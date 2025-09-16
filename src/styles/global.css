@@ -1,21 +1,48 @@
-// tailwind.config.js
-module.exports = {
-  content: [
-    "./pages/**/*.{js,ts,jsx,tsx}",
-    "./src/components/**/*.{js,ts,jsx,tsx}",
-    "./styles/**/*.{css}"
-  ],
-  theme: {
-    extend: {
-      colors: {
-        background: "#ffffff",
-        box: "#f5f5f5",
-        accent: "#4a90e2" // neutral blue
-      },
-      fontFamily: {
-        sans: ["system-ui", "-apple-system", "sans-serif"]
-      }
-    }
-  },
-  plugins: []
+/* global.css */
+
+/* Tailwind directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom theme colors */
+:root {
+  --color-background: #ffffff;
+  --color-box: #f5f5f5;
+  --color-accent: #c40000; /* H&P red */
+  --color-text: #1f2937; /* gray-900 */
 }
+
+/* Body styles */
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Example box component */
+.box {
+  background-color: var(--color-box);
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+/* Accent text or buttons */
+.accent {
+  color: var(--color-accent);
+}
+
+/* Tailwind @apply example (optional, clean) */
+.button {
+  @apply bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800;
+}
+
+/* Utilities for spacing if needed */
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-4 { margin-top: 1rem; }
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
