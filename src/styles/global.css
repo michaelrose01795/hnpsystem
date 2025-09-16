@@ -1,15 +1,21 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Custom theme colors */
-:root {
-  --color-background: #ffffff;
-  --color-box: #f5f5f5;
-  --color-accent: #c40000; /* strong red for H&P */
-}
-
-body {
-  @apply bg-white text-gray-900;
-  font-family: system-ui, -apple-system, sans-serif;
+// tailwind.config.js
+module.exports = {
+  content: [
+    "./pages/**/*.{js,ts,jsx,tsx}",
+    "./src/components/**/*.{js,ts,jsx,tsx}",
+    "./styles/**/*.{css}"
+  ],
+  theme: {
+    extend: {
+      colors: {
+        background: "#ffffff",
+        box: "#f5f5f5",
+        accent: "#4a90e2" // neutral blue
+      },
+      fontFamily: {
+        sans: ["system-ui", "-apple-system", "sans-serif"]
+      }
+    }
+  },
+  plugins: []
 }
