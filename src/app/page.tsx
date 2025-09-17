@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Layout from "../components/Layout"; // make sure path is correct
 
 interface Job {
   id: number;
@@ -28,61 +29,63 @@ export default function DashboardPage() {
   const activeClockedIn = jobs.filter((j) => j.clockedIn).length;
 
   return (
-    <div style={{ padding: "30px", fontFamily: "sans-serif" }}>
-      {/* Header */}
-      <header style={{ marginBottom: "30px" }}>
-        <h1 style={{ color: "#c00", margin: 0 }}>H&P System Dashboard</h1>
-        <p>Manage vehicles and technician clocking efficiently</p>
-      </header>
+    <Layout>
+      <div style={{ padding: "30px" }}>
+        {/* Header */}
+        <header style={{ marginBottom: "30px" }}>
+          <h1 style={{ color: "#c00", margin: 0 }}>H&P System Dashboard</h1>
+          <p>Manage vehicles and technician clocking efficiently</p>
+        </header>
 
-      {/* Stats cards */}
-      <div style={{ display: "flex", gap: "20px", marginBottom: "30px" }}>
-        <div style={cardStyle}>
-          <h2>Total Jobs</h2>
-          <p style={statStyle}>{totalJobs}</p>
-        </div>
-        <div style={cardStyle}>
-          <h2>Active Clocked In</h2>
-          <p style={statStyle}>{activeClockedIn}</p>
-        </div>
-        <div style={cardStyle}>
-          <h2>Jobs in Workshop</h2>
-          <p style={statStyle}>
-            {jobs.filter((j) => j.status === "Workshop").length}
-          </p>
-        </div>
-      </div>
-
-      {/* Job list */}
-      <div>
-        {jobs.map((job) => (
-          <div key={job.id} style={jobCardStyle}>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <div>
-                <h3 style={{ margin: "0 0 5px" }}>{job.reg}</h3>
-                <p style={{ margin: 0 }}>
-                  Status: <strong>{job.status}</strong>
-                </p>
-              </div>
-              <button
-                onClick={() => toggleClock(job.id)}
-                style={{
-                  backgroundColor: job.clockedIn ? "gray" : "#c00",
-                  color: "white",
-                  padding: "8px 16px",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  border: "none",
-                  alignSelf: "center",
-                }}
-              >
-                {job.clockedIn ? "Clock Out" : "Clock In"}
-              </button>
-            </div>
+        {/* Stats cards */}
+        <div style={{ display: "flex", gap: "20px", marginBottom: "30px" }}>
+          <div style={cardStyle}>
+            <h2>Total Jobs</h2>
+            <p style={statStyle}>{totalJobs}</p>
           </div>
-        ))}
+          <div style={cardStyle}>
+            <h2>Active Clocked In</h2>
+            <p style={statStyle}>{activeClockedIn}</p>
+          </div>
+          <div style={cardStyle}>
+            <h2>Jobs in Workshop</h2>
+            <p style={statStyle}>
+              {jobs.filter((j) => j.status === "Workshop").length}
+            </p>
+          </div>
+        </div>
+
+        {/* Job list */}
+        <div>
+          {jobs.map((job) => (
+            <div key={job.id} style={jobCardStyle}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <div>
+                  <h3 style={{ margin: "0 0 5px" }}>{job.reg}</h3>
+                  <p style={{ margin: 0 }}>
+                    Status: <strong>{job.status}</strong>
+                  </p>
+                </div>
+                <button
+                  onClick={() => toggleClock(job.id)}
+                  style={{
+                    backgroundColor: job.clockedIn ? "gray" : "#c00",
+                    color: "white",
+                    padding: "8px 16px",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    border: "none",
+                    alignSelf: "center",
+                  }}
+                >
+                  {job.clockedIn ? "Clock Out" : "Clock In"}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 }
 
