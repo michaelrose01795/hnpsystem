@@ -92,3 +92,16 @@
   align-self: flex-start; /* position at top-left inside sidebar */
   color: black; /* adjust for visibility against red background */
 }
+
+/* Hamburger button (to reopen sidebar when closed) */
+.hamburger-btn {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 200; /* above sidebar */
+  color: black; /* adjust if needed for visibility */
+}
