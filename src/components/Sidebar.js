@@ -10,7 +10,7 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* Hamburger button always visible, positioned above sidebar */}
+      {/* Hamburger button always visible, only clickable when sidebar closed */}
       <button
         className="hamburger-btn"
         onClick={toggleSidebar}

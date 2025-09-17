@@ -2,16 +2,18 @@
   display: flex;
   min-height: 100vh;
   font-family: Arial, sans-serif;
+  transition: all 0.3s ease;
 }
 
 /* Sidebar */
 .sidebar {
   width: 220px;
   background-color: #7a7a7a;
-  color: rgb(0, 0, 0);
+  color: black;
   padding: 1rem;
   display: flex;
   flex-direction: column;
+  transition: margin-left 0.3s ease;
 }
 
 .sidebar h2 {
@@ -29,7 +31,7 @@
 }
 
 .sidebar a {
-  color: rgb(0, 0, 0);
+  color: black;
   text-decoration: none;
 }
 
@@ -37,13 +39,57 @@
   text-decoration: underline;
 }
 
+/* Closed sidebar */
+.sidebar.closed {
+  margin-left: -220px; /* slide it out without covering content */
+}
+
+/* Enhanced close button inside sidebar */
+.close-btn {
+  background-color: #555; /* dark gray background for visibility */
+  color: white;            /* white X for contrast */
+  border: none;
+  font-size: 1.5rem;       /* bigger X */
+  font-weight: bold;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  align-self: flex-start;  /* top-left inside sidebar */
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.close-btn:hover {
+  background-color: #333; /* darker on hover */
+}
+
+/* Hamburger button */
+.hamburger-btn {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 300;
+  color: black;
+  display: none; /* show only when sidebar closed via JS inline style */
+}
+
 /* Main content */
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: #b8b8b8; /* dark background */
-  color: #000000;
+  background-color: #b8b8b8;
+  color: black;
+  transition: margin-left 0.3s ease;
+}
+
+/* Push content when sidebar is open */
+.sidebar.open ~ .main-content {
+  margin-left: 220px;
 }
 
 /* Header */
@@ -66,42 +112,4 @@
   color: white;
   text-align: center;
   padding: 1rem;
-}
-
-/* Sidebar open/close */
-.sidebar {
-  position: fixed; /* keep it fixed so it can slide */
-  top: 0;
-  left: 0;
-  height: 100vh;
-  transition: transform 0.3s ease;
-  z-index: 100;
-}
-
-.sidebar.closed {
-  transform: translateX(-100%);
-}
-
-/* Close button */
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  margin-bottom: 1rem;
-  align-self: flex-start; /* position at top-left inside sidebar */
-  color: black; /* adjust for visibility against red background */
-}
-
-/* Hamburger button (to reopen sidebar when closed) */
-.hamburger-btn {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  font-size: 1.5rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  z-index: 200; /* above sidebar */
-  color: black; /* adjust if needed for visibility */
 }
