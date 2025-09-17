@@ -7,7 +7,7 @@
 /* Sidebar */
 .sidebar {
   width: 220px;
-  background-color: #ff4a4a;
+  background-color: #7a7a7a;
   color: rgb(0, 0, 0);
   padding: 1rem;
   display: flex;
@@ -48,7 +48,7 @@
 
 /* Header */
 .header {
-  background-color: #ff4a4a;
+  background-color: #7a7a7a;
   color: white;
   padding: 1rem 2rem;
   font-size: 1.5rem;
@@ -62,7 +62,7 @@
 
 /* Footer */
 .footer {
-  background-color: #ff4a4a;
+  background-color: #7a7a7a;
   color: white;
   text-align: center;
   padding: 1rem;
