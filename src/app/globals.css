@@ -1,26 +1,64 @@
-@import "tailwindcss";
+/* =========================
+   Tailwind Import
+   ========================= */
+@import "tailwindcss"; /* Import Tailwind CSS utilities so you can use Tailwind classes across your app */
 
+/* =========================
+   Root-level CSS variables
+   ========================= */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* -------------------------
+     Color Variables
+     ------------------------- */
+  --color-background: #ffffff; /* Default page background color (light theme) */
+  --color-foreground: #171717; /* Default text color (dark gray for readability) */
+  
+  /* -------------------------
+     Font Variables
+     ------------------------- */
+  --font-sans: 'Geist', Arial, Helvetica, sans-serif; /* Primary sans-serif font */
+  --font-mono: 'Geist Mono', monospace;               /* Monospaced font for code, tables, or console text */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* =========================
+   Dark Mode Support
+   ========================= */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #c9c9c9;
-    --foreground: #000000;
+    --color-background: #c9c9c9; /* Lighter gray background in dark mode for contrast */
+    --color-foreground: #000000; /* Black text in dark mode */
   }
+  /* Note: Tailwind also supports dark mode; this complements your CSS variables */
 }
 
+/* =========================
+   Base Body Styles
+   ========================= */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-background); /* Apply background color from variable */
+  color: var(--color-foreground);            /* Apply text color from variable */
+  font-family: var(--font-sans);             /* Apply main font */
+  margin: 0;                                 /* Remove default margin */
+  padding: 0;                                /* Remove default padding */
+  -webkit-font-smoothing: antialiased;       /* Improve font rendering on WebKit browsers */
+  -moz-osx-font-smoothing: grayscale;        /* Improve font rendering on macOS Firefox */
 }
+
+/* =========================
+   Typography Utilities
+   ========================= */
+/* Quick utility classes to reference your CSS variables */
+.text-primary { color: var(--color-foreground); }          /* Use for text matching theme foreground */
+.bg-primary { background-color: var(--color-background); } /* Use for backgrounds matching theme background */
+.font-sans { font-family: var(--font-sans); }              /* Apply main sans-serif font */
+.font-mono { font-family: var(--font-mono); }              /* Apply monospaced font for code or tables */
+
+/* =========================
+   Notes:
+   - All variables are defined under :root so they can be used globally.
+   - Dark mode is handled with prefers-color-scheme media query.
+   - Utilities help apply theme colors and fonts without repeating CSS.
+   - You can add more variables for accents, buttons, cards, etc., as your design grows.
+   - Compatible with Tailwind; you can use CSS variables inside Tailwind config if needed.
+   ========================= */
+

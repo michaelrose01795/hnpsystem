@@ -1,121 +1,115 @@
+
+/* src/components/Layout.css */
 .layout-container {
-  display: flex;
-  min-height: 100vh;
-  font-family: Arial, sans-serif;
-  transition: all 0.3s ease;
+  display: flex; /* use flexbox for layout of sidebar + main content */
+  min-height: 100vh; /* make container at least full viewport height */
+  font-family: Arial, sans-serif; /* default font for the layout */
+  transition: all 0.3s ease; /* smooth transition for all changes */
 }
 
 /* Sidebar */
 .sidebar {
-  width: 220px;
-  background-color: #7a7a7a;
-  color: black;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  transition: margin-left 0.3s ease;
+  width: 220px; /* fixed width for sidebar */
+  background-color: #7a7a7a; /* gray background for sidebar */
+  color: black; /* default text color inside sidebar */
+  padding: 1rem; /* inner spacing */
+  display: flex; /* use flexbox for sidebar content */
+  flex-direction: column; /* stack items vertically */
+  transition: margin-left 0.3s ease; /* animate sliding in/out */
   position: relative; /* needed for absolute positioning of close button */
 }
 
 .sidebar h2 {
-  text-align: center;
-  margin-bottom: 2rem;
+  text-align: center; /* center the sidebar title */
+  margin-bottom: 2rem; /* spacing below title */
   position: relative; /* ensures title and close button can align */
 }
 
 /* Sidebar menu */
 .sidebar ul {
-  list-style: none;
-  padding: 0;
+  list-style: none; /* remove default bullets */
+  padding: 0; /* remove default padding */
 }
 
 .sidebar li {
-  margin-bottom: 1rem;
+  margin-bottom: 1rem; /* spacing between menu items */
 }
 
 .sidebar a {
-  color: black;
-  text-decoration: none;
+  color: black; /* link text color */
+  text-decoration: none; /* remove underline */
 }
 
 .sidebar a:hover {
-  text-decoration: underline;
+  text-decoration: underline; /* underline on hover for feedback */
 }
 
 /* Closed sidebar */
 .sidebar.closed {
-  margin-left: -220px; /* slide it out without covering content */
+  margin-left: -220px; /* slide it out of view without covering content */
 }
 
 /* Close button inside sidebar at top-right */
 .close-btn {
-  background-color: #555; /* dark gray background for visibility */
-  color: white;           /* white X for contrast */
-  border: none;
-  font-size: 1.2rem;      /* adjust size to fit neatly */
-  font-weight: bold;
-  padding: 0.2rem 0.5rem;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: background 0.2s ease;
+  background-color: #ff0000; /* red background for button */
+  color: #e01818; /* red-ish text for X */
+  border: none; /* remove default button border */
+  font-size: 1.2rem; /* size of X text */
+  font-weight: bold; /* make X bold */
+  padding: 0.2rem 0.5rem; /* inner spacing */
+  cursor: pointer; /* pointer cursor on hover */
+  border-radius: 4px; /* slightly rounded corners */
+  transition: background 0.2s ease; /* smooth background change */
 
   /* Position top-right inside sidebar */
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
+  position: absolute; /* absolute relative to sidebar */
+  top: 1rem; /* distance from top of sidebar */
+  right: 1rem; /* distance from right of sidebar */
 }
 
 .close-btn:hover {
-  background-color: #333; /* darker on hover */
+  background-color: #ff0000; /* darker on hover for visual feedback */
 }
 
 /* Hamburger button */
 .hamburger-btn {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  font-size: 1.5rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  z-index: 300;
-  color: black;
-  display: none; /* show only when sidebar closed via JS inline style */
+  position: fixed; /* fixed position on screen */
+  top: 1rem; /* distance from top */
+  left: 1rem; /* distance from left */
+  font-size: 1.5rem; /* bigger size for visibility */
+  background: none; /* remove default background */
+  border: none; /* remove default border */
+  cursor: pointer; /* pointer cursor */
+  z-index: 300; /* make sure it's on top of other content */
+  color: black; /* text color */
+  display: none; /* hidden by default, show via JS when sidebar closed */
 }
 
 /* Main content */
 .main-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background-color: #b8b8b8;
-  color: black;
-  transition: margin-left 0.3s ease;
+  flex: 1; /* take remaining width next to sidebar */
+  display: flex; /* flex for inner layout if needed */
+  flex-direction: column; /* stack child content vertically */
+  background-color: #b8b8b8; /* gray background for main content */
+  color: black; /* text color */
+  transition: margin-left 0.3s ease; /* smooth slide when sidebar opens/closes */
 }
 
 /* Push content when sidebar is open */
 .sidebar.open ~ .main-content {
-  margin-left: 220px;
-}
-
-/* Header */
-.header {
-  background-color: #7a7a7a;
-  color: white;
-  padding: 1rem 2rem;
-  font-size: 1.5rem;
+  margin-left: 220px; /* push content to the right when sidebar open */
 }
 
 /* Main area */
 .content {
-  flex: 1;
-  padding: 2rem;
+  flex: 1; /* fill available space */
+  padding: 2rem; /* spacing around content */
 }
 
 /* Footer */
 .footer {
-  background-color: #7a7a7a;
-  color: white;
-  text-align: center;
-  padding: 1rem;
+  background-color: #7a7a7a; /* gray footer */
+  color: white; /* white text in footer */
+  text-align: center; /* center text */
+  padding: 1rem; /* inner spacing */
 }

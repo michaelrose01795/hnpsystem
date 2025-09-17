@@ -1,136 +1,137 @@
+/* src/styles/global.css
 /* =========================
    Global Theme Variables
    ========================= */
 :root {
   /* Colors */
-  --color-background: #ffffff;
-  --color-box: #f5f5f5;
-  --color-accent: #c00000; /* H&P red */
-  --color-text: #111111;
-  --color-muted: #666666;
+  --color-background: #ffffff; /* default page background */
+  --color-box: #f5f5f5; /* background for cards, boxes */
+  --color-accent: #c00000; /* primary accent color (H&P red) */
+  --color-text: #111111; /* main text color */
+  --color-muted: #666666; /* secondary / muted text color */
 
   /* Spacing */
-  --spacing-xs: 0.25rem;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-  --spacing-xl: 2rem;
+  --spacing-xs: 0.25rem; /* extra small spacing */
+  --spacing-sm: 0.5rem;  /* small spacing */
+  --spacing-md: 1rem;    /* medium spacing */
+  --spacing-lg: 1.5rem;  /* large spacing */
+  --spacing-xl: 2rem;    /* extra large spacing */
 
   /* Radius */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
+  --radius-sm: 0.25rem; /* small border-radius */
+  --radius-md: 0.5rem;  /* medium border-radius */
+  --radius-lg: 0.75rem; /* large border-radius */
 
   /* Typography */
-  --font-main: 'Segoe UI', Arial, sans-serif;
-  --text-sm: 0.875rem;
-  --text-md: 1rem;
-  --text-lg: 1.25rem;
-  --text-xl: 1.5rem;
+  --font-main: 'Segoe UI', Arial, sans-serif; /* main font stack */
+  --text-sm: 0.875rem; /* small text size */
+  --text-md: 1rem;     /* medium text size */
+  --text-lg: 1.25rem;  /* large text size */
+  --text-xl: 1.5rem;   /* extra large text size */
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-  --shadow-lg: 0 10px 15px rgba(0,0,0,0.15);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);  /* subtle shadow */
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);   /* medium shadow */
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.15); /* strong shadow */
 }
 
 /* =========================
    Base Styles
    ========================= */
 body {
-  margin: 0;
-  font-family: var(--font-main);
-  background-color: var(--color-background);
-  color: var(--color-text);
+  margin: 0; /* remove default margin */
+  font-family: var(--font-main); /* apply main font */
+  background-color: var(--color-background); /* page background color */
+  color: var(--color-text); /* default text color */
 }
 
 /* =========================
    Utilities - Layout
    ========================= */
-.flex { display: flex; }
-.grid { display: grid; }
-.inline-block { display: inline-block; }
+.flex { display: flex; } /* flex container */
+.grid { display: grid; } /* grid container */
+.inline-block { display: inline-block; } /* inline-block element */
 
-.flex-col { flex-direction: column; }
-.flex-row { flex-direction: row; }
-.justify-center { justify-content: center; }
-.justify-between { justify-content: space-between; }
-.items-center { align-items: center; }
+.flex-col { flex-direction: column; } /* flex column */
+.flex-row { flex-direction: row; } /* flex row */
+.justify-center { justify-content: center; } /* center items horizontally */
+.justify-between { justify-content: space-between; } /* space between items */
+.items-center { align-items: center; } /* align items vertically */
 
-.gap-sm { gap: var(--spacing-sm); }
-.gap-md { gap: var(--spacing-md); }
-.gap-lg { gap: var(--spacing-lg); }
+.gap-sm { gap: var(--spacing-sm); } /* small gap between items */
+.gap-md { gap: var(--spacing-md); } /* medium gap */
+.gap-lg { gap: var(--spacing-lg); } /* large gap */
 
 /* =========================
    Utilities - Spacing
    ========================= */
-.p-xs { padding: var(--spacing-xs); }
-.p-sm { padding: var(--spacing-sm); }
-.p-md { padding: var(--spacing-md); }
-.p-lg { padding: var(--spacing-lg); }
-.p-xl { padding: var(--spacing-xl); }
+.p-xs { padding: var(--spacing-xs); } /* padding all sides extra small */
+.p-sm { padding: var(--spacing-sm); } /* small padding */
+.p-md { padding: var(--spacing-md); } /* medium padding */
+.p-lg { padding: var(--spacing-lg); } /* large padding */
+.p-xl { padding: var(--spacing-xl); } /* extra large padding */
 
-.m-xs { margin: var(--spacing-xs); }
-.m-sm { margin: var(--spacing-sm); }
-.m-md { margin: var(--spacing-md); }
-.m-lg { margin: var(--spacing-lg); }
-.m-xl { margin: var(--spacing-xl); }
+.m-xs { margin: var(--spacing-xs); } /* margin all sides extra small */
+.m-sm { margin: var(--spacing-sm); } /* small margin */
+.m-md { margin: var(--spacing-md); } /* medium margin */
+.m-lg { margin: var(--spacing-lg); } /* large margin */
+.m-xl { margin: var(--spacing-xl); } /* extra large margin */
 
 /* =========================
    Utilities - Colors
    ========================= */
-.bg-background { background-color: var(--color-background); }
-.bg-box { background-color: var(--color-box); }
-.bg-accent { background-color: var(--color-accent); }
+.bg-background { background-color: var(--color-background); } /* white bg */
+.bg-box { background-color: var(--color-box); } /* card / box bg */
+.bg-accent { background-color: var(--color-accent); } /* accent bg */
 
-.text-accent { color: var(--color-accent); }
-.text-muted { color: var(--color-muted); }
+.text-accent { color: var(--color-accent); } /* accent text */
+.text-muted { color: var(--color-muted); } /* muted / secondary text */
 
 /* =========================
    Utilities - Borders
    ========================= */
-.rounded-sm { border-radius: var(--radius-sm); }
-.rounded-md { border-radius: var(--radius-md); }
-.rounded-lg { border-radius: var(--radius-lg); }
+.rounded-sm { border-radius: var(--radius-sm); } /* small rounded corners */
+.rounded-md { border-radius: var(--radius-md); } /* medium rounded corners */
+.rounded-lg { border-radius: var(--radius-lg); } /* large rounded corners */
 
 /* =========================
    Utilities - Shadows
    ========================= */
-.shadow-sm { box-shadow: var(--shadow-sm); }
-.shadow-md { box-shadow: var(--shadow-md); }
-.shadow-lg { box-shadow: var(--shadow-lg); }
+.shadow-sm { box-shadow: var(--shadow-sm); } /* small shadow */
+.shadow-md { box-shadow: var(--shadow-md); } /* medium shadow */
+.shadow-lg { box-shadow: var(--shadow-lg); } /* large shadow */
 
 /* =========================
    Utilities - Typography
    ========================= */
-.text-sm { font-size: var(--text-sm); }
-.text-md { font-size: var(--text-md); }
-.text-lg { font-size: var(--text-lg); }
-.text-xl { font-size: var(--text-xl); }
+.text-sm { font-size: var(--text-sm); } /* small text */
+.text-md { font-size: var(--text-md); } /* medium text */
+.text-lg { font-size: var(--text-lg); } /* large text */
+.text-xl { font-size: var(--text-xl); } /* extra large text */
 
-.font-bold { font-weight: bold; }
-.font-normal { font-weight: normal; }
+.font-bold { font-weight: bold; } /* bold text */
+.font-normal { font-weight: normal; } /* normal weight */
 
 /* =========================
    Components
    ========================= */
 .btn {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  color: #fff;
-  background-color: var(--color-accent);
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s;
-  font-weight: bold;
+  padding: var(--spacing-sm) var(--spacing-md); /* vertical and horizontal padding */
+  border-radius: var(--radius-md); /* rounded corners */
+  color: #fff; /* text color */
+  background-color: var(--color-accent); /* primary button bg */
+  border: none; /* remove default border */
+  cursor: pointer; /* pointer on hover */
+  transition: background 0.2s; /* smooth bg change */
+  font-weight: bold; /* bold text */
 }
 .btn:hover {
-  background-color: #a00000;
+  background-color: #a00000; /* darker red on hover */
 }
 
 .card {
-  background: var(--color-box);
-  padding: var(--spacing-md);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  background: var(--color-box); /* card background */
+  padding: var(--spacing-md); /* padding inside card */
+  border-radius: var(--radius-md); /* rounded corners */
+  box-shadow: var(--shadow-sm); /* subtle shadow for depth */
 }

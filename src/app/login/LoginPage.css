@@ -1,35 +1,41 @@
+/* src/app/login/LoginPage.css */
+
+/* Main login box container */
 .login-container {
-  max-width: 400px;
-  margin: 80px auto;
-  padding: 2rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  text-align: center;
-  background-color: #f9f9f9;
+  max-width: 400px; /* limit width of login box */
+  margin: 80px auto; /* center horizontally with 80px top/bottom margin */
+  padding: 2rem; /* inner spacing */
+  border: 1px solid #ccc; /* light gray border */
+  border-radius: 8px; /* rounded corners */
+  text-align: center; /* center text inside */
+  background-color: #f9f9f9; /* light background for contrast */
 }
 
+/* Input fields and select dropdown inside login box */
 .login-container input,
 .login-container select {
-  display: block;
-  width: 100%;
-  margin: 0.5rem 0;
-  padding: 0.5rem;
+  display: block; /* stack vertically */
+  width: 100%; /* full width inside container */
+  margin: 0.5rem 0; /* vertical spacing between fields */
+  padding: 0.5rem; /* inner spacing for text */
 }
 
+/* Login button styling */
 .login-container button {
-  padding: 0.5rem 1rem;
-  margin-top: 1rem;
-  cursor: pointer;
+  padding: 0.5rem 1rem; /* top/bottom and left/right padding */
+  margin-top: 1rem; /* spacing above button */
+  cursor: pointer; /* pointer on hover for clickable feel */
 }
 
+/* Error message styling */
 .error {
-  color: red;
-  margin-bottom: 1rem;
+  color: red; /* red text for errors */
+  margin-bottom: 1rem; /* spacing below error message */
 }
 
+/* Forgot password link styling */
 .forgot-password {
-  color: blue;
-  cursor: pointer;
-  margin-top: 1rem;
+  color: blue; /* blue text to indicate clickable */
+  cursor: pointer; /* pointer on hover */
+  margin-top: 1rem; /* spacing above link */
 }
-

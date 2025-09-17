@@ -1,17 +1,21 @@
+/* src/app/login/TopBar.css */
+
+/* Main topbar container */
 .topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  background-color: #222;
-  color: #fff;
+  display: flex; /* use flexbox for horizontal layout */
+  justify-content: space-between; /* push title left and button right */
+  align-items: center; /* vertically center items */
+  padding: 0.5rem 1rem; /* vertical and horizontal spacing */
+  background-color: #222; /* dark background for topbar */
+  color: #fff; /* white text for contrast */
 }
 
+/* Logout button styling */
 .logout-btn {
-  background-color: #ff4d4f;
-  border: none;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  color: white;
-  cursor: pointer;
+  background-color: #ff4d4f; /* red button matching H&P accent */
+  border: none; /* remove default border */
+  padding: 0.4rem 0.8rem; /* button inner spacing */
+  border-radius: 4px; /* slightly rounded corners */
+  color: white; /* text color */
+  cursor: pointer; /* pointer cursor on hover */
 }

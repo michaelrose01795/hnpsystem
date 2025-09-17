@@ -1,21 +1,25 @@
-import Link from "next/link";
-import Layout from "../components/Layout";
-import "./home.css"; // optional if you want extra styling
+// src/app/page.js
+import Link from "next/link"; // Next.js Link component for client-side page navigation
+import Layout from "../components/Layout"; // import Layout wrapper to include sidebar/header/footer
+import "./home.css"; // optional CSS for additional styling of homepage
 
 export default function HomePage() {
   return (
-    <Layout>
-      <div className="home-container">
-        <header className="home-header">
-          <h1>Welcome to Humphries & Parks System</h1>
-          <p>Your all-in-one workshop and sales dashboard</p>
+    <Layout> {/* wrap entire page in Layout to include sidebar + header/footer */}
+      <div className="home-container"> {/* main container for homepage content */}
+
+        <header className="home-header"> {/* page header section */}
+          <h1>Welcome to Humphries & Parks System</h1> {/* main heading */}
+          <p>Your all-in-one workshop and sales dashboard</p> {/* subheading / description */}
         </header>
 
-        <main className="home-main">
-          <div className="cards">
+        <main className="home-main"> {/* main content area */}
+          <div className="cards"> {/* container for dashboard cards / links */}
+
+            {/* Each card links to a page in the system */}
             <Link href="/accounts" className="card">
-              <h2>Account Management</h2>
-              <p>View and edit your profile, manage users (admins only)</p>
+              <h2>Account Management</h2> {/* card title */}
+              <p>View and edit your profile, manage users (admins only)</p> {/* card description */}
             </Link>
 
             <Link href="/jobs" className="card">
@@ -52,9 +56,10 @@ export default function HomePage() {
               <h2>Messages</h2>
               <p>View internal messages and notifications</p>
             </Link>
-          </div>
-        </main>
-      </div>
-    </Layout>
+
+          </div> {/* end cards container */}
+        </main> {/* end main content */}
+      </div> {/* end home container */}
+    </Layout> /* end Layout wrapper */
   );
 }
