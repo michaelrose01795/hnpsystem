@@ -67,3 +67,28 @@
   text-align: center;
   padding: 1rem;
 }
+
+/* Sidebar open/close */
+.sidebar {
+  position: fixed; /* keep it fixed so it can slide */
+  top: 0;
+  left: 0;
+  height: 100vh;
+  transition: transform 0.3s ease;
+  z-index: 100;
+}
+
+.sidebar.closed {
+  transform: translateX(-100%);
+}
+
+/* Close button */
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  align-self: flex-start; /* position at top-left inside sidebar */
+  color: black; /* adjust for visibility against red background */
+}
