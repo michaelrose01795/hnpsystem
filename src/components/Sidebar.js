@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./Layout.css";
+import Link from "next/link"; // Use this if using Next.js for navigation
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
@@ -26,11 +27,21 @@ const Sidebar = () => {
 
         {isOpen && (
           <ul>
-            <li>Dashboard</li>
-            <li>Accounts</li>
-            <li>Workshop</li>
-            <li>Parts</li>
-            <li>Settings</li>
+            <li>
+              <Link href="/dashboard">Dashboard</Link>
+            </li>
+            <li>
+              <Link href="/accounts">Accounts</Link>
+            </li>
+            <li>
+              <Link href="/workshop">Workshop</Link>
+            </li>
+            <li>
+              <Link href="/parts">Parts</Link>
+            </li>
+            <li>
+              <Link href="/settings">Settings</Link>
+            </li>
           </ul>
         )}
       </div>
