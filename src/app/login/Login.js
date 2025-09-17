@@ -1,22 +1,20 @@
 // src/pages/login.js
-import { useEffect, useState } from "react";
-import keycloak from "../auth/keycloak";
+import { useState } from "react";
 
 export default function LoginPage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [username, setUsername] = useState("");
 
-  useEffect(() => {
-    keycloak
-      .init({ onLoad: "check-sso", checkLoginIframe: false })
-      .then(auth => {
-        setAuthenticated(auth);
-        if (auth) {
-          setUsername(keycloak.tokenParsed?.preferred_username || "");
-        }
-      })
-      .catch(err => console.error("Keycloak init error:", err));
-  }, []);
+  const handleLogin = () => {
+    // Mock login: you can change the username for testing
+    setUsername("TestUser");
+    setAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    setUsername("");
+    setAuthenticated(false);
+  };
 
   if (!authenticated) {
     return (
@@ -24,7 +22,7 @@ export default function LoginPage() {
         <h1>Login</h1>
         <p>You must log in to access the system.</p>
         <button
-          onClick={() => keycloak.login()}
+          onClick={handleLogin}
           style={{
             backgroundColor: "#c00",
             color: "white",
@@ -35,7 +33,7 @@ export default function LoginPage() {
             marginTop: "15px",
           }}
         >
-          Login with Keycloak
+          Mock Login
         </button>
       </div>
     );
@@ -46,7 +44,7 @@ export default function LoginPage() {
       <h1>Welcome, {username}</h1>
       <p>You are logged in.</p>
       <button
-        onClick={() => keycloak.logout()}
+        onClick={handleLogout}
         style={{
           backgroundColor: "gray",
           color: "white",
