@@ -1,0 +1,17 @@
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: #222;
+  color: #fff;
+}
+
+.logout-btn {
+  background-color: #ff4d4f;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+}
