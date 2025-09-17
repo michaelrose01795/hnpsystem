@@ -1,114 +1,93 @@
 "use client";
 
-import { useState } from "react";
-import Layout from "../components/Layout"; // make sure path is correct
+import React from "react";
+import "./home/Home.css";
 
-interface Job {
-  id: number;
-  reg: string;
-  status: string;
-  clockedIn: boolean;
-}
-
-export default function DashboardPage() {
-  const [jobs, setJobs] = useState<Job[]>([
-    { id: 1, reg: "AB12 CDE", status: "Workshop", clockedIn: false },
-    { id: 2, reg: "FG34 HIJ", status: "Valeting", clockedIn: true },
-    { id: 3, reg: "KL56 MNO", status: "MOT", clockedIn: false },
-  ]);
-
-  const toggleClock = (id: number) => {
-    setJobs((prev) =>
-      prev.map((job) =>
-        job.id === id ? { ...job, clockedIn: !job.clockedIn } : job
-      )
-    );
-  };
-
-  const totalJobs = jobs.length;
-  const activeClockedIn = jobs.filter((j) => j.clockedIn).length;
-
+export default function Home() {
   return (
-    <Layout>
-      <div style={{ padding: "30px" }}>
-        {/* Header */}
-        <header style={{ marginBottom: "30px" }}>
-          <h1 style={{ color: "#c00", margin: 0 }}>H&P System Dashboard</h1>
-          <p>Manage vehicles and technician clocking efficiently</p>
-        </header>
+    <div className="home-container">
+      <h1>Welcome to Humphries & Parks System</h1>
 
-        {/* Stats cards */}
-        <div style={{ display: "flex", gap: "20px", marginBottom: "30px" }}>
-          <div style={cardStyle}>
-            <h2>Total Jobs</h2>
-            <p style={statStyle}>{totalJobs}</p>
-          </div>
-          <div style={cardStyle}>
-            <h2>Active Clocked In</h2>
-            <p style={statStyle}>{activeClockedIn}</p>
-          </div>
-          <div style={cardStyle}>
-            <h2>Jobs in Workshop</h2>
-            <p style={statStyle}>
-              {jobs.filter((j) => j.status === "Workshop").length}
-            </p>
-          </div>
+      <div className="dashboard-grid">
+        {/* Dashboard Overview */}
+        <div className="card">
+          <h2>Dashboard Overview</h2>
+          <ul>
+            <li>Active Users: 40</li>
+            <li>Active Jobs: 12</li>
+            <li>Pending Parts Requests: 3</li>
+          </ul>
         </div>
 
-        {/* Job list */}
-        <div>
-          {jobs.map((job) => (
-            <div key={job.id} style={jobCardStyle}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <div>
-                  <h3 style={{ margin: "0 0 5px" }}>{job.reg}</h3>
-                  <p style={{ margin: 0 }}>
-                    Status: <strong>{job.status}</strong>
-                  </p>
-                </div>
-                <button
-                  onClick={() => toggleClock(job.id)}
-                  style={{
-                    backgroundColor: job.clockedIn ? "gray" : "#c00",
-                    color: "white",
-                    padding: "8px 16px",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    border: "none",
-                    alignSelf: "center",
-                  }}
-                >
-                  {job.clockedIn ? "Clock Out" : "Clock In"}
-                </button>
-              </div>
-            </div>
-          ))}
+        {/* Workshop / Technician Pages */}
+        <div className="card">
+          <h2>Workshop</h2>
+          <ul>
+            <li><a href="/workshop/job-cards">Job Cards</a></li>
+            <li><a href="/workshop/mot-checklist">MOT / Service Checklists</a></li>
+            <li><a href="/workshop/parts-requests">Parts Requests</a></li>
+            <li><a href="/workshop/clocking">Clocking / Time</a></li>
+          </ul>
+        </div>
+
+        {/* Car Sales / Buying Pages */}
+        <div className="card">
+          <h2>Car Sales / Buying</h2>
+          <ul>
+            <li><a href="/sales/inventory">Car Inventory</a></li>
+            <li><a href="/sales/progress">Sales Progress</a></li>
+            <li><a href="/buying/requests">Buying Requests</a></li>
+          </ul>
+        </div>
+
+        {/* Accounts / Finance */}
+        <div className="card">
+          <h2>Accounts</h2>
+          <ul>
+            <li><a href="/accounts/invoices">Invoices & Payments</a></li>
+            <li><a href="/accounts/reports">Reports</a></li>
+            <li><a href="/accounts/expenses">Expenses</a></li>
+          </ul>
+        </div>
+
+        {/* Admin / Management */}
+        <div className="card">
+          <h2>Admin</h2>
+          <ul>
+            <li><a href="/admin/users">User Management</a></li>
+            <li><a href="/admin/logs">Audit Logs</a></li>
+            <li><a href="/admin/settings">Settings</a></li>
+          </ul>
+        </div>
+
+        {/* Parts Department */}
+        <div className="card">
+          <h2>Parts</h2>
+          <ul>
+            <li><a href="/parts/inventory">Inventory Management</a></li>
+            <li><a href="/parts/sales">Sales Tracking</a></li>
+            <li><a href="/parts/approval">Approval Dashboard</a></li>
+          </ul>
+        </div>
+
+        {/* Messaging / Notifications */}
+        <div className="card">
+          <h2>Messaging / Notifications</h2>
+          <ul>
+            <li><a href="/messages/inbox">Inbox</a></li>
+            <li><a href="/messages/alerts">Alerts</a></li>
+          </ul>
+        </div>
+
+        {/* Help / Training */}
+        <div className="card">
+          <h2>Help / Training</h2>
+          <ul>
+            <li><a href="/help/manuals">Manuals</a></li>
+            <li><a href="/help/tutorials">Tutorials</a></li>
+          </ul>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 }
-
-// Styles
-const cardStyle: React.CSSProperties = {
-  backgroundColor: "#f9f9f9",
-  padding: "20px",
-  borderRadius: "10px",
-  flex: 1,
-  textAlign: "center",
-  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-};
-
-const statStyle: React.CSSProperties = {
-  fontSize: "24px",
-  fontWeight: "bold",
-  margin: "10px 0 0",
-};
-
-const jobCardStyle: React.CSSProperties = {
-  backgroundColor: "#f2f2f2",
-  padding: "15px 20px",
-  marginBottom: "10px",
-  borderRadius: "10px",
-  boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-};

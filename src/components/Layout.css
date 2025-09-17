@@ -14,13 +14,16 @@
   display: flex;
   flex-direction: column;
   transition: margin-left 0.3s ease;
+  position: relative; /* needed for absolute positioning of close button */
 }
 
 .sidebar h2 {
   text-align: center;
   margin-bottom: 2rem;
+  position: relative; /* ensures title and close button can align */
 }
 
+/* Sidebar menu */
 .sidebar ul {
   list-style: none;
   padding: 0;
@@ -44,19 +47,22 @@
   margin-left: -220px; /* slide it out without covering content */
 }
 
-/* Enhanced close button inside sidebar */
+/* Close button inside sidebar at top-right */
 .close-btn {
   background-color: #555; /* dark gray background for visibility */
-  color: white;            /* white X for contrast */
+  color: white;           /* white X for contrast */
   border: none;
-  font-size: 1.5rem;       /* bigger X */
+  font-size: 1.2rem;      /* adjust size to fit neatly */
   font-weight: bold;
-  padding: 0.3rem 0.6rem;
+  padding: 0.2rem 0.5rem;
   cursor: pointer;
-  align-self: flex-start;  /* top-left inside sidebar */
-  margin-bottom: 1rem;
   border-radius: 4px;
   transition: background 0.2s ease;
+
+  /* Position top-right inside sidebar */
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
 }
 
 .close-btn:hover {
