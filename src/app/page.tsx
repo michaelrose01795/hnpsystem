@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import AuthWrapper from "./AuthWrapper";
 
 interface Job {
   id: number;
@@ -10,7 +11,7 @@ interface Job {
   clockedIn: boolean;
 }
 
-export default function HomePage() {
+export default function DashboardPage() {
   const [jobs, setJobs] = useState<Job[]>([
     { id: 1, reg: "AB12 CDE", status: "Workshop", clockedIn: false },
     { id: 2, reg: "FG34 HIJ", status: "Valeting", clockedIn: true },
@@ -26,42 +27,44 @@ export default function HomePage() {
   };
 
   return (
-    <div style={{ padding: "30px" }}>
-      <h1 style={{ color: "#c00" }}>H&amp;P Dashboard</h1>
-      <p>Manage vehicles and technician clocking here.</p>
+    <AuthWrapper>
+      <div style={{ padding: "30px" }}>
+        <h1 style={{ color: "#c00" }}>H&amp;P Dashboard</h1>
+        <p>Manage vehicles and technician clocking here.</p>
 
-      <div style={{ marginTop: "20px" }}>
-        {jobs.map((job) => (
-          <div
-            key={job.id}
-            style={{
-              backgroundColor: "#f2f2f2",
-              padding: "15px",
-              marginBottom: "10px",
-              borderRadius: "8px",
-            }}
-          >
-            <h2 style={{ margin: "0 0 10px" }}>{job.reg}</h2>
-            <p>
-              Status: <strong>{job.status}</strong>
-            </p>
-            <button
-              onClick={() => toggleClock(job.id)}
+        <div style={{ marginTop: "20px" }}>
+          {jobs.map((job) => (
+            <div
+              key={job.id}
               style={{
-                backgroundColor: job.clockedIn ? "gray" : "#c00",
-                color: "white",
-                padding: "8px 16px",
-                borderRadius: "6px",
-                cursor: "pointer",
-                border: "none",
-                marginTop: "10px",
+                backgroundColor: "#f2f2f2",
+                padding: "15px",
+                marginBottom: "10px",
+                borderRadius: "8px",
               }}
             >
-              {job.clockedIn ? "Clock Out" : "Clock In"}
-            </button>
-          </div>
-        ))}
+              <h2 style={{ margin: "0 0 10px" }}>{job.reg}</h2>
+              <p>
+                Status: <strong>{job.status}</strong>
+              </p>
+              <button
+                onClick={() => toggleClock(job.id)}
+                style={{
+                  backgroundColor: job.clockedIn ? "gray" : "#c00",
+                  color: "white",
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  border: "none",
+                  marginTop: "10px",
+                }}
+              >
+                {job.clockedIn ? "Clock Out" : "Clock In"}
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </AuthWrapper>
   );
 }
