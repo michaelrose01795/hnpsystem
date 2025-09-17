@@ -13,14 +13,16 @@ export default function Layout({ children }) {
             <li><Link href="/jobs">Jobs</Link></li>
             <li><Link href="/parts">Parts</Link></li>
             <li><Link href="/dashboard">Dashboard</Link></li>
+            <li><Link href="/vhc">VHC / Checks</Link></li>
+            <li><Link href="/sales">Sales</Link></li>
+            <li><Link href="/reports">Reports</Link></li>
+            <li><Link href="/messages">Messages</Link></li>
           </ul>
         </nav>
       </aside>
 
       <div className="main-content">
-        <header className="header">
-          <h1>Welcome to Humphries & Parks</h1>
-        </header>
+        <header className="header">Humphries & Parks System</header>
 
         <main className="content">
           {children}
