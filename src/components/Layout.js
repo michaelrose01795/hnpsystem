@@ -1,3 +1,4 @@
+/* src/components/Layout.js */
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 

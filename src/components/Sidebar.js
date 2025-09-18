@@ -1,3 +1,4 @@
+/* src/components/Sidebar.js */
 import Link from "next/link";
 
 export default function Sidebar() {
