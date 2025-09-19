@@ -1,4 +1,4 @@
-// src/pages/dashboard/Dashboard.js
+// src/app/dashboard/Dashboard.js
 // =================================
 // This is the main dashboard page for the DMS system.
 // TODO previously: "Populate with live stats + role-based widgets"

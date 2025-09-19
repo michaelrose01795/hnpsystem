@@ -8,8 +8,7 @@ import { useNotifications } from "@/context/NotificationsContext";
 export default function CarBuyingPage() {
   const { roles } = useUser();
   const { addNotification } = useNotifications();
-
-  const suppliers = ["Supplier A", "Supplier B", "Supplier C"]; // Example suppliers
+  const suppliers = ["Supplier A", "Supplier B", "Supplier C"];
   const [cars, setCars] = useState([]);
 
   const handleAddCar = (car) => {
@@ -21,11 +20,8 @@ export default function CarBuyingPage() {
     <ProtectedRoute allowedRoles={[roles.ADMIN, roles.SALES, roles.WORKSHOP]}>
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-4">Car Buying Module</h1>
-
-        {/* Car purchase form */}
         <CarBuyingForm suppliers={suppliers} onSubmit={handleAddCar} />
 
-        {/* Purchases table */}
         <h2 className="text-xl font-semibold mt-6 mb-2">Recorded Purchases</h2>
         <table className="w-full border-collapse border">
           <thead>

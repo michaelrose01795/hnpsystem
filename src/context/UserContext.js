@@ -1,8 +1,7 @@
 "use client";
 import { createContext, useContext, useState } from "react";
 
-// Define roles: Admin, Accounts, Sales, Workshop, ServiceReception, Valet, MOT, Contractors
-const roles = {
+export const roles = {
   ADMIN: "Admin",
   ACCOUNTS: "Accounts",
   SALES: "Sales",
@@ -16,15 +15,12 @@ const roles = {
 const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
-  // Example: current user with a role
   const [user, setUser] = useState({
     name: "Alice",
-    role: roles.ADMIN // Change role to test access
+    role: roles.ADMIN
   });
 
-  const hasAccess = (allowedRoles) => {
-    return allowedRoles.includes(user.role);
-  };
+  const hasAccess = (allowedRoles) => allowedRoles.includes(user.role);
 
   return (
     <UserContext.Provider value={{ user, setUser, roles, hasAccess }}>

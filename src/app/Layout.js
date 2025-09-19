@@ -1,7 +1,8 @@
+"use client";
 import "../app/globals.css";
-import Layout from "../components/Layout";
+import Layout from "@/components/Layout";
 import { UserProvider } from "@/context/UserContext";
-import { NotificationsProvider } from "@/context/NotificationsContext"; // if using notifications
+import { NotificationsProvider } from "@/context/NotificationsContext";
 
 export default function RootLayout({ children }) {
   return (
@@ -9,9 +10,7 @@ export default function RootLayout({ children }) {
       <body>
         <UserProvider>
           <NotificationsProvider>
-            <Layout>
-              {children}
-            </Layout>
+            <Layout>{children}</Layout>
           </NotificationsProvider>
         </UserProvider>
       </body>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useUser } from "@/context/UserContext";
 
 export default function Sidebar() {
-  const { roles } = useUser();
+  const { roles, user } = useUser();
 
   return (
     <aside className="w-56 bg-gray-800 text-white p-4 flex-shrink-0 min-h-screen">
@@ -16,8 +16,7 @@ export default function Sidebar() {
           <li><Link href="/workshop/Clocking">Workshop</Link></li>
           <li><Link href="/parts/Inventory">Parts</Link></li>
           <li><Link href="/sales/Tracker">Sales</Link></li>
-          {/* Only show Buying if user has role */}
-          {(roles.ADMIN || roles.SALES || roles.WORKSHOP) && (
+          {(user.role === roles.ADMIN || user.role === roles.SALES || user.role === roles.WORKSHOP) && (
             <li><Link href="/car-buying">Buying</Link></li>
           )}
           <li><Link href="/valet/Valet">Valet</Link></li>

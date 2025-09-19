@@ -1,3 +1,5 @@
+//src/app/sales/page.js
+
 "use client";
 import { useState } from "react";
 import SalesForm from "@/components/Sales/SalesForm";
