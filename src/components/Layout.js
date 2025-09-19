@@ -1,14 +1,17 @@
+// src/components/Layout.js
+"use client";
 import Sidebar from "./Sidebar";
-import Header from "./Header";
 
 export default function Layout({ children }) {
   return (
-    <div className="layout-container flex min-h-screen">
+    <div className="flex min-h-screen">
+      {/* Sidebar on the left */}
       <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <Header />
-        <main className="p-4">{children}</main>
-      </div>
+
+      {/* Main content area */}
+      <main className="flex-1 bg-gray-100 p-6 overflow-y-auto">
+        {children}
+      </main>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+//src/app.Layout.js
 "use client";
 import "../app/globals.css";
 import Layout from "@/components/Layout";
