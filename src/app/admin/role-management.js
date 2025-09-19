@@ -1,37 +1,39 @@
-// src/pages/admin/user-management.js
+// src/pages/admin/role-management.js
 import React, { useState } from "react";
 
-export default function UserManagement() {
-  // Placeholder user data
-  const [users, setUsers] = useState([
-    { id: 1, name: "John Doe", role: "Technician", email: "john@example.com" },
-    { id: 2, name: "Jane Smith", role: "Salesman", email: "jane@example.com" },
-    { id: 3, name: "Admin User", role: "Admin", email: "admin@example.com" },
+export default function RoleManagement() {
+  // Placeholder role data
+  const [roles, setRoles] = useState([
+    { id: 1, name: "Admin", description: "Full system access" },
+    { id: 2, name: "Technician", description: "Workshop tasks & VHC" },
+    { id: 3, name: "Service Reception", description: "Booking & job allocation" },
+    { id: 4, name: "Salesman", description: "Car sales & customer tracking" },
+    { id: 5, name: "Manager", description: "Reports & approvals" },
   ]);
 
   // Placeholder functions
-  const handleAddUser = () => {
-    alert("TODO: Implement Add User form/modal");
+  const handleAddRole = () => {
+    alert("TODO: Implement Add Role form/modal");
   };
 
-  const handleEditUser = (id) => {
-    alert(`TODO: Implement Edit User functionality for user ID ${id}`);
+  const handleEditRole = (id) => {
+    alert(`TODO: Implement Edit Role functionality for role ID ${id}`);
   };
 
-  const handleDeleteUser = (id) => {
-    if (confirm("Are you sure you want to delete this user?")) {
-      setUsers(users.filter((user) => user.id !== id));
+  const handleDeleteRole = (id) => {
+    if (confirm("Are you sure you want to delete this role?")) {
+      setRoles(roles.filter((role) => role.id !== id));
     }
   };
 
   return (
     <div style={{ padding: "2rem" }}>
-      <h1>User Management</h1>
-      <p>Manage system users below. (Placeholder data shown)</p>
+      <h1>Role Management</h1>
+      <p>Manage system roles below. (Placeholder data shown)</p>
 
-      {/* Add User Button */}
+      {/* Add Role Button */}
       <button
-        onClick={handleAddUser}
+        onClick={handleAddRole}
         style={{
           margin: "1rem 0",
           padding: "0.5rem 1rem",
@@ -42,10 +44,10 @@ export default function UserManagement() {
           cursor: "pointer",
         }}
       >
-        ➕ Add User
+        ➕ Add Role
       </button>
 
-      {/* User Table */}
+      {/* Role Table */}
       <table
         style={{
           width: "100%",
@@ -56,28 +58,26 @@ export default function UserManagement() {
         <thead>
           <tr style={{ background: "#f5f5f5" }}>
             <th style={tableHeader}>ID</th>
-            <th style={tableHeader}>Name</th>
-            <th style={tableHeader}>Email</th>
-            <th style={tableHeader}>Role</th>
+            <th style={tableHeader}>Role Name</th>
+            <th style={tableHeader}>Description</th>
             <th style={tableHeader}>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => (
-            <tr key={user.id} style={{ borderBottom: "1px solid #ddd" }}>
-              <td style={tableCell}>{user.id}</td>
-              <td style={tableCell}>{user.name}</td>
-              <td style={tableCell}>{user.email}</td>
-              <td style={tableCell}>{user.role}</td>
+          {roles.map((role) => (
+            <tr key={role.id} style={{ borderBottom: "1px solid #ddd" }}>
+              <td style={tableCell}>{role.id}</td>
+              <td style={tableCell}>{role.name}</td>
+              <td style={tableCell}>{role.description}</td>
               <td style={tableCell}>
                 <button
-                  onClick={() => handleEditUser(user.id)}
+                  onClick={() => handleEditRole(role.id)}
                   style={btnStyle("orange")}
                 >
                   ✏️ Edit
                 </button>
                 <button
-                  onClick={() => handleDeleteUser(user.id)}
+                  onClick={() => handleDeleteRole(role.id)}
                   style={btnStyle("red")}
                 >
                   🗑 Delete
