@@ -1,14 +1,13 @@
-/* src/components/Layout.js */
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 
 export default function Layout({ children }) {
   return (
-    <div className="layout-container" style={{ display: "flex" }}>
+    <div className="layout-container flex min-h-screen">
       <Sidebar />
-      <div style={{ flex: 1 }}>
+      <div className="flex-1 flex flex-col">
         <Header />
-        <main style={{ padding: "1rem" }}>{children}</main>
+        <main className="p-4">{children}</main>
       </div>
     </div>
   );

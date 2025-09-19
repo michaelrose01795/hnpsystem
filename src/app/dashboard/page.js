@@ -2,9 +2,11 @@
 import { useState } from "react";
 import StatCard from "@/components/Dashboard/StatCard";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/context/UserContext";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { roles } = useUser();
 
   // Example state data
   const [vehicles, setVehicles] = useState([
@@ -46,7 +48,10 @@ export default function DashboardPage() {
         <div className="flex flex-wrap gap-4">
           <button onClick={() => goTo("/vehicle-processing")} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Process Vehicle</button>
           <button onClick={() => goTo("/sales")} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Record Sale</button>
-          <button onClick={() => goTo("/car-buying")} className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Add Purchase</button>
+          {/* Only show Car Buying button if user has role */}
+          {(roles.ADMIN || roles.SALES || roles.WORKSHOP) && (
+            <button onClick={() => goTo("/car-buying")} className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Add Purchase</button>
+          )}
         </div>
       </div>
 

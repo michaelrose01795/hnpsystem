@@ -1,12 +1,14 @@
-/* src/components/Sidebar.js */
 import Link from "next/link";
+import { useUser } from "@/context/UserContext";
 
 export default function Sidebar() {
+  const { roles } = useUser();
+
   return (
-    <aside style={{ width: "220px", background: "#2f3b52", color: "white", padding: "1rem" }}>
-      <h2>DMS</h2>
+    <aside className="w-56 bg-gray-800 text-white p-4 flex-shrink-0 min-h-screen">
+      <h2 className="text-2xl font-bold mb-4">DMS</h2>
       <nav>
-        <ul style={{ listStyle: "none", padding: 0 }}>
+        <ul className="space-y-2">
           <li><Link href="/">Dashboard</Link></li>
           <li><Link href="/accounts/Profile">Accounts</Link></li>
           <li><Link href="/admin/UserManagement">Admin</Link></li>
@@ -14,7 +16,10 @@ export default function Sidebar() {
           <li><Link href="/workshop/Clocking">Workshop</Link></li>
           <li><Link href="/parts/Inventory">Parts</Link></li>
           <li><Link href="/sales/Tracker">Sales</Link></li>
-          <li><Link href="/buying/CarBuying">Buying</Link></li>
+          {/* Only show Buying if user has role */}
+          {(roles.ADMIN || roles.SALES || roles.WORKSHOP) && (
+            <li><Link href="/car-buying">Buying</Link></li>
+          )}
           <li><Link href="/valet/Valet">Valet</Link></li>
           <li><Link href="/mot/MOT">MOT</Link></li>
           <li><Link href="/smart/Repairs">Smart Repair</Link></li>
