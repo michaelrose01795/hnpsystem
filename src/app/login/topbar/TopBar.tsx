@@ -1,24 +1,28 @@
 // src/app/login/topbar/TopBar.tsx
 "use client"; // must be first line to allow React hooks and client-side code
 
-import React from "react"; // import React
-import { useAuth } from "../../../context/UserContext"; // import authentication context for user info & logout
-import "./TopBar.css"; // import styling for the topbar
+import React from "react";
+import { useUser } from "../../../context/UserContext"; // ✅ correct hook
+import "./TopBar.css";
 
 const TopBar = () => {
-  const { user, logout } = useAuth(); // destructure user info and logout function from context
+  const { user, setUser } = useUser(); // ✅ useUser instead of useAuth
+
+  const handleLogout = () => {
+    setUser(null); // clears user when logging out
+  };
 
   return (
-    <div className="topbar"> {/* main topbar container */}
-      <h1>H&P System</h1> {/* system title/logo */}
-      
-      {user ? (  // only show logout if user is logged in
-        <button className="logout-btn" onClick={logout}>
-          Logout ({user.username}) {/* show logged-in username */}
+    <div className="topbar">
+      <h1>H&P System</h1>
+
+      {user ? (
+        <button className="logout-btn" onClick={handleLogout}>
+          Logout ({user.name}) {/* show logged-in username */}
         </button>
-      ) : null} 
+      ) : null}
     </div>
   );
 };
 
-export default TopBar; // export component to be used in RootLayout
+export default TopBar;
