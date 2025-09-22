@@ -1,5 +1,5 @@
 // file location: src/components/Layout.js
-// Sidebar + Topbar layout with visible Section widgets
+// Modern Sidebar + Topbar layout with visible Section widgets
 
 import React from "react";
 import Link from "next/link";
@@ -43,9 +43,9 @@ export default function Layout({ children }) {
   const links = navLinks[role] || [{ href: "/dashboard", label: "Dashboard" }];
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 font-sans">
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 text-white flex flex-col">
+      <aside className="w-1/5 min-w-[220px] bg-gray-900 text-white flex flex-col rounded-r-xl shadow-lg overflow-hidden">
         <div className="p-4 text-xl font-bold border-b border-gray-700">
           H&P System
         </div>
@@ -55,10 +55,10 @@ export default function Layout({ children }) {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className={`block p-2 rounded ${
+                  className={`block p-3 rounded-lg transition-colors duration-200 ${
                     router.pathname === link.href
                       ? "bg-red-600"
-                      : "hover:bg-gray-700"
+                      : "hover:bg-gray-800"
                   }`}
                 >
                   {link.label}
@@ -70,7 +70,7 @@ export default function Layout({ children }) {
         <div className="p-4 border-t border-gray-700">
           <button
             onClick={logout}
-            className="w-full bg-red-600 hover:bg-red-700 py-2 rounded"
+            className="w-full bg-red-600 hover:bg-red-700 py-2 rounded-lg font-semibold transition-colors duration-200"
           >
             Logout
           </button>
@@ -80,8 +80,8 @@ export default function Layout({ children }) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-auto">
         {/* Topbar */}
-        <header className="bg-white shadow p-4 flex justify-between items-center">
-          <h1 className="text-lg font-semibold">
+        <header className="bg-white shadow-md p-4 flex justify-between items-center rounded-b-xl">
+          <h1 className="text-xl font-semibold">
             Welcome {user?.username || "Guest"} ({role})
           </h1>
         </header>
