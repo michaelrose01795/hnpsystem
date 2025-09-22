@@ -44,7 +44,7 @@ export default function Layout({ children }) {
   const links = navLinks[role] || [{ href: "/dashboard", label: "Dashboard" }];
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="bg-gray-50 rounded-lg shadow-lg p-6 min-h-full border border-gray-200">
       {/* Sidebar */}
       <aside className="w-64 bg-gray-900 text-white flex flex-col">
         <div className="p-4 text-xl font-bold border-b border-gray-700">
@@ -81,7 +81,7 @@ export default function Layout({ children }) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-auto">
         {/* Topbar */}
-        <header className="bg-white shadow p-4 flex justify-between items-center">
+        <header className="bg-white shadow p-4 flex justify-between items-center"> 
           <h1 className="text-lg font-semibold">
             Welcome {user?.username || "Guest"} ({role})
           </h1>

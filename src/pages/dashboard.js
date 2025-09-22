@@ -3,7 +3,7 @@ import React from "react";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Layout from "../components/Layout";
 import { useUser } from "../context/UserContext";
-import Section from "../components/Section"; // New reusable section
+import Section from "../components/Section"; // Reusable widget component
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -21,7 +21,7 @@ export default function DashboardPage() {
             </p>
           </header>
 
-          {/* Quick status section */}
+          {/* Quick Status section */}
           <Section title="Quick Status">
             <p className="text-gray-700">
               Phase 1.3 MVP: Layout + Navigation is working. Next step: connect
@@ -29,7 +29,7 @@ export default function DashboardPage() {
             </p>
           </Section>
 
-          {/* Cards grid */}
+          {/* Cards grid for other sections */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Section title="Jobs">
               Placeholder for incoming jobs / progress bar
