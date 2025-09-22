@@ -1,55 +1,61 @@
-// file location: pages/dashboard.js
-// pages/dashboard.js - simple role-aware dashboard; protected so only logged in users can view
+// file location: src/pages/dashboard.js
+// Dashboard page with role awareness, protected access, and wrapped in Layout
 
-import React from 'react'; // import React
-import ProtectedRoute from '../components/ProtectedRoute'; // protected wrapper
-import { useUser } from '../context/UserContext'; // user hook
+import React from "react"; // React core
+import ProtectedRoute from "../components/ProtectedRoute"; // Protects the route
+import { useUser } from "../context/UserContext"; // Access user + role
+import Layout from "../components/Layout"; // Shared sidebar + topbar layout
 
 export default function DashboardPage() {
-  const { user, logout } = useUser(); // get user and logout helper
+  const { user } = useUser(); // Get logged-in user (logout handled in Layout)
 
-  // small UI for demonstration — expand this in Phase 1.1 tasks (status bars, cards etc.)
   return (
-    <ProtectedRoute> {/* all logged-in users can access dashboard in this MVP */}
-      <div style={{ padding: 20, maxWidth: 1100, margin: '20px auto' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h2>H&P Dashboard</h2>
-            <div style={{ color: '#555' }}>
-              Signed in as <strong>{user?.username}</strong> — Role: <strong>{user?.role}</strong>
-            </div>
-          </div>
-          <div>
-            <button onClick={() => logout()} style={{ padding: '8px 12px' }}>
-              Logout
-            </button>
-          </div>
-        </header>
+    <ProtectedRoute>
+      <Layout>
+        <div className="space-y-6">
+          {/* Dashboard header */}
+          <header>
+            <h2 className="text-2xl font-bold">H&P Dashboard</h2>
+            <p className="text-gray-600">
+              Signed in as <strong>{user?.username}</strong> — Role:{" "}
+              <strong>{user?.role}</strong>
+            </p>
+          </header>
 
-        <main style={{ marginTop: 20 }}>
-          <section style={{ marginBottom: 16 }}>
-            <h3>Quick status</h3>
-            <p>Phase 1.1 MVP: role-aware landing area is working. Next: connect Keycloak + role detection.</p>
+          {/* Quick status section */}
+          <section>
+            <h3 className="text-xl font-semibold">Quick Status</h3>
+            <p className="text-gray-700">
+              Phase 1.3 MVP: Layout + Navigation is working. Next step: connect
+              Keycloak + role detection.
+            </p>
           </section>
 
-          <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px,1fr))', gap: 12 }}>
-            <div style={{ padding: 12, border: '1px solid #eee', borderRadius: 6 }}>
+          {/* Cards grid */}
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 bg-white rounded-lg shadow">
               <strong>Jobs</strong>
-              <div style={{ marginTop: 8 }}>Placeholder for incoming jobs / progress bar</div>
+              <div className="mt-2 text-gray-600">
+                Placeholder for incoming jobs / progress bar
+              </div>
             </div>
 
-            <div style={{ padding: 12, border: '1px solid #eee', borderRadius: 6 }}>
+            <div className="p-4 bg-white rounded-lg shadow">
               <strong>Clocking</strong>
-              <div style={{ marginTop: 8 }}>Placeholder for mechanic clocking status</div>
+              <div className="mt-2 text-gray-600">
+                Placeholder for mechanic clocking status
+              </div>
             </div>
 
-            <div style={{ padding: 12, border: '1px solid #eee', borderRadius: 6 }}>
+            <div className="p-4 bg-white rounded-lg shadow">
               <strong>Parts</strong>
-              <div style={{ marginTop: 8 }}>Placeholder for parts requests</div>
+              <div className="mt-2 text-gray-600">
+                Placeholder for parts requests
+              </div>
             </div>
           </section>
-        </main>
-      </div>
+        </div>
+      </Layout>
     </ProtectedRoute>
   );
 }
