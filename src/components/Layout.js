@@ -1,6 +1,6 @@
 // file location: src/components/Layout.js
 // Vertical left sidebar + topbar layout with Section widgets, sidebar hidden on /login
-// Updated for red-accent modern style, all new roles, and logout redirect
+// Red-accent modern style, all roles, News Feed button, logout redirect
 
 import React, { useEffect } from "react";
 import Link from "next/link";
@@ -12,139 +12,56 @@ export default function Layout({ children }) {
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
 
-  // Redirect only when user is explicitly logged out (null), not when undefined/loading
+  // Redirect if logged out
   useEffect(() => {
     if (user === null && !hideSidebar) {
       router.replace("/login");
     }
   }, [user, hideSidebar, router]);
 
-  // Show nothing (or spinner) while loading
+  // Show loading spinner while user is undefined
   if (user === undefined && !hideSidebar) {
     return <div style={{ padding: "2rem", textAlign: "center" }}>Loading...</div>;
   }
 
   // Navigation links per role
   const navLinks = {
-    Admin: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/users", label: "User Management" },
-      { href: "/reports", label: "Reports" },
-    ],
-    Accounts: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/accounts", label: "Accounts Overview" },
-      { href: "/reports", label: "Reports" },
-    ],
-    Owner: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/overview", label: "Business Overview" },
-    ],
-    "General Manager": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/overview", label: "Overview" },
-    ],
-    "Sales Director": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/sales", label: "Sales Tracking" },
-      { href: "/cars", label: "Car Inventory" },
-    ],
-    Sales: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/sales", label: "Sales Tracking" },
-      { href: "/cars", label: "Car Inventory" },
-    ],
-    Service: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/jobs", label: "Job Cards" },
-      { href: "/workshop/Clocking", label: "Clocking System" },
-    ],
-    "After Sales Director": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/service", label: "Service Overview" },
-    ],
-    Techs: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/jobs", label: "Job Cards" },
-      { href: "/workshop/Clocking", label: "Clocking System" },
-    ],
-    Parts: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/parts", label: "Parts Management" },
-      { href: "/requests", label: "Parts Requests" },
-    ],
-    "MOT Tester": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/mot", label: "MOT Testing" },
-      { href: "/workshop/Clocking", label: "Clocking System" },
-    ],
-    "Valet Service": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/valet", label: "Valet Jobs" },
-    ],
-    "Valet Sales": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/valet/sales", label: "Valet Sales" },
-    ],
-    "Buying Director": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/buying", label: "Buying Overview" },
-    ],
-    "Second Hand Buying": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/buying/used", label: "Used Cars" },
-    ],
-    "Vehicle Processor & Photographer": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/vehicle/processing", label: "Vehicle Processing" },
-      { href: "/vehicle/photos", label: "Photos" },
-    ],
-    Receptionist: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/appointments", label: "Appointments" },
-    ],
-    Painters: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/painting", label: "Painting Jobs" },
-    ],
-    Contractors: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/contracts", label: "Contract Jobs" },
-    ],
-    Manager: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/overview", label: "Overview" },
-      { href: "/approvals", label: "Approvals" },
-    ],
+    Admin: [{ href: "/dashboard", label: "Dashboard" }, { href: "/users", label: "User Management" }, { href: "/reports", label: "Reports" }],
+    Accounts: [{ href: "/dashboard", label: "Dashboard" }, { href: "/accounts", label: "Accounts Overview" }, { href: "/reports", label: "Reports" }],
+    Owner: [{ href: "/dashboard", label: "Dashboard" }, { href: "/overview", label: "Business Overview" }],
+    "General Manager": [{ href: "/dashboard", label: "Dashboard" }, { href: "/overview", label: "Overview" }],
+    "Sales Director": [{ href: "/dashboard", label: "Dashboard" }, { href: "/sales", label: "Sales Tracking" }, { href: "/cars", label: "Car Inventory" }],
+    Sales: [{ href: "/dashboard", label: "Dashboard" }, { href: "/sales", label: "Sales Tracking" }, { href: "/cars", label: "Car Inventory" }],
+    Service: [{ href: "/dashboard", label: "Dashboard" }, { href: "/jobs", label: "Job Cards" }, { href: "/workshop/Clocking", label: "Clocking System" }],
+    "After Sales Director": [{ href: "/dashboard", label: "Dashboard" }, { href: "/service", label: "Service Overview" }],
+    Techs: [{ href: "/dashboard", label: "Dashboard" }, { href: "/jobs", label: "Job Cards" }, { href: "/workshop/Clocking", label: "Clocking System" }],
+    Parts: [{ href: "/dashboard", label: "Dashboard" }, { href: "/parts", label: "Parts Management" }, { href: "/requests", label: "Parts Requests" }],
+    "MOT Tester": [{ href: "/dashboard", label: "Dashboard" }, { href: "/mot", label: "MOT Testing" }, { href: "/workshop/Clocking", label: "Clocking System" }],
+    "Valet Service": [{ href: "/dashboard", label: "Dashboard" }, { href: "/valet", label: "Valet Jobs" }],
+    "Valet Sales": [{ href: "/dashboard", label: "Dashboard" }, { href: "/valet/sales", label: "Valet Sales" }],
+    "Buying Director": [{ href: "/dashboard", label: "Dashboard" }, { href: "/buying", label: "Buying Overview" }],
+    "Second Hand Buying": [{ href: "/dashboard", label: "Dashboard" }, { href: "/buying/used", label: "Used Cars" }],
+    "Vehicle Processor & Photographer": [{ href: "/dashboard", label: "Dashboard" }, { href: "/vehicle/processing", label: "Vehicle Processing" }, { href: "/vehicle/photos", label: "Photos" }],
+    Receptionist: [{ href: "/dashboard", label: "Dashboard" }, { href: "/appointments", label: "Appointments" }],
+    Painters: [{ href: "/dashboard", label: "Dashboard" }, { href: "/painting", label: "Painting Jobs" }],
+    Contractors: [{ href: "/dashboard", label: "Dashboard" }, { href: "/contracts", label: "Contract Jobs" }],
+    Manager: [{ href: "/dashboard", label: "Dashboard" }, { href: "/overview", label: "Overview" }, { href: "/approvals", label: "Approvals" }],
   };
 
   const role = user?.roles?.[0] || "Guest";
-  const links = navLinks[role] || [{ href: "/dashboard", label: "Dashboard" }];
+  const links = [{ href: "/newsfeed", label: "News Feed" }, ...(navLinks[role] || [{ href: "/dashboard", label: "Dashboard" }])];
 
   // Only specific manager roles see Controller Clocking
   const controllerRoles = ["Workshop Manager", "Service Controller"];
   if (controllerRoles.includes(role)) {
     const clockingLink = { href: "/workshop/ControllerClocking", label: "Controller Clocking" };
-    links.splice(1, 0, clockingLink);
+    links.splice(2, 0, clockingLink); // Insert after News Feed & Dashboard
   }
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "sans-serif" }}>
       {!hideSidebar && (
-        <aside
-          style={{
-            width: "10%",
-            minWidth: "140px",
-            backgroundColor: "#FFF0F0",
-            color: "black",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            padding: "20px",
-            boxSizing: "border-box",
-            borderRight: "1px solid #FFCCCC",
-          }}
-        >
+        <aside style={{ width: "10%", minWidth: "140px", backgroundColor: "#FFF0F0", color: "black", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "20px", boxSizing: "border-box", borderRight: "1px solid #FFCCCC" }}>
           <div>
             <h2 style={{ marginBottom: "20px", fontSize: "1.2rem", color: "#FF4040" }}>H&P DMS</h2>
 
@@ -181,7 +98,7 @@ export default function Layout({ children }) {
             <button
               onClick={() => {
                 logout();
-                router.push("/login"); // redirect to login page after logout
+                router.push("/login");
               }}
               style={{
                 width: "100%",

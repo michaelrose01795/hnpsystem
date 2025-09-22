@@ -1,12 +1,14 @@
 // file location: /src/pages/login.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useUser } from "../context/UserContext";
 import Layout from "../components/Layout";
 import Section from "../components/Section";
+import { useRouter } from "next/router";
 
 export default function LoginPage() {
-  const { devLogin } = useUser();
+  const { devLogin, user } = useUser();
+  const router = useRouter();
   const [selectedRole, setSelectedRole] = useState("");
   const [selectedUser, setSelectedUser] = useState("");
 
@@ -33,14 +35,21 @@ export default function LoginPage() {
     Contractors: ["Smart Repair", "Paints (grey van)", "Dent Man", "Wheel Men", "Windscreen Guy", "Key Guy"],
   };
 
+  // Developer login handler
   const handleDevLogin = () => {
     if (!selectedRole || !selectedUser) {
       alert("Please select a role and a user.");
       return;
     }
     devLogin(selectedUser, selectedRole);
-    window.location.href = "/dashboard"; // redirect after login
   };
+
+  // Redirect dev login users to newsfeed once `user` is set
+  useEffect(() => {
+    if (user) {
+      router.push("/newsfeed");
+    }
+  }, [user, router]);
 
   return (
     <Layout>
