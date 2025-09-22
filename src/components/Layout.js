@@ -1,4 +1,6 @@
 // file location: src/components/Layout.js
+// Vertical left sidebar + topbar layout with Section widgets
+
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -8,6 +10,7 @@ export default function Layout({ children }) {
   const { user, logout } = useUser();
   const router = useRouter();
 
+  // Navigation links per role
   const navLinks = {
     Admin: [
       { href: "/dashboard", label: "Dashboard" },
@@ -40,53 +43,53 @@ export default function Layout({ children }) {
   const links = navLinks[role] || [{ href: "/dashboard", label: "Dashboard" }];
 
   return (
-    <div className="flex flex-col h-screen font-sans bg-gray-100">
-      {/* Topbar */}
-      <header className="bg-white shadow-md p-4 flex justify-between items-center">
-        <h1 className="text-xl font-semibold">
-          Welcome {user?.username || "Guest"} ({role})
-        </h1>
-      </header>
+    <div className="flex h-screen bg-gray-100 font-sans">
+      {/* Sidebar */}
+      <aside className="w-1/5 min-w-[220px] bg-gray-900 text-white flex flex-col rounded-r-xl shadow-lg overflow-hidden">
+        <div className="p-4 text-xl font-bold border-b border-gray-700">
+          H&P System
+        </div>
+        <nav className="flex-1 p-4">
+          <ul className="space-y-2">
+            {links.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className={`block p-3 rounded-lg transition-colors duration-200 ${
+                    router.pathname === link.href
+                      ? "bg-red-600"
+                      : "hover:bg-gray-800"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div className="p-4 border-t border-gray-700">
+          <button
+            onClick={logout}
+            className="w-full bg-red-600 hover:bg-red-700 py-2 rounded-lg font-semibold transition-colors duration-200"
+          >
+            Logout
+          </button>
+        </div>
+      </aside>
 
-      {/* Main body: sidebar + content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar section */}
-        <aside className="w-1/5 min-w-[220px] flex flex-col bg-red-100 shadow-inner">
-          <div className="p-4 text-xl font-bold border-b border-red-300">
-            H&P System
-          </div>
+      {/* Main content (topbar + page content) */}
+      <div className="flex-1 flex flex-col overflow-auto">
+        {/* Topbar */}
+        <header className="bg-white shadow-md p-4 flex justify-between items-center">
+          <h1 className="text-xl font-semibold">
+            Welcome {user?.username || "Guest"} ({role})
+          </h1>
+        </header>
 
-          <nav className="flex-1 p-4 overflow-auto">
-            <ul className="space-y-2">
-              {links.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className={`block p-3 rounded-lg transition-colors duration-200 ${
-                      router.pathname === link.href
-                        ? "bg-red-600 text-white"
-                        : "hover:bg-red-200"
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          <div className="p-4 border-t border-red-300">
-            <button
-              onClick={logout}
-              className="w-full bg-red-600 hover:bg-red-700 py-2 rounded-lg font-semibold text-white transition-colors duration-200"
-            >
-              Logout
-            </button>
-          </div>
-        </aside>
-
-        {/* Main content */}
-        <main className="flex-1 p-6 overflow-auto">{children}</main>
+        {/* Page content */}
+        <main className="flex-1 p-6">
+          <div className="min-h-full">{children}</div>
+        </main>
       </div>
     </div>
   );
