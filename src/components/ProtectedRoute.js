@@ -1,5 +1,5 @@
 // file location: /src/components/ProtectedRoute.js
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import { useUser } from "../context/UserContext";
@@ -8,11 +8,12 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { user, loading } = useUser();
+  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    if (loading) return; // ✅ wait until user context has finished loading
+    if (loading) return;
 
-    // ✅ If dev user exists, trust that
+    // ✅ Case 1: dev user exists
     if (user) {
       if (allowedRoles) {
         const hasRole = (user.roles || []).some((r) =>
@@ -20,24 +21,30 @@ export default function ProtectedRoute({ children, allowedRoles }) {
         );
         if (!hasRole) router.replace("/unauthorized");
       }
-      return; // stop here, don’t check next-auth
+      setChecked(true);
+      return;
     }
 
-    // ✅ Otherwise, check next-auth session
+    // ✅ Case 2: fallback to next-auth session
+    if (status === "authenticated" && session?.user) {
+      if (allowedRoles) {
+        const hasRole = (session.user.roles || []).some((r) =>
+          allowedRoles.includes(r.toUpperCase())
+        );
+        if (!hasRole) router.replace("/unauthorized");
+      }
+      setChecked(true);
+      return;
+    }
+
+    // ✅ Case 3: definitely no user
     if (status === "unauthenticated") {
       router.replace("/login");
     }
-
-    if (allowedRoles && session?.user) {
-      const hasRole = (session.user.roles || []).some((r) =>
-        allowedRoles.includes(r.toUpperCase())
-      );
-      if (!hasRole) router.replace("/unauthorized");
-    }
   }, [loading, status, session, user, allowedRoles, router]);
 
-  // ✅ While loading, show nothing (prevents redirect loops)
-  if (loading || status === "loading") {
+  // Show nothing until we’ve finished checking
+  if (loading || status === "loading" || !checked) {
     return <p>Loading...</p>;
   }
 

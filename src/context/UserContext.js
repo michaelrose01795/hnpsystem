@@ -7,7 +7,7 @@ const UserContext = createContext();
 export function UserProvider({ children }) {
   const { data: session } = useSession();
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // ✅ add loading state
+  const [loading, setLoading] = useState(true); // ✅ loading state
 
   // Load saved user from localStorage on first render
   useEffect(() => {
@@ -32,11 +32,11 @@ export function UserProvider({ children }) {
     }
   }, [session]);
 
-  // Dev login (persist to localStorage)
+  // ✅ Dev login (persist to localStorage, ensure roles are uppercase)
   const devLogin = (username, role) => {
     const dev = {
       username: username || "dev",
-      roles: [role?.toUpperCase() || "WORKSHOP"],
+      roles: [role ? role.toUpperCase() : "WORKSHOP"],
     };
     setUser(dev);
     localStorage.setItem("devUser", JSON.stringify(dev));
