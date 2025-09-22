@@ -1,33 +1,29 @@
-//src/context/UserContext
+//file: src/context/UserContext.js
+//notes: Context to hold logged in user details (role, username, etc.)
+
 "use client";
 import { createContext, useContext, useState } from "react";
 
-export const roles = {
-  ADMIN: "Admin",
-  ACCOUNTS: "Accounts",
-  SALES: "Sales",
-  WORKSHOP: "Workshop",
-  SERVICE: "ServiceReception",
-  VALET: "Valet",
-  MOT: "MOT",
-  CONTRACTOR: "Contractor"
-};
-
 const UserContext = createContext();
 
-export const UserProvider = ({ children }) => {
-  const [user, setUser] = useState({
-    name: "Alice",
-    role: roles.ADMIN
-  });
+export function UserProvider({ children }) {
+  const [user, setUser] = useState(null); // { username: "", role: "" }
 
-  const hasAccess = (allowedRoles) => allowedRoles.includes(user.role);
+  const login = (username, role) => {
+    setUser({ username, role });
+  };
+
+  const logout = () => {
+    setUser(null);
+  };
 
   return (
-    <UserContext.Provider value={{ user, setUser, roles, hasAccess }}>
+    <UserContext.Provider value={{ user, login, logout }}>
       {children}
     </UserContext.Provider>
   );
-};
+}
 
-export const useUser = () => useContext(UserContext);
+export function useUser() {
+  return useContext(UserContext);
+}
