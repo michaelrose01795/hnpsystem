@@ -6,6 +6,7 @@ import React, { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useUser } from "../context/UserContext";
+import ClockInButton from "./Clocking/ClockInButton"; // ✅ Import ClockInButton
 
 export default function Layout({ children }) {
   const { user, logout } = useUser();
@@ -32,11 +33,10 @@ export default function Layout({ children }) {
     "General Manager": [{ href: "/dashboard", label: "Dashboard" }, { href: "/overview", label: "Overview" }],
     "Sales Director": [{ href: "/dashboard", label: "Dashboard" }, { href: "/sales", label: "Sales Tracking" }, { href: "/cars", label: "Car Inventory" }],
     Sales: [{ href: "/dashboard", label: "Dashboard" }, { href: "/sales", label: "Sales Tracking" }, { href: "/cars", label: "Car Inventory" }],
-    Service: [{ href: "/dashboard", label: "Dashboard" }, { href: "/jobs", label: "Job Cards" }, { href: "/workshop/Clocking", label: "Clocking System" }],
-    "After Sales Director": [{ href: "/dashboard", label: "Dashboard" }, { href: "/service", label: "Service Overview" }],
-    Techs: [{ href: "/dashboard", label: "Dashboard" }, { href: "/jobs", label: "Job Cards" }, { href: "/workshop/Clocking", label: "Clocking System" }],
+    Service: [{ href: "/dashboard", label: "Dashboard" }, { href: "/jobs", label: "Job Cards" }],
+    Techs: [{ href: "/dashboard", label: "Dashboard" }, { href: "/jobs", label: "Job Cards" }],
     Parts: [{ href: "/dashboard", label: "Dashboard" }, { href: "/parts", label: "Parts Management" }, { href: "/requests", label: "Parts Requests" }],
-    "MOT Tester": [{ href: "/dashboard", label: "Dashboard" }, { href: "/mot", label: "MOT Testing" }, { href: "/workshop/Clocking", label: "Clocking System" }],
+    "MOT Tester": [{ href: "/dashboard", label: "Dashboard" }, { href: "/mot", label: "MOT Testing" }],
     "Valet Service": [{ href: "/dashboard", label: "Dashboard" }, { href: "/valet", label: "Valet Jobs" }],
     "Valet Sales": [{ href: "/dashboard", label: "Dashboard" }, { href: "/valet/sales", label: "Valet Sales" }],
     "Buying Director": [{ href: "/dashboard", label: "Dashboard" }, { href: "/buying", label: "Buying Overview" }],
@@ -61,7 +61,20 @@ export default function Layout({ children }) {
   return (
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "sans-serif" }}>
       {!hideSidebar && (
-        <aside style={{ width: "10%", minWidth: "140px", backgroundColor: "#FFF0F0", color: "black", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "20px", boxSizing: "border-box", borderRight: "1px solid #FFCCCC" }}>
+        <aside
+          style={{
+            width: "10%",
+            minWidth: "140px",
+            backgroundColor: "#FFF0F0",
+            color: "black",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            padding: "20px",
+            boxSizing: "border-box",
+            borderRight: "1px solid #FFCCCC",
+          }}
+        >
           <div>
             <h2 style={{ marginBottom: "20px", fontSize: "1.2rem", color: "#FF4040" }}>H&P DMS</h2>
 
@@ -86,6 +99,11 @@ export default function Layout({ children }) {
                 </Link>
               ))}
             </nav>
+
+            {/* ✅ Add ClockInButton for techs */}
+            <div style={{ marginTop: "20px" }}>
+              <ClockInButton />
+            </div>
 
             <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
               <button style={{ padding: "8px", backgroundColor: "#FF8080", border: "none", color: "black", cursor: "pointer", borderRadius: "6px", fontSize: "0.85rem" }}>New Job</button>
@@ -118,9 +136,26 @@ export default function Layout({ children }) {
         </aside>
       )}
 
-      <div style={{ width: hideSidebar ? "100%" : "90%", display: "flex", flexDirection: "column", overflow: "auto", backgroundColor: "#FFF8F8" }}>
+      <div
+        style={{
+          width: hideSidebar ? "100%" : "90%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "auto",
+          backgroundColor: "#FFF8F8",
+        }}
+      >
         {!hideSidebar && (
-          <header style={{ backgroundColor: "white", padding: "16px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <header
+            style={{
+              backgroundColor: "white",
+              padding: "16px",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <h1 style={{ fontSize: "1.25rem", fontWeight: "600", color: "#FF4040" }}>
               Welcome {user?.username || "Guest"} ({role})
             </h1>
