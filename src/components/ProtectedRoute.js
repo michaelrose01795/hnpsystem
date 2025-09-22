@@ -1,30 +1,49 @@
-// file location: components/ProtectedRoute.js
-// components/ProtectedRoute.js - client-side protected wrapper that redirects if not allowed
+// file location: src/components/ProtectedRoute.js
+// ProtectedRoute that waits for auth status and gracefully redirects/blocks pages.
+// Place this file at src/components/ProtectedRoute.js (overwrite previous version).
 
-import React, { useEffect } from 'react'; // import React and useEffect
-import { useRouter } from 'next/router'; // Next.js router for redirects
-import { useUser } from '../context/UserContext'; // use our UserContext
+import React, { useEffect } from "react"; // import React + hook
+import { useRouter } from "next/router"; // Next.js router for redirects
+import { useUser } from "../context/UserContext"; // our user context
 
-export default function ProtectedRoute({ children, allowedRoles = null }) { // allowedRoles: array or null (allow all)
-  const { user } = useUser(); // get current user
+export default function ProtectedRoute({ children, allowedRoles = null }) {
   const router = useRouter(); // router instance
+  const { user, status } = useUser(); // get user + status from context
 
-  useEffect(() => { // on user change decide where to send them
-    // if user not loaded yet, wait (useEffect will run again)
-    if (typeof window === 'undefined') return; // guard for SSR
-    if (!user) { // not logged in → go to login
-      router.replace('/login'); // replace to avoid back-button confusion
+  useEffect(() => {
+    // don't run on server
+    if (typeof window === "undefined") return;
+
+    // while NextAuth is loading, wait
+    if (status === "loading") return;
+
+    // if not logged in (no user) → send to login
+    if (!user) {
+      router.replace("/login"); // redirect to login
       return;
     }
-    // if allowedRoles specified but user.role not included → unauthorized
-    if (allowedRoles && !allowedRoles.includes(user.role)) {
-      router.replace('/unauthorized'); // send to unauthorized page
+
+    // if allowedRoles set and user doesn't have any of them → unauthorized
+    if (
+      allowedRoles &&
+      // check both simple user.role and role list from tokens
+      !allowedRoles.includes(user.role) &&
+      !(user.roles && user.roles.some((r) => allowedRoles.includes(r)))
+    ) {
+      router.replace("/unauthorized"); // redirect to unauthorized page
     }
-  }, [user, allowedRoles, router]); // rerun when user or allowedRoles change
+  }, [user, status, allowedRoles, router]); // dependencies
 
-  // while there's no user (or role mismatch) we render nothing — redirect handles the UX
-  if (!user) return null; // no user yet
-  if (allowedRoles && !allowedRoles.includes(user.role)) return null; // not permitted
+  // while loading or not allowed, render nothing (redirect will run)
+  if (status === "loading") return null;
+  if (!user) return null;
+  if (
+    allowedRoles &&
+    !allowedRoles.includes(user.role) &&
+    !(user.roles && user.roles.some((r) => allowedRoles.includes(r)))
+  )
+    return null;
 
-  return <>{children}</>; // render protected content
+  // allowed → render children
+  return <>{children}</>;
 }

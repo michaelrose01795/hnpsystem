@@ -1,14 +1,20 @@
-// file location: pages/_app.js
-// pages/_app.js - Next.js custom App; wraps the app with UserProvider so every page can use useUser
+// file location: src/pages/_app.js
+// Wrap the app with NextAuth SessionProvider and your UserProvider so all pages can access auth state.
+// Place this file at src/pages/_app.js (overwrite the previous one).
 
-import React from 'react'; // import React
-import { UserProvider } from '../context/UserContext'; // import our provider
-import '../styles/globals.css'; // optional: your global CSS (create if you don't have it)
+import React from "react"; // import React
+import { SessionProvider } from "next-auth/react"; // NextAuth's session provider
+import { UserProvider } from "../context/UserContext"; // your app's UserProvider (uses session)
+import "../styles/globals.css"; // import your global stylesheet
 
-export default function MyApp({ Component, pageProps }) { // Next.js app entry point
+// Next.js custom App component
+export default function MyApp({ Component, pageProps }) {
+  // wrap Component with SessionProvider then UserProvider
   return (
-    <UserProvider>
-      <Component {...pageProps} /> {/* render the page */}
-    </UserProvider>
+    <SessionProvider session={pageProps.session}>
+      <UserProvider>
+        <Component {...pageProps} /> {/* render the page */}
+      </UserProvider>
+    </SessionProvider>
   );
 }
