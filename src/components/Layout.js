@@ -1,5 +1,5 @@
 // file location: src/components/Layout.js
-// Vertical left sidebar + topbar layout with Section widgets
+// Vertical left sidebar + topbar layout with Section widgets, sidebar hidden on /login
 
 import React from "react";
 import Link from "next/link";
@@ -9,6 +9,8 @@ import { useUser } from "../context/UserContext";
 export default function Layout({ children }) {
   const { user, logout } = useUser();
   const router = useRouter();
+
+  const hideSidebar = router.pathname === "/login"; // hide sidebar on login page
 
   // Navigation links per role
   const navLinks = {
@@ -43,52 +45,87 @@ export default function Layout({ children }) {
   const links = navLinks[role] || [{ href: "/dashboard", label: "Dashboard" }];
 
   return (
-    <div className="flex h-screen bg-gray-100 font-sans">
-      {/* Sidebar */}
-      <aside className="w-1/5 min-w-[220px] bg-gray-900 text-white flex flex-col rounded-r-xl shadow-lg overflow-hidden">
-        <div className="p-4 text-xl font-bold border-b border-gray-700">
-          H&P System
-        </div>
-        <nav className="flex-1 p-4">
-          <ul className="space-y-2">
-            {links.map((link) => (
-              <li key={link.href}>
+    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "sans-serif" }}>
+      {/* Sidebar: hidden on /login */}
+      {!hideSidebar && (
+        <aside
+          style={{
+            width: "10%",
+            minWidth: "120px",
+            backgroundColor: "#FFC0C0",
+            color: "black",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            padding: "20px",
+            boxSizing: "border-box",
+          }}
+        >
+          <div>
+            <h2 style={{ marginBottom: "20px", fontSize: "1.2rem" }}>H&P System</h2>
+
+            <nav style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {links.map((link) => (
                 <Link
+                  key={link.href}
                   href={link.href}
-                  className={`block p-3 rounded-lg transition-colors duration-200 ${
-                    router.pathname === link.href
-                      ? "bg-red-600"
-                      : "hover:bg-gray-800"
-                  }`}
+                  style={{
+                    display: "block",
+                    padding: "8px 10px",
+                    borderRadius: "6px",
+                    textDecoration: "none",
+                    color: "black",
+                    backgroundColor: router.pathname === link.href ? "#FF8080" : "transparent",
+                    transition: "background-color 0.2s",
+                    fontSize: "0.9rem",
+                  }}
                 >
                   {link.label}
                 </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        <div className="p-4 border-t border-gray-700">
-          <button
-            onClick={logout}
-            className="w-full bg-red-600 hover:bg-red-700 py-2 rounded-lg font-semibold transition-colors duration-200"
-          >
-            Logout
-          </button>
-        </div>
-      </aside>
+              ))}
+            </nav>
 
-      {/* Main content (topbar + page content) */}
-      <div className="flex-1 flex flex-col overflow-auto">
-        {/* Topbar */}
-        <header className="bg-white shadow-md p-4 flex justify-between items-center">
-          <h1 className="text-xl font-semibold">
-            Welcome {user?.username || "Guest"} ({role})
-          </h1>
-        </header>
+            <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
+              <button style={{ padding: "8px", backgroundColor: "#FF8080", border: "none", color: "black", cursor: "pointer", borderRadius: "6px", fontSize: "0.85rem" }}>New Job</button>
+              <button style={{ padding: "8px", backgroundColor: "#FF8080", border: "none", color: "black", cursor: "pointer", borderRadius: "6px", fontSize: "0.85rem" }}>Request Part</button>
+              <button style={{ padding: "8px", backgroundColor: "#FF8080", border: "none", color: "black", cursor: "pointer", borderRadius: "6px", fontSize: "0.85rem" }}>Send Message</button>
+            </div>
+          </div>
 
-        {/* Page content */}
-        <main className="flex-1 p-6">
-          <div className="min-h-full">{children}</div>
+          <div>
+            <button
+              onClick={logout}
+              style={{
+                width: "100%",
+                padding: "8px",
+                backgroundColor: "#FF4040",
+                border: "none",
+                color: "black",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontWeight: "bold",
+                fontSize: "0.9rem",
+              }}
+            >
+              Logout
+            </button>
+          </div>
+        </aside>
+      )}
+
+      {/* Main content */}
+      <div style={{ width: hideSidebar ? "100%" : "90%", display: "flex", flexDirection: "column", overflow: "auto" }}>
+        {/* Topbar: optional to hide on login */}
+        {!hideSidebar && (
+          <header style={{ backgroundColor: "white", padding: "16px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h1 style={{ fontSize: "1.25rem", fontWeight: "600" }}>
+              Welcome {user?.username || "Guest"} ({role})
+            </h1>
+          </header>
+        )}
+
+        <main style={{ flex: 1, padding: "24px", boxSizing: "border-box" }}>
+          {children}
         </main>
       </div>
     </div>
