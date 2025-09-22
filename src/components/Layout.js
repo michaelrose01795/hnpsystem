@@ -1,6 +1,6 @@
 // file location: src/components/Layout.js
 // Vertical left sidebar + topbar layout with Section widgets, sidebar hidden on /login
-// Updated for red-accent modern style, all new roles, and proper logout/login redirect
+// Updated for red-accent modern style, all new roles, and logout redirect
 
 import React, { useEffect } from "react";
 import Link from "next/link";
@@ -12,16 +12,16 @@ export default function Layout({ children }) {
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
 
-  // Redirect to login if user explicitly logged out
+  // Redirect only when user is explicitly logged out (null), not when undefined/loading
   useEffect(() => {
     if (user === null && !hideSidebar) {
-      router.replace("/login"); // replace to prevent back navigation
+      router.replace("/login");
     }
   }, [user, hideSidebar, router]);
 
-  // Show nothing while user state is loading
+  // Show nothing (or spinner) while loading
   if (user === undefined && !hideSidebar) {
-    return null; // optional: replace with a spinner/loading indicator
+    return <div style={{ padding: "2rem", textAlign: "center" }}>Loading...</div>;
   }
 
   // Navigation links per role
@@ -36,8 +36,14 @@ export default function Layout({ children }) {
       { href: "/accounts", label: "Accounts Overview" },
       { href: "/reports", label: "Reports" },
     ],
-    Owner: [{ href: "/dashboard", label: "Dashboard" }, { href: "/overview", label: "Business Overview" }],
-    "General Manager": [{ href: "/dashboard", label: "Dashboard" }, { href: "/overview", label: "Overview" }],
+    Owner: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/overview", label: "Business Overview" },
+    ],
+    "General Manager": [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/overview", label: "Overview" },
+    ],
     "Sales Director": [
       { href: "/dashboard", label: "Dashboard" },
       { href: "/sales", label: "Sales Tracking" },
@@ -53,7 +59,10 @@ export default function Layout({ children }) {
       { href: "/jobs", label: "Job Cards" },
       { href: "/workshop/Clocking", label: "Clocking System" },
     ],
-    "After Sales Director": [{ href: "/dashboard", label: "Dashboard" }, { href: "/service", label: "Service Overview" }],
+    "After Sales Director": [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/service", label: "Service Overview" },
+    ],
     Techs: [
       { href: "/dashboard", label: "Dashboard" },
       { href: "/jobs", label: "Job Cards" },
@@ -77,8 +86,14 @@ export default function Layout({ children }) {
       { href: "/dashboard", label: "Dashboard" },
       { href: "/valet/sales", label: "Valet Sales" },
     ],
-    "Buying Director": [{ href: "/dashboard", label: "Dashboard" }, { href: "/buying", label: "Buying Overview" }],
-    "Second Hand Buying": [{ href: "/dashboard", label: "Dashboard" }, { href: "/buying/used", label: "Used Cars" }],
+    "Buying Director": [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/buying", label: "Buying Overview" },
+    ],
+    "Second Hand Buying": [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/buying/used", label: "Used Cars" },
+    ],
     "Vehicle Processor & Photographer": [
       { href: "/dashboard", label: "Dashboard" },
       { href: "/vehicle/processing", label: "Vehicle Processing" },
@@ -88,7 +103,10 @@ export default function Layout({ children }) {
       { href: "/dashboard", label: "Dashboard" },
       { href: "/appointments", label: "Appointments" },
     ],
-    Painters: [{ href: "/dashboard", label: "Dashboard" }, { href: "/painting", label: "Painting Jobs" }],
+    Painters: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/painting", label: "Painting Jobs" },
+    ],
     Contractors: [
       { href: "/dashboard", label: "Dashboard" },
       { href: "/contracts", label: "Contract Jobs" },
@@ -163,7 +181,7 @@ export default function Layout({ children }) {
             <button
               onClick={() => {
                 logout();
-                router.replace("/login"); // redirect to login page after logout
+                router.push("/login"); // redirect to login page after logout
               }}
               style={{
                 width: "100%",
