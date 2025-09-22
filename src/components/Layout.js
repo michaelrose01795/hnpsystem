@@ -1,6 +1,4 @@
 // file location: src/components/Layout.js
-// Vertical left sidebar + topbar layout with Section widgets, sidebar hidden on /login
-
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -9,8 +7,7 @@ import { useUser } from "../context/UserContext";
 export default function Layout({ children }) {
   const { user, logout } = useUser();
   const router = useRouter();
-
-  const hideSidebar = router.pathname === "/login"; // hide sidebar on login page
+  const hideSidebar = router.pathname === "/login";
 
   // Navigation links per role
   const navLinks = {
@@ -27,7 +24,7 @@ export default function Layout({ children }) {
     Workshop: [
       { href: "/dashboard", label: "Dashboard" },
       { href: "/jobs", label: "Job Cards" },
-      { href: "/clocking", label: "Clocking System" },
+      { href: "/workshop/Clocking", label: "Clocking System" },
     ],
     Parts: [
       { href: "/dashboard", label: "Dashboard" },
@@ -36,6 +33,7 @@ export default function Layout({ children }) {
     ],
     Manager: [
       { href: "/dashboard", label: "Dashboard" },
+      { href: "/workshop/Clocking", label: "Clocking System" }, // Added for manager
       { href: "/overview", label: "Overview" },
       { href: "/approvals", label: "Approvals" },
     ],
@@ -46,23 +44,23 @@ export default function Layout({ children }) {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "sans-serif" }}>
-      {/* Sidebar: hidden on /login */}
       {!hideSidebar && (
         <aside
           style={{
             width: "10%",
-            minWidth: "120px",
-            backgroundColor: "#FFC0C0",
+            minWidth: "140px",
+            backgroundColor: "#FFF0F0",
             color: "black",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
             padding: "20px",
             boxSizing: "border-box",
+            borderRight: "1px solid #FFCCCC",
           }}
         >
           <div>
-            <h2 style={{ marginBottom: "20px", fontSize: "1.2rem" }}>H&P System</h2>
+            <h2 style={{ marginBottom: "20px", fontSize: "1.2rem", color: "#FF4040" }}>H&P DMS</h2>
 
             <nav style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {links.map((link) => (
@@ -71,13 +69,14 @@ export default function Layout({ children }) {
                   href={link.href}
                   style={{
                     display: "block",
-                    padding: "8px 10px",
+                    padding: "10px",
                     borderRadius: "6px",
                     textDecoration: "none",
-                    color: "black",
-                    backgroundColor: router.pathname === link.href ? "#FF8080" : "transparent",
-                    transition: "background-color 0.2s",
-                    fontSize: "0.9rem",
+                    color: router.pathname === link.href ? "white" : "#FF4040",
+                    backgroundColor: router.pathname === link.href ? "#FF4040" : "transparent",
+                    transition: "all 0.2s",
+                    fontSize: "0.95rem",
+                    fontWeight: 500,
                   }}
                 >
                   {link.label}
@@ -85,7 +84,7 @@ export default function Layout({ children }) {
               ))}
             </nav>
 
-            <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
               <button style={{ padding: "8px", backgroundColor: "#FF8080", border: "none", color: "black", cursor: "pointer", borderRadius: "6px", fontSize: "0.85rem" }}>New Job</button>
               <button style={{ padding: "8px", backgroundColor: "#FF8080", border: "none", color: "black", cursor: "pointer", borderRadius: "6px", fontSize: "0.85rem" }}>Request Part</button>
               <button style={{ padding: "8px", backgroundColor: "#FF8080", border: "none", color: "black", cursor: "pointer", borderRadius: "6px", fontSize: "0.85rem" }}>Send Message</button>
@@ -97,10 +96,10 @@ export default function Layout({ children }) {
               onClick={logout}
               style={{
                 width: "100%",
-                padding: "8px",
+                padding: "10px",
                 backgroundColor: "#FF4040",
                 border: "none",
-                color: "black",
+                color: "white",
                 borderRadius: "8px",
                 cursor: "pointer",
                 fontWeight: "bold",
@@ -113,12 +112,10 @@ export default function Layout({ children }) {
         </aside>
       )}
 
-      {/* Main content */}
-      <div style={{ width: hideSidebar ? "100%" : "90%", display: "flex", flexDirection: "column", overflow: "auto" }}>
-        {/* Topbar: optional to hide on login */}
+      <div style={{ width: hideSidebar ? "100%" : "90%", display: "flex", flexDirection: "column", overflow: "auto", backgroundColor: "#FFF8F8" }}>
         {!hideSidebar && (
           <header style={{ backgroundColor: "white", padding: "16px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h1 style={{ fontSize: "1.25rem", fontWeight: "600" }}>
+            <h1 style={{ fontSize: "1.25rem", fontWeight: "600", color: "#FF4040" }}>
               Welcome {user?.username || "Guest"} ({role})
             </h1>
           </header>

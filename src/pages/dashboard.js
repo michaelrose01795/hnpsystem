@@ -4,6 +4,7 @@ import ProtectedRoute from "../components/ProtectedRoute";
 import Layout from "../components/Layout";
 import { useUser } from "../context/UserContext";
 import Section from "../components/Section"; // Reusable widget component
+import DashboardClocking from "../components/DashboardClocking"; // Added import
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -36,7 +37,8 @@ export default function DashboardPage() {
             </Section>
 
             <Section title="Clocking">
-              Placeholder for mechanic clocking status
+              {/* Replaced placeholder with DashboardClocking */}
+              <DashboardClocking />
             </Section>
 
             <Section title="Parts">
