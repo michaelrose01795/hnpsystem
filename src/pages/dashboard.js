@@ -1,13 +1,12 @@
 // file location: src/pages/dashboard.js
-// Dashboard page with role awareness, protected access, and wrapped in Layout
-
-import React from "react"; // React core
-import ProtectedRoute from "../components/ProtectedRoute"; // Protects the route
-import { useUser } from "../context/UserContext"; // Access user + role
-import Layout from "../components/Layout"; // Shared sidebar + topbar layout
+import React from "react";
+import ProtectedRoute from "../components/ProtectedRoute";
+import Layout from "../components/Layout";
+import { useUser } from "../context/UserContext";
+import Section from "../components/Section"; // New reusable section
 
 export default function DashboardPage() {
-  const { user } = useUser(); // Get logged-in user (logout handled in Layout)
+  const { user } = useUser();
 
   return (
     <ProtectedRoute>
@@ -17,43 +16,33 @@ export default function DashboardPage() {
           <header>
             <h2 className="text-2xl font-bold">H&P Dashboard</h2>
             <p className="text-gray-600">
-              Signed in as <strong>{user?.username}</strong> — Role:{" "}
-              <strong>{user?.role}</strong>
+              Signed in as <strong>{user?.username || "Guest"}</strong> — Role:{" "}
+              <strong>{user?.roles?.[0] || "Guest"}</strong>
             </p>
           </header>
 
           {/* Quick status section */}
-          <section>
-            <h3 className="text-xl font-semibold">Quick Status</h3>
+          <Section title="Quick Status">
             <p className="text-gray-700">
               Phase 1.3 MVP: Layout + Navigation is working. Next step: connect
               Keycloak + role detection.
             </p>
-          </section>
+          </Section>
 
           {/* Cards grid */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-white rounded-lg shadow">
-              <strong>Jobs</strong>
-              <div className="mt-2 text-gray-600">
-                Placeholder for incoming jobs / progress bar
-              </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Section title="Jobs">
+              Placeholder for incoming jobs / progress bar
+            </Section>
 
-            <div className="p-4 bg-white rounded-lg shadow">
-              <strong>Clocking</strong>
-              <div className="mt-2 text-gray-600">
-                Placeholder for mechanic clocking status
-              </div>
-            </div>
+            <Section title="Clocking">
+              Placeholder for mechanic clocking status
+            </Section>
 
-            <div className="p-4 bg-white rounded-lg shadow">
-              <strong>Parts</strong>
-              <div className="mt-2 text-gray-600">
-                Placeholder for parts requests
-              </div>
-            </div>
-          </section>
+            <Section title="Parts">
+              Placeholder for parts requests
+            </Section>
+          </div>
         </div>
       </Layout>
     </ProtectedRoute>

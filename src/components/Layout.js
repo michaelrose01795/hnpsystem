@@ -1,16 +1,16 @@
 // file location: src/components/Layout.js
-// This component provides a sidebar + topbar layout that adapts based on user roles.
+// Sidebar + Topbar layout with consistent content box styling
 
-import React from "react"; // React core
-import Link from "next/link"; // Next.js routing
-import { useRouter } from "next/router"; // For navigation
-import { useUser } from "../context/UserContext"; // Get current user + role
+import React from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { useUser } from "../context/UserContext";
 
 export default function Layout({ children }) {
-  const { user, logout } = useUser(); // Access user + logout
+  const { user, logout } = useUser();
   const router = useRouter();
 
-  // Define navigation links per role
+  // Navigation links per role
   const navLinks = {
     Admin: [
       { href: "/dashboard", label: "Dashboard" },
@@ -39,12 +39,12 @@ export default function Layout({ children }) {
     ],
   };
 
-  // Fallback links if role missing
-  const role = user?.role || "Guest";
+  // Correct role from user.roles array
+  const role = user?.roles?.[0] || "Guest";
   const links = navLinks[role] || [{ href: "/dashboard", label: "Dashboard" }];
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
       <aside className="w-64 bg-gray-900 text-white flex flex-col">
         <div className="p-4 text-xl font-bold border-b border-gray-700">
@@ -79,17 +79,20 @@ export default function Layout({ children }) {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-auto">
         {/* Topbar */}
         <header className="bg-white shadow p-4 flex justify-between items-center">
           <h1 className="text-lg font-semibold">
-            Welcome {user?.name || "Guest"} ({role})
+            Welcome {user?.username || "Guest"} ({role})
           </h1>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-6 bg-gray-100 overflow-auto">
-          {children}
+        <main className="flex-1 p-6">
+          {/* Light box container for page content */}
+          <div className="bg-white rounded-lg shadow p-6 min-h-full">
+            {children}
+          </div>
         </main>
       </div>
     </div>
