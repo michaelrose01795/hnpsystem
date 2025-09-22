@@ -1,5 +1,5 @@
 // file location: src/components/Layout.js
-// Sidebar + Topbar layout with consistent content box styling
+// Sidebar + Topbar layout with visible Section widgets
 
 import React from "react";
 import Link from "next/link";
@@ -39,12 +39,11 @@ export default function Layout({ children }) {
     ],
   };
 
-  // Correct role from user.roles array
   const role = user?.roles?.[0] || "Guest";
   const links = navLinks[role] || [{ href: "/dashboard", label: "Dashboard" }];
 
   return (
-    <div className="bg-gray-50 rounded-lg shadow-lg p-6 min-h-full border border-gray-200">
+    <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
       <aside className="w-64 bg-gray-900 text-white flex flex-col">
         <div className="p-4 text-xl font-bold border-b border-gray-700">
@@ -81,7 +80,7 @@ export default function Layout({ children }) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-auto">
         {/* Topbar */}
-        <header className="bg-white shadow p-4 flex justify-between items-center"> 
+        <header className="bg-white shadow p-4 flex justify-between items-center">
           <h1 className="text-lg font-semibold">
             Welcome {user?.username || "Guest"} ({role})
           </h1>
@@ -89,10 +88,8 @@ export default function Layout({ children }) {
 
         {/* Page Content */}
         <main className="flex-1 p-6">
-          {/* Light box container for page content */}
-          <div className="bg-white rounded-lg shadow p-6 min-h-full">
-            {children}
-          </div>
+          {/* Light gray container to make white Section widgets stand out */}
+          <div className="min-h-full">{children}</div>
         </main>
       </div>
     </div>
