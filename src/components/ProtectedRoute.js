@@ -10,21 +10,34 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   const { user } = useUser();
 
   useEffect(() => {
-    // if no session + no dev user → redirect
-    if (status === "unauthenticated" && !user) {
+    // ✅ If we have a dev user, skip next-auth checks
+    if (user) {
+      if (allowedRoles) {
+        const hasRole = (user.roles || []).some((r) =>
+          allowedRoles.includes(r.toUpperCase())
+        );
+        if (!hasRole) {
+          router.replace("/unauthorized");
+        }
+      }
+      return; // stop here, don’t check session
+    }
+
+    // otherwise fall back to next-auth session check
+    if (status === "unauthenticated") {
       router.replace("/login");
     }
 
-    // check role permissions (both keycloak + dev)
-    if (allowedRoles && user) {
-      const hasRole = (user.roles || []).some((r) =>
+    // role check if session exists
+    if (allowedRoles && session?.user) {
+      const hasRole = (session.user.roles || []).some((r) =>
         allowedRoles.includes(r.toUpperCase())
       );
       if (!hasRole) {
         router.replace("/unauthorized");
       }
     }
-  }, [status, user, allowedRoles, router]);
+  }, [status, session, user, allowedRoles, router]);
 
   return <>{children}</>;
 }
