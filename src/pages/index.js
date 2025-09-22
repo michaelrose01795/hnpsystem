@@ -8,7 +8,7 @@ export default function HomePage() {
     <div style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
       <h1>Welcome to H&P DMS</h1>
       <p>This is the home page. Please log in to continue.</p>
-      <Link href="/login">
+      <Link href="/login" legacyBehavior>
         <button style={{ marginTop: "1rem" }}>Go to Login</button>
       </Link>
     </div>
