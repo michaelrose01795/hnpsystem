@@ -1,5 +1,5 @@
 // file location: src/components/Layout.js
-// Modern Sidebar + Topbar layout with visible Section widgets
+// Vertical left sidebar + topbar layout with Section widgets
 
 import React from "react";
 import Link from "next/link";
@@ -77,18 +77,17 @@ export default function Layout({ children }) {
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main content (topbar + page content) */}
       <div className="flex-1 flex flex-col overflow-auto">
         {/* Topbar */}
-        <header className="bg-white shadow-md p-4 flex justify-between items-center rounded-b-xl">
+        <header className="bg-white shadow-md p-4 flex justify-between items-center">
           <h1 className="text-xl font-semibold">
             Welcome {user?.username || "Guest"} ({role})
           </h1>
         </header>
 
-        {/* Page Content */}
+        {/* Page content */}
         <main className="flex-1 p-6">
-          {/* Light gray container to make white Section widgets stand out */}
           <div className="min-h-full">{children}</div>
         </main>
       </div>

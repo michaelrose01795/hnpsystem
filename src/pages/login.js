@@ -1,4 +1,4 @@
-// file location: /src/pages/login.js
+// file location: src/pages/login.js
 import React, { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useUser } from "../context/UserContext";
@@ -12,33 +12,24 @@ export default function LoginPage() {
 
   const handleDevLogin = () => {
     devLogin(username, role);
-    window.location.href = "/dashboard"; // redirect after login
+    window.location.href = "/dashboard";
   };
 
   return (
     <Layout>
-      {/* Center the login section */}
       <div className="flex justify-center items-center h-full">
         <div className="w-full max-w-md">
-          {/* Login form section */}
-          <Section
-            title="Login to H&P System"
-            bgColor="#ffffff"
-            borderColor="#d10000"
-            textColor="#222222"
-          >
-            {/* Keycloak login */}
+          <Section title="Login to H&P System">
             <div className="flex flex-col space-y-4">
               <button
                 onClick={() => signIn("keycloak")}
-                className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-white"
+                className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-white font-medium"
               >
                 Login with SSO
               </button>
 
               <hr className="border-gray-300" />
 
-              {/* Dev login for testing */}
               <h3 className="text-lg font-semibold">Developer Login</h3>
               <input
                 type="text"
@@ -60,7 +51,7 @@ export default function LoginPage() {
               </select>
               <button
                 onClick={handleDevLogin}
-                className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-white"
+                className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-white font-medium"
               >
                 Dev Login
               </button>
