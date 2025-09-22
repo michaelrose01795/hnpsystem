@@ -1,64 +1,89 @@
-// file location: src/pages/login.js
-import React, { useState } from "react";
-import { signIn } from "next-auth/react";
+// file location: src/components/Layout.js
+import React from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
 import { useUser } from "../context/UserContext";
-import Layout from "../components/Layout";
-import Section from "../components/Section";
 
-export default function LoginPage() {
-  const { devLogin } = useUser();
-  const [username, setUsername] = useState("");
-  const [role, setRole] = useState("WORKSHOP");
+export default function Layout({ children }) {
+  const { user, logout } = useUser();
+  const router = useRouter();
 
-  const handleDevLogin = () => {
-    devLogin(username, role);
-    window.location.href = "/dashboard";
+  const navLinks = {
+    Admin: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/users", label: "User Management" },
+      { href: "/reports", label: "Reports" },
+    ],
+    Sales: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/sales", label: "Sales Tracking" },
+      { href: "/cars", label: "Car Inventory" },
+    ],
+    Workshop: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/jobs", label: "Job Cards" },
+      { href: "/clocking", label: "Clocking System" },
+    ],
+    Parts: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/parts", label: "Parts Management" },
+      { href: "/requests", label: "Parts Requests" },
+    ],
+    Manager: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/overview", label: "Overview" },
+      { href: "/approvals", label: "Approvals" },
+    ],
   };
 
+  const role = user?.roles?.[0] || "Guest";
+  const links = navLinks[role] || [{ href: "/dashboard", label: "Dashboard" }];
+
   return (
-    <Layout>
-      <div className="flex justify-center items-center h-full">
-        <div className="w-full max-w-md">
-          <Section title="Login to H&P System">
-            <div className="flex flex-col space-y-4">
-              <button
-                onClick={() => signIn("keycloak")}
-                className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-white font-medium"
-              >
-                Login with SSO
-              </button>
+    <div className="flex flex-col h-screen font-sans">
+      {/* Top bar */}
+      <header className="bg-white shadow-md p-4 flex justify-between items-center">
+        <h1 className="text-xl font-semibold">
+          Welcome {user?.username || "Guest"} ({role})
+        </h1>
+      </header>
 
-              <hr className="border-gray-300" />
+      {/* Main content row: sidebar + page content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar vertical section */}
+        <aside className="w-1/5 min-w-[220px] bg-red-100 text-white flex flex-col p-4">
+          <div className="text-xl font-bold text-red-800 mb-4">H&P System</div>
+          <nav className="flex-1">
+            <ul className="space-y-2">
+              {links.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className={`block p-3 rounded-lg transition-colors duration-200 ${
+                      router.pathname === link.href
+                        ? "bg-red-600 text-white"
+                        : "hover:bg-red-200 text-red-800"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <div className="mt-4">
+            <button
+              onClick={logout}
+              className="w-full bg-red-600 hover:bg-red-700 py-2 rounded-lg font-semibold transition-colors duration-200"
+            >
+              Logout
+            </button>
+          </div>
+        </aside>
 
-              <h3 className="text-lg font-semibold">Developer Login</h3>
-              <input
-                type="text"
-                placeholder="Enter username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="p-2 border border-gray-300 rounded"
-              />
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="p-2 border border-gray-300 rounded"
-              >
-                <option value="ADMIN">Admin</option>
-                <option value="SALES">Sales</option>
-                <option value="WORKSHOP">Workshop</option>
-                <option value="PARTS">Parts</option>
-                <option value="MANAGERS">Managers</option>
-              </select>
-              <button
-                onClick={handleDevLogin}
-                className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-white font-medium"
-              >
-                Dev Login
-              </button>
-            </div>
-          </Section>
-        </div>
+        {/* Page content */}
+        <main className="flex-1 overflow-auto p-6 bg-gray-100">{children}</main>
       </div>
-    </Layout>
+    </div>
   );
 }

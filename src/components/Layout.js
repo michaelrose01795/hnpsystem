@@ -40,7 +40,7 @@ export default function Layout({ children }) {
   const links = navLinks[role] || [{ href: "/dashboard", label: "Dashboard" }];
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 font-sans">
+    <div className="flex flex-col h-screen font-sans bg-gray-100">
       {/* Topbar */}
       <header className="bg-white shadow-md p-4 flex justify-between items-center">
         <h1 className="text-xl font-semibold">
@@ -50,11 +50,12 @@ export default function Layout({ children }) {
 
       {/* Main body: sidebar + content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-1/5 min-w-[220px] bg-gray-900 text-white flex flex-col">
-          <div className="p-4 text-xl font-bold border-b border-gray-700">
+        {/* Sidebar section */}
+        <aside className="w-1/5 min-w-[220px] flex flex-col bg-red-100 shadow-inner">
+          <div className="p-4 text-xl font-bold border-b border-red-300">
             H&P System
           </div>
+
           <nav className="flex-1 p-4 overflow-auto">
             <ul className="space-y-2">
               {links.map((link) => (
@@ -63,8 +64,8 @@ export default function Layout({ children }) {
                     href={link.href}
                     className={`block p-3 rounded-lg transition-colors duration-200 ${
                       router.pathname === link.href
-                        ? "bg-red-600"
-                        : "hover:bg-gray-800"
+                        ? "bg-red-600 text-white"
+                        : "hover:bg-red-200"
                     }`}
                   >
                     {link.label}
@@ -73,10 +74,11 @@ export default function Layout({ children }) {
               ))}
             </ul>
           </nav>
-          <div className="p-4 border-t border-gray-700">
+
+          <div className="p-4 border-t border-red-300">
             <button
               onClick={logout}
-              className="w-full bg-red-600 hover:bg-red-700 py-2 rounded-lg font-semibold transition-colors duration-200"
+              className="w-full bg-red-600 hover:bg-red-700 py-2 rounded-lg font-semibold text-white transition-colors duration-200"
             >
               Logout
             </button>
