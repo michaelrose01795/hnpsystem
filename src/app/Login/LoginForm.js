@@ -1,5 +1,5 @@
 //file: src/app/login/LoginForm.js
-//notes: Login form with role dropdown (temporary until auto-role mapping)
+//notes: Login form with username + role dropdown (temp)
 
 "use client";
 import { useState } from "react";
@@ -10,16 +10,19 @@ export default function LoginForm() {
   const { login } = useUser();
   const router = useRouter();
   const [username, setUsername] = useState("");
-  const [role, setRole] = useState("WORKSHOP"); // default
+  const [role, setRole] = useState("WORKSHOP");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    login(username, role); // save in context
-    router.push("/"); // redirect to home
+    login(username, role);
+    router.push("/");
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: "300px" }}>
+    <form
+      onSubmit={handleSubmit}
+      style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: "300px" }}
+    >
       <input
         type="text"
         placeholder="Enter username"
@@ -28,7 +31,6 @@ export default function LoginForm() {
         required
       />
 
-      {/* Temporary role dropdown */}
       <select value={role} onChange={(e) => setRole(e.target.value)}>
         <option value="ADMIN">Admin</option>
         <option value="SALES">Sales</option>
