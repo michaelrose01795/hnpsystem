@@ -1,4 +1,7 @@
 // file location: src/components/Layout.js
+// Vertical left sidebar + topbar layout with Section widgets, sidebar hidden on /login
+// Updated for red-accent modern style and Manager Clocking button
+
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -33,9 +36,9 @@ export default function Layout({ children }) {
     ],
     Manager: [
       { href: "/dashboard", label: "Dashboard" },
-      { href: "/workshop/Clocking", label: "Clocking System" }, // Added for manager
       { href: "/overview", label: "Overview" },
       { href: "/approvals", label: "Approvals" },
+      // Clocking button will be rendered separately below
     ],
   };
 
@@ -64,24 +67,45 @@ export default function Layout({ children }) {
 
             <nav style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  style={{
-                    display: "block",
-                    padding: "10px",
-                    borderRadius: "6px",
-                    textDecoration: "none",
-                    color: router.pathname === link.href ? "white" : "#FF4040",
-                    backgroundColor: router.pathname === link.href ? "#FF4040" : "transparent",
-                    transition: "all 0.2s",
-                    fontSize: "0.95rem",
-                    fontWeight: 500,
-                  }}
-                >
-                  {link.label}
+                <Link key={link.href} href={link.href} legacyBehavior>
+                  <a
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      borderRadius: "6px",
+                      textDecoration: "none",
+                      color: router.pathname === link.href ? "white" : "#FF4040",
+                      backgroundColor: router.pathname === link.href ? "#FF4040" : "transparent",
+                      transition: "all 0.2s",
+                      fontSize: "0.95rem",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {link.label}
+                  </a>
                 </Link>
               ))}
+
+              {/* Manager-specific Clocking button */}
+              {role === "Manager" && !links.find(l => l.href === "/workshop/Clocking") && (
+                <Link href="/workshop/Clocking" legacyBehavior>
+                  <a
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      borderRadius: "6px",
+                      textDecoration: "none",
+                      color: router.pathname === "/workshop/Clocking" ? "white" : "#FF4040",
+                      backgroundColor: router.pathname === "/workshop/Clocking" ? "#FF4040" : "transparent",
+                      transition: "all 0.2s",
+                      fontSize: "0.95rem",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Clocking System
+                  </a>
+                </Link>
+              )}
             </nav>
 
             <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
