@@ -1,8 +1,8 @@
 // file location: src/components/Layout.js
 // Vertical left sidebar + topbar layout with Section widgets, sidebar hidden on /login
-// Updated for red-accent modern style and Manager Clocking button
+// Updated for red-accent modern style, all new roles, and proper logout/login redirect
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useUser } from "../context/UserContext";
@@ -12,6 +12,18 @@ export default function Layout({ children }) {
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
 
+  // Redirect to login if user explicitly logged out
+  useEffect(() => {
+    if (user === null && !hideSidebar) {
+      router.replace("/login"); // replace to prevent back navigation
+    }
+  }, [user, hideSidebar, router]);
+
+  // Show nothing while user state is loading
+  if (user === undefined && !hideSidebar) {
+    return null; // optional: replace with a spinner/loading indicator
+  }
+
   // Navigation links per role
   const navLinks = {
     Admin: [
@@ -19,12 +31,30 @@ export default function Layout({ children }) {
       { href: "/users", label: "User Management" },
       { href: "/reports", label: "Reports" },
     ],
+    Accounts: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/accounts", label: "Accounts Overview" },
+      { href: "/reports", label: "Reports" },
+    ],
+    Owner: [{ href: "/dashboard", label: "Dashboard" }, { href: "/overview", label: "Business Overview" }],
+    "General Manager": [{ href: "/dashboard", label: "Dashboard" }, { href: "/overview", label: "Overview" }],
+    "Sales Director": [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/sales", label: "Sales Tracking" },
+      { href: "/cars", label: "Car Inventory" },
+    ],
     Sales: [
       { href: "/dashboard", label: "Dashboard" },
       { href: "/sales", label: "Sales Tracking" },
       { href: "/cars", label: "Car Inventory" },
     ],
-    Workshop: [
+    Service: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/jobs", label: "Job Cards" },
+      { href: "/workshop/Clocking", label: "Clocking System" },
+    ],
+    "After Sales Director": [{ href: "/dashboard", label: "Dashboard" }, { href: "/service", label: "Service Overview" }],
+    Techs: [
       { href: "/dashboard", label: "Dashboard" },
       { href: "/jobs", label: "Job Cards" },
       { href: "/workshop/Clocking", label: "Clocking System" },
@@ -34,16 +64,51 @@ export default function Layout({ children }) {
       { href: "/parts", label: "Parts Management" },
       { href: "/requests", label: "Parts Requests" },
     ],
+    "MOT Tester": [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/mot", label: "MOT Testing" },
+      { href: "/workshop/Clocking", label: "Clocking System" },
+    ],
+    "Valet Service": [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/valet", label: "Valet Jobs" },
+    ],
+    "Valet Sales": [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/valet/sales", label: "Valet Sales" },
+    ],
+    "Buying Director": [{ href: "/dashboard", label: "Dashboard" }, { href: "/buying", label: "Buying Overview" }],
+    "Second Hand Buying": [{ href: "/dashboard", label: "Dashboard" }, { href: "/buying/used", label: "Used Cars" }],
+    "Vehicle Processor & Photographer": [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/vehicle/processing", label: "Vehicle Processing" },
+      { href: "/vehicle/photos", label: "Photos" },
+    ],
+    Receptionist: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/appointments", label: "Appointments" },
+    ],
+    Painters: [{ href: "/dashboard", label: "Dashboard" }, { href: "/painting", label: "Painting Jobs" }],
+    Contractors: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/contracts", label: "Contract Jobs" },
+    ],
     Manager: [
       { href: "/dashboard", label: "Dashboard" },
       { href: "/overview", label: "Overview" },
       { href: "/approvals", label: "Approvals" },
-      // Clocking button will be rendered separately below
     ],
   };
 
   const role = user?.roles?.[0] || "Guest";
   const links = navLinks[role] || [{ href: "/dashboard", label: "Dashboard" }];
+
+  // Only specific manager roles see Controller Clocking
+  const controllerRoles = ["Workshop Manager", "Service Controller"];
+  if (controllerRoles.includes(role)) {
+    const clockingLink = { href: "/workshop/ControllerClocking", label: "Controller Clocking" };
+    links.splice(1, 0, clockingLink);
+  }
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "sans-serif" }}>
@@ -85,27 +150,6 @@ export default function Layout({ children }) {
                   </a>
                 </Link>
               ))}
-
-              {/* Manager-specific Clocking button */}
-              {role === "Manager" && !links.find(l => l.href === "/workshop/Clocking") && (
-                <Link href="/workshop/Clocking" legacyBehavior>
-                  <a
-                    style={{
-                      display: "block",
-                      padding: "10px",
-                      borderRadius: "6px",
-                      textDecoration: "none",
-                      color: router.pathname === "/workshop/Clocking" ? "white" : "#FF4040",
-                      backgroundColor: router.pathname === "/workshop/Clocking" ? "#FF4040" : "transparent",
-                      transition: "all 0.2s",
-                      fontSize: "0.95rem",
-                      fontWeight: 500,
-                    }}
-                  >
-                    Clocking System
-                  </a>
-                </Link>
-              )}
             </nav>
 
             <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -117,7 +161,10 @@ export default function Layout({ children }) {
 
           <div>
             <button
-              onClick={logout}
+              onClick={() => {
+                logout();
+                router.replace("/login"); // redirect to login page after logout
+              }}
               style={{
                 width: "100%",
                 padding: "10px",
