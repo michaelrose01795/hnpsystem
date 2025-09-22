@@ -1,22 +1,30 @@
-//file: src/components/ProtectedRoute.js
-//notes: Wrap any page with this to require login
+// file location: components/ProtectedRoute.js
+// components/ProtectedRoute.js - client-side protected wrapper that redirects if not allowed
 
-"use client";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useUser } from "@/context/UserContext";
+import React, { useEffect } from 'react'; // import React and useEffect
+import { useRouter } from 'next/router'; // Next.js router for redirects
+import { useUser } from '../context/UserContext'; // use our UserContext
 
-export default function ProtectedRoute({ children }) {
-  const { user } = useUser();
-  const router = useRouter();
+export default function ProtectedRoute({ children, allowedRoles = null }) { // allowedRoles: array or null (allow all)
+  const { user } = useUser(); // get current user
+  const router = useRouter(); // router instance
 
-  useEffect(() => {
-    if (!user) {
-      router.push("/login"); // redirect if not logged in
+  useEffect(() => { // on user change decide where to send them
+    // if user not loaded yet, wait (useEffect will run again)
+    if (typeof window === 'undefined') return; // guard for SSR
+    if (!user) { // not logged in → go to login
+      router.replace('/login'); // replace to avoid back-button confusion
+      return;
     }
-  }, [user, router]);
+    // if allowedRoles specified but user.role not included → unauthorized
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
+      router.replace('/unauthorized'); // send to unauthorized page
+    }
+  }, [user, allowedRoles, router]); // rerun when user or allowedRoles change
 
-  if (!user) return null; // prevents flash
+  // while there's no user (or role mismatch) we render nothing — redirect handles the UX
+  if (!user) return null; // no user yet
+  if (allowedRoles && !allowedRoles.includes(user.role)) return null; // not permitted
 
-  return children;
+  return <>{children}</>; // render protected content
 }
