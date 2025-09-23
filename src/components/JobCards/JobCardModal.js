@@ -1,76 +1,90 @@
 // file location: src/components/JobCards/JobCardModal.js
-import React, { useState } from "react"; // React hooks
-import styles from "./JobCardModal.module.css"; // Import CSS for styling (we'll create this next)
+import React, { useState } from "react";
+import { useRouter } from "next/router";
 
 export default function JobCardModal({ isOpen, onClose }) {
-  const [jobNumber, setJobNumber] = useState(""); // state for entered job number
-  const [jobData, setJobData] = useState(null); // state for fetched job data
-  const [error, setError] = useState(""); // state for errors
+  const router = useRouter();
+  const [jobNumber, setJobNumber] = useState("JOB1234"); // placeholder job number
 
-  // ✅ Mock database lookup
-  const mockDatabase = {
-    "12345": {
-      jobNumber: "12345",
-      vehicle: "Mitsubishi Outlander 2021",
-      reg: "AB21 CDE",
-      mileage: 15200,
-      instructions: "Carry out 1st service",
-      customer: "John Smith",
-    },
-    "67890": {
-      jobNumber: "67890",
-      vehicle: "Suzuki Swift 2019",
-      reg: "XY19 ZZZ",
-      mileage: 30500,
-      instructions: "Investigate engine noise",
-      customer: "Sarah Brown",
-    },
+  if (!isOpen) return null;
+
+  const handleClockOn = () => {
+    // Close modal and go to job card page
+    onClose();
+    router.push(`/job-cards/${jobNumber}`);
   };
-
-  // ✅ Lookup handler
-  const handleLookup = () => {
-    if (mockDatabase[jobNumber]) {
-      setJobData(mockDatabase[jobNumber]); // set found data
-      setError("");
-    } else {
-      setJobData(null);
-      setError("Job not found, please try again.");
-    }
-  };
-
-  if (!isOpen) return null; // Don’t render if modal is closed
 
   return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modal}>
-        <h2>Enter Job Number</h2>
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 1000,
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          padding: "24px",
+          borderRadius: "8px",
+          width: "320px",
+          textAlign: "center",
+        }}
+      >
+        <h2 style={{ marginBottom: "16px", color: "#FF4040" }}>
+          Enter Job Number
+        </h2>
+
         <input
           type="text"
           value={jobNumber}
           onChange={(e) => setJobNumber(e.target.value)}
-          placeholder="Enter job number"
-          className={styles.input}
+          style={{
+            width: "100%",
+            padding: "8px",
+            marginBottom: "16px",
+            borderRadius: "4px",
+            border: "1px solid #ccc",
+            fontSize: "1rem",
+          }}
         />
-        <button onClick={handleLookup} className={styles.button}>
-          Lookup
-        </button>
-        <button onClick={onClose} className={styles.closeButton}>
-          Close
+
+        <button
+          onClick={handleClockOn}
+          style={{
+            width: "100%",
+            padding: "10px",
+            backgroundColor: "#FF4040",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            fontWeight: "bold",
+            cursor: "pointer",
+          }}
+        >
+          Clock On
         </button>
 
-        {error && <p className={styles.error}>{error}</p>}
-
-        {jobData && (
-          <div className={styles.jobDetails}>
-            <h3>Job Card</h3>
-            <p><strong>Job Number:</strong> {jobData.jobNumber}</p>
-            <p><strong>Customer:</strong> {jobData.customer}</p>
-            <p><strong>Vehicle:</strong> {jobData.vehicle}</p>
-            <p><strong>Reg:</strong> {jobData.reg}</p>
-            <p><strong>Mileage:</strong> {jobData.mileage} miles</p>
-            <p><strong>Instructions:</strong> {jobData.instructions}</p>
-          </div>
-        )}
+        <button
+          onClick={onClose}
+          style={{
+            width: "100%",
+            marginTop: "10px",
+            padding: "10px",
+            backgroundColor: "#ccc",
+            color: "#333",
+            border: "none",
+            borderRadius: "6px",
+            fontWeight: "bold",
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
       </div>
     </div>
   );

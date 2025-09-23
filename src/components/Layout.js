@@ -1,17 +1,21 @@
 // file location: src/components/Layout.js
-import React, { useEffect, useState } from "react"; // ✅ added useState for modal
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useUser } from "../context/UserContext";
-import ClockInButton from "./Clocking/ClockInButton"; // ✅ Clock In
-import JobCardModal from "./JobCards/JobCardModal"; // ✅ Import Job Card Modal
+import ClockInButton from "./Clocking/ClockInButton";
+import JobCardModal from "./JobCards/JobCardModal";
 
 export default function Layout({ children }) {
   const { user, logout } = useUser();
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [isModalOpen, setIsModalOpen] = useState(false); // ✅ Modal state
+  useEffect(() => {
+    console.log("User object:", user);
+    console.log("Roles (normalized):", user?.roles?.map((r) => r.toLowerCase()));
+  }, [user]);
 
   useEffect(() => {
     if (user === null && !hideSidebar) {
@@ -23,101 +27,16 @@ export default function Layout({ children }) {
     return <div style={{ padding: "2rem", textAlign: "center" }}>Loading...</div>;
   }
 
-  const navLinks = {
-    Admin: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/users", label: "User Management" },
-      { href: "/reports", label: "Reports" },
-    ],
-    Accounts: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/accounts", label: "Accounts Overview" },
-      { href: "/reports", label: "Reports" },
-    ],
-    Owner: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/overview", label: "Business Overview" },
-    ],
-    "General Manager": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/overview", label: "Overview" },
-    ],
-    "Sales Director": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/sales", label: "Sales Tracking" },
-      { href: "/cars", label: "Car Inventory" },
-    ],
-    Sales: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/sales", label: "Sales Tracking" },
-      { href: "/cars", label: "Car Inventory" },
-    ],
-    Service: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/jobs", label: "Job Cards" },
-    ],
-    Techs: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/jobs", label: "Job Cards" },
-    ],
-    Parts: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/parts", label: "Parts Management" },
-      { href: "/requests", label: "Parts Requests" },
-    ],
-    "MOT Tester": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/mot", label: "MOT Testing" },
-    ],
-    "Valet Service": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/valet", label: "Valet Jobs" },
-    ],
-    "Valet Sales": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/valet/sales", label: "Valet Sales" },
-    ],
-    "Buying Director": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/buying", label: "Buying Overview" },
-    ],
-    "Second Hand Buying": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/buying/used", label: "Used Cars" },
-    ],
-    "Vehicle Processor & Photographer": [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/vehicle/processing", label: "Vehicle Processing" },
-      { href: "/vehicle/photos", label: "Photos" },
-    ],
-    Receptionist: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/appointments", label: "Appointments" },
-    ],
-    Painters: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/painting", label: "Painting Jobs" },
-    ],
-    Contractors: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/contracts", label: "Contract Jobs" },
-    ],
-    Manager: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/overview", label: "Overview" },
-      { href: "/approvals", label: "Approvals" },
-    ],
-  };
+  const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const role = userRoles[0] || "guest";
 
-  const role = user?.roles?.[0] || "Guest";
-  let links = [{ href: "/newsfeed", label: "News Feed" }, ...(navLinks[role] || [{ href: "/dashboard", label: "Dashboard" }])];
+  const links = [
+    { href: "/newsfeed", label: "📰 News Feed" },
+    { href: "/dashboard", label: "📊 Dashboard" },
+  ];
 
-  // Insert Controller Clocking link for certain managers
-  const controllerRoles = ["Workshop Manager", "Service Controller"];
-  if (controllerRoles.includes(role)) {
-    const clockingLink = { href: "/workshop/ControllerClocking", label: "Controller Clocking" };
-    links.splice(2, 0, clockingLink);
-  }
+  const viewRoles = ["manager", "service", "sales"];
+  const isActive = (path) => router.pathname.startsWith(path);
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "sans-serif" }}>
@@ -125,20 +44,29 @@ export default function Layout({ children }) {
         <aside
           style={{
             width: "10%",
-            minWidth: "140px",
+            minWidth: "160px",
             backgroundColor: "#FFF0F0",
             color: "black",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
             padding: "20px",
-            boxSizing: "border-box",
             borderRight: "1px solid #FFCCCC",
           }}
         >
           <div>
-            <h2 style={{ marginBottom: "20px", fontSize: "1.2rem", color: "#FF4040" }}>H&P DMS</h2>
+            <h2
+              style={{
+                marginBottom: "20px",
+                fontSize: "1.2rem",
+                fontWeight: 700,
+                color: "#FF4040",
+              }}
+            >
+              H&P DMS
+            </h2>
 
+            {/* Sidebar nav */}
             <nav style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {links.map((link, index) => (
                 <React.Fragment key={link.href}>
@@ -149,8 +77,8 @@ export default function Layout({ children }) {
                         padding: "10px",
                         borderRadius: "6px",
                         textDecoration: "none",
-                        color: router.pathname === link.href ? "white" : "#FF4040",
-                        backgroundColor: router.pathname === link.href ? "#FF4040" : "transparent",
+                        color: isActive(link.href) ? "white" : "#FF4040",
+                        backgroundColor: isActive(link.href) ? "#FF4040" : "transparent",
                         transition: "all 0.2s",
                         fontSize: "0.95rem",
                         fontWeight: 500,
@@ -160,8 +88,8 @@ export default function Layout({ children }) {
                     </a>
                   </Link>
 
-                  {/* ✅ ClockInButton always under Dashboard for Techs */}
-                  {index === 1 && user?.roles?.includes("Techs") && (
+                  {/* Tech: Clock In Button under Dashboard */}
+                  {index === 1 && userRoles.includes("techs") && (
                     <div style={{ marginTop: "10px" }}>
                       <ClockInButton />
                     </div>
@@ -169,8 +97,10 @@ export default function Layout({ children }) {
                 </React.Fragment>
               ))}
 
-              {/* ✅ Create Job Card button only for Service, Admin, or Manager roles */}
-              {(role === "Service" || role === "Admin" || role.toLowerCase().includes("manager")) && (
+              {/* Service/Admin/Managers: Create Job Card */}
+              {(userRoles.includes("service") ||
+                userRoles.includes("admin") ||
+                userRoles.some((r) => r.includes("manager"))) && (
                 <Link href="/jobcards/create" legacyBehavior>
                   <a
                     style={{
@@ -191,8 +121,8 @@ export default function Layout({ children }) {
                 </Link>
               )}
 
-              {/* ✅ Open Job Card Modal for Techs */}
-              {role === "Techs" && (
+              {/* Tech-only: Start Job button (styled like links) */}
+              {userRoles.includes("techs") && (
                 <button
                   onClick={() => setIsModalOpen(true)}
                   style={{
@@ -201,26 +131,56 @@ export default function Layout({ children }) {
                     marginTop: "10px",
                     borderRadius: "6px",
                     textDecoration: "none",
-                    color: "white",
-                    backgroundColor: "#FF4040",
-                    textAlign: "center",
-                    fontSize: "0.9rem",
-                    fontWeight: 600,
+                    color: isActive("/jobcards/start") ? "white" : "#FF4040",
+                    backgroundColor: isActive("/jobcards/start") ? "#FF4040" : "transparent",
+                    border: "1px solid #FF4040",
+                    textAlign: "left",
+                    fontSize: "0.95rem",
+                    fontWeight: 500,
                     cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = "#FF4040";
+                    e.target.style.color = "white";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive("/jobcards/start")) {
+                      e.target.style.backgroundColor = "transparent";
+                      e.target.style.color = "#FF4040";
+                    }
                   }}
                 >
-                  🔧 Open Job Card
+                  🔧 Start Job
                 </button>
               )}
-            </nav>
 
-            <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <button style={{ padding: "8px", backgroundColor: "#FF8080", border: "none", color: "black", cursor: "pointer", borderRadius: "6px", fontSize: "0.85rem" }}>New Job</button>
-              <button style={{ padding: "8px", backgroundColor: "#FF8080", border: "none", color: "black", cursor: "pointer", borderRadius: "6px", fontSize: "0.85rem" }}>Request Part</button>
-              <button style={{ padding: "8px", backgroundColor: "#FF8080", border: "none", color: "black", cursor: "pointer", borderRadius: "6px", fontSize: "0.85rem" }}>Send Message</button>
-            </div>
+              {/* Manager/Service/Sales: View Job Cards */}
+              {viewRoles.some((r) => userRoles.includes(r)) && (
+                <Link href="/jobcards/view" legacyBehavior>
+                  <a
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      marginTop: "10px",
+                      borderRadius: "6px",
+                      color: isActive("/jobcards/view") ? "white" : "#FF4040",
+                      backgroundColor: isActive("/jobcards/view") ? "#FF4040" : "transparent",
+                      border: "1px solid #FF4040",
+                      textAlign: "left",
+                      fontSize: "0.95rem",
+                      fontWeight: 500,
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    👀 View Job Cards
+                  </a>
+                </Link>
+              )}
+            </nav>
           </div>
 
+          {/* Logout */}
           <div>
             <button
               onClick={() => {
@@ -245,7 +205,16 @@ export default function Layout({ children }) {
         </aside>
       )}
 
-      <div style={{ width: hideSidebar ? "100%" : "90%", display: "flex", flexDirection: "column", overflow: "auto", backgroundColor: "#FFF8F8" }}>
+      {/* Main content area */}
+      <div
+        style={{
+          width: hideSidebar ? "100%" : "90%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "auto",
+          backgroundColor: "#FFF8F8",
+        }}
+      >
         {!hideSidebar && (
           <header
             style={{
@@ -257,7 +226,13 @@ export default function Layout({ children }) {
               alignItems: "center",
             }}
           >
-            <h1 style={{ fontSize: "1.25rem", fontWeight: "600", color: "#FF4040" }}>
+            <h1
+              style={{
+                fontSize: "1.25rem",
+                fontWeight: "600",
+                color: "#FF4040",
+              }}
+            >
               Welcome {user?.username || "Guest"} ({role})
             </h1>
           </header>
@@ -268,7 +243,7 @@ export default function Layout({ children }) {
         </main>
       </div>
 
-      {/* ✅ Job Card Modal */}
+      {/* Job Card Modal for Techs */}
       <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
