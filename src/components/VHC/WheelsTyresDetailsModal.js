@@ -3,7 +3,10 @@
 import React, { useState } from "react";
 
 export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete }) {
-  const [selectedWheel, setSelectedWheel] = useState("NSF"); // ✅ Default wheel
+  // ✅ Selected wheel state
+  const [selectedWheel, setSelectedWheel] = useState("NSF");
+
+  // ✅ Tyre data state
   const [tyreData, setTyreData] = useState({
     NSF: { manufacturer: "", runFlat: false, size: "", load: "", speed: "", tread: { outer: "", middle: "", inner: "" }, concerns: [] },
     OSF: { manufacturer: "", runFlat: false, size: "", load: "", speed: "", tread: { outer: "", middle: "", inner: "" }, concerns: [] },
@@ -12,8 +15,9 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
     Spare: { type: "", year: "", condition: "", concerns: [] },
   });
 
-  if (!isOpen) return null;
+  if (!isOpen) return null; // ✅ Don't render if modal is closed
 
+  // ✅ Update field value for a wheel
   const handleFieldChange = (wheel, field, value) => {
     setTyreData((prev) => ({
       ...prev,
@@ -21,6 +25,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
     }));
   };
 
+  // ✅ Copy selected wheel data to all other wheels
   const copyToAll = () => {
     const base = tyreData[selectedWheel];
     setTyreData((prev) => ({
@@ -32,8 +37,8 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
     }));
   };
 
+  // ✅ Complete and send data to parent
   const handleComplete = () => {
-    // ✅ Save tyre data here (later connect to DB)
     console.log("Saved tyre data:", tyreData);
     onComplete(tyreData);
     onClose();
@@ -42,7 +47,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-5xl p-6 flex gap-6">
-        {/* Left: Car diagram */}
+        {/* Left: Wheel selection */}
         <div className="w-2/5 flex flex-col items-center border-r pr-4">
           <h3 className="font-bold mb-4">Select Wheel</h3>
           <div className="grid grid-cols-2 gap-4">
@@ -55,7 +60,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
                 {wheel}
               </button>
             ))}
-            {/* Spare button */}
             <button
               onClick={() => setSelectedWheel("Spare")}
               className={`col-span-2 p-3 border rounded ${selectedWheel === "Spare" ? "bg-red-600 text-white" : "bg-gray-100"}`}
@@ -71,7 +75,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
 
           {selectedWheel !== "Spare" ? (
             <>
-              {/* Manufacturer etc */}
+              {/* Wheel info inputs */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <input
                   type="text"
@@ -132,25 +136,33 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
                 ))}
               </div>
 
-              {/* Concerns */}
-              <button
-                onClick={() =>
-                  setTyreData((prev) => ({
-                    ...prev,
-                    [selectedWheel]: {
-                      ...prev[selectedWheel],
-                      concerns: [...prev[selectedWheel].concerns, `Concern ${prev[selectedWheel].concerns.length + 1}`],
-                    },
-                  }))
-                }
-                className="mb-4 px-3 py-1 bg-yellow-500 text-white rounded"
-              >
-                + Add Concern
-              </button>
+              {/* Concerns log (direct, no popup) */}
+              <div className="mb-4">
+                <h4 className="font-semibold mb-2">Concerns:</h4>
+                <ul className="mb-2 list-disc list-inside">
+                  {tyreData[selectedWheel].concerns.map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() =>
+                    setTyreData((prev) => ({
+                      ...prev,
+                      [selectedWheel]: {
+                        ...prev[selectedWheel],
+                        concerns: [...prev[selectedWheel].concerns, `Concern ${prev[selectedWheel].concerns.length + 1}`],
+                      },
+                    }))
+                  }
+                  className="px-3 py-1 bg-yellow-500 text-white rounded"
+                >
+                  + Add Concern
+                </button>
+              </div>
             </>
           ) : (
             <>
-              {/* Spare options */}
+              {/* Spare wheel inputs */}
               <select
                 value={tyreData.Spare.type}
                 onChange={(e) => handleFieldChange("Spare", "type", e.target.value)}
@@ -171,9 +183,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
                 >
                   <option value="">Select Year</option>
                   {Array.from({ length: 20 }, (_, i) => 2025 - i).map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
+                    <option key={year} value={year}>{year}</option>
                   ))}
                 </select>
               )}
@@ -197,12 +207,9 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
             </>
           )}
 
-          {/* Copy to all */}
+          {/* Copy to all button */}
           {selectedWheel !== "Spare" && (
-            <button
-              onClick={copyToAll}
-              className="px-4 py-2 bg-blue-500 text-white rounded mb-4"
-            >
+            <button onClick={copyToAll} className="px-4 py-2 bg-blue-500 text-white rounded mb-4">
               Copy to All
             </button>
           )}

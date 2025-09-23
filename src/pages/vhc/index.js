@@ -1,7 +1,7 @@
 // file location: src/pages/vhc/index.js
 
 import React, { useState } from "react"; // ✅ Import React and state
-import WheelsTyresModal from "@/components/VHC/WheelsTyresModal"; // ✅ Import modal
+import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal"; // ✅ Use the new detailed modal
 
 export default function VHCPage() {
   // ✅ State to control modal visibility
@@ -33,7 +33,7 @@ export default function VHCPage() {
           <h2 className="font-semibold">Wheels & Tyres</h2>
           <p>
             {wheelsTyresData
-              ? `${wheelsTyresData.concerns.length} issues logged`
+              ? `${wheelsTyresData.concerns?.length || 0} issues logged`
               : "0 issues logged"}
           </p>
         </div>
@@ -79,11 +79,11 @@ export default function VHCPage() {
         </div>
       )}
 
-      {/* ✅ Wheels & Tyres Modal */}
-      <WheelsTyresModal
+      {/* ✅ Wheels & Tyres Modal (new detailed version) */}
+      <WheelsTyresDetailsModal
         isOpen={isWheelsTyresOpen}
         onClose={() => setIsWheelsTyresOpen(false)}
-        onSave={handleSave}
+        onComplete={handleSave}
       />
     </div>
   );
