@@ -1,15 +1,28 @@
 // file location: src/pages/job-cards/[jobNumber]/vhc.js
+
 import React, { useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
+import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
+
+// ✅ Reusable section card component
+const SectionCard = ({ title, subtitle, onClick }) => (
+  <div
+    className={`border p-4 rounded ${onClick ? "cursor-pointer hover:bg-gray-100" : ""}`}
+    onClick={onClick}
+  >
+    <h2 className="font-semibold text-red-600">{title}</h2>
+    <p>{subtitle}</p>
+  </div>
+);
 
 export default function VHCPAGE() {
   const router = useRouter();
   const { jobNumber } = router.query;
 
-  // Keep all VHC data here
+  // ✅ VHC data for all sections
   const [vhcData, setVhcData] = useState({
-    wheelsTyres: [],
+    wheelsTyres: null, // detailed modal data
     brakesHubs: [],
     serviceBook: [],
     underBonnet: [],
@@ -19,20 +32,10 @@ export default function VHCPAGE() {
     cosmetics: [],
   });
 
-  const [activeSection, setActiveSection] = useState(null); // which modal is open
+  // ✅ Currently active section (for modals)
+  const [activeSection, setActiveSection] = useState(null);
 
-  // Add placeholder issue
-  const addIssue = (section) => {
-    setVhcData((prev) => ({
-      ...prev,
-      [section]: [...prev[section], { title: "New Issue", details: "" }],
-    }));
-  };
-
-  // Close modal
-  const closeModal = () => setActiveSection(null);
-
-  // Config of sections
+  // ✅ Sections config
   const sections = [
     { key: "wheelsTyres", label: "Wheels & Tyres" },
     { key: "brakesHubs", label: "Brakes & Hubs" },
@@ -51,7 +54,7 @@ export default function VHCPAGE() {
           Vehicle Health Check - Job {jobNumber || "Loading..."}
         </h1>
 
-        {/* Two-column grid */}
+        {/* ✅ Two-column grid for section cards */}
         <div
           style={{
             display: "grid",
@@ -60,36 +63,39 @@ export default function VHCPAGE() {
           }}
         >
           {sections.map((section) => (
-            <div
+            <SectionCard
               key={section.key}
+              title={section.label}
+              subtitle={
+                section.key === "wheelsTyres"
+                  ? vhcData.wheelsTyres
+                    ? "Details completed"
+                    : "No issues logged yet"
+                  : `${vhcData[section.key].length} issues logged`
+              }
               onClick={() => setActiveSection(section.key)}
-              style={{
-                backgroundColor: "white",
-                padding: "20px",
-                borderRadius: "8px",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: "1.1rem",
-                  fontWeight: 600,
-                  color: "#FF4040",
-                }}
-              >
-                {section.label}
-              </h2>
-              <p style={{ fontSize: "0.9rem", color: "#555" }}>
-                {vhcData[section.key].length} issues logged
-              </p>
-            </div>
+            />
           ))}
         </div>
 
-        {/* Modal */}
-        {activeSection && (
+        {/* ========================= */}
+        {/* ✅ Wheels & Tyres Detailed Modal */}
+        {/* ========================= */}
+        {activeSection === "wheelsTyres" && (
+          <WheelsTyresDetailsModal
+            isOpen={true}
+            onClose={() => setActiveSection(null)}
+            onComplete={(data) => {
+              setVhcData((prev) => ({ ...prev, wheelsTyres: data }));
+              setActiveSection(null);
+            }}
+          />
+        )}
+
+        {/* ========================= */}
+        {/* ✅ Placeholder Modals for All Other Sections */}
+        {/* ========================= */}
+        {activeSection && activeSection !== "wheelsTyres" && (
           <div
             style={{
               position: "fixed",
@@ -118,28 +124,20 @@ export default function VHCPAGE() {
                 {sections.find((s) => s.key === activeSection)?.label}
               </h2>
 
-              {/* Show current issues */}
-              {vhcData[activeSection].length === 0 && (
-                <p>No issues logged yet</p>
-              )}
-              {vhcData[activeSection].map((issue, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    marginBottom: "10px",
-                    padding: "10px",
-                    border: "1px solid #FFCCCC",
-                    borderRadius: "4px",
-                  }}
-                >
-                  <strong>{issue.title}</strong>:{" "}
-                  {issue.details || "No details"}
-                </div>
-              ))}
+              {/* Placeholder content */}
+              <p>No issues logged yet (placeholder)</p>
 
-              {/* Add new issue */}
+              {/* Add new issue (optional) */}
               <button
-                onClick={() => addIssue(activeSection)}
+                onClick={() =>
+                  setVhcData((prev) => ({
+                    ...prev,
+                    [activeSection]: [
+                      ...prev[activeSection],
+                      { title: "New Issue", details: "" },
+                    ],
+                  }))
+                }
                 style={{
                   padding: "8px 12px",
                   backgroundColor: "#FF4040",
@@ -155,9 +153,10 @@ export default function VHCPAGE() {
                 + Add Issue
               </button>
 
+              {/* Close modal */}
               <div style={{ marginTop: "20px", textAlign: "right" }}>
                 <button
-                  onClick={closeModal}
+                  onClick={() => setActiveSection(null)}
                   style={{
                     padding: "8px 16px",
                     border: "none",
