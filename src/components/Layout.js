@@ -165,6 +165,28 @@ export default function Layout({ children }) {
                   )}
                 </React.Fragment>
               ))}
+
+              {/* ✅ Create Job Card button only for Service, Admin, or Manager roles */}
+              {(role === "Service" || role === "Admin" || role.toLowerCase().includes("manager")) && (
+                <Link href="/jobcards/create" legacyBehavior>
+                  <a
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      marginTop: "10px",
+                      borderRadius: "6px",
+                      textDecoration: "none",
+                      color: "white",
+                      backgroundColor: "#FF4040",
+                      textAlign: "center",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    ➕ Create Job Card
+                  </a>
+                </Link>
+              )}
             </nav>
 
             <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
