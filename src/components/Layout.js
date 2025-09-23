@@ -1,14 +1,17 @@
 // file location: src/components/Layout.js
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react"; // ✅ added useState for modal
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useUser } from "../context/UserContext";
-import ClockInButton from "./Clocking/ClockInButton"; // ✅ Import ClockInButton
+import ClockInButton from "./Clocking/ClockInButton"; // ✅ Clock In
+import JobCardModal from "./JobCards/JobCardModal"; // ✅ Import Job Card Modal
 
 export default function Layout({ children }) {
   const { user, logout } = useUser();
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
+
+  const [isModalOpen, setIsModalOpen] = useState(false); // ✅ Modal state
 
   useEffect(() => {
     if (user === null && !hideSidebar) {
@@ -187,6 +190,28 @@ export default function Layout({ children }) {
                   </a>
                 </Link>
               )}
+
+              {/* ✅ Open Job Card Modal for Techs */}
+              {role === "Techs" && (
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  style={{
+                    display: "block",
+                    padding: "10px",
+                    marginTop: "10px",
+                    borderRadius: "6px",
+                    textDecoration: "none",
+                    color: "white",
+                    backgroundColor: "#FF4040",
+                    textAlign: "center",
+                    fontSize: "0.9rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  🔧 Open Job Card
+                </button>
+              )}
             </nav>
 
             <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -242,6 +267,9 @@ export default function Layout({ children }) {
           {children}
         </main>
       </div>
+
+      {/* ✅ Job Card Modal */}
+      <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }
