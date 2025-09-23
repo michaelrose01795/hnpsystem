@@ -1,6 +1,6 @@
 // file location: src/pages/job-cards/[jobNumber]/vhc.js
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
@@ -34,6 +34,13 @@ export default function VHCPAGE() {
 
   // ✅ Currently active section (for modals)
   const [activeSection, setActiveSection] = useState(null);
+
+  // ✅ Log whenever Wheels & Tyres modal opens (optional debug)
+  useEffect(() => {
+    if (activeSection === "wheelsTyres") {
+      console.log("Opening Wheels & Tyres modal");
+    }
+  }, [activeSection]);
 
   // ✅ Sections config
   const sections = [
@@ -127,7 +134,7 @@ export default function VHCPAGE() {
               {/* Placeholder content */}
               <p>No issues logged yet (placeholder)</p>
 
-              {/* Add new issue (optional) */}
+              {/* Add new issue */}
               <button
                 onClick={() =>
                   setVhcData((prev) => ({
