@@ -1,106 +1,198 @@
 // file location: src/components/Layout.js
-// Vertical left sidebar + topbar layout with Section widgets, sidebar hidden on /login
-
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useUser } from "../context/UserContext";
+import ClockInButton from "./Clocking/ClockInButton";
+import JobCardModal from "./JobCards/JobCardModal";
 
 export default function Layout({ children }) {
   const { user, logout } = useUser();
   const router = useRouter();
+  const hideSidebar = router.pathname === "/login";
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const hideSidebar = router.pathname === "/login"; // hide sidebar on login page
+  useEffect(() => {
+    console.log("User object:", user);
+    console.log("Roles (normalized):", user?.roles?.map((r) => r.toLowerCase()));
+  }, [user]);
 
-  // Navigation links per role
-  const navLinks = {
-    Admin: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/users", label: "User Management" },
-      { href: "/reports", label: "Reports" },
-    ],
-    Sales: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/sales", label: "Sales Tracking" },
-      { href: "/cars", label: "Car Inventory" },
-    ],
-    Workshop: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/jobs", label: "Job Cards" },
-      { href: "/clocking", label: "Clocking System" },
-    ],
-    Parts: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/parts", label: "Parts Management" },
-      { href: "/requests", label: "Parts Requests" },
-    ],
-    Manager: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/overview", label: "Overview" },
-      { href: "/approvals", label: "Approvals" },
-    ],
-  };
+  useEffect(() => {
+    if (user === null && !hideSidebar) {
+      router.replace("/login");
+    }
+  }, [user, hideSidebar, router]);
 
-  const role = user?.roles?.[0] || "Guest";
-  const links = navLinks[role] || [{ href: "/dashboard", label: "Dashboard" }];
+  if (user === undefined && !hideSidebar) {
+    return <div style={{ padding: "2rem", textAlign: "center" }}>Loading...</div>;
+  }
+
+  const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const role = userRoles[0] || "guest";
+
+  const links = [
+    { href: "/newsfeed", label: "📰 News Feed" },
+    { href: "/dashboard", label: "📊 Dashboard" },
+  ];
+
+  const viewRoles = ["manager", "service", "sales"];
+  const isActive = (path) => router.pathname.startsWith(path);
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "sans-serif" }}>
-      {/* Sidebar: hidden on /login */}
       {!hideSidebar && (
         <aside
           style={{
             width: "10%",
-            minWidth: "120px",
-            backgroundColor: "#FFC0C0",
+            minWidth: "160px",
+            backgroundColor: "#FFF0F0",
             color: "black",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
             padding: "20px",
-            boxSizing: "border-box",
+            borderRight: "1px solid #FFCCCC",
           }}
         >
           <div>
-            <h2 style={{ marginBottom: "20px", fontSize: "1.2rem" }}>H&P System</h2>
+            <h2
+              style={{
+                marginBottom: "20px",
+                fontSize: "1.2rem",
+                fontWeight: 700,
+                color: "#FF4040",
+              }}
+            >
+              H&P DMS
+            </h2>
 
+            {/* Sidebar nav */}
             <nav style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
+              {links.map((link, index) => (
+                <React.Fragment key={link.href}>
+                  <Link href={link.href} legacyBehavior>
+                    <a
+                      style={{
+                        display: "block",
+                        padding: "10px",
+                        borderRadius: "6px",
+                        textDecoration: "none",
+                        color: isActive(link.href) ? "white" : "#FF4040",
+                        backgroundColor: isActive(link.href) ? "#FF4040" : "transparent",
+                        transition: "all 0.2s",
+                        fontSize: "0.95rem",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {link.label}
+                    </a>
+                  </Link>
+
+                  {/* Tech: Clock In Button under Dashboard */}
+                  {index === 1 && userRoles.includes("techs") && (
+                    <div style={{ marginTop: "10px" }}>
+                      <ClockInButton />
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
+
+              {/* Service/Admin/Managers: Create Job Card */}
+              {(userRoles.includes("service") ||
+                userRoles.includes("admin") ||
+                userRoles.some((r) => r.includes("manager"))) && (
+                <Link href="/jobcards/create" legacyBehavior>
+                  <a
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      marginTop: "10px",
+                      borderRadius: "6px",
+                      textDecoration: "none",
+                      color: "white",
+                      backgroundColor: "#FF4040",
+                      textAlign: "center",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    ➕ Create Job Card
+                  </a>
+                </Link>
+              )}
+
+              {/* Tech-only: Start Job button (styled like links) */}
+              {userRoles.includes("techs") && (
+                <button
+                  onClick={() => setIsModalOpen(true)}
                   style={{
                     display: "block",
-                    padding: "8px 10px",
+                    padding: "10px",
+                    marginTop: "10px",
                     borderRadius: "6px",
                     textDecoration: "none",
-                    color: "black",
-                    backgroundColor: router.pathname === link.href ? "#FF8080" : "transparent",
-                    transition: "background-color 0.2s",
-                    fontSize: "0.9rem",
+                    color: isActive("/jobcards/start") ? "white" : "#FF4040",
+                    backgroundColor: isActive("/jobcards/start") ? "#FF4040" : "transparent",
+                    border: "1px solid #FF4040",
+                    textAlign: "left",
+                    fontSize: "0.95rem",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = "#FF4040";
+                    e.target.style.color = "white";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive("/jobcards/start")) {
+                      e.target.style.backgroundColor = "transparent";
+                      e.target.style.color = "#FF4040";
+                    }
                   }}
                 >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
+                  🔧 Start Job
+                </button>
+              )}
 
-            <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
-              <button style={{ padding: "8px", backgroundColor: "#FF8080", border: "none", color: "black", cursor: "pointer", borderRadius: "6px", fontSize: "0.85rem" }}>New Job</button>
-              <button style={{ padding: "8px", backgroundColor: "#FF8080", border: "none", color: "black", cursor: "pointer", borderRadius: "6px", fontSize: "0.85rem" }}>Request Part</button>
-              <button style={{ padding: "8px", backgroundColor: "#FF8080", border: "none", color: "black", cursor: "pointer", borderRadius: "6px", fontSize: "0.85rem" }}>Send Message</button>
-            </div>
+              {/* Manager/Service/Sales: View Job Cards */}
+              {viewRoles.some((r) => userRoles.includes(r)) && (
+                <Link href="/jobcards/view" legacyBehavior>
+                  <a
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      marginTop: "10px",
+                      borderRadius: "6px",
+                      color: isActive("/jobcards/view") ? "white" : "#FF4040",
+                      backgroundColor: isActive("/jobcards/view") ? "#FF4040" : "transparent",
+                      border: "1px solid #FF4040",
+                      textAlign: "left",
+                      fontSize: "0.95rem",
+                      fontWeight: 500,
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    👀 View Job Cards
+                  </a>
+                </Link>
+              )}
+            </nav>
           </div>
 
+          {/* Logout */}
           <div>
             <button
-              onClick={logout}
+              onClick={() => {
+                logout();
+                router.push("/login");
+              }}
               style={{
                 width: "100%",
-                padding: "8px",
+                padding: "10px",
                 backgroundColor: "#FF4040",
                 border: "none",
-                color: "black",
+                color: "white",
                 borderRadius: "8px",
                 cursor: "pointer",
                 fontWeight: "bold",
@@ -113,12 +205,34 @@ export default function Layout({ children }) {
         </aside>
       )}
 
-      {/* Main content */}
-      <div style={{ width: hideSidebar ? "100%" : "90%", display: "flex", flexDirection: "column", overflow: "auto" }}>
-        {/* Topbar: optional to hide on login */}
+      {/* Main content area */}
+      <div
+        style={{
+          width: hideSidebar ? "100%" : "90%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "auto",
+          backgroundColor: "#FFF8F8",
+        }}
+      >
         {!hideSidebar && (
-          <header style={{ backgroundColor: "white", padding: "16px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h1 style={{ fontSize: "1.25rem", fontWeight: "600" }}>
+          <header
+            style={{
+              backgroundColor: "white",
+              padding: "16px",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <h1
+              style={{
+                fontSize: "1.25rem",
+                fontWeight: "600",
+                color: "#FF4040",
+              }}
+            >
               Welcome {user?.username || "Guest"} ({role})
             </h1>
           </header>
@@ -128,6 +242,9 @@ export default function Layout({ children }) {
           {children}
         </main>
       </div>
+
+      {/* Job Card Modal for Techs */}
+      <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }

@@ -1,34 +1,49 @@
 // file location: /src/pages/login.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useUser } from "../context/UserContext";
 import Layout from "../components/Layout";
 import Section from "../components/Section";
+import { useRouter } from "next/router";
+import LoginDropdown from "../components/LoginDropdown";
+
+// Import centralized users config
+import { usersByRole } from "../config/users";
 
 export default function LoginPage() {
-  const { devLogin } = useUser();
-  const [username, setUsername] = useState("");
-  const [role, setRole] = useState("WORKSHOP");
+  const { devLogin, user } = useUser();
+  const router = useRouter();
+  const [selectedRole, setSelectedRole] = useState("");
+  const [selectedUser, setSelectedUser] = useState("");
 
+  // Developer login handler
   const handleDevLogin = () => {
-    devLogin(username, role);
-    window.location.href = "/dashboard"; // redirect after login
+    if (!selectedRole || !selectedUser) {
+      alert("Please select a role and a user.");
+      return;
+    }
+    devLogin(selectedUser, selectedRole);
   };
+
+  // Redirect dev login users once `user` is set
+  useEffect(() => {
+    if (user) {
+      router.push("/newsfeed");
+    }
+  }, [user, router]);
 
   return (
     <Layout>
-      {/* Center the login section */}
       <div className="flex justify-center items-center h-full">
         <div className="w-full max-w-md">
-          {/* Login form section */}
           <Section
             title="Login to H&P System"
             bgColor="#ffffff"
             borderColor="#d10000"
             textColor="#222222"
           >
-            {/* Keycloak login */}
             <div className="flex flex-col space-y-4">
+              {/* Keycloak login */}
               <button
                 onClick={() => signIn("keycloak")}
                 className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-white"
@@ -38,26 +53,19 @@ export default function LoginPage() {
 
               <hr className="border-gray-300" />
 
-              {/* Dev login for testing */}
+              {/* Developer login */}
               <h3 className="text-lg font-semibold">Developer Login</h3>
-              <input
-                type="text"
-                placeholder="Enter username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="p-2 border border-gray-300 rounded"
+
+              {/* LoginDropdown component */}
+              <LoginDropdown
+                selectedRole={selectedRole}
+                setSelectedRole={setSelectedRole}
+                selectedUser={selectedUser}
+                setSelectedUser={setSelectedUser}
+                usersByRole={usersByRole} // use centralized config
               />
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="p-2 border border-gray-300 rounded"
-              >
-                <option value="ADMIN">Admin</option>
-                <option value="SALES">Sales</option>
-                <option value="WORKSHOP">Workshop</option>
-                <option value="PARTS">Parts</option>
-                <option value="MANAGERS">Managers</option>
-              </select>
+
+              {/* Dev login button */}
               <button
                 onClick={handleDevLogin}
                 className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-white"
@@ -71,3 +79,4 @@ export default function LoginPage() {
     </Layout>
   );
 }
+

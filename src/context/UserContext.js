@@ -7,13 +7,17 @@ const UserContext = createContext();
 export function UserProvider({ children }) {
   const { data: session } = useSession();
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true); // ✅ loading state
 
   // Load saved user from localStorage on first render
   useEffect(() => {
     const stored = localStorage.getItem("devUser");
     if (stored && !session?.user) {
       setUser(JSON.parse(stored));
+      setLoading(false);
+      return;
     }
+    setLoading(false);
   }, [session]);
 
   // If session comes from Keycloak, use that
@@ -28,11 +32,11 @@ export function UserProvider({ children }) {
     }
   }, [session]);
 
-  // Dev login (persist to localStorage)
+  // ✅ Dev login (persist to localStorage, ensure roles are uppercase)
   const devLogin = (username, role) => {
     const dev = {
       username: username || "dev",
-      roles: [role?.toUpperCase() || "WORKSHOP"],
+      roles: [role ? role.toUpperCase() : "WORKSHOP"],
     };
     setUser(dev);
     localStorage.setItem("devUser", JSON.stringify(dev));
@@ -45,7 +49,7 @@ export function UserProvider({ children }) {
   };
 
   return (
-    <UserContext.Provider value={{ user, devLogin, logout }}>
+    <UserContext.Provider value={{ user, loading, devLogin, logout }}>
       {children}
     </UserContext.Provider>
   );
