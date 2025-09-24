@@ -3,224 +3,375 @@
 import React, { useState } from "react";
 
 export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete }) {
-  // ✅ Selected wheel state
-  const [selectedWheel, setSelectedWheel] = useState("NSF");
+  const initialTyre = {
+    manufacturer: "",
+    runFlat: false,
+    size: "",
+    load: "",
+    speed: "",
+    tread: { outer: "", middle: "", inner: "" },
+    concerns: [],
+  };
 
-  // ✅ Tyre data state
-  const [tyreData, setTyreData] = useState({
-    NSF: { manufacturer: "", runFlat: false, size: "", load: "", speed: "", tread: { outer: "", middle: "", inner: "" }, concerns: [] },
-    OSF: { manufacturer: "", runFlat: false, size: "", load: "", speed: "", tread: { outer: "", middle: "", inner: "" }, concerns: [] },
-    NSR: { manufacturer: "", runFlat: false, size: "", load: "", speed: "", tread: { outer: "", middle: "", inner: "" }, concerns: [] },
-    OSR: { manufacturer: "", runFlat: false, size: "", load: "", speed: "", tread: { outer: "", middle: "", inner: "" }, concerns: [] },
-    Spare: { type: "", year: "", condition: "", concerns: [] },
+  const [tyres, setTyres] = useState({
+    NSF: { ...initialTyre },
+    OSF: { ...initialTyre },
+    NSR: { ...initialTyre },
+    OSR: { ...initialTyre },
+    Spare: {
+      type: "not_checked",
+      year: "",
+      condition: "",
+      details: { ...initialTyre },
+      concerns: [],
+    },
   });
 
-  if (!isOpen) return null; // ✅ Don't render if modal is closed
+  const [activeWheel, setActiveWheel] = useState("NSF");
 
-  // ✅ Update field value for a wheel
-  const handleFieldChange = (wheel, field, value) => {
-    setTyreData((prev) => ({
-      ...prev,
-      [wheel]: { ...prev[wheel], [field]: value },
-    }));
+  const updateTyre = (field, value) => {
+    if (activeWheel === "Spare") {
+      setTyres((prev) => ({
+        ...prev,
+        Spare: {
+          ...prev.Spare,
+          [field]: value,
+        },
+      }));
+    } else {
+      setTyres((prev) => ({
+        ...prev,
+        [activeWheel]: { ...prev[activeWheel], [field]: value },
+      }));
+    }
   };
 
-  // ✅ Copy selected wheel data to all other wheels
   const copyToAll = () => {
-    const base = tyreData[selectedWheel];
-    setTyreData((prev) => ({
-      ...prev,
-      NSF: { ...base, tread: { ...prev.NSF.tread }, concerns: [...prev.NSF.concerns] },
-      OSF: { ...base, tread: { ...prev.OSF.tread }, concerns: [...prev.OSF.concerns] },
-      NSR: { ...base, tread: { ...prev.NSR.tread }, concerns: [...prev.NSR.concerns] },
-      OSR: { ...base, tread: { ...prev.OSR.tread }, concerns: [...prev.OSR.concerns] },
-    }));
+    const current = tyres[activeWheel];
+    setTyres((prev) => {
+      const updated = { ...prev };
+      ["NSF", "OSF", "NSR", "OSR"].forEach((wheel) => {
+        updated[wheel] = {
+          ...updated[wheel],
+          manufacturer: current.manufacturer,
+          runFlat: current.runFlat,
+          size: current.size,
+          load: current.load,
+          speed: current.speed,
+        };
+      });
+      if (updated.Spare.type === "spare_tyre") {
+        updated.Spare.details = {
+          ...updated.Spare.details,
+          manufacturer: current.manufacturer,
+          runFlat: current.runFlat,
+          size: current.size,
+          load: current.load,
+          speed: current.speed,
+        };
+      }
+      return updated;
+    });
   };
 
-  // ✅ Complete and send data to parent
-  const handleComplete = () => {
-    console.log("Saved tyre data:", tyreData);
-    onComplete(tyreData);
-    onClose();
-  };
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-5xl p-6 flex gap-6">
-        {/* Left: Wheel selection */}
-        <div className="w-2/5 flex flex-col items-center border-r pr-4">
-          <h3 className="font-bold mb-4">Select Wheel</h3>
-          <div className="grid grid-cols-2 gap-4">
-            {["NSF", "OSF", "NSR", "OSR"].map((wheel) => (
-              <button
-                key={wheel}
-                onClick={() => setSelectedWheel(wheel)}
-                className={`p-3 border rounded ${selectedWheel === wheel ? "bg-red-600 text-white" : "bg-gray-100"}`}
-              >
-                {wheel}
-              </button>
-            ))}
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        background: "rgba(0,0,0,0.6)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 2000,
+      }}
+    >
+      <div
+        style={{
+          background: "white",
+          borderRadius: "10px",
+          width: "95%",
+          height: "95%",
+          display: "flex",
+          overflow: "hidden",
+        }}
+      >
+        {/* LEFT SIDE (Car Layout) */}
+        <div
+          style={{
+            width: "35%",
+            background: "#f9f9f9",
+            padding: "20px",
+            borderRight: "1px solid #ddd",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <h3 style={{ marginBottom: "20px", color: "#FF4040" }}>Car Wheel Layout</h3>
+
+          {/* Car diagram layout */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateRows: "1fr 1fr",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "40px",
+              marginBottom: "40px",
+            }}
+          >
             <button
-              onClick={() => setSelectedWheel("Spare")}
-              className={`col-span-2 p-3 border rounded ${selectedWheel === "Spare" ? "bg-red-600 text-white" : "bg-gray-100"}`}
+              onClick={() => setActiveWheel("NSF")}
+              style={{
+                width: "100px",
+                height: "100px",
+                borderRadius: "50%",
+                background: activeWheel === "NSF" ? "#FF4040" : "#eee",
+                color: activeWheel === "NSF" ? "white" : "black",
+                fontWeight: "bold",
+                border: "2px solid #ccc",
+                cursor: "pointer",
+              }}
             >
-              Spare
+              NSF
+            </button>
+            <button
+              onClick={() => setActiveWheel("OSF")}
+              style={{
+                width: "100px",
+                height: "100px",
+                borderRadius: "50%",
+                background: activeWheel === "OSF" ? "#FF4040" : "#eee",
+                color: activeWheel === "OSF" ? "white" : "black",
+                fontWeight: "bold",
+                border: "2px solid #ccc",
+                cursor: "pointer",
+              }}
+            >
+              OSF
+            </button>
+            <button
+              onClick={() => setActiveWheel("NSR")}
+              style={{
+                width: "100px",
+                height: "100px",
+                borderRadius: "50%",
+                background: activeWheel === "NSR" ? "#FF4040" : "#eee",
+                color: activeWheel === "NSR" ? "white" : "black",
+                fontWeight: "bold",
+                border: "2px solid #ccc",
+                cursor: "pointer",
+              }}
+            >
+              NSR
+            </button>
+            <button
+              onClick={() => setActiveWheel("OSR")}
+              style={{
+                width: "100px",
+                height: "100px",
+                borderRadius: "50%",
+                background: activeWheel === "OSR" ? "#FF4040" : "#eee",
+                color: activeWheel === "OSR" ? "white" : "black",
+                fontWeight: "bold",
+                border: "2px solid #ccc",
+                cursor: "pointer",
+              }}
+            >
+              OSR
             </button>
           </div>
+
+          <button
+            onClick={() => setActiveWheel("Spare")}
+            style={{
+              padding: "14px",
+              background: activeWheel === "Spare" ? "#FF4040" : "#eee",
+              color: activeWheel === "Spare" ? "white" : "black",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "bold",
+              width: "70%",
+            }}
+          >
+            Spare / Kit
+          </button>
         </div>
 
-        {/* Right: Wheel details */}
-        <div className="w-3/5">
-          <h3 className="font-bold mb-4">{selectedWheel} Details</h3>
+        {/* RIGHT SIDE (Details) */}
+        <div style={{ flex: 1, padding: "20px", overflowY: "auto" }}>
+          <h2 style={{ color: "#FF4040", marginBottom: "20px" }}>
+            {activeWheel === "Spare" ? "Spare Tyre / Kit Details" : `${activeWheel} Tyre Details`}
+          </h2>
 
-          {selectedWheel !== "Spare" ? (
+          {activeWheel !== "Spare" ? (
             <>
-              {/* Wheel info inputs */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              {/* Top line: Manufacturer + Size */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <input
-                  type="text"
                   placeholder="Manufacturer"
-                  value={tyreData[selectedWheel].manufacturer}
-                  onChange={(e) => handleFieldChange(selectedWheel, "manufacturer", e.target.value)}
-                  className="border rounded px-2 py-1"
+                  value={tyres[activeWheel].manufacturer}
+                  onChange={(e) => updateTyre("manufacturer", e.target.value)}
                 />
-                <button
-                  onClick={() => handleFieldChange(selectedWheel, "runFlat", !tyreData[selectedWheel].runFlat)}
-                  className={`px-3 py-1 rounded ${tyreData[selectedWheel].runFlat ? "bg-green-500 text-white" : "bg-gray-200"}`}
-                >
-                  Run Flat: {tyreData[selectedWheel].runFlat ? "Yes" : "No"}
-                </button>
                 <input
-                  type="text"
                   placeholder="Size"
-                  value={tyreData[selectedWheel].size}
-                  onChange={(e) => handleFieldChange(selectedWheel, "size", e.target.value)}
-                  className="border rounded px-2 py-1"
+                  value={tyres[activeWheel].size}
+                  onChange={(e) => updateTyre("size", e.target.value)}
                 />
+              </div>
+
+              {/* Second line: Run flat + Copy to all */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "12px" }}>
+                <button
+                  onClick={() => updateTyre("runFlat", !tyres[activeWheel].runFlat)}
+                  style={{
+                    padding: "10px",
+                    background: tyres[activeWheel].runFlat ? "#FF4040" : "#ddd",
+                    color: tyres[activeWheel].runFlat ? "white" : "black",
+                    border: "none",
+                    borderRadius: "6px",
+                  }}
+                >
+                  Run Flat: {tyres[activeWheel].runFlat ? "Yes" : "No"}
+                </button>
+                <button
+                  onClick={copyToAll}
+                  style={{
+                    padding: "10px 20px",
+                    background: "#333",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Copy to All
+                </button>
+              </div>
+
+              {/* Third line: Load + Speed */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "12px" }}>
                 <input
-                  type="text"
                   placeholder="Load"
-                  value={tyreData[selectedWheel].load}
-                  onChange={(e) => handleFieldChange(selectedWheel, "load", e.target.value)}
-                  className="border rounded px-2 py-1"
+                  value={tyres[activeWheel].load}
+                  onChange={(e) => updateTyre("load", e.target.value)}
                 />
                 <input
-                  type="text"
                   placeholder="Speed"
-                  value={tyreData[selectedWheel].speed}
-                  onChange={(e) => handleFieldChange(selectedWheel, "speed", e.target.value)}
-                  className="border rounded px-2 py-1"
+                  value={tyres[activeWheel].speed}
+                  onChange={(e) => updateTyre("speed", e.target.value)}
                 />
               </div>
 
               {/* Tread depths */}
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                {["outer", "middle", "inner"].map((pos) => (
-                  <input
-                    key={pos}
-                    type="number"
-                    step="0.1"
-                    placeholder={`${pos} tread`}
-                    value={tyreData[selectedWheel].tread[pos]}
-                    onChange={(e) =>
-                      setTyreData((prev) => ({
-                        ...prev,
-                        [selectedWheel]: {
-                          ...prev[selectedWheel],
-                          tread: { ...prev[selectedWheel].tread, [pos]: e.target.value },
-                        },
-                      }))
-                    }
-                    className="border rounded px-2 py-1"
-                  />
-                ))}
+              <h4 style={{ marginTop: "20px" }}>Tread Depth (mm)</h4>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <input
+                  placeholder="Outer"
+                  value={tyres[activeWheel].tread.outer}
+                  onChange={(e) =>
+                    updateTyre("tread", {
+                      ...tyres[activeWheel].tread,
+                      outer: e.target.value,
+                    })
+                  }
+                />
+                <input
+                  placeholder="Middle"
+                  value={tyres[activeWheel].tread.middle}
+                  onChange={(e) =>
+                    updateTyre("tread", {
+                      ...tyres[activeWheel].tread,
+                      middle: e.target.value,
+                    })
+                  }
+                />
+                <input
+                  placeholder="Inner"
+                  value={tyres[activeWheel].tread.inner}
+                  onChange={(e) =>
+                    updateTyre("tread", {
+                      ...tyres[activeWheel].tread,
+                      inner: e.target.value,
+                    })
+                  }
+                />
               </div>
 
-              {/* Concerns log (direct, no popup) */}
-              <div className="mb-4">
-                <h4 className="font-semibold mb-2">Concerns:</h4>
-                <ul className="mb-2 list-disc list-inside">
-                  {tyreData[selectedWheel].concerns.map((c, i) => (
-                    <li key={i}>{c}</li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() =>
-                    setTyreData((prev) => ({
-                      ...prev,
-                      [selectedWheel]: {
-                        ...prev[selectedWheel],
-                        concerns: [...prev[selectedWheel].concerns, `Concern ${prev[selectedWheel].concerns.length + 1}`],
-                      },
-                    }))
-                  }
-                  className="px-3 py-1 bg-yellow-500 text-white rounded"
-                >
-                  + Add Concern
-                </button>
-              </div>
+              {/* Concerns */}
+              <h4 style={{ marginTop: "20px" }}>Concerns</h4>
+              <ul>
+                {tyres[activeWheel].concerns.map((c, i) => (
+                  <li key={i}>{c}</li>
+                ))}
+              </ul>
+              <button
+                onClick={() =>
+                  updateTyre("concerns", [...tyres[activeWheel].concerns, "New concern"])
+                }
+                style={{
+                  marginTop: "10px",
+                  padding: "8px 12px",
+                  background: "#FF4040",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                }}
+              >
+                + Add Concern
+              </button>
             </>
           ) : (
             <>
-              {/* Spare wheel inputs */}
+              {/* Spare options remain same */}
               <select
-                value={tyreData.Spare.type}
-                onChange={(e) => handleFieldChange("Spare", "type", e.target.value)}
-                className="border rounded px-2 py-1 mb-4 w-full"
+                value={tyres.Spare.type}
+                onChange={(e) => updateTyre("type", e.target.value)}
               >
-                <option value="">Select Spare Type</option>
-                <option value="tyre">Spare Tyre</option>
-                <option value="repair-kit">Repair Kit</option>
-                <option value="space-saver">Space Saver</option>
-                <option value="none">Not Checked</option>
+                <option value="spare_tyre">Spare Tyre</option>
+                <option value="repair_kit">Repair Kit</option>
+                <option value="space_saver">Space Saver</option>
+                <option value="not_checked">Not Checked</option>
               </select>
-
-              {tyreData.Spare.type === "repair-kit" && (
-                <select
-                  value={tyreData.Spare.year}
-                  onChange={(e) => handleFieldChange("Spare", "year", e.target.value)}
-                  className="border rounded px-2 py-1 mb-4 w-full"
-                >
-                  <option value="">Select Year</option>
-                  {Array.from({ length: 20 }, (_, i) => 2025 - i).map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              )}
-
-              {tyreData.Spare.type === "space-saver" && (
-                <div className="flex gap-2 mb-4">
-                  <button
-                    onClick={() => handleFieldChange("Spare", "condition", "Good")}
-                    className={`px-3 py-1 rounded ${tyreData.Spare.condition === "Good" ? "bg-green-500 text-white" : "bg-gray-200"}`}
-                  >
-                    Good
-                  </button>
-                  <button
-                    onClick={() => handleFieldChange("Spare", "condition", "Bad")}
-                    className={`px-3 py-1 rounded ${tyreData.Spare.condition === "Bad" ? "bg-red-500 text-white" : "bg-gray-200"}`}
-                  >
-                    Bad
-                  </button>
-                </div>
-              )}
             </>
           )}
 
-          {/* Copy to all button */}
-          {selectedWheel !== "Spare" && (
-            <button onClick={copyToAll} className="px-4 py-2 bg-blue-500 text-white rounded mb-4">
-              Copy to All
+          {/* Bottom buttons */}
+          <div style={{ marginTop: "30px", textAlign: "right" }}>
+            <button
+              onClick={onClose}
+              style={{
+                padding: "10px 20px",
+                border: "none",
+                background: "#aaa",
+                color: "white",
+                borderRadius: "6px",
+                marginRight: "10px",
+              }}
+            >
+              Cancel
             </button>
-          )}
-
-          {/* Complete button */}
-          <button
-            onClick={handleComplete}
-            className="px-4 py-2 bg-red-600 text-white rounded w-full"
-          >
-            Complete Wheels & Tyres
-          </button>
+            <button
+              onClick={() => onComplete(tyres)}
+              style={{
+                padding: "10px 20px",
+                border: "none",
+                background: "#FF4040",
+                color: "white",
+                borderRadius: "6px",
+                fontWeight: "bold",
+              }}
+            >
+              Complete
+            </button>
+          </div>
         </div>
       </div>
     </div>
