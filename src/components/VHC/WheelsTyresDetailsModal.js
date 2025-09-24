@@ -10,6 +10,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
     load: "",
     speed: "",
     tread: { outer: "", middle: "", inner: "" },
+    treadLocked: { outer: false, middle: false, inner: false }, // ✅ track locks separately
     concerns: [],
   };
 
@@ -29,6 +30,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
 
   const [activeWheel, setActiveWheel] = useState("NSF");
 
+  // ✅ Update non-tread fields
   const updateTyre = (field, value) => {
     if (activeWheel === "Spare") {
       setTyres((prev) => ({
@@ -46,6 +48,42 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
     }
   };
 
+  // ✅ Update tread with special outer → middle+inner copy
+  const updateTread = (section, value) => {
+    setTyres((prev) => {
+      const updated = { ...prev };
+      const wheel = updated[activeWheel];
+
+      if (!wheel) return prev;
+
+      // Outer → also update middle and inner, unless they've been edited before
+      if (section === "outer") {
+        const newTread = {
+          ...wheel.tread,
+          outer: value,
+          middle: wheel.treadLocked.middle ? wheel.tread.middle : value,
+          inner: wheel.treadLocked.inner ? wheel.tread.inner : value,
+        };
+
+        updated[activeWheel] = {
+          ...wheel,
+          tread: newTread,
+          treadLocked: { ...wheel.treadLocked, outer: true },
+        };
+      } else {
+        // Middle/Inner updates only themselves
+        updated[activeWheel] = {
+          ...wheel,
+          tread: { ...wheel.tread, [section]: value },
+          treadLocked: { ...wheel.treadLocked, [section]: true },
+        };
+      }
+
+      return updated;
+    });
+  };
+
+  // ✅ Copy manufacturer/runFlat/size/load/speed to all
   const copyToAll = () => {
     const current = tyres[activeWheel];
     setTyres((prev) => {
@@ -115,7 +153,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
         >
           <h3 style={{ marginBottom: "20px", color: "#FF4040" }}>Car Wheel Layout</h3>
 
-          {/* Car diagram layout */}
           <div
             style={{
               display: "grid",
@@ -125,66 +162,24 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
               marginBottom: "40px",
             }}
           >
-            <button
-              onClick={() => setActiveWheel("NSF")}
-              style={{
-                width: "100px",
-                height: "100px",
-                borderRadius: "50%",
-                background: activeWheel === "NSF" ? "#FF4040" : "#eee",
-                color: activeWheel === "NSF" ? "white" : "black",
-                fontWeight: "bold",
-                border: "2px solid #ccc",
-                cursor: "pointer",
-              }}
-            >
-              NSF
-            </button>
-            <button
-              onClick={() => setActiveWheel("OSF")}
-              style={{
-                width: "100px",
-                height: "100px",
-                borderRadius: "50%",
-                background: activeWheel === "OSF" ? "#FF4040" : "#eee",
-                color: activeWheel === "OSF" ? "white" : "black",
-                fontWeight: "bold",
-                border: "2px solid #ccc",
-                cursor: "pointer",
-              }}
-            >
-              OSF
-            </button>
-            <button
-              onClick={() => setActiveWheel("NSR")}
-              style={{
-                width: "100px",
-                height: "100px",
-                borderRadius: "50%",
-                background: activeWheel === "NSR" ? "#FF4040" : "#eee",
-                color: activeWheel === "NSR" ? "white" : "black",
-                fontWeight: "bold",
-                border: "2px solid #ccc",
-                cursor: "pointer",
-              }}
-            >
-              NSR
-            </button>
-            <button
-              onClick={() => setActiveWheel("OSR")}
-              style={{
-                width: "100px",
-                height: "100px",
-                borderRadius: "50%",
-                background: activeWheel === "OSR" ? "#FF4040" : "#eee",
-                color: activeWheel === "OSR" ? "white" : "black",
-                fontWeight: "bold",
-                border: "2px solid #ccc",
-                cursor: "pointer",
-              }}
-            >
-              OSR
-            </button>
+            {["NSF", "OSF", "NSR", "OSR"].map((wheel) => (
+              <button
+                key={wheel}
+                onClick={() => setActiveWheel(wheel)}
+                style={{
+                  width: "100px",
+                  height: "100px",
+                  borderRadius: "50%",
+                  background: activeWheel === wheel ? "#FF4040" : "#eee",
+                  color: activeWheel === wheel ? "white" : "black",
+                  fontWeight: "bold",
+                  border: "2px solid #ccc",
+                  cursor: "pointer",
+                }}
+              >
+                {wheel}
+              </button>
+            ))}
           </div>
 
           <button
@@ -212,7 +207,38 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
 
           {activeWheel !== "Spare" ? (
             <>
-              {/* Top line: Manufacturer + Size */}
+              {/* Copy + Run flat */}
+              <div style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
+                <button
+                  onClick={copyToAll}
+                  style={{
+                    padding: "10px 20px",
+                    background: "#333",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontWeight: "bold",
+                    flex: 1,
+                  }}
+                >
+                  Copy to All
+                </button>
+                <button
+                  onClick={() => updateTyre("runFlat", !tyres[activeWheel].runFlat)}
+                  style={{
+                    padding: "10px",
+                    background: tyres[activeWheel].runFlat ? "#FF4040" : "#ddd",
+                    color: tyres[activeWheel].runFlat ? "white" : "black",
+                    border: "none",
+                    borderRadius: "6px",
+                    flex: 1,
+                  }}
+                >
+                  Run Flat: {tyres[activeWheel].runFlat ? "Yes" : "No"}
+                </button>
+              </div>
+
+              {/* Manufacturer, Size, Load, Speed */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <input
                   placeholder="Manufacturer"
@@ -224,39 +250,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
                   value={tyres[activeWheel].size}
                   onChange={(e) => updateTyre("size", e.target.value)}
                 />
-              </div>
-
-              {/* Second line: Run flat + Copy to all */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "12px" }}>
-                <button
-                  onClick={() => updateTyre("runFlat", !tyres[activeWheel].runFlat)}
-                  style={{
-                    padding: "10px",
-                    background: tyres[activeWheel].runFlat ? "#FF4040" : "#ddd",
-                    color: tyres[activeWheel].runFlat ? "white" : "black",
-                    border: "none",
-                    borderRadius: "6px",
-                  }}
-                >
-                  Run Flat: {tyres[activeWheel].runFlat ? "Yes" : "No"}
-                </button>
-                <button
-                  onClick={copyToAll}
-                  style={{
-                    padding: "10px 20px",
-                    background: "#333",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Copy to All
-                </button>
-              </div>
-
-              {/* Third line: Load + Speed */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "12px" }}>
                 <input
                   placeholder="Load"
                   value={tyres[activeWheel].load}
@@ -271,66 +264,33 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
 
               {/* Tread depths */}
               <h4 style={{ marginTop: "20px" }}>Tread Depth (mm)</h4>
-              <div style={{ display: "flex", gap: "10px" }}>
-                <input
-                  placeholder="Outer"
-                  value={tyres[activeWheel].tread.outer}
-                  onChange={(e) =>
-                    updateTyre("tread", {
-                      ...tyres[activeWheel].tread,
-                      outer: e.target.value,
-                    })
-                  }
-                />
-                <input
-                  placeholder="Middle"
-                  value={tyres[activeWheel].tread.middle}
-                  onChange={(e) =>
-                    updateTyre("tread", {
-                      ...tyres[activeWheel].tread,
-                      middle: e.target.value,
-                    })
-                  }
-                />
-                <input
-                  placeholder="Inner"
-                  value={tyres[activeWheel].tread.inner}
-                  onChange={(e) =>
-                    updateTyre("tread", {
-                      ...tyres[activeWheel].tread,
-                      inner: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              {/* Concerns */}
-              <h4 style={{ marginTop: "20px" }}>Concerns</h4>
-              <ul>
-                {tyres[activeWheel].concerns.map((c, i) => (
-                  <li key={i}>{c}</li>
+              <div style={{ display: "flex", gap: "20px" }}>
+                {["outer", "middle", "inner"].map((section) => (
+                  <div key={section} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <span style={{ fontSize: "0.8rem", marginBottom: "4px" }}>{section.toUpperCase()}</span>
+                    <select
+                      value={tyres[activeWheel].tread[section]}
+                      onChange={(e) => updateTread(section, e.target.value)}
+                      style={{
+                        width: "60px",
+                        padding: "4px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <option value="">-</option>
+                      {Array.from({ length: 15 }, (_, i) => (
+                        <option key={i} value={i}>
+                          {i}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 ))}
-              </ul>
-              <button
-                onClick={() =>
-                  updateTyre("concerns", [...tyres[activeWheel].concerns, "New concern"])
-                }
-                style={{
-                  marginTop: "10px",
-                  padding: "8px 12px",
-                  background: "#FF4040",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                }}
-              >
-                + Add Concern
-              </button>
+              </div>
             </>
           ) : (
             <>
-              {/* Spare options remain same */}
+              {/* Spare tyre / kit options */}
               <select
                 value={tyres.Spare.type}
                 onChange={(e) => updateTyre("type", e.target.value)}
