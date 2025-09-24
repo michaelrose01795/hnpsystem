@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
+import BrakesHubsDetailsModal from "@/components/VHC/BrakesHubsDetailsModal"; // ✅ Added import
 
 // ✅ Reusable section card component
 const SectionCard = ({ title, subtitle, onClick }) => (
@@ -23,7 +24,7 @@ export default function VHCPAGE() {
   // ✅ VHC data for all sections
   const [vhcData, setVhcData] = useState({
     wheelsTyres: null, // detailed modal data
-    brakesHubs: [],
+    brakesHubs: [], // ✅ now used by new modal
     serviceBook: [],
     underBonnet: [],
     externalInspection: [],
@@ -45,7 +46,7 @@ export default function VHCPAGE() {
   // ✅ Sections config
   const sections = [
     { key: "wheelsTyres", label: "Wheels & Tyres" },
-    { key: "brakesHubs", label: "Brakes & Hubs" },
+    { key: "brakesHubs", label: "Brakes & Hubs" }, // ✅ new modal will be used
     { key: "serviceBook", label: "Service Book / Indicator" },
     { key: "underBonnet", label: "Under Bonnet" },
     { key: "externalInspection", label: "External / Drive-in Inspection" },
@@ -100,86 +101,103 @@ export default function VHCPAGE() {
         )}
 
         {/* ========================= */}
+        {/* ✅ Brakes & Hubs Detailed Modal */}
+        {/* ========================= */}
+        {activeSection === "brakesHubs" && (
+          <BrakesHubsDetailsModal
+            isOpen={true}
+            initialData={vhcData.brakesHubs}
+            onClose={() => setActiveSection(null)}
+            onComplete={(data) => {
+              setVhcData((prev) => ({ ...prev, brakesHubs: data }));
+              setActiveSection(null);
+            }}
+          />
+        )}
+
+        {/* ========================= */}
         {/* ✅ Placeholder Modals for All Other Sections */}
         {/* ========================= */}
-        {activeSection && activeSection !== "wheelsTyres" && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100vw",
-              height: "100vh",
-              background: "rgba(0,0,0,0.5)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 1000,
-            }}
-          >
+        {activeSection &&
+          activeSection !== "wheelsTyres" &&
+          activeSection !== "brakesHubs" && (
             <div
               style={{
-                background: "white",
-                padding: "24px",
-                borderRadius: "10px",
-                width: "600px",
-                maxHeight: "80vh",
-                overflowY: "auto",
+                position: "fixed",
+                top: 0,
+                left: 0,
+                width: "100vw",
+                height: "100vh",
+                background: "rgba(0,0,0,0.5)",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                zIndex: 1000,
               }}
             >
-              <h2 style={{ color: "#FF4040", marginBottom: "16px" }}>
-                {sections.find((s) => s.key === activeSection)?.label}
-              </h2>
-
-              {/* Placeholder content */}
-              <p>No issues logged yet (placeholder)</p>
-
-              {/* Add new issue */}
-              <button
-                onClick={() =>
-                  setVhcData((prev) => ({
-                    ...prev,
-                    [activeSection]: [
-                      ...prev[activeSection],
-                      { title: "New Issue", details: "" },
-                    ],
-                  }))
-                }
+              <div
                 style={{
-                  padding: "8px 12px",
-                  backgroundColor: "#FF4040",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontWeight: "bold",
-                  fontSize: "0.9rem",
-                  marginTop: "10px",
+                  background: "white",
+                  padding: "24px",
+                  borderRadius: "10px",
+                  width: "600px",
+                  maxHeight: "80vh",
+                  overflowY: "auto",
                 }}
               >
-                + Add Issue
-              </button>
+                <h2 style={{ color: "#FF4040", marginBottom: "16px" }}>
+                  {sections.find((s) => s.key === activeSection)?.label}
+                </h2>
 
-              {/* Close modal */}
-              <div style={{ marginTop: "20px", textAlign: "right" }}>
+                {/* Placeholder content */}
+                <p>No issues logged yet (placeholder)</p>
+
+                {/* Add new issue */}
                 <button
-                  onClick={() => setActiveSection(null)}
+                  onClick={() =>
+                    setVhcData((prev) => ({
+                      ...prev,
+                      [activeSection]: [
+                        ...prev[activeSection],
+                        { title: "New Issue", details: "" },
+                      ],
+                    }))
+                  }
                   style={{
-                    padding: "8px 16px",
-                    border: "none",
-                    background: "#FF4040",
+                    padding: "8px 12px",
+                    backgroundColor: "#FF4040",
                     color: "white",
-                    borderRadius: "6px",
-                    fontWeight: "bold",
+                    border: "none",
+                    borderRadius: "4px",
                     cursor: "pointer",
+                    fontWeight: "bold",
+                    fontSize: "0.9rem",
+                    marginTop: "10px",
                   }}
                 >
-                  Close
+                  + Add Issue
                 </button>
+
+                {/* Close modal */}
+                <div style={{ marginTop: "20px", textAlign: "right" }}>
+                  <button
+                    onClick={() => setActiveSection(null)}
+                    style={{
+                      padding: "8px 16px",
+                      border: "none",
+                      background: "#FF4040",
+                      color: "white",
+                      borderRadius: "6px",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
     </Layout>
   );
