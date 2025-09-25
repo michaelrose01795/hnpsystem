@@ -1,3 +1,4 @@
+// src/components/VHC/BrakesHubsDetailsModal.js
 import React, { useState } from "react";
 
 // ✅ Autocomplete small component

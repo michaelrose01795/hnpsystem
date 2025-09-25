@@ -221,8 +221,8 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
         style={{
           background: "white",
           borderRadius: "10px",
-          width: "95%",
-          height: "95%",
+          width: "1000px",
+          height: "600px",
           display: "flex",
           overflow: "hidden",
         }}
@@ -230,7 +230,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
         {/* LEFT SIDE */}
         <div
           style={{
-            width: "35%",
+            width: "40%",
             background: "#f9f9f9",
             padding: "20px",
             borderRight: "1px solid #ddd",
@@ -558,7 +558,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
             left: 0,
             width: "100vw",
             height: "100vh",
-            background: "rgba(0,0,0,0.6)",
+            background: "rgba(0,0,0,0.5)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",

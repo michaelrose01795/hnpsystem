@@ -8,18 +8,22 @@ export default function JobCardPage() {
   const { jobNumber } = router.query;
 
   const handleStartVHC = () => {
+    if (!jobNumber) return;
     router.push(`/job-cards/${jobNumber}/vhc`);
   };
 
   const handleWriteUp = () => {
+    if (!jobNumber) return;
     router.push(`/job-cards/${jobNumber}/write-up`);
   };
 
   const handleCheckBox = () => {
+    if (!jobNumber) return;
     router.push(`/job-cards/${jobNumber}/check-box`);
   };
 
   const handleFullCarDetails = () => {
+    if (!jobNumber) return;
     router.push(`/dealership/car-details/${jobNumber}`);
   };
 
@@ -29,7 +33,7 @@ export default function JobCardPage() {
     "MOT preparation"
   ]);
 
-  // fixed heights
+  // Fixed heights
   const sectionHeight = "250px"; // vehicle & customer
   const jobDetailsHeight = "350px"; // 3x taller
   const bottomRowHeight = "150px"; // last row
@@ -56,7 +60,7 @@ export default function JobCardPage() {
               fontSize: "1rem",
             }}
           >
-            🚗 Start VHC
+            Start VHC
           </button>
         </div>
 
