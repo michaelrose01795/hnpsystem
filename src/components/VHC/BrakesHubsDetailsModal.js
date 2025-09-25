@@ -1,5 +1,3 @@
-// file location: src/components/VHC/BrakesHubsDetailsModal.js
-
 import React, { useState } from "react";
 
 // ✅ Autocomplete small component
@@ -10,12 +8,17 @@ function AutoCompleteInput({ value, onChange, options }) {
     setFiltered(options.filter((opt) => opt.toString().includes(val)));
   };
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{ position: "relative", width: "100%" }}>
       <input
         type="text"
         value={value}
         onChange={(e) => handleChange(e.target.value)}
-        style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
+        style={{
+          padding: "6px",
+          borderRadius: "4px",
+          border: "1px solid #ccc",
+          width: "100%",
+        }}
       />
       {filtered.length > 0 && (
         <div
@@ -51,35 +54,73 @@ function AutoCompleteInput({ value, onChange, options }) {
 
 export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, initialData }) {
   const [data, setData] = useState({
-    frontPads: { measurement: "", concerns: [] },
-    rearPads: { measurement: "", concerns: [] },
-    frontDiscs: { tab: "measurements", measurements: { thickness: "", status: "Red" }, visual: { status: "Red" }, concerns: [] },
-    rearDiscs: { tab: "measurements", measurements: { thickness: "", status: "Red" }, visual: { status: "Red" }, concerns: [] },
-    rearDrums: { status: "" }, // ✅ Added drum brake status tracking
+    frontPads: { measurement: "", status: "Green", concerns: [] },
+    rearPads: { measurement: "", status: "Green", concerns: [] },
+    frontDiscs: { tab: "measurements", measurements: { thickness: "", status: "Green" }, visual: { status: "Green" }, concerns: [] },
+    rearDiscs: { tab: "measurements", measurements: { thickness: "", status: "Green" }, visual: { status: "Green" }, concerns: [] },
+    rearDrums: { status: "" },
     ...initialData,
   });
 
-  const [activeSide, setActiveSide] = useState("front"); // "front" | "rear"
-  const [showDrum, setShowDrum] = useState(false); // toggle drum brakes section
-  const [concernPopup, setConcernPopup] = useState({ open: false, category: "", tempConcern: { issue: "", status: "Red" } });
+  const [activeSide, setActiveSide] = useState("front");
+  const [showDrum, setShowDrum] = useState(false);
+  const [concernPopup, setConcernPopup] = useState({
+    open: false,
+    category: "",
+    tempConcern: { issue: "", status: "Red" },
+  });
 
-  const padOptions = Array.from({ length: 15 }, (_, i) => i); // 0-14 mm
-  const discIssues = ["Pitting", "Lipped", "Corroded", "Warped"];
+  const padOptions = Array.from({ length: 15 }, (_, i) => i);
 
   const updatePadMeasurement = (category, value) => {
-    setData((prev) => ({ ...prev, [category]: { ...prev[category], measurement: value } }));
+    setData((prev) => ({
+      ...prev,
+      [category]: { ...prev[category], measurement: value },
+    }));
+
+    // ✅ Automatic status update for pad measurement
+    const numbers = value.split(",").map((v) => parseFloat(v.trim())).filter((v) => !isNaN(v));
+    const min = Math.min(...numbers);
+    if (min >= 5) {
+      updatePadStatus(category, "Green");
+    } else if (min >= 3) {
+      updatePadStatus(category, "Amber");
+    } else {
+      updatePadStatus(category, "Red");
+    }
+  };
+
+  const updatePadStatus = (category, value) => {
+    setData((prev) => ({
+      ...prev,
+      [category]: { ...prev[category], status: value },
+    }));
   };
 
   const updateDisc = (category, field, value) => {
-    setData((prev) => ({ ...prev, [category]: { ...prev[category], [field]: { ...prev[category][field], ...value } } }));
+    setData((prev) => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [field]: { ...prev[category][field], ...value },
+      },
+    }));
   };
 
   const addConcern = (category, concern) => {
-    setData((prev) => ({ ...prev, [category]: { ...prev[category], concerns: [...prev[category].concerns, concern] } }));
+    setData((prev) => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        concerns: [...prev[category].concerns, concern],
+      },
+    }));
   };
 
   const isCompleteEnabled = () => {
-    const padsDone = ["frontPads", "rearPads"].every((p) => data[p].measurement !== "");
+    const padsDone = ["frontPads", "rearPads"].every(
+      (p) => data[p].measurement !== "" && data[p].status !== ""
+    );
     if (showDrum) {
       return padsDone && data.rearDrums.status !== "";
     } else {
@@ -95,28 +136,29 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
   if (!isOpen) return null;
 
-  // ✅ Reusable Pads Section
+  // ✅ Pads Section
   const PadsSection = ({ category }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
-      <label>Measurement (mm):</label>
+    <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, paddingRight: "12px" }}>
+      <label style={{ marginTop: "66px" }}>Pad Measurement (mm, comma-separated):</label>
       <AutoCompleteInput
         value={data[category].measurement}
         onChange={(val) => updatePadMeasurement(category, val)}
         options={padOptions}
       />
+      <label>Status:</label>
+      <select
+        value={data[category].status}
+        onChange={(e) => updatePadStatus(category, e.target.value)}
+        style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
+      >
+        <option>Red</option>
+        <option>Amber</option>
+        <option>Green</option>
+      </select>
+
       <button
-        onClick={() =>
-          setConcernPopup({ open: true, category, tempConcern: { issue: "", status: "Red" } })
-        }
-        style={{
-          padding: "6px 12px",
-          borderRadius: "4px",
-          border: "none",
-          background: "#FF4040",
-          color: "white",
-          cursor: "pointer",
-          marginTop: "8px",
-        }}
+        onClick={() => setConcernPopup({ open: true, category, tempConcern: { issue: "", status: "Red" } })}
+        style={{ padding: "6px 12px", borderRadius: "4px", border: "none", background: "#FF4040", color: "white", cursor: "pointer", marginTop: "8px" }}
       >
         + Add Concern
       </button>
@@ -129,7 +171,10 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             onChange={(e) => {
               const updated = [...data[category].concerns];
               updated[idx].status = e.target.value;
-              setData((prev) => ({ ...prev, [category]: { ...prev[category], concerns: updated } }));
+              setData((prev) => ({
+                ...prev,
+                [category]: { ...prev[category], concerns: updated },
+              }));
             }}
             style={{ padding: "4px", borderRadius: "4px", border: "1px solid #ccc" }}
           >
@@ -141,35 +186,51 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     </div>
   );
 
-  // ✅ Reusable Discs Section
-  const DiscsSection = ({ category }) => (
+  // ✅ Discs Section (with Drum button moved above Pad Measurement)
+  const DiscsSection = ({ category, showDrumButton }) => (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, borderLeft: "1px solid #ddd", paddingLeft: "12px" }}>
-      <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-        {["measurements", "visual"].map((tab) => (
-          <div
-            key={tab}
-            onClick={() =>
-              setData((prev) => ({ ...prev, [category]: { ...prev[category], tab } }))
-            }
+      <div style={{ display: "flex", gap: "8px", marginBottom: "12px", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", gap: "8px" }}>
+          {["measurements", "visual"].map((tab) => (
+            <div
+              key={tab}
+              onClick={() => setData((prev) => ({ ...prev, [category]: { ...prev[category], tab } }))}
+              style={{
+                padding: "6px 12px",
+                cursor: "pointer",
+                borderRadius: "4px",
+                backgroundColor: data[category].tab === tab ? "#FF4040" : "#f5f5f5",
+                color: data[category].tab === tab ? "white" : "black",
+                fontWeight: data[category].tab === tab ? "bold" : "normal",
+              }}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </div>
+          ))}
+        </div>
+        {showDrumButton && (
+          <button
+            onClick={() => setShowDrum(true)}
             style={{
               padding: "6px 12px",
+              borderRadius: "6px",
+              border: "none",
+              background: "#FF4040",
+              color: "white",
               cursor: "pointer",
-              borderRadius: "4px",
-              backgroundColor: data[category].tab === tab ? "#FF4040" : "#f5f5f5",
-              color: data[category].tab === tab ? "white" : "black",
-              fontWeight: data[category].tab === tab ? "bold" : "normal",
+              fontWeight: "bold",
             }}
           >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </div>
-        ))}
+            Drum Brakes
+          </button>
+        )}
       </div>
 
-      {data[category].tab === "measurements" ? (
+      {data[category].tab === "measurements" && (
         <>
-          <label>Thickness (mm):</label>
+          <label style={{ marginTop: "12px" }}>Disk Thickness (mm):</label>
           <input
-            type="number"
+            type="text"
             value={data[category].measurements.thickness}
             onChange={(e) => updateDisc(category, "measurements", { thickness: e.target.value })}
             style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
@@ -185,9 +246,10 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             <option>Green</option>
           </select>
         </>
-      ) : (
+      )}
+      {data[category].tab === "visual" && (
         <>
-          <label>Visual check status:</label>
+          <label style={{ marginTop: "12px" }}>Visual check status:</label>
           <select
             value={data[category].visual.status}
             onChange={(e) => updateDisc(category, "visual", { status: e.target.value })}
@@ -201,18 +263,8 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       )}
 
       <button
-        onClick={() =>
-          setConcernPopup({ open: true, category, tempConcern: { issue: "", status: "Red" } })
-        }
-        style={{
-          padding: "6px 12px",
-          borderRadius: "4px",
-          border: "none",
-          background: "#FF4040",
-          color: "white",
-          cursor: "pointer",
-          marginTop: "8px",
-        }}
+        onClick={() => setConcernPopup({ open: true, category, tempConcern: { issue: "", status: "Red" } })}
+        style={{ padding: "6px 12px", borderRadius: "4px", border: "none", background: "#FF4040", color: "white", cursor: "pointer", marginTop: "8px" }}
       >
         + Add Concern
       </button>
@@ -225,7 +277,10 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             onChange={(e) => {
               const updated = [...data[category].concerns];
               updated[idx].status = e.target.value;
-              setData((prev) => ({ ...prev, [category]: { ...prev[category], concerns: updated } }));
+              setData((prev) => ({
+                ...prev,
+                [category]: { ...prev[category], concerns: updated },
+              }));
             }}
             style={{ padding: "4px", borderRadius: "4px", border: "1px solid #ccc" }}
           >
@@ -237,7 +292,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     </div>
   );
 
-  // ✅ Drum Brakes Section
+  // ✅ Drum Brakes Section unchanged
   const DrumBrakesSection = () => (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "20px" }}>
       <h3 style={{ marginBottom: "16px" }}>Drum Brakes</h3>
@@ -280,59 +335,15 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   );
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        background: "rgba(0,0,0,0.5)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
-    >
-      <div
-        style={{
-          background: "white",
-          borderRadius: "10px",
-          width: "1000px",
-          height: "600px",
-          display: "flex",
-          overflow: "hidden",
-        }}
-      >
+    <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
+      <div style={{ background: "white", borderRadius: "10px", width: "1000px", height: "600px", display: "flex", overflow: "hidden", position: "relative" }}>
         {/* Left side */}
         <div style={{ width: "40%", background: "#ffeaea", borderRight: "1px solid #eee", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px" }}>
           <h3 style={{ color: "#FF4040" }}>Car View</h3>
-          <button
-            onClick={() => { setActiveSide("front"); setShowDrum(false); }}
-            style={{
-              padding: "10px 20px",
-              borderRadius: "6px",
-              border: "none",
-              background: activeSide === "front" ? "#FF4040" : "#f5f5f5",
-              color: activeSide === "front" ? "white" : "black",
-              cursor: "pointer",
-              fontWeight: "bold",
-            }}
-          >
+          <button onClick={() => { setActiveSide("front"); setShowDrum(false); }} style={{ padding: "10px 20px", borderRadius: "6px", border: "none", background: activeSide === "front" ? "#FF4040" : "#f5f5f5", color: activeSide === "front" ? "white" : "black", cursor: "pointer", fontWeight: "bold" }}>
             Front Brakes
           </button>
-          <button
-            onClick={() => { setActiveSide("rear"); setShowDrum(false); }}
-            style={{
-              padding: "10px 20px",
-              borderRadius: "6px",
-              border: "none",
-              background: activeSide === "rear" ? "#FF4040" : "#f5f5f5",
-              color: activeSide === "rear" ? "white" : "black",
-              cursor: "pointer",
-              fontWeight: "bold",
-            }}
-          >
+          <button onClick={() => { setActiveSide("rear"); setShowDrum(false); }} style={{ padding: "10px 20px", borderRadius: "6px", border: "none", background: activeSide === "rear" ? "#FF4040" : "#f5f5f5", color: activeSide === "rear" ? "white" : "black", cursor: "pointer", fontWeight: "bold" }}>
             Rear Brakes
           </button>
         </div>
@@ -346,145 +357,24 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             </div>
           )}
           {activeSide === "rear" && !showDrum && (
-            <>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: "12px" }}>
-                <button
-                  onClick={() => setShowDrum(true)}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: "6px",
-                    border: "none",
-                    background: "#FF4040",
-                    color: "white",
-                    cursor: "pointer",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Drum Brakes
-                </button>
-              </div>
-              <div style={{ display: "flex", gap: "16px", height: "100%" }}>
-                <PadsSection category="rearPads" />
-                <DiscsSection category="rearDiscs" />
-              </div>
-            </>
+            <div style={{ display: "flex", gap: "16px", height: "100%" }}>
+              <PadsSection category="rearPads" />
+              <DiscsSection category="rearDiscs" showDrumButton />
+            </div>
           )}
           {activeSide === "rear" && showDrum && <DrumBrakesSection />}
 
-          {/* Action buttons */}
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "24px" }}>
-            <button
-              onClick={onClose}
-              style={{
-                padding: "8px 16px",
-                border: "none",
-                background: "#ccc",
-                color: "#333",
-                borderRadius: "6px",
-                fontWeight: "bold",
-                cursor: "pointer",
-              }}
-            >
+          {/* Fixed Action buttons */}
+          <div style={{ position: "absolute", bottom: "16px", right: "16px", display: "flex", gap: "10px" }}>
+            <button onClick={onClose} style={{ padding: "8px 16px", border: "none", background: "#ccc", color: "#333", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}>
               Close
             </button>
-            <button
-              disabled={!isCompleteEnabled()}
-              onClick={() => onComplete(data)}
-              style={{
-                padding: "8px 16px",
-                border: "none",
-                background: isCompleteEnabled() ? "#FF4040" : "#f5f5f5",
-                color: isCompleteEnabled() ? "white" : "#aaa",
-                borderRadius: "6px",
-                fontWeight: "bold",
-                cursor: isCompleteEnabled() ? "pointer" : "not-allowed",
-              }}
-            >
+            <button disabled={!isCompleteEnabled()} onClick={() => onComplete(data)} style={{ padding: "8px 16px", border: "none", background: isCompleteEnabled() ? "#FF4040" : "#f5f5f5", color: isCompleteEnabled() ? "white" : "#aaa", borderRadius: "6px", fontWeight: "bold", cursor: isCompleteEnabled() ? "pointer" : "not-allowed" }}>
               Complete
             </button>
           </div>
         </div>
       </div>
-
-      {/* Concern popup */}
-      {concernPopup.open && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1100,
-          }}
-        >
-          <div
-            style={{
-              background: "white",
-              padding: "24px",
-              borderRadius: "10px",
-              width: "400px",
-            }}
-          >
-            <h3>Add Concern</h3>
-            <label>Issue:</label>
-            <AutoCompleteInput
-              value={concernPopup.tempConcern.issue}
-              onChange={(val) =>
-                setConcernPopup((prev) => ({ ...prev, tempConcern: { ...prev.tempConcern, issue: val } }))
-              }
-              options={discIssues}
-            />
-            <label>Status:</label>
-            <select
-              value={concernPopup.tempConcern.status}
-              onChange={(e) =>
-                setConcernPopup((prev) => ({ ...prev, tempConcern: { ...prev.tempConcern, status: e.target.value } }))
-              }
-              style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
-            >
-              <option>Red</option>
-              <option>Amber</option>
-            </select>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "12px" }}>
-              <button
-                onClick={() =>
-                  setConcernPopup({ open: false, category: "", tempConcern: { issue: "", status: "Red" } })
-                }
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: "4px",
-                  border: "none",
-                  background: "#ccc",
-                  cursor: "pointer",
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  addConcern(concernPopup.category, concernPopup.tempConcern);
-                  setConcernPopup({ open: false, category: "", tempConcern: { issue: "", status: "Red" } });
-                }}
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: "4px",
-                  border: "none",
-                  background: "#FF4040",
-                  color: "white",
-                  cursor: "pointer",
-                }}
-              >
-                Add
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
