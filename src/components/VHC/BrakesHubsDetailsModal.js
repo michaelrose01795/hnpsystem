@@ -210,18 +210,40 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   return (
     <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
       <div style={{ background: "white", borderRadius: "10px", width: "1000px", height: "600px", display: "flex", overflow: "hidden", position: "relative" }}>
-        
+
         {/* Left side */}
-        <div style={{ width: "35%", background: "#fff", borderRight: "1px solid #eee", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px" }}>
-          <h3 style={{ color: "#FF4040" }}>Car View</h3>
+        <div style={{ width: "35%", background: "#fff", borderRight: "1px solid #eee", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "24px" }}>
 
-          {/* ✅ Brake disk and pad images acting as buttons */}
-          <Image src="/images/FrontBrakes.png" alt="Front Brakes" width={100} height={100} onClick={() => { setActiveSide("front"); setShowDrum(false); }} style={{ cursor: "pointer", border: activeSide === "front" ? "2px solid #FF4040" : "none", borderRadius: "6px", objectFit: "contain" }} />
-          <Image src="/images/RearBrakes.png" alt="Rear Brakes" width={100} height={100} onClick={() => { setActiveSide("rear"); setShowDrum(false); }} style={{ cursor: "pointer", border: activeSide === "rear" ? "2px solid #FF4040" : "none", borderRadius: "6px", objectFit: "contain" }} />
+          {/* ✅ Image Titles */}
+          <h2 style={{ color: "#FF4040", marginBottom: "8px", fontSize: "24px" }}>Front</h2>
+          <Image
+            src="/images/Brakes2.png"
+            alt="Front Brakes"
+            width={160}
+            height={160}
+            style={{
+              cursor: "pointer",
+              border: activeSide === "front" ? "3px solid #FF4040" : "none",
+              borderRadius: "8px",
+              objectFit: "contain",
+            }}
+            onClick={() => setActiveSide("front")}
+          />
 
-          {/* Optional buttons */}
-          <button onClick={() => { setActiveSide("front"); setShowDrum(false); }} style={{ padding: "10px 20px", borderRadius: "6px", border: "none", background: activeSide === "front" ? "#FF4040" : "#f5f5f5", color: activeSide === "front" ? "white" : "black", cursor: "pointer", fontWeight: "bold" }}>Front Brakes</button>
-          <button onClick={() => { setActiveSide("rear"); setShowDrum(false); }} style={{ padding: "10px 20px", borderRadius: "6px", border: "none", background: activeSide === "rear" ? "#FF4040" : "#f5f5f5", color: activeSide === "rear" ? "white" : "black", cursor: "pointer", fontWeight: "bold" }}>Rear Brakes</button>
+          <h2 style={{ color: "#FF4040", marginTop: "16px", marginBottom: "8px", fontSize: "24px" }}>Rear</h2>
+          <Image
+            src="/images/Brakes2.png"
+            alt="Rear Brakes"
+            width={160}
+            height={160}
+            style={{
+              cursor: "pointer",
+              border: activeSide === "rear" ? "3px solid #FF4040" : "none",
+              borderRadius: "8px",
+              objectFit: "contain",
+            }}
+            onClick={() => setActiveSide("rear")}
+          />
         </div>
 
         {/* Right side */}
