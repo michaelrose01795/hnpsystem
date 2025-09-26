@@ -38,7 +38,7 @@ export default function VHCPage() {
 
         {/* Placeholder sections */}
         <SectionCard title="Brakes & Hubs" subtitle="0 issues logged" />
-        <SectionCard title="Service Book / Indicator" subtitle="0 issues logged" />
+        <SectionCard title="Service Book" subtitle="0 issues logged" />
         <SectionCard title="Under Bonnet" subtitle="0 issues logged" />
         <SectionCard title="External / Drive-in Inspection" subtitle="0 issues logged" />
         <SectionCard title="Internal / Lamps / Electrics" subtitle="0 issues logged" />

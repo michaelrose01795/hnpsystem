@@ -517,7 +517,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
           </div>
 
           {/* Buttons */}
-          <div style={{ marginTop: "30px", textAlign: "right" }}>
+          <div className="flex justify-end gap-2 mt-4">
             <button
               onClick={onClose}
               style={{
@@ -529,7 +529,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
                 marginRight: "10px",
               }}
             >
-              Cancel
+              Close
             </button>
             <button
               onClick={() => allWheelsComplete() && onComplete(tyres)}

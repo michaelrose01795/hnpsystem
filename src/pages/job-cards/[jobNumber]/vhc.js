@@ -4,16 +4,19 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
-import BrakesHubsDetailsModal from "@/components/VHC/BrakesHubsDetailsModal"; // ✅ Added import
+import BrakesHubsDetailsModal from "@/components/VHC/BrakesHubsDetailsModal";
+import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetailsModal"; // ✅ new modal
 
 // ✅ Reusable section card component
-const SectionCard = ({ title, subtitle, onClick }) => (
+const SectionCard = ({ title, subtitle, onClick, fullWidth = false }) => (
   <div
-    className={`border p-4 rounded ${onClick ? "cursor-pointer hover:bg-gray-100" : ""}`}
+    className={`border p-6 rounded-lg shadow-sm bg-white transition ${
+      onClick ? "cursor-pointer hover:shadow-md" : ""
+    } ${fullWidth ? "col-span-2" : ""}`}
     onClick={onClick}
   >
-    <h2 className="font-semibold text-red-600">{title}</h2>
-    <p>{subtitle}</p>
+    <h2 className="font-semibold text-red-600 text-lg mb-2">{title}</h2>
+    <p className="text-sm text-gray-600">{subtitle}</p>
   </div>
 );
 
@@ -23,10 +26,9 @@ export default function VHCPAGE() {
 
   // ✅ VHC data for all sections
   const [vhcData, setVhcData] = useState({
-    wheelsTyres: null, // detailed modal data
-    brakesHubs: [], // ✅ now used by new modal
-    serviceBook: [],
-    underBonnet: [],
+    wheelsTyres: null,
+    brakesHubs: [],
+    serviceIndicator: [],
     externalInspection: [],
     internalElectrics: [],
     underside: [],
@@ -36,24 +38,11 @@ export default function VHCPAGE() {
   // ✅ Currently active section (for modals)
   const [activeSection, setActiveSection] = useState(null);
 
-  // ✅ Log whenever Wheels & Tyres modal opens (optional debug)
   useEffect(() => {
     if (activeSection === "wheelsTyres") {
       console.log("Opening Wheels & Tyres modal");
     }
   }, [activeSection]);
-
-  // ✅ Sections config
-  const sections = [
-    { key: "wheelsTyres", label: "Wheels & Tyres" },
-    { key: "brakesHubs", label: "Brakes & Hubs" }, // ✅ new modal will be used
-    { key: "serviceBook", label: "Service Book / Indicator" },
-    { key: "underBonnet", label: "Under Bonnet" },
-    { key: "externalInspection", label: "External / Drive-in Inspection" },
-    { key: "internalElectrics", label: "Internal / Lamps / Electrics" },
-    { key: "underside", label: "Underside" },
-    { key: "cosmetics", label: "Cosmetics" },
-  ];
 
   return (
     <Layout>
@@ -62,33 +51,62 @@ export default function VHCPAGE() {
           Vehicle Health Check - Job {jobNumber || "Loading..."}
         </h1>
 
-        {/* ✅ Two-column grid for section cards */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "16px",
-          }}
-        >
-          {sections.map((section) => (
-            <SectionCard
-              key={section.key}
-              title={section.label}
-              subtitle={
-                section.key === "wheelsTyres"
-                  ? vhcData.wheelsTyres
-                    ? "Details completed"
-                    : "No issues logged yet"
-                  : `${vhcData[section.key].length} issues logged`
-              }
-              onClick={() => setActiveSection(section.key)}
-            />
-          ))}
+        {/* ✅ Mandatory Section */}
+        <h2 className="text-xl font-bold text-gray-800 mb-4">Mandatory</h2>
+        <div className="grid grid-cols-2 gap-4 mb-10">
+          {/* Wheels */}
+          <SectionCard
+            title="Wheels & Tyres"
+            subtitle={
+              vhcData.wheelsTyres
+                ? "Details completed"
+                : "No issues logged yet"
+            }
+            onClick={() => setActiveSection("wheelsTyres")}
+          />
+
+          {/* Brakes */}
+          <SectionCard
+            title="Brakes & Hubs"
+            subtitle={`${vhcData.brakesHubs.length} issues logged`}
+            onClick={() => setActiveSection("brakesHubs")}
+          />
+
+          {/* Service Indicator (full width below both) */}
+          <SectionCard
+            title="Service Indicator and Under Bonnet"
+            subtitle={`${vhcData.serviceIndicator.length} issues logged`}
+            fullWidth={true}
+            onClick={() => setActiveSection("serviceIndicator")}
+          />
         </div>
 
-        {/* ========================= */}
-        {/* ✅ Wheels & Tyres Detailed Modal */}
-        {/* ========================= */}
+        {/* ✅ Optional Section */}
+        <h2 className="text-xl font-bold text-gray-800 mb-4">Optional</h2>
+        <div className="grid grid-cols-2 gap-4">
+          <SectionCard
+            title="External / Drive-in Inspection"
+            subtitle={`${vhcData.externalInspection.length} issues logged`}
+            onClick={() => setActiveSection("externalInspection")}
+          />
+          <SectionCard
+            title="Internal / Lamps / Electrics"
+            subtitle={`${vhcData.internalElectrics.length} issues logged`}
+            onClick={() => setActiveSection("internalElectrics")}
+          />
+          <SectionCard
+            title="Underside"
+            subtitle={`${vhcData.underside.length} issues logged`}
+            onClick={() => setActiveSection("underside")}
+          />
+          <SectionCard
+            title="Cosmetics"
+            subtitle={`${vhcData.cosmetics.length} issues logged`}
+            onClick={() => setActiveSection("cosmetics")}
+          />
+        </div>
+
+        {/* ✅ Wheels & Tyres Modal */}
         {activeSection === "wheelsTyres" && (
           <WheelsTyresDetailsModal
             isOpen={true}
@@ -100,9 +118,7 @@ export default function VHCPAGE() {
           />
         )}
 
-        {/* ========================= */}
-        {/* ✅ Brakes & Hubs Detailed Modal */}
-        {/* ========================= */}
+        {/* ✅ Brakes & Hubs Modal */}
         {activeSection === "brakesHubs" && (
           <BrakesHubsDetailsModal
             isOpen={true}
@@ -115,12 +131,24 @@ export default function VHCPAGE() {
           />
         )}
 
-        {/* ========================= */}
-        {/* ✅ Placeholder Modals for All Other Sections */}
-        {/* ========================= */}
+        {/* ✅ Service Indicator + Under Bonnet Modal */}
+        {activeSection === "serviceIndicator" && (
+          <ServiceIndicatorDetailsModal
+            isOpen={true}
+            initialData={vhcData.serviceIndicator}
+            onClose={() => setActiveSection(null)}
+            onComplete={(data) => {
+              setVhcData((prev) => ({ ...prev, serviceIndicator: data }));
+              setActiveSection(null);
+            }}
+          />
+        )}
+
+        {/* ✅ Optional Section Modals with issue lists */}
         {activeSection &&
-          activeSection !== "wheelsTyres" &&
-          activeSection !== "brakesHubs" && (
+          ["externalInspection", "internalElectrics", "underside", "cosmetics"].includes(
+            activeSection
+          ) && (
             <div
               style={{
                 position: "fixed",
@@ -146,13 +174,60 @@ export default function VHCPAGE() {
                 }}
               >
                 <h2 style={{ color: "#FF4040", marginBottom: "16px" }}>
-                  {sections.find((s) => s.key === activeSection)?.label}
+                  {
+                    {
+                      externalInspection: "External / Drive-in Inspection",
+                      internalElectrics: "Internal / Lamps / Electrics",
+                      underside: "Underside",
+                      cosmetics: "Cosmetics",
+                    }[activeSection]
+                  }
                 </h2>
 
-                {/* Placeholder content */}
-                <p>No issues logged yet (placeholder)</p>
+                {/* List of issues */}
+                {vhcData[activeSection].length === 0 ? (
+                  <p>No issues logged yet</p>
+                ) : (
+                  <ul style={{ marginBottom: "16px" }}>
+                    {vhcData[activeSection].map((issue, idx) => (
+                      <li
+                        key={idx}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "6px 0",
+                          borderBottom: "1px solid #eee",
+                        }}
+                      >
+                        <span>{issue.title || "Untitled Issue"}</span>
+                        <button
+                          onClick={() => {
+                            setVhcData((prev) => ({
+                              ...prev,
+                              [activeSection]: prev[activeSection].filter(
+                                (_, i) => i !== idx
+                              ),
+                            }));
+                          }}
+                          style={{
+                            background: "#FF4040",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            padding: "4px 8px",
+                            cursor: "pointer",
+                            fontSize: "0.8rem",
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
-                {/* Add new issue */}
+                {/* Add issue button */}
                 <button
                   onClick={() =>
                     setVhcData((prev) => ({
@@ -172,14 +247,14 @@ export default function VHCPAGE() {
                     cursor: "pointer",
                     fontWeight: "bold",
                     fontSize: "0.9rem",
-                    marginTop: "10px",
+                    marginBottom: "16px",
                   }}
                 >
                   + Add Issue
                 </button>
 
-                {/* Close modal */}
-                <div style={{ marginTop: "20px", textAlign: "right" }}>
+                {/* Close button */}
+                <div style={{ textAlign: "right" }}>
                   <button
                     onClick={() => setActiveSection(null)}
                     style={{
