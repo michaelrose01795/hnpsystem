@@ -1,144 +1,297 @@
 // file location: src/components/VHC/InternalElectricsDetailsModal.js
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
-export default function InternalElectricsDetailsModal({
-  isOpen, // whether modal is open
-  initialData, // saved issues
-  onClose, // close handler
-  onComplete, // save handler
-}) {
-  const [data, setData] = useState([]);
+export default function InternalElectricsDetailsModal({ isOpen, onClose, onComplete, initialData }) {
+  const [data, setData] = useState({
+    "Lights Front": { concerns: [] },
+    "Lights Rear": { concerns: [] },
+    "Lights Interior": { concerns: [] },
+    "Horn/Washers/Wipers": { concerns: [] },
+    "Air Con/Heating/Venterlation": { concerns: [] },
+    "Warning Lamps": { concerns: [] },
+    Seatbelt: { concerns: [] },
+    Miscellaneous: { concerns: [] },
+    ...initialData,
+  });
 
-  // ✅ Load initial data when opening
-  useEffect(() => {
-    if (initialData) {
-      setData(initialData);
-    }
-  }, [initialData]);
-
-  // ✅ Add a new issue
-  const handleAddIssue = (label) => {
-    setData((prev) => [
-      ...prev,
-      { title: label, details: "", status: "amber" }, // default amber
-    ]);
-  };
-
-  // ✅ Update issue details
-  const handleUpdateIssue = (idx, key, value) => {
-    setData((prev) =>
-      prev.map((item, i) =>
-        i === idx ? { ...item, [key]: value } : item
-      )
-    );
-  };
-
-  // ✅ Remove an issue
-  const handleRemoveIssue = (idx) => {
-    setData((prev) => prev.filter((_, i) => i !== idx));
-  };
+  const [activeConcern, setActiveConcern] = useState({
+    open: false,
+    category: "",
+    temp: { issue: "", status: "Red" },
+  });
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg shadow-lg w-[90%] max-w-2xl p-6">
-        <h2 className="text-xl font-bold text-red-600 mb-4">
-          Internal / Lamps / Electrics
-        </h2>
+  const buttonOrder = [
+    "Lights Front",
+    "Lights Rear",
+    "Lights Interior",
+    "Horn/Washers/Wipers",
+    "Air Con/Heating/Venterlation",
+    "Warning Lamps",
+    "Seatbelt",
+    "Miscellaneous",
+  ];
 
-        {/* ✅ Buttons for quick add */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          {[
-            "Lights Front",
-            "Lights Rear",
-            "Lights Interior",
-            "Horn/Washers/Wipers",
-            "Air Con/Heating/venterlation",
-            "Warning Lamps",
-            "Seatbelt",
-            "Miscellaneous",
-          ].map((label) => (
+  const openConcern = (key) => {
+    setActiveConcern({ open: true, category: key, temp: { issue: "", status: "Red" } });
+  };
+
+  const addConcern = () => {
+    const { category, temp } = activeConcern;
+    if (temp.issue.trim() === "") return; // prevent empty concerns
+    setData((prev) => ({
+      ...prev,
+      [category]: { ...prev[category], concerns: [...prev[category].concerns, temp] },
+    }));
+    setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } });
+  };
+
+  const updateConcern = (category, idx, field, value) => {
+    const updated = [...data[category].concerns];
+    updated[idx][field] = value;
+    setData((prev) => ({ ...prev, [category]: { ...prev[category], concerns: updated } }));
+  };
+
+  const deleteConcern = (category, idx) => {
+    setData((prev) => ({
+      ...prev,
+      [category]: { ...prev[category], concerns: prev[category].concerns.filter((_, i) => i !== idx) },
+    }));
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        background: "rgba(0,0,0,0.5)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 1000,
+      }}
+    >
+      <div
+        style={{
+          background: "white",
+          borderRadius: "10px",
+          width: "850px",
+          height: "550px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "24px",
+          position: "relative",
+        }}
+      >
+        <h2 style={{ color: "#FF4040", marginBottom: "24px" }}>Internal Lamps & Electrics</h2>
+
+        {/* 2x4 Button Grid */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateRows: "repeat(2, 1fr)",
+            gap: "16px",
+            width: "100%",
+            maxWidth: "750px",
+            marginBottom: "40px",
+          }}
+        >
+          {buttonOrder.map((key) => (
             <button
-              key={label}
-              onClick={() => handleAddIssue(label)}
-              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              key={key}
+              onClick={() => openConcern(key)}
+              style={{
+                width: "160px",
+                height: "80px",
+                borderRadius: "8px",
+                border: "none",
+                background: "#f5f5f5",
+                color: "black",
+                fontWeight: "bold",
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                textAlign: "center",
+              }}
             >
-              {label}
+              {key} {data[key].concerns.length > 0 && `(${data[key].concerns.length})`}
             </button>
           ))}
         </div>
 
-        {/* ✅ List of issues */}
-        <div className="space-y-4 max-h-64 overflow-y-auto mb-6">
-          {data.map((item, idx) => (
-            <div
-              key={idx}
-              className="border rounded p-3 bg-gray-50 shadow-sm"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-semibold text-gray-800">
-                  {item.title}
-                </span>
-                <button
-                  onClick={() => handleRemoveIssue(idx)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Concern text */}
-              <textarea
-                className="w-full border rounded p-2 text-sm"
-                placeholder="Add details..."
-                value={item.details}
-                onChange={(e) =>
-                  handleUpdateIssue(idx, "details", e.target.value)
-                }
-              />
-
-              {/* Status buttons */}
-              <div className="flex gap-2 mt-2">
-                {["red", "amber", "green"].map((status) => (
-                  <button
-                    key={status}
-                    onClick={() =>
-                      handleUpdateIssue(idx, "status", status)
-                    }
-                    className={`flex-1 py-1 rounded text-white ${
-                      item.status === status
-                        ? status === "red"
-                          ? "bg-red-600"
-                          : status === "amber"
-                          ? "bg-yellow-500"
-                          : "bg-green-600"
-                        : "bg-gray-300"
-                    }`}
-                  >
-                    {status.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* ✅ Action buttons */}
-        <div className="flex justify-end gap-3">
+        {/* Close & Complete */}
+        <div style={{ display: "flex", gap: "16px" }}>
           <button
             onClick={onClose}
-            className="px-4 py-2 border rounded hover:bg-gray-100"
+            style={{
+              padding: "10px 20px",
+              border: "none",
+              borderRadius: "6px",
+              background: "#ccc",
+              color: "#333",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
           >
             Close
           </button>
+
           <button
             onClick={() => onComplete(data)}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            style={{
+              padding: "10px 20px",
+              border: "none",
+              borderRadius: "6px",
+              background: "#FF4040",
+              color: "white",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
           >
             Complete
           </button>
         </div>
+
+        {/* ✅ Concern Popup */}
+        {activeConcern.open && (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              background: "rgba(0,0,0,0.5)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 2000,
+            }}
+          >
+            <div
+              style={{
+                background: "white",
+                borderRadius: "10px",
+                padding: "24px",
+                width: "450px",
+                maxHeight: "80%",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+                overflowY: "auto",
+              }}
+            >
+              <h3 style={{ color: "#FF4040" }}>{activeConcern.category}</h3>
+
+              {/* Input to add new concern */}
+              <input
+                type="text"
+                placeholder="Enter issue"
+                value={activeConcern.temp.issue}
+                onChange={(e) =>
+                  setActiveConcern((prev) => ({ ...prev, temp: { ...prev.temp, issue: e.target.value } }))
+                }
+                style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc", fontSize: "1rem" }}
+              />
+              <label>Status:</label>
+              <select
+                value={activeConcern.temp.status}
+                onChange={(e) =>
+                  setActiveConcern((prev) => ({ ...prev, temp: { ...prev.temp, status: e.target.value } }))
+                }
+                style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc", fontSize: "1rem" }}
+              >
+                <option>Red</option>
+                <option>Amber</option>
+              </select>
+
+              <button
+                onClick={addConcern}
+                style={{
+                  padding: "8px",
+                  border: "none",
+                  borderRadius: "6px",
+                  background: "#FF4040",
+                  color: "white",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                Add Concern
+              </button>
+
+              {/* List of existing concerns */}
+              {data[activeConcern.category].concerns.map((c, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    padding: "8px",
+                    background: "#f5f5f5",
+                    borderRadius: "6px",
+                    fontSize: "1rem",
+                  }}
+                >
+                  <input
+                    type="text"
+                    value={c.issue}
+                    onChange={(e) => updateConcern(activeConcern.category, idx, "issue", e.target.value)}
+                    style={{ flex: 1, padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
+                  />
+                  <select
+                    value={c.status}
+                    onChange={(e) => updateConcern(activeConcern.category, idx, "status", e.target.value)}
+                    style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
+                  >
+                    <option>Red</option>
+                    <option>Amber</option>
+                  </select>
+                  <button
+                    onClick={() => deleteConcern(activeConcern.category, idx)}
+                    style={{
+                      padding: "6px 10px",
+                      border: "none",
+                      borderRadius: "6px",
+                      background: "#FF4040",
+                      color: "white",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+
+              {/* Close button */}
+              <button
+                onClick={() => setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } })}
+                style={{
+                  padding: "8px",
+                  border: "none",
+                  borderRadius: "6px",
+                  background: "#ccc",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
