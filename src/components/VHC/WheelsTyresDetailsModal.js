@@ -1,6 +1,7 @@
 // file location: src/components/VHC/WheelsTyresDetailsModal.js
 
 import React, { useState } from "react";
+import Image from "next/image";
 
 // ✅ Autocomplete small component
 function AutoCompleteInput({ value, onChange, options, placeholder }) {
@@ -68,7 +69,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
     NSR: { ...initialTyre },
     OSR: { ...initialTyre },
     Spare: {
-      type: "spare", // ✅ default is now 'spare'
+      type: "spare",
       year: "",
       month: "",
       condition: "",
@@ -89,7 +90,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
     "Yokohama", "Hankook", "Kumho", "Falken", "Toyo", "Nexen", "Firestone",
   ];
 
-  // ✅ Not checked last
   const spareTypes = ["Spare Tyre", "Repair Kit", "space_saver", "boot_full", "not_checked"];
 
   const updateTyre = (field, value) => {
@@ -134,7 +134,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
         ["NSF", "OSF", "NSR", "OSR"].forEach((wheel) => {
           updated[wheel] = { ...updated[wheel], manufacturer: current.manufacturer, runFlat: current.runFlat, size: current.size, load: current.load, speed: current.speed };
         });
-        // ✅ copy to spare as well if spare type is 'spare'
         if (updated.Spare.type === "spare") {
           updated.Spare.details = { ...updated.Spare.details, manufacturer: current.manufacturer, runFlat: current.runFlat, size: current.size, load: current.load, speed: current.speed };
         }
@@ -198,7 +197,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
     textAlign: "center",
   });
 
-  // ✅ Month & Year arrays
   const months = Array.from({ length: 12 }, (_, i) => `${i + 1}`);
   const years = Array.from({ length: 3000 - 2015 + 1 }, (_, i) => `${2015 + i}`);
 
@@ -228,7 +226,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
           position: "relative",
         }}
       >
-        {/* LEFT SIDE */}
+        {/* LEFT SIDE with wheel images */}
         <div
           style={{
             width: "40%",
@@ -238,52 +236,63 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
+            justifyContent: "flex-start",
           }}
         >
-          <h3 style={{ marginBottom: "20px", color: "#FF4040" }}>Top View</h3>
+          {/* Main tyres (squares) */}
           <div
             style={{
               display: "grid",
               gridTemplateRows: "1fr 1fr",
               gridTemplateColumns: "1fr 1fr",
-              gap: "40px",
-              marginBottom: "40px",
+              gap: "30px",
             }}
           >
             {["NSF", "OSF", "NSR", "OSR"].map((wheel) => (
-              <button
-                key={wheel}
-                onClick={() => setActiveWheel(wheel)}
-                style={{
-                  width: "100px",
-                  height: "100px",
-                  borderRadius: "50%",
-                  background: activeWheel === wheel ? "#FF4040" : "#eee",
-                  color: activeWheel === wheel ? "white" : "black",
-                  fontWeight: "bold",
-                  border: "2px solid #ccc",
-                  cursor: "pointer",
-                }}
-              >
-                {wheel}
-              </button>
+              <div key={wheel} style={{ textAlign: "center" }}>
+                <div style={{ color: "#FF4040", fontWeight: "bold", marginBottom: "6px" }}>{wheel}</div>
+                <div
+                  onClick={() => setActiveWheel(wheel)}
+                  style={{
+                    width: "140px",
+                    height: "140px",
+                    borderRadius: "8px",
+                    border: activeWheel === wheel ? "3px solid #FF4040" : "2px solid #ccc",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: activeWheel === wheel ? "#ffe5e5" : "#fff",
+                    margin: "0 auto",
+                  }}
+                >
+                  <Image src="/images/Tyres2.png" alt={wheel} width={100} height={100} />
+                </div>
+              </div>
             ))}
           </div>
-          <button
-            onClick={() => setActiveWheel("Spare")}
-            style={{
-              padding: "14px",
-              background: activeWheel === "Spare" ? "#FF4040" : "#eee",
-              color: activeWheel === "Spare" ? "white" : "black",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontWeight: "bold",
-              width: "70%",
-            }}
-          >
-            Spare / Kit
-          </button>
+
+          {/* Spare tyre centered at bottom */}
+          <div style={{ marginTop: "20px", textAlign: "center" }}>
+            <div style={{ color: "#FF4040", fontWeight: "bold", marginBottom: "6px" }}>Spare/Kit</div>
+            <div
+              onClick={() => setActiveWheel("Spare")}
+              style={{
+                width: "140px",
+                height: "140px",
+                borderRadius: "8px",
+                border: activeWheel === "Spare" ? "3px solid #FF4040" : "2px solid #ccc",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: activeWheel === "Spare" ? "#ffe5e5" : "#fff",
+                margin: "0 auto",
+              }}
+            >
+              <Image src="/images/Spare.png" alt="Spare Tyre" width={100} height={100} />
+            </div>
+          </div>
         </div>
 
         {/* RIGHT SIDE */}
