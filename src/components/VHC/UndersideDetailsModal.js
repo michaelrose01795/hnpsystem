@@ -40,7 +40,8 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
       ...prev,
       [category]: { ...prev[category], concerns: [...prev[category].concerns, temp] },
     }));
-    setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } });
+    // Keep popup open after adding concern, reset input
+    setActiveConcern((prev) => ({ ...prev, temp: { issue: "", status: "Red" } }));
   };
 
   const updateConcern = (category, idx, field, value) => {
@@ -208,6 +209,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
               >
                 <option>Red</option>
                 <option>Amber</option>
+                <option>Green</option>
               </select>
 
               <button
@@ -253,6 +255,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                   >
                     <option>Red</option>
                     <option>Amber</option>
+                    <option>Green</option>
                   </select>
                   <button
                     onClick={() => deleteConcern(activeConcern.category, idx)}

@@ -1,5 +1,4 @@
 // file location: src/components/VHC/CosmeticsDetailsModal.js
-
 import React, { useState } from "react";
 
 export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, initialData }) {
@@ -41,7 +40,8 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
       ...prev,
       [category]: { ...prev[category], concerns: [...prev[category].concerns, temp] },
     }));
-    setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } });
+    // ✅ Keep popup open, just clear the input
+    setActiveConcern((prev) => ({ ...prev, temp: { issue: "", status: "Red" } }));
   };
 
   const updateConcern = (category, idx, field, value) => {
@@ -53,7 +53,10 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
   const deleteConcern = (category, idx) => {
     setData((prev) => ({
       ...prev,
-      [category]: { ...prev[category], concerns: prev[category].concerns.filter((_, i) => i !== idx) },
+      [category]: {
+        ...prev[category],
+        concerns: prev[category].concerns.filter((_, i) => i !== idx),
+      },
     }));
   };
 

@@ -31,7 +31,11 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
       ...prev,
       [category]: { ...prev[category], concerns: [...prev[category].concerns, temp] },
     }));
-    setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } });
+    // ✅ Keep popup open, just reset the input
+    setActiveConcern((prev) => ({
+      ...prev,
+      temp: { issue: "", status: "Red" },
+    }));
   };
 
   const updateConcern = (category, idx, field, value) => {
