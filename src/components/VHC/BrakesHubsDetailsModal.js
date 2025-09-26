@@ -1,5 +1,6 @@
 // src/components/VHC/BrakesHubsDetailsModal.js
 import React, { useState } from "react";
+import Image from "next/image";
 
 // ✅ Autocomplete small component
 function AutoCompleteInput({ value, onChange, options }) {
@@ -78,17 +79,11 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       ...prev,
       [category]: { ...prev[category], measurement: value },
     }));
-
-    // ✅ Automatic status update for pad measurement
     const numbers = value.split(",").map((v) => parseFloat(v.trim())).filter((v) => !isNaN(v));
     const min = Math.min(...numbers);
-    if (min >= 5) {
-      updatePadStatus(category, "Green");
-    } else if (min >= 3) {
-      updatePadStatus(category, "Amber");
-    } else {
-      updatePadStatus(category, "Red");
-    }
+    if (min >= 5) updatePadStatus(category, "Green");
+    else if (min >= 3) updatePadStatus(category, "Amber");
+    else updatePadStatus(category, "Red");
   };
 
   const updatePadStatus = (category, value) => {
@@ -187,7 +182,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     </div>
   );
 
-  // ✅ Discs Section (with Drum button moved above Pad Measurement)
+  // ✅ Discs Section
   const DiscsSection = ({ category, showDrumButton }) => (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, borderLeft: "1px solid #ddd", paddingLeft: "12px" }}>
       <div style={{ display: "flex", gap: "8px", marginBottom: "12px", justifyContent: "space-between" }}>
@@ -293,7 +288,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     </div>
   );
 
-  // ✅ Drum Brakes Section unchanged
+  // ✅ Drum Brakes Section
   const DrumBrakesSection = () => (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "20px" }}>
       <h3 style={{ marginBottom: "16px" }}>Drum Brakes</h3>
@@ -338,9 +333,30 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   return (
     <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
       <div style={{ background: "white", borderRadius: "10px", width: "1000px", height: "600px", display: "flex", overflow: "hidden", position: "relative" }}>
+        
         {/* Left side */}
-        <div style={{ width: "40%", background: "#ffeaea", borderRight: "1px solid #eee", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px" }}>
+        <div style={{ width: "35%", background: "#fff", borderRight: "1px solid #eee", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px" }}>
           <h3 style={{ color: "#FF4040" }}>Car View</h3>
+
+          {/* ✅ Brake disk and pad images acting as buttons */}
+          <Image
+            src="/images/FrontBrakes.png"
+            alt="Front Brakes"
+            width={80}
+            height={80}
+            onClick={() => { setActiveSide("front"); setShowDrum(false); }}
+            style={{ cursor: "pointer", border: activeSide === "front" ? "2px solid #FF4040" : "none", borderRadius: "6px" }}
+          />
+          <Image
+            src="/images/RearBrake.png"
+            alt="Rear Brakes"
+            width={80}
+            height={80}
+            onClick={() => { setActiveSide("rear"); setShowDrum(false); }}
+            style={{ cursor: "pointer", border: activeSide === "rear" ? "2px solid #FF4040" : "none", borderRadius: "6px" }}
+          />
+
+          {/* Optional buttons */}
           <button onClick={() => { setActiveSide("front"); setShowDrum(false); }} style={{ padding: "10px 20px", borderRadius: "6px", border: "none", background: activeSide === "front" ? "#FF4040" : "#f5f5f5", color: activeSide === "front" ? "white" : "black", cursor: "pointer", fontWeight: "bold" }}>
             Front Brakes
           </button>

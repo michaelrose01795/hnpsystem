@@ -8,17 +8,16 @@ export default function ServiceIndicatorDetailsModal({
   onClose,
   onComplete,
 }) {
-  const [serviceChoice, setServiceChoice] = useState(null); // left side choice
-  const [oilStatus, setOilStatus] = useState(null); // Yes, No, EV
-  const [concerns, setConcerns] = useState([]); // store concerns
-  const [showConcernModal, setShowConcernModal] = useState(false); // toggle concern popup
-  const [newConcern, setNewConcern] = useState(""); // concern text
-  const [concernStatus, setConcernStatus] = useState("Red"); // Red/Amber/Green
-  const [activeConcernTarget, setActiveConcernTarget] = useState(null); // track where concern came from
+  const [serviceChoice, setServiceChoice] = useState(null);
+  const [oilStatus, setOilStatus] = useState(null);
+  const [concerns, setConcerns] = useState([]);
+  const [showConcernModal, setShowConcernModal] = useState(false);
+  const [newConcern, setNewConcern] = useState("");
+  const [concernStatus, setConcernStatus] = useState("Red");
+  const [activeConcernTarget, setActiveConcernTarget] = useState(null);
 
   if (!isOpen) return null;
 
-  // ✅ Add a new concern
   const addConcern = () => {
     if (newConcern.trim() !== "") {
       setConcerns((prev) => [
@@ -32,14 +31,12 @@ export default function ServiceIndicatorDetailsModal({
     }
   };
 
-  // ✅ Check if we can complete
   const canComplete =
     serviceChoice &&
     (oilStatus === "Yes" ||
       oilStatus === "EV" ||
       (oilStatus === "No" && concerns.some((c) => c.source === "oil")));
 
-  // ✅ Under bonnet items (Screen Wash removed, Cam Belt added)
   const underBonnetItems = [
     "Antifreeze Strength",
     "Water/Oil",
@@ -59,11 +56,11 @@ export default function ServiceIndicatorDetailsModal({
         left: 0,
         width: "100vw",
         height: "100vh",
-        background: "rgba(0,0,0,0.5)",
+        background: "rgba(0,0,0,0.6)",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        zIndex: 1000,
+        zIndex: 2000,
       }}
     >
       <div
@@ -71,7 +68,7 @@ export default function ServiceIndicatorDetailsModal({
           background: "white",
           borderRadius: "10px",
           width: "1000px",
-          height: "650px",
+          height: "600px",
           display: "flex",
           flexDirection: "column",
           padding: "20px",
@@ -82,9 +79,8 @@ export default function ServiceIndicatorDetailsModal({
           Service Indicator & Under Bonnet
         </h2>
 
-        {/* ✅ Split into 2 sides */}
         <div style={{ display: "flex", flex: 1, gap: "20px" }}>
-          {/* LEFT SIDE - Service Reminder Reset */}
+          {/* LEFT SIDE */}
           <div
             style={{
               flex: 1,
@@ -97,66 +93,30 @@ export default function ServiceIndicatorDetailsModal({
             }}
           >
             <h3>Service Reminder</h3>
-            <button
-              onClick={() => setServiceChoice("reset")}
-              style={{
-                width: "70%",
-                padding: "14px",
-                background: serviceChoice === "reset" ? "#FF4040" : "#eee",
-                color: serviceChoice === "reset" ? "white" : "black",
-                border: "none",
-                borderRadius: "6px",
-                fontWeight: "bold",
-                cursor: "pointer",
-              }}
-            >
-              Service Reminder Reset
-            </button>
-            <button
-              onClick={() => setServiceChoice("not_required")}
-              style={{
-                width: "70%",
-                padding: "14px",
-                background: serviceChoice === "not_required" ? "#FF4040" : "#eee",
-                color: serviceChoice === "not_required" ? "white" : "black",
-                border: "none",
-                borderRadius: "6px",
-                fontWeight: "bold",
-                cursor: "pointer",
-              }}
-            >
-              Service Reminder Not Required
-            </button>
-            <button
-              onClick={() => setServiceChoice("no_reminder")}
-              style={{
-                width: "70%",
-                padding: "14px",
-                background: serviceChoice === "no_reminder" ? "#FF4040" : "#eee",
-                color: serviceChoice === "no_reminder" ? "white" : "black",
-                border: "none",
-                borderRadius: "6px",
-                fontWeight: "bold",
-                cursor: "pointer",
-              }}
-            >
-              Doesn’t Have a Service Reminder
-            </button>
-            <button
-              onClick={() => setServiceChoice("indicator_on")}
-              style={{
-                width: "70%",
-                padding: "14px",
-                background: serviceChoice === "indicator_on" ? "#FF4040" : "#eee",
-                color: serviceChoice === "indicator_on" ? "white" : "black",
-                border: "none",
-                borderRadius: "6px",
-                fontWeight: "bold",
-                cursor: "pointer",
-              }}
-            >
-              Service Indicator On
-            </button>
+            {["reset", "not_required", "no_reminder", "indicator_on"].map((choice) => (
+              <button
+                key={choice}
+                onClick={() => setServiceChoice(choice)}
+                style={{
+                  width: "70%",
+                  padding: "14px",
+                  background: serviceChoice === choice ? "#FF4040" : "#eee",
+                  color: serviceChoice === choice ? "white" : "black",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                {choice === "reset"
+                  ? "Service Reminder Reset"
+                  : choice === "not_required"
+                  ? "Service Reminder Not Required"
+                  : choice === "no_reminder"
+                  ? "Doesn’t Have a Service Reminder"
+                  : "Service Indicator On"}
+              </button>
+            ))}
             <button
               onClick={() => {
                 setActiveConcernTarget("service");
@@ -177,12 +137,12 @@ export default function ServiceIndicatorDetailsModal({
             </button>
           </div>
 
-          {/* RIGHT SIDE - Split top/bottom */}
+          {/* RIGHT SIDE */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "20px" }}>
-            {/* Top Half - Oil Level */}
+            {/* Top 40% - Oil Level */}
             <div
               style={{
-                flex: 1,
+                flex: 0.4,
                 borderBottom: "1px solid #ddd",
                 display: "flex",
                 flexDirection: "column",
@@ -193,48 +153,23 @@ export default function ServiceIndicatorDetailsModal({
             >
               <h3>Oil Level OK?</h3>
               <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-                <button
-                  onClick={() => setOilStatus("Yes")}
-                  style={{
-                    padding: "12px 18px",
-                    background: oilStatus === "Yes" ? "#FF4040" : "#eee",
-                    color: oilStatus === "Yes" ? "white" : "black",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                  }}
-                >
-                  Yes
-                </button>
-                <button
-                  onClick={() => setOilStatus("No")}
-                  style={{
-                    padding: "12px 18px",
-                    background: oilStatus === "No" ? "#FF4040" : "#eee",
-                    color: oilStatus === "No" ? "white" : "black",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                  }}
-                >
-                  No
-                </button>
-                <button
-                  onClick={() => setOilStatus("EV")}
-                  style={{
-                    padding: "12px 18px",
-                    background: oilStatus === "EV" ? "#FF4040" : "#eee",
-                    color: oilStatus === "EV" ? "white" : "black",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                  }}
-                >
-                  EV
-                </button>
+                {["Yes", "No", "EV"].map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setOilStatus(status)}
+                    style={{
+                      padding: "12px 18px",
+                      background: oilStatus === status ? "#FF4040" : "#eee",
+                      color: oilStatus === status ? "white" : "black",
+                      border: "none",
+                      borderRadius: "6px",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {status}
+                  </button>
+                ))}
               </div>
               <button
                 onClick={() => {
@@ -255,14 +190,15 @@ export default function ServiceIndicatorDetailsModal({
               </button>
             </div>
 
-            {/* Bottom Half - Other Under Bonnet Items */}
+            {/* Bottom 60% - Other Under Bonnet Items */}
             <div
               style={{
-                flex: 1,
+                flex: 0.6,
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
-                gap: "12px",
-                padding: "10px",
+                gap: "15px", 
+                padding: "1px",
+                alignContent: "start", // move buttons to top
               }}
             >
               {underBonnetItems.map((item) => (
@@ -273,7 +209,7 @@ export default function ServiceIndicatorDetailsModal({
                     setShowConcernModal(true);
                   }}
                   style={{
-                    padding: "12px",
+                    padding: "10px", // medium size between small and original
                     background: "#eee",
                     color: "black",
                     border: "none",
@@ -289,7 +225,7 @@ export default function ServiceIndicatorDetailsModal({
           </div>
         </div>
 
-        {/* ✅ Concern Modal Popup */}
+        {/* Concern Modal */}
         {showConcernModal && (
           <div
             style={{
@@ -298,96 +234,84 @@ export default function ServiceIndicatorDetailsModal({
               left: 0,
               width: "100vw",
               height: "100vh",
-              background: "rgba(0,0,0,0.6)",
+              background: "rgba(0,0,0,0.5)",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              zIndex: 1100,
+              zIndex: 3000,
             }}
           >
             <div
               style={{
                 background: "white",
-                padding: "20px",
-                borderRadius: "8px",
+                borderRadius: "10px",
+                padding: "24px",
                 width: "400px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+                maxHeight: "80%",
+                overflowY: "auto",
               }}
             >
-              <h3 style={{ marginBottom: "10px" }}>Add Concern</h3>
+              <h3 style={{ color: "#FF4040" }}>Add Concern</h3>
               <textarea
                 value={newConcern}
                 onChange={(e) => setNewConcern(e.target.value)}
                 placeholder="Describe concern..."
-                style={{
-                  width: "100%",
-                  height: "80px",
-                  padding: "8px",
-                  borderRadius: "6px",
-                  border: "1px solid #ccc",
-                  marginBottom: "10px",
-                }}
+                style={{ padding: "8px", borderRadius: "6px", border: "1px solid #ccc", fontSize: "1rem" }}
               />
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  gap: "10px",
-                  marginBottom: "10px",
-                }}
-              >
-                {["Red", "Amber", "Green"].map((s) => (
+              <div style={{ display: "flex", gap: "10px" }}>
+                {["Red", "Amber", "Green"].map((status) => (
                   <button
-                    key={s}
-                    onClick={() => setConcernStatus(s)}
+                    key={status}
+                    onClick={() => setConcernStatus(status)}
                     style={{
-                      padding: "8px 12px",
-                      background: concernStatus === s ? "#FF4040" : "#eee",
-                      color: concernStatus === s ? "white" : "black",
-                      border: "none",
+                      flex: 1,
+                      padding: "8px",
                       borderRadius: "6px",
+                      border: "none",
+                      fontWeight: "bold",
                       cursor: "pointer",
+                      background: concernStatus === status ? "#FF4040" : "#ddd",
+                      color: concernStatus === status ? "white" : "black",
                     }}
                   >
-                    {s}
+                    {status}
                   </button>
                 ))}
               </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-                <button
-                  onClick={() => {
-                    setShowConcernModal(false);
-                    setActiveConcernTarget(null);
-                  }}
-                  style={{
-                    padding: "8px 12px",
-                    background: "gray",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={addConcern}
-                  style={{
-                    padding: "8px 12px",
-                    background: "#FF4040",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Save
-                </button>
-              </div>
+              <button
+                onClick={addConcern}
+                style={{
+                  padding: "10px",
+                  borderRadius: "6px",
+                  background: "#FF4040",
+                  color: "white",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                Save Concern
+              </button>
+              <button
+                onClick={() => setShowConcernModal(false)}
+                style={{
+                  padding: "10px",
+                  borderRadius: "6px",
+                  background: "#ccc",
+                  color: "black",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                Close
+              </button>
             </div>
           </div>
         )}
 
-        {/* ✅ Fixed buttons */}
+        {/* Fixed buttons */}
         <div
           style={{
             position: "absolute",
@@ -415,7 +339,7 @@ export default function ServiceIndicatorDetailsModal({
             disabled={!canComplete}
             onClick={() => onComplete({ serviceChoice, oilStatus, concerns })}
             style={{
-              padding: "10px 16px",
+              padding: "1px 16px",
               border: "none",
               background: canComplete ? "#FF4040" : "#aaa",
               color: "white",
