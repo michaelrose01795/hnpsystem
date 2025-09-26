@@ -1,184 +1,124 @@
-// file location: src/pages/job-cards/[jobNumber].js
-import React, { useState } from "react";
+// file location: src/pages/job-cards/[jobNumber]/check-box.js
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
+import SignatureCanvas from "react-signature-canvas";
 
-export default function JobCardPage() {
+export default function CheckBoxPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
+  const [formFields, setFormFields] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const sigCanvas = useRef(null);
 
-  const handleStartVHC = () => {
+  useEffect(() => {
     if (!jobNumber) return;
-    router.push(`/job-cards/${jobNumber}/vhc`);
+
+    // Use mock fields for now to avoid "Failed to load check sheet"
+    const fields = [
+      "Oil Level",
+      "Brakes Condition",
+      "Tyres Condition",
+      "Lights Working",
+      "Fluid Levels",
+      "Suspension Check"
+    ];
+    const parsedFields = fields.map(name => ({ name, checked: false }));
+    setFormFields(parsedFields);
+    setLoading(false);
+  }, [jobNumber]);
+
+  const toggleCheckbox = (index) => {
+    setFormFields(prev =>
+      prev.map((f, i) => (i === index ? { ...f, checked: !f.checked } : f))
+    );
   };
 
-  const handleWriteUp = () => {
-    if (!jobNumber) return;
-    router.push(`/job-cards/${jobNumber}/write-up`);
+  const checkAll = () => {
+    setFormFields(prev => prev.map(f => ({ ...f, checked: true })));
   };
 
-  const handleCheckBox = () => {
-    if (!jobNumber) return;
-    router.push(`/job-cards/${jobNumber}/check-box`);
+  const handleClearSignature = () => {
+    sigCanvas.current.clear();
   };
 
-  const handleFullCarDetails = () => {
-    if (!jobNumber) return;
-    router.push(`/dealership/car-details/${jobNumber}`);
+  const handleSave = async () => {
+    if (sigCanvas.current) {
+      const canvas = sigCanvas.current.getCanvas();
+      const signatureData = canvas && !sigCanvas.current.isEmpty() ? canvas.toDataURL("image/png") : null;
+
+      try {
+        const res = await fetch(`/api/job-cards/${jobNumber}/save-checksheet`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ formFields, signatureData }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert(data.message || "Check sheet saved successfully");
+          router.push(`/job-cards/${jobNumber}`);
+        } else {
+          alert(data.error || "Failed to save check sheet");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Failed to save check sheet");
+      }
+    } else {
+      alert("Please provide a signature before saving.");
+    }
   };
 
-  const [requests, setRequests] = useState([
-    "Oil change",
-    "Brake inspection",
-    "MOT preparation"
-  ]);
-
-  // Fixed heights
-  const sectionHeight = "250px"; // vehicle & customer
-  const jobDetailsHeight = "350px"; // 3x taller
-  const bottomRowHeight = "150px"; // last row
+  if (loading) return <Layout><p>Loading check sheet...</p></Layout>;
 
   return (
     <Layout>
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "16px" }}>
-        {/* Top row */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: "1rem", color: "#555" }}>Retail / Sales / Warranty</h2>
-            <h1 style={{ color: "#FF4040", margin: 0 }}>Job Card: {jobNumber || "Loading..."}</h1>
+      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "16px" }}>
+        <h2>Service Check Sheet for Job {jobNumber}</h2>
+
+        {formFields.map((field, index) => (
+          <div key={index} style={{ marginBottom: "8px" }}>
+            <label>
+              <input
+                type="checkbox"
+                checked={field.checked}
+                onChange={() => toggleCheckbox(index)}
+              />
+              {field.name}
+            </label>
           </div>
+        ))}
+
+        <h3>Technician Signature</h3>
+        <SignatureCanvas
+          ref={sigCanvas}
+          penColor="black"
+          canvasProps={{ width: 600, height: 150, className: "sigCanvas", style: { border: "1px solid #000" } }}
+        />
+
+        <div style={{ marginTop: "16px" }}>
           <button
-            onClick={handleStartVHC}
-            style={{
-              padding: "12px 20px",
-              backgroundColor: "#FF4040",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              fontWeight: "bold",
-              cursor: "pointer",
-              fontSize: "1rem",
-            }}
+            onClick={handleClearSignature}
+            style={{ marginRight: "12px", padding: "8px 16px", backgroundColor: "#ccc", border: "none", borderRadius: "6px" }}
           >
-            Start VHC
+            Clear
           </button>
-        </div>
 
-        {/* Vehicle & Customer Details */}
-        <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
-          {/* Vehicle Details */}
-          <div style={{
-            flex: 1,
-            backgroundColor: "white",
-            padding: "16px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            height: sectionHeight,
-            overflow: "hidden"
-          }}>
-            <h3 style={{ marginTop: 0, marginBottom: "12px" }}>Vehicle Details</h3>
-            <p><strong>Registration:</strong> ABC123</p>
-            <p><strong>Colour:</strong> Red</p>
-            <p><strong>Make & Model:</strong> Renault Clio Mk5 1.3 Turbo</p>
-            <p><strong>Chassis Number:</strong> XYZ987654321</p>
-            <p><strong>Engine Number:</strong> ENG123456789</p>
-            <div style={{ marginTop: "8px" }}>
-              <label>
-                <strong>Mileage:</strong>
-                <input type="number" placeholder="Enter miles" style={{ marginLeft: "8px", padding: "4px 8px", width: "100px" }} />
-              </label>
-            </div>
-          </div>
+          <button
+            onClick={handleSave}
+            style={{ marginRight: "12px", padding: "8px 16px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "6px" }}
+          >
+            Save Check Sheet
+          </button>
 
-          {/* Customer Details */}
-          <div style={{
-            flex: 1,
-            backgroundColor: "white",
-            padding: "16px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            height: sectionHeight,
-            overflow: "hidden"
-          }}>
-            <h3 style={{ marginTop: 0, marginBottom: "12px" }}>Customer Details</h3>
-            <p><strong>Full Name:</strong> John Doe</p>
-            <p><strong>Address:</strong><br />123 Example St,<br />London,<br />UK</p>
-            <p><strong>Email:</strong> john@example.com</p>
-            <p><strong>Phone:</strong> 01234 567890</p>
-          </div>
-        </div>
-
-        {/* Job Details */}
-        <div style={{
-          backgroundColor: "white",
-          padding: "16px",
-          borderRadius: "8px",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-          marginBottom: "24px",
-          height: jobDetailsHeight,
-        }}>
-          <h3 style={{ marginTop: 0 }}>Job Details</h3>
-          {requests.map((req, index) => (
-            <p key={index}><strong>Request {index + 1}:</strong> {req}</p>
-          ))}
-        </div>
-
-        {/* Bottom 4 sections */}
-        <div style={{ display: "flex", gap: "16px", height: bottomRowHeight }}>
-          {/* Cosmetic Damage */}
-          <div style={{
-            flex: 1,
-            backgroundColor: "white",
-            padding: "16px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            overflowY: "auto"
-          }}>
-            <h4 style={{ marginTop: 0 }}>Cosmetic Damage</h4>
-            <textarea placeholder="Scratches, dents, paint damage..." style={{ width: "100%", height: "80px", padding: "8px" }} />
-          </div>
-
-          {/* Write-Up */}
-          <div style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "#FF4040",
-            color: "white",
-            borderRadius: "8px",
-            cursor: "pointer"
-          }} onClick={handleWriteUp}>
-            <h4>Go to Write-Up</h4>
-          </div>
-
-          {/* Check Box */}
-          <div style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "#FF4040",
-            color: "white",
-            borderRadius: "8px",
-            cursor: "pointer"
-          }} onClick={handleCheckBox}>
-            <h4>Go to Check Box</h4>
-          </div>
-
-          {/* Full Car Details */}
-          <div style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "#FF4040",
-            color: "white",
-            borderRadius: "8px",
-            cursor: "pointer"
-          }} onClick={handleFullCarDetails}>
-            <h4>Full Car Details</h4>
-          </div>
+          <button
+            onClick={checkAll}
+            style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "6px" }}
+          >
+            Check All
+          </button>
         </div>
       </div>
     </Layout>
