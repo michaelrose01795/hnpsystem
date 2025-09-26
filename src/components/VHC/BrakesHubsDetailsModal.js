@@ -140,7 +140,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   // ✅ Pads Section
   const PadsSection = ({ category }) => (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, paddingRight: "12px" }}>
-      <label style={{ marginTop: "66px" }}>Pad Measurement (mm, comma-separated):</label>
+      <label style={{ marginTop: "66px" }}>Pad Measurement (mm):</label>
       <AutoCompleteInput
         value={data[category].measurement}
         onChange={(val) => updatePadMeasurement(category, val)}

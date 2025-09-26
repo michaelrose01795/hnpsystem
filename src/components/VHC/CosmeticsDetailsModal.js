@@ -1,34 +1,24 @@
 // file location: src/components/VHC/CosmeticsDetailsModal.js
-
 import React, { useState } from "react";
 
 export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, initialData }) {
   const [data, setData] = useState({
-    "Bodywork & Paint": { concerns: [] },
-    "Glass & Mirrors": { concerns: [] },
-    "Interior Trim": { concerns: [] },
-    "Upholstery & Seats": { concerns: [] },
-    "Media Systems": { concerns: [] },
-    Miscellaneous: { concerns: [] },
-    ...initialData,
+    "Bodywork & Paint": { concerns: [] }, // category for cosmetic bodywork issues
+    "Media Systems": { concerns: [] }, // category for multimedia issues
+    Miscellaneous: { concerns: [] }, // category for other issues
+    ...initialData, // merge in any existing saved data
   });
 
   const [activeConcern, setActiveConcern] = useState({
     open: false,
     category: "",
-    temp: { issue: "", status: "Red" },
+    temp: { issue: "", status: "Red" }, // temporary input when adding
   });
 
-  if (!isOpen) return null;
+  if (!isOpen) return null; // don't render if modal is closed
 
-  const buttonOrder = [
-    "Bodywork & Paint",
-    "Glass & Mirrors",
-    "Interior Trim",
-    "Upholstery & Seats",
-    "Media Systems",
-    "Miscellaneous",
-  ];
+  // Only keep the 3 buttons required
+  const buttonOrder = ["Bodywork & Paint", "Media Systems", "Miscellaneous"];
 
   const openConcern = (key) => {
     setActiveConcern({ open: true, category: key, temp: { issue: "", status: "Red" } });
@@ -36,7 +26,7 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
 
   const addConcern = () => {
     const { category, temp } = activeConcern;
-    if (temp.issue.trim() === "") return; // prevent empty concerns
+    if (temp.issue.trim() === "") return;
     setData((prev) => ({
       ...prev,
       [category]: { ...prev[category], concerns: [...prev[category].concerns, temp] },
@@ -88,15 +78,12 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
       >
         <h2 style={{ color: "#FF4040", marginBottom: "24px" }}>Cosmetics Inspection</h2>
 
-        {/* Button Grid */}
+        {/* Button Row */}
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gridTemplateRows: "repeat(2, 1fr)",
-            gap: "16px",
-            width: "100%",
-            maxWidth: "750px",
+            display: "flex",
+            justifyContent: "center",
+            gap: "24px",
             marginBottom: "40px",
           }}
         >
@@ -189,7 +176,7 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
             >
               <h3 style={{ color: "#FF4040" }}>{activeConcern.category}</h3>
 
-              {/* Input to add new concern */}
+              {/* Input for new concern */}
               <input
                 type="text"
                 placeholder="Enter issue"
@@ -209,7 +196,6 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
               >
                 <option>Red</option>
                 <option>Amber</option>
-                <option>Green</option>
               </select>
 
               <button
@@ -227,7 +213,7 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
                 Add Concern
               </button>
 
-              {/* List of existing concerns */}
+              {/* Existing concerns list */}
               {data[activeConcern.category].concerns.map((c, idx) => (
                 <div
                   key={idx}
@@ -255,7 +241,6 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
                   >
                     <option>Red</option>
                     <option>Amber</option>
-                    <option>Green</option>
                   </select>
                   <button
                     onClick={() => deleteConcern(activeConcern.category, idx)}

@@ -7,7 +7,9 @@ import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
 import BrakesHubsDetailsModal from "@/components/VHC/BrakesHubsDetailsModal";
 import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetailsModal";
 import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
-import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal"; // ✅ New Internal Electrics modal
+import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal";
+import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
+import CosmeticsDetailsModal from "@/components/VHC/CosmeticsDetailsModal"; // ✅ cosmetics modal
 
 // ✅ Section title mapping
 const SECTION_TITLES = {
@@ -17,7 +19,7 @@ const SECTION_TITLES = {
   externalInspection: "External / Drive-in Inspection",
   internalElectrics: "Internal / Lamps / Electrics",
   underside: "Underside",
-  cosmetics: "Cosmetics",
+  cosmetics: "Cosmetics", // ✅ cosmetics section
 };
 
 // ✅ Reusable section card component
@@ -37,30 +39,41 @@ export default function VHCPAGE() {
   const router = useRouter();
   const { jobNumber } = router.query;
 
+  // ✅ VHC Data structure
   const [vhcData, setVhcData] = useState({
     wheelsTyres: null,
     brakesHubs: [],
     serviceIndicator: [],
     externalInspection: [],
-    internalElectrics: [],
-    underside: [],
-    cosmetics: [],
+    internalElectrics: {
+      "Lights Front": { concerns: [] },
+      "Lights Rear": { concerns: [] },
+      "Lights Interior": { concerns: [] },
+      "Horn/Washers/Wipers": { concerns: [] },
+      "Air Con/Heating/Ventilation": { concerns: [] },
+      "Warning Lamps": { concerns: [] },
+      Seatbelt: { concerns: [] },
+      Miscellaneous: { concerns: [] },
+    },
+    underside: {
+      "Exhaust System/Catalyst": { concerns: [] },
+      Steering: { concerns: [] },
+      "Front Suspension": { concerns: [] },
+      "Rear Suspension": { concerns: [] },
+      "Driveshafts/Oil Leaks": { concerns: [] },
+      Miscellaneous: { concerns: [] },
+    },
+    cosmetics: {
+      "Bodywork & Paint": { concerns: [] },
+      "Glass & Mirrors": { concerns: [] },
+      "Interior Trim": { concerns: [] },
+      "Upholstery & Seats": { concerns: [] },
+      "Media Systems": { concerns: [] },
+      Miscellaneous: { concerns: [] },
+    },
   });
 
   const [activeSection, setActiveSection] = useState(null);
-
-  // ✅ Handlers for adding/deleting issues (used for generic sections)
-  const handleAddIssue = (section) =>
-    setVhcData((prev) => ({
-      ...prev,
-      [section]: [...prev[section], { title: "New Issue", details: "" }],
-    }));
-
-  const handleDeleteIssue = (section, idx) =>
-    setVhcData((prev) => ({
-      ...prev,
-      [section]: prev[section].filter((_, i) => i !== idx),
-    }));
 
   return (
     <Layout>
@@ -111,12 +124,12 @@ export default function VHCPAGE() {
             "externalInspection",
             "internalElectrics",
             "underside",
-            "cosmetics",
+            "cosmetics", // ✅ cosmetics card included
           ].map((section) => (
             <SectionCard
               key={section}
               title={SECTION_TITLES[section]}
-              subtitle={`${vhcData[section].length} issues logged`}
+              subtitle={`${Object.keys(vhcData[section]).length || 0} categories`}
               onClick={() => setActiveSection(section)}
             />
           ))}
@@ -181,13 +194,28 @@ export default function VHCPAGE() {
           />
         )}
 
-        {["underside", "cosmetics"].includes(activeSection) && (
-          <VHCModal
-            title={SECTION_TITLES[activeSection]}
-            issues={vhcData[activeSection]}
-            onAddIssue={() => handleAddIssue(activeSection)}
-            onDeleteIssue={(idx) => handleDeleteIssue(activeSection, idx)}
+        {activeSection === "underside" && (
+          <UndersideDetailsModal
+            isOpen={true}
+            initialData={vhcData.underside}
             onClose={() => setActiveSection(null)}
+            onComplete={(data) => {
+              setVhcData((prev) => ({ ...prev, underside: data }));
+              setActiveSection(null);
+            }}
+          />
+        )}
+
+        {/* ✅ Cosmetics Modal */}
+        {activeSection === "cosmetics" && (
+          <CosmeticsDetailsModal
+            isOpen={true}
+            initialData={vhcData.cosmetics}
+            onClose={() => setActiveSection(null)}
+            onComplete={(data) => {
+              setVhcData((prev) => ({ ...prev, cosmetics: data }));
+              setActiveSection(null);
+            }}
           />
         )}
       </div>
