@@ -35,6 +35,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
 
   const addConcern = () => {
     const { category, temp } = activeConcern;
+    if (temp.issue.trim() === "") return; // prevent empty concerns
     setData((prev) => ({
       ...prev,
       [category]: { ...prev[category], concerns: [...prev[category].concerns, temp] },
@@ -42,13 +43,16 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
     setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } });
   };
 
+  const updateConcern = (category, idx, field, value) => {
+    const updated = [...data[category].concerns];
+    updated[idx][field] = value;
+    setData((prev) => ({ ...prev, [category]: { ...prev[category], concerns: updated } }));
+  };
+
   const deleteConcern = (category, idx) => {
     setData((prev) => ({
       ...prev,
-      [category]: {
-        ...prev[category],
-        concerns: prev[category].concerns.filter((_, i) => i !== idx),
-      },
+      [category]: { ...prev[category], concerns: prev[category].concerns.filter((_, i) => i !== idx) },
     }));
   };
 
@@ -174,13 +178,17 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                 background: "white",
                 borderRadius: "10px",
                 padding: "24px",
-                width: "400px",
+                width: "450px",
+                maxHeight: "80%",
                 display: "flex",
                 flexDirection: "column",
-                gap: "12px",
+                gap: "16px",
+                overflowY: "auto",
               }}
             >
               <h3 style={{ color: "#FF4040" }}>{activeConcern.category}</h3>
+
+              {/* Input to add new concern */}
               <input
                 type="text"
                 placeholder="Enter issue"
@@ -188,7 +196,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                 onChange={(e) =>
                   setActiveConcern((prev) => ({ ...prev, temp: { ...prev.temp, issue: e.target.value } }))
                 }
-                style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
+                style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc", fontSize: "1rem" }}
               />
               <label>Status:</label>
               <select
@@ -196,25 +204,64 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                 onChange={(e) =>
                   setActiveConcern((prev) => ({ ...prev, temp: { ...prev.temp, status: e.target.value } }))
                 }
-                style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
+                style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc", fontSize: "1rem" }}
               >
                 <option>Red</option>
                 <option>Amber</option>
               </select>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "12px" }}>
-                <button
-                  onClick={() => setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } })}
-                  style={{ padding: "6px 12px", border: "none", borderRadius: "6px", background: "#ccc", fontWeight: "bold", cursor: "pointer" }}
+
+              <button
+                onClick={addConcern}
+                style={{ padding: "8px", border: "none", borderRadius: "6px", background: "#FF4040", color: "white", fontWeight: "bold", cursor: "pointer" }}
+              >
+                Add Concern
+              </button>
+
+              {/* List of existing concerns */}
+              {data[activeConcern.category].concerns.map((c, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    padding: "8px",
+                    background: "#f5f5f5",
+                    borderRadius: "6px",
+                    fontSize: "1rem",
+                  }}
                 >
-                  Close
-                </button>
-                <button
-                  onClick={addConcern}
-                  style={{ padding: "6px 12px", border: "none", borderRadius: "6px", background: "#FF4040", color: "white", fontWeight: "bold", cursor: "pointer" }}
-                >
-                  Add
-                </button>
-              </div>
+                  <input
+                    type="text"
+                    value={c.issue}
+                    onChange={(e) => updateConcern(activeConcern.category, idx, "issue", e.target.value)}
+                    style={{ flex: 1, padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
+                  />
+                  <select
+                    value={c.status}
+                    onChange={(e) => updateConcern(activeConcern.category, idx, "status", e.target.value)}
+                    style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
+                  >
+                    <option>Red</option>
+                    <option>Amber</option>
+                  </select>
+                  <button
+                    onClick={() => deleteConcern(activeConcern.category, idx)}
+                    style={{ padding: "6px 10px", border: "none", borderRadius: "6px", background: "#FF4040", color: "white", fontWeight: "bold", cursor: "pointer" }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+
+              {/* Close button */}
+              <button
+                onClick={() => setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } })}
+                style={{ padding: "8px", border: "none", borderRadius: "6px", background: "#ccc", fontWeight: "bold", cursor: "pointer" }}
+              >
+                Close
+              </button>
             </div>
           </div>
         )}
