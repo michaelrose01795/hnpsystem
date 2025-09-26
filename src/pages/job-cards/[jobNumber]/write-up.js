@@ -32,6 +32,11 @@ export default function WriteUpPage() {
     setWriteUpData(prev => ({ ...prev, [field]: updatedArray }));
   };
 
+  // Navigation buttons
+  const goBackToJobCard = () => router.push(`/job-cards/${jobNumber}`);
+  const goToCheckSheet = () => router.push(`/job-cards/${jobNumber}/check-box`);
+  const goToVehicleDetails = () => router.push(`/job-cards/${jobNumber}/dealership-car-details`);
+
   return (
     <Layout>
       <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "16px", display: "flex", gap: "16px" }}>
@@ -221,6 +226,30 @@ export default function WriteUpPage() {
 
           </div>
         </div>
+      </div>
+
+      {/* Bottom Navigation Buttons */}
+      <div style={{ maxWidth: "1400px", margin: "24px auto 0 auto", display: "flex", gap: "12px" }}>
+        <button
+          onClick={goBackToJobCard}
+          style={{ flex: 1, padding: "12px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "6px" }}
+        >
+          Back to Job Card
+        </button>
+
+        <button
+          onClick={goToCheckSheet}
+          style={{ flex: 1, padding: "12px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "6px" }}
+        >
+          Check Sheet
+        </button>
+
+        <button
+          onClick={goToVehicleDetails}
+          style={{ flex: 1, padding: "12px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "6px" }}
+        >
+          Vehicle Details
+        </button>
       </div>
     </Layout>
   );
