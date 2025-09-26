@@ -134,7 +134,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   // ✅ Discs Section
   const DiscsSection = ({ category, showDrumButton }) => (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, borderLeft: "1px solid #ddd", paddingLeft: "12px" }}>
-      <div style={{ display: "flex", gap: "8px", marginBottom: "12px", justifyContent: "space-between" }}>
+      <div style={{ display: "flex", gap: "8px", marginBottom: "8px", justifyContent: "space-between" }}>
         <div style={{ display: "flex", gap: "8px" }}>
           {["measurements", "visual"].map((tab) => (
             <div key={tab} onClick={() => setData((prev) => ({ ...prev, [category]: { ...prev[category], tab } }))} style={{ padding: "6px 12px", cursor: "pointer", borderRadius: "4px", backgroundColor: data[category].tab === tab ? "#FF4040" : "#f5f5f5", color: data[category].tab === tab ? "white" : "black", fontWeight: data[category].tab === tab ? "bold" : "normal" }}>
@@ -217,7 +217,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           {/* ✅ Image Titles */}
           <h2 style={{ color: "#FF4040", marginBottom: "8px", fontSize: "24px" }}>Front</h2>
           <Image
-            src="/images/Brakes2.png"
+            src="/images/Brakes3.png"
             alt="Front Brakes"
             width={160}
             height={160}
@@ -232,7 +232,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
           <h2 style={{ color: "#FF4040", marginTop: "16px", marginBottom: "8px", fontSize: "24px" }}>Rear</h2>
           <Image
-            src="/images/Brakes2.png"
+            src="/images/Brakes3.png"
             alt="Rear Brakes"
             width={160}
             height={160}

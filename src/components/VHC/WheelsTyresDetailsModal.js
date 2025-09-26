@@ -2,8 +2,55 @@
 
 import React, { useState } from "react";
 
+// ✅ Autocomplete small component
+function AutoCompleteInput({ value, onChange, options, placeholder }) {
+  const [filtered, setFiltered] = useState([]);
+  const handleChange = (e) => {
+    const val = e.target.value;
+    onChange(val);
+    setFiltered(options.filter((o) => o.toLowerCase().includes(val.toLowerCase())));
+  };
+  return (
+    <div style={{ position: "relative" }}>
+      <input
+        placeholder={placeholder}
+        value={value}
+        onChange={handleChange}
+        style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
+      />
+      {filtered.length > 0 && (
+        <ul
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            background: "white",
+            border: "1px solid #ccc",
+            maxHeight: "100px",
+            overflowY: "auto",
+            zIndex: 100,
+            margin: 0,
+            padding: "5px",
+            listStyle: "none",
+          }}
+        >
+          {filtered.map((o, i) => (
+            <li
+              key={i}
+              onClick={() => onChange(o)}
+              style={{ padding: "4px", cursor: "pointer" }}
+            >
+              {o}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete }) {
-  // ✅ Tyre template
   const initialTyre = {
     manufacturer: "",
     runFlat: false,
@@ -15,14 +62,13 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
     concerns: [],
   };
 
-  // ✅ All wheels state
   const [tyres, setTyres] = useState({
     NSF: { ...initialTyre },
     OSF: { ...initialTyre },
     NSR: { ...initialTyre },
     OSR: { ...initialTyre },
     Spare: {
-      type: "",
+      type: "spare", // ✅ default is now 'spare'
       year: "",
       month: "",
       condition: "",
@@ -38,43 +84,22 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
   const [concernInput, setConcernInput] = useState("");
   const [concernStatus, setConcernStatus] = useState("Amber");
 
-  // ✅ Tyre brands
   const tyreBrands = [
-    "Unknown",
-    "Michelin",
-    "Continental",
-    "Goodyear",
-    "Pirelli",
-    "Bridgestone",
-    "Dunlop",
-    "Yokohama",
-    "Hankook",
-    "Kumho",
-    "Falken",
-    "Toyo",
-    "Nexen",
-    "Firestone",
+    "Unknown", "Michelin", "Continental", "Goodyear", "Pirelli", "Bridgestone", "Dunlop",
+    "Yokohama", "Hankook", "Kumho", "Falken", "Toyo", "Nexen", "Firestone",
   ];
 
-  // ✅ Update normal fields
+  // ✅ Not checked last
+  const spareTypes = ["Spare Tyre", "Repair Kit", "space_saver", "boot_full", "not_checked"];
+
   const updateTyre = (field, value) => {
     if (activeWheel === "Spare") {
-      setTyres((prev) => ({
-        ...prev,
-        Spare: {
-          ...prev.Spare,
-          [field]: value,
-        },
-      }));
+      setTyres((prev) => ({ ...prev, Spare: { ...prev.Spare, details: { ...prev.Spare.details, [field]: value } } }));
     } else {
-      setTyres((prev) => ({
-        ...prev,
-        [activeWheel]: { ...prev[activeWheel], [field]: value },
-      }));
+      setTyres((prev) => ({ ...prev, [activeWheel]: { ...prev[activeWheel], [field]: value } }));
     }
   };
 
-  // ✅ Update tread
   const updateTread = (section, value) => {
     setTyres((prev) => {
       const updated = { ...prev };
@@ -88,11 +113,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
           middle: wheel.treadLocked.middle ? wheel.tread.middle : value,
           inner: wheel.treadLocked.inner ? wheel.tread.inner : value,
         };
-        updated[activeWheel] = {
-          ...wheel,
-          tread: newTread,
-          treadLocked: { ...wheel.treadLocked, outer: true },
-        };
+        updated[activeWheel] = { ...wheel, tread: newTread, treadLocked: { ...wheel.treadLocked, outer: true } };
       } else {
         updated[activeWheel] = {
           ...wheel,
@@ -104,7 +125,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
     });
   };
 
-  // ✅ Copy to all toggle
   const copyToAll = () => {
     setCopyActive((prev) => !prev);
     if (!copyActive) {
@@ -112,65 +132,43 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
       setTyres((prev) => {
         const updated = { ...prev };
         ["NSF", "OSF", "NSR", "OSR"].forEach((wheel) => {
-          updated[wheel] = {
-            ...updated[wheel],
-            manufacturer: current.manufacturer,
-            runFlat: current.runFlat,
-            size: current.size,
-            load: current.load,
-            speed: current.speed,
-          };
+          updated[wheel] = { ...updated[wheel], manufacturer: current.manufacturer, runFlat: current.runFlat, size: current.size, load: current.load, speed: current.speed };
         });
+        // ✅ copy to spare as well if spare type is 'spare'
         if (updated.Spare.type === "spare") {
-          updated.Spare.details = {
-            ...updated.Spare.details,
-            manufacturer: current.manufacturer,
-            runFlat: current.runFlat,
-            size: current.size,
-            load: current.load,
-            speed: current.speed,
-          };
+          updated.Spare.details = { ...updated.Spare.details, manufacturer: current.manufacturer, runFlat: current.runFlat, size: current.size, load: current.load, speed: current.speed };
         }
         return updated;
       });
     }
   };
 
-  // ✅ Add concern
   const addConcern = () => {
     if (!concernInput.trim()) return;
     setTyres((prev) => {
       const updated = { ...prev };
       if (!updated[activeWheel].concerns) updated[activeWheel].concerns = [];
-      updated[activeWheel].concerns.push({
-        text: concernInput,
-        status: concernStatus,
-      });
+      updated[activeWheel].concerns.push({ text: concernInput, status: concernStatus });
       return updated;
     });
     setConcernModal(null);
     setConcernInput("");
   };
 
-  // ✅ Validation - all wheels & spare
   const allWheelsComplete = () => {
     const checkTyre = (t) => t.manufacturer && t.size && t.load && t.speed;
     const mainWheels = ["NSF", "OSF", "NSR", "OSR"].every((w) => checkTyre(tyres[w]));
     let spareOk = false;
-
-    if (tyres.Spare.type === "spare") {
-      spareOk =
-        tyres.Spare.details.manufacturer &&
-        tyres.Spare.details.size &&
-        tyres.Spare.details.load &&
-        tyres.Spare.details.speed;
-    } else if (tyres.Spare.type === "repair") {
-      spareOk = tyres.Spare.month && tyres.Spare.year;
-    } else if (tyres.Spare.type === "space_saver") {
-      spareOk = tyres.Spare.condition !== "";
-    } else if (tyres.Spare.type === "not_checked") {
-      spareOk = tyres.Spare.note.trim() !== "";
-    } else if (tyres.Spare.type === "boot_full") {
+    const spare = tyres.Spare;
+    if (spare.type === "spare") {
+      spareOk = spare.details.manufacturer && spare.details.size && spare.details.load && spare.details.speed;
+    } else if (spare.type === "repair") {
+      spareOk = spare.month && spare.year;
+    } else if (spare.type === "space_saver") {
+      spareOk = spare.condition !== "";
+    } else if (spare.type === "not_checked") {
+      spareOk = spare.note.trim() !== "";
+    } else if (spare.type === "boot_full") {
       spareOk = true;
     }
     return mainWheels && spareOk;
@@ -178,7 +176,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
 
   if (!isOpen) return null;
 
-  // ✅ Button style
   const buttonStyle = (active) => ({
     padding: "8px 12px",
     background: active ? "#FF4040" : "#ddd",
@@ -190,7 +187,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
     cursor: "pointer",
   });
 
-  // ✅ Input style (for tread boxes narrower)
   const treadInputStyle = (active) => ({
     padding: "6px",
     background: active ? "#FF4040" : "#f0f0f0",
@@ -201,6 +197,10 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
     width: "70px",
     textAlign: "center",
   });
+
+  // ✅ Month & Year arrays
+  const months = Array.from({ length: 12 }, (_, i) => `${i + 1}`);
+  const years = Array.from({ length: 3000 - 2015 + 1 }, (_, i) => `${2015 + i}`);
 
   return (
     <div
@@ -225,6 +225,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
           height: "600px",
           display: "flex",
           overflow: "hidden",
+          position: "relative",
         }}
       >
         {/* LEFT SIDE */}
@@ -286,14 +287,13 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
         </div>
 
         {/* RIGHT SIDE */}
-        <div style={{ flex: 1, padding: "20px", overflowY: "auto" }}>
+        <div style={{ flex: 1, padding: "20px", overflowY: "auto", position: "relative" }}>
           <h2 style={{ color: "#FF4040", marginBottom: "20px" }}>
             {activeWheel === "Spare" ? "Spare / Kit Details" : `${activeWheel} Tyre Details`}
           </h2>
 
           {activeWheel !== "Spare" ? (
             <>
-              {/* Copy + Run Flat */}
               <div style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
                 <button onClick={copyToAll} style={buttonStyle(copyActive)}>
                   Copy to All
@@ -306,7 +306,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
                 </button>
               </div>
 
-              {/* Dropdowns */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <select
                   value={tyres[activeWheel].manufacturer}
@@ -315,9 +314,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
                 >
                   <option value="">Manufacturer</option>
                   {tyreBrands.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
+                    <option key={b} value={b}>{b}</option>
                   ))}
                 </select>
                 <input
@@ -340,7 +337,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
                 />
               </div>
 
-              {/* Tread depths */}
               <h4 style={{ marginTop: "20px" }}>Tread Depth (mm)</h4>
               <div style={{ display: "flex", gap: "12px" }}>
                 {["outer", "middle", "inner"].map((section) => (
@@ -356,157 +352,112 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
             </>
           ) : (
             <>
-              {/* Spare / Kit options */}
-              <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
-                {["spare", "repair", "space_saver", "not_checked", "boot_full"].map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => updateTyre("type", type)}
-                    style={buttonStyle(tyres.Spare.type === type)}
-                  >
-                    {type.replace("_", " ")}
-                  </button>
-                ))}
+              {/* Spare / Kit full layout with buttons */}
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ fontWeight: "bold", display: "block", marginBottom: "8px" }}>Spare Type:</label>
+                <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+                  {spareTypes.map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setTyres((prev) => ({ ...prev, Spare: { ...prev.Spare, type } }))}
+                      style={buttonStyle(tyres.Spare.type === type)}
+                    >
+                      {type.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Spare type details */}
-              {tyres.Spare.type === "spare" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px" }}>
+              {tyres.Spare.type === "Spare Tyre" && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "10px" }}>
                   <select
                     value={tyres.Spare.details.manufacturer}
-                    onChange={(e) =>
-                      setTyres((p) => ({
-                        ...p,
-                        Spare: {
-                          ...p.Spare,
-                          details: { ...p.Spare.details, manufacturer: e.target.value },
-                        },
-                      }))
-                    }
+                    onChange={(e) => updateTyre("manufacturer", e.target.value)}
                     style={buttonStyle(!!tyres.Spare.details.manufacturer)}
                   >
                     <option value="">Manufacturer</option>
                     {tyreBrands.map((b) => (
-                      <option key={b}>{b}</option>
+                      <option key={b} value={b}>{b}</option>
                     ))}
                   </select>
                   <input
                     placeholder="Size"
                     value={tyres.Spare.details.size}
-                    onChange={(e) =>
-                      setTyres((p) => ({
-                        ...p,
-                        Spare: {
-                          ...p.Spare,
-                          details: { ...p.Spare.details, size: e.target.value },
-                        },
-                      }))
-                    }
+                    onChange={(e) => updateTyre("size", e.target.value)}
                     style={buttonStyle(!!tyres.Spare.details.size)}
                   />
                   <input
                     placeholder="Load"
                     value={tyres.Spare.details.load}
-                    onChange={(e) =>
-                      setTyres((p) => ({
-                        ...p,
-                        Spare: {
-                          ...p.Spare,
-                          details: { ...p.Spare.details, load: e.target.value },
-                        },
-                      }))
-                    }
+                    onChange={(e) => updateTyre("load", e.target.value)}
                     style={buttonStyle(!!tyres.Spare.details.load)}
                   />
                   <input
                     placeholder="Speed"
                     value={tyres.Spare.details.speed}
-                    onChange={(e) =>
-                      setTyres((p) => ({
-                        ...p,
-                        Spare: {
-                          ...p.Spare,
-                          details: { ...p.Spare.details, speed: e.target.value },
-                        },
-                      }))
-                    }
+                    onChange={(e) => updateTyre("speed", e.target.value)}
                     style={buttonStyle(!!tyres.Spare.details.speed)}
                   />
                 </div>
               )}
 
-              {tyres.Spare.type === "repair" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              {/* ✅ Repair kit as dropdowns */}
+              {tyres.Spare.type === "Repair Kit" && (
+                <div style={{ display: "flex", gap: "12px", marginTop: "10px" }}>
                   <select
                     value={tyres.Spare.month}
-                    onChange={(e) => updateTyre("month", e.target.value)}
+                    onChange={(e) => setTyres((prev) => ({ ...prev, Spare: { ...prev.Spare, month: e.target.value } }))}
                     style={buttonStyle(!!tyres.Spare.month)}
                   >
                     <option value="">Month</option>
-                    {[
-                      "January (1)",
-                      "February (2)",
-                      "March (3)",
-                      "April (4)",
-                      "May (5)",
-                      "June (6)",
-                      "July (7)",
-                      "August (8)",
-                      "September (9)",
-                      "October (10)",
-                      "November (11)",
-                      "December (12)",
-                    ].map((m) => (
-                      <option key={m}>{m}</option>
+                    {months.map((m) => (
+                      <option key={m} value={m}>{m}</option>
                     ))}
                   </select>
                   <select
                     value={tyres.Spare.year}
-                    onChange={(e) => updateTyre("year", e.target.value)}
+                    onChange={(e) => setTyres((prev) => ({ ...prev, Spare: { ...prev.Spare, year: e.target.value } }))}
                     style={buttonStyle(!!tyres.Spare.year)}
                   >
                     <option value="">Year</option>
-                    {Array.from({ length: 20 }, (_, i) => 2015 + i).map((y) => (
-                      <option key={y}>{y}</option>
+                    {years.map((y) => (
+                      <option key={y} value={y}>{y}</option>
                     ))}
                   </select>
                 </div>
               )}
 
+              {/* ✅ Space saver Good/Bad buttons */}
               {tyres.Spare.type === "space_saver" && (
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button
-                    onClick={() => updateTyre("condition", "Good")}
-                    style={buttonStyle(tyres.Spare.condition === "Good")}
-                  >
-                    Good
-                  </button>
-                  <button
-                    onClick={() => updateTyre("condition", "Bad")}
-                    style={buttonStyle(tyres.Spare.condition === "Bad")}
-                  >
-                    Bad
-                  </button>
+                <div style={{ display: "flex", gap: "12px", marginTop: "10px" }}>
+                  {["Good", "Bad"].map((cond) => (
+                    <button
+                      key={cond}
+                      onClick={() => setTyres((prev) => ({ ...prev, Spare: { ...prev.Spare, condition: cond } }))}
+                      style={buttonStyle(tyres.Spare.condition === cond)}
+                    >
+                      {cond}
+                    </button>
+                  ))}
                 </div>
               )}
 
               {tyres.Spare.type === "not_checked" && (
                 <textarea
-                  placeholder="Reason"
+                  placeholder="Notes"
                   value={tyres.Spare.note}
-                  onChange={(e) => updateTyre("note", e.target.value)}
-                  style={{ width: "100%", minHeight: "80px" }}
+                  onChange={(e) => setTyres((prev) => ({ ...prev, Spare: { ...prev.Spare, note: e.target.value } }))}
+                  style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #ccc", marginTop: "10px", minHeight: "60px" }}
                 />
               )}
+
+              {tyres.Spare.type === "boot_full" && <p>Boot is full.</p>}
             </>
           )}
 
-          {/* Concerns */}
           <div style={{ marginTop: "20px" }}>
             <h4>Concerns</h4>
-            <button onClick={() => setConcernModal(true)} style={buttonStyle(false)}>
-              Add Concern
-            </button>
+            <button onClick={() => setConcernModal(true)} style={buttonStyle(false)}>Add Concern</button>
             <ul>
               {(tyres[activeWheel].concerns || []).map((c, idx) => (
                 <li key={idx} style={{ color: c.status === "Red" ? "red" : "orange" }}>
@@ -516,8 +467,16 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
             </ul>
           </div>
 
-          {/* Buttons */}
-          <div className="flex justify-end gap-2 mt-4">
+          {/* ✅ Buttons absolutely positioned bottom-right */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: "20px",
+              right: "20px",
+              display: "flex",
+              gap: "10px",
+            }}
+          >
             <button
               onClick={onClose}
               style={{
@@ -526,30 +485,32 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
                 background: "#aaa",
                 color: "white",
                 borderRadius: "6px",
-                marginRight: "10px",
+                fontWeight: "bold",
+                cursor: "pointer",
               }}
             >
               Close
             </button>
             <button
-              onClick={() => allWheelsComplete() && onComplete(tyres)}
+              onClick={() => onComplete(tyres)}
               style={{
                 padding: "10px 20px",
                 border: "none",
-                background: allWheelsComplete() ? "#FF4040" : "#ddd",
+                background: "#FF4040",
                 color: "white",
                 borderRadius: "6px",
                 fontWeight: "bold",
+                cursor: "pointer",
               }}
               disabled={!allWheelsComplete()}
             >
-              Complete
+              Save
             </button>
           </div>
         </div>
       </div>
 
-      {/* Concern modal */}
+      {/* ✅ Simple concern modal */}
       {concernModal && (
         <div
           style={{
@@ -558,32 +519,33 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
             left: 0,
             width: "100vw",
             height: "100vh",
-            background: "rgba(0,0,0,0.5)",
+            background: "rgba(0,0,0,0.6)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
             zIndex: 3000,
           }}
         >
-          <div style={{ background: "white", padding: "20px", borderRadius: "8px", width: "400px" }}>
+          <div style={{ background: "white", padding: "20px", borderRadius: "10px", width: "400px" }}>
             <h3>Add Concern</h3>
-            <AutoCompleteInput
-              placeholder="Concern"
+            <input
+              placeholder="Concern description"
               value={concernInput}
-              onChange={setConcernInput}
-              options={concernOptions}
+              onChange={(e) => setConcernInput(e.target.value)}
+              style={{ width: "100%", marginBottom: "10px", padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
             />
-            <div style={{ margin: "10px 0" }}>
-              <button onClick={() => setConcernStatus("Amber")} style={buttonStyle(concernStatus === "Amber")}>
-                Amber
-              </button>
-              <button onClick={() => setConcernStatus("Red")} style={buttonStyle(concernStatus === "Red")}>
-                Red
-              </button>
+            <select
+              value={concernStatus}
+              onChange={(e) => setConcernStatus(e.target.value)}
+              style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #ccc", marginBottom: "10px" }}
+            >
+              <option value="Amber">Amber</option>
+              <option value="Red">Red</option>
+            </select>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <button onClick={() => setConcernModal(null)} style={buttonStyle(false)}>Cancel</button>
+              <button onClick={addConcern} style={buttonStyle(true)}>Add</button>
             </div>
-            <button onClick={addConcern} style={buttonStyle(true)}>
-              Save Concern
-            </button>
           </div>
         </div>
       )}
