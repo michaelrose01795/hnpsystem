@@ -6,7 +6,8 @@ import Layout from "../../../components/Layout";
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
 import BrakesHubsDetailsModal from "@/components/VHC/BrakesHubsDetailsModal";
 import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetailsModal";
-import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal"; // ✅ Import the new External modal
+import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
+import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal"; // ✅ New Internal Electrics modal
 
 // ✅ Section title mapping
 const SECTION_TITLES = {
@@ -48,7 +49,7 @@ export default function VHCPAGE() {
 
   const [activeSection, setActiveSection] = useState(null);
 
-  // ✅ Handlers for adding/deleting issues
+  // ✅ Handlers for adding/deleting issues (used for generic sections)
   const handleAddIssue = (section) =>
     setVhcData((prev) => ({
       ...prev,
@@ -75,7 +76,11 @@ export default function VHCPAGE() {
             <div className="flex-1 min-w-[48%]">
               <SectionCard
                 title="Wheels & Tyres"
-                subtitle={vhcData.wheelsTyres ? "Details completed" : "No issues logged yet"}
+                subtitle={
+                  vhcData.wheelsTyres
+                    ? "Details completed"
+                    : "No issues logged yet"
+                }
                 onClick={() => setActiveSection("wheelsTyres")}
               />
             </div>
@@ -102,7 +107,12 @@ export default function VHCPAGE() {
         {/* ✅ Optional Section */}
         <h2 className="text-xl font-bold text-gray-800 mb-4">Optional</h2>
         <div className="grid grid-cols-2 gap-4">
-          {["externalInspection", "internalElectrics", "underside", "cosmetics"].map((section) => (
+          {[
+            "externalInspection",
+            "internalElectrics",
+            "underside",
+            "cosmetics",
+          ].map((section) => (
             <SectionCard
               key={section}
               title={SECTION_TITLES[section]}
@@ -159,7 +169,19 @@ export default function VHCPAGE() {
           />
         )}
 
-        {["internalElectrics", "underside", "cosmetics"].includes(activeSection) && (
+        {activeSection === "internalElectrics" && (
+          <InternalElectricsDetailsModal
+            isOpen={true}
+            initialData={vhcData.internalElectrics}
+            onClose={() => setActiveSection(null)}
+            onComplete={(data) => {
+              setVhcData((prev) => ({ ...prev, internalElectrics: data }));
+              setActiveSection(null);
+            }}
+          />
+        )}
+
+        {["underside", "cosmetics"].includes(activeSection) && (
           <VHCModal
             title={SECTION_TITLES[activeSection]}
             issues={vhcData[activeSection]}
