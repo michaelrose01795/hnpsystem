@@ -194,7 +194,6 @@ export default function WriteUpPage() {
                     onChange={() => handleCheckboxChange("qty", idx)}
                     style={{ marginRight: "8px" }}
                   />
-                  {`Item ${idx + 1}`}
                 </label>
               ))}
             </div>
@@ -216,7 +215,6 @@ export default function WriteUpPage() {
                     onChange={() => handleCheckboxChange("booked", idx)}
                     style={{ marginRight: "8px" }}
                   />
-                  {`Item ${idx + 1}`}
                 </label>
               ))}
             </div>
