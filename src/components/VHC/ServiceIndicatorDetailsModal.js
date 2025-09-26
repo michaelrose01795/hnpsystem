@@ -39,6 +39,18 @@ export default function ServiceIndicatorDetailsModal({
       oilStatus === "EV" ||
       (oilStatus === "No" && concerns.some((c) => c.source === "oil")));
 
+  // ✅ Under bonnet items (Screen Wash removed, Cam Belt added)
+  const underBonnetItems = [
+    "Antifreeze Strength",
+    "Water/Oil",
+    "Fluid Leaks",
+    "Alternator Belt/Battery",
+    "Power Steering Fluid",
+    "Fuel System",
+    "Cam Belt",
+    "Miscellaneous",
+  ];
+
   return (
     <div
       style={{
@@ -58,8 +70,8 @@ export default function ServiceIndicatorDetailsModal({
         style={{
           background: "white",
           borderRadius: "10px",
-          width: "900px",
-          height: "600px",
+          width: "1000px",
+          height: "650px",
           display: "flex",
           flexDirection: "column",
           padding: "20px",
@@ -131,6 +143,21 @@ export default function ServiceIndicatorDetailsModal({
               Doesn’t Have a Service Reminder
             </button>
             <button
+              onClick={() => setServiceChoice("indicator_on")}
+              style={{
+                width: "70%",
+                padding: "14px",
+                background: serviceChoice === "indicator_on" ? "#FF4040" : "#eee",
+                color: serviceChoice === "indicator_on" ? "white" : "black",
+                border: "none",
+                borderRadius: "6px",
+                fontWeight: "bold",
+                cursor: "pointer",
+              }}
+            >
+              Service Indicator On
+            </button>
+            <button
               onClick={() => {
                 setActiveConcernTarget("service");
                 setShowConcernModal(true);
@@ -150,91 +177,115 @@ export default function ServiceIndicatorDetailsModal({
             </button>
           </div>
 
-          {/* RIGHT SIDE - Under Bonnet */}
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "20px",
-            }}
-          >
-            <h3>Oil Level OK?</h3>
-            <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+          {/* RIGHT SIDE - Split top/bottom */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "20px" }}>
+            {/* Top Half - Oil Level */}
+            <div
+              style={{
+                flex: 1,
+                borderBottom: "1px solid #ddd",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: "20px",
+              }}
+            >
+              <h3>Oil Level OK?</h3>
+              <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+                <button
+                  onClick={() => setOilStatus("Yes")}
+                  style={{
+                    padding: "12px 18px",
+                    background: oilStatus === "Yes" ? "#FF4040" : "#eee",
+                    color: oilStatus === "Yes" ? "white" : "black",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                  }}
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={() => setOilStatus("No")}
+                  style={{
+                    padding: "12px 18px",
+                    background: oilStatus === "No" ? "#FF4040" : "#eee",
+                    color: oilStatus === "No" ? "white" : "black",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                  }}
+                >
+                  No
+                </button>
+                <button
+                  onClick={() => setOilStatus("EV")}
+                  style={{
+                    padding: "12px 18px",
+                    background: oilStatus === "EV" ? "#FF4040" : "#eee",
+                    color: oilStatus === "EV" ? "white" : "black",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                  }}
+                >
+                  EV
+                </button>
+              </div>
               <button
-                onClick={() => setOilStatus("Yes")}
+                onClick={() => {
+                  setActiveConcernTarget("oil");
+                  setShowConcernModal(true);
+                }}
                 style={{
-                  padding: "12px 18px",
-                  background: oilStatus === "Yes" ? "#FF4040" : "#eee",
-                  color: oilStatus === "Yes" ? "white" : "black",
+                  padding: "10px 14px",
+                  background: "#FF4040",
+                  color: "white",
                   border: "none",
                   borderRadius: "6px",
                   fontWeight: "bold",
                   cursor: "pointer",
                 }}
               >
-                Yes
-              </button>
-              <button
-                onClick={() => setOilStatus("No")}
-                style={{
-                  padding: "12px 18px",
-                  background: oilStatus === "No" ? "#FF4040" : "#eee",
-                  color: oilStatus === "No" ? "white" : "black",
-                  border: "none",
-                  borderRadius: "6px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                }}
-              >
-                No
-              </button>
-              <button
-                onClick={() => setOilStatus("EV")}
-                style={{
-                  padding: "12px 18px",
-                  background: oilStatus === "EV" ? "#FF4040" : "#eee",
-                  color: oilStatus === "EV" ? "white" : "black",
-                  border: "none",
-                  borderRadius: "6px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                }}
-              >
-                EV
+                + Add Concern
               </button>
             </div>
 
-            {/* ✅ Concern button always available */}
-            <button
-              onClick={() => {
-                setActiveConcernTarget("oil");
-                setShowConcernModal(true);
-              }}
+            {/* Bottom Half - Other Under Bonnet Items */}
+            <div
               style={{
-                padding: "10px 14px",
-                background: "#FF4040",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                fontWeight: "bold",
-                cursor: "pointer",
+                flex: 1,
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "12px",
+                padding: "10px",
               }}
             >
-              + Add Concern
-            </button>
-
-            {concerns.length > 0 && (
-              <ul style={{ marginTop: "10px", textAlign: "left" }}>
-                {concerns.map((c, idx) => (
-                  <li key={idx}>
-                    {c.text} ({c.status})
-                  </li>
-                ))}
-              </ul>
-            )}
+              {underBonnetItems.map((item) => (
+                <button
+                  key={item}
+                  onClick={() => {
+                    setActiveConcernTarget(item);
+                    setShowConcernModal(true);
+                  }}
+                  style={{
+                    padding: "12px",
+                    background: "#eee",
+                    color: "black",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                  }}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

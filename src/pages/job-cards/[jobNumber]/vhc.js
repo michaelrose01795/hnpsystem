@@ -1,18 +1,18 @@
 // file location: src/pages/job-cards/[jobNumber]/vhc.js
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
 import BrakesHubsDetailsModal from "@/components/VHC/BrakesHubsDetailsModal";
-import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetailsModal"; // ✅ new modal
+import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetailsModal";
 
 // ✅ Reusable section card component
-const SectionCard = ({ title, subtitle, onClick, fullWidth = false }) => (
+const SectionCard = ({ title, subtitle, onClick }) => (
   <div
-    className={`border p-6 rounded-lg shadow-sm bg-white transition ${
-      onClick ? "cursor-pointer hover:shadow-md" : ""
-    } ${fullWidth ? "col-span-2" : ""}`}
+    className={`border p-6 rounded-lg shadow-md bg-white transition transform hover:-translate-y-1 hover:shadow-xl ${
+      onClick ? "cursor-pointer" : ""
+    }`}
     onClick={onClick}
   >
     <h2 className="font-semibold text-red-600 text-lg mb-2">{title}</h2>
@@ -24,7 +24,6 @@ export default function VHCPAGE() {
   const router = useRouter();
   const { jobNumber } = router.query;
 
-  // ✅ VHC data for all sections
   const [vhcData, setVhcData] = useState({
     wheelsTyres: null,
     brakesHubs: [],
@@ -35,14 +34,7 @@ export default function VHCPAGE() {
     cosmetics: [],
   });
 
-  // ✅ Currently active section (for modals)
   const [activeSection, setActiveSection] = useState(null);
-
-  useEffect(() => {
-    if (activeSection === "wheelsTyres") {
-      console.log("Opening Wheels & Tyres modal");
-    }
-  }, [activeSection]);
 
   return (
     <Layout>
@@ -53,33 +45,37 @@ export default function VHCPAGE() {
 
         {/* ✅ Mandatory Section */}
         <h2 className="text-xl font-bold text-gray-800 mb-4">Mandatory</h2>
-        <div className="grid grid-cols-2 gap-4 mb-10">
-          {/* Wheels */}
-          <SectionCard
-            title="Wheels & Tyres"
-            subtitle={
-              vhcData.wheelsTyres
-                ? "Details completed"
-                : "No issues logged yet"
-            }
-            onClick={() => setActiveSection("wheelsTyres")}
-          />
+        <div className="flex flex-col gap-4 mb-6">
+          {/* Top row: Wheels & Tyres + Brakes & Hubs side by side */}
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-[48%]">
+              <SectionCard
+                title="Wheels & Tyres"
+                subtitle={vhcData.wheelsTyres ? "Details completed" : "No issues logged yet"}
+                onClick={() => setActiveSection("wheelsTyres")}
+              />
+            </div>
+            <div className="flex-1 min-w-[48%]">
+              <SectionCard
+                title="Brakes & Hubs"
+                subtitle={`${vhcData.brakesHubs.length} issues logged`}
+                onClick={() => setActiveSection("brakesHubs")}
+              />
+            </div>
+          </div>
 
-          {/* Brakes */}
-          <SectionCard
-            title="Brakes & Hubs"
-            subtitle={`${vhcData.brakesHubs.length} issues logged`}
-            onClick={() => setActiveSection("brakesHubs")}
-          />
-
-          {/* Service Indicator (full width below both) */}
-          <SectionCard
-            title="Service Indicator and Under Bonnet"
-            subtitle={`${vhcData.serviceIndicator.length} issues logged`}
-            fullWidth={true}
-            onClick={() => setActiveSection("serviceIndicator")}
-          />
+          {/* Bottom row: Service Indicator + Under Bonnet full width */}
+          <div className="w-full">
+            <SectionCard
+              title="Service Indicator and Under Bonnet"
+              subtitle={`${vhcData.serviceIndicator.length} issues logged`}
+              onClick={() => setActiveSection("serviceIndicator")}
+            />
+          </div>
         </div>
+
+        {/* ✅ Divider */}
+        <hr className="my-8 border-gray-300" />
 
         {/* ✅ Optional Section */}
         <h2 className="text-xl font-bold text-gray-800 mb-4">Optional</h2>
@@ -106,7 +102,7 @@ export default function VHCPAGE() {
           />
         </div>
 
-        {/* ✅ Wheels & Tyres Modal */}
+        {/* ✅ Modals */}
         {activeSection === "wheelsTyres" && (
           <WheelsTyresDetailsModal
             isOpen={true}
@@ -118,7 +114,6 @@ export default function VHCPAGE() {
           />
         )}
 
-        {/* ✅ Brakes & Hubs Modal */}
         {activeSection === "brakesHubs" && (
           <BrakesHubsDetailsModal
             isOpen={true}
@@ -131,7 +126,6 @@ export default function VHCPAGE() {
           />
         )}
 
-        {/* ✅ Service Indicator + Under Bonnet Modal */}
         {activeSection === "serviceIndicator" && (
           <ServiceIndicatorDetailsModal
             isOpen={true}
@@ -144,7 +138,7 @@ export default function VHCPAGE() {
           />
         )}
 
-        {/* ✅ Optional Section Modals with issue lists */}
+        {/* Optional Section Modals */}
         {activeSection &&
           ["externalInspection", "internalElectrics", "underside", "cosmetics"].includes(
             activeSection
@@ -184,7 +178,6 @@ export default function VHCPAGE() {
                   }
                 </h2>
 
-                {/* List of issues */}
                 {vhcData[activeSection].length === 0 ? (
                   <p>No issues logged yet</p>
                 ) : (
@@ -227,7 +220,6 @@ export default function VHCPAGE() {
                   </ul>
                 )}
 
-                {/* Add issue button */}
                 <button
                   onClick={() =>
                     setVhcData((prev) => ({
@@ -253,7 +245,6 @@ export default function VHCPAGE() {
                   + Add Issue
                 </button>
 
-                {/* Close button */}
                 <div style={{ textAlign: "right" }}>
                   <button
                     onClick={() => setActiveSection(null)}

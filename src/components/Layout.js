@@ -209,8 +209,6 @@ export default function Layout({ children }) {
       <div
         style={{
           width: hideSidebar ? "100%" : "90%",
-          display: "flex",
-          flexDirection: "column",
           overflow: "auto",
           backgroundColor: "#FFF8F8",
         }}
@@ -238,7 +236,7 @@ export default function Layout({ children }) {
           </header>
         )}
 
-        <main style={{ flex: 1, padding: "24px", boxSizing: "border-box" }}>
+        <main style={{ padding: "24px", boxSizing: "border-box" }}>
           {children}
         </main>
       </div>
