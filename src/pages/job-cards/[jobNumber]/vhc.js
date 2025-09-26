@@ -9,7 +9,6 @@ import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetai
 import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
 import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal";
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
-import CosmeticsDetailsModal from "@/components/VHC/CosmeticsDetailsModal"; // ✅ cosmetics modal
 
 // ✅ Section title mapping
 const SECTION_TITLES = {
@@ -19,7 +18,7 @@ const SECTION_TITLES = {
   externalInspection: "External / Drive-in Inspection",
   internalElectrics: "Internal / Lamps / Electrics",
   underside: "Underside",
-  cosmetics: "Cosmetics", // ✅ cosmetics section
+  // cosmetics section removed
 };
 
 // ✅ Reusable section card component
@@ -63,14 +62,7 @@ export default function VHCPAGE() {
       "Driveshafts/Oil Leaks": { concerns: [] },
       Miscellaneous: { concerns: [] },
     },
-    cosmetics: {
-      "Bodywork & Paint": { concerns: [] },
-      "Glass & Mirrors": { concerns: [] },
-      "Interior Trim": { concerns: [] },
-      "Upholstery & Seats": { concerns: [] },
-      "Media Systems": { concerns: [] },
-      Miscellaneous: { concerns: [] },
-    },
+    // cosmetics removed
   });
 
   const [activeSection, setActiveSection] = useState(null);
@@ -120,19 +112,16 @@ export default function VHCPAGE() {
         {/* ✅ Optional Section */}
         <h2 className="text-xl font-bold text-gray-800 mb-4">Optional</h2>
         <div className="grid grid-cols-2 gap-4">
-          {[
-            "externalInspection",
-            "internalElectrics",
-            "underside",
-            "cosmetics", // ✅ cosmetics card included
-          ].map((section) => (
-            <SectionCard
-              key={section}
-              title={SECTION_TITLES[section]}
-              subtitle={`${Object.keys(vhcData[section]).length || 0} categories`}
-              onClick={() => setActiveSection(section)}
-            />
-          ))}
+          {["externalInspection", "internalElectrics", "underside"].map(
+            (section) => (
+              <SectionCard
+                key={section}
+                title={SECTION_TITLES[section]}
+                subtitle={`${Object.keys(vhcData[section]).length || 0} categories`}
+                onClick={() => setActiveSection(section)}
+              />
+            )
+          )}
         </div>
 
         {/* ✅ Mandatory Modals */}
@@ -201,19 +190,6 @@ export default function VHCPAGE() {
             onClose={() => setActiveSection(null)}
             onComplete={(data) => {
               setVhcData((prev) => ({ ...prev, underside: data }));
-              setActiveSection(null);
-            }}
-          />
-        )}
-
-        {/* ✅ Cosmetics Modal */}
-        {activeSection === "cosmetics" && (
-          <CosmeticsDetailsModal
-            isOpen={true}
-            initialData={vhcData.cosmetics}
-            onClose={() => setActiveSection(null)}
-            onComplete={(data) => {
-              setVhcData((prev) => ({ ...prev, cosmetics: data }));
               setActiveSection(null);
             }}
           />

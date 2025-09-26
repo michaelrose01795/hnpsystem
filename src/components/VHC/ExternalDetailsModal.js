@@ -1,16 +1,15 @@
-// file location: src/components/VHC/ExternalDetailsModal.js
 import React, { useState } from "react";
 
 export default function ExternalDetailsModal({ isOpen, onClose, onComplete, initialData }) {
   const [data, setData] = useState({
-    "Glass/mirrors/Door locks": { concerns: [] },
-    Brakes: { concerns: [] },
+    "Horn/Washers/Wipers": { concerns: [] },
+    "Front Lights": { concerns: [] },
+    "Rear lights": { concerns: [] },
+    "Wheel Trim": { concerns: [] },
     "Clutch/Transmission operations": { concerns: [] },
-    "Engine noise/smoke": { concerns: [] },
     "Number plates": { concerns: [] },
-    Lights: { concerns: [] },
-    Miscellaneous: { concerns: [] },
-    Tyres: { concerns: [] }, // 8th button
+    "Doors": { concerns: [] },
+    "Miscellaneous": { concerns: [] },
     ...initialData,
   });
 
@@ -23,14 +22,14 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
   if (!isOpen) return null;
 
   const buttonOrder = [
-    "Glass/mirrors/Door locks",
-    "Brakes",
+    "Horn/Washers/Wipers",
+    "Front Lights",
+    "Rear lights",
+    "Wheel Trim",
     "Clutch/Transmission operations",
-    "Engine noise/smoke",
     "Number plates",
-    "Lights",
+    "Doors",
     "Miscellaneous",
-    "Tyres",
   ];
 
   const openConcern = (key) => {
@@ -39,12 +38,11 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
 
   const addConcern = () => {
     const { category, temp } = activeConcern;
-    if (temp.issue.trim() === "") return; // prevent empty concerns
+    if (temp.issue.trim() === "") return;
     setData((prev) => ({
       ...prev,
       [category]: { ...prev[category], concerns: [...prev[category].concerns, temp] },
     }));
-    // ✅ Reset temp input but keep popup open
     setActiveConcern((prev) => ({ ...prev, temp: { issue: "", status: "Red" } }));
   };
 
@@ -57,10 +55,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
   const deleteConcern = (category, idx) => {
     setData((prev) => ({
       ...prev,
-      [category]: {
-        ...prev[category],
-        concerns: prev[category].concerns.filter((_, i) => i !== idx),
-      },
+      [category]: { ...prev[category], concerns: prev[category].concerns.filter((_, i) => i !== idx) },
     }));
   };
 
@@ -95,7 +90,6 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
       >
         <h2 style={{ color: "#FF4040", marginBottom: "24px" }}>External / Drive-in Inspection</h2>
 
-        {/* 2x4 Button Grid */}
         <div
           style={{
             display: "grid",
@@ -132,7 +126,6 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
           ))}
         </div>
 
-        {/* Close & Complete */}
         <div style={{ display: "flex", gap: "16px" }}>
           <button
             onClick={onClose}
@@ -165,7 +158,6 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
           </button>
         </div>
 
-        {/* Concern Popup */}
         {activeConcern.open && (
           <div
             style={{
@@ -196,39 +188,22 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
             >
               <h3 style={{ color: "#FF4040" }}>{activeConcern.category}</h3>
 
-              {/* Input to add new concern */}
               <input
                 type="text"
                 placeholder="Enter issue"
                 value={activeConcern.temp.issue}
                 onChange={(e) =>
-                  setActiveConcern((prev) => ({
-                    ...prev,
-                    temp: { ...prev.temp, issue: e.target.value },
-                  }))
+                  setActiveConcern((prev) => ({ ...prev, temp: { ...prev.temp, issue: e.target.value } }))
                 }
-                style={{
-                  padding: "8px",
-                  borderRadius: "4px",
-                  border: "1px solid #ccc",
-                  fontSize: "1rem",
-                }}
+                style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc", fontSize: "1rem" }}
               />
               <label>Status:</label>
               <select
                 value={activeConcern.temp.status}
                 onChange={(e) =>
-                  setActiveConcern((prev) => ({
-                    ...prev,
-                    temp: { ...prev.temp, status: e.target.value },
-                  }))
+                  setActiveConcern((prev) => ({ ...prev, temp: { ...prev.temp, status: e.target.value } }))
                 }
-                style={{
-                  padding: "8px",
-                  borderRadius: "4px",
-                  border: "1px solid #ccc",
-                  fontSize: "1rem",
-                }}
+                style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc", fontSize: "1rem" }}
               >
                 <option>Red</option>
                 <option>Amber</option>
@@ -249,7 +224,6 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                 Add Concern
               </button>
 
-              {/* List of existing concerns */}
               {data[activeConcern.category].concerns.map((c, idx) => (
                 <div
                   key={idx}
@@ -267,26 +241,13 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                   <input
                     type="text"
                     value={c.issue}
-                    onChange={(e) =>
-                      updateConcern(activeConcern.category, idx, "issue", e.target.value)
-                    }
-                    style={{
-                      flex: 1,
-                      padding: "6px",
-                      borderRadius: "4px",
-                      border: "1px solid #ccc",
-                    }}
+                    onChange={(e) => updateConcern(activeConcern.category, idx, "issue", e.target.value)}
+                    style={{ flex: 1, padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
                   />
                   <select
                     value={c.status}
-                    onChange={(e) =>
-                      updateConcern(activeConcern.category, idx, "status", e.target.value)
-                    }
-                    style={{
-                      padding: "6px",
-                      borderRadius: "4px",
-                      border: "1px solid #ccc",
-                    }}
+                    onChange={(e) => updateConcern(activeConcern.category, idx, "status", e.target.value)}
+                    style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
                   >
                     <option>Red</option>
                     <option>Amber</option>
@@ -308,23 +269,9 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                 </div>
               ))}
 
-              {/* Close button */}
               <button
-                onClick={() =>
-                  setActiveConcern({
-                    open: false,
-                    category: "",
-                    temp: { issue: "", status: "Red" },
-                  })
-                }
-                style={{
-                  padding: "8px",
-                  border: "none",
-                  borderRadius: "6px",
-                  background: "#ccc",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                }}
+                onClick={() => setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } })}
+                style={{ padding: "8px", border: "none", borderRadius: "6px", background: "#ccc", fontWeight: "bold", cursor: "pointer" }}
               >
                 Close
               </button>

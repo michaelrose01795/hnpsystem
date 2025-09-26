@@ -1,14 +1,13 @@
-// file location: src/components/VHC/CosmeticsDetailsModal.js
 import React, { useState } from "react";
 
-export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, initialData }) {
+export default function InternalElectricsDetailsModal({ isOpen, onClose, onComplete, initialData }) {
   const [data, setData] = useState({
-    "Bodywork & Paint": { concerns: [] },
-    "Glass & Mirrors": { concerns: [] },
-    "Interior Trim": { concerns: [] },
-    "Upholstery & Seats": { concerns: [] },
+    "Interior Lights": { concerns: [] },
     "Media Systems": { concerns: [] },
-    Miscellaneous: { concerns: [] },
+    "Air Con/Heating/ventilation": { concerns: [] },
+    "Warning Lamps": { concerns: [] },
+    "Seatbelt": { concerns: [] },
+    "Miscellaneous": { concerns: [] },
     ...initialData,
   });
 
@@ -21,11 +20,11 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
   if (!isOpen) return null;
 
   const buttonOrder = [
-    "Bodywork & Paint",
-    "Glass & Mirrors",
-    "Interior Trim",
-    "Upholstery & Seats",
+    "Interior Lights",
     "Media Systems",
+    "Air Con/Heating/ventilation",
+    "Warning Lamps",
+    "Seatbelt",
     "Miscellaneous",
   ];
 
@@ -35,12 +34,11 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
 
   const addConcern = () => {
     const { category, temp } = activeConcern;
-    if (temp.issue.trim() === "") return; // prevent empty concerns
+    if (temp.issue.trim() === "") return;
     setData((prev) => ({
       ...prev,
       [category]: { ...prev[category], concerns: [...prev[category].concerns, temp] },
     }));
-    // ✅ Keep popup open, just clear the input
     setActiveConcern((prev) => ({ ...prev, temp: { issue: "", status: "Red" } }));
   };
 
@@ -53,10 +51,7 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
   const deleteConcern = (category, idx) => {
     setData((prev) => ({
       ...prev,
-      [category]: {
-        ...prev[category],
-        concerns: prev[category].concerns.filter((_, i) => i !== idx),
-      },
+      [category]: { ...prev[category], concerns: prev[category].concerns.filter((_, i) => i !== idx) },
     }));
   };
 
@@ -89,9 +84,8 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
           position: "relative",
         }}
       >
-        <h2 style={{ color: "#FF4040", marginBottom: "24px" }}>Cosmetics Inspection</h2>
+        <h2 style={{ color: "#FF4040", marginBottom: "24px" }}>Internal Electrics</h2>
 
-        {/* Button Grid */}
         <div
           style={{
             display: "grid",
@@ -128,7 +122,6 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
           ))}
         </div>
 
-        {/* Close & Complete */}
         <div style={{ display: "flex", gap: "16px" }}>
           <button
             onClick={onClose}
@@ -161,7 +154,6 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
           </button>
         </div>
 
-        {/* Concern Popup */}
         {activeConcern.open && (
           <div
             style={{
@@ -192,7 +184,6 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
             >
               <h3 style={{ color: "#FF4040" }}>{activeConcern.category}</h3>
 
-              {/* Input to add new concern */}
               <input
                 type="text"
                 placeholder="Enter issue"
@@ -230,7 +221,6 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
                 Add Concern
               </button>
 
-              {/* List of existing concerns */}
               {data[activeConcern.category].concerns.map((c, idx) => (
                 <div
                   key={idx}
@@ -277,7 +267,6 @@ export default function CosmeticsDetailsModal({ isOpen, onClose, onComplete, ini
                 </div>
               ))}
 
-              {/* Close button */}
               <button
                 onClick={() => setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } })}
                 style={{
