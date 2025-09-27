@@ -1,5 +1,7 @@
 // file location: src/pages/job-cards/create/index.js
-import React, { useState } from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
 
@@ -140,8 +142,11 @@ function NewCustomerPopup({ onClose, onAdd }) {
 export default function CreateJobCardPage() {
   const router = useRouter();
 
-  // Auto-generated job number (for demo: using timestamp)
-  const [jobNumber] = useState(`JOB${Date.now()}`);
+  // ✅ Generate jobNumber only on the client to fix hydration error
+  const [jobNumber, setJobNumber] = useState(null);
+  useEffect(() => {
+    setJobNumber("JOB" + Math.floor(Math.random() * 1000000));
+  }, []);
 
   // Vehicle details
   const [registration, setRegistration] = useState("");
@@ -196,6 +201,15 @@ export default function CreateJobCardPage() {
     });
   };
 
+  // Show loading message until jobNumber is generated
+  if (!jobNumber) {
+    return (
+      <Layout>
+        <p>Generating Job Number...</p>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "16px" }}>
@@ -223,17 +237,34 @@ export default function CreateJobCardPage() {
           </label>
           <button
             onClick={handleFetchVSM}
-            style={{ marginLeft: "12px", padding: "6px 12px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "4px" }}
+            style={{
+              marginLeft: "12px",
+              padding: "6px 12px",
+              backgroundColor: "#FF4040",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+            }}
           >
             Fetch VSM
           </button>
           {vsmData.make && (
             <div style={{ marginTop: "12px" }}>
-              <p><strong>Make:</strong> {vsmData.make}</p>
-              <p><strong>Model:</strong> {vsmData.model}</p>
-              <p><strong>Colour:</strong> {vsmData.colour}</p>
-              <p><strong>Chassis Number:</strong> {vsmData.chassis}</p>
-              <p><strong>Engine Number:</strong> {vsmData.engine}</p>
+              <p>
+                <strong>Make:</strong> {vsmData.make}
+              </p>
+              <p>
+                <strong>Model:</strong> {vsmData.model}
+              </p>
+              <p>
+                <strong>Colour:</strong> {vsmData.colour}
+              </p>
+              <p>
+                <strong>Chassis Number:</strong> {vsmData.chassis}
+              </p>
+              <p>
+                <strong>Engine Number:</strong> {vsmData.engine}
+              </p>
             </div>
           )}
         </div>
@@ -252,24 +283,46 @@ export default function CreateJobCardPage() {
           <div style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
             <button
               onClick={() => setCustomer(null)}
-              style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "4px" }}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#FF4040",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+              }}
             >
               Add Existing Customer
             </button>
             <button
               onClick={() => setShowCustomerPopup(true)}
-              style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "4px" }}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#FF4040",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+              }}
             >
               Add New Customer
             </button>
           </div>
           {customer && (
             <div>
-              <p><strong>Name:</strong> {customer.firstName} {customer.lastName}</p>
-              <p><strong>Address:</strong> {customer.address}</p>
-              <p><strong>Email:</strong> {customer.email}</p>
-              <p><strong>Mobile:</strong> {customer.mobile}</p>
-              <p><strong>Telephone:</strong> {customer.telephone}</p>
+              <p>
+                <strong>Name:</strong> {customer.firstName} {customer.lastName}
+              </p>
+              <p>
+                <strong>Address:</strong> {customer.address}
+              </p>
+              <p>
+                <strong>Email:</strong> {customer.email}
+              </p>
+              <p>
+                <strong>Mobile:</strong> {customer.mobile}
+              </p>
+              <p>
+                <strong>Telephone:</strong> {customer.telephone}
+              </p>
             </div>
           )}
         </div>
@@ -286,7 +339,9 @@ export default function CreateJobCardPage() {
         >
           <h3>Job Requests</h3>
           {requests.map((req, index) => (
-            <p key={index}><strong>Request {index + 1}:</strong> {req}</p>
+            <p key={index}>
+              <strong>Request {index + 1}:</strong> {req}
+            </p>
           ))}
           <div style={{ display: "flex", marginTop: "12px", gap: "8px" }}>
             <input
@@ -296,7 +351,16 @@ export default function CreateJobCardPage() {
               placeholder="Enter request"
               style={{ flex: 1, padding: "4px 8px" }}
             />
-            <button onClick={handleAddRequest} style={{ padding: "6px 12px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "4px" }}>
+            <button
+              onClick={handleAddRequest}
+              style={{
+                padding: "6px 12px",
+                backgroundColor: "#FF4040",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+              }}
+            >
               Add Line
             </button>
           </div>
@@ -304,7 +368,14 @@ export default function CreateJobCardPage() {
 
         <button
           onClick={handleAddJobCard}
-          style={{ padding: "12px 20px", backgroundColor: "green", color: "white", border: "none", borderRadius: "6px", fontWeight: "bold" }}
+          style={{
+            padding: "12px 20px",
+            backgroundColor: "green",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            fontWeight: "bold",
+          }}
         >
           Add Job Card
         </button>
