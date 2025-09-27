@@ -1,20 +1,19 @@
 // file location: src/pages/job-cards/[jobNumber]/upload-checksheet.js
-import React, { useState } from "react"; // import React and hooks
-import { useRouter } from "next/router"; // import router for navigation
-import Layout from "../../../components/Layout"; // import Layout wrapper
+import React, { useState } from "react";
+import { useRouter } from "next/router";
+import Layout from "../../../components/Layout";
 
 export default function UploadChecksheet() {
-  const router = useRouter(); // get router instance
-  const { jobNumber } = router.query; // extract job number from URL
-  const [file, setFile] = useState(null); // store selected file
-  const [showStatusPopup, setShowStatusPopup] = useState(false); // toggle popup modal
+  const router = useRouter();
+  const { jobNumber } = router.query;
+  const [file, setFile] = useState(null);
+  const [showStatusPopup, setShowStatusPopup] = useState(false);
 
-  // ✅ Upload handler
   const handleUpload = async () => {
-    if (!file) return alert("Please select a PDF first"); // validate file
+    if (!file) return alert("Please select a PDF first");
 
-    const formData = new FormData(); // create form data
-    formData.append("file", file); // append file to form data
+    const formData = new FormData();
+    formData.append("file", file);
 
     const res = await fetch(`/api/job-cards/${jobNumber}/upload-checksheet`, {
       method: "POST",
@@ -23,30 +22,24 @@ export default function UploadChecksheet() {
 
     if (res.ok) {
       alert("Check sheet uploaded successfully");
-      router.push(`/job-cards/${jobNumber}/check-box`); // go to checkbox page
+      router.push(`/job-cards/${jobNumber}/check-box`);
     } else {
       alert("Upload failed");
     }
   };
 
-  // ✅ Job status update handler
   const handleStatusChange = async (status) => {
-    try {
-      const res = await fetch(`/api/job-cards/${jobNumber}/update-status`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
+    const res = await fetch(`/api/job-cards/${jobNumber}/update-status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
 
-      if (res.ok) {
-        alert(`Job marked as: ${status}`);
-        router.push("/news-feed"); // redirect back to news feed
-      } else {
-        alert("Failed to update job status");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error updating job status");
+    if (res.ok) {
+      alert(`Job marked as: ${status}`);
+      router.push("/news-feed");
+    } else {
+      alert("Failed to update job status");
     }
   };
 
@@ -55,48 +48,55 @@ export default function UploadChecksheet() {
       <div style={{ maxWidth: "600px", margin: "0 auto", padding: "16px" }}>
         <h2>Upload Check Sheet for Job {jobNumber}</h2>
 
-        {/* File upload input */}
         <input
           type="file"
           accept="application/pdf"
           onChange={(e) => setFile(e.target.files[0])}
         />
 
-        {/* Upload button */}
-        <button
-          onClick={handleUpload}
+        {/* ✅ Button row */}
+        <div
           style={{
             marginTop: "12px",
-            padding: "10px 16px",
-            backgroundColor: "#FF4040",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            display: "block",
+            display: "flex",
+            gap: "12px",
           }}
         >
-          Upload
-        </button>
+          {/* Upload button */}
+          <button
+            onClick={handleUpload}
+            style={{
+              flex: 1,
+              padding: "10px 16px",
+              backgroundColor: "#FF4040",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            Upload
+          </button>
 
-        {/* Complete button */}
-        <button
-          onClick={() => setShowStatusPopup(true)} // show popup
-          style={{
-            marginTop: "12px",
-            padding: "10px 16px",
-            backgroundColor: "green",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            display: "block",
-          }}
-        >
-          Complete
-        </button>
+          {/* Complete button */}
+          <button
+            onClick={() => setShowStatusPopup(true)}
+            style={{
+              flex: 1,
+              padding: "10px 16px",
+              backgroundColor: "limegreen",
+              color: "black",
+              fontWeight: "bold",
+              border: "2px solid black",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            ✅ Mark Complete
+          </button>
+        </div>
 
-        {/* ✅ Popup Modal */}
+        {/* Popup modal */}
         {showStatusPopup && (
           <div
             style={{
@@ -105,7 +105,7 @@ export default function UploadChecksheet() {
               left: 0,
               width: "100vw",
               height: "100vh",
-              backgroundColor: "rgba(0,0,0,0.5)",
+              backgroundColor: "rgba(0,0,0,0.6)",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -124,7 +124,6 @@ export default function UploadChecksheet() {
               <h3>Update Job Status</h3>
               <p>Choose the status for this job:</p>
 
-              {/* Buttons for status options */}
               <button
                 onClick={() => handleStatusChange("Complete")}
                 style={{
@@ -157,7 +156,6 @@ export default function UploadChecksheet() {
                 Additional Work Required
               </button>
 
-              {/* Cancel button */}
               <button
                 onClick={() => setShowStatusPopup(false)}
                 style={{
