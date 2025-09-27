@@ -183,26 +183,21 @@ export default function CreateJobCardPage() {
     setNewRequest("");
   };
 
-  // ✅ Updated handleAddJobCard
   const handleAddJobCard = () => {
     if (!registration || !customer || requests.length === 0) {
       alert("Please fill in registration, customer, and at least one request.");
       return;
     }
-
-    // Open popup instead of alert
     setShowCheckSheetPopup(true);
   };
 
   const handleAddCheckSheet = () => {
     setShowCheckSheetPopup(false);
-    // Navigate to add checksheet page
     router.push(`/job-cards/${jobNumber}/add-checksheet`);
   };
 
   const handleAddDealerDetails = () => {
     setShowCheckSheetPopup(false);
-    // Navigate to dealer car details page
     router.push(`/job-cards/${jobNumber}/dealer-car-details`);
   };
 

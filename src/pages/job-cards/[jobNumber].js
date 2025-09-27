@@ -55,7 +55,7 @@ export default function JobCardPage() {
 
   const handleFullCarDetails = () => {
     if (!jobNumber) return;
-    router.push(`/job-cards/${jobNumber}/dealership-car-details`);
+    router.push(`/job-cards/${jobNumber}/car-details`);
   };
 
   // Handle job completion

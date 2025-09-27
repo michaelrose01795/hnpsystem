@@ -108,7 +108,7 @@ export default function CheckBoxPage() {
   // Navigation buttons
   const goBackToJobCard = () => router.push(`/job-cards/${jobNumber}`);
   const goToWriteUp = () => router.push(`/job-cards/${jobNumber}/write-up`);
-  const goToVehicleDetails = () => router.push(`/job-cards/${jobNumber}/dealership-car-details`);
+  const goToVehicleDetails = () => router.push(`/job-cards/${jobNumber}/car-details`);
 
   if (loading) return <Layout><p>Loading check sheet...</p></Layout>;
 

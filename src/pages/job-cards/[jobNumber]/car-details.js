@@ -1,4 +1,4 @@
-// file location: src/pages/job-cards/[jobNumber]/dealership-car-details.js
+// file location: src/pages/job-cards/[jobNumber]/car-details.js
 import React from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";

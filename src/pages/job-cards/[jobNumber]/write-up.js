@@ -35,7 +35,7 @@ export default function WriteUpPage() {
   // Navigation buttons
   const goBackToJobCard = () => router.push(`/job-cards/${jobNumber}`);
   const goToCheckSheet = () => router.push(`/job-cards/${jobNumber}/check-box`);
-  const goToVehicleDetails = () => router.push(`/job-cards/${jobNumber}/dealership-car-details`);
+  const goToVehicleDetails = () => router.push(`/job-cards/${jobNumber}/car-details`);
 
   return (
     <Layout>

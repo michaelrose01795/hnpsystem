@@ -1,4 +1,4 @@
-// file location: src/pages/job-cards/create/add-checksheet.js
+// src/pages/job-cards/[jobNumber]/add-checksheet.js
 "use client";
 
 import React, { useState } from "react";
