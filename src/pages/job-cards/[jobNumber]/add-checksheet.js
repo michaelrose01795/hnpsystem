@@ -21,10 +21,10 @@ function ChecksheetRenderer({ sections, onSave }) {
   return (
     <div className="space-y-6">
       {sections.map((section, idx) => (
-        <div key={idx} className="border rounded-xl p-4 shadow-sm bg-white">
-          <h2 className="font-bold text-lg mb-2">{section.title}</h2>
+        <div key={idx} style={{ backgroundColor: "white", padding: "16px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+          <h2 style={{ fontWeight: "bold", fontSize: "18px", marginBottom: "8px" }}>{section.title}</h2>
           {section.fields.map((field, fIdx) => (
-            <div key={fIdx} className="flex items-center gap-3 mb-2">
+            <div key={fIdx} style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
               {field.type === "checkbox" && (
                 <input
                   type="checkbox"
@@ -42,7 +42,7 @@ function ChecksheetRenderer({ sections, onSave }) {
                   onChange={(e) =>
                     handleChange(section.key, field.key, e.target.value)
                   }
-                  className="border rounded px-2 py-1 w-full"
+                  style={{ flex: 1, border: "1px solid #ccc", borderRadius: "4px", padding: "6px 8px" }}
                 />
               )}
               <label>{field.label}</label>
@@ -52,7 +52,14 @@ function ChecksheetRenderer({ sections, onSave }) {
       ))}
       <button
         onClick={() => onSave(formData)}
-        className="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700"
+        style={{
+          padding: "12px 20px",
+          backgroundColor: "#FF4040",
+          color: "white",
+          border: "none",
+          borderRadius: "6px",
+          fontWeight: "bold",
+        }}
       >
         Save Checksheet
       </button>
@@ -67,7 +74,6 @@ export default function AddChecksheet() {
   const [sections, setSections] = useState([]);
   const [savedData, setSavedData] = useState(null);
 
-  // ✅ Default checksheet layout
   const defaultSections = [
     {
       key: "brakes",
@@ -97,30 +103,41 @@ export default function AddChecksheet() {
   };
 
   const handleSave = (data) => {
-    setSavedData(data);
-    console.log("Saved checksheet:", data);
-    alert("Checksheet saved (local state only). DB integration needed.");
+    setSavedData(data); // Save locally
+    console.log("Saved checksheet (local):", data);
+
+    // Forward to dealer car details page
+    router.push(`/job-cards/${jobNumber}/dealer-car-details`);
   };
 
   return (
     <Layout>
-      <div className="p-6 space-y-6">
-        <h1 className="text-2xl font-bold">Add Checksheet – Job #{jobNumber}</h1>
+      <div style={{ maxWidth: "600px", margin: "0 auto", padding: "16px", display: "flex", flexDirection: "column", gap: "16px" }}>
+        <h1 style={{ color: "#FF4040" }}>Add Checksheet – Job #{jobNumber}</h1>
 
-        {/* Button to skip PDF upload */}
+        {/* Button to initialize checksheet */}
         <button
           onClick={handleAddChecksheet}
-          className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
+          style={{
+            padding: "12px 20px",
+            backgroundColor: "#FF4040",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            fontWeight: "bold",
+          }}
         >
           Add Checksheet
         </button>
 
+        {/* Render checksheet if sections exist */}
         {sections.length > 0 && (
           <ChecksheetRenderer sections={sections} onSave={handleSave} />
         )}
 
+        {/* Debug: show saved data */}
         {savedData && (
-          <pre className="bg-black text-green-400 p-3 rounded-xl">
+          <pre style={{ backgroundColor: "black", color: "#00ff90", padding: "12px", borderRadius: "8px" }}>
             {JSON.stringify(savedData, null, 2)}
           </pre>
         )}

@@ -1,7 +1,7 @@
 // file location: src/pages/job-cards/create/index.js
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
 
@@ -161,6 +161,9 @@ function CheckSheetPopup({ onClose, onAddCheckSheet, onAddDealerDetails }) {
   );
 }
 
+// ✅ Local job number counter (starts at 30000)
+let localJobCounter = 30000;
+
 export default function CreateJobCardPage() {
   const router = useRouter();
   const [jobNumber, setJobNumber] = useState(null);
@@ -173,10 +176,6 @@ export default function CreateJobCardPage() {
   const [requests, setRequests] = useState([]);
   const [newRequest, setNewRequest] = useState("");
 
-  useEffect(() => {
-    setJobNumber("JOB" + Math.floor(Math.random() * 1000000));
-  }, []);
-
   const handleAddRequest = () => {
     if (newRequest.trim() === "") return;
     setRequests([...requests, newRequest.trim()]);
@@ -188,6 +187,13 @@ export default function CreateJobCardPage() {
       alert("Please fill in registration, customer, and at least one request.");
       return;
     }
+
+    // ✅ Generate local job number
+    const newJobNumber = "JOB" + localJobCounter;
+    setJobNumber(newJobNumber);
+    localJobCounter += 1;
+
+    // Show next popup
     setShowCheckSheetPopup(true);
   };
 
@@ -213,12 +219,10 @@ export default function CreateJobCardPage() {
 
   const isReadyToCreate = registration && customer && requests.length > 0;
 
-  if (!jobNumber) return <Layout><p>Generating Job Number...</p></Layout>;
-
   return (
     <Layout>
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "16px" }}>
-        <h1 style={{ color: "#FF4040" }}>Create Job Card: {jobNumber}</h1>
+        <h1 style={{ color: "#FF4040" }}>Create Job Card: {jobNumber || "Generating..."}</h1>
 
         {/* Vehicle Details */}
         <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "8px", marginBottom: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>

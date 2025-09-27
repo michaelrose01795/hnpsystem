@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 
-// Nav items including Create Job Card
+// Nav items including Create Job Card and View Job Cards
 const navItems = [
   { label: "Home", href: "/" },
   { label: "Dashboard", href: "/dashboard" },
@@ -17,6 +17,7 @@ const navItems = [
   { label: "Features", href: "/features" },
   { label: "Login", href: "/login" },
   { label: "Create Job Card", href: "/job-cards/create", roles: ["ADMIN","SALES","WORKSHOP"] },
+  { label: "View Job Cards", href: "/job-cards/view", roles: ["ADMIN","SALES","WORKSHOP"] }, // ✅ Added button
 ];
 
 export default function Sidebar() {
