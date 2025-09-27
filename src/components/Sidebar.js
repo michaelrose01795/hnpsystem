@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 
-// ✅ Nav items including Create Job Card with correct hyphen
+// Nav items including Create Job Card
 const navItems = [
   { label: "Home", href: "/" },
   { label: "Dashboard", href: "/dashboard" },
@@ -16,8 +16,6 @@ const navItems = [
   { label: "Smart Repair", href: "/smartrepair" },
   { label: "Features", href: "/features" },
   { label: "Login", href: "/login" },
-
-  // ✅ Fixed Create Job Card link
   { label: "Create Job Card", href: "/job-cards/create", roles: ["ADMIN","SALES","WORKSHOP"] },
 ];
 
@@ -37,7 +35,8 @@ export default function Sidebar() {
       </div>
       <nav className="flex-1 p-md flex flex-col gap-sm">
         {navItems.filter(canAccess).map((item) => {
-          const isActive = pathname === item.href;
+          // ✅ Compare pathname carefully to handle dynamic routes
+          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
@@ -47,7 +46,6 @@ export default function Sidebar() {
                   ? "bg-accent text-white"
                   : "hover:bg-accent hover:text-white text-muted"
               }`}
-              legacyBehavior
             >
               {item.label}
             </Link>

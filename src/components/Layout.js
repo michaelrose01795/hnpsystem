@@ -101,7 +101,7 @@ export default function Layout({ children }) {
               {(userRoles.includes("service") ||
                 userRoles.includes("admin") ||
                 userRoles.some((r) => r.includes("manager"))) && (
-                <Link href="/job-cards/view" legacyBehavior>
+                <Link href="/job-cards/create" legacyBehavior>
                   <a
                     style={{
                       display: "block",
@@ -241,8 +241,10 @@ export default function Layout({ children }) {
         </main>
       </div>
 
-      {/* Job Card Modal for Techs */}
-      <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      {/* Job Card Modal for Techs only */}
+      {userRoles.includes("techs") && (
+        <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      )}
     </div>
   );
 }
