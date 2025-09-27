@@ -1,19 +1,13 @@
 // file location: src/pages/job-cards/[jobNumber]/add-checksheet.js
 "use client";
 
-import React, { useState, useRef } from "react"; // React state + refs
-import { useRouter } from "next/router"; // Next.js router for jobNumber
-import Layout from "../../../components/Layout"; // Shared layout wrapper
-import { pdfjs } from "react-pdf"; // Only using parser utilities, not rendering pages
+import React, { useState } from "react";
+import { useRouter } from "next/router";
+import Layout from "../../../components/Layout";
 
-// ✅ Point pdf.js to the correct worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-
-// ✅ Renderer for parsed checksheet
 function ChecksheetRenderer({ sections, onSave }) {
-  const [formData, setFormData] = useState({}); // Store field values
+  const [formData, setFormData] = useState({});
 
-  // Handle checkbox/text updates
   const handleChange = (sectionKey, fieldKey, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -27,10 +21,7 @@ function ChecksheetRenderer({ sections, onSave }) {
   return (
     <div className="space-y-6">
       {sections.map((section, idx) => (
-        <div
-          key={idx}
-          className="border rounded-xl p-4 shadow-sm bg-white"
-        >
+        <div key={idx} className="border rounded-xl p-4 shadow-sm bg-white">
           <h2 className="font-bold text-lg mb-2">{section.title}</h2>
           {section.fields.map((field, fIdx) => (
             <div key={fIdx} className="flex items-center gap-3 mb-2">
@@ -70,64 +61,41 @@ function ChecksheetRenderer({ sections, onSave }) {
 }
 
 export default function AddChecksheet() {
-  const router = useRouter(); // Get job number from route
+  const router = useRouter();
   const { jobNumber } = router.query;
 
-  const fileInputRef = useRef(null); // File upload ref
-  const [sections, setSections] = useState([]); // Store parsed layout structure
-  const [savedData, setSavedData] = useState(null); // Store user’s filled data
-  const [loading, setLoading] = useState(false);
+  const [sections, setSections] = useState([]);
+  const [savedData, setSavedData] = useState(null);
 
-  // ✅ Upload PDF to backend API for parsing with safe JSON handling
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  // ✅ Default checksheet layout
+  const defaultSections = [
+    {
+      key: "brakes",
+      title: "Brakes",
+      fields: [
+        { key: "front", label: "Front Brakes OK", type: "checkbox" },
+        { key: "rear", label: "Rear Brakes OK", type: "checkbox" },
+      ],
+    },
+    {
+      key: "tyres",
+      title: "Tyres",
+      fields: [
+        { key: "tread", label: "Tread Depth", type: "text" },
+        { key: "pressure", label: "Tyre Pressure", type: "text" },
+      ],
+    },
+    {
+      key: "signature",
+      title: "Technician Signature",
+      fields: [{ key: "sign", label: "Signature", type: "text" }],
+    },
+  ];
 
-    // ✅ Ensure jobNumber is ready
-    if (!jobNumber) {
-      alert("Job number not available yet. Please wait a moment.");
-      return;
-    }
-
-    setLoading(true);
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      console.log("Uploading PDF for jobNumber:", jobNumber);
-
-      const res = await fetch(`/api/jobcards/${jobNumber}/parse-checksheet`, {
-        method: "POST",
-        body: formData,
-      });
-
-      let result;
-      try {
-        result = await res.json(); // Try parse JSON
-      } catch (jsonErr) {
-        console.error("Failed to parse JSON response:", jsonErr);
-        const text = await res.text();
-        console.error("Server returned:", text);
-        alert("Server returned invalid JSON. See console for details.");
-        return;
-      }
-
-      if (res.ok) {
-        setSections(result.sections || []);
-        console.log("Extracted text:", result.extractedText);
-      } else {
-        alert(result.error || "Failed to parse PDF");
-      }
-    } catch (err) {
-      console.error("Upload error:", err);
-      alert("Error uploading file");
-    } finally {
-      setLoading(false);
-    }
+  const handleAddChecksheet = () => {
+    setSections(defaultSections);
   };
 
-  // ✅ Save filled checksheet (local state, later hook to DB)
   const handleSave = (data) => {
     setSavedData(data);
     console.log("Saved checksheet:", data);
@@ -137,29 +105,20 @@ export default function AddChecksheet() {
   return (
     <Layout>
       <div className="p-6 space-y-6">
-        <h1 className="text-2xl font-bold">
-          Add Checksheet – Job #{jobNumber}
-        </h1>
+        <h1 className="text-2xl font-bold">Add Checksheet – Job #{jobNumber}</h1>
 
-        {/* File upload */}
-        <div className="border p-4 rounded-xl bg-gray-50">
-          <h2 className="font-semibold mb-2">Upload OEM PDF</h2>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/pdf"
-            onChange={handleFileUpload}
-          />
-        </div>
+        {/* Button to skip PDF upload */}
+        <button
+          onClick={handleAddChecksheet}
+          className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
+        >
+          Add Checksheet
+        </button>
 
-        {loading && <p className="text-gray-600">Parsing PDF...</p>}
-
-        {/* Render structured checksheet */}
         {sections.length > 0 && (
           <ChecksheetRenderer sections={sections} onSave={handleSave} />
         )}
 
-        {/* Debug preview */}
         {savedData && (
           <pre className="bg-black text-green-400 p-3 rounded-xl">
             {JSON.stringify(savedData, null, 2)}

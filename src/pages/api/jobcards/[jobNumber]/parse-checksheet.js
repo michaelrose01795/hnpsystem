@@ -1,10 +1,9 @@
 // file location: src/pages/api/jobcards/[jobNumber]/parse-checksheet.js
-
-import formidable from "formidable"; // handle file uploads
+import formidable from "formidable";
 import fs from "fs";
 import pdfParse from "pdf-parse";
 
-// ✅ Disable Next.js default bodyParser so formidable can parse file
+// Disable Next.js default bodyParser
 export const config = {
   api: {
     bodyParser: false,
@@ -34,7 +33,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    // ✅ Read PDF into buffer
+    console.log("File received:", file.originalFilename, file.mimetype, file.size);
+
     const dataBuffer = fs.readFileSync(file.filepath);
 
     let pdfData;
@@ -45,10 +45,8 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Error parsing PDF file" });
     }
 
-    // 🔎 Extracted text (basic)
     const text = pdfData.text || "";
 
-    // 🚀 Map PDF to structured sections (stub)
     const sections = [
       {
         key: "brakes",
@@ -73,10 +71,8 @@ export default async function handler(req, res) {
       },
     ];
 
-    // ✅ Debug log
     console.log("Returning parsed sections for job:", req.query.jobNumber);
 
-    // ✅ Always return valid JSON
     return res.status(200).json({
       message: "PDF parsed successfully",
       extractedText: text,
@@ -84,8 +80,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error("PDF parse handler error:", err);
-
-    // ✅ Return JSON even on unexpected errors
     return res.status(500).json({ error: "Failed to parse PDF" });
   }
 }
