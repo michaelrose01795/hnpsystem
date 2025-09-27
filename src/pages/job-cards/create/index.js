@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
+import { useJobs } from "../../../context/JobsContext";
 
 // ✅ Popup to add new customer
 function NewCustomerPopup({ onClose, onAdd }) {
@@ -166,6 +167,7 @@ let localJobCounter = 30000;
 
 export default function CreateJobCardPage() {
   const router = useRouter();
+  const { addJob } = useJobs();
   const [jobNumber, setJobNumber] = useState(null);
   const [registration, setRegistration] = useState("");
   const [vsmData, setVsmData] = useState({ colour: "", make: "", model: "", chassis: "", engine: "" });
@@ -188,10 +190,19 @@ export default function CreateJobCardPage() {
       return;
     }
 
-    // ✅ Generate local job number
     const newJobNumber = "JOB" + localJobCounter;
     setJobNumber(newJobNumber);
     localJobCounter += 1;
+
+    // ✅ Add job to context
+    addJob({
+      jobNumber: newJobNumber,
+      customer: `${customer.firstName} ${customer.lastName}`,
+      car: registration,
+      description: requests.join(", "),
+      status: "Waiting",
+      assignedTech: null,
+    });
 
     // Show next popup
     setShowCheckSheetPopup(true);

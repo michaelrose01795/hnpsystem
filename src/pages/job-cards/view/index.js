@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import Layout from "../../../components/Layout";
 import { useRouter } from "next/router";
 
-// Dummy data for initial display
+// Dummy job cards for initial display
 const initialJobs = [
   { jobNumber: "JN001", customer: "John Smith", status: "Checked In" },
   { jobNumber: "JN002", customer: "Jane Doe", status: "Checked In" },
@@ -17,52 +17,67 @@ export default function ViewJobCards() {
   const router = useRouter();
 
   useEffect(() => {
-    // For now, all jobs start in Checked In
     setJobs(initialJobs);
   }, []);
 
-  // Function to navigate to job card detail page
   const goToJobCard = (jobNumber) => {
     router.push(`/job-cards/${jobNumber}`);
   };
 
-  // Function to filter jobs by status
   const getJobsByStatus = (status) => {
     return jobs.filter((job) => job.status === status);
   };
 
+  const jobStatuses = ["Booked", "Checked In", "Workshop/MOT", "Waiting for Parts", "Being Washed", "Complete"];
+
   return (
     <Layout>
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-6">View Job Cards</h1>
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "16px" }}>
+        <h1 style={{ color: "#FF4040", marginBottom: "24px" }}>View Job Cards</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {/* Sections */}
-          {["Booked", "Checked In", "Workshop/MOT", "Waiting for Parts", "Being Washed", "Complete"].map(
-            (section) => (
-              <div
-                key={section}
-                className="bg-white shadow-md rounded-md p-4 flex flex-col"
-              >
-                <h2 className="font-semibold text-lg mb-4">{section}</h2>
-                <div className="flex flex-col gap-2">
-                  {getJobsByStatus(section).length > 0 ? (
-                    getJobsByStatus(section).map((job) => (
-                      <button
-                        key={job.jobNumber}
-                        onClick={() => goToJobCard(job.jobNumber)}
-                        className="text-left p-2 border rounded hover:bg-gray-100"
-                      >
-                        {job.jobNumber} - {job.customer}
-                      </button>
-                    ))
-                  ) : (
-                    <p className="text-gray-400 text-sm">No jobs</p>
-                  )}
-                </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+          {jobStatuses.map((status) => (
+            <div
+              key={status}
+              style={{
+                flex: "1 1 250px",
+                backgroundColor: "white",
+                borderRadius: "8px",
+                padding: "16px",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <h2 style={{ fontWeight: "600", fontSize: "1.1rem", marginBottom: "12px" }}>{status}</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
+                {getJobsByStatus(status).length > 0 ? (
+                  getJobsByStatus(status).map((job) => (
+                    <button
+                      key={job.jobNumber}
+                      onClick={() => goToJobCard(job.jobNumber)}
+                      style={{
+                        textAlign: "left",
+                        padding: "8px",
+                        border: "1px solid #ddd",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        backgroundColor: "#f9f9f9",
+                        color: "black",
+                        transition: "background-color 0.2s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e0e0e0")}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#f9f9f9")}
+                    >
+                      {job.jobNumber} - {job.customer}
+                    </button>
+                  ))
+                ) : (
+                  <p style={{ color: "#999", fontSize: "0.875rem" }}>No jobs</p>
+                )}
               </div>
-            )
-          )}
+            </div>
+          ))}
         </div>
       </div>
     </Layout>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 
-// Nav items including Create Job Card and View Job Cards
+// Navigation items with correct folder names
 const navItems = [
   { label: "Home", href: "/" },
   { label: "Dashboard", href: "/dashboard" },
@@ -17,7 +17,8 @@ const navItems = [
   { label: "Features", href: "/features" },
   { label: "Login", href: "/login" },
   { label: "Create Job Card", href: "/job-cards/create", roles: ["ADMIN","SALES","WORKSHOP"] },
-  { label: "View Job Cards", href: "/job-cards/view", roles: ["ADMIN","SALES","WORKSHOP"] }, // ✅ Added button
+  { label: "View Job Cards", href: "/job-cards/view", roles: ["ADMIN","SALES","WORKSHOP"] }, // ✅ Correct folder
+  { label: "Next Jobs", href: "/job-cards/waiting/nextjobs", roles: ["Workshop Manager", "Service Manager"] }, // New button
 ];
 
 export default function Sidebar() {
@@ -36,7 +37,6 @@ export default function Sidebar() {
       </div>
       <nav className="flex-1 p-md flex flex-col gap-sm">
         {navItems.filter(canAccess).map((item) => {
-          // ✅ Compare pathname carefully to handle dynamic routes
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link

@@ -6,6 +6,7 @@ import React from "react"; // import React
 import { SessionProvider } from "next-auth/react"; // NextAuth's session provider
 import { UserProvider } from "../context/UserContext"; // your app's UserProvider (uses session)
 import "../styles/globals.css"; // import your global stylesheet
+import { JobsProvider } from "../context/JobsContext";
 
 // Next.js custom App component
 export default function MyApp({ Component, pageProps }) {
@@ -16,5 +17,13 @@ export default function MyApp({ Component, pageProps }) {
         <Component {...pageProps} /> {/* render the page */}
       </UserProvider>
     </SessionProvider>
+  );
+}
+
+export default function MyApp({ Component, pageProps }) {
+  return (
+    <JobsProvider>
+      <Component {...pageProps} />
+    </JobsProvider>
   );
 }

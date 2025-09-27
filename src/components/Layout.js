@@ -121,6 +121,28 @@ export default function Layout({ children }) {
                 </Link>
               )}
 
+              {/* Manager/Service Manager: Next Jobs */}
+              {["service manager", "workshop manager"].some((r) => userRoles.includes(r.toLowerCase())) && (
+                <Link href="/job-cards/waiting/nextjobs" legacyBehavior>
+                  <a
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      marginTop: "10px",
+                      borderRadius: "6px",
+                      textDecoration: "none",
+                      color: "white",
+                      backgroundColor: "#FF4040",
+                      textAlign: "center",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    🔜 Next Jobs
+                  </a>
+                </Link>
+              )}
+
               {/* Tech-only: Start Job button (styled like links) */}
               {userRoles.includes("techs") && (
                 <button
@@ -131,8 +153,8 @@ export default function Layout({ children }) {
                     marginTop: "10px",
                     borderRadius: "6px",
                     textDecoration: "none",
-                    color: isActive("/jobcards/start") ? "white" : "#FF4040",
-                    backgroundColor: isActive("/jobcards/start") ? "#FF4040" : "transparent",
+                    color: isActive("/job-cards/start") ? "white" : "#FF4040",
+                    backgroundColor: isActive("/job-cards/start") ? "#FF4040" : "transparent",
                     border: "1px solid #FF4040",
                     textAlign: "left",
                     fontSize: "0.95rem",
@@ -145,7 +167,7 @@ export default function Layout({ children }) {
                     e.target.style.color = "white";
                   }}
                   onMouseLeave={(e) => {
-                    if (!isActive("/jobcards/start")) {
+                    if (!isActive("/job-cards/start")) {
                       e.target.style.backgroundColor = "transparent";
                       e.target.style.color = "#FF4040";
                     }
@@ -157,15 +179,15 @@ export default function Layout({ children }) {
 
               {/* Manager/Service/Sales: View Job Cards */}
               {viewRoles.some((r) => userRoles.includes(r)) && (
-                <Link href="/jobcards/view" legacyBehavior>
+                <Link href="/job-cards/view" legacyBehavior>
                   <a
                     style={{
                       display: "block",
                       padding: "10px",
                       marginTop: "10px",
                       borderRadius: "6px",
-                      color: isActive("/jobcards/view") ? "white" : "#FF4040",
-                      backgroundColor: isActive("/jobcards/view") ? "#FF4040" : "transparent",
+                      color: isActive("/job-cards/view") ? "white" : "#FF4040",
+                      backgroundColor: isActive("/job-cards/view") ? "#FF4040" : "transparent",
                       border: "1px solid #FF4040",
                       textAlign: "left",
                       fontSize: "0.95rem",
