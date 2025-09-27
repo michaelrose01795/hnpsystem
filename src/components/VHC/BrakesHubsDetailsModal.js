@@ -1,4 +1,4 @@
-// src/components/VHC/BrakesHubsDetailsModal.js
+// file location: src/components/VHC/BrakesHubsDetailsModal.js
 import React, { useState } from "react";
 import Image from "next/image";
 
@@ -91,22 +91,33 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     setData((prev) => ({ ...prev, [category]: { ...prev[category], concerns: [...prev[category].concerns, concern] } }));
   };
 
+  // ✅ New completion logic
   const isCompleteEnabled = () => {
-    const padsDone = ["frontPads", "rearPads"].every((p) => data[p].measurement !== "" && data[p].status !== "");
+    // Front must always be complete
+    const frontPadsDone = data.frontPads.measurement !== "" && data.frontPads.status !== "";
+    const frontDiscsDone = data.frontDiscs.measurements.thickness !== "" && data.frontDiscs.measurements.status && data.frontDiscs.visual.status;
+
+    if (!frontPadsDone || !frontDiscsDone) return false;
+
     if (showDrum) {
-      return padsDone && data.rearDrums.status !== "";
+      // ✅ Rear drum setup: pads filled + drum button selected
+      const rearPadsDone = data.rearPads.measurement !== "" && data.rearPads.status !== "";
+      const drumSelected = data.rearDrums.status !== "";
+      return rearPadsDone && drumSelected;
     } else {
-      const discsDone = ["frontDiscs", "rearDiscs"].every((d) => data[d].measurements.thickness !== "" && data[d].measurements.status && data[d].visual.status);
-      return padsDone && discsDone;
+      // ✅ Rear disc setup: pads and discs filled
+      const rearPadsDone = data.rearPads.measurement !== "" && data.rearPads.status !== "";
+      const rearDiscsDone = data.rearDiscs.measurements.thickness !== "" && data.rearDiscs.measurements.status && data.rearDiscs.visual.status;
+      return rearPadsDone && rearDiscsDone;
     }
   };
 
   if (!isOpen) return null;
 
   // ✅ Pads Section
-  const PadsSection = ({ category }) => (
+  const PadsSection = ({ category, showDrumButton }) => (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, paddingRight: "12px" }}>
-      <label style={{ marginTop: "66px" }}>Pad Measurement (mm):</label>
+      <label style={{ marginTop: "12px" }}>Pad Measurement (mm):</label>
       <AutoCompleteInput value={data[category].measurement} onChange={(val) => updatePadMeasurement(category, val)} options={padOptions} />
       <label>Status:</label>
       <select value={data[category].status} onChange={(e) => updatePadStatus(category, e.target.value)} style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}>
@@ -128,27 +139,19 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           </select>
         </div>
       ))}
+
+      {/* ✅ Drum Brakes button under rear pads */}
+      {showDrumButton && (
+        <button onClick={() => setShowDrum(true)} style={{ padding: "6px 12px", borderRadius: "6px", border: "none", background: "#FF4040", color: "white", cursor: "pointer", fontWeight: "bold", marginTop: "12px" }}>
+          Drum Brakes
+        </button>
+      )}
     </div>
   );
 
   // ✅ Discs Section
-  const DiscsSection = ({ category, showDrumButton }) => (
+  const DiscsSection = ({ category }) => (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, borderLeft: "1px solid #ddd", paddingLeft: "12px" }}>
-      <div style={{ display: "flex", gap: "8px", marginBottom: "8px", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", gap: "8px" }}>
-          {["measurements", "visual"].map((tab) => (
-            <div key={tab} onClick={() => setData((prev) => ({ ...prev, [category]: { ...prev[category], tab } }))} style={{ padding: "6px 12px", cursor: "pointer", borderRadius: "4px", backgroundColor: data[category].tab === tab ? "#FF4040" : "#f5f5f5", color: data[category].tab === tab ? "white" : "black", fontWeight: data[category].tab === tab ? "bold" : "normal" }}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </div>
-          ))}
-        </div>
-        {showDrumButton && (
-          <button onClick={() => setShowDrum(true)} style={{ padding: "6px 12px", borderRadius: "6px", border: "none", background: "#FF4040", color: "white", cursor: "pointer", fontWeight: "bold" }}>
-            Drum Brakes
-          </button>
-        )}
-      </div>
-
       {data[category].tab === "measurements" && (
         <>
           <label style={{ marginTop: "12px" }}>Disk Thickness (mm):</label>
@@ -175,6 +178,15 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       <button onClick={() => setConcernPopup({ open: true, category, tempConcern: { issue: "", status: "Red" } })} style={{ padding: "6px 12px", borderRadius: "4px", border: "none", background: "#FF4040", color: "white", cursor: "pointer", marginTop: "8px" }}>
         + Add Concern
       </button>
+
+      {/* ✅ Tabs under concerns */}
+      <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+        {["measurements", "visual"].map((tab) => (
+          <div key={tab} onClick={() => setData((prev) => ({ ...prev, [category]: { ...prev[category], tab } }))} style={{ padding: "6px 12px", cursor: "pointer", borderRadius: "4px", backgroundColor: data[category].tab === tab ? "#FF4040" : "#f5f5f5", color: data[category].tab === tab ? "white" : "black", fontWeight: data[category].tab === tab ? "bold" : "normal" }}>
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </div>
+        ))}
+      </div>
 
       {data[category].concerns.map((c, idx) => (
         <div key={idx} style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "4px" }}>
@@ -210,46 +222,19 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   return (
     <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
       <div style={{ background: "white", borderRadius: "10px", width: "1000px", height: "600px", display: "flex", overflow: "hidden", position: "relative" }}>
-
         {/* Left side */}
         <div style={{ width: "35%", background: "#fff", borderRight: "1px solid #eee", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "24px" }}>
-
-          {/* ✅ Image Titles */}
           <h2 style={{ color: "#FF4040", marginBottom: "8px", fontSize: "24px" }}>Front</h2>
-          <Image
-            src="/images/Brakes3.png"
-            alt="Front Brakes"
-            width={160}
-            height={160}
-            style={{
-              cursor: "pointer",
-              border: activeSide === "front" ? "3px solid #FF4040" : "none",
-              borderRadius: "8px",
-              objectFit: "contain",
-            }}
-            onClick={() => setActiveSide("front")}
-          />
+          <Image src="/images/Brakes3.png" alt="Front Brakes" width={160} height={160} style={{ cursor: "pointer", border: activeSide === "front" ? "3px solid #FF4040" : "none", borderRadius: "8px", objectFit: "contain" }} onClick={() => setActiveSide("front")} />
 
           <h2 style={{ color: "#FF4040", marginTop: "16px", marginBottom: "8px", fontSize: "24px" }}>Rear</h2>
-          <Image
-            src="/images/Brakes3.png"
-            alt="Rear Brakes"
-            width={160}
-            height={160}
-            style={{
-              cursor: "pointer",
-              border: activeSide === "rear" ? "3px solid #FF4040" : "none",
-              borderRadius: "8px",
-              objectFit: "contain",
-            }}
-            onClick={() => setActiveSide("rear")}
-          />
+          <Image src="/images/Brakes3.png" alt="Rear Brakes" width={160} height={160} style={{ cursor: "pointer", border: activeSide === "rear" ? "3px solid #FF4040" : "none", borderRadius: "8px", objectFit: "contain" }} onClick={() => setActiveSide("rear")} />
         </div>
 
         {/* Right side */}
         <div style={{ flex: 1, padding: "16px", overflowY: "auto" }}>
           {activeSide === "front" && <div style={{ display: "flex", gap: "16px", height: "100%" }}><PadsSection category="frontPads" /><DiscsSection category="frontDiscs" /></div>}
-          {activeSide === "rear" && !showDrum && <div style={{ display: "flex", gap: "16px", height: "100%" }}><PadsSection category="rearPads" /><DiscsSection category="rearDiscs" showDrumButton /></div>}
+          {activeSide === "rear" && !showDrum && <div style={{ display: "flex", gap: "16px", height: "100%" }}><PadsSection category="rearPads" showDrumButton /><DiscsSection category="rearDiscs" /></div>}
           {activeSide === "rear" && showDrum && <DrumBrakesSection />}
 
           {/* Fixed Action buttons */}
