@@ -130,7 +130,10 @@ function NewCustomerPopup({ onClose, onAdd }) {
           <button onClick={onClose} style={{ padding: "8px 16px" }}>
             Close
           </button>
-          <button onClick={handleAdd} style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white" }}>
+          <button
+            onClick={handleAdd}
+            style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white" }}
+          >
             Add Customer
           </button>
         </div>
@@ -142,13 +145,11 @@ function NewCustomerPopup({ onClose, onAdd }) {
 export default function CreateJobCardPage() {
   const router = useRouter();
 
-  // ✅ Generate jobNumber only on the client to fix hydration error
   const [jobNumber, setJobNumber] = useState(null);
   useEffect(() => {
     setJobNumber("JOB" + Math.floor(Math.random() * 1000000));
   }, []);
 
-  // Vehicle details
   const [registration, setRegistration] = useState("");
   const [vsmData, setVsmData] = useState({
     colour: "",
@@ -158,40 +159,46 @@ export default function CreateJobCardPage() {
     engine: "",
   });
 
-  // Customer details
   const [customer, setCustomer] = useState(null);
   const [showCustomerPopup, setShowCustomerPopup] = useState(false);
 
-  // Job requests
   const [requests, setRequests] = useState([]);
   const [newRequest, setNewRequest] = useState("");
 
-  // Handle adding new request line
   const handleAddRequest = () => {
     if (newRequest.trim() === "") return;
     setRequests([...requests, newRequest.trim()]);
     setNewRequest("");
   };
 
-  // Handle adding job card (local storage for testing)
-  const handleAddJobCard = () => {
-    const jobData = {
-      jobNumber,
-      registration,
-      vsmData,
-      customer,
-      requests,
-    };
-    // Save to local storage for demo
-    const existing = JSON.parse(localStorage.getItem("jobCards") || "[]");
-    localStorage.setItem("jobCards", JSON.stringify([...existing, jobData]));
-    alert(`Job Card ${jobNumber} added!`);
-    router.push(`/job-cards/${jobNumber}`);
+  // ✅ Submit job card to API
+  const handleAddJobCard = async () => {
+    if (!registration || !customer || requests.length === 0) {
+      alert("Please fill in registration, customer, and at least one request.");
+      return;
+    }
+
+    const jobData = { jobNumber, registration, vsmData, customer, requests };
+
+    try {
+      const res = await fetch("/api/jobcards/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(jobData),
+      });
+
+      if (!res.ok) throw new Error("Failed to create job card");
+
+      const data = await res.json();
+      alert(`Job Card ${jobNumber} added successfully!`);
+      router.push(`/job-cards/${jobNumber}`);
+    } catch (err) {
+      console.error(err);
+      alert("Error adding job card");
+    }
   };
 
-  // Dummy VSM fetch
   const handleFetchVSM = () => {
-    // Replace with real API fetch later
     setVsmData({
       colour: "Red",
       make: "Renault",
@@ -201,7 +208,6 @@ export default function CreateJobCardPage() {
     });
   };
 
-  // Show loading message until jobNumber is generated
   if (!jobNumber) {
     return (
       <Layout>
@@ -370,7 +376,7 @@ export default function CreateJobCardPage() {
           onClick={handleAddJobCard}
           style={{
             padding: "12px 20px",
-            backgroundColor: "green",
+            backgroundColor: "#FF4040",
             color: "white",
             border: "none",
             borderRadius: "6px",

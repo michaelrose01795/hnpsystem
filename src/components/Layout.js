@@ -101,7 +101,7 @@ export default function Layout({ children }) {
               {(userRoles.includes("service") ||
                 userRoles.includes("admin") ||
                 userRoles.some((r) => r.includes("manager"))) && (
-                <Link href="/job-cards/create" legacyBehavior>
+                <Link href="/job-cards/view" legacyBehavior>
                   <a
                     style={{
                       display: "block",
