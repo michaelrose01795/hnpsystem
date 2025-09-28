@@ -7,8 +7,6 @@ import { useJobs } from "../../context/JobsContext";
 import FullCalendar from "@fullcalendar/react";
 import timelinePlugin from "@fullcalendar/timeline";
 import moment from "moment";
-import "@fullcalendar/core/main.css";
-
 
 export default function AppointmentsPage() {
   const { jobs, updateJob } = useJobs();
@@ -18,6 +16,7 @@ export default function AppointmentsPage() {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
 
+  // Add appointment handler
   const handleAddAppointment = () => {
     const job = jobs.find((j) => j.jobNumber === jobNumber);
     if (!job) return alert("Job not found");
@@ -48,7 +47,10 @@ export default function AppointmentsPage() {
   );
 
   // Jobs as resources for Y-axis
-  const resources = useMemo(() => jobs.map((j) => ({ id: j.jobNumber, title: j.jobNumber })), [jobs]);
+  const resources = useMemo(
+    () => jobs.map((j) => ({ id: j.jobNumber, title: j.jobNumber })),
+    [jobs]
+  );
 
   return (
     <Layout>
