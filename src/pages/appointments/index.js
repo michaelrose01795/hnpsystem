@@ -19,9 +19,11 @@ export default function AppointmentsPage() {
     if (jobParam) setJobNumber(jobParam);
   }, [searchParams]);
 
+  const hours = Array.from({ length: 10 }, (_, i) => 8 + i); // 8am to 5pm
+
   const handleAddAppointment = (customDate) => {
     const appointmentDate = customDate || (selectedDate ? selectedDate.toISOString().split("T")[0] : null);
-    if (!jobNumber || !appointmentDate || !time) return; // Exit if missing
+    if (!jobNumber || !appointmentDate || !time) return;
 
     let job = jobs.find((j) => j.jobNumber === jobNumber);
     if (!job) {
@@ -35,12 +37,9 @@ export default function AppointmentsPage() {
       status: "Booked",
     });
 
-    // Clear modal inputs and close
     setJobNumber("");
     setTime("");
     setIsModalOpen(false);
-
-    // Set selectedDate to refresh calendar view
     setSelectedDate(new Date(appointmentDate));
   };
 
@@ -52,18 +51,19 @@ export default function AppointmentsPage() {
       return d;
     });
   };
+
   const dates = generateDates();
-  const hours = Array.from({ length: 10 }, (_, i) => i + 8); // 8am-17pm
 
   const getAppointmentsAt = (dateObj, hour) =>
     jobs.filter((job) => {
       if (!job.appointment) return false;
-      const appDate = new Date(job.appointment.date + "T" + job.appointment.time);
+      const jobHour = Number(job.appointment.time.split(":")[0]);
+      const appDate = new Date(job.appointment.date);
       return (
         appDate.getFullYear() === dateObj.getFullYear() &&
         appDate.getMonth() === dateObj.getMonth() &&
         appDate.getDate() === dateObj.getDate() &&
-        appDate.getHours() === hour
+        jobHour === hour
       );
     });
 
@@ -71,7 +71,7 @@ export default function AppointmentsPage() {
     jobs
       .filter((job) => {
         if (!job.appointment) return false;
-        const appDate = new Date(job.appointment.date + "T" + job.appointment.time);
+        const appDate = new Date(job.appointment.date);
         return (
           appDate.getFullYear() === dateObj.getFullYear() &&
           appDate.getMonth() === dateObj.getMonth() &&
@@ -113,12 +113,18 @@ export default function AppointmentsPage() {
             placeholder="Job Number"
             style={{ flex: "1 1 150px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
           />
-          <input
-            type="time"
+          <select
             value={time}
             onChange={(e) => setTime(e.target.value)}
             style={{ flex: "1 1 150px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
-          />
+          >
+            <option value="">Select time</option>
+            {hours.map((h) => (
+              <option key={h} value={`${h.toString().padStart(2, "0")}:00`}>
+                {h}:00
+              </option>
+            ))}
+          </select>
           <button
             onClick={() => handleAddAppointment(selectedDate ? selectedDate.toISOString().split("T")[0] : null)}
             style={{
@@ -184,6 +190,7 @@ export default function AppointmentsPage() {
                         borderBottom: "1px solid #eee",
                         borderRight: "1px solid #eee",
                         position: "relative",
+                        minHeight: "40px",
                         cursor: apps.length > 0 ? "pointer" : "default",
                       }}
                       onClick={() => apps.length > 0 && handleClickAppointment(apps[0])}
@@ -202,7 +209,11 @@ export default function AppointmentsPage() {
                             fontSize: "12px",
                             textAlign: "center",
                             borderRadius: "4px",
-                            lineHeight: "36px",
+                            padding: "2px",
+                            lineHeight: "16px",
+                            overflow: "hidden",
+                            whiteSpace: "nowrap",
+                            textOverflow: "ellipsis",
                           }}
                         >
                           {job.jobNumber}
@@ -273,12 +284,18 @@ export default function AppointmentsPage() {
                 onChange={(e) => setJobNumber(e.target.value)}
                 style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
               />
-              <input
-                type="time"
+              <select
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
                 style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
-              />
+              >
+                <option value="">Select time</option>
+                {hours.map((h) => (
+                  <option key={h} value={`${h.toString().padStart(2, "0")}:00`}>
+                    {h}:00
+                  </option>
+                ))}
+              </select>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
                 <button
                   onClick={() => setIsModalOpen(false)}
