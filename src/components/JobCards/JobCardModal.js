@@ -16,7 +16,7 @@ export default function JobCardModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   const handleClockOn = () => {
-    if (!jobNumber) return; // optional: prevent empty submission
+    if (!jobNumber) return; // prevent empty submission
     onClose();
     router.push(`/job-cards/${jobNumber}`);
   };
@@ -50,6 +50,7 @@ export default function JobCardModal({ isOpen, onClose }) {
           type="text"
           value={jobNumber}
           onChange={(e) => setJobNumber(e.target.value)}
+          placeholder="Enter job number here"
           style={{
             width: "100%",
             padding: "8px",

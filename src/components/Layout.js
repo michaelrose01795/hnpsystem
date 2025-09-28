@@ -98,9 +98,7 @@ export default function Layout({ children }) {
               ))}
 
               {/* Service/Admin/Managers: Create Job Card */}
-              {(userRoles.includes("service") ||
-                userRoles.includes("admin") ||
-                userRoles.some((r) => r.includes("manager"))) && (
+              {["service", "admin", "service manager", "workshop manager"].some(r => userRoles.includes(r)) && (
                 <Link href="/job-cards/create" legacyBehavior>
                   <a
                     style={{
@@ -121,8 +119,42 @@ export default function Layout({ children }) {
                 </Link>
               )}
 
+              {/* Appointment Button (Service/Sales/Admin/Manager) */}
+              {["service", "sales", "admin", "service manager", "workshop manager"].some(r => userRoles.includes(r)) && (
+                <Link href="/appointments" legacyBehavior>
+                  <a
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      marginTop: "10px",
+                      borderRadius: "6px",
+                      textDecoration: "none",
+                      color: isActive("/appointments") ? "white" : "#FF4040",
+                      backgroundColor: isActive("/appointments") ? "#FF4040" : "transparent",
+                      border: "1px solid #FF4040",
+                      textAlign: "left",
+                      fontSize: "0.95rem",
+                      fontWeight: 500,
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = "#FF4040";
+                      e.target.style.color = "white";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive("/appointments")) {
+                        e.target.style.backgroundColor = "transparent";
+                        e.target.style.color = "#FF4040";
+                      }
+                    }}
+                  >
+                    📅 Appointments
+                  </a>
+                </Link>
+              )}
+
               {/* Manager/Service Manager: Next Jobs */}
-              {["service manager", "workshop manager"].some((r) => userRoles.includes(r.toLowerCase())) && (
+              {["service manager", "workshop manager"].some(r => userRoles.includes(r)) && (
                 <Link href="/job-cards/waiting/nextjobs" legacyBehavior>
                   <a
                     style={{
@@ -143,7 +175,7 @@ export default function Layout({ children }) {
                 </Link>
               )}
 
-              {/* Tech-only: Start Job button (styled like links) */}
+              {/* Tech-only: Start Job button */}
               {userRoles.includes("techs") && (
                 <button
                   onClick={() => setIsModalOpen(true)}

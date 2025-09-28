@@ -10,6 +10,7 @@ const initialJobs = [
   { jobNumber: "JN001", customer: "John Smith", status: "Checked In" },
   { jobNumber: "JN002", customer: "Jane Doe", status: "Checked In" },
   { jobNumber: "JN003", customer: "Mike Johnson", status: "Checked In" },
+  { jobNumber: "JN004", customer: "Alice Brown", status: "Booked", appointment: { date: "2025-09-30", time: "10:00" } },
 ];
 
 export default function ViewJobCards() {
@@ -70,6 +71,11 @@ export default function ViewJobCards() {
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#f9f9f9")}
                     >
                       {job.jobNumber} - {job.customer}
+                      {job.appointment && status === "Booked" && (
+                        <div style={{ fontSize: "0.85rem", color: "#555", marginTop: "4px" }}>
+                          Appointment: {job.appointment.date} {job.appointment.time}
+                        </div>
+                      )}
                     </button>
                   ))
                 ) : (

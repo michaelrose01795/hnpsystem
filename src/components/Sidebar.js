@@ -13,8 +13,9 @@ const navItems = [
   { label: "Contractors", href: "/contractors", roles: ["ADMIN"] },
   { label: "Vehicle Processing", href: "/vehicle-processing", roles: ["ADMIN", "WORKSHOP"] },
   { label: "Smart Repair", href: "/smartrepair", roles: ["WORKSHOP"] },
-  { label: "Create Job Card", href: "/job-cards/create", roles: ["ADMIN", "SALES", "WORKSHOP"] }, // always go here
+  { label: "Create Job Card", href: "/job-cards/create", roles: ["ADMIN", "SALES", "WORKSHOP"] }, 
   { label: "View Job Cards", href: "/job-cards/view", roles: ["ADMIN", "SALES", "WORKSHOP"] },
+  { label: "Appointments", href: "/job-cards/appointments", roles: ["ADMIN", "SALES", "WORKSHOP"] }, // <--- new button
   { label: "Next Jobs", href: "/job-cards/waiting/nextjobs", roles: ["Workshop Manager", "Service Manager"] },
 ];
 
