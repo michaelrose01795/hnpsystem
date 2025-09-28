@@ -1,69 +1,101 @@
-// src/pages/appointments/index.js
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "../../components/Layout";
 import { useJobs } from "../../context/JobsContext";
-import FullCalendar from "@fullcalendar/react";
-import timelinePlugin from "@fullcalendar/timeline";
-import moment from "moment";
-import { useSearchParams } from "next/navigation"; // Next.js hook
+import { useSearchParams } from "next/navigation";
 
 export default function AppointmentsPage() {
-  const { jobs, updateJob } = useJobs();
+  const { jobs, addJob, updateJob } = useJobs();
   const searchParams = useSearchParams();
-  
-  // Form state
-  const [jobNumber, setJobNumber] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
 
-  // Prefill job number from query string
+  const [jobNumber, setJobNumber] = useState("");
+  const [time, setTime] = useState("");
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   useEffect(() => {
     const jobParam = searchParams.get("jobNumber");
     if (jobParam) setJobNumber(jobParam);
   }, [searchParams]);
 
-  // Add appointment handler
-  const handleAddAppointment = () => {
-    const job = jobs.find((j) => j.jobNumber === jobNumber);
-    if (!job) return alert("Job not found");
+  const handleAddAppointment = (customDate) => {
+    const appointmentDate = customDate || (selectedDate ? selectedDate.toISOString().split("T")[0] : null);
+    if (!jobNumber || !appointmentDate || !time) return; // Exit if missing
 
-    updateJob(jobNumber, { ...job, appointment: { date, time }, status: "Booked" });
-    alert(`Appointment set for ${jobNumber} on ${date} at ${time}`);
+    let job = jobs.find((j) => j.jobNumber === jobNumber);
+    if (!job) {
+      job = { jobNumber, customer: "Unknown", status: "Booked" };
+      addJob(job);
+    }
 
+    updateJob(jobNumber, {
+      ...job,
+      appointment: { date: appointmentDate, time },
+      status: "Booked",
+    });
+
+    // Clear modal inputs and close
     setJobNumber("");
-    setDate("");
     setTime("");
+    setIsModalOpen(false);
+
+    // Set selectedDate to refresh calendar view
+    setSelectedDate(new Date(appointmentDate));
   };
 
-  // Transform jobs into FullCalendar events
-  const events = useMemo(
-    () =>
-      jobs
-        .filter((j) => j.appointment)
-        .map((j) => ({
-          id: j.jobNumber,
-          title: `${j.jobNumber} - ${j.customer || "Unknown"}`,
-          start: `${j.appointment.date}T${j.appointment.time}`,
-          end: moment(`${j.appointment.date}T${j.appointment.time}`)
-            .add(30, "minutes")
-            .toISOString(),
-          resourceId: j.jobNumber,
-        })),
-    [jobs]
-  );
+  const generateDates = () => {
+    const today = new Date();
+    return Array.from({ length: 37 }, (_, i) => {
+      const d = new Date();
+      d.setDate(today.getDate() + i);
+      return d;
+    });
+  };
+  const dates = generateDates();
+  const hours = Array.from({ length: 10 }, (_, i) => i + 8); // 8am-17pm
 
-  // Jobs as resources for Y-axis
-  const resources = useMemo(
-    () => jobs.map((j) => ({ id: j.jobNumber, title: j.jobNumber })),
-    [jobs]
-  );
+  const getAppointmentsAt = (dateObj, hour) =>
+    jobs.filter((job) => {
+      if (!job.appointment) return false;
+      const appDate = new Date(job.appointment.date + "T" + job.appointment.time);
+      return (
+        appDate.getFullYear() === dateObj.getFullYear() &&
+        appDate.getMonth() === dateObj.getMonth() &&
+        appDate.getDate() === dateObj.getDate() &&
+        appDate.getHours() === hour
+      );
+    });
+
+  const getAppointmentsForDay = (dateObj) =>
+    jobs
+      .filter((job) => {
+        if (!job.appointment) return false;
+        const appDate = new Date(job.appointment.date + "T" + job.appointment.time);
+        return (
+          appDate.getFullYear() === dateObj.getFullYear() &&
+          appDate.getMonth() === dateObj.getMonth() &&
+          appDate.getDate() === dateObj.getDate()
+        );
+      })
+      .slice(0, 20);
+
+  const handleClickAppointment = (job) => {
+    setJobNumber(job.jobNumber);
+    setTime(job.appointment.time);
+    setSelectedDate(new Date(job.appointment.date));
+    setIsModalOpen(true);
+  };
+
+  const formatDateNoYear = (dateObj) => {
+    const options = { weekday: "short", month: "short", day: "numeric" };
+    return dateObj.toLocaleDateString(undefined, options);
+  };
 
   return (
     <Layout>
       <div style={{ height: "calc(100vh - 64px)", display: "flex", flexDirection: "column" }}>
-        {/* Top 10% - Controls */}
+        {/* Top Controls */}
         <div
           style={{
             flex: "0 0 10%",
@@ -82,19 +114,13 @@ export default function AppointmentsPage() {
             style={{ flex: "1 1 150px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
           />
           <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            style={{ flex: "1 1 150px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
-          />
-          <input
             type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
             style={{ flex: "1 1 150px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
           />
           <button
-            onClick={handleAddAppointment}
+            onClick={() => handleAddAppointment(selectedDate ? selectedDate.toISOString().split("T")[0] : null)}
             style={{
               padding: "8px 16px",
               backgroundColor: "#FF4040",
@@ -109,37 +135,167 @@ export default function AppointmentsPage() {
           </button>
         </div>
 
-        {/* Bottom 90% - Timeline Calendar */}
-        <div
-          style={{
-            flex: "1 1 90%",
-            padding: "16px",
-            overflow: "auto",
-          }}
-        >
-          <FullCalendar
-            plugins={[timelinePlugin]}
-            initialView="timelineWeek"
-            events={events}
-            resources={resources}
-            resourceAreaHeaderContent="Jobs"
-            slotMinTime="06:00:00"
-            slotMaxTime="20:00:00"
-            allDaySlot={false}
-            nowIndicator={true}
-            headerToolbar={false}
-            height="100%"
-            slotLabelFormat={{
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            }}
-            slotLabelContent={(arg) => (
-              <div style={{ writingMode: "vertical-rl", textAlign: "center" }}>{arg.text}</div>
-            )}
-            scrollTime={moment().format("HH:mm:ss")}
-          />
+        {/* Calendar */}
+        <div style={{ flex: "0 0 40%", overflow: "auto", padding: "8px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: `120px repeat(${hours.length}, 120px)`, gridAutoRows: "40px" }}>
+            <div style={{ borderBottom: "1px solid #ccc", borderRight: "1px solid #ccc" }}></div>
+            {hours.map((hour) => (
+              <div
+                key={hour}
+                style={{
+                  textAlign: "center",
+                  fontWeight: "bold",
+                  borderBottom: "1px solid #ccc",
+                  borderRight: "1px solid #ccc",
+                  backgroundColor: "#f9f9f9",
+                  lineHeight: "40px",
+                }}
+              >
+                {hour}:00
+              </div>
+            ))}
+            {dates.map((dateObj, rowIdx) => (
+              <React.Fragment key={rowIdx}>
+                <div
+                  style={{
+                    borderBottom: "1px solid #ccc",
+                    borderRight: "1px solid #ccc",
+                    padding: "4px",
+                    fontWeight: "bold",
+                    backgroundColor: "#f9f9f9",
+                    textAlign: "center",
+                    lineHeight: "40px",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => {
+                    setSelectedDate(dateObj);
+                    setIsModalOpen(true);
+                  }}
+                >
+                  {formatDateNoYear(dateObj)}
+                </div>
+
+                {hours.map((hour) => {
+                  const apps = getAppointmentsAt(dateObj, hour);
+                  return (
+                    <div
+                      key={hour}
+                      style={{
+                        borderBottom: "1px solid #eee",
+                        borderRight: "1px solid #eee",
+                        position: "relative",
+                        cursor: apps.length > 0 ? "pointer" : "default",
+                      }}
+                      onClick={() => apps.length > 0 && handleClickAppointment(apps[0])}
+                    >
+                      {apps.map((job) => (
+                        <div
+                          key={job.jobNumber}
+                          style={{
+                            position: "absolute",
+                            top: 2,
+                            left: 2,
+                            right: 2,
+                            bottom: 2,
+                            backgroundColor: "#FF4040",
+                            color: "white",
+                            fontSize: "12px",
+                            textAlign: "center",
+                            borderRadius: "4px",
+                            lineHeight: "36px",
+                          }}
+                        >
+                          {job.jobNumber}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
+
+        {/* Selected Day's Appointments */}
+        <div style={{ flex: "0 0 50%", padding: "16px", overflowY: "auto", borderTop: "1px solid #FFCCCC", backgroundColor: "#fdfdfd" }}>
+          <h3>{selectedDate ? formatDateNoYear(selectedDate) : "Select a day to see appointments"}</h3>
+          {selectedDate &&
+            getAppointmentsForDay(selectedDate).map((job) => (
+              <div
+                key={job.jobNumber}
+                onClick={() => handleClickAppointment(job)}
+                style={{
+                  padding: "8px",
+                  marginBottom: "6px",
+                  backgroundColor: "#FF4040",
+                  color: "white",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                }}
+              >
+                {job.jobNumber} - {job.appointment.time} - {job.customer || "Unknown"}
+              </div>
+            ))}
+        </div>
+
+        {/* Modal */}
+        {isModalOpen && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              backgroundColor: "rgba(0,0,0,0.5)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 9999,
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: "white",
+                padding: "24px",
+                borderRadius: "8px",
+                minWidth: "300px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              <h3>Add Appointment for {selectedDate && formatDateNoYear(selectedDate)}</h3>
+              <input
+                type="text"
+                placeholder="Job Number"
+                value={jobNumber}
+                onChange={(e) => setJobNumber(e.target.value)}
+                style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+              />
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+              />
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  style={{ padding: "8px 16px", borderRadius: "6px", border: "none", cursor: "pointer" }}
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => handleAddAppointment(selectedDate.toISOString().split("T")[0])}
+                  style={{ padding: "8px 16px", borderRadius: "6px", border: "none", backgroundColor: "#FF4040", color: "white", cursor: "pointer" }}
+                >
+                  Add Appointment
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );
