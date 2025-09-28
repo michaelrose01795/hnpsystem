@@ -9,24 +9,27 @@ import { useUser } from "@/context/UserContext";
 const navItems = [
   { label: "Home", href: "/" },
   { label: "Dashboard", href: "/dashboard" },
-  { label: "Car Buying", href: "/car-buying", roles: ["ADMIN", "SALES", "WORKSHOP"] },
-  { label: "Contractors", href: "/contractors", roles: ["ADMIN"] },
-  { label: "Vehicle Processing", href: "/vehicle-processing", roles: ["ADMIN", "WORKSHOP"] },
-  { label: "Smart Repair", href: "/smartrepair", roles: ["WORKSHOP"] },
-  { label: "Create Job Card", href: "/job-cards/create", roles: ["ADMIN", "SALES", "WORKSHOP"] }, 
-  { label: "View Job Cards", href: "/job-cards/view", roles: ["ADMIN", "SALES", "WORKSHOP"] },
-  { label: "Appointments", href: "/job-cards/appointments", roles: ["ADMIN", "SALES", "WORKSHOP"] }, // <--- new button
-  { label: "Next Jobs", href: "/job-cards/waiting/nextjobs", roles: ["Workshop Manager", "Service Manager"] },
+  { label: "Car Buying", href: "/car-buying", roles: ["admin", "sales", "workshop"] },
+  { label: "Contractors", href: "/contractors", roles: ["admin"] },
+  { label: "Vehicle Processing", href: "/vehicle-processing", roles: ["admin", "workshop"] },
+  { label: "Smart Repair", href: "/smartrepair", roles: ["workshop"] },
+  { label: "Create Job Card", href: "/job-cards/create", roles: ["admin", "sales", "workshop"] },
+  { label: "View Job Cards", href: "/job-cards/view", roles: ["admin", "sales", "workshop", "service", "manager"] },
+  { label: "Appointments", href: "/appointments", roles: ["admin", "sales", "service", "manager"] },
+  { label: "Next Jobs", href: "/job-cards/waiting/nextjobs", roles: ["service manager", "workshop manager"] },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { roles } = useUser();
+  const { roles: userRolesRaw } = useUser();
 
-  // Check if current user can access the nav item
+  // Normalize roles to lowercase for consistent comparison
+  const userRoles = (userRolesRaw || []).map((r) => r.toLowerCase().trim());
+
+  // Function to check if a nav item can be accessed by the current user
   const canAccess = (item) => {
     if (!item.roles) return true;
-    return item.roles.some((role) => roles[role]);
+    return item.roles.some((role) => userRoles.includes(role.toLowerCase()));
   };
 
   return (
