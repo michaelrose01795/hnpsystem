@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@fullcalendar/core": "^6.1.19",
     "@fullcalendar/react": "^6.1.19",
     "@fullcalendar/timeline": "^6.1.19",
     "formidable": "^3.5.4",

@@ -7,8 +7,8 @@ import { useJobs } from "../../context/JobsContext";
 import FullCalendar from "@fullcalendar/react";
 import timelinePlugin from "@fullcalendar/timeline";
 import moment from "moment";
-import "@fullcalendar/common/main.css";
-import "@fullcalendar/timeline/main.css";
+import "@fullcalendar/core/main.css";
+
 
 export default function AppointmentsPage() {
   const { jobs, updateJob } = useJobs();
@@ -17,22 +17,6 @@ export default function AppointmentsPage() {
   const [jobNumber, setJobNumber] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-
-  // Transform jobs into FullCalendar events
-  const events = useMemo(
-    () =>
-      jobs
-        .filter((j) => j.appointment)
-        .map((j) => ({
-          title: `${j.jobNumber} - ${j.customer || "Unknown"}`,
-          start: `${j.appointment.date}T${j.appointment.time}`,
-          end: moment(`${j.appointment.date}T${j.appointment.time}`)
-            .add(30, "minutes")
-            .toISOString(),
-          resourceId: j.jobNumber, // Optional: each job as a resource
-        })),
-    [jobs]
-  );
 
   const handleAddAppointment = () => {
     const job = jobs.find((j) => j.jobNumber === jobNumber);
@@ -46,11 +30,25 @@ export default function AppointmentsPage() {
     setTime("");
   };
 
-  // Optional: resources for Y-axis (jobs)
-  const resources = useMemo(
-    () => jobs.map((j) => ({ id: j.jobNumber, title: j.jobNumber })),
+  // Transform jobs into FullCalendar events
+  const events = useMemo(
+    () =>
+      jobs
+        .filter((j) => j.appointment)
+        .map((j) => ({
+          id: j.jobNumber,
+          title: `${j.jobNumber} - ${j.customer || "Unknown"}`,
+          start: `${j.appointment.date}T${j.appointment.time}`,
+          end: moment(`${j.appointment.date}T${j.appointment.time}`)
+            .add(30, "minutes")
+            .toISOString(),
+          resourceId: j.jobNumber,
+        })),
     [jobs]
   );
+
+  // Jobs as resources for Y-axis
+  const resources = useMemo(() => jobs.map((j) => ({ id: j.jobNumber, title: j.jobNumber })), [jobs]);
 
   return (
     <Layout>
@@ -101,7 +99,7 @@ export default function AppointmentsPage() {
           </button>
         </div>
 
-        {/* Bottom 90% - Calendar */}
+        {/* Bottom 90% - Timeline Calendar */}
         <div
           style={{
             flex: "1 1 90%",
@@ -115,13 +113,21 @@ export default function AppointmentsPage() {
             events={events}
             resources={resources}
             resourceAreaHeaderContent="Jobs"
-            slotLabelFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
             slotMinTime="06:00:00"
             slotMaxTime="20:00:00"
-            height="100%"
             allDaySlot={false}
             nowIndicator={true}
             headerToolbar={false}
+            height="100%"
+            slotLabelFormat={{
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }}
+            slotLabelContent={(arg) => (
+              <div style={{ writingMode: "vertical-rl", textAlign: "center" }}>{arg.text}</div>
+            )}
+            scrollTime={moment().format("HH:mm:ss")}
           />
         </div>
       </div>
