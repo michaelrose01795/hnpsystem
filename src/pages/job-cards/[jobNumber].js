@@ -1,88 +1,53 @@
-// file location: src/pages/job-cards/[jobNumber].js
-import React, { useState, useEffect } from "react"; // Added useEffect for loading job data
+
+// src/pages/job-cards/[jobNumber].js
+"use client";
+
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
+import { useJobs } from "../../context/JobsContext";
+import { Document, Page, pdfjs } from "react-pdf";
+
+// ✅ Point pdf.js to the correct worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 export default function JobCardPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
+  const { jobs } = useJobs();
 
-  // Track requests list
-  const [requests, setRequests] = useState([
-    "Oil change",
-    "Brake inspection",
-    "MOT preparation",
-  ]);
-
-  // Track job data and VHC completion
+  const [jobData, setJobData] = useState(null);
   const [vhcCompleted, setVhcCompleted] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [numPages, setNumPages] = useState(null);
 
-  // Fetch job data (simulate API for now)
   useEffect(() => {
-    if (!jobNumber) return;
-    const fetchJob = async () => {
-      try {
-        const res = await fetch(`/api/job-cards/${jobNumber}`);
-        if (res.ok) {
-          const data = await res.json();
-          setVhcCompleted(data.vhcCompleted || false);
-        }
-      } catch (err) {
-        console.error("Error loading job card:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchJob();
-  }, [jobNumber]);
-
-  // Handle navigation buttons
-  const handleStartVHC = () => {
-    if (!jobNumber) return;
-    router.push(`/job-cards/${jobNumber}/vhc`);
-  };
-
-  const handleWriteUp = () => {
-    if (!jobNumber) return;
-    router.push(`/job-cards/${jobNumber}/write-up`);
-  };
-
-  const handleCheckBox = () => {
-    if (!jobNumber) return;
-    router.push(`/job-cards/${jobNumber}/check-box`);
-  };
-
-  const handleFullCarDetails = () => {
-    if (!jobNumber) return;
-    router.push(`/job-cards/${jobNumber}/car-details`);
-  };
-
-  // Handle job completion
-  const handleCompleteJob = async () => {
-    if (!jobNumber) return;
-    try {
-      const res = await fetch(`/api/job-cards/${jobNumber}/complete`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "completed" }),
-      });
-      if (res.ok) {
-        router.push("/news"); // Redirect to News page
-      } else {
-        console.error("Failed to complete job");
-      }
-    } catch (err) {
-      console.error("Error completing job:", err);
+    if (!jobNumber || !jobs) return;
+    const job = jobs.find((j) => j.jobNumber === jobNumber);
+    if (job) {
+      setJobData(job);
+      setVhcCompleted(job.vhcCompleted || false);
+      if (job.pdfUrl) setPdfFile(job.pdfUrl);
     }
+  }, [jobNumber, jobs]);
+
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages);
   };
 
-  // Fixed heights
-  const sectionHeight = "250px"; // vehicle & customer
-  const jobDetailsHeight = "350px"; // 3x taller
-  const bottomRowHeight = "150px"; // last row
+  // Navigation handlers
+  const handleStartVHC = () => router.push(`/job-cards/${jobNumber}/vhc`);
+  const handleWriteUp = () => router.push(`/job-cards/${jobNumber}/write-up`);
+  const handleCheckBox = () => router.push(`/job-cards/${jobNumber}/check-box`);
+  const handleFullCarDetails = () => router.push(`/job-cards/${jobNumber}/car-details`);
 
-  if (loading) {
+  const handleCompleteJob = () => {
+    alert(`Job ${jobNumber} marked as completed`);
+    // In real app, call API or update context here
+    router.push("/news");
+  };
+
+  if (!jobData) {
     return (
       <Layout>
         <h2>Loading Job Card...</h2>
@@ -90,59 +55,24 @@ export default function JobCardPage() {
     );
   }
 
+  const { customer, car, vsmData, requests } = jobData;
+
   return (
     <Layout>
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "16px" }}>
         {/* Top row */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: "24px",
-          }}
-        >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: "1rem", color: "#555" }}>
-              Retail / Sales / Warranty
-            </h2>
-            <h1 style={{ color: "#FF4040", margin: 0 }}>
-              Job Card: {jobNumber || "Loading..."}
-            </h1>
+            <h2 style={{ margin: 0, fontSize: "1rem", color: "#555" }}>Retail / Sales / Warranty</h2>
+            <h1 style={{ color: "#FF4040", margin: 0 }}>Job Card: {jobNumber}</h1>
           </div>
-
-          {/* Action buttons */}
           <div style={{ display: "flex", gap: "12px" }}>
             {vhcCompleted && (
-              <button
-                onClick={handleCompleteJob}
-                style={{
-                  padding: "12px 20px",
-                  backgroundColor: "green",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  fontSize: "1rem",
-                }}
-              >
+              <button onClick={handleCompleteJob} style={{ padding: "12px 20px", backgroundColor: "green", color: "white", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", fontSize: "1rem" }}>
                 Complete Job
               </button>
             )}
-            <button
-              onClick={handleStartVHC}
-              style={{
-                padding: "12px 20px",
-                backgroundColor: "#FF4040",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                fontWeight: "bold",
-                cursor: "pointer",
-                fontSize: "1rem",
-              }}
-            >
+            <button onClick={handleStartVHC} style={{ padding: "12px 20px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", fontSize: "1rem" }}>
               {vhcCompleted ? "Reopen VHC" : "Start VHC"}
             </button>
           </div>
@@ -150,175 +80,63 @@ export default function JobCardPage() {
 
         {/* Vehicle & Customer Details */}
         <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
-          {/* Vehicle Details */}
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "white",
-              padding: "16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              height: sectionHeight,
-              overflow: "hidden",
-            }}
-          >
-            <h3 style={{ marginTop: 0, marginBottom: "12px" }}>
-              Vehicle Details
-            </h3>
-            <p>
-              <strong>Registration:</strong> ABC123
-            </p>
-            <p>
-              <strong>Colour:</strong> Red
-            </p>
-            <p>
-              <strong>Make & Model:</strong> Renault Clio Mk5 1.3 Turbo
-            </p>
-            <p>
-              <strong>Chassis Number:</strong> XYZ987654321
-            </p>
-            <p>
-              <strong>Engine Number:</strong> ENG123456789
-            </p>
-            <div style={{ marginTop: "8px" }}>
-              <label>
-                <strong>Mileage:</strong>
-                <input
-                  type="number"
-                  placeholder="Enter miles"
-                  style={{
-                    marginLeft: "8px",
-                    padding: "4px 8px",
-                    width: "100px",
-                  }}
-                />
-              </label>
-            </div>
+          {/* Vehicle */}
+          <div style={{ flex: 1, backgroundColor: "white", padding: "16px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+            <h3>Vehicle Details</h3>
+            <p><strong>Registration:</strong> {car.registration}</p>
+            <p><strong>Make:</strong> {vsmData.make}</p>
+            <p><strong>Model:</strong> {vsmData.model}</p>
+            <p><strong>Colour:</strong> {vsmData.colour}</p>
+            <p><strong>Chassis Number:</strong> {vsmData.chassis}</p>
+            <p><strong>Engine Number:</strong> {vsmData.engine}</p>
+            <p><strong>Mileage:</strong> {car.mileage || "N/A"}</p>
           </div>
 
-          {/* Customer Details */}
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "white",
-              padding: "16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              height: sectionHeight,
-              overflow: "hidden",
-            }}
-          >
-            <h3 style={{ marginTop: 0, marginBottom: "12px" }}>
-              Customer Details
-            </h3>
-            <p>
-              <strong>Full Name:</strong> John Doe
-            </p>
-            <p>
-              <strong>Address:</strong>
-              <br />
-              123 Example St,
-              <br />
-              London,
-              <br />
-              UK
-            </p>
-            <p>
-              <strong>Email:</strong> john@example.com
-            </p>
-            <p>
-              <strong>Phone:</strong> 01234 567890
-            </p>
+          {/* Customer */}
+          <div style={{ flex: 1, backgroundColor: "white", padding: "16px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+            <h3>Customer Details</h3>
+            <p><strong>Name:</strong> {customer.firstName} {customer.lastName}</p>
+            <p><strong>Address:</strong> {customer.address}</p>
+            <p><strong>Email:</strong> {customer.email}</p>
+            <p><strong>Mobile:</strong> {customer.mobile}</p>
+            <p><strong>Telephone:</strong> {customer.telephone}</p>
           </div>
         </div>
 
         {/* Job Details */}
-        <div
-          style={{
-            backgroundColor: "white",
-            padding: "16px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            marginBottom: "24px",
-            height: jobDetailsHeight,
-          }}
-        >
-          <h3 style={{ marginTop: 0 }}>Job Details</h3>
-          {requests.map((req, index) => (
-            <p key={index}>
-              <strong>Request {index + 1}:</strong> {req}
-            </p>
-          ))}
+        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", marginBottom: "24px" }}>
+          <h3>Job Requests</h3>
+          {requests.map((req, i) => (<p key={i}><strong>Request {i + 1}:</strong> {req}</p>))}
+
+          {/* PDF */}
+          {pdfFile && (
+            <div style={{ marginTop: "16px" }}>
+              <h4>Attached PDF:</h4>
+              <Document file={pdfFile} onLoadSuccess={onDocumentLoadSuccess}>
+                {Array.from(new Array(numPages), (el, index) => (
+                  <Page key={index} pageNumber={index + 1} width={600} />
+                ))}
+              </Document>
+            </div>
+          )}
         </div>
 
-        {/* Bottom 4 sections */}
-        <div style={{ display: "flex", gap: "16px", height: bottomRowHeight }}>
-          {/* Cosmetic Damage */}
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "white",
-              padding: "16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              overflowY: "auto",
-            }}
-          >
-            <h4 style={{ marginTop: 0 }}>Cosmetic Damage</h4>
-            <textarea
-              placeholder="Scratches, dents, paint damage..."
-              style={{ width: "100%", height: "80px", padding: "8px" }}
-            />
+        {/* Bottom sections */}
+        <div style={{ display: "flex", gap: "16px" }}>
+          <div style={{ flex: 1, backgroundColor: "white", padding: "16px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+            <h4>Cosmetic Damage</h4>
+            <textarea placeholder="Scratches, dents, paint damage..." style={{ width: "100%", height: "80px", padding: "8px" }} />
           </div>
 
-          {/* Write-Up */}
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "#FF4040",
-              color: "white",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }}
-            onClick={handleWriteUp}
-          >
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#FF4040", color: "white", borderRadius: "8px", cursor: "pointer" }} onClick={handleWriteUp}>
             <h4>Go to Write-Up</h4>
           </div>
 
-          {/* Check Box */}
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "#FF4040",
-              color: "white",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }}
-            onClick={handleCheckBox}
-          >
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#FF4040", color: "white", borderRadius: "8px", cursor: "pointer" }} onClick={handleCheckBox}>
             <h4>Go to Check Box</h4>
           </div>
 
-          {/* Full Car Details */}
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "#FF4040",
-              color: "white",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }}
-            onClick={handleFullCarDetails}
-          >
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#FF4040", color: "white", borderRadius: "8px", cursor: "pointer" }} onClick={handleFullCarDetails}>
             <h4>Full Car Details</h4>
           </div>
         </div>

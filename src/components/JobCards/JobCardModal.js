@@ -1,15 +1,22 @@
 // file location: src/components/JobCards/JobCardModal.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 
 export default function JobCardModal({ isOpen, onClose }) {
   const router = useRouter();
-  const [jobNumber, setJobNumber] = useState("JOB1234"); // placeholder job number
+  const [jobNumber, setJobNumber] = useState(""); // start empty
+
+  // Reset job number whenever the modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setJobNumber("");
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleClockOn = () => {
-    // Close modal and go to job card page
+    if (!jobNumber) return; // optional: prevent empty submission
     onClose();
     router.push(`/job-cards/${jobNumber}`);
   };

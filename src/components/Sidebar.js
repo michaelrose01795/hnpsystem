@@ -5,26 +5,24 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 
-// Navigation items with correct folder names
+// Navigation items for H&P Dealer Management System
 const navItems = [
   { label: "Home", href: "/" },
   { label: "Dashboard", href: "/dashboard" },
-  { label: "Auth", href: "/auth", roles: ["ADMIN"] },
-  { label: "Car Buying", href: "/car-buying", roles: ["ADMIN","SALES","WORKSHOP"] },
-  { label: "Contractors", href: "/contractors" },
-  { label: "Vehicle Processing", href: "/vehicle-processing" },
-  { label: "Smart Repair", href: "/smartrepair" },
-  { label: "Features", href: "/features" },
-  { label: "Login", href: "/login" },
-  { label: "Create Job Card", href: "/job-cards/create", roles: ["ADMIN","SALES","WORKSHOP"] },
-  { label: "View Job Cards", href: "/job-cards/view", roles: ["ADMIN","SALES","WORKSHOP"] }, // ✅ Correct folder
-  { label: "Next Jobs", href: "/job-cards/waiting/nextjobs", roles: ["Workshop Manager", "Service Manager"] }, // New button
+  { label: "Car Buying", href: "/car-buying", roles: ["ADMIN", "SALES", "WORKSHOP"] },
+  { label: "Contractors", href: "/contractors", roles: ["ADMIN"] },
+  { label: "Vehicle Processing", href: "/vehicle-processing", roles: ["ADMIN", "WORKSHOP"] },
+  { label: "Smart Repair", href: "/smartrepair", roles: ["WORKSHOP"] },
+  { label: "Create Job Card", href: "/job-cards/create", roles: ["ADMIN", "SALES", "WORKSHOP"] }, // always go here
+  { label: "View Job Cards", href: "/job-cards/view", roles: ["ADMIN", "SALES", "WORKSHOP"] },
+  { label: "Next Jobs", href: "/job-cards/waiting/nextjobs", roles: ["Workshop Manager", "Service Manager"] },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { roles } = useUser();
 
+  // Check if current user can access the nav item
   const canAccess = (item) => {
     if (!item.roles) return true;
     return item.roles.some((role) => roles[role]);
@@ -33,7 +31,7 @@ export default function Sidebar() {
   return (
     <aside className="w-64 h-screen bg-box text-text fixed left-0 top-0 flex flex-col shadow-lg">
       <div className="p-md text-2xl font-bold border-b border-muted">
-        H&P System
+        H&P DMS
       </div>
       <nav className="flex-1 p-md flex flex-col gap-sm">
         {navItems.filter(canAccess).map((item) => {
