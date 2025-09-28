@@ -1,20 +1,28 @@
 // src/pages/appointments/index.js
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Layout from "../../components/Layout";
 import { useJobs } from "../../context/JobsContext";
 import FullCalendar from "@fullcalendar/react";
 import timelinePlugin from "@fullcalendar/timeline";
 import moment from "moment";
+import { useSearchParams } from "next/navigation"; // Next.js hook
 
 export default function AppointmentsPage() {
   const { jobs, updateJob } = useJobs();
-
+  const searchParams = useSearchParams();
+  
   // Form state
   const [jobNumber, setJobNumber] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+
+  // Prefill job number from query string
+  useEffect(() => {
+    const jobParam = searchParams.get("jobNumber");
+    if (jobParam) setJobNumber(jobParam);
+  }, [searchParams]);
 
   // Add appointment handler
   const handleAddAppointment = () => {

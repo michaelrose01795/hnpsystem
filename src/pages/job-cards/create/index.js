@@ -1,68 +1,38 @@
-// file location: src/pages/job-cards/create/index.js
+// src/pages/job-cards/create/index.js
 "use client";
 
 import React, { useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
 
-// ✅ Popup to add new customer
+// ✅ Popup to add a new customer
 function NewCustomerPopup({ onClose, onAdd }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [number, setNumber] = useState("");
-  const [street, setStreet] = useState("");
-  const [town, setTown] = useState("");
-  const [country, setCountry] = useState("");
-  const [postcode, setPostcode] = useState("");
+  const [address, setAddress] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [telephone, setTelephone] = useState("");
 
   const handleAdd = () => {
-    onAdd({
-      firstName,
-      lastName,
-      address: `${number} ${street}, ${town}, ${country}, ${postcode}`,
-      email,
-      mobile,
-      telephone,
-    });
+    if (!firstName || !lastName) return alert("Enter first and last name");
+    onAdd({ firstName, lastName, address, email, mobile, telephone });
     onClose();
   };
 
   return (
-    <div style={{
-      position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-      backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000
-    }}>
-      <div style={{
-        backgroundColor: "white", padding: "24px", borderRadius: "8px",
-        width: "400px", maxHeight: "90vh", overflowY: "auto"
-      }}>
-        <h3>Add New Customer</h3>
-        <label>First Name:</label>
-        <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} style={{ width: "100%", marginBottom: "8px" }} />
-        <label>Last Name:</label>
-        <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} style={{ width: "100%", marginBottom: "8px" }} />
-        <label>Number:</label>
-        <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} style={{ width: "100%", marginBottom: "8px" }} />
-        <label>Street:</label>
-        <input type="text" value={street} onChange={(e) => setStreet(e.target.value)} style={{ width: "100%", marginBottom: "8px" }} />
-        <label>Town/City:</label>
-        <input type="text" value={town} onChange={(e) => setTown(e.target.value)} style={{ width: "100%", marginBottom: "8px" }} />
-        <label>Country:</label>
-        <input type="text" value={country} onChange={(e) => setCountry(e.target.value)} style={{ width: "100%", marginBottom: "8px" }} />
-        <label>Postcode:</label>
-        <input type="text" value={postcode} onChange={(e) => setPostcode(e.target.value)} style={{ width: "100%", marginBottom: "8px" }} />
-        <label>Email:</label>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: "100%", marginBottom: "8px" }} />
-        <label>Mobile:</label>
-        <input type="text" value={mobile} onChange={(e) => setMobile(e.target.value)} style={{ width: "100%", marginBottom: "8px" }} />
-        <label>Telephone:</label>
-        <input type="text" value={telephone} onChange={(e) => setTelephone(e.target.value)} style={{ width: "100%", marginBottom: "8px" }} />
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "12px" }}>
-          <button onClick={onClose} style={{ padding: "8px 16px" }}>Close</button>
-          <button onClick={handleAdd} style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white" }}>Add Customer</button>
+    <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ backgroundColor: "white", padding: "24px", borderRadius: "8px", minWidth: "400px" }}>
+        <h2>Add New Customer</h2>
+        <input placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} style={{ display: "block", marginBottom: "8px", width: "100%" }} />
+        <input placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} style={{ display: "block", marginBottom: "8px", width: "100%" }} />
+        <input placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} style={{ display: "block", marginBottom: "8px", width: "100%" }} />
+        <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={{ display: "block", marginBottom: "8px", width: "100%" }} />
+        <input placeholder="Mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} style={{ display: "block", marginBottom: "8px", width: "100%" }} />
+        <input placeholder="Telephone" value={telephone} onChange={(e) => setTelephone(e.target.value)} style={{ display: "block", marginBottom: "8px", width: "100%" }} />
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+          <button onClick={onClose} style={{ padding: "6px 12px" }}>Cancel</button>
+          <button onClick={handleAdd} style={{ padding: "6px 12px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "4px" }}>Add</button>
         </div>
       </div>
     </div>
@@ -71,91 +41,40 @@ function NewCustomerPopup({ onClose, onAdd }) {
 
 // ✅ Popup to select an existing customer
 function ExistingCustomerPopup({ onClose, onSelect }) {
-  const [search, setSearch] = useState("");
-  const [customerList] = useState([
-    { id: 1, firstName: "John", lastName: "Doe", address: "1 Street, Town, UK, AB1 2CD", email: "john@example.com", mobile: "07123456789", telephone: "0123456789" },
-    { id: 2, firstName: "Jane", lastName: "Smith", address: "2 Avenue, City, UK, XY1 9YZ", email: "jane@example.com", mobile: "07234567890", telephone: "0987654321" },
-  ]);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-
-  const filteredList = search
-    ? customerList.filter(c => `${c.firstName} ${c.lastName}`.toLowerCase().includes(search.toLowerCase()))
-    : [];
-
-  const handleAdd = () => {
-    if (selectedCustomer) {
-      onSelect(selectedCustomer);
-      onClose();
-    }
-  };
+  const dummyCustomers = [
+    { firstName: "John", lastName: "Smith", address: "123 Street", email: "john@example.com", mobile: "07123456789", telephone: "0161234567" },
+    { firstName: "Jane", lastName: "Doe", address: "456 Avenue", email: "jane@example.com", mobile: "07234567890", telephone: "0171234567" },
+  ];
 
   return (
-    <div style={{
-      position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-      backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000
-    }}>
-      <div style={{
-        backgroundColor: "white", padding: "24px", borderRadius: "8px",
-        width: "400px", maxHeight: "90vh", overflowY: "auto"
-      }}>
-        <h3>Select Existing Customer</h3>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name"
-          style={{ width: "100%", marginBottom: "12px", padding: "6px" }}
-        />
-        {filteredList.length > 0 && (
-          <div style={{ maxHeight: "200px", overflowY: "auto", marginBottom: "12px" }}>
-            {filteredList.map(c => (
-              <div
-                key={c.id}
-                onClick={() => setSelectedCustomer(c)}
-                style={{
-                  padding: "8px",
-                  cursor: "pointer",
-                  backgroundColor: selectedCustomer?.id === c.id ? "#f0f0f0" : "white"
-                }}
-              >
-                {c.firstName} {c.lastName}
-              </div>
-            ))}
+    <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ backgroundColor: "white", padding: "24px", borderRadius: "8px", minWidth: "400px" }}>
+        <h2>Select Existing Customer</h2>
+        {dummyCustomers.map((c, i) => (
+          <div key={i} style={{ marginBottom: "8px", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer" }}
+               onClick={() => { onSelect(c); onClose(); }}>
+            {c.firstName} {c.lastName} - {c.mobile}
           </div>
-        )}
-        {selectedCustomer && (
-          <div style={{ marginBottom: "12px" }}>
-            <p><strong>Name:</strong> {selectedCustomer.firstName} {selectedCustomer.lastName}</p>
-            <p><strong>Address:</strong> {selectedCustomer.address}</p>
-            <p><strong>Email:</strong> {selectedCustomer.email}</p>
-            <p><strong>Mobile:</strong> {selectedCustomer.mobile}</p>
-            <p><strong>Telephone:</strong> {selectedCustomer.telephone}</p>
-          </div>
-        )}
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <button onClick={onClose} style={{ padding: "8px 16px" }}>Close</button>
-          <button onClick={handleAdd} disabled={!selectedCustomer} style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white" }}>Add Customer</button>
-        </div>
+        ))}
+        <button onClick={onClose} style={{ marginTop: "12px", padding: "6px 12px" }}>Cancel</button>
       </div>
     </div>
   );
 }
 
-// ✅ Popup to ask for check sheet or dealer car details
-function CheckSheetPopup({ onClose, onAddCheckSheet, onAddDealerDetails }) {
+// ✅ Popup to choose next step after creating job card
+function CheckSheetPopup({ onClose, onAddCheckSheet, onAddDealerDetails, onAddAppointment }) {
   return (
-    <div style={{
-      position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-      backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000
-    }}>
-      <div style={{ backgroundColor: "white", padding: "24px", borderRadius: "8px", width: "400px" }}>
-        <h3>Next Step</h3>
-        <p>This job may require additional details. Choose an option:</p>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "12px" }}>
-          <button onClick={onClose} style={{ padding: "8px 16px" }}>Cancel</button>
-          <button onClick={onAddCheckSheet} style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white" }}>Add Check Sheet</button>
-          <button onClick={onAddDealerDetails} style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white" }}>Add Dealer Car Details</button>
+    <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ backgroundColor: "white", padding: "24px", borderRadius: "8px", minWidth: "400px" }}>
+        <h2>Next Step</h2>
+        <p>Choose which section to fill in next:</p>
+        <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
+          <button onClick={onAddCheckSheet} style={{ padding: "6px 12px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "4px" }}>Add Check Sheet</button>
+          <button onClick={onAddDealerDetails} style={{ padding: "6px 12px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "4px" }}>Add Dealer Details</button>
+          <button onClick={onAddAppointment} style={{ padding: "6px 12px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "4px" }}>Set Appointment</button>
         </div>
+        <button onClick={onClose} style={{ marginTop: "12px", padding: "6px 12px" }}>Cancel</button>
       </div>
     </div>
   );
@@ -167,6 +86,7 @@ let localJobCounter = 30000;
 export default function CreateJobCardPage() {
   const router = useRouter();
   const [jobNumber, setJobNumber] = useState(null);
+  const [jobData, setJobData] = useState({});
   const [registration, setRegistration] = useState("");
   const [vsmData, setVsmData] = useState({ colour: "", make: "", model: "", chassis: "", engine: "" });
   const [customer, setCustomer] = useState(null);
@@ -188,12 +108,18 @@ export default function CreateJobCardPage() {
       return;
     }
 
-    // ✅ Generate local job number
     const newJobNumber = "JOB" + localJobCounter;
-    setJobNumber(newJobNumber);
     localJobCounter += 1;
+    setJobNumber(newJobNumber);
 
-    // Show next popup
+    setJobData({
+      jobNumber: newJobNumber,
+      registration,
+      vsmData,
+      customer,
+      requests
+    });
+
     setShowCheckSheetPopup(true);
   };
 
@@ -205,6 +131,11 @@ export default function CreateJobCardPage() {
   const handleAddDealerDetails = () => {
     setShowCheckSheetPopup(false);
     router.push(`/job-cards/${jobNumber}/dealer-car-details`);
+  };
+
+  const handleAddAppointment = () => {
+    setShowCheckSheetPopup(false);
+    router.push(`/appointments?jobNumber=${jobNumber}`);
   };
 
   const handleFetchVSM = () => {
@@ -294,6 +225,7 @@ export default function CreateJobCardPage() {
             onClose={() => setShowCheckSheetPopup(false)}
             onAddCheckSheet={handleAddCheckSheet}
             onAddDealerDetails={handleAddDealerDetails}
+            onAddAppointment={handleAddAppointment}
           />
         )}
       </div>
