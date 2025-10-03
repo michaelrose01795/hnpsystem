@@ -1,25 +1,27 @@
 // file location: src/components/JobCards/JobCardModal.js
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/router";
 
-export default function JobCardModal({ isOpen, onClose }) {
+export default function JobCardModal({ isOpen, onClose, existingJobs = [] }) {
   const router = useRouter();
-  const [jobNumber, setJobNumber] = useState(""); // start empty
-
-  // Reset job number whenever the modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setJobNumber("");
-    }
-  }, [isOpen]);
+  const [jobNumber, setJobNumber] = useState("JOB1234"); // placeholder job number
 
   if (!isOpen) return null;
 
   const handleClockOn = () => {
-    if (!jobNumber) return; // prevent empty submission
+    // Close modal and go to job card page
     onClose();
-    router.push(`/job-cards/${jobNumber}`);
+    router.push(`/job-cards/${trimmedJob}`);
   };
+
+  // Handle pressing Enter key
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleClockOn();
+    }
+  };
+
+  if (!isOpen) return null;
 
   return (
     <div
@@ -47,19 +49,26 @@ export default function JobCardModal({ isOpen, onClose }) {
         </h2>
 
         <input
+          ref={inputRef}
           type="text"
           value={jobNumber}
           onChange={(e) => setJobNumber(e.target.value)}
-          placeholder="Enter job number here"
           style={{
             width: "100%",
             padding: "8px",
-            marginBottom: "16px",
+            marginBottom: "8px",
             borderRadius: "4px",
-            border: "1px solid #ccc",
+            border: error ? "1px solid red" : "1px solid #ccc",
             fontSize: "1rem",
+            color: "#333",
           }}
         />
+
+        {error && (
+          <div style={{ color: "red", marginBottom: "8px", fontWeight: "bold" }}>
+            {error}
+          </div>
+        )}
 
         <button
           onClick={handleClockOn}
