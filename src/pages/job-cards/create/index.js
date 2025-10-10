@@ -185,8 +185,24 @@ export default function CreateJobCardPage() {
         {showJobModal && <JobCardModal isOpen={showJobModal} onClose={() => setShowJobModal(false)} existingJobs={jobs.map(j => j.jobNumber)} />}
 
         {/* Customer Popups */}
-        {showNewCustomer && <NewCustomerPopup onClose={() => setShowNewCustomer(false)} onSelectCustomer={(c) => setCustomer(c)} />}
-        {showExistingCustomer && <ExistingCustomerPopup onClose={() => setShowExistingCustomer(false)} onSelectCustomer={(c) => setCustomer(c)} />}
+        {showNewCustomer && (
+          <NewCustomerPopup
+            onClose={() => setShowNewCustomer(false)}
+            onSelect={(c) => {
+              setCustomer(c);
+              setShowNewCustomer(false);
+            }}
+          />
+        )}
+        {showExistingCustomer && (
+          <ExistingCustomerPopup
+            onClose={() => setShowExistingCustomer(false)}
+            onSelect={(c) => {
+              setCustomer(c);
+              setShowExistingCustomer(false);
+            }}
+          />
+        )}
 
         {/* VHC Popup */}
         {showVhcPopup && (
