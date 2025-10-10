@@ -36,6 +36,7 @@ export default function Layout({ children }) {
   ];
 
   const viewRoles = ["manager", "service", "sales"];
+  const appointmentRoles = ["admin", "sales", "service", "manager"];
   const isActive = (path) => router.pathname.startsWith(path);
 
   return (
@@ -182,6 +183,29 @@ export default function Layout({ children }) {
                     }}
                   >
                     👀 View Job Cards
+                  </span>
+                </Link>
+              )}
+
+              {/* Appointments button added */}
+              {appointmentRoles.some((r) => userRoles.includes(r)) && (
+                <Link href="/appointments">
+                  <span
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      marginTop: "10px",
+                      borderRadius: "6px",
+                      textDecoration: "none",
+                      color: "white",
+                      backgroundColor: "#FF4040",
+                      textAlign: "center",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    📅 Appointments
                   </span>
                 </Link>
               )}
