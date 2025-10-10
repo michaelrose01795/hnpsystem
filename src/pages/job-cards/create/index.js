@@ -63,18 +63,36 @@ export default function CreateJobCardPage() {
   const [jobSource, setJobSource] = useState("Retail");
   const [jobCategories, setJobCategories] = useState(["Other"]);
 
-  // Determine colour tag for waiting status (stored for later use)
-  const getWaitingColor = (status) => {
+  // Determine colour tag for waiting status + warranty tint
+  const getBackgroundColor = (status, source) => {
+    let baseColor = "white";
+
+    // Base customer status colours
     switch (status) {
       case "Waiting":
-        return "red";
+        baseColor = "#ffcccc"; // light red
+        break;
       case "Loan Car":
-        return "blue";
+        baseColor = "#cce0ff"; // light blue
+        break;
       case "Collection":
-        return "green";
+        baseColor = "#d6f5d6"; // light green
+        break;
       default:
-        return "default";
+        baseColor = "white"; // default
     }
+
+    // Warranty vertical gradient 50/50 split
+    if (source === "Warranty") {
+      if (baseColor === "white") {
+        return "#ffeacc"; // just orange if no base colour
+      } else {
+        // vertical half split gradient
+        return `linear-gradient(to bottom, ${baseColor} 50%, #ffeacc 50%)`;
+      }
+    }
+
+    return baseColor;
   };
 
   // Update job requests and re-run detection
@@ -116,7 +134,6 @@ export default function CreateJobCardPage() {
       cosmeticNotes,
       vhcRequired,
       waitingStatus,
-      waitingColor: getWaitingColor(waitingStatus),
       jobSource,
       jobCategories,
     };
@@ -125,14 +142,21 @@ export default function CreateJobCardPage() {
     return currentJobNumber;
   };
 
-  // Layout heights
   const sectionHeight = "260px";
-  const jobDetailsHeight = "auto";
   const bottomRowHeight = "150px";
 
   return (
     <Layout>
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "16px" }}>
+      <div
+        style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
+          padding: "16px",
+          transition: "background 0.3s ease",
+          background: getBackgroundColor(waitingStatus, jobSource), // gradient/tint logic
+          borderRadius: "10px",
+        }}
+      >
         {/* Top Section */}
         <div
           style={{
@@ -335,7 +359,7 @@ export default function CreateJobCardPage() {
                   type="text"
                   value={req.text}
                   onChange={(e) => handleRequestChange(i, e.target.value)}
-                  placeholder="Enter job request (e.g. MOT, Service, Diagnosis)"
+                  placeholder="Enter job request (e.g. MOT, Service, Diagnostic)"
                   style={{
                     width: "90%",
                     padding: "6px 8px",
@@ -485,7 +509,11 @@ export default function CreateJobCardPage() {
             >
               <h3>Add VHC to this job?</h3>
               <div
-                style={{ display: "flex", justifyContent: "space-around", marginTop: "16px" }}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-around",
+                  marginTop: "16px",
+                }}
               >
                 <label>
                   <input
