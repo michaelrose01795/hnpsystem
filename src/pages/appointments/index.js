@@ -8,12 +8,7 @@ import { useJobs } from "../../context/JobsContext";
 import { useSearchParams } from "next/navigation";
 
 // Placeholder tech availability
-const techs = 6;
-const breaks = [
-  { start: "10:30", end: "10:45" },
-  { start: "15:30", end: "15:45" },
-  { start: "13:00", end: "13:30" }
-];
+const techsDefault = 6;
 
 // Placeholder jobs for a day
 const placeholderJobs = [
@@ -78,11 +73,15 @@ export default function Appointments() {
   const [dates, setDates] = useState([]);
   const [selectedDay, setSelectedDay] = useState(new Date());
   const [notes, setNotes] = useState({});
-  const [showPopup, setShowPopup] = useState(false);
+  const [showNotePopup, setShowNotePopup] = useState(false);
+  const [showAppointmentPopup, setShowAppointmentPopup] = useState(false);
   const [currentNote, setCurrentNote] = useState("");
   const [jobNumber, setJobNumber] = useState("");
   const [time, setTime] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Tech hours state per day
+  const [techHours, setTechHours] = useState({});
+  const [showTechHoursEditor, setShowTechHoursEditor] = useState(false);
 
   // Initialize dates
   useEffect(() => {
@@ -100,12 +99,12 @@ export default function Appointments() {
     setSelectedDay(date);
     const dateKey = date.toDateString();
     setCurrentNote(notes[dateKey] || "");
-    setShowPopup(true);
+    setShowNotePopup(true);
   };
 
   const saveNote = () => {
     setNotes({ ...notes, [selectedDay.toDateString()]: currentNote });
-    setShowPopup(false);
+    setShowNotePopup(false);
   };
 
   // Add/Edit appointment
@@ -127,7 +126,7 @@ export default function Appointments() {
 
     setJobNumber("");
     setTime("");
-    setIsModalOpen(false);
+    setShowAppointmentPopup(false);
     setSelectedDay(new Date(appointmentDate));
   };
 
@@ -137,38 +136,27 @@ export default function Appointments() {
   const isSaturday = (date) => date.getDay() === 6;
 
   const hours = Array.from({ length: 10 }, (_, i) => 8 + i); // 8am to 5pm
+  const stickyHeaderStyle = { position: "sticky", top: 0, backgroundColor: "#fff", zIndex: 2 };
 
-  const getAppointmentsAt = (dateObj, hour) =>
-    jobs.filter((job) => {
-      if (!job.appointment) return false;
-      const jobHour = Number(job.appointment.time.split(":")[0]);
-      const appDate = new Date(job.appointment.date);
-      return appDate.getFullYear() === dateObj.getFullYear() &&
-        appDate.getMonth() === dateObj.getMonth() &&
-        appDate.getDate() === dateObj.getDate() &&
-        jobHour === hour;
+  // Tech hours editor
+  const toggleTechHoursEditor = () => {
+    setShowTechHoursEditor(!showTechHoursEditor);
+  };
+  const handleTechHoursChange = (e) => {
+    setTechHours({
+      ...techHours,
+      [selectedDay.toDateString()]: e.target.value
     });
+  };
 
-  const getAppointmentsForDay = (dateObj) =>
-    jobs.filter((job) => {
-      if (!job.appointment) return false;
-      const appDate = new Date(job.appointment.date);
-      return appDate.getFullYear() === dateObj.getFullYear() &&
-        appDate.getMonth() === dateObj.getMonth() &&
-        appDate.getDate() === dateObj.getDate();
-    }).slice(0, 20);
-
-  const handleClickAppointment = (job) => {
-    setJobNumber(job.jobNumber);
-    setTime(job.appointment.time);
-    setSelectedDay(new Date(job.appointment.date));
-    setIsModalOpen(true);
+  const getTechHoursForDay = (date) => {
+    return techHours[date.toDateString()] || techsDefault;
   };
 
   return (
     <Layout>
       <div style={{ height: "100%", padding: "16px", display: "flex", flexDirection: "column" }}>
-        {/* Top 10% - Add Note */}
+        {/* Top 10% - Add Note / Appointment */}
         <div style={{ flex: "0 0 10%", display: "flex", gap: "12px", alignItems: "center" }}>
           <button onClick={() => handleAddNote(selectedDay)} style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}>
             Add Note
@@ -186,7 +174,7 @@ export default function Appointments() {
               <option key={h} value={`${h.toString().padStart(2, "0")}:00`}>{h}:00</option>
             ))}
           </select>
-          <button onClick={() => handleAddAppointment(selectedDay?.toISOString().split("T")[0])} style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}>
+          <button onClick={() => setShowAppointmentPopup(true)} style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}>
             Add Appointment
           </button>
         </div>
@@ -196,15 +184,15 @@ export default function Appointments() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                <th>Day/Date</th>
-                <th>Availability</th>
-                <th>Total Hours</th>
-                <th>Total Jobs</th>
-                <th>Services</th>
-                <th>MOT</th>
-                <th>Diagnosis</th>
-                <th>Other</th>
-                <th>Notes</th>
+                <th style={stickyHeaderStyle}>Day/Date</th>
+                <th style={stickyHeaderStyle}>Availability</th>
+                <th style={stickyHeaderStyle}>Total Hours</th>
+                <th style={stickyHeaderStyle}>Total Jobs</th>
+                <th style={stickyHeaderStyle}>Services</th>
+                <th style={stickyHeaderStyle}>MOT</th>
+                <th style={stickyHeaderStyle}>Diagnosis</th>
+                <th style={stickyHeaderStyle}>Other</th>
+                <th style={stickyHeaderStyle}>Notes</th>
               </tr>
             </thead>
             <tbody>
@@ -213,7 +201,7 @@ export default function Appointments() {
                 return (
                   <tr key={dateKey} onClick={() => setSelectedDay(date)} style={{ cursor: "pointer", backgroundColor: isSaturday(date) ? "#FFD580" : "#fff" }}>
                     <td>{formatDate(date)}</td>
-                    <td>{techs} techs available</td>
+                    <td>{getTechHoursForDay(date)} techs available</td>
                     <td>Placeholder</td>
                     <td>0</td>
                     <td>0</td>
@@ -233,28 +221,49 @@ export default function Appointments() {
           <h3>Jobs for {formatDateNoYear(selectedDay)}</h3>
           <div style={{ display: "flex", gap: "12px", marginBottom: "8px" }}>
             {["All Jobs", "MOT", "Tech Hours"].map((tab) => (
-              <div key={tab} style={{ padding: "6px 12px", border: "1px solid #000", cursor: "pointer" }}>{tab}</div>
+              <div
+                key={tab}
+                style={{ padding: "6px 12px", border: "1px solid #000", cursor: "pointer" }}
+                onClick={() => {
+                  if (tab === "Tech Hours") toggleTechHoursEditor();
+                }}
+              >
+                {tab}
+              </div>
             ))}
           </div>
+
+          {showTechHoursEditor && (
+            <div style={{ marginBottom: "12px", padding: "12px", border: "1px solid #FF4040", borderRadius: "6px" }}>
+              <label>Tech Hours for {formatDateNoYear(selectedDay)}:</label>
+              <input
+                type="number"
+                min="0"
+                value={getTechHoursForDay(selectedDay)}
+                onChange={handleTechHoursChange}
+                style={{ marginLeft: "8px", padding: "6px", width: "60px", borderRadius: "4px", border: "1px solid #ccc" }}
+              />
+            </div>
+          )}
 
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                <th>Job #</th>
-                <th>Reg</th>
-                <th>Vehicle</th>
-                <th>Customer</th>
-                <th>Time In</th>
-                <th>Time Out</th>
-                <th>Reason</th>
-                <th>Total Time</th>
-                <th>Time on Job</th>
-                <th>Waiting</th>
-                <th>Collection</th>
-                <th>Loan Car</th>
-                <th>MOT</th>
-                <th>Wash</th>
-                <th>Address</th>
+                <th style={stickyHeaderStyle}>Job #</th>
+                <th style={stickyHeaderStyle}>Reg</th>
+                <th style={stickyHeaderStyle}>Vehicle</th>
+                <th style={stickyHeaderStyle}>Customer</th>
+                <th style={stickyHeaderStyle}>Time In</th>
+                <th style={stickyHeaderStyle}>Time Out</th>
+                <th style={stickyHeaderStyle}>Reason</th>
+                <th style={stickyHeaderStyle}>Total Time</th>
+                <th style={stickyHeaderStyle}>Time on Job</th>
+                <th style={stickyHeaderStyle}>Waiting</th>
+                <th style={stickyHeaderStyle}>Collection</th>
+                <th style={stickyHeaderStyle}>Loan Car</th>
+                <th style={stickyHeaderStyle}>MOT</th>
+                <th style={stickyHeaderStyle}>Wash</th>
+                <th style={stickyHeaderStyle}>Address</th>
               </tr>
             </thead>
             <tbody>
@@ -282,34 +291,28 @@ export default function Appointments() {
         </div>
 
         {/* Add Note Popup */}
-        {showPopup && (
-          <Popup onClose={() => setShowPopup(false)}>
-            <h3>Add Note for {formatDateNoYear(selectedDay)}</h3>
-            <textarea style={{ width: "100%", height: "100px" }} value={currentNote} onChange={(e) => setCurrentNote(e.target.value)} />
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px" }}>
-              <button onClick={saveNote}>Update</button>
-              <button onClick={() => setShowPopup(false)}>Close</button>
-            </div>
-          </Popup>
-        )}
-
-        {/* Appointment Modal */}
-        {isModalOpen && (
-          <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 9999 }}>
-            <div style={{ backgroundColor: "white", padding: "24px", borderRadius: "8px", minWidth: "300px", display: "flex", flexDirection: "column", gap: "12px" }}>
-              <h3>Add Appointment for {selectedDay && formatDateNoYear(selectedDay)}</h3>
-              <input type="text" placeholder="Job Number" value={jobNumber} onChange={(e) => setJobNumber(e.target.value)} style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }} />
-              <select value={time} onChange={(e) => setTime(e.target.value)} style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}>
-                <option value="">Select time</option>
-                {hours.map((h) => <option key={h} value={`${h.toString().padStart(2,"0")}:00`}>{h}:00</option>)}
-              </select>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-                <button onClick={() => setIsModalOpen(false)} style={{ padding: "8px 16px", borderRadius: "6px", border: "none", cursor: "pointer" }}>Close</button>
-                <button onClick={() => handleAddAppointment(selectedDay.toISOString().split("T")[0])} style={{ padding: "8px 16px", borderRadius: "6px", border: "none", backgroundColor: "#FF4040", color: "white", cursor: "pointer" }}>Add Appointment</button>
-              </div>
-            </div>
+        <Popup isOpen={showNotePopup} onClose={() => setShowNotePopup(false)}>
+          <h3>Add Note for {formatDateNoYear(selectedDay)}</h3>
+          <textarea style={{ width: "100%", height: "100px" }} value={currentNote} onChange={(e) => setCurrentNote(e.target.value)} />
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px" }}>
+            <button onClick={saveNote}>Update</button>
+            <button onClick={() => setShowNotePopup(false)}>Close</button>
           </div>
-        )}
+        </Popup>
+
+        {/* Appointment Popup */}
+        <Popup isOpen={showAppointmentPopup} onClose={() => setShowAppointmentPopup(false)}>
+          <h3>Add Appointment for {selectedDay && formatDateNoYear(selectedDay)}</h3>
+          <input type="text" placeholder="Job Number" value={jobNumber} onChange={(e) => setJobNumber(e.target.value)} style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }} />
+          <select value={time} onChange={(e) => setTime(e.target.value)} style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}>
+            <option value="">Select time</option>
+            {hours.map((h) => <option key={h} value={`${h.toString().padStart(2,"0")}:00`}>{h}:00</option>)}
+          </select>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "12px" }}>
+            <button onClick={() => setShowAppointmentPopup(false)} style={{ padding: "8px 16px", borderRadius: "6px", border: "none", cursor: "pointer" }}>Close</button>
+            <button onClick={() => handleAddAppointment(selectedDay.toISOString().split("T")[0])} style={{ padding: "8px 16px", borderRadius: "6px", border: "none", backgroundColor: "#FF4040", color: "white", cursor: "pointer" }}>Add Appointment</button>
+          </div>
+        </Popup>
       </div>
     </Layout>
   );

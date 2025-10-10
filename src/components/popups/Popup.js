@@ -1,6 +1,5 @@
 // src/components/popups/Popup.js
-
-import Popup from "../../components/popups/Popup";
+import React from "react";
 
 export default function Popup({ isOpen, onClose, children }) {
   if (!isOpen) return null;
