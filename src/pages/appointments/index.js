@@ -1,5 +1,5 @@
-// src/pages/appointments/index.js
-"use client";
+// file location: src/pages/appointments/index.js
+"use client"; // enables client-side rendering in Next.js
 
 import React, { useState, useEffect } from "react";
 import Layout from "../../components/Layout";

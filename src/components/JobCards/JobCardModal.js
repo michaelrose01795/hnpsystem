@@ -1,27 +1,43 @@
 // file location: src/components/JobCards/JobCardModal.js
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 
-export default function JobCardModal({ isOpen, onClose, existingJobs = [] }) {
+export default function JobCardModal({ isOpen, onClose }) {
   const router = useRouter();
-  const [jobNumber, setJobNumber] = useState("JOB1234"); // placeholder job number
+  const [jobNumber, setJobNumber] = useState(""); // start empty
+  const [error, setError] = useState(""); // for error message
+  const inputRef = useRef(null); // ref for input
 
-  if (!isOpen) return null;
+  // Focus input automatically when modal opens and reset states
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+      setJobNumber("");
+      setError("");
+    }
+  }, [isOpen]);
+
+  // Function to check if job number exists
+  const isValidJobNumber = (num) => {
+    const numVal = Number(num);
+    return existingJobs.includes(numVal);
+  };
 
   const handleClockOn = () => {
-    // Close modal and go to job card page
-    onClose();
-    router.push(`/job-cards/${trimmedJob}`);
-  };
-
-  // Handle pressing Enter key
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleClockOn();
+    const trimmedJob = jobNumber.trim();
+    if (!trimmedJob) {
+      setError("Please enter a job number");
+      return;
     }
-  };
+    if (!isValidJobNumber(trimmedJob)) {
+      setError("Wrong job number or not accepted");
+      return;
+    }
 
-  if (!isOpen) return null;
+    // Job recognized, immediately navigate to job card
+    onClose();
+    router.push(`/job-cards/${jobNumber}`);
+  };
 
   return (
     <div
@@ -49,26 +65,23 @@ export default function JobCardModal({ isOpen, onClose, existingJobs = [] }) {
         </h2>
 
         <input
-          ref={inputRef}
           type="text"
           value={jobNumber}
-          onChange={(e) => setJobNumber(e.target.value)}
+          onChange={(e) => {
+            setJobNumber(e.target.value);
+            setError(""); // reset error when typing
+          }}
+          onKeyDown={handleKeyDown} // Enter key triggers Clock On
+          placeholder="JOB NUMBER HERE"
           style={{
             width: "100%",
             padding: "8px",
-            marginBottom: "8px",
+            marginBottom: "16px",
             borderRadius: "4px",
-            border: error ? "1px solid red" : "1px solid #ccc",
+            border: "1px solid #ccc",
             fontSize: "1rem",
-            color: "#333",
           }}
         />
-
-        {error && (
-          <div style={{ color: "red", marginBottom: "8px", fontWeight: "bold" }}>
-            {error}
-          </div>
-        )}
 
         <button
           onClick={handleClockOn}

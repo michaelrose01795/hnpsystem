@@ -39,53 +39,76 @@ export default function Layout({ children }) {
   const isActive = (path) => router.pathname.startsWith(path);
 
   return (
-    <>
-      <div className="layout-container">
-        {!hideSidebar && (
-          <aside className="sidebar">
-            <div>
-              <h2 className="sidebar-title">H&P DMS</h2>
+    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "sans-serif" }}>
+      {!hideSidebar && (
+        <aside
+          style={{
+            width: "10%",
+            minWidth: "160px",
+            backgroundColor: "#FFF0F0",
+            color: "black",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            padding: "20px",
+            borderRight: "1px solid #FFCCCC",
+          }}
+        >
+          <div>
+            <h2
+              style={{
+                marginBottom: "20px",
+                fontSize: "1.2rem",
+                fontWeight: 700,
+                color: "#FF4040",
+              }}
+            >
+              H&P DMS
+            </h2>
 
-              {/* Sidebar nav */}
-              <nav className="nav-links">
-                {links.map((link, index) => (
-                  <React.Fragment key={link.href}>
-                    <Link href={link.href} legacyBehavior>
-                      <a className={`nav-link ${isActive(link.href) ? "active" : ""}`}>
-                        {link.label}
-                      </a>
-                    </Link>
+            {/* Sidebar nav */}
+            <nav style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {links.map((link, index) => (
+                <React.Fragment key={link.href}>
+                  <Link href={link.href} legacyBehavior>
+                    <a
+                      style={{
+                        display: "block",
+                        padding: "10px",
+                        borderRadius: "6px",
+                        textDecoration: "none",
+                        color: isActive(link.href) ? "white" : "#FF4040",
+                        backgroundColor: isActive(link.href) ? "#FF4040" : "transparent",
+                        transition: "all 0.2s",
+                        fontSize: "0.95rem",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {link.label}
+                    </a>
+                  </Link>
 
-                    {/* Tech: Clock In Button under Dashboard */}
-                    {index === 1 && userRoles.includes("techs") && (
-                      <div style={{ marginTop: "10px" }}>
-                        <ClockInButton />
-                      </div>
-                    )}
-                  </React.Fragment>
-                ))}
+                  {/* Tech: Clock In Button under Dashboard */}
+                  {index === 1 && userRoles.includes("techs") && (
+                    <div style={{ marginTop: "10px" }}>
+                      <ClockInButton />
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
 
                 {/* Service/Admin/Managers: Create Job Card */}
-                {["service", "admin", "service manager", "workshop manager"].some(r =>
-                  userRoles.includes(r)
-                ) && (
+                {(userRoles.includes("service") ||
+                  userRoles.includes("admin") ||
+                  userRoles.some((r) => r.includes("manager"))) && (
                   <Link href="/job-cards/create" legacyBehavior>
                     <a className="create-btn">➕ Create Job Card</a>
                   </Link>
                 )}
 
-                {/* Appointment Button (Service/Sales/Admin/Manager) */}
-                {["service", "sales", "admin", "service manager", "workshop manager"].some(r =>
-                  userRoles.includes(r)
-                ) && (
-                  <Link href="/appointments" legacyBehavior>
-                    <a className="create-btn">📅 Appointments</a>
-                  </Link>
-                )}
-
                 {/* Manager/Service Manager: Next Jobs */}
-                {["service manager", "workshop manager"].some(r =>
-                  userRoles.includes(r)
+                {["service manager", "workshop manager"].some((r) =>
+                  userRoles.includes(r.toLowerCase())
                 ) && (
                   <Link href="/job-cards/waiting/nextjobs" legacyBehavior>
                     <a className="create-btn">🔜 Next Jobs</a>
@@ -96,8 +119,7 @@ export default function Layout({ children }) {
                 {userRoles.includes("techs") && (
                   <button
                     onClick={() => setIsModalOpen(true)}
-                    className="create-btn"
-                    style={{ cursor: "pointer" }}
+                    className={`nav-link ${isActive("/job-cards/start") ? "active" : ""}`}
                   >
                     🔧 Start Job
                   </button>
@@ -106,39 +128,78 @@ export default function Layout({ children }) {
                 {/* Manager/Service/Sales: View Job Cards */}
                 {viewRoles.some((r) => userRoles.includes(r)) && (
                   <Link href="/job-cards/view" legacyBehavior>
-                    <a className="create-btn">👀 View Job Cards</a>
+                    <a
+                      className={`nav-link ${
+                        isActive("/job-cards/view") ? "active" : ""
+                      }`}
+                    >
+                      👀 View Job Cards
+                    </a>
                   </Link>
                 )}
               </nav>
             </div>
 
-            {/* Logout */}
-            <div>
-              <button
-                onClick={() => {
-                  logout();
-                  router.push("/login");
-                }}
-                className="logout-btn"
-              >
-                Logout
-              </button>
-            </div>
-          </aside>
+          {/* Logout */}
+          <div>
+            <button
+              onClick={() => {
+                logout();
+                router.push("/login");
+              }}
+              style={{
+                width: "100%",
+                padding: "10px",
+                backgroundColor: "#FF4040",
+                border: "none",
+                color: "white",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontWeight: "bold",
+                fontSize: "0.9rem",
+              }}
+            >
+              Logout
+            </button>
+          </div>
+        </aside>
+      )}
+
+      {/* Main content area */}
+      <div
+        style={{
+          width: hideSidebar ? "100%" : "90%",
+          overflow: "auto",
+          backgroundColor: "#FFF8F8",
+        }}
+      >
+        {!hideSidebar && (
+          <header
+            style={{
+              backgroundColor: "white",
+              padding: "16px",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <h1
+              style={{
+                fontSize: "1.25rem",
+                fontWeight: "600",
+                color: "#FF4040",
+              }}
+            >
+              Welcome {user?.username || "Guest"} ({role})
+            </h1>
+          </header>
         )}
 
-        {/* Main content area */}
-        <div className="main-container" style={{ width: hideSidebar ? "100%" : "90%" }}>
-          {!hideSidebar && (
-            <header className="header">
-              <h1>
-                Welcome {user?.username || "Guest"} ({role})
-              </h1>
-            </header>
-          )}
-
-          <main className="main-content">{children}</main>
-        </div>
+        <main style={{ padding: "24px", boxSizing: "border-box" }}>
+          {children}
+        </main>
+      </div>
 
         {/* Job Card Modal for Techs only */}
         {userRoles.includes("techs") && (
@@ -152,7 +213,7 @@ export default function Layout({ children }) {
           display: flex;
           min-height: 100vh;
           font-family: sans-serif;
-          overflow: hidden;
+          overflow: hidden; /* Prevents extra scroll on large screens */
         }
 
         .sidebar {
@@ -182,8 +243,7 @@ export default function Layout({ children }) {
           gap: 10px;
         }
 
-        .nav-link,
-        .create-btn {
+        .nav-link {
           display: block;
           padding: 10px;
           border-radius: 6px;
@@ -193,23 +253,27 @@ export default function Layout({ children }) {
           border: 1px solid #ff4040;
           font-size: 0.95rem;
           font-weight: 500;
-          text-align: center;
           transition: all 0.2s;
+          text-align: center;
         }
 
         .nav-link.active,
-        .nav-link:hover,
-        .create-btn:hover {
+        .nav-link:hover {
           background-color: #ff4040;
           color: white;
         }
 
         .create-btn {
+          display: block;
+          padding: 10px;
+          margin-top: 10px;
+          border-radius: 6px;
+          text-decoration: none;
           color: white;
           background-color: #ff4040;
+          text-align: center;
+          font-size: 0.9rem;
           font-weight: 600;
-          margin-top: 10px;
-          cursor: pointer;
         }
 
         .logout-btn {
@@ -222,7 +286,6 @@ export default function Layout({ children }) {
           cursor: pointer;
           font-weight: bold;
           font-size: 0.9rem;
-          margin-top: 20px;
         }
 
         .main-container {
@@ -254,23 +317,67 @@ export default function Layout({ children }) {
           box-sizing: border-box;
         }
 
+        /* 🔹 Larger screens (no scrollbars if possible) */
+        @media (min-width: 1025px) {
+          .main-container {
+            padding: 10px;
+            overflow-y: auto;
+          }
+          .main-content {
+            max-height: calc(100vh - 80px); /* keep everything visible */
+            overflow-y: auto;
+          }
+        }
+
+        /* 🔹 Tablets */
         @media (max-width: 1024px) {
-          .sidebar { width: 18%; }
-          .header h1 { font-size: 1.1rem; }
+          .sidebar {
+            width: 18%;
+          }
+          .header h1 {
+            font-size: 1.1rem;
+          }
         }
 
+        /* 🔹 Phones */
         @media (max-width: 768px) {
-          .layout-container { flex-direction: column; }
-          .sidebar { width: 100%; flex-direction: row; justify-content: space-around; border-right: none; border-bottom: 1px solid #ffcccc; padding: 10px; }
-          .nav-links { flex-direction: row; flex-wrap: wrap; gap: 5px; }
-          .main-container { width: 100% !important; }
+          .layout-container {
+            flex-direction: column;
+          }
+          .sidebar {
+            width: 100%;
+            flex-direction: row;
+            justify-content: space-around;
+            border-right: none;
+            border-bottom: 1px solid #ffcccc;
+            padding: 10px;
+          }
+          .nav-links {
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 5px;
+          }
+          .main-container {
+            width: 100% !important;
+          }
         }
 
+        /* 🔹 Very small phones */
         @media (max-width: 480px) {
-          .sidebar { flex-direction: column; align-items: center; }
-          .nav-links { flex-direction: column; gap: 8px; }
-          .header h1 { font-size: 1rem; }
-          .main-content { padding: 12px; }
+          .sidebar {
+            flex-direction: column;
+            align-items: center;
+          }
+          .nav-links {
+            flex-direction: column;
+            gap: 8px;
+          }
+          .header h1 {
+            font-size: 1rem;
+          }
+          .main-content {
+            padding: 12px;
+          }
         }
       `}</style>
     </>

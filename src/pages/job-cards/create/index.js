@@ -1,15 +1,17 @@
+// file location: src/pages/job-cards/create/index.js
 "use client";
 
-import React, { useState } from "react"; // React imports
-import { useRouter } from "next/router"; // Router for navigation
-import Layout from "../../../components/Layout"; // Layout wrapper
-import { useJobs } from "../../../context/JobsContext"; // Jobs context
+import React, { useState } from "react";
+import { useRouter } from "next/router";
+import Layout from "../../../components/Layout";
+import { useJobs } from "../../../context/JobsContext";
+import JobCardModal from "../../../components/JobCards/JobCardModal";
 
-// ✅ Import popups (now lowercase folder name "popups")
+// Popups
 import NewCustomerPopup from "../../../components/popups/NewCustomerPopup";
 import ExistingCustomerPopup from "../../../components/popups/ExistingCustomerPopup";
 
-// Local job number counter (starts at 30000)
+// Local job number counter
 let localJobCounter = 30000;
 
 export default function CreateJobCardPage() {
@@ -25,11 +27,11 @@ export default function CreateJobCardPage() {
     engine: "",
     mileage: "",
   });
-
-  // Customer & job data states
   const [customer, setCustomer] = useState(null);
+  const [showCustomerPopup, setShowCustomerPopup] = useState(false);
+  const [showExistingPopup, setShowExistingPopup] = useState(false);
+  const [showCheckSheetPopup, setShowCheckSheetPopup] = useState(false);
   const [requests, setRequests] = useState([]);
-  const [newRequest, setNewRequest] = useState("");
   const [cosmeticNotes, setCosmeticNotes] = useState("");
 
   // VHC state
@@ -44,36 +46,52 @@ export default function CreateJobCardPage() {
   const [showNewCustomer, setShowNewCustomer] = useState(false);
   const [showExistingCustomer, setShowExistingCustomer] = useState(false);
 
-  // Handle vehicle autofill (dummy fetch)
+  // Current job number for editing
+  const [jobNumber, setJobNumber] = useState(null);
+
+  // Modal state
+  const [showJobModal, setShowJobModal] = useState(false);
+
+  // Auto-fetch VSM dummy data
   const handleFetchVSM = () => {
-    setVehicle({
-      reg: "ABC123",
+    setVsmData({
       colour: "Red",
-      makeModel: "Renault Clio Mk5 1.3 Turbo",
+      make: "Renault",
+      model: "Clio Mk5 1.3 Turbo",
       chassis: "XYZ987654321",
       engine: "ENG123456789",
-      mileage: "",
     });
   };
 
-  // Handle add job
-  const handleCreateJob = () => {
-    localJobCounter++;
-    const newJob = {
-      jobNumber: localJobCounter,
+  // Save or update job
+  const handleSaveUpdates = () => {
+    let currentJobNumber = jobNumber;
+
+    // If no jobNumber yet, create new
+    if (!currentJobNumber) {
+      localJobCounter++;
+      currentJobNumber = localJobCounter;
+      setJobNumber(currentJobNumber);
+    }
+
+    const updatedJob = {
+      jobNumber: currentJobNumber,
       vehicle,
       customer,
       requests,
       cosmeticNotes,
       vhcRequired: vhcRequired !== null ? vhcRequired : false,
-      checksheetRequired: checksheetRequired !== null ? checksheetRequired : false,
+      checksheetRequired: checksheetRequired !== null ? checksheetRequired : false, // ✅ store choice
     };
-    addJob(newJob);
-    router.push(`/job-cards/${localJobCounter}`);
+
+    addJob(updatedJob); // addJob will auto-update if jobNumber exists
+    return currentJobNumber;
   };
 
   // Layout heights
   const sectionHeight = "250px";
+  const jobDetailsHeight = "350px";
+  const bottomRowHeight = "150px";
 
   return (
     <Layout>
@@ -93,10 +111,12 @@ export default function CreateJobCardPage() {
             </h2>
             <h1 style={{ color: "#FF4040", margin: 0 }}>Create New Job Card</h1>
           </div>
+
+          {/* Save Job Button */}
           <button
             onClick={() => {
               const num = handleSaveUpdates();
-              router.push(`/job-cards/${num || localJobCounter}`);
+              router.push(`/job-cards/${num || jobNumber}`);
             }}
             style={{
               padding: "12px 20px",
@@ -130,11 +150,21 @@ export default function CreateJobCardPage() {
             <h3 style={{ marginTop: 0, marginBottom: "12px" }}>
               Vehicle Details
             </h3>
-            <p><strong>Registration:</strong> {vehicle.reg}</p>
-            <p><strong>Colour:</strong> {vehicle.colour}</p>
-            <p><strong>Make & Model:</strong> {vehicle.makeModel}</p>
-            <p><strong>Chassis Number:</strong> {vehicle.chassis}</p>
-            <p><strong>Engine Number:</strong> {vehicle.engine}</p>
+            <p>
+              <strong>Registration:</strong> {vehicle.reg}
+            </p>
+            <p>
+              <strong>Colour:</strong> {vehicle.colour}
+            </p>
+            <p>
+              <strong>Make & Model:</strong> {vehicle.makeModel}
+            </p>
+            <p>
+              <strong>Chassis Number:</strong> {vehicle.chassis}
+            </p>
+            <p>
+              <strong>Engine Number:</strong> {vehicle.engine}
+            </p>
             <div style={{ marginTop: "8px" }}>
               <label>
                 <strong>Mileage:</strong>
@@ -150,24 +180,8 @@ export default function CreateJobCardPage() {
                 />
               </label>
             </div>
-            <button
-              onClick={() => {
-                handleFetchVSM();
-                handleSaveUpdates();
-              }}
-              style={{
-                marginTop: "12px",
-                padding: "6px 12px",
-                backgroundColor: "#FF4040",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-              }}
-            >
-              Fetch VSM
-            </button>
-          </div>
+          )}
+        </div>
 
           {/* Customer Details */}
           <div
@@ -186,10 +200,19 @@ export default function CreateJobCardPage() {
             </h3>
             {customer ? (
               <>
-                <p><strong>Full Name:</strong> {customer.firstName} {customer.lastName}</p>
-                <p><strong>Address:</strong> {customer.address}</p>
-                <p><strong>Email:</strong> {customer.email}</p>
-                <p><strong>Phone:</strong> {customer.mobile || customer.telephone}</p>
+                <p>
+                  <strong>Full Name:</strong> {customer.firstName}{" "}
+                  {customer.lastName}
+                </p>
+                <p>
+                  <strong>Address:</strong> {customer.address}
+                </p>
+                <p>
+                  <strong>Email:</strong> {customer.email}
+                </p>
+                <p>
+                  <strong>Phone:</strong> {customer.mobile || customer.telephone}
+                </p>
               </>
             ) : (
               <p>No customer selected</p>
@@ -220,7 +243,7 @@ export default function CreateJobCardPage() {
                 Existing Customer
               </button>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Job Requests */}
@@ -246,6 +269,7 @@ export default function CreateJobCardPage() {
             onKeyDown={(e) => {
               if (e.key === "Enter" && e.target.value) {
                 setRequests([...requests, e.target.value]);
+                handleSaveUpdates();
                 e.target.value = "";
               }
             }}
@@ -278,7 +302,7 @@ export default function CreateJobCardPage() {
             />
           </div>
 
-          {/* Write-Up */}
+          {/* Add VHC Button */}
           <div
             style={{
               flex: 1,
@@ -292,7 +316,7 @@ export default function CreateJobCardPage() {
             }}
             onClick={() => setShowVhcPopup(true)}
           >
-            <h4>Go to Write-Up</h4>
+            <h4>Add VHC</h4>
           </div>
 
           {/* ✅ Add Check Sheet */}
@@ -331,29 +355,10 @@ export default function CreateJobCardPage() {
         </div>
       </div>
 
-      {/* Popups */}
-      {showNewCustomer && (
-        <NewCustomerPopup
-          onClose={() => setShowNewCustomer(false)}
-          onAdd={(c) => {
-            setCustomer(c);
-            handleSaveUpdates();
-          }}
-        />
-      )}
-      {showExistingCustomer && (
-        <ExistingCustomerPopup
-          onClose={() => setShowExistingCustomer(false)}
-          onSelect={(c) => {
-            setCustomer(c);
-            handleSaveUpdates();
-          }}
-        />
-      )}
-
-      {/* ✅ Check Sheet Popup */}
-      {showChecksheetPopup && (
-        <div
+        {/* Create Job Card Button */}
+        <button
+          onClick={handleAddJobCard}
+          disabled={!isReadyToCreate}
           style={{
             position: "fixed",
             top: 0,
@@ -502,6 +507,15 @@ export default function CreateJobCardPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Job Card Modal */}
+      {showJobModal && (
+        <JobCardModal
+          isOpen={showJobModal}
+          onClose={() => setShowJobModal(false)}
+          existingJobs={jobs.map((j) => j.jobNumber)} // ✅ pass all job numbers
+        />
       )}
     </Layout>
   );
