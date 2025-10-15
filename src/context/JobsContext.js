@@ -1,4 +1,4 @@
-// file location: src/context/JobsContext.js
+// src/context/JobsContext.js
 "use client";
 
 import React, { createContext, useState, useContext } from "react";
@@ -12,6 +12,25 @@ export const useJobs = () => useContext(JobsContext);
 export function JobsProvider({ children }) {
   const [jobs, setJobs] = useState([]); // All job cards stored here
 
+  // Default fields for a new job
+  const defaultJobFields = {
+    jobNumber: "",
+    customer: "Unknown",
+    reg: "",
+    vehicle: "",
+    reason: "",
+    appointment: null,
+    status: "Booked",
+    totalTime: 0,
+    timeOnJob: 0,
+    waiting: false,
+    collection: false,
+    loanCar: false,
+    MOT: false,
+    wash: false,
+    address: ""
+  };
+
   // Add a new job OR update if it already exists
   const addJob = (job) => {
     setJobs((prev) => {
@@ -19,14 +38,16 @@ export function JobsProvider({ children }) {
         (j) => j.jobNumber === job.jobNumber
       );
 
+      const jobWithDefaults = { ...defaultJobFields, ...job };
+
       if (existingIndex !== -1) {
         // Update existing job if jobNumber matches
         const updatedJobs = [...prev];
-        updatedJobs[existingIndex] = { ...prev[existingIndex], ...job };
+        updatedJobs[existingIndex] = { ...prev[existingIndex], ...jobWithDefaults };
         return updatedJobs;
       } else {
         // Add new job
-        return [...prev, job];
+        return [...prev, jobWithDefaults];
       }
     });
   };

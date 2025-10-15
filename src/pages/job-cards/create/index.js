@@ -68,12 +68,25 @@ export default function CreateJobCardPage() {
   const [showExistingCustomer, setShowExistingCustomer] = useState(false);
   const [showVhcPopup, setShowVhcPopup] = useState(false);
 
-  const [requests, setRequests] = useState([{ text: "" }]);
+  const [requests, setRequests] = useState([{ text: "", time: "" }]);
   const [cosmeticNotes, setCosmeticNotes] = useState("");
   const [vhcRequired, setVhcRequired] = useState(false);
   const [waitingStatus, setWaitingStatus] = useState("Neither");
   const [jobSource, setJobSource] = useState("Retail");
   const [jobCategories, setJobCategories] = useState(["Other"]);
+
+  // Maintenance Section
+  const [maintenance, setMaintenance] = useState({
+    nextServiceDate: "",
+    nextMotDate: "",
+    leaseCO: "",
+    privileges: "",
+    nextVHC: "",
+    warrantyExpiry: "",
+    servicePlanSupplier: "",
+    servicePlanType: "",
+    servicePlanExpiry: "",
+  });
 
   const getBackgroundColor = (status, source) => {
     let baseColor = "white";
@@ -100,12 +113,26 @@ export default function CreateJobCardPage() {
   const handleRequestChange = (index, value) => {
     const updated = [...requests];
     updated[index].text = value;
+
+    // Auto-fill Time Required
+    const lower = value.toLowerCase();
+    if (lower.includes("mot")) updated[index].time = updated[index].time || 0.1;
+    else if (lower.includes("diag")) updated[index].time = updated[index].time || 1;
+
     setRequests(updated);
     const allTexts = updated.map((r) => r.text);
     setJobCategories(detectJobTypes(allTexts));
   };
 
-  const handleAddRequest = () => setRequests([...requests, { text: "" }]);
+  const handleTimeChange = (index, value) => {
+    const updated = [...requests];
+    let num = parseFloat(value);
+    if (isNaN(num) || num < 0) num = 0;
+    updated[index].time = num;
+    setRequests(updated);
+  };
+
+  const handleAddRequest = () => setRequests([...requests, { text: "", time: "" }]);
   const handleRemoveRequest = (index) => {
     const updated = requests.filter((_, i) => i !== index);
     setRequests(updated);
@@ -142,27 +169,14 @@ export default function CreateJobCardPage() {
       waitingStatus,
       jobSource,
       jobCategories,
+      maintenance,
     };
 
-    try {
-      const response = await fetch("/api/jobcards/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(jobCardData),
-      });
+    addJob(jobCardData);
 
-      const result = await response.json();
+    const encodedData = encodeURIComponent(JSON.stringify(jobCardData));
 
-      if (response.ok) {
-        addJob(jobCardData);
-        const encodedData = encodeURIComponent(JSON.stringify(jobCardData));
-        router.push(`/appointments?data=${encodedData}`);
-      } else {
-        console.error("Error:", result.message);
-      }
-    } catch (error) {
-      console.error("Error saving job card:", error);
-    }
+    router.push(`/appointments?jobNumber=${jobNumber}&data=${encodedData}`);
   };
 
   const handleFetchVehicleData = () => {
@@ -175,7 +189,7 @@ export default function CreateJobCardPage() {
 
   const sectionHeight = "260px";
   const bottomRowHeight = "150px";
-  
+
   return (
     <Layout>
       <div
@@ -219,9 +233,8 @@ export default function CreateJobCardPage() {
           </button>
         </div>
 
-         {/* Job Info + GDPR Section */}
+        {/* Job Info + GDPR Section */}
         <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
-          {/* Job Info 70% */}
           <div style={{ flex: 7, backgroundColor: "white", padding: "16px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
             <h3 style={{ marginTop: 0 }}>Job Information</h3>
             <div style={{ marginBottom: "12px" }}>
@@ -234,7 +247,7 @@ export default function CreateJobCardPage() {
             </div>
             <div style={{ marginBottom: "12px" }}>
               <strong style={{ width: "150px", display: "inline-block" }}>Job Source:</strong>
-              {["Retail","Warranty"].map((src)=>(
+              {["Retail","Warranty"].map((src)=>( 
                 <label key={src} style={{ marginRight: "12px" }}>
                   <input type="radio" name="source" value={src} checked={jobSource===src} onChange={()=>setJobSource(src)} /> {src}
                 </label>
@@ -247,8 +260,6 @@ export default function CreateJobCardPage() {
               ))}
             </div>
           </div>
-
-          {/* GDPR Settings 30% */}
           <div style={{ flex: 3, backgroundColor: "white", padding: "16px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
             <h3 style={{ marginTop: 0 }}>GDPR Settings</h3>
             <table style={{ width:"100%", borderCollapse:"collapse", marginBottom:"16px" }}>
@@ -284,9 +295,8 @@ export default function CreateJobCardPage() {
           </div>
         </div>
 
-        {/* Vehicle & Customer */}
+        {/* Vehicle & Customer + Maintenance */}
         <div style={{ display:"flex", gap:"16px", marginBottom:"24px" }}>
-          {/* Vehicle */}
           <div style={{ flex:1, backgroundColor:"white", padding:"16px", borderRadius:"8px", boxShadow:"0 2px 4px rgba(0,0,0,0.1)", height:sectionHeight }}>
             <h3 style={{marginTop:0}}>Vehicle Details</h3>
             <label><strong>Registration:</strong> <input type="text" value={vehicle.reg} onChange={e=>setVehicle({...vehicle,reg:e.target.value})} placeholder="Enter reg" style={{ marginLeft:"8px", padding:"4px 8px", width:"120px"}}/></label>
@@ -296,9 +306,20 @@ export default function CreateJobCardPage() {
             <p><strong>Chassis:</strong> {vehicle.chassis}</p>
             <p><strong>Engine:</strong> {vehicle.engine}</p>
             <label><strong>Mileage:</strong> <input type="number" value={vehicle.mileage} onChange={e=>setVehicle({...vehicle,mileage:e.target.value})} placeholder="Enter miles" style={{ marginLeft:"8px", padding:"4px 8px", width:"100px"}}/></label>
+
+            {/* Maintenance Section */}
+            <h4 style={{ marginTop:"16px" }}>Maintenance</h4>
+            <label>Next Service Date: <input type="date" value={maintenance.nextServiceDate} onChange={e=>setMaintenance({...maintenance,nextServiceDate:e.target.value})}/></label><br/>
+            <label>Next MOT Date: <input type="date" value={maintenance.nextMotDate} onChange={e=>setMaintenance({...maintenance,nextMotDate:e.target.value})}/></label><br/>
+            <label>Lease CO: <input type="text" value={maintenance.leaseCO} onChange={e=>setMaintenance({...maintenance,leaseCO:e.target.value})}/></label><br/>
+            <label>Privileges: <input type="text" value={maintenance.privileges} onChange={e=>setMaintenance({...maintenance,privileges:e.target.value})}/></label><br/>
+            <label>Next VHC: <input type="date" value={maintenance.nextVHC} onChange={e=>setMaintenance({...maintenance,nextVHC:e.target.value})}/></label><br/>
+            <label>Warranty Expiry: <input type="date" value={maintenance.warrantyExpiry} onChange={e=>setMaintenance({...maintenance,warrantyExpiry:e.target.value})}/></label><br/>
+            <label>Service Plan Supplier: <input type="text" value={maintenance.servicePlanSupplier} onChange={e=>setMaintenance({...maintenance,servicePlanSupplier:e.target.value})}/></label><br/>
+            <label>Service Plan Type: <input type="text" value={maintenance.servicePlanType} onChange={e=>setMaintenance({...maintenance,servicePlanType:e.target.value})}/></label><br/>
+            <label>Service Plan Expiry: <input type="date" value={maintenance.servicePlanExpiry} onChange={e=>setMaintenance({...maintenance,servicePlanExpiry:e.target.value})}/></label>
           </div>
 
-          {/* Customer */}
           <div style={{ flex:1, backgroundColor:"white", padding:"16px", borderRadius:"8px", boxShadow:"0 2px 4px rgba(0,0,0,0.1)", height:sectionHeight }}>
             <h3 style={{marginTop:0}}>Customer Details</h3>
             {customer ? (
@@ -320,17 +341,43 @@ export default function CreateJobCardPage() {
 
         {/* Job Requests */}
         <div style={{ backgroundColor:"white", padding:"16px", borderRadius:"8px", boxShadow:"0 2px 4px rgba(0,0,0,0.1)", marginBottom:"24px" }}>
-          <h3 style={{ marginTop:0 }}>Job Requests</h3>
-          {requests.map((req,i)=>(
-            <div key={i} style={{ border:"1px solid #ddd", borderRadius:"6px", marginBottom:"12px", padding:"12px"}}>
-              <strong>Request {i+1}:</strong>
-              <div style={{ marginLeft:"20px", marginTop:"6px"}}>
-                <input type="text" value={req.text} onChange={e=>handleRequestChange(i,e.target.value)} placeholder="Enter job request (MOT, Service, Diagnostic)" style={{ width:"90%", padding:"6px 8px", border:"1px solid #ccc", borderRadius:"4px"}}/>
-                <button onClick={()=>handleRemoveRequest(i)} style={{ marginLeft:"8px", backgroundColor:"#FF4040", color:"white", border:"none", borderRadius:"4px", padding:"6px 10px", cursor:"pointer"}}>Remove</button>
+          <h3 style={{ marginTop: 0 }}>Job Requests</h3>
+          {requests.map((req, i) => (
+            <div key={i} style={{ border: "1px solid #ddd", borderRadius: "6px", marginBottom: "12px", padding: "12px" }}>
+              <strong>Request {i + 1}:</strong>
+              <div style={{ marginLeft: "20px", marginTop: "6px", display: "flex", gap: "12px", alignItems: "center" }}>
+                <input
+                  type="text"
+                  value={req.text}
+                  onChange={(e) => handleRequestChange(i, e.target.value)}
+                  placeholder="Enter job request (MOT, Service, Diagnostic)"
+                  style={{ flex: 2, padding: "6px 8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={req.time || ""}
+                  onChange={(e) => handleTimeChange(i, e.target.value)}
+                  placeholder="Time (h)"
+                  style={{ width: "80px", padding: "6px 8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+                <span>{req.time !== "" ? `${req.time}h` : ""}</span>
+                <button
+                  onClick={() => handleRemoveRequest(i)}
+                  style={{ backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "4px", padding: "6px 10px", cursor: "pointer" }}
+                >
+                  Remove
+                </button>
               </div>
             </div>
           ))}
-          <button onClick={handleAddRequest} style={{ backgroundColor:"#007bff", color:"white", border:"none", borderRadius:"6px", padding:"8px 14px", cursor:"pointer"}}>+ Add Request</button>
+          <button
+            onClick={handleAddRequest}
+            style={{ backgroundColor: "#007bff", color: "white", border: "none", borderRadius: "6px", padding: "8px 14px", cursor: "pointer" }}
+          >
+            + Add Request
+          </button>
         </div>
 
         {/* Cosmetic + VHC + Details Buttons */}
