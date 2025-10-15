@@ -78,10 +78,17 @@ export default function CreateJobCardPage() {
   const getBackgroundColor = (status, source) => {
     let baseColor = "white";
     switch (status) {
-      case "Waiting": baseColor = "#ffcccc"; break;
-      case "Loan Car": baseColor = "#cce0ff"; break;
-      case "Collection": baseColor = "#d6f5d6"; break;
-      default: baseColor = "white";
+      case "Waiting":
+        baseColor = "#ffcccc";
+        break;
+      case "Loan Car":
+        baseColor = "#cce0ff";
+        break;
+      case "Collection":
+        baseColor = "#d6f5d6";
+        break;
+      default:
+        baseColor = "white";
     }
     if (source === "Warranty") {
       if (baseColor === "white") return "#ffeacc";
@@ -106,7 +113,6 @@ export default function CreateJobCardPage() {
   };
 
   const handleSaveJob = async () => {
-    // Validation
     if (!vehicle.reg.trim()) {
       alert("Please enter a vehicle registration!");
       return;
@@ -115,46 +121,22 @@ export default function CreateJobCardPage() {
       alert("Please select or create a customer!");
       return;
     }
-    const validRequests = requests.filter(r => r.text.trim());
+    const validRequests = requests.filter((r) => r.text.trim());
     if (validRequests.length === 0) {
       alert("Please add at least one job request!");
       return;
     }
 
-    // Generate job number
     localJobCounter++;
     const jobNumber = localJobCounter;
 
-    // Create properly linked job card object
     const jobCardData = {
       jobNumber,
       createdAt: new Date().toISOString(),
       status: "Open",
-      
-      // Vehicle details with registration as primary key
-      vehicle: {
-        reg: vehicle.reg.toUpperCase(),
-        colour: vehicle.colour,
-        makeModel: vehicle.makeModel,
-        chassis: vehicle.chassis,
-        engine: vehicle.engine,
-        mileage: vehicle.mileage,
-      },
-      
-      // Customer details linked to this job
-      customer: {
-        customerId: customer.customerId || `CUST-${Date.now()}`,
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        email: customer.email,
-        mobile: customer.mobile,
-        telephone: customer.telephone,
-        address: customer.address,
-        postcode: customer.postcode,
-      },
-      
-      // Job details
-      requests: validRequests.map(r => r.text),
+      vehicle,
+      customer,
+      requests: validRequests.map((r) => r.text),
       cosmeticNotes,
       vhcRequired,
       waitingStatus,
@@ -163,69 +145,81 @@ export default function CreateJobCardPage() {
     };
 
     try {
-      // Save to API
-      const response = await fetch('/api/jobcards/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/jobcards/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(jobCardData),
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        // Also save to context for immediate use
         addJob(jobCardData);
-        
-        alert(`Job Card #${jobNumber} created successfully!\n\nLinked to:\n- Vehicle: ${vehicle.reg}\n- Customer: ${customer.firstName} ${customer.lastName}`);
-        
-        // Navigate to the job card view
-        router.push(`/job-cards/${jobNumber}`);
+        const encodedData = encodeURIComponent(JSON.stringify(jobCardData));
+        router.push(`/appointments?data=${encodedData}`);
       } else {
-        alert(`Error: ${result.message}`);
+        console.error("Error:", result.message);
       }
     } catch (error) {
-      console.error('Error saving job card:', error);
-      alert('Failed to save job card. Please try again.');
+      console.error("Error saving job card:", error);
     }
   };
 
   const handleFetchVehicleData = () => {
-    if (!vehicle.reg.trim()) { 
-      alert("Please enter a registration first!"); 
-      return; 
+    if (!vehicle.reg.trim()) {
+      alert("Please enter a registration first!");
+      return;
     }
     setVehicle(generateFakeVehicleData(vehicle.reg));
   };
 
   const sectionHeight = "260px";
   const bottomRowHeight = "150px";
-
+  
   return (
     <Layout>
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "16px", transition: "background 0.3s ease", background: getBackgroundColor(waitingStatus, jobSource), borderRadius: "10px" }}>
+      <div
+        style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
+          padding: "16px",
+          transition: "background 0.3s ease",
+          background: getBackgroundColor(waitingStatus, jobSource),
+          borderRadius: "10px",
+        }}
+      >
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: "24px",
+          }}
+        >
           <div>
-            <h2 style={{ margin: 0, fontSize: "1rem", color: "#555" }}>Retail / Warranty</h2>
+            <h2 style={{ margin: 0, fontSize: "1rem", color: "#555" }}>
+              Retail / Warranty
+            </h2>
             <h1 style={{ color: "#FF4040", margin: 0 }}>Create New Job Card</h1>
           </div>
-          <button 
-            onClick={handleSaveJob} 
-            style={{ 
-              padding: "12px 20px", 
-              backgroundColor: "green", 
-              color: "white", 
-              border: "none", 
-              borderRadius: "6px", 
-              fontWeight: "bold", 
-              cursor: "pointer" 
+          <button
+            onClick={handleSaveJob}
+            style={{
+              padding: "12px 20px",
+              backgroundColor: "green",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              fontWeight: "bold",
+              cursor: "pointer",
             }}
           >
             Save Job
           </button>
         </div>
 
-        {/* Job Info + GDPR Section */}
+         {/* Job Info + GDPR Section */}
         <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
           {/* Job Info 70% */}
           <div style={{ flex: 7, backgroundColor: "white", padding: "16px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
