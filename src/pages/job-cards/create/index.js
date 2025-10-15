@@ -1,5 +1,5 @@
 // file location: src/pages/job-cards/create/index.js
-"use client"; // must stay at the top
+"use client";
 
 import React, { useState } from "react";
 import { useRouter } from "next/router";
@@ -9,10 +9,8 @@ import JobCardModal from "../../../components/JobCards/JobCardModal";
 import NewCustomerPopup from "../../../components/popups/NewCustomerPopup";
 import ExistingCustomerPopup from "../../../components/popups/ExistingCustomerPopup";
 
-// Local job number counter
 let localJobCounter = 30000;
 
-// Helper function to auto-detect job types from all requests
 const detectJobTypes = (requests) => {
   const detected = new Set();
   requests.forEach((description) => {
@@ -33,11 +31,29 @@ const detectJobTypes = (requests) => {
   return Array.from(detected);
 };
 
+const generateFakeVehicleData = (reg) => {
+  const colours = ["Red", "Blue", "White", "Black", "Grey", "Silver"];
+  const makes = [
+    "Mitsubishi L200",
+    "Suzuki Swift",
+    "SsangYong Tivoli",
+    "Nissan Qashqai",
+    "Toyota Corolla",
+  ];
+  return {
+    reg: reg.toUpperCase(),
+    colour: colours[Math.floor(Math.random() * colours.length)],
+    makeModel: makes[Math.floor(Math.random() * makes.length)],
+    chassis: `CH${Math.floor(100000 + Math.random() * 900000)}`,
+    engine: `EN${Math.floor(10000 + Math.random() * 90000)}`,
+    mileage: Math.floor(10000 + Math.random() * 90000),
+  };
+};
+
 export default function CreateJobCardPage() {
   const router = useRouter();
-  const { jobs, addJob } = useJobs();
+  const { addJob } = useJobs();
 
-  // Vehicle & customer state
   const [vehicle, setVehicle] = useState({
     reg: "",
     colour: "",
@@ -48,54 +64,32 @@ export default function CreateJobCardPage() {
   });
   const [customer, setCustomer] = useState(null);
 
-  // Popups
   const [showNewCustomer, setShowNewCustomer] = useState(false);
   const [showExistingCustomer, setShowExistingCustomer] = useState(false);
   const [showVhcPopup, setShowVhcPopup] = useState(false);
-  const [showJobModal, setShowJobModal] = useState(false);
 
-  // Job state
   const [requests, setRequests] = useState([{ text: "" }]);
   const [cosmeticNotes, setCosmeticNotes] = useState("");
   const [vhcRequired, setVhcRequired] = useState(false);
-  const [jobNumber, setJobNumber] = useState(null);
   const [waitingStatus, setWaitingStatus] = useState("Neither");
   const [jobSource, setJobSource] = useState("Retail");
   const [jobCategories, setJobCategories] = useState(["Other"]);
 
-  // Determine colour tag for waiting status + warranty tint
   const getBackgroundColor = (status, source) => {
     let baseColor = "white";
-
-    // Base customer status colours
     switch (status) {
-      case "Waiting":
-        baseColor = "#ffcccc"; // light red
-        break;
-      case "Loan Car":
-        baseColor = "#cce0ff"; // light blue
-        break;
-      case "Collection":
-        baseColor = "#d6f5d6"; // light green
-        break;
-      default:
-        baseColor = "white"; // default
+      case "Waiting": baseColor = "#ffcccc"; break;
+      case "Loan Car": baseColor = "#cce0ff"; break;
+      case "Collection": baseColor = "#d6f5d6"; break;
+      default: baseColor = "white";
     }
-
-    // Warranty vertical gradient 50/50 split
     if (source === "Warranty") {
-      if (baseColor === "white") {
-        return "#ffeacc"; // just orange if no base colour
-      } else {
-        // vertical half split gradient
-        return `linear-gradient(to bottom, ${baseColor} 50%, #ffeacc 50%)`;
-      }
+      if (baseColor === "white") return "#ffeacc";
+      return `linear-gradient(to bottom, ${baseColor} 50%, #ffeacc 50%)`;
     }
-
     return baseColor;
   };
 
-  // Update job requests and re-run detection
   const handleRequestChange = (index, value) => {
     const updated = [...requests];
     updated[index].text = value;
@@ -104,33 +98,63 @@ export default function CreateJobCardPage() {
     setJobCategories(detectJobTypes(allTexts));
   };
 
-  // Add new request line
-  const handleAddRequest = () => {
-    setRequests([...requests, { text: "" }]);
-  };
-
-  // Remove a specific request line
+  const handleAddRequest = () => setRequests([...requests, { text: "" }]);
   const handleRemoveRequest = (index) => {
     const updated = requests.filter((_, i) => i !== index);
     setRequests(updated);
-    const allTexts = updated.map((r) => r.text);
-    setJobCategories(detectJobTypes(allTexts));
+    setJobCategories(detectJobTypes(updated.map((r) => r.text)));
   };
 
-  // Save or update job
-  const handleSaveUpdates = () => {
-    let currentJobNumber = jobNumber;
-    if (!currentJobNumber) {
-      localJobCounter++;
-      currentJobNumber = localJobCounter;
-      setJobNumber(currentJobNumber);
+  const handleSaveJob = async () => {
+    // Validation
+    if (!vehicle.reg.trim()) {
+      alert("Please enter a vehicle registration!");
+      return;
+    }
+    if (!customer) {
+      alert("Please select or create a customer!");
+      return;
+    }
+    const validRequests = requests.filter(r => r.text.trim());
+    if (validRequests.length === 0) {
+      alert("Please add at least one job request!");
+      return;
     }
 
-    const updatedJob = {
-      jobNumber: currentJobNumber,
-      vehicle,
-      customer,
-      requests: requests.map((r) => r.text),
+    // Generate job number
+    localJobCounter++;
+    const jobNumber = localJobCounter;
+
+    // Create properly linked job card object
+    const jobCardData = {
+      jobNumber,
+      createdAt: new Date().toISOString(),
+      status: "Open",
+      
+      // Vehicle details with registration as primary key
+      vehicle: {
+        reg: vehicle.reg.toUpperCase(),
+        colour: vehicle.colour,
+        makeModel: vehicle.makeModel,
+        chassis: vehicle.chassis,
+        engine: vehicle.engine,
+        mileage: vehicle.mileage,
+      },
+      
+      // Customer details linked to this job
+      customer: {
+        customerId: customer.customerId || `CUST-${Date.now()}`,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        email: customer.email,
+        mobile: customer.mobile,
+        telephone: customer.telephone,
+        address: customer.address,
+        postcode: customer.postcode,
+      },
+      
+      // Job details
+      requests: validRequests.map(r => r.text),
       cosmeticNotes,
       vhcRequired,
       waitingStatus,
@@ -138,8 +162,39 @@ export default function CreateJobCardPage() {
       jobCategories,
     };
 
-    addJob(updatedJob);
-    return currentJobNumber;
+    try {
+      // Save to API
+      const response = await fetch('/api/jobcards/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(jobCardData),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // Also save to context for immediate use
+        addJob(jobCardData);
+        
+        alert(`Job Card #${jobNumber} created successfully!\n\nLinked to:\n- Vehicle: ${vehicle.reg}\n- Customer: ${customer.firstName} ${customer.lastName}`);
+        
+        // Navigate to the job card view
+        router.push(`/job-cards/${jobNumber}`);
+      } else {
+        alert(`Error: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error saving job card:', error);
+      alert('Failed to save job card. Please try again.');
+    }
+  };
+
+  const handleFetchVehicleData = () => {
+    if (!vehicle.reg.trim()) { 
+      alert("Please enter a registration first!"); 
+      return; 
+    }
+    setVehicle(generateFakeVehicleData(vehicle.reg));
   };
 
   const sectionHeight = "260px";
@@ -147,409 +202,171 @@ export default function CreateJobCardPage() {
 
   return (
     <Layout>
-      <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "16px",
-          transition: "background 0.3s ease",
-          background: getBackgroundColor(waitingStatus, jobSource), // gradient/tint logic
-          borderRadius: "10px",
-        }}
-      >
-        {/* Top Section */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: "24px",
-          }}
-        >
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "16px", transition: "background 0.3s ease", background: getBackgroundColor(waitingStatus, jobSource), borderRadius: "10px" }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: "1rem", color: "#555" }}>
-              Retail / Warranty
-            </h2>
+            <h2 style={{ margin: 0, fontSize: "1rem", color: "#555" }}>Retail / Warranty</h2>
             <h1 style={{ color: "#FF4040", margin: 0 }}>Create New Job Card</h1>
           </div>
-
-          <button
-            onClick={() => {
-              const num = handleSaveUpdates();
-              router.push(`/job-cards/${num}`);
-            }}
-            style={{
-              padding: "12px 20px",
-              backgroundColor: "green",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              fontWeight: "bold",
-              cursor: "pointer",
-              fontSize: "1rem",
+          <button 
+            onClick={handleSaveJob} 
+            style={{ 
+              padding: "12px 20px", 
+              backgroundColor: "green", 
+              color: "white", 
+              border: "none", 
+              borderRadius: "6px", 
+              fontWeight: "bold", 
+              cursor: "pointer" 
             }}
           >
             Save Job
           </button>
         </div>
 
-        {/* Job Meta Info */}
-        <div
-          style={{
-            backgroundColor: "white",
-            padding: "16px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            marginBottom: "24px",
-          }}
-        >
-          <h3 style={{ marginTop: 0 }}>Job Information</h3>
-
-          {/* Waiting Status */}
-          <div style={{ marginBottom: "12px" }}>
-            <strong style={{ width: "150px", display: "inline-block" }}>
-              Customer Status:
-            </strong>
-            {["Waiting", "Loan Car", "Collection", "Neither"].map((status) => (
-              <label key={status} style={{ marginRight: "12px" }}>
-                <input
-                  type="radio"
-                  name="waiting"
-                  value={status}
-                  checked={waitingStatus === status}
-                  onChange={() => setWaitingStatus(status)}
-                />{" "}
-                {status}
-              </label>
-            ))}
-          </div>
-
-          {/* Job Source */}
-          <div style={{ marginBottom: "12px" }}>
-            <strong style={{ width: "150px", display: "inline-block" }}>
-              Job Source:
-            </strong>
-            {["Retail", "Warranty"].map((src) => (
-              <label key={src} style={{ marginRight: "12px" }}>
-                <input
-                  type="radio"
-                  name="source"
-                  value={src}
-                  checked={jobSource === src}
-                  onChange={() => setJobSource(src)}
-                />{" "}
-                {src}
-              </label>
-            ))}
-          </div>
-
-          {/* Auto Job Types Display */}
-          <div>
-            <strong>Detected Job Types:</strong>{" "}
-            {jobCategories.length > 0 ? (
-              jobCategories.map((type, index) => (
-                <span
-                  key={index}
-                  style={{
-                    display: "inline-block",
-                    marginRight: "8px",
-                    backgroundColor: "#FF4040",
-                    color: "white",
-                    padding: "4px 10px",
-                    borderRadius: "20px",
-                    fontWeight: "bold",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  {type}
-                </span>
-              ))
-            ) : (
-              <span style={{ color: "#777" }}>None detected</span>
-            )}
-          </div>
-        </div>
-
-        {/* Vehicle & Customer Details */}
+        {/* Job Info + GDPR Section */}
         <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
-          {/* Vehicle Details */}
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "white",
-              padding: "16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              height: sectionHeight,
-            }}
-          >
-            <h3 style={{ marginTop: 0 }}>Vehicle Details</h3>
-            <p><strong>Registration:</strong> {vehicle.reg}</p>
-            <p><strong>Colour:</strong> {vehicle.colour}</p>
-            <p><strong>Make & Model:</strong> {vehicle.makeModel}</p>
-            <p><strong>Chassis Number:</strong> {vehicle.chassis}</p>
-            <p><strong>Engine Number:</strong> {vehicle.engine}</p>
-            <label>
-              <strong>Mileage:</strong>
-              <input
-                type="number"
-                value={vehicle.mileage}
-                onChange={(e) =>
-                  setVehicle({ ...vehicle, mileage: e.target.value })
-                }
-                placeholder="Enter miles"
-                style={{ marginLeft: "8px", padding: "4px 8px", width: "100px" }}
-              />
-            </label>
-          </div>
-
-          {/* Customer Details */}
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "white",
-              padding: "16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              height: sectionHeight,
-            }}
-          >
-            <h3 style={{ marginTop: 0 }}>Customer Details</h3>
-            {customer ? (
-              <>
-                <p><strong>Full Name:</strong> {customer.firstName} {customer.lastName}</p>
-                <p><strong>Address:</strong> {customer.address}</p>
-                <p><strong>Email:</strong> {customer.email}</p>
-                <p><strong>Phone:</strong> {customer.mobile || customer.telephone}</p>
-              </>
-            ) : (
-              <p>No customer selected</p>
-            )}
-            <div style={{ marginTop: "12px", display: "flex", gap: "8px" }}>
-              <button onClick={() => setShowNewCustomer(true)} style={{ flex: 1 }}>New Customer</button>
-              <button onClick={() => setShowExistingCustomer(true)} style={{ flex: 1 }}>Existing Customer</button>
+          {/* Job Info 70% */}
+          <div style={{ flex: 7, backgroundColor: "white", padding: "16px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ marginTop: 0 }}>Job Information</h3>
+            <div style={{ marginBottom: "12px" }}>
+              <strong style={{ width: "150px", display: "inline-block" }}>Customer Status:</strong>
+              {["Waiting", "Loan Car", "Collection", "Neither"].map((status) => (
+                <label key={status} style={{ marginRight: "12px" }}>
+                  <input type="radio" name="waiting" value={status} checked={waitingStatus===status} onChange={()=>setWaitingStatus(status)} /> {status}
+                </label>
+              ))}
+            </div>
+            <div style={{ marginBottom: "12px" }}>
+              <strong style={{ width: "150px", display: "inline-block" }}>Job Source:</strong>
+              {["Retail","Warranty"].map((src)=>(
+                <label key={src} style={{ marginRight: "12px" }}>
+                  <input type="radio" name="source" value={src} checked={jobSource===src} onChange={()=>setJobSource(src)} /> {src}
+                </label>
+              ))}
+            </div>
+            <div>
+              <strong>Detected Job Types:</strong>{" "}
+              {jobCategories.map((type,index)=>(
+                <span key={index} style={{ display:"inline-block", marginRight:"8px", backgroundColor:"#FF4040", color:"white", padding:"4px 10px", borderRadius:"20px", fontWeight:"bold", fontSize:"0.9rem" }}>{type}</span>
+              ))}
             </div>
           </div>
+
+          {/* GDPR Settings 30% */}
+          <div style={{ flex: 3, backgroundColor: "white", padding: "16px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ marginTop: 0 }}>GDPR Settings</h3>
+            <table style={{ width:"100%", borderCollapse:"collapse", marginBottom:"16px" }}>
+              <thead>
+                <tr>
+                  <th style={{ borderBottom:"1px solid #ddd", textAlign:"left" }}>Contact Type</th>
+                  <th style={{ borderBottom:"1px solid #ddd", textAlign:"left" }}>From Us</th>
+                  <th style={{ borderBottom:"1px solid #ddd", textAlign:"left" }}>From Franchise</th>
+                </tr>
+              </thead>
+              <tbody>
+                {["Email","SMS","Letter","Telephone","Social media"].map(method=>(
+                  <tr key={method}>
+                    <td style={{padding:"4px 0"}}>{method}</td>
+                    <td><input type="checkbox"/></td>
+                    <td><input type="checkbox"/></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <table style={{ width:"100%", borderCollapse:"collapse" }}>
+              <thead>
+                <tr>
+                  <th style={{ borderBottom:"1px solid #ddd", textAlign:"left" }}>Marketing / Service</th>
+                  <th style={{ borderBottom:"1px solid #ddd", textAlign:"left" }}>Allowed</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Marketing Messages</td><td><input type="checkbox"/></td></tr>
+                <tr><td>Service Dept Follow Up</td><td><input type="checkbox"/></td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* Job Requests Section */}
-        <div
-          style={{
-            backgroundColor: "white",
-            padding: "16px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            marginBottom: "24px",
-          }}
-        >
-          <h3 style={{ marginTop: 0 }}>Job Requests</h3>
-          {requests.map((req, i) => (
-            <div
-              key={i}
-              style={{
-                border: "1px solid #ddd",
-                borderRadius: "6px",
-                marginBottom: "12px",
-                padding: "12px",
-              }}
-            >
-              <strong>Request {i + 1}:</strong>
-              <div style={{ marginLeft: "20px", marginTop: "6px" }}>
-                <input
-                  type="text"
-                  value={req.text}
-                  onChange={(e) => handleRequestChange(i, e.target.value)}
-                  placeholder="Enter job request (e.g. MOT, Service, Diagnostic)"
-                  style={{
-                    width: "90%",
-                    padding: "6px 8px",
-                    border: "1px solid #ccc",
-                    borderRadius: "4px",
-                  }}
-                />
-                <button
-                  onClick={() => handleRemoveRequest(i)}
-                  style={{
-                    marginLeft: "8px",
-                    backgroundColor: "#FF4040",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    padding: "6px 10px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Remove
-                </button>
+        {/* Vehicle & Customer */}
+        <div style={{ display:"flex", gap:"16px", marginBottom:"24px" }}>
+          {/* Vehicle */}
+          <div style={{ flex:1, backgroundColor:"white", padding:"16px", borderRadius:"8px", boxShadow:"0 2px 4px rgba(0,0,0,0.1)", height:sectionHeight }}>
+            <h3 style={{marginTop:0}}>Vehicle Details</h3>
+            <label><strong>Registration:</strong> <input type="text" value={vehicle.reg} onChange={e=>setVehicle({...vehicle,reg:e.target.value})} placeholder="Enter reg" style={{ marginLeft:"8px", padding:"4px 8px", width:"120px"}}/></label>
+            <button onClick={handleFetchVehicleData} style={{ marginLeft:"12px", backgroundColor:"#007bff", color:"white", border:"none", borderRadius:"4px", padding:"4px 10px", cursor:"pointer"}}>Fetch Vehicle Data</button>
+            <p><strong>Colour:</strong> {vehicle.colour}</p>
+            <p><strong>Make & Model:</strong> {vehicle.makeModel}</p>
+            <p><strong>Chassis:</strong> {vehicle.chassis}</p>
+            <p><strong>Engine:</strong> {vehicle.engine}</p>
+            <label><strong>Mileage:</strong> <input type="number" value={vehicle.mileage} onChange={e=>setVehicle({...vehicle,mileage:e.target.value})} placeholder="Enter miles" style={{ marginLeft:"8px", padding:"4px 8px", width:"100px"}}/></label>
+          </div>
+
+          {/* Customer */}
+          <div style={{ flex:1, backgroundColor:"white", padding:"16px", borderRadius:"8px", boxShadow:"0 2px 4px rgba(0,0,0,0.1)", height:sectionHeight }}>
+            <h3 style={{marginTop:0}}>Customer Details</h3>
+            {customer ? (
+              <>
+                <p><strong>Name:</strong> {customer.firstName} {customer.lastName}</p>
+                <p><strong>Address:</strong> {customer.address}</p>
+                <p><strong>Email:</strong> {customer.email}</p>
+                <p><strong>Phone:</strong> {customer.mobile||customer.telephone}</p>
+                <button onClick={()=>setCustomer(null)} style={{ marginTop:"12px", padding:"6px 12px", fontSize:"0.9rem", backgroundColor:"#FF4040", color:"white", border:"none", borderRadius:"6px", cursor:"pointer"}}>Clear Customer</button>
+              </>
+            ):(
+              <div style={{ display:"flex", gap:"12px" }}>
+                <button onClick={()=>setShowNewCustomer(true)} style={{ flex:1, padding:"14px 0", fontSize:"1rem", backgroundColor:"#007bff", color:"white", border:"none", borderRadius:"6px", cursor:"pointer", fontWeight:"bold"}}>New Customer</button>
+                <button onClick={()=>setShowExistingCustomer(true)} style={{ flex:1, padding:"14px 0", fontSize:"1rem", backgroundColor:"#FF4040", color:"white", border:"none", borderRadius:"6px", cursor:"pointer", fontWeight:"bold"}}>Existing Customer</button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Job Requests */}
+        <div style={{ backgroundColor:"white", padding:"16px", borderRadius:"8px", boxShadow:"0 2px 4px rgba(0,0,0,0.1)", marginBottom:"24px" }}>
+          <h3 style={{ marginTop:0 }}>Job Requests</h3>
+          {requests.map((req,i)=>(
+            <div key={i} style={{ border:"1px solid #ddd", borderRadius:"6px", marginBottom:"12px", padding:"12px"}}>
+              <strong>Request {i+1}:</strong>
+              <div style={{ marginLeft:"20px", marginTop:"6px"}}>
+                <input type="text" value={req.text} onChange={e=>handleRequestChange(i,e.target.value)} placeholder="Enter job request (MOT, Service, Diagnostic)" style={{ width:"90%", padding:"6px 8px", border:"1px solid #ccc", borderRadius:"4px"}}/>
+                <button onClick={()=>handleRemoveRequest(i)} style={{ marginLeft:"8px", backgroundColor:"#FF4040", color:"white", border:"none", borderRadius:"4px", padding:"6px 10px", cursor:"pointer"}}>Remove</button>
               </div>
             </div>
           ))}
-          <button
-            onClick={handleAddRequest}
-            style={{
-              backgroundColor: "#007bff",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              padding: "8px 14px",
-              cursor: "pointer",
-            }}
-          >
-            + Add Request
-          </button>
+          <button onClick={handleAddRequest} style={{ backgroundColor:"#007bff", color:"white", border:"none", borderRadius:"6px", padding:"8px 14px", cursor:"pointer"}}>+ Add Request</button>
         </div>
 
-        {/* Bottom Row */}
-        <div style={{ display: "flex", gap: "16px", height: bottomRowHeight }}>
-          {/* Cosmetic Damage */}
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "white",
-              padding: "16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h4 style={{ marginTop: 0 }}>Cosmetic Damage</h4>
-            <textarea
-              value={cosmeticNotes}
-              onChange={(e) => setCosmeticNotes(e.target.value)}
-              placeholder="Scratches, dents, paint damage..."
-              style={{ width: "100%", height: "80px", padding: "8px" }}
-            />
+        {/* Cosmetic + VHC + Details Buttons */}
+        <div style={{ display:"flex", gap:"16px", height:bottomRowHeight }}>
+          <div style={{ flex:1, backgroundColor:"white", padding:"16px", borderRadius:"8px", boxShadow:"0 2px 4px rgba(0,0,0,0.1)" }}>
+            <h4 style={{ marginTop:0 }}>Cosmetic Damage</h4>
+            <textarea value={cosmeticNotes} onChange={e=>setCosmeticNotes(e.target.value)} placeholder="Scratches, dents, etc..." style={{ width:"100%", height:"80px", padding:"8px"}}/>
           </div>
-
-          {/* VHC Button */}
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "#FF4040",
-              color: "white",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-            }}
-            onClick={() => setShowVhcPopup(true)}
-          >
+          <div style={{ flex:1, backgroundColor:"#FF4040", color:"white", borderRadius:"8px", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer"}} onClick={()=>setShowVhcPopup(true)}>
             <h4>Add VHC</h4>
           </div>
-
-          {/* Full Car Details */}
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "#FF4040",
-              color: "white",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-            }}
-            onClick={() => alert("Full Car Details Coming Soon")}
-          >
+          <div style={{ flex:1, backgroundColor:"#FF4040", color:"white", borderRadius:"8px", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer"}} onClick={()=>alert("Full Car Details Coming Soon")}>
             <h4>Full Car Details</h4>
           </div>
         </div>
 
         {/* Popups */}
-        {showJobModal && (
-          <JobCardModal
-            isOpen={showJobModal}
-            onClose={() => setShowJobModal(false)}
-            existingJobs={jobs.map((j) => j.jobNumber)}
-          />
-        )}
-        {showNewCustomer && (
-          <NewCustomerPopup
-            onClose={() => setShowNewCustomer(false)}
-            onSelect={(c) => {
-              setCustomer(c);
-              setShowNewCustomer(false);
-            }}
-          />
-        )}
-        {showExistingCustomer && (
-          <ExistingCustomerPopup
-            onClose={() => setShowExistingCustomer(false)}
-            onSelect={(c) => {
-              setCustomer(c);
-              setShowExistingCustomer(false);
-            }}
-          />
-        )}
+        {showNewCustomer && <NewCustomerPopup onClose={()=>setShowNewCustomer(false)} onSelect={c=>{setCustomer(c); setShowNewCustomer(false);}}/>}
+        {showExistingCustomer && <ExistingCustomerPopup onClose={()=>setShowExistingCustomer(false)} onSelect={c=>{setCustomer(c); setShowExistingCustomer(false);}}/>}
 
         {/* VHC Popup */}
         {showVhcPopup && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0,0,0,0.5)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 1000,
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: "white",
-                padding: "24px",
-                borderRadius: "8px",
-                width: "320px",
-                textAlign: "center",
-              }}
-            >
+          <div style={{ position:"fixed", top:0,left:0,right:0,bottom:0, backgroundColor:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
+            <div style={{ backgroundColor:"white", padding:"24px", borderRadius:"8px", width:"320px", textAlign:"center"}}>
               <h3>Add VHC to this job?</h3>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-around",
-                  marginTop: "16px",
-                }}
-              >
-                <label>
-                  <input
-                    type="radio"
-                    name="vhc"
-                    value="yes"
-                    onChange={() => setVhcRequired(true)}
-                    checked={vhcRequired === true}
-                  />{" "}
-                  Yes
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    name="vhc"
-                    value="no"
-                    onChange={() => setVhcRequired(false)}
-                    checked={vhcRequired === false}
-                  />{" "}
-                  No
-                </label>
+              <div style={{ display:"flex", justifyContent:"space-around", marginTop:"16px"}}>
+                <label><input type="radio" name="vhc" value="yes" onChange={()=>setVhcRequired(true)} checked={vhcRequired===true}/> Yes</label>
+                <label><input type="radio" name="vhc" value="no" onChange={()=>setVhcRequired(false)} checked={vhcRequired===false}/> No</label>
               </div>
-              <button
-                onClick={() => setShowVhcPopup(false)}
-                style={{
-                  marginTop: "16px",
-                  padding: "8px 16px",
-                  backgroundColor: "#FF4040",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                }}
-              >
-                Confirm
-              </button>
+              <button onClick={()=>setShowVhcPopup(false)} style={{ marginTop:"16px", padding:"8px 16px", backgroundColor:"#FF4040", color:"white", border:"none", borderRadius:"6px", cursor:"pointer"}}>Confirm</button>
             </div>
           </div>
         )}

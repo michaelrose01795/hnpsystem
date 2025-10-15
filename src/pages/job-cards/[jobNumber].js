@@ -4,258 +4,338 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
-import { useJobs } from "../../context/JobsContext";
 
-export default function JobCardPage() {
+export default function JobCardViewPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
-  const { getJobByNumber } = useJobs();
 
-  // Simulate user role (tech or other)
-  const userRole = "tech"; // Change dynamically depending on auth in real app
-
-  // Job state
-  const [job, setJob] = useState(null);
+  const [jobData, setJobData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Fetch job details
   useEffect(() => {
     if (!jobNumber) return;
-    const fetchJob = async () => {
-      const jobData = getJobByNumber(Number(jobNumber));
-      setJob(jobData);
-      setLoading(false);
-    };
-    fetchJob();
-  }, [jobNumber, getJobByNumber]);
 
-  if (loading || !job) {
+    // Fetch job card with all linked data
+    fetch(`/api/jobcards/${jobNumber}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.jobCard) {
+          setJobData(data);
+        } else {
+          setError("Job card not found");
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        setError("Failed to load job card");
+        setLoading(false);
+      });
+  }, [jobNumber]);
+
+  if (loading) {
     return (
       <Layout>
-        <h2>Loading Job Card...</h2>
+        <div style={{ padding: "40px", textAlign: "center" }}>
+          <h2>Loading Job Card #{jobNumber}...</h2>
+        </div>
       </Layout>
     );
   }
 
-  // Navigation handlers
-  const handleStartVHC = () => router.push(`/job-cards/${jobNumber}/vhc`);
-  const handleWriteUp = () => router.push(`/job-cards/${jobNumber}/write-up`);
-  const handleCheckBox = () => router.push(`/job-cards/${jobNumber}/check-box`);
-  const handleFullCarDetails = () =>
-    router.push(`/job-cards/${jobNumber}/car-details`);
-  const handleCompleteJob = () => {
-    alert("Job marked as completed");
-    router.push("/news");
-  };
+  if (error || !jobData) {
+    return (
+      <Layout>
+        <div style={{ padding: "40px", textAlign: "center" }}>
+          <h2 style={{ color: "#FF4040" }}>{error || "Job card not found"}</h2>
+          <button 
+            onClick={() => router.push("/job-cards")}
+            style={{
+              marginTop: "20px",
+              padding: "10px 20px",
+              backgroundColor: "#007bff",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer"
+            }}
+          >
+            Back to Job Cards
+          </button>
+        </div>
+      </Layout>
+    );
+  }
 
-  // Layout heights
-  const sectionHeight = "250px";
-  const jobDetailsHeight = "350px";
-  const bottomRowHeight = "150px";
+  const { jobCard, customer, vehicle, customerJobHistory, vehicleJobHistory } = jobData;
 
   return (
     <Layout>
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "16px" }}>
+      <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "20px" }}>
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: "24px",
-          }}
-        >
+        <div style={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center",
+          marginBottom: "30px",
+          padding: "20px",
+          backgroundColor: "white",
+          borderRadius: "8px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+        }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: "1rem", color: "#555" }}>
-              Retail / Sales / Warranty
-            </h2>
-            <h1 style={{ color: "#FF4040", margin: 0 }}>
-              Job Card: {jobNumber}
+            <h1 style={{ margin: 0, color: "#FF4040" }}>
+              Job Card #{jobCard.jobNumber}
             </h1>
+            <p style={{ margin: "5px 0 0 0", color: "#666" }}>
+              Created: {new Date(jobCard.createdAt).toLocaleString()}
+            </p>
           </div>
-
-          <div style={{ display: "flex", gap: "12px" }}>
-            {/* Complete Job button only if job is VHC completed or not required */}
-            {(job.vhcRequired ? job.vhcCompleted : true) && (
-              <button
-                onClick={handleCompleteJob}
-                style={{
-                  padding: "12px 20px",
-                  backgroundColor: "green",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  fontSize: "1rem",
-                }}
-              >
-                Complete Job
-              </button>
-            )}
-
-            {/* VHC button only for techs and if VHC required */}
-            {userRole === "tech" && job.vhcRequired && (
-              <button
-                onClick={handleStartVHC}
-                style={{
-                  padding: "12px 20px",
-                  backgroundColor: "#FF4040",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  fontSize: "1rem",
-                }}
-              >
-                {job.vhcCompleted ? "Reopen VHC" : "Start VHC"}
-              </button>
-            )}
+          <div style={{ display: "flex", gap: "10px" }}>
+            <span style={{
+              padding: "8px 16px",
+              backgroundColor: jobCard.status === "Open" ? "#28a745" : "#ffc107",
+              color: "white",
+              borderRadius: "20px",
+              fontWeight: "bold"
+            }}>
+              {jobCard.status}
+            </span>
+            <span style={{
+              padding: "8px 16px",
+              backgroundColor: jobCard.jobSource === "Retail" ? "#007bff" : "#ff9800",
+              color: "white",
+              borderRadius: "20px",
+              fontWeight: "bold"
+            }}>
+              {jobCard.jobSource}
+            </span>
           </div>
         </div>
 
-        {/* Vehicle & Customer Details */}
-        <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
-          {/* Vehicle Details */}
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "white",
-              padding: "16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              height: sectionHeight,
-              overflow: "hidden",
-            }}
-          >
-            <h3 style={{ marginTop: 0, marginBottom: "12px" }}>
-              Vehicle Details
-            </h3>
-            <p>
-              <strong>Registration:</strong> {job.vehicle?.reg || "-"}
-            </p>
-            <p>
-              <strong>Colour:</strong> {job.vehicle?.colour || "-"}
-            </p>
-            <p>
-              <strong>Make & Model:</strong> {job.vehicle?.makeModel || "-"}
-            </p>
-            <p>
-              <strong>Chassis Number:</strong> {job.vehicle?.chassis || "-"}
-            </p>
-            <p>
-              <strong>Engine Number:</strong> {job.vehicle?.engine || "-"}
-            </p>
-            <div style={{ marginTop: "8px" }}>
-              <label>
-                <strong>Mileage:</strong>
-                <input
-                  type="number"
-                  value={job.vehicle?.mileage || ""}
-                  placeholder="Enter miles"
-                  style={{
-                    marginLeft: "8px",
-                    padding: "4px 8px",
-                    width: "100px",
-                  }}
-                  readOnly
-                />
-              </label>
-            </div>
+        {/* Main Content Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
+          
+          {/* Customer Details */}
+          <div style={{
+            backgroundColor: "white",
+            padding: "20px",
+            borderRadius: "8px",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+          }}>
+            <h2 style={{ 
+              marginTop: 0, 
+              borderBottom: "2px solid #FF4040", 
+              paddingBottom: "10px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
+              Customer Details
+              <button
+                onClick={() => router.push(`/customers/${customer?.customerId}`)}
+                style={{
+                  padding: "6px 12px",
+                  fontSize: "0.85rem",
+                  backgroundColor: "#007bff",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer"
+                }}
+              >
+                View Full Profile
+              </button>
+            </h2>
+            {customer ? (
+              <>
+                <p><strong>Customer ID:</strong> {customer.customerId}</p>
+                <p><strong>Name:</strong> {customer.firstName} {customer.lastName}</p>
+                <p><strong>Email:</strong> {customer.email || "N/A"}</p>
+                <p><strong>Mobile:</strong> {customer.mobile || "N/A"}</p>
+                <p><strong>Telephone:</strong> {customer.telephone || "N/A"}</p>
+                <p><strong>Address:</strong> {customer.address || "N/A"}</p>
+                <p><strong>Postcode:</strong> {customer.postcode || "N/A"}</p>
+                <p style={{ marginTop: "15px", padding: "10px", backgroundColor: "#f0f0f0", borderRadius: "4px" }}>
+                  <strong>Total Jobs:</strong> {customerJobHistory?.length || 0}
+                </p>
+              </>
+            ) : (
+              <p style={{ color: "#999" }}>Customer information not available</p>
+            )}
           </div>
 
-          {/* Customer Details */}
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "white",
-              padding: "16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              height: sectionHeight,
-              overflow: "hidden",
-            }}
-          >
-            <h3 style={{ marginTop: 0, marginBottom: "12px" }}>
-              Customer Details
-            </h3>
-            <p>
-              <strong>Full Name:</strong>{" "}
-              {job.customer?.firstName
-                ? `${job.customer.firstName} ${job.customer.lastName}`
-                : "-"}
-            </p>
-            <p>
-              <strong>Address:</strong> {job.customer?.address || "-"}
-            </p>
-            <p>
-              <strong>Email:</strong> {job.customer?.email || "-"}
-            </p>
-            <p>
-              <strong>Phone:</strong>{" "}
-              {job.customer?.mobile || job.customer?.telephone || "-"}
-            </p>
+          {/* Vehicle Details */}
+          <div style={{
+            backgroundColor: "white",
+            padding: "20px",
+            borderRadius: "8px",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+          }}>
+            <h2 style={{ 
+              marginTop: 0, 
+              borderBottom: "2px solid #FF4040", 
+              paddingBottom: "10px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
+              Vehicle Details
+              <button
+                onClick={() => router.push(`/vehicles/${vehicle?.reg}`)}
+                style={{
+                  padding: "6px 12px",
+                  fontSize: "0.85rem",
+                  backgroundColor: "#007bff",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer"
+                }}
+              >
+                View History
+              </button>
+            </h2>
+            {vehicle ? (
+              <>
+                <p><strong>Registration:</strong> {vehicle.reg}</p>
+                <p><strong>Make & Model:</strong> {vehicle.makeModel}</p>
+                <p><strong>Colour:</strong> {vehicle.colour}</p>
+                <p><strong>Chassis Number:</strong> {vehicle.chassis}</p>
+                <p><strong>Engine Number:</strong> {vehicle.engine}</p>
+                <p><strong>Mileage:</strong> {vehicle.mileage?.toLocaleString()} miles</p>
+                <p style={{ marginTop: "15px", padding: "10px", backgroundColor: "#f0f0f0", borderRadius: "4px" }}>
+                  <strong>Total Jobs:</strong> {vehicleJobHistory?.length || 0}
+                </p>
+              </>
+            ) : (
+              <p style={{ color: "#999" }}>Vehicle information not available</p>
+            )}
           </div>
         </div>
 
         {/* Job Details */}
-        <div
-          style={{
-            backgroundColor: "white",
-            padding: "16px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            marginBottom: "24px",
-            height: jobDetailsHeight,
-          }}
-        >
-          <h3 style={{ marginTop: 0 }}>Job Details</h3>
-          {job.requests?.map((req, index) => (
-            <p key={index}>
-              <strong>Request {index + 1}:</strong> {req}
-            </p>
+        <div style={{
+          backgroundColor: "white",
+          padding: "20px",
+          borderRadius: "8px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+          marginBottom: "20px"
+        }}>
+          <h2 style={{ marginTop: 0, borderBottom: "2px solid #FF4040", paddingBottom: "10px" }}>
+            Job Information
+          </h2>
+          
+          <div style={{ marginBottom: "20px" }}>
+            <strong>Job Categories:</strong>
+            <div style={{ marginTop: "10px" }}>
+              {jobCard.jobCategories?.map((category, i) => (
+                <span key={i} style={{
+                  display: "inline-block",
+                  marginRight: "10px",
+                  padding: "6px 14px",
+                  backgroundColor: "#FF4040",
+                  color: "white",
+                  borderRadius: "20px",
+                  fontWeight: "bold"
+                }}>
+                  {category}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <strong>Customer Status:</strong> 
+            <span style={{ 
+              marginLeft: "10px",
+              padding: "4px 12px",
+              backgroundColor: 
+                jobCard.waitingStatus === "Waiting" ? "#ffcccc" :
+                jobCard.waitingStatus === "Loan Car" ? "#cce0ff" :
+                jobCard.waitingStatus === "Collection" ? "#d6f5d6" : "#f0f0f0",
+              borderRadius: "4px"
+            }}>
+              {jobCard.waitingStatus}
+            </span>
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <strong>VHC Required:</strong> {jobCard.vhcRequired ? "Yes" : "No"}
+          </div>
+
+          <h3 style={{ marginTop: "25px" }}>Job Requests:</h3>
+          {jobCard.requests?.map((request, i) => (
+            <div key={i} style={{
+              padding: "12px",
+              marginBottom: "10px",
+              backgroundColor: "#f8f9fa",
+              borderLeft: "4px solid #FF4040",
+              borderRadius: "4px"
+            }}>
+              <strong>Request {i + 1}:</strong> {request}
+            </div>
           ))}
+
+          {jobCard.cosmeticNotes && (
+            <>
+              <h3 style={{ marginTop: "25px" }}>Cosmetic Damage Notes:</h3>
+              <div style={{
+                padding: "12px",
+                backgroundColor: "#fff3cd",
+                border: "1px solid #ffc107",
+                borderRadius: "4px"
+              }}>
+                {jobCard.cosmeticNotes}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Bottom Sections */}
-        <div style={{ display: "flex", gap: "16px", height: bottomRowHeight }}>
-          {/* Cosmetic Damage */}
-          <div
+        {/* Action Buttons */}
+        <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+          <button
+            onClick={() => router.push("/job-cards")}
             style={{
-              flex: 1,
-              backgroundColor: "white",
-              padding: "16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              overflowY: "auto",
-            }}
-          >
-            <h4 style={{ marginTop: 0 }}>Cosmetic Damage</h4>
-            <textarea
-              value={job.cosmeticNotes || ""}
-              placeholder="Scratches, dents, paint damage..."
-              style={{ width: "100%", height: "80px", padding: "8px" }}
-              readOnly
-            />
-          </div>
-
-          {/* Write-Up Button */}
-          <div
-            onClick={handleWriteUp}
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "#FF4040",
+              padding: "12px 24px",
+              backgroundColor: "#6c757d",
               color: "white",
-              borderRadius: "8px",
+              border: "none",
+              borderRadius: "6px",
               cursor: "pointer",
+              fontWeight: "bold"
             }}
           >
-            <h4 style={{ margin: 0 }}>Go to Write-Up</h4>
-          </div>
+            Back to All Jobs
+          </button>
+          <button
+            onClick={() => router.push(`/job-cards/${jobNumber}/edit`)}
+            style={{
+              padding: "12px 24px",
+              backgroundColor: "#007bff",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "bold"
+            }}
+          >
+            Edit Job Card
+          </button>
+          <button
+            onClick={() => alert("Print functionality coming soon!")}
+            style={{
+              padding: "12px 24px",
+              backgroundColor: "#28a745",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "bold"
+            }}
+          >
+            Print Job Card
+          </button>
         </div>
       </div>
     </Layout>
