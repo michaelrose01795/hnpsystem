@@ -1,4 +1,5 @@
 /* file location: src/styles/globals.css */
+
 /* Reset some defaults */
 * {
   margin: 0;
@@ -19,8 +20,10 @@ body {
 a {
   color: #d10000; /* H&P red accent */
   text-decoration: none;
+  transition: color 0.2s;
 }
 a:hover {
+  color: #a00000;
   text-decoration: underline;
 }
 
@@ -29,9 +32,66 @@ button {
   background: #d10000;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
 }
 button:hover {
   background: #a00000;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Input & Textarea & Select fields */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="date"],
+textarea,
+select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  outline: none;
+  background-color: #fafafa;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+/* Hover effect for inputs */
+input:hover,
+textarea:hover,
+select:hover {
+  border-color: #d10000;
+  box-shadow: 0 0 3px #d10000;
+}
+
+/* Focused input effect */
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #ff4040;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(255, 64, 64, 0.1);
+}
+
+/* Optional: subtle placeholder style */
+input::placeholder,
+textarea::placeholder {
+  color: #999;
+}
+
+/* Label styling for consistent look */
+label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #555;
+  display: block;
+  margin-bottom: 4px;
 }

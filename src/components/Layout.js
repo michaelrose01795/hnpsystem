@@ -187,7 +187,7 @@ export default function Layout({ children }) {
                 </Link>
               )}
 
-              {/* Appointments button added */}
+              {/* Appointments button */}
               {appointmentRoles.some((r) => userRoles.includes(r)) && (
                 <Link href="/appointments">
                   <span
