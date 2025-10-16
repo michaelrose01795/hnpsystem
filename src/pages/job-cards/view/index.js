@@ -5,42 +5,45 @@ import React, { useState, useEffect } from "react";
 import Layout from "../../../components/Layout";
 import { useRouter } from "next/router";
 
-// Example fetch from local storage (replace with actual DB/API)
-const fetchJobsFromLocal = () => {
-  const storedJobs = localStorage.getItem("jobCards");
-  return storedJobs ? JSON.parse(storedJobs) : [];
+// Utility to get today's date string in YYYY-MM-DD format
+const getTodayDate = () => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+// Replace this with your actual API call
+const fetchJobsFromAPI = async () => {
+  // Example: fetch from your jobs endpoint
+  const res = await fetch("/api/jobs"); 
+  const data = await res.json();
+  return data; // Expect an array of jobs with { jobNumber, customer, reg, description, status, appointment }
 };
 
 export default function ViewJobCards() {
   const [jobs, setJobs] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date());
   const [popupJob, setPopupJob] = useState(null);
   const [searchTerms, setSearchTerms] = useState({});
   const [activeTab, setActiveTab] = useState("today"); // today / carryOver
   const router = useRouter();
+  const today = getTodayDate();
 
+  // Fetch jobs from API on mount
   useEffect(() => {
-    const jobsFromDB = fetchJobsFromLocal();
-    setJobs(jobsFromDB);
+    const fetchJobs = async () => {
+      const jobsFromAPI = await fetchJobsFromAPI();
+      setJobs(jobsFromAPI);
+    };
+    fetchJobs();
   }, []);
 
   const goToJobCard = (jobNumber) => {
     router.push(`/job-cards/${jobNumber}`);
   };
 
-  const changeDate = (days) => {
-    const today = new Date();
-    let newDate = new Date(selectedDate);
-    do {
-      newDate.setDate(newDate.getDate() + days);
-    } while (newDate.getDay() === 0); // skip Sundays
-
-    const diff = Math.floor((newDate - today) / (1000 * 60 * 60 * 24));
-    if (diff < -7 || diff > 7) return;
-
-    setSelectedDate(newDate);
-  };
-
+  // Define tabs and their sections
   const tabs = {
     today: [
       "Booked",
@@ -63,15 +66,15 @@ export default function ViewJobCards() {
     ],
   };
 
+  // Filter jobs by status and optionally by today's date
   const filterJobs = (status) => {
     let filtered = jobs.filter((job) => job.status === status);
 
+    // If Booked, filter only today's appointments
     if (status === "Booked") {
-      const dateStr = selectedDate.toISOString().split("T")[0];
-      filtered = filtered.filter((job) => job.appointment?.date === dateStr);
-      filtered.sort((a, b) => (a.appointment.time > b.appointment.time ? 1 : -1));
-    } else {
-      filtered.sort((a, b) => (a.jobNumber > b.jobNumber ? 1 : -1));
+      filtered = filtered.filter(
+        (job) => job.appointment && job.appointment.date === today
+      );
     }
 
     if (searchTerms[status]) {
@@ -123,7 +126,6 @@ export default function ViewJobCards() {
     </div>
   );
 
-  // Determine grid layout based on active tab
   const gridLayout =
     activeTab === "today"
       ? { gridTemplateColumns: "repeat(3, 1fr)", gridTemplateRows: "repeat(3, 1fr)" }
@@ -164,6 +166,7 @@ export default function ViewJobCards() {
           </button>
         </div>
 
+        {/* Job Sections */}
         <div
           style={{
             display: "grid",
@@ -186,14 +189,6 @@ export default function ViewJobCards() {
               }}
             >
               <h2 style={{ fontWeight: "600", fontSize: "1.1rem", marginBottom: "8px" }}>{status}</h2>
-
-              {status === "Booked" && (
-                <div style={{ display: "flex", alignItems: "center", marginBottom: "8px", gap: "8px" }}>
-                  <button onClick={() => changeDate(-1)}>⬅️ Previous</button>
-                  <span>{selectedDate.toDateString()}</span>
-                  <button onClick={() => changeDate(1)}>Next ➡️</button>
-                </div>
-              )}
 
               <input
                 type="text"
@@ -251,10 +246,16 @@ export default function ViewJobCards() {
                 overflowY: "auto",
               }}
             >
-              <h2>{popupJob.jobNumber} - {popupJob.customer}</h2>
+              <h2>
+                {popupJob.jobNumber} - {popupJob.customer}
+              </h2>
               <p>Reg: {popupJob.reg}</p>
               <p>Description: {popupJob.description}</p>
-              {popupJob.appointment && <p>Appointment: {popupJob.appointment.date} {popupJob.appointment.time}</p>}
+              {popupJob.appointment && (
+                <p>
+                  Appointment: {popupJob.appointment.date} {popupJob.appointment.time}
+                </p>
+              )}
 
               <div style={{ display: "flex", gap: "6px", marginTop: "12px", flexWrap: "wrap" }}>
                 <button style={{ padding: "4px 8px", fontSize: "0.75rem" }}>State Selector</button>

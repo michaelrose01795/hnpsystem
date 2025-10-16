@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.75.0",
     "formidable": "^3.5.4",
     "jwt-decode": "^4.0.0",
     "keycloak-js": "^26.2.0",
