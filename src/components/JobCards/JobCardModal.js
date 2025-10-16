@@ -1,28 +1,39 @@
 // file location: src/components/JobCards/JobCardModal.js
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
+import { useUser } from "../../context/UserContext"; // ✅ import user context to check login
 
-export default function JobCardModal({ isOpen, onClose }) {
+export default function JobCardModal({ isOpen, onClose, existingJobs = [] }) {
   const router = useRouter();
-  const [jobNumber, setJobNumber] = useState(""); // start empty
-  const [error, setError] = useState(""); // for error message
-  const inputRef = useRef(null); // ref for input
+  const { user } = useUser(); // ✅ access current user
+  const [jobNumber, setJobNumber] = useState("");
+  const [error, setError] = useState("");
+  const inputRef = useRef(null);
 
-  // Focus input automatically when modal opens and reset states
+  // ✅ Redirect to login if not logged in
   useEffect(() => {
-    if (isOpen && inputRef.current) {
+    if (isOpen && !user) {
+      router.push("/api/auth/login"); // or your Keycloak dev login URL
+      onClose(); // close popup while redirecting
+    }
+  }, [isOpen, user, router, onClose]);
+
+  // ✅ Focus input when modal opens
+  useEffect(() => {
+    if (isOpen && inputRef.current && user) {
       inputRef.current.focus();
       setJobNumber("");
       setError("");
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
 
-  // Function to check if job number exists
+  // ✅ Job number validation
   const isValidJobNumber = (num) => {
     const numVal = Number(num);
     return existingJobs.includes(numVal);
   };
 
+  // ✅ Main Clock On button logic
   const handleClockOn = () => {
     const trimmedJob = jobNumber.trim();
     if (!trimmedJob) {
@@ -34,10 +45,17 @@ export default function JobCardModal({ isOpen, onClose }) {
       return;
     }
 
-    // Job recognized, immediately navigate to job card
-    onClose();
+    onClose(); // ✅ properly close modal
     router.push(`/job-cards/${jobNumber}`);
   };
+
+  // ✅ Pressing Enter triggers Clock On
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleClockOn();
+  };
+
+  // ✅ Don’t render anything if modal isn’t open
+  if (!isOpen) return null;
 
   return (
     <div
@@ -50,6 +68,7 @@ export default function JobCardModal({ isOpen, onClose }) {
         alignItems: "center",
         zIndex: 1000,
       }}
+      onClick={onClose} // ✅ click outside to close
     >
       <div
         style={{
@@ -59,19 +78,21 @@ export default function JobCardModal({ isOpen, onClose }) {
           width: "320px",
           textAlign: "center",
         }}
+        onClick={(e) => e.stopPropagation()} // prevent backdrop click
       >
         <h2 style={{ marginBottom: "16px", color: "#FF4040" }}>
           Enter Job Number
         </h2>
 
         <input
+          ref={inputRef}
           type="text"
           value={jobNumber}
           onChange={(e) => {
             setJobNumber(e.target.value);
-            setError(""); // reset error when typing
+            setError("");
           }}
-          onKeyDown={handleKeyDown} // Enter key triggers Clock On
+          onKeyDown={handleKeyDown}
           placeholder="JOB NUMBER HERE"
           style={{
             width: "100%",
@@ -82,6 +103,12 @@ export default function JobCardModal({ isOpen, onClose }) {
             fontSize: "1rem",
           }}
         />
+
+        {error && (
+          <p style={{ color: "red", marginBottom: "10px", fontSize: "0.9rem" }}>
+            {error}
+          </p>
+        )}
 
         <button
           onClick={handleClockOn}
@@ -100,7 +127,7 @@ export default function JobCardModal({ isOpen, onClose }) {
         </button>
 
         <button
-          onClick={onClose}
+          onClick={onClose} // ✅ properly closes modal
           style={{
             width: "100%",
             marginTop: "10px",
