@@ -269,7 +269,7 @@ export const saveChecksheet = async (jobNumber, checksheetData) => {
 };
 
 /* ============================================
-   ✅ SAVE INDIVIDUAL VHC SECTION
+   SAVE INDIVIDUAL VHC SECTION
    (used for single sections like Wheels & Tyres)
 ============================================ */
 export const saveVhcSection = async (jobNumber, sectionKey, sectionData) => {
@@ -280,12 +280,9 @@ export const saveVhcSection = async (jobNumber, sectionKey, sectionData) => {
       .eq("job_number", jobNumber)
       .single();
 
-    let updatedData = {};
-    if (!fetchError && existing?.data) {
-      updatedData = { ...existing.data, [sectionKey]: sectionData };
-    } else {
-      updatedData = { [sectionKey]: sectionData };
-    }
+    const updatedData = !fetchError && existing?.data
+      ? { ...existing.data, [sectionKey]: sectionData }
+      : { [sectionKey]: sectionData };
 
     const { data, error } = await supabase
       .from("vhc_checks")
