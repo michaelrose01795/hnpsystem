@@ -186,7 +186,7 @@ export default function CreateJobCardPage() {
       }
 
       // 2️⃣ Vehicle not in DB → fetch from DVLA API endpoint
-      const dvlaRes = await fetch(`/api/dvla?reg=${vehicle.reg.toUpperCase()}`);
+      const dvlaRes = await fetch(`/api/vehicles/dvla?reg=${vehicle.reg.toUpperCase()}`);
       if (!dvlaRes.ok) throw new Error("DVLA API fetch failed");
       const dvlaData = await dvlaRes.json();
 
