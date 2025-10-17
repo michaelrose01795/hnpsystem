@@ -1,6 +1,10 @@
 // file location: src/pages/vhc/index.js
 
-import React, { useState } from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { supabase } from "../../lib/supabaseClient";
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
 
 // ✅ Reusable card component
@@ -15,38 +19,88 @@ const SectionCard = ({ title, subtitle, onClick }) => (
 );
 
 export default function VHCPage() {
-  const [isWheelsTyresOpen, setIsWheelsTyresOpen] = useState(false); // Modal open state
-  const [wheelsTyresData, setWheelsTyresData] = useState(null); // Saved data
+  const params = useSearchParams();
+  const jobNumber = params.get("job") || "JOB1234"; // fallback for testing
+  const [isWheelsTyresOpen, setIsWheelsTyresOpen] = useState(false);
+  const [wheelsTyresData, setWheelsTyresData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  // ✅ Handle saving Wheels & Tyres data
-  const handleSave = (data) => {
+  // ✅ Load any existing VHC data
+  useEffect(() => {
+    const fetchVhcData = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("vhc_checks")
+        .select("wheels_tyres")
+        .eq("job_number", jobNumber)
+        .single();
+
+      if (!error && data && data.wheels_tyres) {
+        setWheelsTyresData(data.wheels_tyres);
+      }
+      setLoading(false);
+    };
+
+    fetchVhcData();
+  }, [jobNumber]);
+
+  // ✅ Save Wheels & Tyres data
+  const handleSave = async (data) => {
     setWheelsTyresData(data);
-    console.log("Wheels & Tyres saved:", data);
+
+    const { error } = await supabase
+      .from("vhc_checks")
+      .upsert({
+        job_number: jobNumber,
+        wheels_tyres: data,
+        updated_at: new Date(),
+      });
+
+    if (error) {
+      console.error("Error saving VHC data:", error);
+      alert("Failed to save data");
+    } else {
+      alert("Wheels & Tyres details saved!");
+    }
   };
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Vehicle Health Check - Job JOB1234</h1>
+      <h1 className="text-2xl font-bold mb-6">
+        Vehicle Health Check – Job {jobNumber}
+      </h1>
 
-      <div className="space-y-4">
-        {/* Wheels & Tyres - opens detailed modal */}
-        <SectionCard
-          title="Wheels & Tyres"
-          subtitle={wheelsTyresData ? "Details completed" : "No issues logged yet"}
-          onClick={() => setIsWheelsTyresOpen(true)}
-        />
+      {loading ? (
+        <p>Loading VHC data...</p>
+      ) : (
+        <div className="space-y-4">
+          {/* Wheels & Tyres */}
+          <SectionCard
+            title="Wheels & Tyres"
+            subtitle={
+              wheelsTyresData ? "Details completed" : "No issues logged yet"
+            }
+            onClick={() => setIsWheelsTyresOpen(true)}
+          />
 
-        {/* Placeholder sections */}
-        <SectionCard title="Brakes & Hubs" subtitle="0 issues logged" />
-        <SectionCard title="Service Book" subtitle="0 issues logged" />
-        <SectionCard title="Under Bonnet" subtitle="0 issues logged" />
-        <SectionCard title="External / Drive-in Inspection" subtitle="0 issues logged" />
-        <SectionCard title="Internal / Lamps / Electrics" subtitle="0 issues logged" />
-        <SectionCard title="Underside" subtitle="0 issues logged" />
-        <SectionCard title="Cosmetics" subtitle="0 issues logged" />
-      </div>
+          {/* Other Sections (placeholders for now) */}
+          <SectionCard title="Brakes & Hubs" subtitle="0 issues logged" />
+          <SectionCard title="Service Book" subtitle="0 issues logged" />
+          <SectionCard title="Under Bonnet" subtitle="0 issues logged" />
+          <SectionCard
+            title="External / Drive-in Inspection"
+            subtitle="0 issues logged"
+          />
+          <SectionCard
+            title="Internal / Lamps / Electrics"
+            subtitle="0 issues logged"
+          />
+          <SectionCard title="Underside" subtitle="0 issues logged" />
+          <SectionCard title="Cosmetics" subtitle="0 issues logged" />
+        </div>
+      )}
 
-      {/* Detailed Wheels & Tyres Modal */}
+      {/* Wheels & Tyres Modal */}
       <WheelsTyresDetailsModal
         isOpen={isWheelsTyresOpen}
         onClose={() => setIsWheelsTyresOpen(false)}

@@ -250,6 +250,7 @@ export const updateJobStatus = async (jobId, newStatus) => {
 
 /* ============================================
    SAVE VHC CHECKSHEET
+   (used for full VHC JSON from tech page)
 ============================================ */
 export const saveChecksheet = async (jobNumber, checksheetData) => {
   try {
@@ -268,8 +269,40 @@ export const saveChecksheet = async (jobNumber, checksheetData) => {
 };
 
 /* ============================================
+   ✅ SAVE INDIVIDUAL VHC SECTION
+   (used for single sections like Wheels & Tyres)
+============================================ */
+export const saveVhcSection = async (jobNumber, sectionKey, sectionData) => {
+  try {
+    const { data: existing, error: fetchError } = await supabase
+      .from("vhc_checks")
+      .select("id, data")
+      .eq("job_number", jobNumber)
+      .single();
+
+    let updatedData = {};
+    if (!fetchError && existing?.data) {
+      updatedData = { ...existing.data, [sectionKey]: sectionData };
+    } else {
+      updatedData = { [sectionKey]: sectionData };
+    }
+
+    const { data, error } = await supabase
+      .from("vhc_checks")
+      .upsert({ job_number: jobNumber, data: updatedData })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error("❌ Error saving VHC section:", error);
+    return { success: false, error };
+  }
+};
+
+/* ============================================
    SAVE WRITE-UP
-   Stores fault, caused, ratification, and related data
 ============================================ */
 export const saveWriteUp = async (jobNumber, writeUpData) => {
   try {
@@ -292,7 +325,7 @@ export const saveWriteUp = async (jobNumber, writeUpData) => {
 };
 
 /* ============================================
-   UPLOAD JOB FILE (Dealer or Internal)
+   UPLOAD JOB FILE
 ============================================ */
 export const uploadJobFile = async (jobNumber, file, folder = "dealer-files") => {
   try {
