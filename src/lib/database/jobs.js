@@ -17,8 +17,8 @@ export default function CarDetailsPage() {
     const fetchJobData = async () => {
       const job = await getJobByNumberOrReg(jobNumber);
       if (job) {
-        // If vhcChecks exist, use the first one
         const vhc = job.vhcChecks?.[0] || {};
+        const customer = job.vehicle?.customer || {};
 
         setCarData({
           registration: job.reg,
@@ -35,10 +35,10 @@ export default function CarDetailsPage() {
           MOTDue: job.vehicle?.mot_due || "",
           serviceHistory: job.vehicle?.service_history || "",
           ownerName: job.customer || "",
-          address: job.vehicle?.customer?.address || "",
-          email: job.vehicle?.customer?.email || "",
-          phone: job.vehicle?.customer?.phone || "",
-          contactPreference: job.vehicle?.customer?.contact_preference || "",
+          address: customer.address || "",
+          email: customer.email || "",
+          phone: customer.phone || "",
+          contactPreference: customer.contact_preference || "",
           warrantyType: job.vehicle?.warranty_type || "",
           warrantyExpiry: job.vehicle?.warranty_expiry || "",
           insuranceProvider: job.vehicle?.insurance_provider || "",

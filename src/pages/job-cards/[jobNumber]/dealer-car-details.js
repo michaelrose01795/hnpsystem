@@ -4,16 +4,25 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
+import { getJobByNumberOrReg } from "../../../lib/database/jobs";
 
 export default function DealerCarDetailsPage() {
   const router = useRouter();
-  const [jobNumber, setJobNumber] = useState("");
+  const { jobNumber } = router.query;
+  const [jobData, setJobData] = useState(null);
   const [file, setFile] = useState(null);
 
-  // Set jobNumber from query
+  // Fetch job details from database
   useEffect(() => {
-    if (router.query.jobNumber) setJobNumber(router.query.jobNumber);
-  }, [router.query.jobNumber]);
+    if (!jobNumber) return;
+
+    const fetchJob = async () => {
+      const job = await getJobByNumberOrReg(jobNumber);
+      if (job) setJobData(job);
+    };
+
+    fetchJob();
+  }, [jobNumber]);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -48,12 +57,23 @@ export default function DealerCarDetailsPage() {
     router.push(`/appointments?jobNumber=${jobNumber}`);
   };
 
+  if (!jobData) return <Layout><p>Loading dealer car details...</p></Layout>;
+
   return (
     <Layout>
       <div style={{ maxWidth: "600px", margin: "0 auto", padding: "16px" }}>
         <h1 style={{ color: "#FF4040", marginBottom: "16px" }}>
           Dealer Car Details – Job #{jobNumber}
         </h1>
+
+        {/* Display basic job/vehicle info */}
+        <div style={{ marginBottom: "16px", padding: "12px", backgroundColor: "#f9f9f9", borderRadius: "8px" }}>
+          <p><strong>Vehicle Registration:</strong> {jobData.reg}</p>
+          <p><strong>Make & Model:</strong> {jobData.vehicle?.make} {jobData.vehicle?.model}</p>
+          <p><strong>Customer:</strong> {jobData.customer}</p>
+        </div>
+
+        {/* File upload section */}
         <input type="file" onChange={handleFileChange} />
         <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
           <button
