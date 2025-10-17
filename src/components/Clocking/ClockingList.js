@@ -1,17 +1,16 @@
 // file location: src/components/Clocking/ClockingList.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
+import { useClockingContext } from "../../context/ClockingContext";
 
 export default function ClockingList() {
-  const [usersClocking, setUsersClocking] = useState([]);
+  const { allUsersClocking, fetchAllUsersClocking, loading } = useClockingContext();
 
+  // Fetch all users clocking data when component mounts
   useEffect(() => {
-    const fetchData = async () => {
-      const res = await fetch("/api/clocking/getClocking");
-      const data = await res.json();
-      setUsersClocking(data);
-    };
-    fetchData();
-  }, []);
+    fetchAllUsersClocking();
+  }, [fetchAllUsersClocking]);
+
+  if (loading) return <p>Loading users clocking info...</p>;
 
   return (
     <div className="p-6 bg-white shadow rounded w-full max-w-3xl">
@@ -25,7 +24,7 @@ export default function ClockingList() {
           </tr>
         </thead>
         <tbody>
-          {usersClocking.map((u) => (
+          {allUsersClocking.map((u) => (
             <tr key={u.user}>
               <td className="border px-4 py-2">{u.user}</td>
               <td className="border px-4 py-2">{u.clockedIn ? "In" : "Out"}</td>

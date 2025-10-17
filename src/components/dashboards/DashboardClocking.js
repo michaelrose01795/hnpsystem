@@ -1,10 +1,22 @@
 // file location: src/components/DashboardClocking.js
-// Workshop Manager Clocking placeholders for 6 mechanics
-
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useClockingContext } from "../context/ClockingContext";
 
 export default function DashboardClocking() {
-  const techs = ["Tech 1", "Tech 2", "Tech 3", "Tech 4", "Tech 5", "Tech 6"];
+  const { allUsersClocking, fetchAllUsersClocking, loading } = useClockingContext();
+  const [techs, setTechs] = useState([]);
+
+  useEffect(() => {
+    fetchAllUsersClocking();
+  }, [fetchAllUsersClocking]);
+
+  useEffect(() => {
+    // Filter only technicians from all users
+    const techUsers = allUsersClocking.filter((u) => u.roles?.includes("Techs"));
+    setTechs(techUsers);
+  }, [allUsersClocking]);
+
+  if (loading) return <p>Loading clocking info...</p>;
 
   return (
     <div style={{ marginTop: "20px" }}>
@@ -34,8 +46,10 @@ export default function DashboardClocking() {
               color: "#FF4040",
             }}
           >
-            <div>{tech}</div>
-            <div style={{ marginTop: "10px", color: "#FF8080" }}>Status: --</div>
+            <div>{tech.user}</div>
+            <div style={{ marginTop: "10px", color: "#FF8080" }}>
+              Status: {tech.clockedIn ? "Clocked In" : "Clocked Out"}
+            </div>
           </div>
         ))}
       </div>
