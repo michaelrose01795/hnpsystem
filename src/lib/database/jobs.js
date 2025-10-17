@@ -76,7 +76,10 @@ export const getAllJobs = async () => {
       ? `${job.vehicle.customer.first_name} ${job.vehicle.customer.last_name}`
       : "",
     appointment: job.appointments?.[0]
-      ? { date: job.appointments[0].scheduled_time, notes: job.appointments[0].notes || "" }
+      ? {
+          date: job.appointments[0].scheduled_time,
+          notes: job.appointments[0].notes || "",
+        }
       : null,
     vhcChecks: job.vhc_checks || [],
     partsRequests: job.parts_requests || [],
@@ -160,7 +163,10 @@ export const getJobByNumberOrReg = async (searchTerm) => {
       ? `${data.technician.first_name} ${data.technician.last_name}`
       : "",
     appointment: data.appointments?.[0]
-      ? { date: data.appointments[0].scheduled_time, notes: data.appointments[0].notes || "" }
+      ? {
+          date: data.appointments[0].scheduled_time,
+          notes: data.appointments[0].notes || "",
+        }
       : null,
     vhcChecks: data.vhc_checks || [],
     partsRequests: data.parts_requests || [],
@@ -172,7 +178,14 @@ export const getJobByNumberOrReg = async (searchTerm) => {
    ADD NEW JOB TO DATABASE
    Creates vehicle if not exists and links job to customer, technician
 ============================================ */
-export const addJobToDatabase = async ({ jobNumber, reg, customerId, assignedTo, type, description }) => {
+export const addJobToDatabase = async ({
+  jobNumber,
+  reg,
+  customerId,
+  assignedTo,
+  type,
+  description,
+}) => {
   try {
     // 1️⃣ Check if vehicle exists
     let { data: vehicle, error: vehicleError } = await supabase
@@ -262,33 +275,57 @@ export const saveChecksheet = async (jobNumber, checksheetData) => {
 };
 
 /* ============================================
-   UPLOAD JOB FILE (Dealer files, PDFs, etc.)
-   Stores uploaded file in Supabase storage and logs it
+   UPLOAD JOB FILE
+   Stores uploaded file in Supabase storage and logs the upload
 ============================================ */
-export const uploadJobFile = async (jobNumber, file, folder = "dealer_files") => {
+export const uploadJobFile = async (jobNumber, file, folder = "dealer-files") => {
   try {
-    const filePath = `${folder}/${jobNumber}/${file.name}`;
+    const filePath = `${folder}/${jobNumber}/${Date.now()}_${file.name}`;
 
     const { error: uploadError } = await supabase.storage
-      .from("job_files")
+      .from("job-files") // Supabase storage bucket name
       .upload(filePath, file, { upsert: true });
 
     if (uploadError) throw uploadError;
 
-    // Log upload
-    await supabase.from("job_notes").insert([
+    const { data: publicUrlData } = supabase.storage
+      .from("job-files")
+      .getPublicUrl(filePath);
+
+    // Log the uploaded file into `job_files` table
+    await supabase.from("job_files").insert([
       {
         job_number: jobNumber,
-        note: `Uploaded file: ${file.name}`,
-        created_at: new Date(),
+        file_name: file.name,
+        file_url: publicUrlData.publicUrl,
+        uploaded_at: new Date(),
       },
     ]);
 
-    return { success: true, path: filePath };
+    return { success: true, url: publicUrlData.publicUrl };
   } catch (error) {
     console.error("❌ Error uploading job file:", error);
     return { success: false, error };
   }
+};
+
+/* ============================================
+   GET JOB FILES
+   Returns all uploaded files linked to a job
+============================================ */
+export const getJobFiles = async (jobNumber) => {
+  const { data, error } = await supabase
+    .from("job_files")
+    .select("id, file_name, file_url, uploaded_at")
+    .eq("job_number", jobNumber)
+    .order("uploaded_at", { ascending: false });
+
+  if (error) {
+    console.error("❌ Error fetching job files:", error);
+    return [];
+  }
+
+  return data || [];
 };
 
 /* ============================================
