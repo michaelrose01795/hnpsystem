@@ -4,8 +4,11 @@
 import React, { useState, useEffect } from "react";
 import Layout from "../../../components/Layout";
 import { useRouter } from "next/router";
+import { getAllJobs } from "../../../lib/database/jobs"; // ✅ new modular import
 
-// Utility to get today's date string in YYYY-MM-DD format
+/* ================================
+   Utility function: today's date
+================================ */
 const getTodayDate = () => {
   const today = new Date();
   const yyyy = today.getFullYear();
@@ -14,14 +17,9 @@ const getTodayDate = () => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
-// Replace this with your actual API call
-const fetchJobsFromAPI = async () => {
-  // Example: fetch from your jobs endpoint
-  const res = await fetch("/api/jobs"); 
-  const data = await res.json();
-  return data; // Expect an array of jobs with { jobNumber, customer, reg, description, status, appointment }
-};
-
+/* ================================
+   Main component: ViewJobCards
+================================ */
 export default function ViewJobCards() {
   const [jobs, setJobs] = useState([]);
   const [popupJob, setPopupJob] = useState(null);
@@ -30,20 +28,27 @@ export default function ViewJobCards() {
   const router = useRouter();
   const today = getTodayDate();
 
-  // Fetch jobs from API on mount
+  /* ----------------------------
+     Fetch jobs from Supabase
+  ---------------------------- */
   useEffect(() => {
     const fetchJobs = async () => {
-      const jobsFromAPI = await fetchJobsFromAPI();
-      setJobs(jobsFromAPI);
+      const jobsFromSupabase = await getAllJobs(); // ✅ now uses modular DB function
+      setJobs(jobsFromSupabase);
     };
     fetchJobs();
   }, []);
 
+  /* ----------------------------
+     Go to job card page
+  ---------------------------- */
   const goToJobCard = (jobNumber) => {
     router.push(`/job-cards/${jobNumber}`);
   };
 
-  // Define tabs and their sections
+  /* ----------------------------
+     Define status categories
+  ---------------------------- */
   const tabs = {
     today: [
       "Booked",
@@ -66,17 +71,20 @@ export default function ViewJobCards() {
     ],
   };
 
-  // Filter jobs by status and optionally by today's date
+  /* ----------------------------
+     Filter jobs by status/date
+  ---------------------------- */
   const filterJobs = (status) => {
     let filtered = jobs.filter((job) => job.status === status);
 
-    // If Booked, filter only today's appointments
+    // Only today's appointments in Booked
     if (status === "Booked") {
       filtered = filtered.filter(
         (job) => job.appointment && job.appointment.date === today
       );
     }
 
+    // Search filter
     if (searchTerms[status]) {
       const term = searchTerms[status].toLowerCase();
       filtered = filtered.filter(
@@ -90,10 +98,16 @@ export default function ViewJobCards() {
     return filtered;
   };
 
+  /* ----------------------------
+     Handle search field input
+  ---------------------------- */
   const handleSearchChange = (status, value) => {
     setSearchTerms({ ...searchTerms, [status]: value });
   };
 
+  /* ----------------------------
+     Render each job card box
+  ---------------------------- */
   const renderJobCard = (job, fullView = false) => (
     <div
       key={job.jobNumber}
@@ -126,17 +140,23 @@ export default function ViewJobCards() {
     </div>
   );
 
+  /* ----------------------------
+     Grid layout styling
+  ---------------------------- */
   const gridLayout =
     activeTab === "today"
       ? { gridTemplateColumns: "repeat(3, 1fr)", gridTemplateRows: "repeat(3, 1fr)" }
       : { gridTemplateColumns: "repeat(2, 1fr)", gridTemplateRows: "repeat(3, 1fr)" };
 
+  /* ================================
+     Page Layout
+  ================================ */
   return (
     <Layout>
       <div style={{ maxWidth: "1500px", margin: "0 auto", padding: "16px" }}>
         <h1 style={{ color: "#FF4040", marginBottom: "24px" }}>View Job Cards</h1>
 
-        {/* Tabs */}
+        {/* ---------- Tabs ---------- */}
         <div style={{ marginBottom: "16px", display: "flex", gap: "16px" }}>
           <button
             style={{
@@ -166,7 +186,7 @@ export default function ViewJobCards() {
           </button>
         </div>
 
-        {/* Job Sections */}
+        {/* ---------- Job Sections ---------- */}
         <div
           style={{
             display: "grid",
@@ -188,8 +208,11 @@ export default function ViewJobCards() {
                 flexDirection: "column",
               }}
             >
-              <h2 style={{ fontWeight: "600", fontSize: "1.1rem", marginBottom: "8px" }}>{status}</h2>
+              <h2 style={{ fontWeight: "600", fontSize: "1.1rem", marginBottom: "8px" }}>
+                {status}
+              </h2>
 
+              {/* Search Input */}
               <input
                 type="text"
                 placeholder="Search by job, reg, customer"
@@ -204,6 +227,7 @@ export default function ViewJobCards() {
                 }}
               />
 
+              {/* Job Cards */}
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {filterJobs(status).length > 0 ? (
                   filterJobs(status).map((job) =>
@@ -217,7 +241,7 @@ export default function ViewJobCards() {
           ))}
         </div>
 
-        {/* Job Popup */}
+        {/* ---------- Job Popup ---------- */}
         {popupJob && (
           <div
             style={{
