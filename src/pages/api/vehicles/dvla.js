@@ -16,9 +16,9 @@ export default async function handler(req, res) {
         .json({ error: "DVLA API key not set in environment" });
     }
 
-    // ✅ Use Open Data API endpoint
+    // ✅ Use built-in fetch (no need for node-fetch)
     const response = await fetch(
-      "https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/open-vehicles",
+      "https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles",
       {
         method: "POST",
         headers: {
@@ -31,7 +31,6 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("DVLA API error:", response.status, errorText);
       return res.status(response.status).json({
         error: "DVLA API request failed",
         details: errorText,
@@ -40,11 +39,13 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // ✅ Return simplified fields
     return res.status(200).json({
       registration: data.registrationNumber || "",
       make: data.make || "",
+      model: data.model || "",
       colour: data.colour || "",
+      vin: data.vin || "",
+      engine_number: data.engineNumber || "",
       fuelType: data.fuelType || "",
       motExpiry: data.motExpiryDate || "",
       taxDue: data.taxDueDate || "",
