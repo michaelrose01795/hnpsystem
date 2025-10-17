@@ -1,4 +1,6 @@
 // file location: src/pages/job-cards/[jobNumber]/upload-checksheet.js
+"use client";
+
 import React, { useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
@@ -6,65 +8,81 @@ import Layout from "../../../components/Layout";
 export default function UploadChecksheet() {
   const router = useRouter();
   const { jobNumber } = router.query;
+
   const [file, setFile] = useState(null);
   const [showStatusPopup, setShowStatusPopup] = useState(false);
+  const [loading, setLoading] = useState(false);
 
+  // ✅ Upload PDF check sheet
   const handleUpload = async () => {
-    if (!file) return alert("Please select a PDF first");
+    if (!jobNumber) return alert("Job number missing.");
+    if (!file) return alert("Please select a PDF before uploading.");
 
-    const formData = new FormData();
-    formData.append("file", file);
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
 
-    const res = await fetch(`/api/job-cards/${jobNumber}/upload-checksheet`, {
-      method: "POST",
-      body: formData,
-    });
+      const res = await fetch(`/api/job-cards/${jobNumber}/upload-checksheet`, {
+        method: "POST",
+        body: formData,
+      });
 
-    if (res.ok) {
-      alert("Check sheet uploaded successfully");
+      if (!res.ok) throw new Error("Upload failed");
+
+      alert("✅ Check sheet uploaded successfully!");
       router.push(`/job-cards/${jobNumber}/check-box`);
-    } else {
-      alert("Upload failed");
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("❌ Failed to upload check sheet. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
+  // ✅ Update job status
   const handleStatusChange = async (status) => {
-    const res = await fetch(`/api/job-cards/${jobNumber}/update-status`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
+    if (!jobNumber) return alert("Job number missing.");
 
-    if (res.ok) {
-      alert(`Job marked as: ${status}`);
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/job-cards/${jobNumber}/update-status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!res.ok) throw new Error("Status update failed");
+
+      alert(`✅ Job marked as: ${status}`);
       router.push("/news-feed");
-    } else {
-      alert("Failed to update job status");
+    } catch (err) {
+      console.error("Status update error:", err);
+      alert("❌ Failed to update job status. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <Layout>
       <div style={{ maxWidth: "600px", margin: "0 auto", padding: "16px" }}>
-        <h2>Upload Check Sheet for Job {jobNumber}</h2>
+        <h2 style={{ color: "#FF4040", marginBottom: "16px" }}>
+          Upload Check Sheet for Job {jobNumber}
+        </h2>
 
         <input
           type="file"
           accept="application/pdf"
           onChange={(e) => setFile(e.target.files[0])}
+          style={{ marginBottom: "12px" }}
         />
 
         {/* ✅ Button row */}
-        <div
-          style={{
-            marginTop: "12px",
-            display: "flex",
-            gap: "12px",
-          }}
-        >
-          {/* Upload button */}
+        <div style={{ display: "flex", gap: "12px" }}>
           <button
             onClick={handleUpload}
+            disabled={loading}
             style={{
               flex: 1,
               padding: "10px 16px",
@@ -72,15 +90,16 @@ export default function UploadChecksheet() {
               color: "white",
               border: "none",
               borderRadius: "6px",
-              cursor: "pointer",
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.6 : 1,
             }}
           >
-            Upload
+            {loading ? "Uploading..." : "Upload"}
           </button>
 
-          {/* Complete button */}
           <button
             onClick={() => setShowStatusPopup(true)}
+            disabled={loading}
             style={{
               flex: 1,
               padding: "10px 16px",
@@ -89,14 +108,15 @@ export default function UploadChecksheet() {
               fontWeight: "bold",
               border: "2px solid black",
               borderRadius: "6px",
-              cursor: "pointer",
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.6 : 1,
             }}
           >
             ✅ Mark Complete
           </button>
         </div>
 
-        {/* Popup modal */}
+        {/* ✅ Status update popup */}
         {showStatusPopup && (
           <div
             style={{
@@ -119,13 +139,17 @@ export default function UploadChecksheet() {
                 borderRadius: "8px",
                 textAlign: "center",
                 width: "300px",
+                boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
               }}
             >
-              <h3>Update Job Status</h3>
-              <p>Choose the status for this job:</p>
+              <h3 style={{ color: "#FF4040" }}>Update Job Status</h3>
+              <p style={{ marginBottom: "12px" }}>
+                Choose the status for this job:
+              </p>
 
               <button
                 onClick={() => handleStatusChange("Complete")}
+                disabled={loading}
                 style={{
                   marginTop: "8px",
                   padding: "10px 16px",
@@ -133,7 +157,7 @@ export default function UploadChecksheet() {
                   color: "white",
                   border: "none",
                   borderRadius: "6px",
-                  cursor: "pointer",
+                  cursor: loading ? "not-allowed" : "pointer",
                   width: "100%",
                 }}
               >
@@ -141,7 +165,10 @@ export default function UploadChecksheet() {
               </button>
 
               <button
-                onClick={() => handleStatusChange("Additional Work Required")}
+                onClick={() =>
+                  handleStatusChange("Additional Work Required")
+                }
+                disabled={loading}
                 style={{
                   marginTop: "8px",
                   padding: "10px 16px",
@@ -149,7 +176,7 @@ export default function UploadChecksheet() {
                   color: "white",
                   border: "none",
                   borderRadius: "6px",
-                  cursor: "pointer",
+                  cursor: loading ? "not-allowed" : "pointer",
                   width: "100%",
                 }}
               >
