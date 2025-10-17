@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react";
 import Layout from "../../../components/Layout";
 import { useRouter } from "next/router";
-import { getAllJobs } from "../../../lib/database/jobs"; // ✅ new modular import
+import { getAllJobs, updateJobStatus } from "../../../lib/database/jobs"; // ✅ added updateJobStatus
 
 /* ================================
    Utility function: today's date
@@ -31,11 +31,12 @@ export default function ViewJobCards() {
   /* ----------------------------
      Fetch jobs from Supabase
   ---------------------------- */
+  const fetchJobs = async () => {
+    const jobsFromSupabase = await getAllJobs();
+    setJobs(jobsFromSupabase);
+  };
+
   useEffect(() => {
-    const fetchJobs = async () => {
-      const jobsFromSupabase = await getAllJobs(); // ✅ now uses modular DB function
-      setJobs(jobsFromSupabase);
-    };
     fetchJobs();
   }, []);
 
@@ -44,6 +45,21 @@ export default function ViewJobCards() {
   ---------------------------- */
   const goToJobCard = (jobNumber) => {
     router.push(`/job-cards/${jobNumber}`);
+  };
+
+  /* ----------------------------
+     Update job status in Supabase
+  ---------------------------- */
+  const handleStatusChange = async (jobId, newStatus) => {
+    const result = await updateJobStatus(jobId, newStatus);
+    if (result.success) {
+      fetchJobs(); // refresh after update
+      if (popupJob && popupJob.id === jobId) {
+        setPopupJob({ ...popupJob, status: newStatus });
+      }
+    } else {
+      alert("Error updating status");
+    }
   };
 
   /* ----------------------------
@@ -135,6 +151,12 @@ export default function ViewJobCards() {
               Appointment: {job.appointment.date} {job.appointment.time}
             </div>
           )}
+          {/* Display VHC checks count */}
+          <div>VHC Checks: {job.vhcChecks.length}</div>
+          {/* Display Parts Requests count */}
+          <div>Parts Requests: {job.partsRequests.length}</div>
+          {/* Display Notes count */}
+          <div>Notes: {job.notes.length}</div>
         </>
       )}
     </div>
@@ -281,11 +303,45 @@ export default function ViewJobCards() {
                 </p>
               )}
 
+              {/* VHC, Parts, Notes */}
+              <p>VHC Checks: {popupJob.vhcChecks.length}</p>
+              <p>Parts Requests: {popupJob.partsRequests.length}</p>
+              <p>Notes: {popupJob.notes.length}</p>
+
               <div style={{ display: "flex", gap: "6px", marginTop: "12px", flexWrap: "wrap" }}>
-                <button style={{ padding: "4px 8px", fontSize: "0.75rem" }}>State Selector</button>
-                <button style={{ padding: "4px 8px", fontSize: "0.75rem" }}>View Write Up</button>
-                <button style={{ padding: "4px 8px", fontSize: "0.75rem" }}>View VHC</button>
-                <button style={{ padding: "4px 8px", fontSize: "0.75rem" }}>Other Actions</button>
+                {/* Update Status Dropdown */}
+                <select
+                  value={popupJob.status}
+                  onChange={(e) => handleStatusChange(popupJob.id, e.target.value)}
+                  style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                >
+                  {Object.values(tabs).flat().map((statusOption) => (
+                    <option key={statusOption} value={statusOption}>
+                      {statusOption}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                  onClick={() => goToJobCard(popupJob.jobNumber)}
+                >
+                  View Write Up
+                </button>
+
+                <button
+                  style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                  onClick={() => router.push(`/job-cards/vhc/${popupJob.jobNumber}`)}
+                >
+                  View VHC
+                </button>
+
+                <button
+                  style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                  onClick={() => router.push(`/job-cards/parts/${popupJob.jobNumber}`)}
+                >
+                  Other Actions
+                </button>
               </div>
 
               <button

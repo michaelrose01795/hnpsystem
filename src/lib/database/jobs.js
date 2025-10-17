@@ -160,3 +160,23 @@ export const addJobToDatabase = async ({ jobNumber, reg, customerId, assignedTo,
     return { success: false, error };
   }
 };
+
+/* ============================================
+   UPDATE JOB STATUS
+   Updates the status of a job in the database
+============================================ */
+export const updateJobStatus = async (jobId, newStatus) => {
+  const { data, error } = await supabase
+    .from('jobs')
+    .update({ status: newStatus })
+    .eq('id', jobId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating job status:", error);
+    return { success: false, error };
+  }
+
+  return { success: true, data };
+};
