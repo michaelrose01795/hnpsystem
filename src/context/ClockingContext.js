@@ -1,17 +1,19 @@
 // file location: src/context/ClockingContext.js
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useUser } from "./UserContext";
-import { supabase } from "../lib/supabaseClient"; // your Supabase client
+import { supabase } from "../lib/supabaseClient"; // Supabase client
 
+// Create context
 const ClockingContext = createContext();
 
+// Provider
 export const ClockingProvider = ({ children }) => {
-  const { user } = useUser(); // logged-in user from context
+  const { user } = useUser(); // logged-in user
   const [clockedIn, setClockedIn] = useState(false);
   const [hoursWorked, setHoursWorked] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Fetch today's clocking status and hours
+  // Fetch today's clocking info
   const fetchClockingStatus = async () => {
     if (!user) return;
     setLoading(true);
@@ -26,16 +28,15 @@ export const ClockingProvider = ({ children }) => {
 
       if (error) throw error;
 
-      // Safely handle empty or undefined data
       if (data?.length > 0) {
         const lastRecord = data[data.length - 1];
-        setClockedIn(!lastRecord.clock_out); // clocked in if last record has no clock_out
+        setClockedIn(!lastRecord.clock_out); // clocked in if no clock_out
 
-        // calculate total hours worked today
+        // calculate hours worked
         let total = 0;
         data.forEach((record) => {
           if (record.clock_in && record.clock_out) {
-            total += (new Date(record.clock_out) - new Date(record.clock_in)) / 3600000; // hours
+            total += (new Date(record.clock_out) - new Date(record.clock_in)) / 3600000;
           }
         });
         setHoursWorked(Number(total.toFixed(2)));
@@ -65,7 +66,7 @@ export const ClockingProvider = ({ children }) => {
       ]);
       if (error) throw error;
       setClockedIn(true);
-      await fetchClockingStatus(); // refresh hoursWorked safely
+      await fetchClockingStatus();
     } catch (err) {
       console.error("Clock In Error:", err.message);
     } finally {
@@ -79,7 +80,6 @@ export const ClockingProvider = ({ children }) => {
     setLoading(true);
     try {
       const today = new Date().toISOString().split("T")[0];
-      // find latest clock-in without clock-out
       const { data, error } = await supabase
         .from("clocking")
         .select("*")
@@ -90,8 +90,7 @@ export const ClockingProvider = ({ children }) => {
         .limit(1)
         .single();
 
-      // Check for empty data to avoid destructuring error
-      if (error && error.code !== "PGRST116") throw error; // ignore "no rows" error
+      if (error && error.code !== "PGRST116") throw error;
       if (!data) {
         console.warn("No active clock-in record found.");
         setLoading(false);
@@ -104,7 +103,7 @@ export const ClockingProvider = ({ children }) => {
         .eq("id", data.id);
 
       setClockedIn(false);
-      await fetchClockingStatus(); // refresh hoursWorked safely
+      await fetchClockingStatus();
     } catch (err) {
       console.error("Clock Out Error:", err.message);
     } finally {
@@ -121,4 +120,11 @@ export const ClockingProvider = ({ children }) => {
   );
 };
 
-export const useClockingContext = () => useContext(ClockingContext);
+// Hook to use the context safely
+export const useClockingContext = () => {
+  const context = useContext(ClockingContext);
+  if (!context) {
+    throw new Error("useClockingContext must be used within a ClockingProvider");
+  }
+  return context;
+};

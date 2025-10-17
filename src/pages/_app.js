@@ -1,19 +1,20 @@
 // file location: src/pages/_app.js
 import React, { useEffect } from "react";
-import { SessionProvider } from "next-auth/react"; // NextAuth session
-import { UserProvider, useUser } from "../context/UserContext"; // custom user context
-import { JobsProvider, useJobs } from "../context/JobsContext"; // jobs context
-import { getAllJobs } from "../lib/database/jobs"; // jobs functions
+import { SessionProvider } from "next-auth/react";
+import { UserProvider, useUser } from "../context/UserContext";
+import { JobsProvider, useJobs } from "../context/JobsContext";
+import { ClockingProvider } from "../context/ClockingContext"; // ✅ Added
+import { getAllJobs } from "../lib/database/jobs";
 import "../styles/globals.css";
 
+// Inner wrapper for job fetching
 function AppWrapper({ Component, pageProps }) {
-  const { setJobs } = useJobs();
-  const { user } = useUser();
+  const { user } = useUser() || {};
+  const { setJobs } = useJobs() || {};
 
-  // 🔹 Fetch all jobs when user is available
   useEffect(() => {
     const fetchJobs = async () => {
-      if (user) {
+      if (user && setJobs) {
         const jobs = await getAllJobs();
         setJobs(jobs);
       }
@@ -24,12 +25,15 @@ function AppWrapper({ Component, pageProps }) {
   return <Component {...pageProps} />;
 }
 
+// Main app entry
 export default function MyApp({ Component, pageProps }) {
   return (
     <SessionProvider session={pageProps.session}>
       <UserProvider>
         <JobsProvider>
-          <AppWrapper Component={Component} pageProps={pageProps} />
+          <ClockingProvider> {/* ✅ Wrapped here */}
+            <AppWrapper Component={Component} pageProps={pageProps} />
+          </ClockingProvider>
         </JobsProvider>
       </UserProvider>
     </SessionProvider>
