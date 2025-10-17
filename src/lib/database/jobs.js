@@ -180,3 +180,27 @@ export const updateJobStatus = async (jobId, newStatus) => {
 
   return { success: true, data };
 };
+
+/* ============================================
+   SAVE VHC CHECKSHEET
+   Adds or updates checksheet data for a specific job
+============================================ */
+export const saveChecksheet = async (jobNumber, checksheetData) => {
+  try {
+    const { data, error } = await supabase
+      .from('vhc_checks')
+      .upsert({ job_number: jobNumber, data: checksheetData })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error saving checksheet:", error);
+      return { success: false, error };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error saving checksheet:", error);
+    return { success: false, error };
+  }
+};

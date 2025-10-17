@@ -4,8 +4,8 @@
 import React, { useState, useEffect } from "react";
 import Layout from "../../components/Layout";
 import Popup from "../../components/popups/Popup";
-import { useJobs } from "../../context/JobsContext";
 import { useSearchParams } from "next/navigation";
+import { getAllJobs, addJobToDatabase, updateJobStatus } from "../../lib/database/jobs";
 
 const techsDefault = 6;
 
@@ -26,9 +26,9 @@ const generateDates = (daysAhead = 60) => {
 };
 
 export default function Appointments() {
-  const { jobs, addJob, updateJob } = useJobs();
   const searchParams = useSearchParams();
 
+  const [jobs, setJobs] = useState([]);
   const [dates, setDates] = useState([]);
   const [selectedDay, setSelectedDay] = useState(new Date());
   const [notes, setNotes] = useState({});
@@ -36,11 +36,22 @@ export default function Appointments() {
   const [currentNote, setCurrentNote] = useState("");
   const [jobNumber, setJobNumber] = useState("");
   const [time, setTime] = useState("");
-  const [highlightJob, setHighlightJob] = useState(""); // NEW: highlight job number
+  const [highlightJob, setHighlightJob] = useState(""); // highlight job number
   const [techHours, setTechHours] = useState({});
   const [showTechHoursEditor, setShowTechHoursEditor] = useState(false);
 
-  useEffect(() => setDates(generateDates(60)), []);
+  /* -----------------------------
+     Fetch all jobs from database
+  ----------------------------- */
+  const fetchJobs = async () => {
+    const jobsFromDb = await getAllJobs();
+    setJobs(jobsFromDb);
+  };
+
+  useEffect(() => {
+    setDates(generateDates(60));
+    fetchJobs();
+  }, []);
 
   useEffect(() => {
     const jobParam = searchParams.get("jobNumber");
@@ -54,6 +65,9 @@ export default function Appointments() {
     }
   }, [searchParams, jobs]);
 
+  /* -----------------------------
+     Add / Edit Note
+  ----------------------------- */
   const handleAddNote = (date) => {
     setSelectedDay(date);
     const dateKey = date.toDateString();
@@ -66,45 +80,55 @@ export default function Appointments() {
     setShowNotePopup(false);
   };
 
-  const handleAddAppointment = (customDate) => {
+  /* -----------------------------
+     Add or update appointment in DB
+  ----------------------------- */
+  const handleAddAppointment = async (customDate) => {
     const appointmentDate = customDate || (selectedDay ? selectedDay.toISOString().split("T")[0] : null);
     if (!jobNumber || !appointmentDate || !time) return;
 
     let job = jobs.find((j) => j.jobNumber === jobNumber);
 
     if (!job) {
-      job = {
+      // If job doesn't exist, add to database
+      const result = await addJobToDatabase({
         jobNumber,
         reg: "",
-        vehicle: "",
-        customer: "Unknown",
-        reason: "",
-        totalTime: "",
-        timeOnJob: "",
-        waiting: false,
-        collection: false,
-        loanCar: false,
-        MOT: false,
-        wash: false,
-        address: "",
-        appointment: { date: appointmentDate, time },
-        status: "Booked"
-      };
-      addJob(job);
+        customerId: null, // Unknown customer
+        assignedTo: null, // unassigned
+        type: "Service",
+        description: ""
+      });
+
+      if (!result.success) {
+        alert("Error adding job to database");
+        return;
+      }
+
+      job = result.data;
+      job.appointment = { date: appointmentDate, time };
+      job.status = "Booked";
+      setJobs([...jobs, job]);
     } else {
-      updateJob({ ...job, appointment: { date: appointmentDate, time }, status: "Booked" });
+      // Job exists → update appointment and status in DB
+      await updateJobStatus(job.id, "Booked");
+      job.appointment = { date: appointmentDate, time };
+      setJobs([...jobs]);
     }
 
-    // NEW: highlight the row for 2 seconds
+    // Highlight row for 2 seconds
     setHighlightJob(jobNumber);
     setSelectedDay(new Date(appointmentDate));
     setTimeout(() => setHighlightJob(""), 2000);
 
-    // Clear job number and time input
+    // Clear inputs
     setJobNumber("");
     setTime("");
   };
 
+  /* -----------------------------
+     Utilities
+  ----------------------------- */
   const formatDate = (dateObj) => dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
   const formatDateNoYear = (dateObj) => dateObj.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
   const isSaturday = (date) => date.getDay() === 6;
@@ -129,6 +153,9 @@ export default function Appointments() {
 
   const jobsForDay = jobs.filter(j => j.appointment?.date === selectedDay.toISOString().split("T")[0]);
 
+  /* ================================
+     Render Component
+  ================================ */
   return (
     <Layout>
       <div style={{ height: "100%", display: "flex", flexDirection: "column", padding: "8px 16px" }}>
