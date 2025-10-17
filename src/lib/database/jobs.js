@@ -4,7 +4,7 @@ import { supabase } from "../supabaseClient";
 /* ============================================
    FETCH ALL JOBS
    Gets all jobs along with linked vehicles, customers,
-   technicians, appointments, VHC checks, parts, and notes
+   technicians, appointments, VHC checks, parts, notes, and write-ups
 ============================================ */
 export const getAllJobs = async () => {
   const { data, error } = await supabase
@@ -49,7 +49,8 @@ export const getAllJobs = async () => {
       appointments(*),
       vhc_checks(*),
       parts_requests(*),
-      job_notes(*)
+      job_notes(*),
+      job_writeups(*)
     `);
 
   if (error) {
@@ -84,6 +85,7 @@ export const getAllJobs = async () => {
     vhcChecks: job.vhc_checks || [],
     partsRequests: job.parts_requests || [],
     notes: job.job_notes || [],
+    writeUp: job.job_writeups?.[0] || null,
   }));
 };
 
@@ -133,7 +135,8 @@ export const getJobByNumberOrReg = async (searchTerm) => {
       appointments(*),
       vhc_checks(*),
       parts_requests(*),
-      job_notes(*)
+      job_notes(*),
+      job_writeups(*)
     `)
     .or(`job_number.eq.${searchTerm},vehicle.registration.eq.${searchTerm}`)
     .single();
@@ -171,12 +174,12 @@ export const getJobByNumberOrReg = async (searchTerm) => {
     vhcChecks: data.vhc_checks || [],
     partsRequests: data.parts_requests || [],
     notes: data.job_notes || [],
+    writeUp: data.job_writeups?.[0] || null,
   };
 };
 
 /* ============================================
    ADD NEW JOB TO DATABASE
-   Creates vehicle if not exists and links job to customer, technician
 ============================================ */
 export const addJobToDatabase = async ({
   jobNumber,
@@ -187,7 +190,6 @@ export const addJobToDatabase = async ({
   description,
 }) => {
   try {
-    // 1️⃣ Check if vehicle exists
     let { data: vehicle, error: vehicleError } = await supabase
       .from("vehicles")
       .select("*")
@@ -195,7 +197,6 @@ export const addJobToDatabase = async ({
       .single();
 
     if (vehicleError && vehicleError.code === "PGRST116") {
-      // Vehicle not found → create new
       const { data: newVehicle, error: newVehicleError } = await supabase
         .from("vehicles")
         .insert([{ registration: reg, customer_id: customerId }])
@@ -205,7 +206,6 @@ export const addJobToDatabase = async ({
       vehicle = newVehicle;
     }
 
-    // 2️⃣ Insert job linked to vehicle
     const { data: job, error: jobError } = await supabase
       .from("jobs")
       .insert([
@@ -222,7 +222,6 @@ export const addJobToDatabase = async ({
       .single();
 
     if (jobError) throw jobError;
-
     return { success: true, data: job };
   } catch (error) {
     console.error("❌ Error adding job:", error);
@@ -260,11 +259,7 @@ export const saveChecksheet = async (jobNumber, checksheetData) => {
       .select()
       .single();
 
-    if (error) {
-      console.error("❌ Error saving checksheet:", error);
-      return { success: false, error };
-    }
-
+    if (error) throw error;
     return { success: true, data };
   } catch (error) {
     console.error("❌ Error saving checksheet:", error);
@@ -273,17 +268,38 @@ export const saveChecksheet = async (jobNumber, checksheetData) => {
 };
 
 /* ============================================
+   SAVE WRITE-UP
+   Stores fault, caused, ratification, and related data
+============================================ */
+export const saveWriteUp = async (jobNumber, writeUpData) => {
+  try {
+    const { data, error } = await supabase
+      .from("job_writeups")
+      .upsert({
+        job_number: jobNumber,
+        ...writeUpData,
+        updated_at: new Date(),
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error("❌ Error saving write-up:", error);
+    return { success: false, error };
+  }
+};
+
+/* ============================================
    UPLOAD JOB FILE (Dealer or Internal)
-   Stores uploaded file in Supabase storage and logs it
 ============================================ */
 export const uploadJobFile = async (jobNumber, file, folder = "dealer-files") => {
   try {
     const filePath = `${folder}/${jobNumber}/${Date.now()}_${file.name}`;
-
     const { error: uploadError } = await supabase.storage
       .from("job-files")
       .upload(filePath, file, { upsert: true });
-
     if (uploadError) throw uploadError;
 
     const { data: publicUrlData } = supabase.storage
@@ -317,15 +333,12 @@ export const deleteJobFile = async (fileId) => {
       .select("file_url")
       .eq("id", fileId)
       .single();
-
     if (fetchError) throw fetchError;
 
     const filePath = file.file_url.split("/job-files/")[1];
-    const { error: deleteError } = await supabase
-      .storage
+    const { error: deleteError } = await supabase.storage
       .from("job-files")
       .remove([filePath]);
-
     if (deleteError) throw deleteError;
 
     await supabase.from("job_files").delete().eq("id", fileId);
@@ -356,7 +369,6 @@ export const getJobFiles = async (jobNumber) => {
 
 /* ============================================
    GET JOBS BY DATE
-   Used by booked/today dashboard view
 ============================================ */
 export const getJobsByDate = async (date) => {
   const { data, error } = await supabase
