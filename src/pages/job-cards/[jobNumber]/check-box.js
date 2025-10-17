@@ -1,8 +1,11 @@
 // file location: src/pages/job-cards/[jobNumber]/check-box.js
+"use client";
+
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
 import SignatureCanvas from "react-signature-canvas";
+import { getJobByNumberOrReg, updateJobVhcCheck } from "../../../lib/database/jobs";
 
 export default function CheckBoxPage() {
   const router = useRouter();
@@ -12,26 +15,30 @@ export default function CheckBoxPage() {
   const sigCanvas = useRef(null);
 
   useEffect(() => {
+    if (!jobNumber) return;
+
     const loadCheckSheet = async () => {
-      if (!jobNumber) return;
-
-      try {
-        const res = await fetch(`/api/job-cards/${jobNumber}/get-checksheet`);
-        if (!res.ok) {
-          console.warn("No PDF found, loading mock check sheet");
-          const fields = [
-            "Oil Level",
-            "Brakes Condition",
-            "Tyres Condition",
-            "Lights Working",
-            "Fluid Levels",
-            "Suspension Check"
-          ];
-          setFormFields(fields.map(name => ({ name, checked: false })));
-          setLoading(false);
-          return;
+      const job = await getJobByNumberOrReg(jobNumber);
+      if (job?.vhcChecks?.length > 0) {
+        // Load existing checksheet
+        const existing = job.vhcChecks[0]; // Assuming one check sheet per job
+        const fields = [
+          "Oil Level",
+          "Brakes Condition",
+          "Tyres Condition",
+          "Lights Working",
+          "Fluid Levels",
+          "Suspension Check"
+        ];
+        setFormFields(fields.map(name => ({
+          name,
+          checked: existing[name] || false
+        })));
+        if (existing.signature) {
+          sigCanvas.current?.fromDataURL(existing.signature);
         }
-
+      } else {
+        // No existing checksheet → create blank
         const fields = [
           "Oil Level",
           "Brakes Condition",
@@ -41,20 +48,8 @@ export default function CheckBoxPage() {
           "Suspension Check"
         ];
         setFormFields(fields.map(name => ({ name, checked: false })));
-        setLoading(false);
-      } catch (err) {
-        console.error(err);
-        const fields = [
-          "Oil Level",
-          "Brakes Condition",
-          "Tyres Condition",
-          "Lights Working",
-          "Fluid Levels",
-          "Suspension Check"
-        ];
-        setFormFields(fields.map(name => ({ name, checked: false })));
-        setLoading(false);
       }
+      setLoading(false);
     };
 
     loadCheckSheet();
@@ -75,29 +70,27 @@ export default function CheckBoxPage() {
   };
 
   const handleSave = async () => {
-    if (!sigCanvas.current) {
+    if (!sigCanvas.current || sigCanvas.current.isEmpty()) {
       alert("Please provide a signature before saving.");
       return;
     }
 
-    const signatureData = sigCanvas.current.isEmpty()
-      ? null
-      : sigCanvas.current.getCanvas().toDataURL("image/png");
+    const signatureData = sigCanvas.current.getCanvas().toDataURL("image/png");
+
+    // Create a payload with checkbox values
+    const checkData = {};
+    formFields.forEach(f => {
+      checkData[f.name] = f.checked;
+    });
+    checkData.signature = signatureData;
 
     try {
-      const res = await fetch(`/api/job-cards/${jobNumber}/save-checksheet`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ formFields, signatureData }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        alert(data.message || "Check sheet saved successfully");
+      const result = await updateJobVhcCheck(jobNumber, checkData);
+      if (result.success) {
+        alert("Check sheet saved successfully");
         router.push(`/job-cards/${jobNumber}`);
       } else {
-        alert(data.error || "Failed to save check sheet");
+        alert("Failed to save check sheet");
       }
     } catch (err) {
       console.error(err);

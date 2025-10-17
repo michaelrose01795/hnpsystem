@@ -1,206 +1,210 @@
-// file location: src/lib/database/jobs.js
-import { supabase } from "../supabaseClient";
+// file location: src/pages/job-cards/[jobNumber]/car-details.js
+"use client";
 
-/* ============================================
-   FETCH ALL JOBS
-   Gets all jobs along with linked vehicles, customers,
-   technicians, appointments, VHC checks, parts, and notes
-============================================ */
-export const getAllJobs = async () => {
-  const { data, error } = await supabase
-    .from("jobs")
-    .select(`
-      id,
-      job_number,
-      description,
-      type,
-      status,
-      assigned_to,
-      vehicle:vehicles(
-        id,
-        registration,
-        customer_id,
-        customer:users(id, first_name, last_name, email)
-      ),
-      technician:users(id, first_name, last_name, email),
-      appointments(*),
-      vhc_checks(*),
-      parts_requests(*),
-      job_notes(*)
-    `);
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import Layout from "../../../components/Layout";
+import { getJobByNumberOrReg } from "../../../lib/database/jobs";
 
-  if (error) {
-    console.error("Error fetching jobs:", error);
-    return [];
-  }
+export default function CarDetailsPage() {
+  const router = useRouter();
+  const { jobNumber } = router.query;
+  const [carData, setCarData] = useState(null);
 
-  return data.map((job) => ({
-    id: job.id,
-    jobNumber: job.job_number || "",
-    description: job.description || "",
-    type: job.type || "",
-    status: job.status || "",
-    reg: job.vehicle?.registration || "",
-    customer: job.vehicle?.customer
-      ? `${job.vehicle.customer.first_name} ${job.vehicle.customer.last_name}`
-      : "",
-    technician: job.technician
-      ? `${job.technician.first_name} ${job.technician.last_name}`
-      : "",
-    appointment: job.appointments?.[0]
-      ? { date: job.appointments[0].scheduled_time, notes: job.appointments[0].notes || "" }
-      : null,
-    vhcChecks: job.vhc_checks || [],
-    partsRequests: job.parts_requests || [],
-    notes: job.job_notes || [],
-  }));
-};
+  useEffect(() => {
+    if (!jobNumber) return;
 
-/* ============================================
-   FETCH JOB BY JOB NUMBER OR VEHICLE REG
-============================================ */
-export const getJobByNumberOrReg = async (searchTerm) => {
-  const { data, error } = await supabase
-    .from("jobs")
-    .select(`
-      id,
-      job_number,
-      description,
-      type,
-      status,
-      assigned_to,
-      vehicle:vehicles(
-        id,
-        registration,
-        customer_id,
-        customer:users(id, first_name, last_name, email)
-      ),
-      technician:users(id, first_name, last_name, email),
-      appointments(*),
-      vhc_checks(*),
-      parts_requests(*),
-      job_notes(*)
-    `)
-    .or(`job_number.eq.${searchTerm},vehicle.registration.eq.${searchTerm}`)
-    .single();
+    const fetchJobData = async () => {
+      const job = await getJobByNumberOrReg(jobNumber);
+      if (job) {
+        // If vhcChecks exist, use the first one
+        const vhc = job.vhcChecks?.[0] || {};
 
-  if (error) {
-    console.error("Error fetching job:", error);
-    return null;
-  }
+        setCarData({
+          registration: job.reg,
+          make: job.vehicle?.make || "",
+          model: job.vehicle?.model || "",
+          year: job.vehicle?.year || "",
+          colour: job.vehicle?.colour || "",
+          vin: job.vehicle?.vin || "",
+          engineNumber: job.vehicle?.engine_number || "",
+          mileage: job.vehicle?.mileage || "",
+          fuelType: job.vehicle?.fuel_type || "",
+          transmission: job.vehicle?.transmission || "",
+          bodyStyle: job.vehicle?.body_style || "",
+          MOTDue: job.vehicle?.mot_due || "",
+          serviceHistory: job.vehicle?.service_history || "",
+          ownerName: job.customer || "",
+          address: job.vehicle?.customer?.address || "",
+          email: job.vehicle?.customer?.email || "",
+          phone: job.vehicle?.customer?.phone || "",
+          contactPreference: job.vehicle?.customer?.contact_preference || "",
+          warrantyType: job.vehicle?.warranty_type || "",
+          warrantyExpiry: job.vehicle?.warranty_expiry || "",
+          insuranceProvider: job.vehicle?.insurance_provider || "",
+          insurancePolicyNumber: job.vehicle?.insurance_policy_number || "",
+          engineOil: vhc.engineOil || "",
+          brakesCondition: vhc.brakesCondition || "",
+          tyresCondition: vhc.tyresCondition || "",
+          batteryStatus: vhc.batteryStatus || "",
+          suspension: vhc.suspension || "",
+          electronics: vhc.electronics || "",
+          airCon: vhc.airCon || "",
+          warningLights: vhc.warningLights || "",
+          comments: job.notes?.map(n => n.note).join(", ") || ""
+        });
+      }
+    };
 
-  return {
-    id: data.id,
-    jobNumber: data.job_number,
-    description: data.description,
-    type: data.type,
-    status: data.status,
-    reg: data.vehicle?.registration || "",
-    customer: data.vehicle?.customer
-      ? `${data.vehicle.customer.first_name} ${data.vehicle.customer.last_name}`
-      : "",
-    technician: data.technician
-      ? `${data.technician.first_name} ${data.technician.last_name}`
-      : "",
-    appointment: data.appointments?.[0]
-      ? { date: data.appointments[0].scheduled_time, notes: data.appointments[0].notes || "" }
-      : null,
-    vhcChecks: data.vhc_checks || [],
-    partsRequests: data.parts_requests || [],
-    notes: data.job_notes || [],
+    fetchJobData();
+  }, [jobNumber]);
+
+  const handleBack = () => router.back();
+  const handleVHC = () => router.push(`/job-cards/${jobNumber}/vhc`);
+  const handleWriteUp = () => router.push(`/job-cards/${jobNumber}/write-up`);
+  const handleCheckBox = () => router.push(`/job-cards/${jobNumber}/check-box`);
+
+  const sectionStyle = {
+    backgroundColor: "white",
+    padding: "16px",
+    borderRadius: "8px",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
   };
-};
 
-/* ============================================
-   ADD NEW JOB TO DATABASE
-   Creates vehicle if not exists and links job to customer, technician
-============================================ */
-export const addJobToDatabase = async ({ jobNumber, reg, customerId, assignedTo, type, description }) => {
-  try {
-    // 1. Check if vehicle exists
-    let { data: vehicle, error: vehicleError } = await supabase
-      .from('vehicles')
-      .select('*')
-      .eq('registration', reg)
-      .single();
+  const gridStyle = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+    gap: "16px",
+    marginBottom: "24px"
+  };
 
-    if (vehicleError && vehicleError.code === 'PGRST116') {
-      // Vehicle not found → create new
-      const { data: newVehicle, error: newVehicleError } = await supabase
-        .from('vehicles')
-        .insert([{ registration: reg, customer_id: customerId }])
-        .select()
-        .single();
-      if (newVehicleError) throw newVehicleError;
-      vehicle = newVehicle;
-    }
+  const fieldStyle = { marginBottom: "8px" };
+  const buttonStyle = {
+    flex: 1,
+    padding: "12px",
+    backgroundColor: "#FF4040",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontWeight: "bold",
+    fontSize: "1rem"
+  };
 
-    // 2. Insert job linked to vehicle
-    const { data: job, error: jobError } = await supabase
-      .from('jobs')
-      .insert([
-        {
-          job_number: jobNumber,
-          vehicle_id: vehicle.id,
-          assigned_to: assignedTo,
-          type,
-          description,
-          status: "New",
-        },
-      ])
-      .select()
-      .single();
+  if (!carData) return <Layout><p>Loading car details...</p></Layout>;
 
-    if (jobError) throw jobError;
+  return (
+    <Layout>
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "16px" }}>
+        <h1 style={{ color: "#FF4040", marginBottom: "16px" }}>
+          Full Car Details - Job {jobNumber}
+        </h1>
+        <button
+          onClick={handleBack}
+          style={{
+            marginBottom: "24px",
+            padding: "8px 16px",
+            backgroundColor: "#ccc",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer"
+          }}
+        >
+          Back
+        </button>
 
-    return { success: true, data: job };
+        {/* Vehicle & Customer Info */}
+        <div style={gridStyle}>
+          <section style={sectionStyle}>
+            <h2>Vehicle Information</h2>
+            {[
+              ["Registration", carData.registration],
+              ["Make", carData.make],
+              ["Model", carData.model],
+              ["Year", carData.year],
+              ["Colour", carData.colour],
+              ["VIN", carData.vin],
+              ["Engine Number", carData.engineNumber],
+              ["Mileage", carData.mileage],
+              ["Fuel Type", carData.fuelType],
+              ["Transmission", carData.transmission],
+              ["Body Style", carData.bodyStyle],
+              ["MOT Due", carData.MOTDue],
+              ["Service History", carData.serviceHistory]
+            ].map(([label, value]) => (
+              <div key={label} style={fieldStyle}>
+                <strong>{label}:</strong> {value}
+              </div>
+            ))}
+          </section>
 
-  } catch (error) {
-    console.error("Error adding job:", error);
-    return { success: false, error };
-  }
-};
+          <section style={sectionStyle}>
+            <h2>Owner / Customer Information</h2>
+            {[
+              ["Full Name", carData.ownerName],
+              ["Address", carData.address],
+              ["Email", carData.email],
+              ["Phone", carData.phone],
+              ["Contact Preference", carData.contactPreference]
+            ].map(([label, value]) => (
+              <div key={label} style={fieldStyle}>
+                <strong>{label}:</strong> {value}
+              </div>
+            ))}
+          </section>
 
-/* ============================================
-   UPDATE JOB STATUS
-   Updates the status of a job in the database
-============================================ */
-export const updateJobStatus = async (jobId, newStatus) => {
-  const { data, error } = await supabase
-    .from('jobs')
-    .update({ status: newStatus })
-    .eq('id', jobId)
-    .select()
-    .single();
+          <section style={sectionStyle}>
+            <h2>Insurance & Warranty</h2>
+            {[
+              ["Warranty Type", carData.warrantyType],
+              ["Warranty Expiry", carData.warrantyExpiry],
+              ["Insurance Provider", carData.insuranceProvider],
+              ["Insurance Policy Number", carData.insurancePolicyNumber]
+            ].map(([label, value]) => (
+              <div key={label} style={fieldStyle}>
+                <strong>{label}:</strong> {value}
+              </div>
+            ))}
+          </section>
 
-  if (error) {
-    console.error("Error updating job status:", error);
-    return { success: false, error };
-  }
+          <section style={sectionStyle}>
+            <h2>Technical / Engine</h2>
+            {[
+              ["Engine Oil", carData.engineOil],
+              ["Brakes Condition", carData.brakesCondition],
+              ["Tyres Condition", carData.tyresCondition],
+              ["Battery Status", carData.batteryStatus],
+              ["Suspension", carData.suspension],
+              ["Electronics", carData.electronics],
+              ["Air Conditioning", carData.airCon],
+              ["Warning Lights", carData.warningLights]
+            ].map(([label, value]) => (
+              <div key={label} style={fieldStyle}>
+                <strong>{label}:</strong> {value}
+              </div>
+            ))}
+          </section>
+        </div>
 
-  return { success: true, data };
-};
+        {/* Additional Comments */}
+        <section style={sectionStyle}>
+          <h2>Additional Comments / Notes</h2>
+          <p>{carData.comments}</p>
+        </section>
 
-/* ============================================
-   SAVE VHC CHECKSHEET
-   Adds or updates checksheet data for a specific job
-============================================ */
-export const saveChecksheet = async (jobNumber, checksheetData) => {
-  try {
-    const { data, error } = await supabase
-      .from('vhc_checks')
-      .upsert({ job_number: jobNumber, data: checksheetData })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error saving checksheet:", error);
-      return { success: false, error };
-    }
-
-    return { success: true, data };
-  } catch (error) {
-    console.error("Error saving checksheet:", error);
-    return { success: false, error };
-  }
-};
+        {/* Bottom Navigation Buttons */}
+        <div style={{ display: "flex", gap: "16px", marginTop: "24px" }}>
+          <button onClick={handleVHC} style={buttonStyle}>
+            Go to VHC
+          </button>
+          <button onClick={handleWriteUp} style={buttonStyle}>
+            Go to Write-Up
+          </button>
+          <button onClick={handleCheckBox} style={buttonStyle}>
+            Go to Check Box
+          </button>
+        </div>
+      </div>
+    </Layout>
+  );
+}

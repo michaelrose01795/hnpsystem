@@ -1,55 +1,60 @@
 // file location: src/pages/job-cards/[jobNumber]/car-details.js
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
+import { getJobByNumberOrReg } from "../../../lib/database/jobs";
 
 export default function CarDetailsPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
+  const [carData, setCarData] = useState(null);
 
-  // Mock data for display
-  const carData = {
-    // Vehicle Info
-    registration: "ABC123",
-    make: "Renault",
-    model: "Clio Mk5 1.3 Turbo",
-    year: "2020",
-    colour: "Red",
-    vin: "XYZ987654321",
-    engineNumber: "ENG123456789",
-    mileage: "15000",
-    fuelType: "Petrol",
-    transmission: "Manual",
-    bodyStyle: "Hatchback",
-    MOTDue: "2026-05-12",
-    serviceHistory: "Full service history available",
+  useEffect(() => {
+    if (!jobNumber) return;
 
-    // Owner / Customer Info
-    ownerName: "John Doe",
-    address: "123 Example St, London, UK",
-    email: "john@example.com",
-    phone: "01234 567890",
-    contactPreference: "Email",
+    const fetchJobData = async () => {
+      const job = await getJobByNumberOrReg(jobNumber);
+      if (job) {
+        setCarData({
+          registration: job.reg,
+          make: job.vehicle?.make || "",
+          model: job.vehicle?.model || "",
+          year: job.vehicle?.year || "",
+          colour: job.vehicle?.colour || "",
+          vin: job.vehicle?.vin || "",
+          engineNumber: job.vehicle?.engine_number || "",
+          mileage: job.vehicle?.mileage || "",
+          fuelType: job.vehicle?.fuel_type || "",
+          transmission: job.vehicle?.transmission || "",
+          bodyStyle: job.vehicle?.body_style || "",
+          MOTDue: job.vehicle?.mot_due || "",
+          serviceHistory: job.vehicle?.service_history || "",
+          ownerName: job.customer || "",
+          address: job.vehicle?.customer?.address || "",
+          email: job.vehicle?.customer?.email || "",
+          phone: job.vehicle?.customer?.phone || "",
+          contactPreference: job.vehicle?.customer?.contact_preference || "",
+          warrantyType: job.vehicle?.warranty_type || "",
+          warrantyExpiry: job.vehicle?.warranty_expiry || "",
+          insuranceProvider: job.vehicle?.insurance_provider || "",
+          insurancePolicyNumber: job.vehicle?.insurance_policy_number || "",
+          engineOil: job.vhcChecks?.engineOil || "",
+          brakesCondition: job.vhcChecks?.brakesCondition || "",
+          tyresCondition: job.vhcChecks?.tyresCondition || "",
+          batteryStatus: job.vhcChecks?.batteryStatus || "",
+          suspension: job.vhcChecks?.suspension || "",
+          electronics: job.vhcChecks?.electronics || "",
+          airCon: job.vhcChecks?.airCon || "",
+          warningLights: job.vhcChecks?.warningLights || "",
+          comments: job.notes?.map(n => n.note).join(", ") || ""
+        });
+      }
+    };
 
-    // Insurance & Warranty
-    warrantyType: "Manufacturer",
-    warrantyExpiry: "2025-06-23",
-    insuranceProvider: "Acme Insurance",
-    insurancePolicyNumber: "INS123456789",
-
-    // Technical / Engine
-    engineOil: "Checked, OK",
-    brakesCondition: "Front pads 50%, rear 60%",
-    tyresCondition: "All tyres 6mm",
-    batteryStatus: "Good",
-    suspension: "No issues",
-    electronics: "All working",
-    airCon: "Working",
-    warningLights: "None",
-
-    // Additional Info
-    comments: "Vehicle returned with no complaints, ready for MOT"
-  };
+    fetchJobData();
+  }, [jobNumber]);
 
   const handleBack = () => router.back();
   const handleVHC = () => router.push(`/job-cards/${jobNumber}/vhc`);
@@ -82,6 +87,8 @@ export default function CarDetailsPage() {
     fontWeight: "bold",
     fontSize: "1rem"
   };
+
+  if (!carData) return <Layout><p>Loading car details...</p></Layout>;
 
   return (
     <Layout>
