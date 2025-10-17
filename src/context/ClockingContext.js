@@ -26,7 +26,8 @@ export const ClockingProvider = ({ children }) => {
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
+      // Safely handle empty or undefined data
+      if (data?.length > 0) {
         const lastRecord = data[data.length - 1];
         setClockedIn(!lastRecord.clock_out); // clocked in if last record has no clock_out
 
@@ -37,7 +38,7 @@ export const ClockingProvider = ({ children }) => {
             total += (new Date(record.clock_out) - new Date(record.clock_in)) / 3600000; // hours
           }
         });
-        setHoursWorked(total.toFixed(2));
+        setHoursWorked(Number(total.toFixed(2)));
       } else {
         setClockedIn(false);
         setHoursWorked(0);
@@ -64,7 +65,7 @@ export const ClockingProvider = ({ children }) => {
       ]);
       if (error) throw error;
       setClockedIn(true);
-      fetchClockingStatus(); // refresh hoursWorked
+      await fetchClockingStatus(); // refresh hoursWorked safely
     } catch (err) {
       console.error("Clock In Error:", err.message);
     } finally {
@@ -89,7 +90,13 @@ export const ClockingProvider = ({ children }) => {
         .limit(1)
         .single();
 
-      if (error) throw error;
+      // Check for empty data to avoid destructuring error
+      if (error && error.code !== "PGRST116") throw error; // ignore "no rows" error
+      if (!data) {
+        console.warn("No active clock-in record found.");
+        setLoading(false);
+        return;
+      }
 
       await supabase
         .from("clocking")
@@ -97,7 +104,7 @@ export const ClockingProvider = ({ children }) => {
         .eq("id", data.id);
 
       setClockedIn(false);
-      fetchClockingStatus(); // refresh hoursWorked
+      await fetchClockingStatus(); // refresh hoursWorked safely
     } catch (err) {
       console.error("Clock Out Error:", err.message);
     } finally {

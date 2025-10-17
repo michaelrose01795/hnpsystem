@@ -2,7 +2,12 @@
 "use client";
 
 import React, { createContext, useState, useContext, useEffect } from "react";
-import { supabase } from "../lib/supabaseClient"; // your Supabase client
+import {
+  getAllJobs,
+  addJobToDatabase,
+  updateJobStatus,
+  getJobByNumberOrReg,
+} from "../lib/database/jobs"; // database helper functions
 
 // Create the Jobs context
 const JobsContext = createContext();
@@ -30,22 +35,18 @@ export function JobsProvider({ children }) {
     loanCar: false,
     MOT: false,
     wash: false,
-    address: ""
+    address: "",
   };
 
   // Fetch all jobs from database
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("jobs")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
+      const data = await getAllJobs();
       setJobs(data || []);
     } catch (err) {
-      console.error("Error fetching jobs:", err.message);
+      console.error("❌ Error fetching jobs:", err.message);
+      setJobs([]);
     } finally {
       setLoading(false);
     }
@@ -55,55 +56,34 @@ export function JobsProvider({ children }) {
     fetchJobs();
   }, []);
 
-  // Add a new job OR update if it already exists in DB
+  // Add a new job
   const addJob = async (job) => {
     const jobWithDefaults = { ...defaultJobFields, ...job };
 
-    // Check if job already exists locally
-    const existingIndex = jobs.findIndex((j) => j.jobNumber === jobWithDefaults.jobNumber);
-
     try {
-      if (existingIndex !== -1) {
-        // Update existing job in DB
-        const { error } = await supabase
-          .from("jobs")
-          .update(jobWithDefaults)
-          .eq("jobNumber", jobWithDefaults.jobNumber);
-        if (error) throw error;
+      const { success, data, error } = await addJobToDatabase(jobWithDefaults);
+      if (!success) throw error;
 
-        // Update local state
-        const updatedJobs = [...jobs];
-        updatedJobs[existingIndex] = { ...updatedJobs[existingIndex], ...jobWithDefaults };
-        setJobs(updatedJobs);
-      } else {
-        // Insert new job in DB
-        const { data, error } = await supabase.from("jobs").insert([jobWithDefaults]).select();
-        if (error) throw error;
-
-        // Add to local state
-        setJobs((prev) => [...prev, data[0]]);
-      }
+      setJobs((prev) => [...prev, data]);
     } catch (err) {
-      console.error("Error adding/updating job:", err.message);
+      console.error("❌ Error adding job:", err.message);
     }
   };
 
-  // Explicit update for an existing job
+  // Update existing job
   const updateJob = async (updatedJob) => {
     try {
-      const { error } = await supabase
-        .from("jobs")
-        .update(updatedJob)
-        .eq("jobNumber", updatedJob.jobNumber);
-      if (error) throw error;
+      const { success, data, error } = await updateJobStatus(
+        updatedJob.id,
+        updatedJob.status
+      );
+      if (!success) throw error;
 
       setJobs((prev) =>
-        prev.map((job) =>
-          job.jobNumber === updatedJob.jobNumber ? { ...job, ...updatedJob } : job
-        )
+        prev.map((job) => (job.id === data.id ? { ...job, ...data } : job))
       );
     } catch (err) {
-      console.error("Error updating job:", err.message);
+      console.error("❌ Error updating job:", err.message);
     }
   };
 
@@ -132,7 +112,7 @@ export function JobsProvider({ children }) {
         updateJob,
         getJobByNumber,
         getJobsByCar,
-        fetchJobs
+        fetchJobs,
       }}
     >
       {children}

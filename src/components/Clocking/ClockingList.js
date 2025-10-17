@@ -3,7 +3,7 @@ import React, { useEffect } from "react";
 import { useClockingContext } from "../../context/ClockingContext";
 
 export default function ClockingList() {
-  const { allUsersClocking, fetchAllUsersClocking, loading } = useClockingContext();
+  const { allUsersClocking = [], fetchAllUsersClocking, loading } = useClockingContext(); // default to empty array
 
   // Fetch all users clocking data when component mounts
   useEffect(() => {
@@ -24,13 +24,21 @@ export default function ClockingList() {
           </tr>
         </thead>
         <tbody>
-          {allUsersClocking.map((u) => (
-            <tr key={u.user}>
-              <td className="border px-4 py-2">{u.user}</td>
-              <td className="border px-4 py-2">{u.clockedIn ? "In" : "Out"}</td>
-              <td className="border px-4 py-2">{u.hoursWorked.toFixed(2)}</td>
+          {allUsersClocking.length > 0 ? (
+            allUsersClocking.map((u) => (
+              <tr key={u.user}>
+                <td className="border px-4 py-2">{u.user}</td>
+                <td className="border px-4 py-2">{u.clockedIn ? "In" : "Out"}</td>
+                <td className="border px-4 py-2">{u.hoursWorked.toFixed(2)}</td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={3} className="border px-4 py-2 text-center">
+                No clocking data available
+              </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>
