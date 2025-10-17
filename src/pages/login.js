@@ -6,15 +6,17 @@ import Layout from "../components/Layout";
 import Section from "../components/Section";
 import { useRouter } from "next/router";
 import LoginDropdown from "../components/LoginDropdown";
-
-// Import centralized users config
-import { usersByRole } from "../config/users";
+import { supabase } from "../lib/supabaseClient"; // Database connection
+import { usersByRole } from "../config/users"; // Dev users config
 
 export default function LoginPage() {
-  const { devLogin, user } = useUser();
+  const { devLogin, user, setUser } = useUser();
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState("");
   const [selectedUser, setSelectedUser] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Developer login handler
   const handleDevLogin = () => {
@@ -25,7 +27,41 @@ export default function LoginPage() {
     devLogin(selectedUser, selectedRole);
   };
 
-  // Redirect dev login users once `user` is set
+  // Supabase email/password login
+  const handleDbLogin = async (e) => {
+    e.preventDefault();
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("email", email)
+        .single();
+
+      if (error || !data) {
+        setErrorMessage("User not found.");
+        return;
+      }
+
+      // Simple password check (replace with hashed in production)
+      if (data.password !== password) {
+        setErrorMessage("Incorrect password.");
+        return;
+      }
+
+      // Set user in context and redirect
+      setUser({
+        id: data.id,
+        name: `${data.first_name} ${data.last_name}`,
+        email: data.email,
+        role: data.role,
+      });
+    } catch (err) {
+      console.error("❌ Login error:", err);
+      setErrorMessage("Login failed, please try again.");
+    }
+  };
+
+  // Redirect once user is logged in
   useEffect(() => {
     if (user) {
       router.push("/newsfeed");
@@ -53,19 +89,45 @@ export default function LoginPage() {
 
               <hr className="border-gray-300" />
 
+              {/* Database email/password login */}
+              <form onSubmit={handleDbLogin} className="flex flex-col space-y-2">
+                <h3 className="text-lg font-semibold">Database Login</h3>
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="border p-2 rounded"
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="border p-2 rounded"
+                  required
+                />
+                {errorMessage && <p className="text-red-600">{errorMessage}</p>}
+                <button
+                  type="submit"
+                  className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-white"
+                >
+                  Login
+                </button>
+              </form>
+
+              <hr className="border-gray-300" />
+
               {/* Developer login */}
               <h3 className="text-lg font-semibold">Developer Login</h3>
-
-              {/* LoginDropdown component */}
               <LoginDropdown
                 selectedRole={selectedRole}
                 setSelectedRole={setSelectedRole}
                 selectedUser={selectedUser}
                 setSelectedUser={setSelectedUser}
-                usersByRole={usersByRole} // use centralized config
+                usersByRole={usersByRole}
               />
-
-              {/* Dev login button */}
               <button
                 onClick={handleDevLogin}
                 className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-white"
@@ -79,4 +141,3 @@ export default function LoginPage() {
     </Layout>
   );
 }
-

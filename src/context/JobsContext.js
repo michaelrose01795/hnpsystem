@@ -1,7 +1,8 @@
-// src/context/JobsContext.js
+// file location: src/context/JobsContext.js
 "use client";
 
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, useEffect } from "react";
+import { supabase } from "../lib/supabaseClient"; // your Supabase client
 
 // Create the Jobs context
 const JobsContext = createContext();
@@ -11,13 +12,14 @@ export const useJobs = () => useContext(JobsContext);
 
 export function JobsProvider({ children }) {
   const [jobs, setJobs] = useState([]); // All job cards stored here
+  const [loading, setLoading] = useState(true);
 
   // Default fields for a new job
   const defaultJobFields = {
     jobNumber: "",
     customer: "Unknown",
     reg: "",
-    vehicle: "",
+    vehicle: null,
     reason: "",
     appointment: null,
     status: "Booked",
@@ -31,36 +33,78 @@ export function JobsProvider({ children }) {
     address: ""
   };
 
-  // Add a new job OR update if it already exists
-  const addJob = (job) => {
-    setJobs((prev) => {
-      const existingIndex = prev.findIndex(
-        (j) => j.jobNumber === job.jobNumber
-      );
+  // Fetch all jobs from database
+  const fetchJobs = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      const jobWithDefaults = { ...defaultJobFields, ...job };
+      if (error) throw error;
+      setJobs(data || []);
+    } catch (err) {
+      console.error("Error fetching jobs:", err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  // Add a new job OR update if it already exists in DB
+  const addJob = async (job) => {
+    const jobWithDefaults = { ...defaultJobFields, ...job };
+
+    // Check if job already exists locally
+    const existingIndex = jobs.findIndex((j) => j.jobNumber === jobWithDefaults.jobNumber);
+
+    try {
       if (existingIndex !== -1) {
-        // Update existing job if jobNumber matches
-        const updatedJobs = [...prev];
-        updatedJobs[existingIndex] = { ...prev[existingIndex], ...jobWithDefaults };
-        return updatedJobs;
+        // Update existing job in DB
+        const { error } = await supabase
+          .from("jobs")
+          .update(jobWithDefaults)
+          .eq("jobNumber", jobWithDefaults.jobNumber);
+        if (error) throw error;
+
+        // Update local state
+        const updatedJobs = [...jobs];
+        updatedJobs[existingIndex] = { ...updatedJobs[existingIndex], ...jobWithDefaults };
+        setJobs(updatedJobs);
       } else {
-        // Add new job
-        return [...prev, jobWithDefaults];
+        // Insert new job in DB
+        const { data, error } = await supabase.from("jobs").insert([jobWithDefaults]).select();
+        if (error) throw error;
+
+        // Add to local state
+        setJobs((prev) => [...prev, data[0]]);
       }
-    });
+    } catch (err) {
+      console.error("Error adding/updating job:", err.message);
+    }
   };
 
   // Explicit update for an existing job
-  const updateJob = (updatedJob) => {
-    setJobs((prev) =>
-      prev.map((job) =>
-        job.jobNumber === updatedJob.jobNumber
-          ? { ...job, ...updatedJob }
-          : job
-      )
-    );
+  const updateJob = async (updatedJob) => {
+    try {
+      const { error } = await supabase
+        .from("jobs")
+        .update(updatedJob)
+        .eq("jobNumber", updatedJob.jobNumber);
+      if (error) throw error;
+
+      setJobs((prev) =>
+        prev.map((job) =>
+          job.jobNumber === updatedJob.jobNumber ? { ...job, ...updatedJob } : job
+        )
+      );
+    } catch (err) {
+      console.error("Error updating job:", err.message);
+    }
   };
 
   // Get a single job by job number
@@ -82,11 +126,13 @@ export function JobsProvider({ children }) {
     <JobsContext.Provider
       value={{
         jobs,
+        loading,
         setJobs,
         addJob,
         updateJob,
         getJobByNumber,
         getJobsByCar,
+        fetchJobs
       }}
     >
       {children}

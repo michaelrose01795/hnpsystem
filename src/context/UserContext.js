@@ -7,13 +7,14 @@ const UserContext = createContext();
 export function UserProvider({ children }) {
   const { data: session } = useSession();
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // ✅ loading state
+  const [loading, setLoading] = useState(true); // loading state
 
-  // Load saved user from localStorage on first render
+  // Load saved dev user from localStorage on first render
   useEffect(() => {
     const stored = localStorage.getItem("devUser");
     if (stored && !session?.user) {
-      setUser(JSON.parse(stored));
+      const parsed = JSON.parse(stored);
+      setUser({ ...parsed, id: parsed.id || Date.now() }); // ensure unique id
       setLoading(false);
       return;
     }
@@ -24,19 +25,21 @@ export function UserProvider({ children }) {
   useEffect(() => {
     if (session?.user) {
       const keycloakUser = {
+        id: session.user.id || Date.now(), // ensure unique id
         username: session.user.name,
-        roles: session.user.roles || [],
+        roles: (session.user.roles || []).map((r) => r.toUpperCase()),
       };
       setUser(keycloakUser);
       localStorage.removeItem("devUser"); // clear dev user if real login
     }
   }, [session]);
 
-  // ✅ Dev login (persist to localStorage, ensure roles are uppercase)
-  const devLogin = (username, role) => {
+  // Dev login (persist to localStorage, ensure roles are uppercase)
+  const devLogin = (username = "dev", role = "WORKSHOP") => {
     const dev = {
-      username: username || "dev",
-      roles: [role ? role.toUpperCase() : "WORKSHOP"],
+      id: Date.now(),
+      username,
+      roles: [role.toUpperCase()],
     };
     setUser(dev);
     localStorage.setItem("devUser", JSON.stringify(dev));
