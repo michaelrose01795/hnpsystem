@@ -10,7 +10,12 @@ import { supabase } from "../lib/supabaseClient"; // Database connection
 import { usersByRole } from "../config/users"; // Dev users config
 
 export default function LoginPage() {
-  const { devLogin, user, setUser } = useUser();
+  // Safe destructuring from context
+  const userContext = useUser();
+  const devLogin = userContext?.devLogin;
+  const user = userContext?.user;
+  const setUser = userContext?.setUser;
+
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState("");
   const [selectedUser, setSelectedUser] = useState("");
@@ -20,6 +25,10 @@ export default function LoginPage() {
 
   // Developer login handler
   const handleDevLogin = () => {
+    if (!devLogin) {
+      alert("Developer login is not available. User context is missing.");
+      return;
+    }
     if (!selectedRole || !selectedUser) {
       alert("Please select a role and a user.");
       return;
@@ -31,25 +40,26 @@ export default function LoginPage() {
   const handleDbLogin = async (e) => {
     e.preventDefault();
     try {
-      const { data, error } = await supabase
+      const response = await supabase
         .from("users")
         .select("*")
         .eq("email", email)
         .single();
+
+      const data = response?.data;
+      const error = response?.error;
 
       if (error || !data) {
         setErrorMessage("User not found.");
         return;
       }
 
-      // Simple password check (replace with hashed in production)
       if (data.password !== password) {
         setErrorMessage("Incorrect password.");
         return;
       }
 
-      // Set user in context and redirect
-      setUser({
+      setUser?.({
         id: data.id,
         name: `${data.first_name} ${data.last_name}`,
         email: data.email,

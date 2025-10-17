@@ -1,4 +1,4 @@
-export default function handler(req, res) {
+ export default function handler(req, res) {
   const { jobNumber } = req.query;
 
   if (req.method !== "GET") {

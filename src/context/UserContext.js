@@ -5,44 +5,49 @@ import { useSession } from "next-auth/react";
 const UserContext = createContext();
 
 export function UserProvider({ children }) {
-  const { data: session } = useSession();
-  const [user, setUser] = useState(null);
+  const { data: session } = useSession(); // NextAuth session
+  const [user, setUser] = useState(null); // user is null by default
   const [loading, setLoading] = useState(true); // loading state
 
   // Load saved dev user from localStorage on first render
   useEffect(() => {
     const stored = localStorage.getItem("devUser");
     if (stored && !session?.user) {
-      const parsed = JSON.parse(stored);
-      setUser({ ...parsed, id: parsed.id || Date.now() }); // ensure unique id
-      setLoading(false);
-      return;
+      try {
+        const parsed = JSON.parse(stored);
+        setUser({
+          ...parsed,
+          id: parsed.id || Date.now(), // ensure unique id
+        });
+      } catch (err) {
+        console.error("Failed to parse dev user from localStorage", err);
+      }
     }
     setLoading(false);
   }, [session]);
 
-  // If session comes from Keycloak, use that
+  // If session comes from Keycloak, set the session user
   useEffect(() => {
     if (session?.user) {
       const keycloakUser = {
-        id: session.user.id || Date.now(), // ensure unique id
-        username: session.user.name,
+        id: session.user.id || Date.now(), // fallback id
+        username: session.user.name || "KeycloakUser",
         roles: (session.user.roles || []).map((r) => r.toUpperCase()),
       };
       setUser(keycloakUser);
-      localStorage.removeItem("devUser"); // clear dev user if real login
+      localStorage.removeItem("devUser"); // remove dev user if real login occurs
     }
   }, [session]);
 
-  // Dev login (persist to localStorage, ensure roles are uppercase)
+  // Developer login (persist to localStorage)
   const devLogin = (username = "dev", role = "WORKSHOP") => {
-    const dev = {
+    const devUser = {
       id: Date.now(),
       username,
       roles: [role.toUpperCase()],
     };
-    setUser(dev);
-    localStorage.setItem("devUser", JSON.stringify(dev));
+    setUser(devUser);
+    localStorage.setItem("devUser", JSON.stringify(devUser));
   };
 
   // Logout (clear both session + dev user)
@@ -58,4 +63,5 @@ export function UserProvider({ children }) {
   );
 }
 
+// Custom hook for consuming user context safely
 export const useUser = () => useContext(UserContext);
