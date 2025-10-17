@@ -1,5 +1,6 @@
 // ✅ File location: src/lib/database/jobs.js
 import { supabase } from "../supabaseClient";
+import dayjs from "dayjs";
 
 /* ============================================
    FETCH ALL JOBS
@@ -87,6 +88,57 @@ export const getAllJobs = async () => {
     notes: job.job_notes || [],
     writeUp: job.job_writeups?.[0] || null,
   }));
+};
+
+/* ============================================
+   GET DASHBOARD DATA
+   Returns all jobs and today’s appointments
+============================================ */
+export const getDashboardData = async () => {
+  const allJobs = await getAllJobs();
+
+  const today = dayjs().format("YYYY-MM-DD");
+  const { data: appointmentsData, error } = await supabase
+    .from("appointments")
+    .select(`
+      id,
+      scheduled_time,
+      notes,
+      job:jobs(
+        id,
+        job_number,
+        type,
+        status,
+        vehicle:vehicles(
+          registration,
+          make,
+          model
+        )
+      )
+    `)
+    .eq("scheduled_time", today);
+
+  if (error) {
+    console.error("❌ Error fetching today’s appointments:", error);
+    return { allJobs, appointments: [] };
+  }
+
+  const appointments = (appointmentsData || []).map((a) => ({
+    appointmentId: a.id,
+    scheduledTime: a.scheduled_time,
+    notes: a.notes,
+    job: {
+      id: a.job?.id,
+      jobNumber: a.job?.job_number,
+      type: a.job?.type,
+      status: a.job?.status,
+      reg: a.job?.vehicle?.registration,
+      make: a.job?.vehicle?.make,
+      model: a.job?.vehicle?.model,
+    },
+  }));
+
+  return { allJobs, appointments };
 };
 
 /* ============================================
@@ -250,7 +302,6 @@ export const updateJobStatus = async (jobId, newStatus) => {
 
 /* ============================================
    SAVE VHC CHECKSHEET
-   (used for full VHC JSON from tech page)
 ============================================ */
 export const saveChecksheet = async (jobNumber, checksheetData) => {
   try {
@@ -270,7 +321,6 @@ export const saveChecksheet = async (jobNumber, checksheetData) => {
 
 /* ============================================
    SAVE INDIVIDUAL VHC SECTION
-   (used for single sections like Wheels & Tyres)
 ============================================ */
 export const saveVhcSection = async (jobNumber, sectionKey, sectionData) => {
   try {

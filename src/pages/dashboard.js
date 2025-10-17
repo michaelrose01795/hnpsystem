@@ -1,18 +1,22 @@
 // file location: src/pages/dashboard.js
-import React, { useEffect, useState } from "react"; // React + hooks
-import { useRouter } from "next/router"; // For redirects
-import { useUser } from "../context/UserContext"; // User context
-import Layout from "../components/Layout"; // Shared layout
-import WorkshopManagerDashboard from "../components/dashboards/WorkshopManagerDashboard"; // Example role dashboard
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import { useUser } from "../context/UserContext";
+import { useJobs } from "../context/JobsContext";
+import Layout from "../components/Layout";
+import WorkshopManagerDashboard from "../components/dashboards/WorkshopManagerDashboard";
 
 export default function Dashboard() {
-  const { user } = useUser(); // Get logged-in user
-  const router = useRouter(); // Router for navigation
-  const [showSearch, setShowSearch] = useState(false); // State for search pop-up
+  const { user } = useUser();
+  const { jobs, setJobs } = useJobs();
+  const router = useRouter();
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
 
-  // Auto-redirect certain roles to their dashboards
+  // Redirect roles to their specific dashboards
   useEffect(() => {
-    if (!user) return; // Wait for user
+    if (!user) return;
 
     const role = user.roles?.[0]?.toUpperCase();
 
@@ -34,15 +38,27 @@ export default function Dashboard() {
         router.replace("/dashboard/manager");
         break;
       default:
-        break; // stay on main dashboard
+        break;
     }
   }, [user, router]);
 
-  if (!user) return null; // No render until we have user
+  // Fetch all jobs on load
+  useEffect(() => {
+    const fetchJobs = async () => {
+      if (user) {
+        const { getAllJobs } = await import("../lib/database/jobs");
+        const allJobs = await getAllJobs();
+        setJobs(allJobs);
+      }
+    };
+    fetchJobs();
+  }, [user, setJobs]);
+
+  if (!user) return null;
 
   const role = user?.roles?.[0] || "Guest";
 
-  // Special case: if directly rendering Workshop Manager dashboard
+  // Render Workshop Manager dashboard directly
   if (role === "Workshop Manager") {
     return (
       <Layout>
@@ -51,17 +67,21 @@ export default function Dashboard() {
     );
   }
 
+  // 🔹 Handle search
+  const handleSearch = () => {
+    const results = jobs.filter(
+      (job) =>
+        job.jobNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.reg?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.customer?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setSearchResults(results);
+  };
+
   return (
     <Layout>
-      <div
-        style={{
-          padding: "0",
-          display: "flex",
-          flexDirection: "column",
-          gap: "20px",
-        }}
-      >
-        {/* ✅ Top Bar */}
+      <div style={{ padding: "0", display: "flex", flexDirection: "column", gap: "20px" }}>
+        {/* Top Bar */}
         <div
           style={{
             display: "flex",
@@ -73,7 +93,6 @@ export default function Dashboard() {
             boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
           }}
         >
-          {/* 🔍 Search Button */}
           <button
             onClick={() => setShowSearch(true)}
             style={{
@@ -91,7 +110,7 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* ✅ Dashboard Content */}
+        {/* Dashboard Content */}
         <div
           style={{
             backgroundColor: "#FFF8F8",
@@ -100,56 +119,38 @@ export default function Dashboard() {
             minHeight: "70vh",
           }}
         >
-          <h2 style={{ marginBottom: "15px", color: "#FF4040" }}>
-            Dashboard Overview
-          </h2>
-          <p>
-            Welcome {user?.username || "Guest"}! Here you’ll see your dashboard
-            widgets, stats, and features.
-          </p>
+          <h2 style={{ marginBottom: "15px", color: "#FF4040" }}>Dashboard Overview</h2>
+          <p>Welcome {user?.username || "Guest"}! Here’s your current jobs overview.</p>
 
-          {/* Example placeholder feature buttons */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-              gap: "20px",
-              marginTop: "20px",
-            }}
-          >
-            {[
-              "Active Jobs",
-              "Today’s Clockings",
-              "Job Cards",
-              "Parts Requests",
-              "VHC Checks",
-              "Sales Tracking",
-              "Inventory",
-              "Messaging",
-              "Reports",
-            ].map((feature) => (
-              <div
-                key={feature}
-                style={{
-                  backgroundColor: "white",
-                  padding: "20px",
-                  borderRadius: "8px",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-                  textAlign: "center",
-                  cursor: "pointer",
-                }}
-              >
-                <h3 style={{ marginBottom: "10px", color: "#333" }}>{feature}</h3>
-                <p style={{ color: "#777", fontSize: "0.9rem" }}>
-                  {feature} feature placeholder
-                </p>
-              </div>
-            ))}
-          </div>
+          {/* Jobs Table */}
+          <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "20px" }}>
+            <thead>
+              <tr style={{ backgroundColor: "#FFCCCC" }}>
+                <th style={{ padding: "8px", border: "1px solid #FFAAAA" }}>Job Number</th>
+                <th style={{ padding: "8px", border: "1px solid #FFAAAA" }}>Customer</th>
+                <th style={{ padding: "8px", border: "1px solid #FFAAAA" }}>Vehicle</th>
+                <th style={{ padding: "8px", border: "1px solid #FFAAAA" }}>Status</th>
+                <th style={{ padding: "8px", border: "1px solid #FFAAAA" }}>Technician</th>
+              </tr>
+            </thead>
+            <tbody>
+              {jobs.map((job) => (
+                <tr key={job.id}>
+                  <td style={{ padding: "8px", border: "1px solid #FFAAAA" }}>{job.jobNumber}</td>
+                  <td style={{ padding: "8px", border: "1px solid #FFAAAA" }}>{job.customer}</td>
+                  <td style={{ padding: "8px", border: "1px solid #FFAAAA" }}>
+                    {job.make} {job.model} ({job.reg})
+                  </td>
+                  <td style={{ padding: "8px", border: "1px solid #FFAAAA" }}>{job.status}</td>
+                  <td style={{ padding: "8px", border: "1px solid #FFAAAA" }}>{job.technician}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* 🔍 Search Modal */}
+      {/* Search Modal */}
       {showSearch && (
         <div
           style={{
@@ -175,11 +176,11 @@ export default function Dashboard() {
               boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
             }}
           >
-            <h2 style={{ marginBottom: "15px", color: "#FF4040" }}>
-              Search System
-            </h2>
+            <h2 style={{ marginBottom: "15px", color: "#FF4040" }}>Search Jobs</h2>
             <input
               type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by job number, reg, or customer..."
               style={{
                 width: "100%",
@@ -203,6 +204,7 @@ export default function Dashboard() {
                 Close
               </button>
               <button
+                onClick={handleSearch}
                 style={{
                   padding: "8px 14px",
                   backgroundColor: "#FF4040",
@@ -215,6 +217,20 @@ export default function Dashboard() {
                 Search
               </button>
             </div>
+
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+              <div style={{ marginTop: "20px" }}>
+                <h3>Results:</h3>
+                <ul>
+                  {searchResults.map((job) => (
+                    <li key={job.id}>
+                      {job.jobNumber} - {job.customer} - {job.make} {job.model} ({job.reg})
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       )}
