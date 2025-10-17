@@ -1,9 +1,14 @@
-// file location: src/pages/job-cards/[jobNumber]/vhc.js
-import React, { useState } from "react"; // import React
-import { useRouter } from "next/router"; // import router for navigation
-import Layout from "../../../components/Layout"; // import layout
+// ✅ File location: src/pages/job-cards/[jobNumber]/vhc.js
+"use client";
 
-// import modals for each section
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import Layout from "../../../components/Layout";
+
+// 🧩 Import database helper
+import { getJobByNumberOrReg, saveChecksheet } from "@/lib/database/jobs";
+
+// 🧩 Import section modals
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
 import BrakesHubsDetailsModal from "@/components/VHC/BrakesHubsDetailsModal";
 import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetailsModal";
@@ -11,7 +16,7 @@ import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
 import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal";
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 
-// section titles for display
+// Section labels
 const SECTION_TITLES = {
   wheelsTyres: "Wheels & Tyres",
   brakesHubs: "Brakes & Hubs",
@@ -22,10 +27,10 @@ const SECTION_TITLES = {
 };
 
 export default function VHCPAGE() {
-  const router = useRouter(); // use router for navigation
-  const { jobNumber } = router.query; // get job number from URL
+  const router = useRouter();
+  const { jobNumber } = router.query;
 
-  // store VHC data
+  // ✅ Initial VHC data structure
   const [vhcData, setVhcData] = useState({
     wheelsTyres: null,
     brakesHubs: [],
@@ -51,10 +56,64 @@ export default function VHCPAGE() {
     },
   });
 
-  // track active section modal
   const [activeSection, setActiveSection] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // reusable card for sections
+  /* ============================================
+     LOAD EXISTING VHC DATA IF IT EXISTS
+  ============================================= */
+  useEffect(() => {
+    if (!jobNumber) return;
+    const loadVhc = async () => {
+      try {
+        setLoading(true);
+        const job = await getJobByNumberOrReg(jobNumber);
+        if (job?.vhcChecks?.length > 0 && job.vhcChecks[0].data) {
+          setVhcData(job.vhcChecks[0].data);
+        }
+      } catch (err) {
+        console.error("❌ Error loading VHC:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadVhc();
+  }, [jobNumber]);
+
+  /* ============================================
+     SAVE VHC DATA TO DATABASE
+  ============================================= */
+  const saveVhcData = async () => {
+    if (!jobNumber) return;
+    try {
+      const result = await saveChecksheet(jobNumber, vhcData);
+      if (!result.success) console.error("❌ Failed to save VHC:", result.error);
+    } catch (err) {
+      console.error("❌ Error saving VHC:", err);
+    }
+  };
+
+  /* ============================================
+     BUTTON HANDLERS
+  ============================================= */
+  const handleBack = async () => {
+    await saveVhcData();
+    router.push(`/job-cards/${jobNumber}`);
+  };
+
+  const handleComplete = async () => {
+    if (!mandatoryComplete) return;
+    await saveVhcData();
+    router.push(`/job-cards/${jobNumber}`);
+  };
+
+  // Mandatory section check
+  const mandatoryComplete =
+    vhcData.wheelsTyres &&
+    vhcData.brakesHubs.length > 0 &&
+    vhcData.serviceIndicator.length > 0;
+
+  // Section card component
   const SectionCard = ({ title, subtitle, onClick }) => (
     <div
       onClick={onClick}
@@ -82,50 +141,19 @@ export default function VHCPAGE() {
     </div>
   );
 
-  // check if mandatory sections are complete
-  const mandatoryComplete =
-    vhcData.wheelsTyres &&
-    vhcData.brakesHubs.length > 0 &&
-    vhcData.serviceIndicator.length > 0;
-
-  // handle saving data (simulate API save for now)
-  const saveVhcData = async () => {
-    try {
-      await fetch(`/api/job-cards/${jobNumber}/vhc`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(vhcData),
-      });
-    } catch (err) {
-      console.error("Error saving VHC data:", err);
-    }
-  };
-
-  // handle back button
-  const handleBack = async () => {
-    await saveVhcData(); // save data before navigating
-    router.push(`/job-cards/${jobNumber}`);
-  };
-
-  // handle complete button
-  const handleComplete = async () => {
-    if (!mandatoryComplete) return;
-    await saveVhcData(); // save data first
-    try {
-      await fetch(`/api/job-cards/${jobNumber}/complete-vhc`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vhcCompleted: true }),
-      });
-      router.push(`/job-cards/${jobNumber}`); // return to job card page
-    } catch (err) {
-      console.error("Error completing VHC:", err);
-    }
-  };
+  if (loading)
+    return (
+      <Layout>
+        <div style={{ padding: "24px" }}>
+          <h1 style={{ color: "#FF4040" }}>Loading VHC Data...</h1>
+        </div>
+      </Layout>
+    );
 
   return (
     <Layout>
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "16px" }}>
+        {/* HEADER */}
         <div
           style={{
             display: "flex",
@@ -139,7 +167,7 @@ export default function VHCPAGE() {
           </h1>
         </div>
 
-        {/* Mandatory Sections */}
+        {/* MANDATORY SECTIONS */}
         <h2 style={{ fontSize: "1.2rem", marginBottom: "12px", color: "#555" }}>
           Mandatory
         </h2>
@@ -163,7 +191,7 @@ export default function VHCPAGE() {
           />
         </div>
 
-        {/* Optional Sections */}
+        {/* OPTIONAL SECTIONS */}
         <h2 style={{ fontSize: "1.2rem", marginBottom: "12px", color: "#555" }}>
           Optional
         </h2>
@@ -180,7 +208,7 @@ export default function VHCPAGE() {
           )}
         </div>
 
-        {/* Action Buttons under Optional */}
+        {/* ACTION BUTTONS */}
         <div
           style={{
             display: "flex",
@@ -222,7 +250,7 @@ export default function VHCPAGE() {
           </button>
         </div>
 
-        {/* Modals */}
+        {/* MODALS */}
         {activeSection === "wheelsTyres" && (
           <WheelsTyresDetailsModal
             isOpen

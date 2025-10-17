@@ -232,7 +232,6 @@ export const addJobToDatabase = async ({
 
 /* ============================================
    UPDATE JOB STATUS
-   Updates the status of a job in the database
 ============================================ */
 export const updateJobStatus = async (jobId, newStatus) => {
   const { data, error } = await supabase
@@ -252,7 +251,6 @@ export const updateJobStatus = async (jobId, newStatus) => {
 
 /* ============================================
    SAVE VHC CHECKSHEET
-   Adds or updates checksheet data for a specific job
 ============================================ */
 export const saveChecksheet = async (jobNumber, checksheetData) => {
   try {
@@ -275,15 +273,15 @@ export const saveChecksheet = async (jobNumber, checksheetData) => {
 };
 
 /* ============================================
-   UPLOAD JOB FILE
-   Stores uploaded file in Supabase storage and logs the upload
+   UPLOAD JOB FILE (Dealer or Internal)
+   Stores uploaded file in Supabase storage and logs it
 ============================================ */
 export const uploadJobFile = async (jobNumber, file, folder = "dealer-files") => {
   try {
     const filePath = `${folder}/${jobNumber}/${Date.now()}_${file.name}`;
 
     const { error: uploadError } = await supabase.storage
-      .from("job-files") // Supabase storage bucket name
+      .from("job-files")
       .upload(filePath, file, { upsert: true });
 
     if (uploadError) throw uploadError;
@@ -292,12 +290,12 @@ export const uploadJobFile = async (jobNumber, file, folder = "dealer-files") =>
       .from("job-files")
       .getPublicUrl(filePath);
 
-    // Log the uploaded file into `job_files` table
     await supabase.from("job_files").insert([
       {
         job_number: jobNumber,
         file_name: file.name,
         file_url: publicUrlData.publicUrl,
+        folder,
         uploaded_at: new Date(),
       },
     ]);
@@ -310,13 +308,41 @@ export const uploadJobFile = async (jobNumber, file, folder = "dealer-files") =>
 };
 
 /* ============================================
+   DELETE JOB FILE
+============================================ */
+export const deleteJobFile = async (fileId) => {
+  try {
+    const { data: file, error: fetchError } = await supabase
+      .from("job_files")
+      .select("file_url")
+      .eq("id", fileId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const filePath = file.file_url.split("/job-files/")[1];
+    const { error: deleteError } = await supabase
+      .storage
+      .from("job-files")
+      .remove([filePath]);
+
+    if (deleteError) throw deleteError;
+
+    await supabase.from("job_files").delete().eq("id", fileId);
+    return { success: true };
+  } catch (error) {
+    console.error("❌ Error deleting job file:", error);
+    return { success: false, error };
+  }
+};
+
+/* ============================================
    GET JOB FILES
-   Returns all uploaded files linked to a job
 ============================================ */
 export const getJobFiles = async (jobNumber) => {
   const { data, error } = await supabase
     .from("job_files")
-    .select("id, file_name, file_url, uploaded_at")
+    .select("id, file_name, file_url, uploaded_at, folder")
     .eq("job_number", jobNumber)
     .order("uploaded_at", { ascending: false });
 
@@ -329,8 +355,8 @@ export const getJobFiles = async (jobNumber) => {
 };
 
 /* ============================================
-   GET JOB APPOINTMENTS BY DATE
-   Used by booked/today view to list scheduled jobs
+   GET JOBS BY DATE
+   Used by booked/today dashboard view
 ============================================ */
 export const getJobsByDate = async (date) => {
   const { data, error } = await supabase
