@@ -1,3 +1,4 @@
+// src/api/vehicles/[reg].js
 export default function handler(req, res) {
   const { reg } = req.query;
 

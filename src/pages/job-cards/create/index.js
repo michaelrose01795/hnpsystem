@@ -38,14 +38,13 @@ export default function CreateJobCardPage() {
     engine: "",
     mileage: "",
   });
-  
+
   const [customer, setCustomer] = useState(null);
   const [isLoadingVehicle, setIsLoadingVehicle] = useState(false);
   const [vehicleDataSource, setVehicleDataSource] = useState("");
 
   const [showNewCustomer, setShowNewCustomer] = useState(false);
   const [showExistingCustomer, setShowExistingCustomer] = useState(false);
-  const [showVhcPopup, setShowVhcPopup] = useState(false);
 
   const [requests, setRequests] = useState([{ text: "", time: "", paymentType: "Customer" }]);
   const [cosmeticNotes, setCosmeticNotes] = useState("");
@@ -53,6 +52,8 @@ export default function CreateJobCardPage() {
   const [waitingStatus, setWaitingStatus] = useState("Neither");
   const [jobSource, setJobSource] = useState("Retail");
   const [jobCategories, setJobCategories] = useState(["Other"]);
+  const [showVhcPopup, setShowVhcPopup] = useState(false);
+
 
   const [maintenance, setMaintenance] = useState({
     nextServiceDate: "",
@@ -129,14 +130,14 @@ export default function CreateJobCardPage() {
     setRequests(updated);
   };
 
-  const handleAddRequest = () => setRequests([...requests, { text: "", time: "", paymentType: "Customer" }]);
+  const handleAddRequest = () =>
+    setRequests([...requests, { text: "", time: "", paymentType: "Customer" }]);
   const handleRemoveRequest = (index) => {
     const updated = requests.filter((_, i) => i !== index);
     setRequests(updated);
     setJobCategories(detectJobTypes(updated.map((r) => r.text)));
   };
 
-  // 🔹 Updated to include DVLA API fetch if vehicle not in DB
   const handleFetchVehicleData = async () => {
     if (!vehicle.reg.trim()) {
       alert("Please enter a registration first!");
@@ -147,30 +148,30 @@ export default function CreateJobCardPage() {
     setVehicleDataSource("");
 
     try {
-      // 1️⃣ Check local database first
-      const { data: dbVehicle, error } = await supabase
+      const regUpper = vehicle.reg.trim().toUpperCase();
+      console.log("🔍 Fetching vehicle from Supabase for REG:", regUpper);
+
+      const { data: dbVehicle, error: dbError } = await supabase
         .from("vehicles")
         .select("*")
-        .eq("reg", vehicle.reg.toUpperCase())
+        .eq("reg", regUpper)
         .single();
+
+      if (dbError && dbError.code !== "PGRST116") {
+        console.error("❌ Supabase vehicle fetch error:", dbError);
+        throw dbError;
+      }
 
       if (dbVehicle) {
         setVehicle({
           reg: dbVehicle.reg,
-          colour: dbVehicle.colour,
-          makeModel: dbVehicle.make_model,
-          chassis: dbVehicle.chassis,
-          engine: dbVehicle.engine,
-          mileage: dbVehicle.mileage,
+          colour: dbVehicle.colour || "",
+          makeModel: dbVehicle.make_model || "",
+          chassis: dbVehicle.chassis || "",
+          engine: dbVehicle.engine || "",
+          mileage: dbVehicle.mileage || "",
         });
         setVehicleDataSource("Database");
-
-        const { data: maintenanceData } = await supabase
-          .from("maintenance_history")
-          .select("*")
-          .eq("vehicle_reg", vehicle.reg.toUpperCase())
-          .single();
-        if (maintenanceData) setMaintenance(maintenanceData);
 
         if (dbVehicle.customer_id) {
           const { data: customerData } = await supabase
@@ -181,28 +182,38 @@ export default function CreateJobCardPage() {
           if (customerData) setCustomer(customerData);
         }
 
+        const { data: maintenanceData } = await supabase
+          .from("maintenance_history")
+          .select("*")
+          .eq("vehicle_reg", regUpper)
+          .single();
+        if (maintenanceData) setMaintenance(maintenanceData);
+
         setIsLoadingVehicle(false);
         return;
       }
 
-      // 2️⃣ Vehicle not in DB → fetch from DVLA API endpoint
-      const dvlaRes = await fetch(`/api/vehicles/dvla?reg=${vehicle.reg.toUpperCase()}`);
-      if (!dvlaRes.ok) throw new Error("DVLA API fetch failed");
-      const dvlaData = await dvlaRes.json();
+      console.log("⚡ Fetching DVLA data for:", regUpper);
+      const dvlaRes = await fetch(`/api/vehicles/dvla?reg=${regUpper}`, { cache: "no-store" });
 
+      if (!dvlaRes.ok) {
+        console.error("❌ DVLA fetch failed:", dvlaRes.status, dvlaRes.statusText);
+        throw new Error("DVLA API fetch failed");
+      }
+
+      const dvlaData = await dvlaRes.json();
       if (!dvlaData || !dvlaData.vin) {
         alert("Vehicle not found via DVLA API");
         setIsLoadingVehicle(false);
         return;
       }
 
-      // 3️⃣ Insert new vehicle into Supabase
       const { data: newVehicle, error: insertError } = await supabase
         .from("vehicles")
         .insert({
           reg: dvlaData.registration,
-          make_model: dvlaData.make + " " + dvlaData.model,
-          colour: dvlaData.colour,
+          make_model: `${dvlaData.make || ""} ${dvlaData.model || ""}`.trim(),
+          colour: dvlaData.colour || "",
           chassis: dvlaData.vin,
           engine: dvlaData.engine_number || "",
           mileage: dvlaData.mileage || "",
@@ -211,23 +222,25 @@ export default function CreateJobCardPage() {
         .select()
         .single();
 
-      if (insertError) throw new Error(insertError.message);
+      if (insertError) {
+        console.error("❌ Supabase insert failed:", insertError);
+        throw insertError;
+      }
 
       setVehicle({
         reg: newVehicle.reg,
-        makeModel: newVehicle.make_model,
-        colour: newVehicle.colour,
-        chassis: newVehicle.chassis,
-        engine: newVehicle.engine,
-        mileage: newVehicle.mileage,
+        makeModel: newVehicle.make_model || "",
+        colour: newVehicle.colour || "",
+        chassis: newVehicle.chassis || "",
+        engine: newVehicle.engine || "",
+        mileage: newVehicle.mileage || "",
       });
       setVehicleDataSource("DVLA API");
 
-      alert("Vehicle data fetched from DVLA API and saved to database!");
-
+      alert("✅ Vehicle data fetched from DVLA API and saved to database!");
     } catch (error) {
-      console.error("Error fetching vehicle:", error);
-      alert("Error fetching vehicle data. Please try again.");
+      console.error("❌ Error fetching vehicle data:", error);
+      alert("Error fetching vehicle data. Please check console for details.");
     } finally {
       setIsLoadingVehicle(false);
     }
@@ -246,7 +259,7 @@ export default function CreateJobCardPage() {
       job_number: jobNumber,
       created_at: new Date().toISOString(),
       status: "Open",
-      vehicle_reg: vehicle.reg,
+      vehicle_reg: vehicle.reg.trim().toUpperCase(),
       customer_id: customer.id,
       requests: validRequests,
       cosmetic_notes: cosmeticNotes,
@@ -257,21 +270,23 @@ export default function CreateJobCardPage() {
       maintenance,
     };
 
-    const { data, error } = await supabase
-      .from("jobs")
-      .insert(jobCardData);
+    try {
+      const { error } = await supabase.from("jobs").insert(jobCardData);
+      if (error) {
+        console.error("❌ Error saving job:", error.message);
+        alert("Error saving job. Check console for details.");
+        return;
+      }
 
-    if (error) {
-      console.error("Error saving job:", error.message);
-      alert("Error saving job. Check console.");
-      return;
+      addJob(jobCardData);
+      router.push(`/appointments?jobNumber=${jobNumber}`);
+    } catch (err) {
+      console.error("❌ Unexpected error saving job:", err);
+      alert("Unexpected error saving job. Check console.");
     }
-
-    addJob(jobCardData);
-    router.push(`/appointments?jobNumber=${jobNumber}`);
   };
 
-  const sectionHeight = "320px";
+ const sectionHeight = "320px";
   const bottomRowHeight = "100px";
 
   return (
