@@ -1,4 +1,4 @@
- const sectionHeight = "320px";
+  const sectionHeight = "320px";
   const bottomRowHeight = "100px";
 
   return (
