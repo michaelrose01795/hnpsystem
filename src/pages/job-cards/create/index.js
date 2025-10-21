@@ -42,10 +42,9 @@ export default function CreateJobCardPage() {
 
   const [customer, setCustomer] = useState(null); // selected customer object
   const [isLoadingVehicle, setIsLoadingVehicle] = useState(false); // loading state for DVLA API call
-  const [vehicleDataSource, setVehicleDataSource] = useState(""); // tracks where vehicle data came from
   const [error, setError] = useState(""); // error message for vehicle fetch
 
-  // ✅ NEW: Notification states
+  // ✅ Notification states
   const [customerNotification, setCustomerNotification] = useState(null); // { type: 'success' | 'error', message: '' }
   const [vehicleNotification, setVehicleNotification] = useState(null); // { type: 'success' | 'error', message: '' }
 
@@ -153,7 +152,7 @@ export default function CreateJobCardPage() {
     setJobCategories(detectJobTypes(updated.map((r) => r.text))); // re-detect job types after removal
   };
 
-  // ✅ NEW: Show notification and auto-hide after 5 seconds
+  // ✅ Show notification and auto-hide after 5 seconds
   const showNotification = (section, type, message) => {
     if (section === "customer") {
       setCustomerNotification({ type, message });
@@ -164,7 +163,7 @@ export default function CreateJobCardPage() {
     }
   };
 
-  // -------------------- ✅ UPDATED: Handle customer selection with inline notifications --------------------
+  // -------------------- Handle customer selection with inline notifications --------------------
   const handleCustomerSelect = async (customerData) => {
     console.log("Attempting to save customer:", customerData); // debug log
 
@@ -257,7 +256,7 @@ export default function CreateJobCardPage() {
     }
   };
 
-  // -------------------- ✅ UPDATED: DVLA API Fetch with inline notifications --------------------
+  // -------------------- DVLA API Fetch with inline notifications --------------------
   const handleFetchVehicleData = async () => {
     // validate that registration is entered
     if (!vehicle.reg.trim()) {
@@ -266,7 +265,6 @@ export default function CreateJobCardPage() {
     }
 
     setIsLoadingVehicle(true); // set loading state
-    setVehicleDataSource(""); // clear previous data source
     setError(""); // clear previous errors
     setVehicleNotification(null); // clear previous notifications
 
@@ -320,7 +318,6 @@ export default function CreateJobCardPage() {
           engine: existingVehicle.engine || "No data provided",
           mileage: existingVehicle.mileage || "",
         });
-        setVehicleDataSource("Database (Vehicle already registered)");
         showNotification("vehicle", "success", "✓ Vehicle loaded from database!");
         setIsLoadingVehicle(false);
         return; // exit early since we found vehicle in database
@@ -353,7 +350,6 @@ export default function CreateJobCardPage() {
           engine: "No data provided",
           mileage: "", // keep mileage editable
         });
-        setVehicleDataSource("DVLA API (No data)");
         showNotification("vehicle", "error", "✗ No vehicle data found for this registration");
         return;
       }
@@ -369,7 +365,6 @@ export default function CreateJobCardPage() {
       };
 
       setVehicle(vehicleData);
-      setVehicleDataSource("DVLA API");
       showNotification("vehicle", "success", "✓ Vehicle details fetched from DVLA!");
 
       // ✅ STEP 3: Save vehicle to database for future use
@@ -407,13 +402,12 @@ export default function CreateJobCardPage() {
         engine: "No data provided",
         mileage: vehicle.mileage || "", // keep mileage editable
       });
-      setVehicleDataSource("Error");
     } finally {
       setIsLoadingVehicle(false); // stop loading spinner
     }
   };
 
-  // -------------------- ✅ FIXED: Save Job Function with correct column names --------------------
+  // -------------------- ✅ UPDATED: Save Job Function with redirect and job number --------------------
   const handleSaveJob = async () => {
     try {
       const newJobId = localJobCounter++; // increment job ID counter
@@ -423,11 +417,11 @@ export default function CreateJobCardPage() {
         id: newJobId,
         customer: customer ? `${customer.firstName} ${customer.lastName}` : "Unknown Customer",
         customer_id: customer ? customer.id : null, // link customer by ID
-        vehicle_reg: vehicle.reg, // ✅ FIXED: snake_case
-        vehicle_make_model: vehicle.makeModel, // ✅ FIXED: snake_case
-        waiting_status: waitingStatus, // ✅ FIXED: snake_case
-        job_source: jobSource, // ✅ FIXED: snake_case
-        job_categories: jobCategories, // ✅ FIXED: snake_case
+        vehicle_reg: vehicle.reg, // snake_case
+        vehicle_make_model: vehicle.makeModel, // snake_case
+        waiting_status: waitingStatus, // snake_case
+        job_source: jobSource, // snake_case
+        job_categories: jobCategories, // snake_case
         requests: requests,
         created_at: new Date().toISOString(),
       };
@@ -443,7 +437,7 @@ export default function CreateJobCardPage() {
 
       addJob(jobData); // update local context
 
-      // ✅ STEP 4: Link customer to vehicle in database (if customer selected)
+      // ✅ Link customer to vehicle in database (if customer selected)
       if (customer && vehicle.reg) {
         console.log("Linking customer to vehicle..."); // debug log
 
@@ -459,8 +453,8 @@ export default function CreateJobCardPage() {
         }
       }
 
-      alert(`Job #${newJobId} saved successfully.`); // success message (kept as alert since redirecting anyway)
-      router.push("/appointments"); // redirect to appointments page
+      // ✅ Redirect to appointments page with job number pre-filled
+      router.push(`/appointments?jobNumber=${newJobId}`);
     } catch (err) {
       console.error("Error saving job:", err);
       alert(`Error saving job: ${err.message}. Check console for details.`);
@@ -787,7 +781,7 @@ export default function CreateJobCardPage() {
           >
             <h3 style={{ marginTop: 0 }}>Vehicle Details</h3>
 
-            {/* ✅ NEW: Vehicle notification banner */}
+            {/* ✅ Vehicle notification banner */}
             {vehicleNotification && (
               <div
                 style={{
@@ -885,22 +879,7 @@ export default function CreateJobCardPage() {
               </div>
             </div>
 
-            {/* Display data source indicator */}
-            {vehicleDataSource && (
-              <div
-                style={{
-                  fontSize: "0.8rem",
-                  color: "#007bff",
-                  marginBottom: "12px",
-                  padding: "8px 12px",
-                  backgroundColor: "#e7f3ff",
-                  borderRadius: "6px",
-                  border: "1px solid #b3d9ff",
-                }}
-              >
-                <strong>Data Source:</strong> {vehicleDataSource}
-              </div>
-            )}
+            {/* ✅ REMOVED: Data Source section */}
 
             {/* Display error message if any */}
             {error && (
@@ -1035,7 +1014,7 @@ export default function CreateJobCardPage() {
           >
             <h3 style={{ marginTop: 0 }}>Customer Details</h3>
 
-            {/* ✅ NEW: Customer notification banner */}
+            {/* ✅ Customer notification banner */}
             {customerNotification && (
               <div
                 style={{
@@ -1435,7 +1414,7 @@ export default function CreateJobCardPage() {
         {showNewCustomer && (
           <NewCustomerPopup
             onClose={() => setShowNewCustomer(false)}
-            onSelect={(c) => handleCustomerSelect(c)} // now saves customer to database
+            onSelect={(c) => handleCustomerSelect(c)}
           />
         )}
         {showExistingCustomer && (
@@ -1545,6 +1524,20 @@ export default function CreateJobCardPage() {
           </div>
         )}
       </div>
+
+      {/* ✅ CSS animation for notifications */}
+      <style jsx>{`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </Layout>
   );
 }

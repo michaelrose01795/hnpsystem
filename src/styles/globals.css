@@ -1,25 +1,24 @@
-/* file location: src/styles/globals.css */
-
-/* Reset some defaults */
+/* ========================================================= */
+/* === Reset & Base Styles === */
+/* ========================================================= */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-/* Apply a base font */
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-  background-color: #f8f9fa;
+  background: linear-gradient(to bottom, #fffafa, #ffecec);
   color: #222;
   line-height: 1.5;
-  transition: background-color 0.3s, color 0.3s; /* smooth mode transition */
+  transition: background-color 0.3s, color 0.3s;
 }
 
 /* Links */
 a {
-  color: #d10000; /* H&P red accent */
+  color: #d10000;
   text-decoration: none;
   transition: color 0.2s;
 }
@@ -46,7 +45,7 @@ button:hover {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
-/* Input & Textarea & Select fields */
+/* Inputs, Textareas & Selects */
 input[type="text"],
 input[type="number"],
 input[type="email"],
@@ -64,16 +63,12 @@ select {
   background-color: #fafafa;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
-
-/* Hover effect for inputs */
 input:hover,
 textarea:hover,
 select:hover {
   border-color: #d10000;
   box-shadow: 0 0 3px #d10000;
 }
-
-/* Focused input effect */
 input:focus,
 textarea:focus,
 select:focus {
@@ -82,13 +77,13 @@ select:focus {
   box-shadow: 0 4px 8px rgba(255, 64, 64, 0.1);
 }
 
-/* Optional: subtle placeholder style */
+/* Placeholder style */
 input::placeholder,
 textarea::placeholder {
   color: #999;
 }
 
-/* Label styling for consistent look */
+/* Labels */
 label {
   font-size: 0.85rem;
   font-weight: 500;
@@ -98,13 +93,46 @@ label {
 }
 
 /* ========================================================= */
-/* === Global Dark Mode Overrides === */
+/* === Card & Section Styles for News Feed / Layout === */
 /* ========================================================= */
+section,
+div.card,
+div.news-card {
+  border-radius: 16px;
+  background-color: #fff;
+  padding: 20px;
+  margin-bottom: 24px; /* spacing between cards */
+  box-shadow: 
+    0 8px 16px rgba(0, 0, 0, 0.08),
+    0 0 20px rgba(255, 64, 64, 0.05); /* subtle glow */
+  transition: all 0.3s ease, box-shadow 0.4s ease;
+}
+section:hover,
+div.card:hover,
+div.news-card:hover {
+  transform: translateY(-6px); /* floating lift */
+  box-shadow: 
+    0 16px 32px rgba(0, 0, 0, 0.12),
+    0 0 30px rgba(255, 64, 64, 0.2); /* stronger glow on hover */
+  border-color: #ffb3b3;
+}
 
-/* Main body dark mode */
+/* Optional: glowing effect for headings inside cards */
+div.news-card h3,
+div.card h3 {
+  transition: text-shadow 0.3s ease;
+}
+div.news-card:hover h3,
+div.card:hover h3 {
+  text-shadow: 0 0 8px rgba(255, 64, 64, 0.6);
+}
+
+/* ========================================================= */
+/* === Dark Mode Overrides === */
+/* ========================================================= */
 body.dark-mode {
-  background-color: #121212 !important; /* Deep dark background */
-  color: #e0e0e0 !important; /* Light text */
+  background-color: #121212 !important;
+  color: #e0e0e0 !important;
 }
 
 /* Smooth transition for all main elements */
@@ -117,18 +145,17 @@ aside {
   transition: background-color 0.3s, color 0.3s;
 }
 
-/* Make containers and layout areas respect dark mode but skip popups */
+/* Dark mode containers & layout */
 body.dark-mode div,
 body.dark-mode section,
-body-dark-mode main,
+body.dark-mode main,
 body.dark-mode header,
 body.dark-mode aside {
   background-color: transparent !important;
   color: #e0e0e0 !important;
 }
 
-/* --- Popup Fix --- */
-/* Ensure popups remain visible in dark mode */
+/* Popups & modals */
 body.dark-mode .popup,
 body.dark-mode .modal,
 body.dark-mode .dialog,
@@ -136,7 +163,7 @@ body.dark-mode .overlay,
 body.dark-mode [class*="popup"],
 body.dark-mode [class*="modal"],
 body.dark-mode [class*="dialog"] {
-  background-color: #1f1f1f !important; /* Dark grey background */
+  background-color: #1f1f1f !important;
   color: #e0e0e0 !important;
   border: 1px solid #333 !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
@@ -173,4 +200,37 @@ body.dark-mode a:hover {
 /* Labels in dark mode */
 body.dark-mode label {
   color: #ccc !important;
+}
+
+/* ========================================================= */
+/* === Misc / Utility Enhancements === */
+/* ========================================================= */
+hr {
+  border: none;
+  height: 1px;
+  background: #eee;
+  margin: 16px 0;
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #ff4040, #d10000);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.shadow-soft {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+.shadow-soft:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Main content wrapper spacing */
+div#main-content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* spacing between sections/cards */
 }
