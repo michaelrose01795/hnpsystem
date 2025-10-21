@@ -14,6 +14,7 @@ body {
   background-color: #f8f9fa;
   color: #222;
   line-height: 1.5;
+  transition: background-color 0.3s, color 0.3s; /* smooth mode transition */
 }
 
 /* Links */
@@ -94,4 +95,82 @@ label {
   color: #555;
   display: block;
   margin-bottom: 4px;
+}
+
+/* ========================================================= */
+/* === Global Dark Mode Overrides === */
+/* ========================================================= */
+
+/* Main body dark mode */
+body.dark-mode {
+  background-color: #121212 !important; /* Deep dark background */
+  color: #e0e0e0 !important; /* Light text */
+}
+
+/* Smooth transition for all main elements */
+body,
+div,
+section,
+main,
+header,
+aside {
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Make containers and layout areas respect dark mode but skip popups */
+body.dark-mode div,
+body.dark-mode section,
+body-dark-mode main,
+body.dark-mode header,
+body.dark-mode aside {
+  background-color: transparent !important;
+  color: #e0e0e0 !important;
+}
+
+/* --- Popup Fix --- */
+/* Ensure popups remain visible in dark mode */
+body.dark-mode .popup,
+body.dark-mode .modal,
+body.dark-mode .dialog,
+body.dark-mode .overlay,
+body.dark-mode [class*="popup"],
+body.dark-mode [class*="modal"],
+body.dark-mode [class*="dialog"] {
+  background-color: #1f1f1f !important; /* Dark grey background */
+  color: #e0e0e0 !important;
+  border: 1px solid #333 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Buttons in dark mode */
+body.dark-mode button {
+  background-color: #ff4040 !important;
+  color: #fff !important;
+  border: 1px solid #ff5a5a !important;
+}
+body.dark-mode button:hover {
+  background-color: #d10000 !important;
+}
+
+/* Inputs, selects, and textareas in dark mode */
+body.dark-mode input,
+body.dark-mode textarea,
+body.dark-mode select {
+  background-color: #1e1e1e !important;
+  color: #e0e0e0 !important;
+  border-color: #333 !important;
+  box-shadow: none !important;
+}
+
+/* Links in dark mode */
+body.dark-mode a {
+  color: #ff4040 !important;
+}
+body.dark-mode a:hover {
+  color: #ff7070 !important;
+}
+
+/* Labels in dark mode */
+body.dark-mode label {
+  color: #ccc !important;
 }

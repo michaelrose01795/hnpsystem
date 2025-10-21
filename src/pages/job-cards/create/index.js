@@ -243,7 +243,7 @@ export default function CreateJobCardPage() {
       addJob(jobData); // update local context
 
       alert(`Job #${newJobId} saved successfully.`); // success message
-      router.push("/job-cards"); // redirect to job cards list
+      router.push("/appointments"); // redirect to appointment page
     } catch (err) {
       console.error("Error saving job:", err);
       alert("Error saving job. Check console for details.");

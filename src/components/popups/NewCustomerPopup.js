@@ -1,8 +1,8 @@
 // file location: src/components/popups/NewCustomerPopup.js
 import React, { useState } from "react"; // Import React and useState hook
 
-// NewCustomerPopup component, receives onClose and onAdd from parent
-export default function NewCustomerPopup({ onClose, onAdd }) {
+// NewCustomerPopup component, receives onClose and onSelect from parent
+export default function NewCustomerPopup({ onClose, onSelect }) {
   // firstName state for customer's first name
   const [firstName, setFirstName] = useState(""); // Track first name
   // lastName state for customer's last name
@@ -24,21 +24,25 @@ export default function NewCustomerPopup({ onClose, onAdd }) {
   // telephone state for landline
   const [telephone, setTelephone] = useState(""); // Track telephone
 
-  // handleAdd aggregates field values and calls parent onAdd + onClose
+  // handleAdd aggregates field values and calls parent onSelect + onClose
   const handleAdd = () => {
     // Build address string from address parts
     const address = `${number} ${street}, ${town}, ${country}, ${postcode}`; // Build address
-    // Call onAdd with the new customer object
-    onAdd({
-      firstName, // customer's first name
-      lastName, // customer's last name
-      address, // aggregated address
-      email, // customer's email
-      mobile, // customer's mobile
-      telephone, // customer's telephone
-    }); // Pass new customer back to parent
+    // Safely call onSelect if provided
+    if (typeof onSelect === "function") {
+      onSelect({
+        firstName, // customer's first name
+        lastName, // customer's last name
+        address, // aggregated address
+        email, // customer's email
+        mobile, // customer's mobile
+        telephone, // customer's telephone
+      });
+    } else {
+      console.error("onSelect is not defined or not a function.");
+    }
     // Close the popup after adding
-    onClose(); // Close popup
+    if (typeof onClose === "function") onClose(); // Close popup
   }; // End handleAdd
 
   // JSX returned by component (overlay + form)
@@ -71,94 +75,116 @@ export default function NewCustomerPopup({ onClose, onAdd }) {
       >
         {/* Title */}
         <h3 style={{ marginTop: 0 }}>Add New Customer</h3> {/* Heading */}
+
         {/* First Name */}
-        <label>First Name:</label> {/* Label */}
+        <label>First Name:</label>
         <input
-          type="text" // text input
-          value={firstName} // bind to state
-          onChange={(e) => setFirstName(e.target.value)} // update state
-          style={{ width: "100%", marginBottom: "8px" }} // styling
+          type="text"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          style={{ width: "100%", marginBottom: "8px" }}
         />
+
         {/* Last Name */}
-        <label>Last Name:</label> {/* Label */}
+        <label>Last Name:</label>
         <input
-          type="text" // text input
-          value={lastName} // bind to state
-          onChange={(e) => setLastName(e.target.value)} // update state
-          style={{ width: "100%", marginBottom: "8px" }} // styling
+          type="text"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          style={{ width: "100%", marginBottom: "8px" }}
         />
+
         {/* Number */}
-        <label>Number:</label> {/* Label */}
+        <label>Number:</label>
         <input
-          type="text" // text input
-          value={number} // bind to state
-          onChange={(e) => setNumber(e.target.value)} // update state
-          style={{ width: "100%", marginBottom: "8px" }} // styling
+          type="text"
+          value={number}
+          onChange={(e) => setNumber(e.target.value)}
+          style={{ width: "100%", marginBottom: "8px" }}
         />
+
         {/* Street */}
-        <label>Street:</label> {/* Label */}
+        <label>Street:</label>
         <input
-          type="text" // text input
-          value={street} // bind to state
-          onChange={(e) => setStreet(e.target.value)} // update state
-          style={{ width: "100%", marginBottom: "8px" }} // styling
+          type="text"
+          value={street}
+          onChange={(e) => setStreet(e.target.value)}
+          style={{ width: "100%", marginBottom: "8px" }}
         />
+
         {/* Town/City */}
-        <label>Town/City:</label> {/* Label */}
+        <label>Town/City:</label>
         <input
-          type="text" // text input
-          value={town} // bind to state
-          onChange={(e) => setTown(e.target.value)} // update state
-          style={{ width: "100%", marginBottom: "8px" }} // styling
+          type="text"
+          value={town}
+          onChange={(e) => setTown(e.target.value)}
+          style={{ width: "100%", marginBottom: "8px" }}
         />
+
         {/* Country */}
-        <label>Country:</label> {/* Label */}
+        <label>Country:</label>
         <input
-          type="text" // text input
-          value={country} // bind to state
-          onChange={(e) => setCountry(e.target.value)} // update state
-          style={{ width: "100%", marginBottom: "8px" }} // styling
+          type="text"
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          style={{ width: "100%", marginBottom: "8px" }}
         />
+
         {/* Postcode */}
-        <label>Postcode:</label> {/* Label */}
+        <label>Postcode:</label>
         <input
-          type="text" // text input
-          value={postcode} // bind to state
-          onChange={(e) => setPostcode(e.target.value)} // update state
-          style={{ width: "100%", marginBottom: "8px" }} // styling
+          type="text"
+          value={postcode}
+          onChange={(e) => setPostcode(e.target.value)}
+          style={{ width: "100%", marginBottom: "8px" }}
         />
+
         {/* Email */}
-        <label>Email:</label> {/* Label */}
+        <label>Email:</label>
         <input
-          type="email" // email input
-          value={email} // bind to state
-          onChange={(e) => setEmail(e.target.value)} // update state
-          style={{ width: "100%", marginBottom: "8px" }} // styling
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={{ width: "100%", marginBottom: "8px" }}
         />
+
         {/* Mobile */}
-        <label>Mobile:</label> {/* Label */}
+        <label>Mobile:</label>
         <input
-          type="text" // text input
-          value={mobile} // bind to state
-          onChange={(e) => setMobile(e.target.value)} // update state
-          style={{ width: "100%", marginBottom: "8px" }} // styling
+          type="text"
+          value={mobile}
+          onChange={(e) => setMobile(e.target.value)}
+          style={{ width: "100%", marginBottom: "8px" }}
         />
+
         {/* Telephone */}
-        <label>Telephone:</label> {/* Label */}
+        <label>Telephone:</label>
         <input
-          type="text" // text input
-          value={telephone} // bind to state
-          onChange={(e) => setTelephone(e.target.value)} // update state
-          style={{ width: "100%", marginBottom: "8px" }} // styling
+          type="text"
+          value={telephone}
+          onChange={(e) => setTelephone(e.target.value)}
+          style={{ width: "100%", marginBottom: "8px" }}
         />
+
         {/* Buttons row */}
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "12px" }}>
-          {/* Close button */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginTop: "12px",
+          }}
+        >
           <button onClick={onClose} style={{ padding: "8px 16px" }}>
             Close
           </button>
-          {/* Add Customer button */}
-          <button onClick={handleAdd} style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white" }}>
+          <button
+            onClick={handleAdd}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#FF4040",
+              color: "white",
+            }}
+          >
             Add Customer
           </button>
         </div>

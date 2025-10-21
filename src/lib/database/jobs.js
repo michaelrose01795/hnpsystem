@@ -248,7 +248,9 @@ export const addJobToDatabase = async ({
       .eq("registration", reg)
       .single();
 
-    if (vehicleError && vehicleError.code === "PGRST116") {
+    // ✅ Create new vehicle if not found or fetch failed
+    if (!vehicle) {
+      console.warn("⚠️ Vehicle not found, creating new record...");
       const { data: newVehicle, error: newVehicleError } = await supabase
         .from("vehicles")
         .insert([{ registration: reg, customer_id: customerId }])
@@ -258,6 +260,12 @@ export const addJobToDatabase = async ({
       vehicle = newVehicle;
     }
 
+    // ✅ Ensure vehicle is valid
+    if (!vehicle || !vehicle.id) {
+      throw new Error("Vehicle record could not be found or created");
+    }
+
+    // ✅ Create new job
     const { data: job, error: jobError } = await supabase
       .from("jobs")
       .insert([
@@ -274,6 +282,7 @@ export const addJobToDatabase = async ({
       .single();
 
     if (jobError) throw jobError;
+    console.log("✅ Job successfully added:", job);
     return { success: true, data: job };
   } catch (error) {
     console.error("❌ Error adding job:", error);
@@ -330,9 +339,10 @@ export const saveVhcSection = async (jobNumber, sectionKey, sectionData) => {
       .eq("job_number", jobNumber)
       .single();
 
-    const updatedData = !fetchError && existing?.data
-      ? { ...existing.data, [sectionKey]: sectionData }
-      : { [sectionKey]: sectionData };
+    const updatedData =
+      !fetchError && existing?.data
+        ? { ...existing.data, [sectionKey]: sectionData }
+        : { [sectionKey]: sectionData };
 
     const { data, error } = await supabase
       .from("vhc_checks")
