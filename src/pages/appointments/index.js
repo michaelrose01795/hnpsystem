@@ -236,14 +236,17 @@ export default function Appointments() {
     const jobsForDate = jobs.filter((j) => j.appointment?.date === date.toISOString().split("T")[0]); // Filter jobs for date
     return {
       totalJobs: jobsForDate.length,
-      services: jobsForDate.filter((j) => j.reason?.toLowerCase().includes("service")).length,
-      MOT: jobsForDate.filter((j) => j.MOT).length,
-      diagnosis: jobsForDate.filter((j) => j.reason?.toLowerCase().includes("diagnosis")).length,
+      services: jobsForDate.filter((j) => j.reason?.toLowerCase().includes("service") || j.type?.toLowerCase().includes("service")).length,
+      MOT: jobsForDate.filter((j) => j.MOT || j.type?.toLowerCase().includes("mot")).length,
+      diagnosis: jobsForDate.filter((j) => j.reason?.toLowerCase().includes("diagnosis") || j.type?.toLowerCase().includes("diagnosis")).length,
       other: jobsForDate.filter(
         (j) =>
           !j.MOT &&
+          !j.type?.toLowerCase().includes("mot") &&
           !j.reason?.toLowerCase().includes("service") &&
-          !j.reason?.toLowerCase().includes("diagnosis")
+          !j.type?.toLowerCase().includes("service") &&
+          !j.reason?.toLowerCase().includes("diagnosis") &&
+          !j.type?.toLowerCase().includes("diagnosis")
       ).length,
     };
   };
@@ -262,6 +265,14 @@ export default function Appointments() {
       job.reg?.toLowerCase().includes(query) // Match registration
     );
   });
+
+  // Helper to safely display vehicle info
+  const getVehicleDisplay = (job) => {
+    if (job.make && job.model) {
+      return `${job.make} ${job.model}`;
+    }
+    return job.vehicle_make_model || "N/A";
+  };
 
   // ---------------- Render ----------------
   return (
@@ -671,15 +682,15 @@ export default function Appointments() {
                       transition: "background-color 0.5s",
                     }}
                   >
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.jobNumber || "0"}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.reg || "0"}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.vehicle || `${job.make} ${job.model}` || "0"}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.customer || "0"}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.appointment?.time || "0"}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>0</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.reason || job.description || "0"}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.totalTime || "0"}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.timeOnJob || "0"}</td>
+                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.jobNumber || "-"}</td>
+                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.reg || "-"}</td>
+                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{getVehicleDisplay(job)}</td>
+                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.customer || "-"}</td>
+                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.appointment?.time || "-"}</td>
+                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>-</td>
+                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.reason || job.description || job.type || "-"}</td>
+                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.totalTime || "-"}</td>
+                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.timeOnJob || "-"}</td>
                     <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
                       <input type="checkbox" checked={job.waiting || false} readOnly />
                     </td>
@@ -695,7 +706,7 @@ export default function Appointments() {
                     <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
                       <input type="checkbox" checked={job.wash || false} readOnly />
                     </td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.customerAddress || "0"}</td>
+                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.customerAddress || "-"}</td>
                   </tr>
                 ))
               ) : (

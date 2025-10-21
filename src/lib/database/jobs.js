@@ -1,4 +1,4 @@
-// file location: src/lib/database/jobs.js
+// ✅ File location: src/lib/database/jobs.js
 import { supabase } from "../supabaseClient";
 import dayjs from "dayjs";
 
@@ -19,9 +19,11 @@ export const getAllJobs = async () => {
       type,
       status,
       assigned_to,
-      vehicle:vehicles(
-        id,
-        registration,
+      customer_id,
+      vehicle_id,
+      vehicle:vehicle_id(
+        vehicle_id,
+        reg_number,
         make,
         model,
         year,
@@ -33,27 +35,23 @@ export const getAllJobs = async () => {
         transmission,
         body_style,
         mot_due,
-        service_history,
-        warranty_type,
-        warranty_expiry,
-        insurance_provider,
-        insurance_policy_number,
-        customer:users(
+        customer:customer_id(
           id,
-          first_name,
-          last_name,
+          firstname,
+          lastname,
           email,
-          phone,
+          mobile,
+          telephone,
           address,
-          contact_preference
+          postcode
         )
       ),
-      technician:users(id, first_name, last_name, email),
-      appointments(*),
-      vhc_checks(*),
-      parts_requests(*),
-      job_notes(*),
-      job_writeups(*)
+      technician:assigned_to(user_id, first_name, last_name, email),
+      appointments(appointment_id, scheduled_time, status, notes),
+      vhc_checks(vhc_id, section, issue_title, issue_description, measurement),
+      parts_requests(request_id, part_id, quantity, status),
+      job_notes(note_id, note_text, created_at),
+      job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time)
     `);
 
   if (error) {
@@ -62,7 +60,6 @@ export const getAllJobs = async () => {
   }
 
   console.log("✅ getAllJobs fetched:", data?.length || 0, "jobs"); // Debug log
-  console.log("📋 Sample job data:", data?.[0]); // Show first job structure
 
   return data.map((job) => ({
     id: job.id,
@@ -70,7 +67,7 @@ export const getAllJobs = async () => {
     description: job.description || "",
     type: job.type || "",
     status: job.status || "",
-    reg: job.vehicle?.registration || "",
+    reg: job.vehicle?.reg_number || "",
     make: job.vehicle?.make || "",
     model: job.vehicle?.model || "",
     year: job.vehicle?.year || "",
@@ -83,9 +80,9 @@ export const getAllJobs = async () => {
       ? `${job.technician.first_name} ${job.technician.last_name}`
       : "",
     customer: job.vehicle?.customer
-      ? `${job.vehicle.customer.first_name} ${job.vehicle.customer.last_name}`
+      ? `${job.vehicle.customer.firstname} ${job.vehicle.customer.lastname}`
       : "",
-    customerPhone: job.vehicle?.customer?.phone || "",
+    customerPhone: job.vehicle?.customer?.mobile || job.vehicle?.customer?.telephone || "",
     customerEmail: job.vehicle?.customer?.email || "",
     customerAddress: job.vehicle?.customer?.address || "",
     appointment: job.appointments?.[0]
@@ -113,22 +110,23 @@ export const getDashboardData = async () => {
   const { data: appointmentsData, error } = await supabase
     .from("appointments")
     .select(`
-      id,
+      appointment_id,
       scheduled_time,
       notes,
-      job:jobs(
+      job:job_id(
         id,
         job_number,
         type,
         status,
-        vehicle:vehicles(
-          registration,
+        vehicle:vehicle_id(
+          reg_number,
           make,
           model
         )
       )
     `)
-    .eq("scheduled_time", today);
+    .gte("scheduled_time", `${today}T00:00:00`)
+    .lte("scheduled_time", `${today}T23:59:59`);
 
   if (error) {
     console.error("❌ Error fetching today's appointments:", error);
@@ -136,7 +134,7 @@ export const getDashboardData = async () => {
   }
 
   const appointments = (appointmentsData || []).map((a) => ({
-    appointmentId: a.id,
+    appointmentId: a.appointment_id,
     scheduledTime: a.scheduled_time,
     notes: a.notes,
     job: {
@@ -144,7 +142,7 @@ export const getDashboardData = async () => {
       jobNumber: a.job?.job_number,
       type: a.job?.type,
       status: a.job?.status,
-      reg: a.job?.vehicle?.registration,
+      reg: a.job?.vehicle?.reg_number,
       make: a.job?.vehicle?.make,
       model: a.job?.vehicle?.model,
     },
@@ -155,7 +153,7 @@ export const getDashboardData = async () => {
 
 /* ============================================
    FETCH JOB BY JOB NUMBER OR VEHICLE REG
-   Updated with better debugging and error handling
+   Updated to work with actual table structure
 ============================================ */
 export const getJobByNumberOrReg = async (searchTerm) => {
   console.log("🔍 getJobByNumberOrReg: Searching for:", searchTerm); // Debug log
@@ -171,9 +169,9 @@ export const getJobByNumberOrReg = async (searchTerm) => {
       status,
       assigned_to,
       vehicle_id,
-      vehicle:vehicles(
-        id,
-        registration,
+      vehicle:vehicle_id(
+        vehicle_id,
+        reg_number,
         make,
         model,
         year,
@@ -185,27 +183,23 @@ export const getJobByNumberOrReg = async (searchTerm) => {
         transmission,
         body_style,
         mot_due,
-        service_history,
-        warranty_type,
-        warranty_expiry,
-        insurance_provider,
-        insurance_policy_number,
-        customer:users(
+        customer:customer_id(
           id,
-          first_name,
-          last_name,
+          firstname,
+          lastname,
           email,
-          phone,
+          mobile,
+          telephone,
           address,
-          contact_preference
+          postcode
         )
       ),
-      technician:users(id, first_name, last_name, email),
-      appointments(*),
-      vhc_checks(*),
-      parts_requests(*),
-      job_notes(*),
-      job_writeups(*)
+      technician:assigned_to(user_id, first_name, last_name, email),
+      appointments(appointment_id, scheduled_time, status, notes),
+      vhc_checks(vhc_id, section, issue_title, issue_description),
+      parts_requests(request_id, part_id, quantity, status),
+      job_notes(note_id, note_text, created_at),
+      job_writeups(writeup_id, work_performed, parts_used, recommendations)
     `)
     .eq("job_number", searchTerm)
     .maybeSingle();
@@ -219,137 +213,97 @@ export const getJobByNumberOrReg = async (searchTerm) => {
     console.log("⚠️ Job not found by job_number, trying registration..."); // Debug log
     
     // If not found by job number, try by vehicle registration
-    const { data: vehicleData, error: vehicleError } = await supabase
-      .from("vehicles")
+    const { data: vehicleJobs, error: vehicleError } = await supabase
+      .from("jobs")
       .select(`
         id,
-        jobs(
-          id,
-          job_number,
-          description,
-          type,
-          status,
-          assigned_to,
-          vehicle:vehicles(
+        job_number,
+        description,
+        type,
+        status,
+        assigned_to,
+        vehicle_id,
+        vehicle:vehicle_id(
+          vehicle_id,
+          reg_number,
+          make,
+          model,
+          year,
+          colour,
+          vin,
+          customer:customer_id(
             id,
-            registration,
-            make,
-            model,
-            year,
-            colour,
-            vin,
-            engine_number,
-            mileage,
-            fuel_type,
-            transmission,
-            body_style,
-            mot_due,
-            service_history,
-            warranty_type,
-            warranty_expiry,
-            insurance_provider,
-            insurance_policy_number,
-            customer:users(
-              id,
-              first_name,
-              last_name,
-              email,
-              phone,
-              address,
-              contact_preference
-            )
-          ),
-          technician:users(id, first_name, last_name, email),
-          appointments(*),
-          vhc_checks(*),
-          parts_requests(*),
-          job_notes(*),
-          job_writeups(*)
-        )
+            firstname,
+            lastname,
+            email,
+            mobile,
+            telephone,
+            address,
+            postcode
+          )
+        ),
+        technician:assigned_to(user_id, first_name, last_name, email),
+        appointments(appointment_id, scheduled_time, status, notes),
+        vhc_checks(vhc_id, section, issue_title, issue_description),
+        parts_requests(request_id, part_id, quantity, status),
+        job_notes(note_id, note_text, created_at),
+        job_writeups(writeup_id, work_performed, parts_used, recommendations)
       `)
-      .eq("registration", searchTerm)
-      .maybeSingle();
+      .eq("vehicle.reg_number", searchTerm);
 
-    if (vehicleError || !vehicleData || !vehicleData.jobs || vehicleData.jobs.length === 0) {
+    if (vehicleError || !vehicleJobs || vehicleJobs.length === 0) {
       console.log("❌ Job not found by registration either"); // Debug log
       return null;
     }
 
-    const data = vehicleData.jobs[0];
+    const data = vehicleJobs[0];
     console.log("✅ Job found by registration:", data.job_number); // Debug log
     
-    return {
-      id: data.id,
-      jobNumber: data.job_number,
-      description: data.description,
-      type: data.type,
-      status: data.status,
-      reg: data.vehicle?.registration || "",
-      make: data.vehicle?.make || "",
-      model: data.vehicle?.model || "",
-      year: data.vehicle?.year || "",
-      colour: data.vehicle?.colour || "",
-      vin: data.vehicle?.vin || "",
-      vehicle: data.vehicle,
-      customer: data.vehicle?.customer
-        ? `${data.vehicle.customer.first_name} ${data.vehicle.customer.last_name}`
-        : "",
-      customerPhone: data.vehicle?.customer?.phone || "",
-      customerEmail: data.vehicle?.customer?.email || "",
-      customerAddress: data.vehicle?.customer?.address || "",
-      technician: data.technician
-        ? `${data.technician.first_name} ${data.technician.last_name}`
-        : "",
-      appointment: data.appointments?.[0]
-        ? {
-            date: dayjs(data.appointments[0].scheduled_time).format("YYYY-MM-DD"),
-            time: dayjs(data.appointments[0].scheduled_time).format("HH:mm"),
-            notes: data.appointments[0].notes || "",
-          }
-        : null,
-      vhcChecks: data.vhc_checks || [],
-      partsRequests: data.parts_requests || [],
-      notes: data.job_notes || [],
-      writeUp: data.job_writeups?.[0] || null,
-    };
+    return formatJobData(data);
   }
 
   console.log("✅ Job found by job_number:", jobData.job_number); // Debug log
-  console.log("📋 Full job data:", jobData); // Show complete job structure
+  return formatJobData(jobData);
+};
 
+/* ============================================
+   HELPER: FORMAT JOB DATA
+   Converts database format to application format
+============================================ */
+const formatJobData = (data) => {
   return {
-    id: jobData.id,
-    jobNumber: jobData.job_number,
-    description: jobData.description,
-    type: jobData.type,
-    status: jobData.status,
-    reg: jobData.vehicle?.registration || "",
-    make: jobData.vehicle?.make || "",
-    model: jobData.vehicle?.model || "",
-    year: jobData.vehicle?.year || "",
-    colour: jobData.vehicle?.colour || "",
-    vin: jobData.vehicle?.vin || "",
-    vehicle: jobData.vehicle,
-    customer: jobData.vehicle?.customer
-      ? `${jobData.vehicle.customer.first_name} ${jobData.vehicle.customer.last_name}`
+    id: data.id,
+    jobNumber: data.job_number,
+    description: data.description,
+    type: data.type,
+    status: data.status,
+    reg: data.vehicle?.reg_number || "",
+    make: data.vehicle?.make || "",
+    model: data.vehicle?.model || "",
+    year: data.vehicle?.year || "",
+    colour: data.vehicle?.colour || "",
+    vin: data.vehicle?.vin || "",
+    vehicle: data.vehicle,
+    customer: data.vehicle?.customer
+      ? `${data.vehicle.customer.firstname} ${data.vehicle.customer.lastname}`
       : "",
-    customerPhone: jobData.vehicle?.customer?.phone || "",
-    customerEmail: jobData.vehicle?.customer?.email || "",
-    customerAddress: jobData.vehicle?.customer?.address || "",
-    technician: jobData.technician
-      ? `${jobData.technician.first_name} ${jobData.technician.last_name}`
+    customerPhone: data.vehicle?.customer?.mobile || data.vehicle?.customer?.telephone || "",
+    customerEmail: data.vehicle?.customer?.email || "",
+    customerAddress: data.vehicle?.customer?.address || "",
+    technician: data.technician
+      ? `${data.technician.first_name} ${data.technician.last_name}`
       : "",
-    appointment: jobData.appointments?.[0]
+    appointment: data.appointments?.[0]
       ? {
-          date: dayjs(jobData.appointments[0].scheduled_time).format("YYYY-MM-DD"),
-          time: dayjs(jobData.appointments[0].scheduled_time).format("HH:mm"),
-          notes: jobData.appointments[0].notes || "",
+          date: dayjs(data.appointments[0].scheduled_time).format("YYYY-MM-DD"),
+          time: dayjs(data.appointments[0].scheduled_time).format("HH:mm"),
+          notes: data.appointments[0].notes || "",
         }
       : null,
-    vhcChecks: jobData.vhc_checks || [],
-    partsRequests: jobData.parts_requests || [],
-    notes: jobData.job_notes || [],
-    writeUp: jobData.job_writeups?.[0] || null,
+    vhcChecks: data.vhc_checks || [],
+    partsRequests: data.parts_requests || [],
+    notes: data.job_notes || [],
+    writeUp: data.job_writeups?.[0] || null,
   };
 };
 
@@ -366,6 +320,8 @@ export const addJobToDatabase = async ({
   description,
 }) => {
   try {
+    console.log("➕ addJobToDatabase called with:", { jobNumber, reg, customerId, assignedTo, type }); // Debug log
+    
     // Validate required fields
     if (!jobNumber) {
       return { 
@@ -386,7 +342,7 @@ export const addJobToDatabase = async ({
       .from("jobs")
       .select("id, job_number")
       .eq("job_number", jobNumber)
-      .maybeSingle(); // Use maybeSingle instead of single to avoid error on no results
+      .maybeSingle();
 
     if (existingJob) {
       console.log("⚠️ Job number already exists:", jobNumber);
@@ -400,8 +356,8 @@ export const addJobToDatabase = async ({
     let { data: vehicle, error: vehicleError } = await supabase
       .from("vehicles")
       .select("*")
-      .eq("registration", reg)
-      .maybeSingle(); // Use maybeSingle to handle no results gracefully
+      .eq("reg_number", reg)
+      .maybeSingle();
 
     // Create new vehicle if not found
     if (!vehicle) {
@@ -409,8 +365,8 @@ export const addJobToDatabase = async ({
       const { data: newVehicle, error: newVehicleError } = await supabase
         .from("vehicles")
         .insert([{ 
-          registration: reg, 
-          customer_id: customerId || null // Allow null customer initially
+          reg_number: reg,
+          customer_id: customerId || null
         }])
         .select()
         .single();
@@ -425,7 +381,7 @@ export const addJobToDatabase = async ({
     }
 
     // Ensure vehicle is valid before proceeding
-    if (!vehicle || !vehicle.id) {
+    if (!vehicle || !vehicle.vehicle_id) {
       throw new Error("Vehicle record could not be found or created");
     }
 
@@ -435,11 +391,11 @@ export const addJobToDatabase = async ({
       .insert([
         {
           job_number: jobNumber,
-          vehicle_id: vehicle.id,
-          assigned_to: assignedTo || null, // Allow null assignment
-          type: type || "Service", // Default to Service if not specified
+          vehicle_id: vehicle.vehicle_id,
+          assigned_to: assignedTo || null,
+          type: type || "Service",
           description: description || "",
-          status: "New", // Set initial status
+          status: "New",
         },
       ])
       .select(`
@@ -449,17 +405,17 @@ export const addJobToDatabase = async ({
         type,
         status,
         assigned_to,
-        vehicle:vehicles(
-          id,
-          registration,
+        vehicle:vehicle_id(
+          vehicle_id,
+          reg_number,
           make,
           model,
-          customer:users(
+          customer:customer_id(
             id,
-            first_name,
-            last_name,
+            firstname,
+            lastname,
             email,
-            phone
+            mobile
           )
         )
       `)
@@ -472,20 +428,20 @@ export const addJobToDatabase = async ({
 
     console.log("✅ Job successfully added:", job);
 
-    // Format the response to match the expected structure in appointments page
+    // Format the response to match the expected structure
     const formattedJob = {
       id: job.id,
       jobNumber: job.job_number,
       description: job.description,
       type: job.type,
       status: job.status,
-      reg: job.vehicle?.registration || "",
+      reg: job.vehicle?.reg_number || "",
       make: job.vehicle?.make || "",
       model: job.vehicle?.model || "",
       customer: job.vehicle?.customer 
-        ? `${job.vehicle.customer.first_name} ${job.vehicle.customer.last_name}`
+        ? `${job.vehicle.customer.firstname} ${job.vehicle.customer.lastname}`
         : "",
-      appointment: null, // No appointment yet
+      appointment: null,
     };
 
     return { success: true, data: formattedJob };
@@ -577,7 +533,7 @@ export const createOrUpdateAppointment = async (jobNumber, appointmentDate, appo
     // Check if appointment already exists for this job
     const { data: existingAppointment, error: checkError } = await supabase
       .from("appointments")
-      .select("id")
+      .select("appointment_id")
       .eq("job_id", job.id)
       .maybeSingle();
 
@@ -595,7 +551,7 @@ export const createOrUpdateAppointment = async (jobNumber, appointmentDate, appo
           scheduled_time: scheduledDateTime,
           updated_at: new Date().toISOString()
         })
-        .eq("id", existingAppointment.id)
+        .eq("appointment_id", existingAppointment.appointment_id)
         .select()
         .single();
 
@@ -651,175 +607,27 @@ export const createOrUpdateAppointment = async (jobNumber, appointmentDate, appo
 };
 
 /* ============================================
-   SAVE VHC CHECKSHEET
-============================================ */
-export const saveChecksheet = async (jobNumber, checksheetData) => {
-  try {
-    const { data, error } = await supabase
-      .from("vhc_checks")
-      .upsert({ job_number: jobNumber, data: checksheetData })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return { success: true, data };
-  } catch (error) {
-    console.error("❌ Error saving checksheet:", error);
-    return { success: false, error };
-  }
-};
-
-/* ============================================
-   SAVE INDIVIDUAL VHC SECTION
-============================================ */
-export const saveVhcSection = async (jobNumber, sectionKey, sectionData) => {
-  try {
-    const { data: existing, error: fetchError } = await supabase
-      .from("vhc_checks")
-      .select("id, data")
-      .eq("job_number", jobNumber)
-      .single();
-
-    const updatedData =
-      !fetchError && existing?.data
-        ? { ...existing.data, [sectionKey]: sectionData }
-        : { [sectionKey]: sectionData };
-
-    const { data, error } = await supabase
-      .from("vhc_checks")
-      .upsert({ job_number: jobNumber, data: updatedData })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return { success: true, data };
-  } catch (error) {
-    console.error("❌ Error saving VHC section:", error);
-    return { success: false, error };
-  }
-};
-
-/* ============================================
-   SAVE WRITE-UP
-============================================ */
-export const saveWriteUp = async (jobNumber, writeUpData) => {
-  try {
-    const { data, error } = await supabase
-      .from("job_writeups")
-      .upsert({
-        job_number: jobNumber,
-        ...writeUpData,
-        updated_at: new Date(),
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return { success: true, data };
-  } catch (error) {
-    console.error("❌ Error saving write-up:", error);
-    return { success: false, error };
-  }
-};
-
-/* ============================================
-   UPLOAD JOB FILE
-============================================ */
-export const uploadJobFile = async (jobNumber, file, folder = "dealer-files") => {
-  try {
-    const filePath = `${folder}/${jobNumber}/${Date.now()}_${file.name}`;
-    const { error: uploadError } = await supabase.storage
-      .from("job-files")
-      .upload(filePath, file, { upsert: true });
-    if (uploadError) throw uploadError;
-
-    const { data: publicUrlData } = supabase.storage
-      .from("job-files")
-      .getPublicUrl(filePath);
-
-    await supabase.from("job_files").insert([
-      {
-        job_number: jobNumber,
-        file_name: file.name,
-        file_url: publicUrlData.publicUrl,
-        folder,
-        uploaded_at: new Date(),
-      },
-    ]);
-
-    return { success: true, url: publicUrlData.publicUrl };
-  } catch (error) {
-    console.error("❌ Error uploading job file:", error);
-    return { success: false, error };
-  }
-};
-
-/* ============================================
-   DELETE JOB FILE
-============================================ */
-export const deleteJobFile = async (fileId) => {
-  try {
-    const { data: file, error: fetchError } = await supabase
-      .from("job_files")
-      .select("file_url")
-      .eq("id", fileId)
-      .single();
-    if (fetchError) throw fetchError;
-
-    const filePath = file.file_url.split("/job-files/")[1];
-    const { error: deleteError } = await supabase.storage
-      .from("job-files")
-      .remove([filePath]);
-    if (deleteError) throw deleteError;
-
-    await supabase.from("job_files").delete().eq("id", fileId);
-    return { success: true };
-  } catch (error) {
-    console.error("❌ Error deleting job file:", error);
-    return { success: false, error };
-  }
-};
-
-/* ============================================
-   GET JOB FILES
-============================================ */
-export const getJobFiles = async (jobNumber) => {
-  const { data, error } = await supabase
-    .from("job_files")
-    .select("id, file_name, file_url, uploaded_at, folder")
-    .eq("job_number", jobNumber)
-    .order("uploaded_at", { ascending: false });
-
-  if (error) {
-    console.error("❌ Error fetching job files:", error);
-    return [];
-  }
-
-  return data || [];
-};
-
-/* ============================================
    GET JOBS BY DATE
 ============================================ */
 export const getJobsByDate = async (date) => {
   const { data, error } = await supabase
     .from("appointments")
     .select(`
-      id,
+      appointment_id,
       scheduled_time,
       notes,
-      job:jobs(
+      job:job_id(
         id,
         job_number,
         type,
         status,
-        vehicle:vehicles(
-          registration,
+        vehicle:vehicle_id(
+          reg_number,
           make,
           model,
-          customer:users(
-            first_name,
-            last_name
+          customer:customer_id(
+            firstname,
+            lastname
           )
         )
       )
@@ -833,7 +641,7 @@ export const getJobsByDate = async (date) => {
   }
 
   return data.map((a) => ({
-    appointmentId: a.id,
+    appointmentId: a.appointment_id,
     scheduledTime: a.scheduled_time,
     notes: a.notes,
     job: {
@@ -841,11 +649,11 @@ export const getJobsByDate = async (date) => {
       jobNumber: a.job?.job_number,
       type: a.job?.type,
       status: a.job?.status,
-      reg: a.job?.vehicle?.registration,
+      reg: a.job?.vehicle?.reg_number,
       make: a.job?.vehicle?.make,
       model: a.job?.vehicle?.model,
       customer: a.job?.vehicle?.customer
-        ? `${a.job.vehicle.customer.first_name} ${a.job.vehicle.customer.last_name}`
+        ? `${a.job.vehicle.customer.firstname} ${a.job.vehicle.customer.lastname}`
         : "",
     },
   }));
