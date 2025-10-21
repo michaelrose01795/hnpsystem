@@ -44,11 +44,7 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`p-sm rounded-md transition-colors text-md ${
-                isActive
-                  ? "bg-accent text-white"
-                  : "hover:bg-accent hover:text-white text-muted"
-              }`}
+              className={`sidebar-link ${isActive ? "active" : ""}`}
             >
               {item.label}
             </Link>
