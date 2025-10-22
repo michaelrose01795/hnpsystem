@@ -30,210 +30,169 @@ const generateDates = (daysAhead = 60) => {
 const generateTimeSlots = () => {
   const slots = [];
   for (let hour = 8; hour <= 17; hour++) { // 8 AM to 5 PM
-    slots.push(`${hour.toString().padStart(2, "0")}:00`); // Add on the hour
-    if (hour < 17) { // Don't add 5:30 PM
-      slots.push(`${hour.toString().padStart(2, "0")}:30`); // Add half-hour
-    }
+    slots.push(`${hour.toString().padStart(2, "0")}:00`);
+    if (hour < 17) slots.push(`${hour.toString().padStart(2, "0")}:30`);
   }
   return slots;
+};
+
+// ---------------- Utility Functions ----------------
+// Display vehicle info in one string
+const getVehicleDisplay = (job) => {
+  const make = job.vehicle_make || "";
+  const model = job.vehicle_model || "";
+  const year = job.vehicle_year || "";
+  return [year, make, model].filter(Boolean).join(" ") || "-";
 };
 
 export default function Appointments() {
   const searchParams = useSearchParams();
 
   // ---------------- States ----------------
-  const [jobs, setJobs] = useState([]); // All jobs from database
-  const [dates, setDates] = useState([]); // List of available dates
-  const [selectedDay, setSelectedDay] = useState(new Date()); // Currently selected day
-  const [notes, setNotes] = useState({}); // Notes for each day
-  const [showNotePopup, setShowNotePopup] = useState(false); // Show/hide note popup
-  const [currentNote, setCurrentNote] = useState(""); // Current note being edited
-  const [jobNumber, setJobNumber] = useState(""); // Job number input
-  const [time, setTime] = useState(""); // Selected time slot
-  const [highlightJob, setHighlightJob] = useState(""); // Job to highlight temporarily
-  const [techHours, setTechHours] = useState({}); // Tech hours per day
-  const [showTechHoursEditor, setShowTechHoursEditor] = useState(false); // Show/hide tech hours editor
-  const [searchQuery, setSearchQuery] = useState(""); // Search input for filtering jobs
-  const [timeSlots] = useState(generateTimeSlots()); // Available time slots
-  const [isLoading, setIsLoading] = useState(false); // Loading state for booking
+  const [jobs, setJobs] = useState([]);
+  const [dates, setDates] = useState([]);
+  const [selectedDay, setSelectedDay] = useState(new Date());
+  const [notes, setNotes] = useState({});
+  const [showNotePopup, setShowNotePopup] = useState(false);
+  const [currentNote, setCurrentNote] = useState("");
+  const [jobNumber, setJobNumber] = useState("");
+  const [time, setTime] = useState("");
+  const [highlightJob, setHighlightJob] = useState("");
+  const [techHours, setTechHours] = useState({});
+  const [showTechHoursEditor, setShowTechHoursEditor] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [timeSlots] = useState(generateTimeSlots());
+  const [isLoading, setIsLoading] = useState(false);
 
   // ---------------- Fetch Jobs ----------------
   const fetchJobs = async () => {
-    console.log("📋 Fetching all jobs..."); // Debug log
-    const jobsFromDb = await getAllJobs(); // Get all jobs from database
-    console.log("✅ Jobs fetched:", jobsFromDb.length); // Debug log
-    setJobs(jobsFromDb); // Update state
+    console.log("📋 Fetching all jobs...");
+    const jobsFromDb = await getAllJobs();
+    console.log("✅ Jobs fetched:", jobsFromDb.length);
+    setJobs(jobsFromDb);
   };
 
   useEffect(() => {
-    setDates(generateDates(60)); // Generate 60 days ahead
-    fetchJobs(); // Load jobs on mount
+    setDates(generateDates(60));
+    fetchJobs();
   }, []);
 
-  // Handle jobNumber in URL - automatically populate fields when redirected from create page
   useEffect(() => {
-    const jobParam = searchParams.get("jobNumber"); // Get job number from URL
-    console.log("🔍 Job number from URL:", jobParam); // Debug log
-    
+    const jobParam = searchParams.get("jobNumber");
     if (jobParam) {
-      setJobNumber(jobParam); // Set job number input
-      const existingJob = jobs.find((j) => j.jobNumber === jobParam); // Find job in list
-      
+      setJobNumber(jobParam);
+      const existingJob = jobs.find((j) => j.id.toString() === jobParam);
       if (existingJob) {
-        console.log("✅ Found existing job:", existingJob); // Debug log
         if (existingJob.appointment) {
-          setSelectedDay(new Date(existingJob.appointment.date)); // Set selected day
-          setTime(existingJob.appointment.time); // Set time
+          setSelectedDay(new Date(existingJob.appointment.date));
+          setTime(existingJob.appointment.time);
         }
-      } else {
-        console.log("⚠️ Job not found in list, it may be new"); // Debug log
       }
     }
   }, [searchParams, jobs]);
 
   // ---------------- Notes ----------------
   const handleAddNote = (date) => {
-    setSelectedDay(date); // Set selected day
-    const dateKey = date.toDateString(); // Create date key
-    setCurrentNote(notes[dateKey] || ""); // Load existing note or empty
-    setShowNotePopup(true); // Show popup
+    setSelectedDay(date);
+    const dateKey = date.toDateString();
+    setCurrentNote(notes[dateKey] || "");
+    setShowNotePopup(true);
   };
 
   const saveNote = () => {
-    setNotes({ ...notes, [selectedDay.toDateString()]: currentNote }); // Save note for selected day
-    setShowNotePopup(false); // Close popup
+    setNotes({ ...notes, [selectedDay.toDateString()]: currentNote });
+    setShowNotePopup(false);
   };
 
   // ---------------- Add / Update Appointment ----------------
   const handleAddAppointment = async (customDate) => {
-    console.log("🚀 Starting appointment booking..."); // Debug log
-    
     const appointmentDate = customDate || (selectedDay ? selectedDay.toISOString().split("T")[0] : null);
-    
-    // Validate inputs
-    if (!jobNumber) {
-      alert("❌ Error: Job number is required");
-      console.error("❌ Validation failed: No job number"); // Debug log
-      return;
-    }
-    
-    if (!appointmentDate) {
-      alert("❌ Error: Please select a date");
-      console.error("❌ Validation failed: No date"); // Debug log
-      return;
-    }
-    
-    if (!time) {
-      alert("❌ Error: Please select a time");
-      console.error("❌ Validation failed: No time"); // Debug log
-      return;
-    }
 
-    console.log("📝 Booking details:", { jobNumber, appointmentDate, time }); // Debug log
-    
-    setIsLoading(true); // Show loading state
+    if (!jobNumber) return alert("❌ Error: Job number is required");
+    if (!appointmentDate) return alert("❌ Error: Please select a date");
+    if (!time) return alert("❌ Error: Please select a time");
+
+    setIsLoading(true);
 
     try {
-      // First, check if the job exists in our local state
-      let job = jobs.find((j) => j.jobNumber === jobNumber);
-      
-      // If not in local state, fetch from database
+      const normalizedJobNumber = jobNumber.toString().trim(); // Normalize to string
+      console.log("Attempting to book appointment for job ID:", normalizedJobNumber);
+
+      // Look for job in local state using id
+      let job = jobs.find((j) => j.id.toString() === normalizedJobNumber);
+
+      // If not found, fetch from DB
       if (!job) {
-        console.log("🔍 Job not in local state, fetching from database..."); // Debug log
-        const fetchedJob = await getJobByNumberOrReg(jobNumber);
-        
+        console.log(`Job ID ${normalizedJobNumber} not found locally, fetching from DB...`);
+        const fetchedJob = await getJobByNumberOrReg(normalizedJobNumber);
         if (!fetchedJob) {
-          alert(`❌ Error: Job number ${jobNumber} does not exist. Please create the job first.`);
-          console.error("❌ Job not found in database"); // Debug log
+          alert(`❌ Error: Job ID ${normalizedJobNumber} does not exist. Please create the job first.`);
           setIsLoading(false);
           return;
         }
-        
         job = fetchedJob;
-        console.log("✅ Job fetched from database:", job); // Debug log
-      } else {
-        console.log("✅ Job found in local state:", job); // Debug log
       }
 
-      // Now create/update the appointment for the existing job
-      console.log("📅 Creating/updating appointment for existing job..."); // Debug log
-      
+      console.log("Job found:", job);
+
+      // Use job.id for appointment creation
       const appointmentResult = await createOrUpdateAppointment(
-        jobNumber,
+        job.id,
         appointmentDate,
         time
       );
 
-      console.log("📦 Appointment result:", appointmentResult); // Debug log
-
       if (!appointmentResult.success) {
         const errorMessage = appointmentResult.error?.message || "Unknown error occurred";
         alert(`❌ Error booking appointment: ${errorMessage}`);
-        console.error("❌ Appointment booking failed:", appointmentResult.error); // Debug log
         setIsLoading(false);
         return;
       }
 
-      // Success! Update local state
-      console.log("✅ Appointment booked successfully!"); // Debug log
-      
-      // Update job in local state with new appointment
+      // Update local state
       const updatedJob = {
         ...job,
         appointment: { date: appointmentDate, time },
         status: "Booked"
       };
-      
-      // Check if job exists in local jobs array
-      const jobIndex = jobs.findIndex((j) => j.jobNumber === jobNumber);
-      
+
+      const jobIndex = jobs.findIndex((j) => j.id === job.id);
       if (jobIndex !== -1) {
-        // Update existing job in array
         const updatedJobs = [...jobs];
         updatedJobs[jobIndex] = updatedJob;
         setJobs(updatedJobs);
-        console.log("✅ Updated job in local state"); // Debug log
       } else {
-        // Add new job to array
         setJobs([...jobs, updatedJob]);
-        console.log("✅ Added job to local state"); // Debug log
       }
 
-      // Highlight briefly to show user the booking was successful
-      setHighlightJob(jobNumber);
+      // Highlight briefly
+      setHighlightJob(normalizedJobNumber);
       setSelectedDay(new Date(appointmentDate));
-      setTimeout(() => setHighlightJob(""), 2000); // Remove highlight after 2 seconds
+      setTimeout(() => setHighlightJob(""), 2000);
 
-      // Show success message
-      alert(`✅ Appointment booked successfully!\n\nJob: ${jobNumber}\nDate: ${appointmentDate}\nTime: ${time}`);
+      alert(`✅ Appointment booked successfully!\n\nJob ID: ${normalizedJobNumber}\nDate: ${appointmentDate}\nTime: ${time}`);
 
-      // Reset inputs
       setJobNumber("");
       setTime("");
-      
+
     } catch (error) {
-      console.error("❌ Unexpected error:", error); // Debug log
+      console.error("❌ Unexpected error:", error);
       alert(`❌ Unexpected error: ${error.message}`);
     } finally {
-      setIsLoading(false); // Hide loading state
+      setIsLoading(false);
     }
   };
 
   // ---------------- Utilities ----------------
-  const formatDate = (dateObj) =>
-    dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); // Format: Mon 1 Jan
-  const formatDateNoYear = (dateObj) =>
-    dateObj.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); // Format without year
-  const isSaturday = (date) => date.getDay() === 6; // Check if date is Saturday
+  const formatDate = (dateObj) => dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  const formatDateNoYear = (dateObj) => dateObj.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  const isSaturday = (date) => date.getDay() === 6;
+  const getTechHoursForDay = (date) => techHours[date.toDateString()] || techsDefault;
+  const handleTechHoursChange = (e) => setTechHours({ ...techHours, [selectedDay.toDateString()]: e.target.value });
+  const toggleTechHoursEditor = () => setShowTechHoursEditor(!showTechHoursEditor);
 
-  const getTechHoursForDay = (date) => techHours[date.toDateString()] || techsDefault; // Get tech hours or default
-  const handleTechHoursChange = (e) =>
-    setTechHours({ ...techHours, [selectedDay.toDateString()]: e.target.value }); // Update tech hours for day
-  const toggleTechHoursEditor = () => setShowTechHoursEditor(!showTechHoursEditor); // Toggle editor visibility
-
-  // Calculate job counts for a specific date
   const getJobCounts = (date) => {
-    const jobsForDate = jobs.filter((j) => j.appointment?.date === date.toISOString().split("T")[0]); // Filter jobs for date
+    const jobsForDate = jobs.filter((j) => j.appointment?.date === date.toISOString().split("T")[0]);
     return {
       totalJobs: jobsForDate.length,
       services: jobsForDate.filter((j) => j.reason?.toLowerCase().includes("service") || j.type?.toLowerCase().includes("service")).length,
@@ -251,262 +210,39 @@ export default function Appointments() {
     };
   };
 
-  // Filter jobs for selected day
-  const jobsForDay = jobs.filter(
-    (j) => j.appointment?.date === selectedDay.toISOString().split("T")[0]
-  );
-
-  // Filter jobs based on search query (job number, name, reg)
+  // ---------------- Filtered Jobs for Selected Day ----------------
+  const jobsForDay = jobs.filter((j) => j.appointment?.date === selectedDay.toISOString().split("T")[0]);
   const filteredJobs = jobsForDay.filter((job) => {
-    const query = searchQuery.toLowerCase(); // Convert search to lowercase
-    return (
-      job.jobNumber?.toLowerCase().includes(query) || // Match job number
-      job.customer?.toLowerCase().includes(query) || // Match customer name
-      job.reg?.toLowerCase().includes(query) // Match registration
-    );
+    const query = searchQuery.toLowerCase();
+    return job.id.toString().includes(query) || job.customer?.toLowerCase().includes(query) || job.vehicle_reg?.toLowerCase().includes(query);
   });
-
-  // Helper to safely display vehicle info
-  const getVehicleDisplay = (job) => {
-    if (job.make && job.model) {
-      return `${job.make} ${job.model}`;
-    }
-    return job.vehicle_make_model || "N/A";
-  };
 
   // ---------------- Render ----------------
   return (
     <Layout>
       <div style={{ height: "100%", display: "flex", flexDirection: "column", padding: "8px 16px" }}>
-        {/* Top Bar - Search and Appointment Booking */}
-        <div
-          style={{
-            display: "flex",
-            gap: "12px",
-            alignItems: "center",
-            marginBottom: "12px",
-            padding: "12px",
-            backgroundColor: "#fff",
-            borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-          }}
-        >
-          {/* Add Note Button */}
-          <button
-            onClick={() => handleAddNote(selectedDay)}
-            disabled={isLoading}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: isLoading ? "#ccc" : "#FF4040",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: isLoading ? "not-allowed" : "pointer",
-              fontWeight: "500",
-              fontSize: "14px",
-              transition: "all 0.2s ease",
-              whiteSpace: "nowrap",
-            }}
-            onMouseEnter={(e) => {
-              if (!isLoading) {
-                e.target.style.backgroundColor = "#E63939";
-                e.target.style.transform = "translateY(-1px)";
-                e.target.style.boxShadow = "0 4px 8px rgba(255,64,64,0.2)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isLoading) {
-                e.target.style.backgroundColor = "#FF4040";
-                e.target.style.transform = "translateY(0)";
-                e.target.style.boxShadow = "none";
-              }
-            }}
-          >
-            Add Note
-          </button>
+        {/* Top Bar */}
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "12px", padding: "12px", backgroundColor: "#fff", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.08)" }}>
+          <button onClick={() => handleAddNote(selectedDay)} disabled={isLoading} style={{ padding: "10px 20px", backgroundColor: isLoading ? "#ccc" : "#FF4040", color: "white", border: "none", borderRadius: "8px", cursor: isLoading ? "not-allowed" : "pointer", fontWeight: "500", fontSize: "14px" }}>Add Note</button>
 
-          {/* Search Bar */}
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by Job #, Name, or Reg..."
-            disabled={isLoading}
-            style={{
-              flex: 1,
-              padding: "10px 16px",
-              borderRadius: "8px",
-              border: "1px solid #e0e0e0",
-              outline: "none",
-              fontSize: "14px",
-              transition: "all 0.2s ease",
-              opacity: isLoading ? 0.6 : 1,
-            }}
-            onFocus={(e) => {
-              if (!isLoading) {
-                e.target.style.borderColor = "#FF4040";
-                e.target.style.boxShadow = "0 0 0 3px rgba(255,64,64,0.1)";
-              }
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = "#e0e0e0";
-              e.target.style.boxShadow = "none";
-            }}
-          />
+          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search by Job #, Name, or Reg..." disabled={isLoading} style={{ flex: 1, padding: "10px 16px", borderRadius: "8px", border: "1px solid #e0e0e0", fontSize: "14px" }} />
 
-          {/* Job Number Input */}
-          <input
-            type="text"
-            value={jobNumber}
-            onChange={(e) => setJobNumber(e.target.value)}
-            placeholder="Job Number"
-            disabled={isLoading}
-            style={{
-              width: "140px",
-              padding: "10px 16px",
-              borderRadius: "8px",
-              border: "1px solid #e0e0e0",
-              outline: "none",
-              fontSize: "14px",
-              transition: "all 0.2s ease",
-              opacity: isLoading ? 0.6 : 1,
-            }}
-            onFocus={(e) => {
-              if (!isLoading) {
-                e.target.style.borderColor = "#FF4040";
-                e.target.style.boxShadow = "0 0 0 3px rgba(255,64,64,0.1)";
-              }
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = "#e0e0e0";
-              e.target.style.boxShadow = "none";
-            }}
-          />
+          <input type="text" value={jobNumber} onChange={(e) => setJobNumber(e.target.value)} placeholder="Job Number" disabled={isLoading} style={{ width: "140px", padding: "10px 16px", borderRadius: "8px", border: "1px solid #e0e0e0", fontSize: "14px" }} />
 
-          {/* Time Slot Dropdown */}
-          <select
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            disabled={isLoading}
-            style={{
-              width: "120px",
-              padding: "10px 12px",
-              borderRadius: "8px",
-              border: "1px solid #e0e0e0",
-              outline: "none",
-              fontSize: "14px",
-              backgroundColor: "#fff",
-              cursor: isLoading ? "not-allowed" : "pointer",
-              transition: "all 0.2s ease",
-              appearance: "none",
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "right 12px center",
-              paddingRight: "32px",
-              opacity: isLoading ? 0.6 : 1,
-            }}
-            onFocus={(e) => {
-              if (!isLoading) {
-                e.target.style.borderColor = "#FF4040";
-                e.target.style.boxShadow = "0 0 0 3px rgba(255,64,64,0.1)";
-              }
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = "#e0e0e0";
-              e.target.style.boxShadow = "none";
-            }}
-          >
+          <select value={time} onChange={(e) => setTime(e.target.value)} disabled={isLoading} style={{ width: "120px", padding: "10px 12px", borderRadius: "8px", border: "1px solid #e0e0e0", fontSize: "14px" }}>
             <option value="">Select time</option>
-            {timeSlots.map((slot) => (
-              <option key={slot} value={slot}>
-                {slot}
-              </option>
-            ))}
+            {timeSlots.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
           </select>
 
-          {/* Add Appointment Button */}
-          <button
-            onClick={() => handleAddAppointment(selectedDay.toISOString().split("T")[0])}
-            disabled={isLoading}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: isLoading ? "#ccc" : "#FF4040",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: isLoading ? "not-allowed" : "pointer",
-              fontWeight: "500",
-              fontSize: "14px",
-              transition: "all 0.2s ease",
-              whiteSpace: "nowrap",
-            }}
-            onMouseEnter={(e) => {
-              if (!isLoading) {
-                e.target.style.backgroundColor = "#E63939";
-                e.target.style.transform = "translateY(-1px)";
-                e.target.style.boxShadow = "0 4px 8px rgba(255,64,64,0.2)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isLoading) {
-                e.target.style.backgroundColor = "#FF4040";
-                e.target.style.transform = "translateY(0)";
-                e.target.style.boxShadow = "none";
-              }
-            }}
-          >
-            {isLoading ? "Booking..." : "Book Appointment"}
-          </button>
+          <button onClick={() => handleAddAppointment(selectedDay.toISOString().split("T")[0])} disabled={isLoading} style={{ padding: "10px 20px", backgroundColor: isLoading ? "#ccc" : "#FF4040", color: "white", border: "none", borderRadius: "8px", cursor: isLoading ? "not-allowed" : "pointer", fontWeight: "500", fontSize: "14px" }}>{isLoading ? "Booking..." : "Book Appointment"}</button>
         </div>
 
         {/* Calendar Table Container */}
-        <div
-          style={{
-            flex: "0 0 auto",
-            maxHeight: "calc(14 * 42px + 60px)",
-            overflowY: "auto",
-            marginBottom: "12px",
-            borderRadius: "10px",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-            backgroundColor: "#fff",
-          }}
-        >
+        <div style={{ flex: "0 0 auto", maxHeight: "calc(14 * 42px + 60px)", overflowY: "auto", marginBottom: "12px", borderRadius: "10px", boxShadow: "0 2px 6px rgba(0,0,0,0.1)", backgroundColor: "#fff" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
-              <tr
-                style={{
-                  backgroundColor: "#f6f6f6",
-                  borderBottom: "2px solid #FF4040",
-                }}
-              >
-                {[
-                  "Day/Date",
-                  "Availability",
-                  "Total Hours",
-                  "Total Jobs",
-                  "Services",
-                  "MOT",
-                  "Diagnosis",
-                  "Other",
-                  "Notes",
-                ].map((header) => (
-                  <th
-                    key={header}
-                    style={{
-                      textAlign: "left",
-                      padding: "10px 12px",
-                      fontWeight: "600",
-                      fontSize: "14px",
-                      color: "#333",
-                      borderBottom: "1px solid #ddd",
-                      background: "#f9f9f9",
-                      position: "sticky",
-                      top: 0,
-                    }}
-                  >
-                    {header}
-                  </th>
-                ))}
+              <tr style={{ backgroundColor: "#f6f6f6", borderBottom: "2px solid #FF4040" }}>
+                {["Day/Date","Availability","Total Hours","Total Jobs","Services","MOT","Diagnosis","Other","Notes"].map(header => <th key={header} style={{ textAlign: "left", padding: "10px 12px", fontWeight: "600", fontSize: "14px", color: "#333", borderBottom: "1px solid #ddd", background: "#f9f9f9", position: "sticky", top: 0 }}>{header}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -514,54 +250,16 @@ export default function Appointments() {
                 const dateKey = date.toDateString();
                 const counts = getJobCounts(date);
                 return (
-                  <tr
-                    key={dateKey}
-                    onClick={() => setSelectedDay(date)}
-                    style={{
-                      cursor: "pointer",
-                      backgroundColor:
-                        selectedDay.toDateString() === date.toDateString()
-                          ? "#FFF2F2"
-                          : isSaturday(date)
-                          ? "#FFF8E1"
-                          : "#fff",
-                      transition: "background-color 0.2s",
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f9f9f9")}
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor =
-                        selectedDay.toDateString() === date.toDateString()
-                          ? "#FFF2F2"
-                          : isSaturday(date)
-                          ? "#FFF8E1"
-                          : "#fff")
-                    }
-                  >
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
-                      {formatDate(date)}
-                    </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
-                      {getTechHoursForDay(date)} techs
-                    </td>
+                  <tr key={dateKey} onClick={() => setSelectedDay(date)} style={{ cursor: "pointer", backgroundColor: selectedDay.toDateString() === date.toDateString() ? "#FFF2F2" : isSaturday(date) ? "#FFF8E1" : "#fff" }}>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{formatDate(date)}</td>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{getTechHoursForDay(date)} techs</td>
                     <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>0</td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
-                      {counts.totalJobs}
-                    </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
-                      {counts.services}
-                    </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
-                      {counts.MOT}
-                    </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
-                      {counts.diagnosis}
-                    </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
-                      {counts.other}
-                    </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
-                      {notes[dateKey] || ""}
-                    </td>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{counts.totalJobs}</td>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{counts.services}</td>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{counts.MOT}</td>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{counts.diagnosis}</td>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{counts.other}</td>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{notes[dateKey] || ""}</td>
                   </tr>
                 );
               })}
@@ -570,118 +268,30 @@ export default function Appointments() {
         </div>
 
         {/* Jobs for Selected Day Section */}
-        <div
-          style={{
-            flex: "0 0 40%",
-            marginBottom: "8px",
-            border: "1px solid #ccc",
-            borderRadius: "10px",
-            padding: "12px",
-            backgroundColor: "#fff",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-            overflowY: "auto",
-          }}
-        >
-          <h3 style={{ marginBottom: "12px" }}>
-            Jobs for <span style={{ color: "#FF4040" }}>{formatDateNoYear(selectedDay)}</span>
-          </h3>
+        <div style={{ flex: "0 0 40%", marginBottom: "8px", border: "1px solid #ccc", borderRadius: "10px", padding: "12px", backgroundColor: "#fff", boxShadow: "0 2px 6px rgba(0,0,0,0.05)", overflowY: "auto" }}>
+          <h3 style={{ marginBottom: "12px" }}>Jobs for <span style={{ color: "#FF4040" }}>{formatDateNoYear(selectedDay)}</span></h3>
 
           <div style={{ display: "flex", gap: "12px", marginBottom: "8px" }}>
             {["All Jobs", "MOT", "Tech Hours"].map((tab) => (
-              <div
-                key={tab}
-                style={{
-                  padding: "6px 12px",
-                  border: "1px solid #FF4040",
-                  color: tab === "Tech Hours" ? "#FF4040" : "#000",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                }}
-                onClick={() => {
-                  if (tab === "Tech Hours") toggleTechHoursEditor();
-                }}
-              >
-                {tab}
-              </div>
+              <div key={tab} style={{ padding: "6px 12px", border: "1px solid #FF4040", color: tab === "Tech Hours" ? "#FF4040" : "#000", borderRadius: "6px", cursor: "pointer" }} onClick={() => { if (tab === "Tech Hours") toggleTechHoursEditor(); }}>{tab}</div>
             ))}
           </div>
 
           {showTechHoursEditor && (
-            <div
-              style={{
-                marginBottom: "12px",
-                padding: "12px",
-                border: "1px solid #FF4040",
-                borderRadius: "6px",
-                background: "#FFF5F5",
-              }}
-            >
+            <div style={{ marginBottom: "12px", padding: "12px", border: "1px solid #FF4040", borderRadius: "6px", background: "#FFF5F5" }}>
               <label>Tech Hours for {formatDateNoYear(selectedDay)}:</label>
-              <input
-                type="number"
-                min="0"
-                value={getTechHoursForDay(selectedDay)}
-                onChange={handleTechHoursChange}
-                style={{
-                  marginLeft: "8px",
-                  padding: "6px",
-                  width: "60px",
-                  borderRadius: "4px",
-                  border: "1px solid #ccc",
-                }}
-              />
+              <input type="number" min="0" value={getTechHoursForDay(selectedDay)} onChange={handleTechHoursChange} style={{ marginLeft: "8px", padding: "6px", width: "60px", borderRadius: "4px", border: "1px solid #ccc" }} />
             </div>
           )}
 
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr>
-                {[
-                  "Job #",
-                  "Reg",
-                  "Vehicle",
-                  "Customer",
-                  "Time In",
-                  "Time Out",
-                  "Reason",
-                  "Total Time",
-                  "Time on Job",
-                  "Waiting",
-                  "Collection",
-                  "Loan Car",
-                  "MOT",
-                  "Wash",
-                  "Address",
-                ].map((head) => (
-                  <th
-                    key={head}
-                    style={{
-                      textAlign: "left",
-                      padding: "8px 10px",
-                      background: "#f6f6f6",
-                      fontWeight: "600",
-                      borderBottom: "2px solid #FF4040",
-                      position: "sticky",
-                      top: 0,
-                      zIndex: 1,
-                    }}
-                  >
-                    {head}
-                  </th>
-                ))}
-              </tr>
+              <tr>{["Job #","Reg","Vehicle","Customer","Time In","Time Out","Reason","Total Time","Time on Job","Waiting","Collection","Loan Car","MOT","Wash","Address"].map(head => <th key={head} style={{ textAlign: "left", padding: "8px 10px", background: "#f6f6f6", fontWeight: "600", borderBottom: "2px solid #FF4040", position: "sticky", top: 0, zIndex: 1 }}>{head}</th>)}</tr>
             </thead>
             <tbody>
               {filteredJobs.length > 0 ? (
                 filteredJobs.map((job, idx) => (
-                  <tr
-                    key={idx}
-                    style={{
-                      backgroundColor:
-                        highlightJob === job.jobNumber ? "#D0F0C0" : "transparent",
-                      transition: "background-color 0.5s",
-                    }}
-                  >
+                  <tr key={idx} style={{ backgroundColor: highlightJob === job.jobNumber ? "#D0F0C0" : "transparent", transition: "background-color 0.5s" }}>
                     <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.jobNumber || "-"}</td>
                     <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.reg || "-"}</td>
                     <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{getVehicleDisplay(job)}</td>
@@ -691,31 +301,17 @@ export default function Appointments() {
                     <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.reason || job.description || job.type || "-"}</td>
                     <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.totalTime || "-"}</td>
                     <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.timeOnJob || "-"}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
-                      <input type="checkbox" checked={job.waiting || false} readOnly />
-                    </td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
-                      <input type="checkbox" checked={job.collection || false} readOnly />
-                    </td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
-                      <input type="checkbox" checked={job.loanCar || false} readOnly />
-                    </td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
-                      <input type="checkbox" checked={job.MOT || false} readOnly />
-                    </td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
-                      <input type="checkbox" checked={job.wash || false} readOnly />
-                    </td>
+                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}><input type="checkbox" checked={job.waiting || false} readOnly /></td>
+                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}><input type="checkbox" checked={job.collection || false} readOnly /></td>
+                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}><input type="checkbox" checked={job.loanCar || false} readOnly /></td>
+                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}><input type="checkbox" checked={job.MOT || false} readOnly /></td>
+                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}><input type="checkbox" checked={job.wash || false} readOnly /></td>
                     <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.customerAddress || "-"}</td>
                   </tr>
                 ))
               ) : (
                 Array.from({ length: 12 }).map((_, idx) => (
-                  <tr key={idx}>
-                    {Array.from({ length: 15 }).map((__, colIdx) => (
-                      <td key={colIdx} style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}></td>
-                    ))}
-                  </tr>
+                  <tr key={idx}>{Array.from({ length: 15 }).map((__, colIdx) => <td key={colIdx} style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}></td>)}</tr>
                 ))
               )}
             </tbody>
@@ -725,40 +321,10 @@ export default function Appointments() {
         {/* Add Note Popup */}
         <Popup isOpen={showNotePopup} onClose={() => setShowNotePopup(false)}>
           <h3>Add Note for {formatDateNoYear(selectedDay)}</h3>
-          <textarea
-            style={{ width: "100%", height: "100px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
-            value={currentNote}
-            onChange={(e) => setCurrentNote(e.target.value)}
-          />
-          <div
-            style={{ display: "flex", justifyContent: "space-between", marginTop: "10px", gap: "8px" }}
-          >
-            <button 
-              onClick={saveNote}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#FF4040",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer"
-              }}
-            >
-              Update
-            </button>
-            <button 
-              onClick={() => setShowNotePopup(false)}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#666",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer"
-              }}
-            >
-              Close
-            </button>
+          <textarea style={{ width: "100%", height: "100px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }} value={currentNote} onChange={(e) => setCurrentNote(e.target.value)} />
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px", gap: "8px" }}>
+            <button onClick={saveNote} style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}>Update</button>
+            <button onClick={() => setShowNotePopup(false)} style={{ padding: "8px 16px", backgroundColor: "#666", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}>Close</button>
           </div>
         </Popup>
       </div>
