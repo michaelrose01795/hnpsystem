@@ -1,5 +1,5 @@
 // ✅ File location: src/lib/database/customers.js
-import { supabase } from "../supabaseClient";
+import { supabase } from "../supabaseClient"; // import Supabase client
 
 /* ============================================
    GET CUSTOMER BY ID
@@ -11,7 +11,12 @@ export const getCustomerById = async (customerId) => {
     .eq("id", customerId)
     .single();
 
-  return error ? null : data;
+  if (error) {
+    console.error("❌ getCustomerById error:", error.message);
+    return null;
+  }
+
+  return data;
 };
 
 /* ============================================
@@ -22,10 +27,17 @@ export const searchCustomers = async (searchTerm) => {
   const { data, error } = await supabase
     .from("customers")
     .select("*")
-    .or(`firstname.ilike.%${searchTerm}%,lastname.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,mobile.ilike.%${searchTerm}%`)
+    .or(
+      `firstname.ilike.%${searchTerm}%,lastname.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,mobile.ilike.%${searchTerm}%`
+    )
     .limit(10);
 
-  return error ? [] : data;
+  if (error) {
+    console.error("❌ searchCustomers error:", error.message);
+    return [];
+  }
+
+  return data;
 };
 
 /* ============================================
@@ -45,20 +57,58 @@ export const getCustomerVehicles = async (customerId) => {
     `)
     .eq("customer_id", customerId);
 
-  return error ? [] : data;
+  if (error) {
+    console.error("❌ getCustomerVehicles error:", error.message);
+    return [];
+  }
+
+  return data;
 };
 
 /* ============================================
-   CREATE CUSTOMER
+   ADD / CREATE CUSTOMER
+   - Checks for duplicates by email or full name
+   - Inserts a new customer
+   - Returns the inserted row
 ============================================ */
-export const createCustomer = async (customerData) => {
-  const { data, error } = await supabase
-    .from("customers")
-    .insert([customerData])
-    .select()
-    .single();
+export const addCustomerToDatabase = async (customerData) => {
+  const { firstname, lastname, email } = customerData;
 
-  return { success: !error, data, error };
+  try {
+    // Step 1: check for duplicate
+    if (email || (firstname && lastname)) {
+      const { data: existing, error: checkError } = await supabase
+        .from("customers")
+        .select("id, firstname, lastname, email")
+        .or(
+          [
+            email ? `email.ilike.${email}` : "",
+            firstname && lastname
+              ? `and(firstname.ilike.${firstname},lastname.ilike.${lastname})`
+              : "",
+          ]
+            .filter(Boolean)
+            .join(",")
+        );
+
+      if (checkError) console.warn("⚠️ duplicate check failed:", checkError.message);
+      if (existing && existing.length > 0)
+        throw new Error("Customer already exists with same name or email.");
+    }
+
+    // Step 2: insert new record
+    const { data, error } = await supabase
+      .from("customers")
+      .insert([customerData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error("❌ addCustomerToDatabase error:", err.message);
+    throw new Error(err.message || "Failed to add new customer.");
+  }
 };
 
 /* ============================================
@@ -72,5 +122,10 @@ export const updateCustomer = async (customerId, customerData) => {
     .select()
     .single();
 
-  return { success: !error, data, error };
+  if (error) {
+    console.error("❌ updateCustomer error:", error.message);
+    return { success: false, error };
+  }
+
+  return { success: true, data };
 };
