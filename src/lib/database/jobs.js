@@ -381,7 +381,7 @@ export const addJobToDatabase = async ({
     }
 
     // Ensure vehicle is valid before proceeding
-    if (!vehicle || !vehicle.vehicle_id) {
+    if (!vehicle || !vehicle.id) {
       throw new Error("Vehicle record could not be found or created");
     }
 
@@ -391,7 +391,7 @@ export const addJobToDatabase = async ({
       .insert([
         {
           job_number: jobNumber,
-          vehicle_id: vehicle.vehicle_id,
+          vehicle_id: vehicle.id,
           assigned_to: assignedTo || null,
           type: type || "Service",
           description: description || "",

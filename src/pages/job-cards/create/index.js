@@ -263,20 +263,21 @@ export default function CreateJobCardPage() {
     }
   };
 
-  // ✅ UPDATED: DVLA API Fetch with automatic customer lookup and dual column support
+  // ✅ FIXED: DVLA API Fetch - properly fetch and display vehicle data from DVLA API
   const handleFetchVehicleData = async () => {
+    // validate that registration number is entered
     if (!vehicle.reg.trim()) {
       setError("Please enter a registration number");
+      showNotification("vehicle", "error", "✗ Please enter a registration number");
       return;
     }
 
-    setIsLoadingVehicle(true);
-    setError("");
-    setVehicleNotification(null);
+    setIsLoadingVehicle(true); // show loading state
+    setError(""); // clear any previous errors
+    setVehicleNotification(null); // clear any previous notifications
 
     try {
-      const regUpper = vehicle.reg.trim().toUpperCase();
-
+      const regUpper = vehicle.reg.trim().toUpperCase(); // normalize registration to uppercase
       console.log("Fetching vehicle data for:", regUpper);
 
       // ✅ STEP 1: Check if vehicle exists in database using BOTH column names
@@ -288,6 +289,7 @@ export default function CreateJobCardPage() {
 
       console.log("Vehicle search result:", existingVehicle, vehicleSearchError);
 
+      // if vehicle exists in database AND has a linked customer, auto-fill customer details
       if (existingVehicle && existingVehicle.customer_id && !vehicleSearchError) {
         console.log("Vehicle found in database, fetching linked customer...");
 
@@ -299,6 +301,7 @@ export default function CreateJobCardPage() {
 
         console.log("Linked customer result:", linkedCustomer, customerError);
 
+        // if linked customer found, populate customer state
         if (linkedCustomer && !customerError) {
           setCustomer({
             id: linkedCustomer.id,
@@ -330,19 +333,26 @@ export default function CreateJobCardPage() {
 
       console.log("Vehicle not in database, fetching from DVLA API...");
 
-      // ✅ STEP 2: If vehicle not in database, fetch from DVLA API
+      // ✅ STEP 2: Fetch from DVLA API via our backend endpoint
       const response = await fetch("/api/vehicles/dvla", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ registration: regUpper }),
       });
 
-      if (!response.ok) throw new Error("Failed to fetch vehicle details");
+      console.log("DVLA API response status:", response.status);
+
+      // if API request fails, throw error
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("DVLA API error:", errorText);
+        throw new Error(`Failed to fetch vehicle details: ${errorText}`);
+      }
 
       const data = await response.json();
+      console.log("DVLA API response data:", data);
 
-      console.log("DVLA API response:", data);
-
+      // if no data returned or empty object, show error
       if (!data || Object.keys(data).length === 0) {
         setError("No vehicle data found for that registration.");
         setVehicle({
@@ -357,50 +367,26 @@ export default function CreateJobCardPage() {
         return;
       }
 
-      // ✅ Populate vehicle state with API data
+      // ✅ STEP 3: Populate vehicle state with API data
       const vehicleData = {
         reg: regUpper,
-        makeModel: `${data.make || "No data"} ${data.model || ""}`.trim(),
+        makeModel: `${data.make || "Unknown"} ${data.model || ""}`.trim(),
         colour: data.colour || "No data provided",
         chassis: data.vin || "No data provided",
         engine: data.engineNumber || "No data provided",
-        mileage: data.motTests?.[0]?.odometerValue || vehicle.mileage || "No data provided",
+        mileage: data.motTests?.[0]?.odometerValue || vehicle.mileage || "",
       };
 
+      console.log("Setting vehicle data:", vehicleData);
       setVehicle(vehicleData);
       showNotification("vehicle", "success", "✓ Vehicle details fetched from DVLA!");
 
-      // ✅ STEP 3: Save vehicle to database using BOTH old and new column names for compatibility
-      const vehicleToInsert = {
-        registration: regUpper,  // NEW column
-        reg_number: regUpper,    // OLD column (keep for compatibility)
-        make_model: vehicleData.makeModel,  // NEW combined column
-        make: vehicleData.makeModel.split(' ')[0] || 'Unknown',  // OLD column
-        model: vehicleData.makeModel.split(' ').slice(1).join(' ') || '',  // OLD column
-        colour: vehicleData.colour,
-        chassis: vehicleData.chassis,  // NEW column
-        vin: vehicleData.chassis,      // OLD column (keep for compatibility)
-        engine: vehicleData.engine,    // NEW column
-        engine_number: vehicleData.engine,  // OLD column (keep for compatibility)
-        mileage: parseInt(vehicleData.mileage) || null,
-        customer_id: null,
-        created_at: new Date().toISOString(),
-      };
-
-      console.log("Saving vehicle to database:", vehicleToInsert);
-
-      const { error: vehicleInsertError } = await supabase.from("vehicles").insert([vehicleToInsert]);
-
-      if (vehicleInsertError) {
-        console.log("Vehicle may already exist in database:", vehicleInsertError);
-      } else {
-        console.log("Vehicle saved to database for future lookups");
-      }
     } catch (err) {
       console.error("Error fetching vehicle data:", err);
-      setError("Error fetching vehicle details. Please check registration or API key.");
-      showNotification("vehicle", "error", "✗ Error fetching vehicle details");
+      setError(`Error fetching vehicle details: ${err.message}`);
+      showNotification("vehicle", "error", `✗ Error: ${err.message}`);
 
+      // set vehicle with "No data provided" for all fields except reg
       setVehicle({
         reg: vehicle.reg.trim().toUpperCase(),
         makeModel: "No data provided",
@@ -410,11 +396,11 @@ export default function CreateJobCardPage() {
         mileage: vehicle.mileage || "",
       });
     } finally {
-      setIsLoadingVehicle(false);
+      setIsLoadingVehicle(false); // always stop loading state
     }
   };
 
-  // ✅ FIXED: Save Job Function - let database auto-generate ID to prevent duplicates
+  // ✅ FIXED: Save Job Function - save vehicle to database and link to customer
   const handleSaveJob = async () => {
     try {
       // ✅ Validate that customer and vehicle are selected
@@ -434,7 +420,88 @@ export default function CreateJobCardPage() {
         return;
       }
 
-      // ✅ Create job data object WITHOUT id field - let database auto-generate it
+      console.log("Starting save job process...");
+
+      // ✅ STEP 1: Save or update vehicle in database
+      console.log("Saving vehicle to database...");
+
+      // check if vehicle already exists using BOTH column names
+      const { data: existingVehicle, error: vehicleCheckError } = await supabase
+        .from("vehicles")
+        .select("*")
+        .or(`registration.eq.${vehicle.reg},reg_number.eq.${vehicle.reg}`)
+        .maybeSingle();
+
+      console.log("Existing vehicle check:", existingVehicle, vehicleCheckError);
+
+      let vehicleId;
+
+      if (existingVehicle) {
+        // ✅ Vehicle exists - update it with new data and link to customer
+        console.log("Vehicle exists, updating with customer link...");
+
+        const { error: updateError } = await supabase
+          .from("vehicles")
+          .update({
+            customer_id: customer.id, // link to customer
+            make_model: vehicle.makeModel,
+            colour: vehicle.colour,
+            chassis: vehicle.chassis,
+            vin: vehicle.chassis, // old column for compatibility
+            engine: vehicle.engine,
+            engine_number: vehicle.engine, // old column for compatibility
+            mileage: parseInt(vehicle.mileage) || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingVehicle.id);
+
+        if (updateError) {
+          console.error("Error updating vehicle:", updateError);
+          throw updateError;
+        }
+
+        vehicleId = existingVehicle.id;
+        console.log("Vehicle updated successfully with ID:", vehicleId);
+      } else {
+        // ✅ Vehicle doesn't exist - create new vehicle entry
+        console.log("Vehicle doesn't exist, creating new vehicle...");
+
+        const vehicleToInsert = {
+          registration: vehicle.reg, // NEW column
+          reg_number: vehicle.reg, // OLD column (keep for compatibility)
+          make_model: vehicle.makeModel, // NEW combined column
+          make: vehicle.makeModel.split(' ')[0] || 'Unknown', // OLD column
+          model: vehicle.makeModel.split(' ').slice(1).join(' ') || '', // OLD column
+          colour: vehicle.colour,
+          chassis: vehicle.chassis, // NEW column
+          vin: vehicle.chassis, // OLD column (keep for compatibility)
+          engine: vehicle.engine, // NEW column
+          engine_number: vehicle.engine, // OLD column (keep for compatibility)
+          mileage: parseInt(vehicle.mileage) || null,
+          customer_id: customer.id, // link to customer
+          created_at: new Date().toISOString(),
+        };
+
+        console.log("Inserting vehicle:", vehicleToInsert);
+
+        const { data: newVehicle, error: insertError } = await supabase
+          .from("vehicles")
+          .insert([vehicleToInsert])
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("Error inserting vehicle:", insertError);
+          throw insertError;
+        }
+
+        vehicleId = newVehicle.id;
+        console.log("Vehicle created successfully with ID:", vehicleId);
+      }
+
+      // ✅ STEP 2: Create job record
+      console.log("Creating job record...");
+
       const jobData = {
         customer: `${customer.firstName} ${customer.lastName}`,
         customer_id: customer.id, // link customer by ID
@@ -469,35 +536,8 @@ export default function CreateJobCardPage() {
 
       addJob(insertedJob); // update local context with the returned job data
 
-      // ✅ Link customer to vehicle in database using BOTH column names
-      if (customer && vehicle.reg) {
-        console.log("Linking customer to vehicle...");
-
-        // Try updating with new column name first
-        let { error: linkError } = await supabase
-          .from("vehicles")
-          .update({ customer_id: customer.id })
-          .eq("registration", vehicle.reg);
-
-        // If that fails, try with old column name
-        if (linkError) {
-          const { error: linkError2 } = await supabase
-            .from("vehicles")
-            .update({ customer_id: customer.id })
-            .eq("reg_number", vehicle.reg);
-          
-          if (linkError2) {
-            console.error("Error linking customer to vehicle:", linkError2);
-          } else {
-            console.log("Customer successfully linked to vehicle in database (using reg_number)");
-          }
-        } else {
-          console.log("Customer successfully linked to vehicle in database (using registration)");
-        }
-      }
-
       // ✅ Show success message
-      alert(`Job created successfully! Job Number: ${insertedJob.id}`);
+      alert(`Job created successfully! Job Number: ${insertedJob.id}\n\nVehicle ${vehicle.reg} has been saved and linked to ${customer.firstName} ${customer.lastName}`);
 
       // ✅ Redirect to appointments page with the actual job number from database
       router.push(`/appointments?jobNumber=${insertedJob.id}`);
