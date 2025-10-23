@@ -1,115 +1,121 @@
+/* ============================================
+   UPDATE JOB STATUS
+============================================ */
+export const updateJobStatus = async (jobId, newStatus) => {
+  try {
+    const { data, error } = await supabase
+      .from("jobs")
+      .update({ status: newStatus })
+      .eq("id", jobId)
+      .select()
+      .single();
 
-  // ---------------- Render ----------------
-  return (
-    <Layout>
-      <div style={{ height: "100%", display: "flex", flexDirection: "column", padding: "8px 16px" }}>
-        {/* Top Bar */}
-        <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "12px", padding: "12px", backgroundColor: "#fff", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.08)" }}>
-          <button onClick={() => handleAddNote(selectedDay)} disabled={isLoading} style={{ padding: "10px 20px", backgroundColor: isLoading ? "#ccc" : "#FF4040", color: "white", border: "none", borderRadius: "8px", cursor: isLoading ? "not-allowed" : "pointer", fontWeight: "500", fontSize: "14px" }}>Add Note</button>
+    if (error) return { success: false, error };
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, error: { message: error.message } };
+  }
+};
 
-          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search by Job #, Name, or Reg..." disabled={isLoading} style={{ flex: 1, padding: "10px 16px", borderRadius: "8px", border: "1px solid #e0e0e0", fontSize: "14px" }} />
+/* ============================================
+   CREATE OR UPDATE APPOINTMENT
+============================================ */
+export const createOrUpdateAppointment = async (jobNumber, appointmentDate, appointmentTime) => {
+  try {
+    if (!jobNumber || !appointmentDate || !appointmentTime) return { success: false, error: { message: "Job number, date, and time are required" } };
 
-          <input type="text" value={jobNumber} onChange={(e) => setJobNumber(e.target.value)} placeholder="Job Number" disabled={isLoading} style={{ width: "140px", padding: "10px 16px", borderRadius: "8px", border: "1px solid #e0e0e0", fontSize: "14px" }} />
+    const { data: job, error: jobError } = await supabase
+      .from("jobs")
+      .select("id, job_number")
+      .eq("job_number", jobNumber)
+      .maybeSingle();
 
-          <select value={time} onChange={(e) => setTime(e.target.value)} disabled={isLoading} style={{ width: "120px", padding: "10px 12px", borderRadius: "8px", border: "1px solid #e0e0e0", fontSize: "14px" }}>
-            <option value="">Select time</option>
-            {timeSlots.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
-          </select>
+    if (!job || jobError) return { success: false, error: { message: `Job ${jobNumber} not found` } };
 
-          <button onClick={() => handleAddAppointment(selectedDay.toISOString().split("T")[0])} disabled={isLoading} style={{ padding: "10px 20px", backgroundColor: isLoading ? "#ccc" : "#FF4040", color: "white", border: "none", borderRadius: "8px", cursor: isLoading ? "not-allowed" : "pointer", fontWeight: "500", fontSize: "14px" }}>{isLoading ? "Booking..." : "Book Appointment"}</button>
-        </div>
+    const scheduledDateTime = `${appointmentDate}T${appointmentTime}:00`;
 
-        {/* Calendar Table Container */}
-        <div style={{ flex: "0 0 auto", maxHeight: "calc(14 * 42px + 60px)", overflowY: "auto", marginBottom: "12px", borderRadius: "10px", boxShadow: "0 2px 6px rgba(0,0,0,0.1)", backgroundColor: "#fff" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
-              <tr style={{ backgroundColor: "#f6f6f6", borderBottom: "2px solid #FF4040" }}>
-                {["Day/Date","Availability","Total Hours","Total Jobs","Services","MOT","Diagnosis","Other","Notes"].map(header => <th key={header} style={{ textAlign: "left", padding: "10px 12px", fontWeight: "600", fontSize: "14px", color: "#333", borderBottom: "1px solid #ddd", background: "#f9f9f9", position: "sticky", top: 0 }}>{header}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {dates.map((date) => {
-                const dateKey = date.toDateString();
-                const counts = getJobCounts(date);
-                return (
-                  <tr key={dateKey} onClick={() => setSelectedDay(date)} style={{ cursor: "pointer", backgroundColor: selectedDay.toDateString() === date.toDateString() ? "#FFF2F2" : isSaturday(date) ? "#FFF8E1" : "#fff" }}>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{formatDate(date)}</td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{getTechHoursForDay(date)} techs</td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>0</td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{counts.totalJobs}</td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{counts.services}</td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{counts.MOT}</td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{counts.diagnosis}</td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{counts.other}</td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{notes[dateKey] || ""}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+    const { data: existingAppointment } = await supabase
+      .from("appointments")
+      .select("appointment_id")
+      .eq("job_id", job.id)
+      .maybeSingle();
 
-        {/* Jobs for Selected Day Section */}
-        <div style={{ flex: "0 0 40%", marginBottom: "8px", border: "1px solid #ccc", borderRadius: "10px", padding: "12px", backgroundColor: "#fff", boxShadow: "0 2px 6px rgba(0,0,0,0.05)", overflowY: "auto" }}>
-          <h3 style={{ marginBottom: "12px" }}>Jobs for <span style={{ color: "#FF4040" }}>{formatDateNoYear(selectedDay)}</span></h3>
+    let appointmentData;
+    if (existingAppointment) {
+      const { data, error } = await supabase
+        .from("appointments")
+        .update({ scheduled_time: scheduledDateTime, updated_at: new Date().toISOString() })
+        .eq("appointment_id", existingAppointment.appointment_id)
+        .select()
+        .single();
 
-          <div style={{ display: "flex", gap: "12px", marginBottom: "8px" }}>
-            {["All Jobs", "MOT", "Tech Hours"].map((tab) => (
-              <div key={tab} style={{ padding: "6px 12px", border: "1px solid #FF4040", color: tab === "Tech Hours" ? "#FF4040" : "#000", borderRadius: "6px", cursor: "pointer" }} onClick={() => { if (tab === "Tech Hours") toggleTechHoursEditor(); }}>{tab}</div>
-            ))}
-          </div>
+      if (error) throw error;
+      appointmentData = data;
+    } else {
+      const { data, error } = await supabase
+        .from("appointments")
+        .insert([{ job_id: job.id, scheduled_time: scheduledDateTime, status: "Scheduled", created_at: new Date().toISOString() }])
+        .select()
+        .single();
 
-          {showTechHoursEditor && (
-            <div style={{ marginBottom: "12px", padding: "12px", border: "1px solid #FF4040", borderRadius: "6px", background: "#FFF5F5" }}>
-              <label>Tech Hours for {formatDateNoYear(selectedDay)}:</label>
-              <input type="number" min="0" value={getTechHoursForDay(selectedDay)} onChange={handleTechHoursChange} style={{ marginLeft: "8px", padding: "6px", width: "60px", borderRadius: "4px", border: "1px solid #ccc" }} />
-            </div>
-          )}
+      if (error) throw error;
+      appointmentData = data;
+    }
 
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>{["Job #","Reg","Vehicle","Customer","Time In","Time Out","Reason","Total Time","Time on Job","Waiting","Collection","Loan Car","MOT","Wash","Address"].map(head => <th key={head} style={{ textAlign: "left", padding: "8px 10px", background: "#f6f6f6", fontWeight: "600", borderBottom: "2px solid #FF4040", position: "sticky", top: 0, zIndex: 1 }}>{head}</th>)}</tr>
-            </thead>
-            <tbody>
-              {filteredJobs.length > 0 ? (
-                filteredJobs.map((job, idx) => (
-                  <tr key={idx} style={{ backgroundColor: highlightJob === job.jobNumber ? "#D0F0C0" : "transparent", transition: "background-color 0.5s" }}>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.jobNumber || "-"}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.reg || "-"}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{getVehicleDisplay(job)}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.customer || "-"}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.appointment?.time || "-"}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>-</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.reason || job.description || job.type || "-"}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.totalTime || "-"}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.timeOnJob || "-"}</td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}><input type="checkbox" checked={job.waiting || false} readOnly /></td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}><input type="checkbox" checked={job.collection || false} readOnly /></td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}><input type="checkbox" checked={job.loanCar || false} readOnly /></td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}><input type="checkbox" checked={job.MOT || false} readOnly /></td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}><input type="checkbox" checked={job.wash || false} readOnly /></td>
-                    <td style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>{job.customerAddress || "-"}</td>
-                  </tr>
-                ))
-              ) : (
-                Array.from({ length: 12 }).map((_, idx) => (
-                  <tr key={idx}>{Array.from({ length: 15 }).map((__, colIdx) => <td key={colIdx} style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}></td>)}</tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+    await updateJobStatus(job.id, "Booked");
 
-        {/* Add Note Popup */}
-        <Popup isOpen={showNotePopup} onClose={() => setShowNotePopup(false)}>
-          <h3>Add Note for {formatDateNoYear(selectedDay)}</h3>
-          <textarea style={{ width: "100%", height: "100px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }} value={currentNote} onChange={(e) => setCurrentNote(e.target.value)} />
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px", gap: "8px" }}>
-            <button onClick={saveNote} style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}>Update</button>
-            <button onClick={() => setShowNotePopup(false)} style={{ padding: "8px 16px", backgroundColor: "#666", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}>Close</button>
-          </div>
-        </Popup>
-      </div>
-    </Layout>
-  );
-}
+    return { success: true, data: { appointment: appointmentData, jobId: job.id } };
+  } catch (error) {
+    return { success: false, error: { message: error.message || "Failed to create/update appointment" } };
+  }
+};
+
+/* ============================================
+   GET JOBS BY DATE
+============================================ */
+export const getJobsByDate = async (date) => {
+  const { data, error } = await supabase
+    .from("appointments")
+    .select(`
+      appointment_id,
+      scheduled_time,
+      notes,
+      job:job_id(
+        id,
+        job_number,
+        type,
+        status,
+        vehicle:vehicle_id(
+          reg_number,
+          make,
+          model,
+          customer:customer_id(
+            firstname,
+            lastname
+          )
+        )
+      )
+    `)
+    .gte("scheduled_time", `${date}T00:00:00`)
+    .lte("scheduled_time", `${date}T23:59:59`);
+
+  if (error) return [];
+
+  return data.map((a) => ({
+    appointmentId: a.appointment_id,
+    scheduledTime: a.scheduled_time,
+    notes: a.notes,
+    job: {
+      id: a.job?.id,
+      jobNumber: a.job?.job_number,
+      type: a.job?.type,
+      status: a.job?.status,
+      reg: a.job?.vehicle?.reg_number,
+      make: a.job?.vehicle?.make,
+      model: a.job?.vehicle?.model,
+      customer: a.job?.vehicle?.customer
+        ? `${a.job.vehicle.customer.firstname} ${a.job.vehicle.customer.lastname}`
+        : "",
+    },
+  }));
+};

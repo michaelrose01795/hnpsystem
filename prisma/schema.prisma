@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Vehicle {
+  id              String   @id @default(cuid())
+  registration    String   @unique
+  make            String?
+  model           String?
+  year            Int?
+  vin             String?  @unique
+  color           String?
+  mileage         Int?
+  fuelType        String?
+  engineSize      String?
+  transmission    String?
+  customerId      String?
+  customer        Customer? @relation(fields: [customerId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  jobCards        JobCard[]
+  motTests        MotTest[]
+  sales           Sale[]
+  
+  @@map("vehicles")
+}
+
+model Customer {
+  id              String   @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String?  @unique
+  phone           String?
+  address         String?
+  postcode        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  vehicles        Vehicle[]
+  jobCards        JobCard[]
+  sales           Sale[]
+  
+  @@map("customers")
+}
+
+model JobCard {
+  id              String   @id @default(cuid())
+  jobNumber       String   @unique
+  vehicleId       String
+  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id])
+  customerId      String
+  customer        Customer @relation(fields: [customerId], references: [id])
+  description     String
+  status          String   @default("pending")
+  priority        String   @default("normal")
+  assignedTo      String?
+  departmentId    String?
+  bookingDate     DateTime?
+  startDate       DateTime?
+  completedDate   DateTime?
+  estimatedCost   Float?
+  actualCost      Float?
+  labourCost      Float?
+  partsCost       Float?
+  notes           String?
+  internalNotes   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  partsRequests   PartsRequest[]
+  timeEntries     TimeEntry[]
+  
+  @@map("job_cards")
+}
+
+model PartsRequest {
+  id              String   @id @default(cuid())
+  jobCardId       String
+  jobCard         JobCard  @relation(fields: [jobCardId], references: [id])
+  partNumber      String
+  partName        String
+  quantity        Int
+  unitPrice       Float?
+  totalPrice      Float?
+  status          String   @default("requested")
+  supplier        String?
+  orderDate       DateTime?
+  receivedDate    DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("parts_requests")
+}
+
+model TimeEntry {
+  id              String   @id @default(cuid())
+  jobCardId       String
+  jobCard         JobCard  @relation(fields: [jobCardId], references: [id])
+  userId          String
+  clockIn         DateTime
+  clockOut        DateTime?
+  totalHours      Float?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("time_entries")
+}
+
+model MotTest {
+  id              String   @id @default(cuid())
+  vehicleId       String
+  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id])
+  testDate        DateTime
+  expiryDate      DateTime
+  result          String
+  mileage         Int
+  testNumber      String?  @unique
+  testerId        String?
+  advisories      String?
+  failures        String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("mot_tests")
+}
+
+model Sale {
+  id              String   @id @default(cuid())
+  vehicleId       String
+  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id])
+  customerId      String
+  customer        Customer @relation(fields: [customerId], references: [id])
+  saleDate        DateTime @default(now())
+  salePrice       Float
+  deposit         Float?
+  financeAmount   Float?
+  financeCompany  String?
+  salespersonId   String
+  status          String   @default("pending")
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("sales")
+}
