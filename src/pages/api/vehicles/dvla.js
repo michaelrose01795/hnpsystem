@@ -1,124 +1,173 @@
-// file location: src/pages/api/vehicles/dvla.js
+// file location: src/pages/job-cards/create/index.js
+// Replace the handleFetchVehicleData function with this improved version
 
-export default async function handler(req, res) {
-  // only allow POST requests
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+// ✅ FIXED: DVLA API Fetch with better error handling and debugging
+const handleFetchVehicleData = async () => {
+  // validate that registration number is entered
+  if (!vehicle.reg.trim()) {
+    setError("Please enter a registration number");
+    showNotification("vehicle", "error", "✗ Please enter a registration number");
+    return;
   }
 
-  // get registration from request body
-  const { registration } = req.body;
-  
-  // validate registration is provided
-  if (!registration) {
-    return res.status(400).json({ error: "No registration provided" });
-  }
-
-  // check if DVLA API key exists
-  if (!process.env.DVLA_API_KEY) {
-    console.warn("⚠️ DVLA_API_KEY not found in environment variables");
-    console.warn("⚠️ Returning mock data for testing purposes");
-    console.warn("⚠️ To use real DVLA data, add DVLA_API_KEY to your .env.local file");
-    
-    // return mock data for testing when no API key is configured
-    return res.status(200).json({
-      registrationNumber: registration.toUpperCase(),
-      make: "FORD",
-      model: "FOCUS ZETEC",
-      colour: "BLUE",
-      vin: "WF0AXXGCDA" + Math.random().toString(36).substring(2, 9).toUpperCase(),
-      engineNumber: "AB" + Math.floor(Math.random() * 100000),
-      motTests: [
-        {
-          odometerValue: "45000",
-          completedDate: "2024-01-15",
-          testResult: "PASSED"
-        }
-      ],
-      yearOfManufacture: 2018,
-      engineCapacity: 1499,
-      fuelType: "PETROL",
-      // note: this is mock data for testing only
-      _isMockData: true
-    });
-  }
+  setIsLoadingVehicle(true); // show loading state
+  setError(""); // clear any previous errors
+  setVehicleNotification(null); // clear any previous notifications
 
   try {
-    console.log("🚗 Fetching vehicle data from DVLA for:", registration);
-    
-    // call DVLA API
-    const dvlaRes = await fetch(
-      "https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles",
-      {
-        method: "POST",
-        headers: {
-          "x-api-key": process.env.DVLA_API_KEY, // server-side only
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ registrationNumber: registration }),
-      }
-    );
+    const regUpper = vehicle.reg.trim().toUpperCase(); // normalize registration to uppercase
+    console.log("🚗 Fetching vehicle data from DVLA API for:", regUpper);
 
-    console.log("📡 DVLA API response status:", dvlaRes.status);
+    // ✅ Fetch ONLY from DVLA API via our backend endpoint
+    const response = await fetch("/api/vehicles/dvla", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ registration: regUpper }),
+    });
 
-    // handle error responses from DVLA API
-    if (!dvlaRes.ok) {
-      const text = await dvlaRes.text();
-      console.error("❌ DVLA API error:", text);
+    console.log("📡 DVLA API response status:", response.status);
+    console.log("📡 Response headers:", Object.fromEntries(response.headers.entries()));
+
+    // Get response text first for better error handling
+    const responseText = await response.text();
+    console.log("📡 Response body:", responseText);
+
+    // if API request fails, throw error with details
+    if (!response.ok) {
+      let errorMessage = "Failed to fetch vehicle details from DVLA";
       
-      // provide helpful error messages based on status code
-      if (dvlaRes.status === 404) {
-        return res.status(404).json({ 
-          error: "Vehicle not found",
-          message: "No vehicle found with registration: " + registration,
-          suggestion: "Please check the registration number is correct"
+      try {
+        // Try to parse error response as JSON
+        const errorData = JSON.parse(responseText);
+        console.error("❌ DVLA API error data:", errorData);
+        
+        // Use specific error message if available
+        errorMessage = errorData.message || errorData.error || errorMessage;
+        
+        // Show suggestion if available
+        if (errorData.suggestion) {
+          errorMessage += `\n${errorData.suggestion}`;
+        }
+      } catch (parseError) {
+        // If response isn't JSON, use the text as error message
+        console.error("❌ Could not parse error response:", parseError);
+        errorMessage = responseText || errorMessage;
+      }
+      
+      throw new Error(errorMessage);
+    }
+
+    // Parse successful response
+    let data;
+    try {
+      data = JSON.parse(responseText);
+      console.log("✅ DVLA API response data:", data);
+    } catch (parseError) {
+      console.error("❌ Could not parse DVLA response:", parseError);
+      throw new Error("Invalid response from DVLA API");
+    }
+
+    // if no data returned or empty object, show error
+    if (!data || Object.keys(data).length === 0) {
+      throw new Error("No vehicle data found for that registration from DVLA");
+    }
+
+    // Check if this is mock data
+    if (data._isMockData) {
+      console.warn("⚠️ Using mock DVLA data (API key not configured)");
+      showNotification("vehicle", "success", "⚠️ Using test data - Add DVLA_API_KEY for real data");
+    }
+
+    // ✅ Extract data from DVLA response and populate vehicle fields
+    const vehicleData = {
+      reg: regUpper,
+      makeModel: data.make && data.model 
+        ? `${data.make} ${data.model}`.trim() 
+        : data.make || "Unknown",
+      colour: data.colour || "Not provided",
+      chassis: data.vin || "Not provided",
+      engine: data.engineNumber || data.engineCapacity?.toString() || "Not provided",
+      mileage: data.motTests && data.motTests.length > 0 
+        ? data.motTests[0].odometerValue || "" 
+        : vehicle.mileage || "",
+    };
+
+    console.log("✅ Setting vehicle data from DVLA:", vehicleData);
+    
+    // ✅ Update vehicle state with DVLA data
+    setVehicle(vehicleData);
+    
+    // ✅ Update MOT date in maintenance if available from DVLA
+    if (data.motExpiryDate) {
+      setMaintenance(prev => ({
+        ...prev,
+        nextMotDate: data.motExpiryDate
+      }));
+    }
+
+    if (!data._isMockData) {
+      showNotification("vehicle", "success", "✓ Vehicle details fetched from DVLA!");
+    }
+
+    // ✅ After successful DVLA fetch, check if vehicle exists in our database
+    const { data: existingVehicle, error: vehicleSearchError } = await supabase
+      .from("vehicles")
+      .select("*, customer_id")
+      .or(`registration.eq.${regUpper},reg_number.eq.${regUpper}`)
+      .maybeSingle();
+
+    console.log("💾 Database vehicle check result:", existingVehicle, vehicleSearchError);
+
+    // ✅ If vehicle exists in database AND has a linked customer, auto-fill customer details
+    if (existingVehicle && existingVehicle.customer_id && !vehicleSearchError) {
+      console.log("💾 Vehicle found in database with linked customer, fetching customer...");
+
+      const { data: linkedCustomer, error: customerError } = await supabase
+        .from("customers")
+        .select("*")
+        .eq("id", existingVehicle.customer_id)
+        .single();
+
+      console.log("👤 Linked customer result:", linkedCustomer, customerError);
+
+      // if linked customer found, populate customer state
+      if (linkedCustomer && !customerError) {
+        setCustomer({
+          id: linkedCustomer.id,
+          firstName: linkedCustomer.firstname || linkedCustomer.firstName,
+          lastName: linkedCustomer.lastname || linkedCustomer.lastName,
+          email: linkedCustomer.email,
+          mobile: linkedCustomer.mobile,
+          telephone: linkedCustomer.telephone,
+          address: linkedCustomer.address,
+          postcode: linkedCustomer.postcode,
         });
-      } else if (dvlaRes.status === 403) {
-        return res.status(403).json({ 
-          error: "API Authentication failed",
-          message: "Your DVLA API key is invalid or expired",
-          suggestion: "Please check your DVLA_API_KEY in .env.local file"
-        });
-      } else if (dvlaRes.status === 429) {
-        return res.status(429).json({ 
-          error: "Rate limit exceeded",
-          message: "Too many requests to DVLA API",
-          suggestion: "Please wait a moment and try again"
-        });
-      } else if (dvlaRes.status === 400) {
-        return res.status(400).json({ 
-          error: "Bad request",
-          message: "Invalid registration format",
-          suggestion: "Registration should be in format: AB12CDE"
-        });
-      } else {
-        return res.status(dvlaRes.status).json({ 
-          error: "DVLA API error",
-          message: text,
-          statusCode: dvlaRes.status
-        });
+        console.log("✅ Customer auto-filled from database");
+        showNotification("customer", "success", "✓ Customer details auto-filled from database!");
       }
     }
 
-    // parse successful response
-    const data = await dvlaRes.json();
-    console.log("✅ Successfully retrieved vehicle data");
-    
-    // return vehicle data to frontend
-    return res.status(200).json(data);
-    
   } catch (err) {
-    // catch any unexpected errors (network issues, parsing errors, etc.)
-    console.error("❌ Server error calling DVLA API:", err);
-    console.error("Error details:", {
-      message: err.message,
-      stack: err.stack
-    });
+    console.error("❌ Error fetching vehicle data:", err);
+    console.error("❌ Error stack:", err.stack);
     
-    return res.status(500).json({ 
-      error: "Server error",
-      message: err.message || "An unexpected error occurred",
-      suggestion: "Check server console logs for more details"
+    // Set user-friendly error message
+    const errorMessage = err.message || "Could not fetch vehicle details";
+    setError(errorMessage);
+    showNotification("vehicle", "error", `✗ ${errorMessage}`);
+
+    // set vehicle with "Not provided" for all fields except reg
+    setVehicle({
+      reg: vehicle.reg.trim().toUpperCase(),
+      makeModel: "Not provided",
+      colour: "Not provided",
+      chassis: "Not provided",
+      engine: "Not provided",
+      mileage: vehicle.mileage || "",
     });
+  } finally {
+    setIsLoadingVehicle(false); // always stop loading state
   }
-}
+};

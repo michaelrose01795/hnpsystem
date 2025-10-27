@@ -1,0 +1,81 @@
+.
+├── README.md
+├── Supabase
+│   └── migrations
+│       ├── 001_enable_rls.sql
+│       ├── 002_create_rls_policies.sql
+│       ├── 003_secure_core_tables.sql
+│       └── 004_fix_core_tables_policies.sql
+├── docs
+│   ├── developer-guide.md
+│   ├── paste
+│   └── project-overview.md
+├── eslint.config.mjs
+├── hnpsystem.tar.gz
+├── next-env.d.ts
+├── next.config.mjs
+├── package-lock.json
+├── package.json
+├── prisma
+│   ├── schema.prisma
+│   └── schema.prisma.save
+├── project-structure.txt
+├── public
+│   ├── file.svg
+│   ├── globe.svg
+│   ├── images
+│   │   ├── Brakes3.png
+│   │   ├── Spare.png
+│   │   └── Tyres2.png
+│   ├── next.svg
+│   ├── vercel.svg
+│   └── window.svg
+├── src
+│   ├── api
+│   │   ├── clocking
+│   │   ├── customers
+│   │   ├── jobcards
+│   │   └── vehicles
+│   ├── components
+│   │   ├── Clocking
+│   │   ├── JobCards
+│   │   ├── Layout.js
+│   │   ├── LoginDropdown.js
+│   │   ├── ProtectedRoute.js
+│   │   ├── Section.js
+│   │   ├── Sidebar.js
+│   │   ├── VHC
+│   │   ├── dashboards
+│   │   └── popups
+│   ├── config
+│   │   ├── navLinks.js
+│   │   └── users.js
+│   ├── context
+│   │   ├── ClockingContext.js
+│   │   ├── JobsContext.js
+│   │   └── UserContext.js
+│   ├── hooks
+│   │   └── useClocking.js
+│   ├── lib
+│   │   ├── database
+│   │   └── supabaseClient.js
+│   ├── pages
+│   │   ├── _app.js
+│   │   ├── api
+│   │   ├── appointments
+│   │   ├── clocking
+│   │   ├── dashboard
+│   │   ├── dashboard.js
+│   │   ├── index.js
+│   │   ├── job-cards
+│   │   ├── login.js
+│   │   ├── newsfeed.js
+│   │   ├── unauthorized.js
+│   │   ├── vhc
+│   │   ├── workshop
+│   │   └── workshop.js
+│   └── styles
+│       └── globals.css
+└── tsconfig.json
+
+33 directories, 46 files

@@ -263,7 +263,7 @@ export default function CreateJobCardPage() {
     }
   };
 
-  // ✅ FIXED: DVLA API Fetch - properly fetch and display vehicle data from DVLA API
+  // ✅ FIXED: DVLA API Fetch - ONLY fetches from DVLA API and populates vehicle fields
   const handleFetchVehicleData = async () => {
     // validate that registration number is entered
     if (!vehicle.reg.trim()) {
@@ -278,20 +278,73 @@ export default function CreateJobCardPage() {
 
     try {
       const regUpper = vehicle.reg.trim().toUpperCase(); // normalize registration to uppercase
-      console.log("Fetching vehicle data for:", regUpper);
+      console.log("Fetching vehicle data from DVLA API for:", regUpper);
 
-      // ✅ STEP 1: Check if vehicle exists in database using BOTH column names
+      // ✅ Fetch ONLY from DVLA API via our backend endpoint
+      const response = await fetch("/api/vehicles/dvla", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registration: regUpper }),
+      });
+
+      console.log("DVLA API response status:", response.status);
+
+      // if API request fails, throw error
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("DVLA API error:", errorText);
+        throw new Error(`Failed to fetch vehicle details from DVLA: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("DVLA API response data:", data);
+
+      // if no data returned or empty object, show error
+      if (!data || Object.keys(data).length === 0) {
+        throw new Error("No vehicle data found for that registration from DVLA");
+      }
+
+      // ✅ Extract data from DVLA response and populate vehicle fields
+      const vehicleData = {
+        reg: regUpper,
+        makeModel: data.make && data.model 
+          ? `${data.make} ${data.model}`.trim() 
+          : data.make || "Unknown",
+        colour: data.colour || "Not provided",
+        chassis: data.vin || "Not provided",
+        engine: data.engineNumber || data.engineCapacity || "Not provided",
+        mileage: data.motTests && data.motTests.length > 0 
+          ? data.motTests[0].odometerValue || "" 
+          : vehicle.mileage || "",
+      };
+
+      console.log("Setting vehicle data from DVLA:", vehicleData);
+      
+      // ✅ Update vehicle state with DVLA data
+      setVehicle(vehicleData);
+      
+      // ✅ Update MOT date in maintenance if available from DVLA
+      if (data.motExpiryDate) {
+        setMaintenance(prev => ({
+          ...prev,
+          nextMotDate: data.motExpiryDate
+        }));
+      }
+
+      showNotification("vehicle", "success", "✓ Vehicle details fetched from DVLA!");
+
+      // ✅ After successful DVLA fetch, check if vehicle exists in our database
       const { data: existingVehicle, error: vehicleSearchError } = await supabase
         .from("vehicles")
         .select("*, customer_id")
         .or(`registration.eq.${regUpper},reg_number.eq.${regUpper}`)
-        .maybeSingle(); // Use maybeSingle instead of single to avoid error when not found
+        .maybeSingle();
 
-      console.log("Vehicle search result:", existingVehicle, vehicleSearchError);
+      console.log("Database vehicle check result:", existingVehicle, vehicleSearchError);
 
-      // if vehicle exists in database AND has a linked customer, auto-fill customer details
+      // ✅ If vehicle exists in database AND has a linked customer, auto-fill customer details
       if (existingVehicle && existingVehicle.customer_id && !vehicleSearchError) {
-        console.log("Vehicle found in database, fetching linked customer...");
+        console.log("Vehicle found in database with linked customer, fetching customer...");
 
         const { data: linkedCustomer, error: customerError } = await supabase
           .from("customers")
@@ -316,83 +369,20 @@ export default function CreateJobCardPage() {
           console.log("Customer auto-filled from database");
           showNotification("customer", "success", "✓ Customer details auto-filled from database!");
         }
-
-        // ✅ Use vehicle data from database - handle both old and new column names
-        setVehicle({
-          reg: regUpper,
-          makeModel: existingVehicle.make_model || `${existingVehicle.make || ''} ${existingVehicle.model || ''}`.trim() || "No data provided",
-          colour: existingVehicle.colour || "No data provided",
-          chassis: existingVehicle.chassis || existingVehicle.vin || "No data provided",
-          engine: existingVehicle.engine || existingVehicle.engine_number || "No data provided",
-          mileage: existingVehicle.mileage || "",
-        });
-        showNotification("vehicle", "success", "✓ Vehicle loaded from database!");
-        setIsLoadingVehicle(false);
-        return;
       }
-
-      console.log("Vehicle not in database, fetching from DVLA API...");
-
-      // ✅ STEP 2: Fetch from DVLA API via our backend endpoint
-      const response = await fetch("/api/vehicles/dvla", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ registration: regUpper }),
-      });
-
-      console.log("DVLA API response status:", response.status);
-
-      // if API request fails, throw error
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("DVLA API error:", errorText);
-        throw new Error(`Failed to fetch vehicle details: ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log("DVLA API response data:", data);
-
-      // if no data returned or empty object, show error
-      if (!data || Object.keys(data).length === 0) {
-        setError("No vehicle data found for that registration.");
-        setVehicle({
-          reg: regUpper,
-          makeModel: "No data provided",
-          colour: "No data provided",
-          chassis: "No data provided",
-          engine: "No data provided",
-          mileage: "",
-        });
-        showNotification("vehicle", "error", "✗ No vehicle data found for this registration");
-        return;
-      }
-
-      // ✅ STEP 3: Populate vehicle state with API data
-      const vehicleData = {
-        reg: regUpper,
-        makeModel: `${data.make || "Unknown"} ${data.model || ""}`.trim(),
-        colour: data.colour || "No data provided",
-        chassis: data.vin || "No data provided",
-        engine: data.engineNumber || "No data provided",
-        mileage: data.motTests?.[0]?.odometerValue || vehicle.mileage || "",
-      };
-
-      console.log("Setting vehicle data:", vehicleData);
-      setVehicle(vehicleData);
-      showNotification("vehicle", "success", "✓ Vehicle details fetched from DVLA!");
 
     } catch (err) {
-      console.error("Error fetching vehicle data:", err);
-      setError(`Error fetching vehicle details: ${err.message}`);
-      showNotification("vehicle", "error", `✗ Error: ${err.message}`);
+      console.error("Error fetching vehicle data from DVLA:", err);
+      setError(`Error: ${err.message}`);
+      showNotification("vehicle", "error", `✗ ${err.message}`);
 
-      // set vehicle with "No data provided" for all fields except reg
+      // set vehicle with "Not provided" for all fields except reg
       setVehicle({
         reg: vehicle.reg.trim().toUpperCase(),
-        makeModel: "No data provided",
-        colour: "No data provided",
-        chassis: "No data provided",
-        engine: "No data provided",
+        makeModel: "Not provided",
+        colour: "Not provided",
+        chassis: "Not provided",
+        engine: "Not provided",
         mileage: vehicle.mileage || "",
       });
     } finally {
