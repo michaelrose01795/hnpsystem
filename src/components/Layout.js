@@ -22,22 +22,17 @@ export default function Layout({ children }) {
   // Apply dark or light mode class to the document body
   useEffect(() => {
     if (darkMode) {
-      document.body.classList.add("dark-mode"); // add dark mode class
-      localStorage.setItem("darkMode", "true"); // store preference
+      document.body.classList.add("dark-mode");
+      localStorage.setItem("darkMode", "true");
     } else {
-      document.body.classList.remove("dark-mode"); // remove dark mode class
-      localStorage.setItem("darkMode", "false"); // store preference
+      document.body.classList.remove("dark-mode");
+      localStorage.setItem("darkMode", "false");
     }
   }, [darkMode]);
 
   useEffect(() => {
-    console.log("User object:", user);
-    console.log("Roles (normalized):", user?.roles?.map((r) => r.toLowerCase()));
-  }, [user]);
-
-  useEffect(() => {
     if (user === null && !hideSidebar) {
-      router.replace("/login"); // redirect to login if no user
+      router.replace("/login");
     }
   }, [user, hideSidebar, router]);
 
@@ -45,10 +40,10 @@ export default function Layout({ children }) {
     return <div style={{ padding: "2rem", textAlign: "center" }}>Loading...</div>;
   }
 
-  const userRoles = user?.roles?.map((r) => r.toLowerCase()) || []; // normalize roles
-  const role = userRoles[0] || "guest"; // get first role or guest
+  const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const role = userRoles[0] || "guest";
 
-  // Define sidebar navigation links
+  // Sidebar navigation
   const links = [
     { href: "/newsfeed", label: "📰 News Feed" },
     { href: "/dashboard", label: "📊 Dashboard" },
@@ -56,9 +51,8 @@ export default function Layout({ children }) {
 
   const viewRoles = ["manager", "service", "sales"];
   const appointmentRoles = ["admin", "sales", "service", "manager"];
-  const isActive = (path) => router.pathname.startsWith(path); // check active link
+  const isActive = (path) => router.pathname.startsWith(path);
 
-  // Define light and dark theme colors
   const colors = darkMode
     ? {
         sidebarBg: "#1E1E1E",
@@ -66,7 +60,6 @@ export default function Layout({ children }) {
         accent: "#FF4040",
         mainBg: "#121212",
         headerBg: "#222",
-        cardBg: "#1E1E1E",
       }
     : {
         sidebarBg: "#FFF0F0",
@@ -74,7 +67,6 @@ export default function Layout({ children }) {
         accent: "#FF4040",
         mainBg: "#FFF8F8",
         headerBg: "white",
-        cardBg: "white",
       };
 
   return (
@@ -83,11 +75,10 @@ export default function Layout({ children }) {
         display: "flex",
         minHeight: "100vh",
         fontFamily: "sans-serif",
-        backgroundColor: colors.mainBg, // apply theme background
-        color: colors.sidebarText, // apply theme text
+        backgroundColor: colors.mainBg,
+        color: colors.sidebarText,
       }}
     >
-      {/* Sidebar section */}
       {!hideSidebar && (
         <aside
           style={{
@@ -116,7 +107,7 @@ export default function Layout({ children }) {
 
             {/* Dark mode toggle */}
             <button
-              onClick={() => setDarkMode((prev) => !prev)} // toggle mode
+              onClick={() => setDarkMode((prev) => !prev)}
               style={{
                 backgroundColor: colors.accent,
                 color: "white",
@@ -142,9 +133,7 @@ export default function Layout({ children }) {
                         padding: "10px",
                         borderRadius: "6px",
                         textDecoration: "none",
-                        color: isActive(link.href)
-                          ? "white"
-                          : colors.accent,
+                        color: isActive(link.href) ? "white" : colors.accent,
                         backgroundColor: isActive(link.href)
                           ? colors.accent
                           : "transparent",
@@ -166,7 +155,29 @@ export default function Layout({ children }) {
                 </React.Fragment>
               ))}
 
-              {/* Conditional links based on roles */}
+              {/* ✅ NEW: My Jobs link visible to techs only */}
+              {userRoles.includes("techs") && (
+                <Link href="/job-cards/myjobs">
+                  <span
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      borderRadius: "6px",
+                      textDecoration: "none",
+                      color: "white",
+                      backgroundColor: colors.accent,
+                      textAlign: "center",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      marginTop: "10px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    🧰 My Jobs
+                  </span>
+                </Link>
+              )}
+
               {(userRoles.includes("service") ||
                 userRoles.includes("admin") ||
                 userRoles.some((r) => r.includes("manager"))) && (
@@ -307,7 +318,7 @@ export default function Layout({ children }) {
         </aside>
       )}
 
-      {/* Main content area */}
+      {/* Main content */}
       <div
         style={{
           flex: 1,
@@ -334,7 +345,6 @@ export default function Layout({ children }) {
         <main style={{ padding: "24px", boxSizing: "border-box" }}>{children}</main>
       </div>
 
-      {/* Modal for technicians */}
       {userRoles.includes("techs") && (
         <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       )}
