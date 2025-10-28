@@ -1,59 +1,49 @@
 // file location: src/components/Layout.js
 import React, { useEffect, useState } from "react"; // import React hooks
 import Link from "next/link"; // import Next.js link component
-import { useRouter } from "next/router"; // import Next.js router
+import { useRouter } from "next/router"; // import router for navigation
 import { useUser } from "../context/UserContext"; // import user context
 import ClockInButton from "./Clocking/ClockInButton"; // import clock in button
 import JobCardModal from "./JobCards/JobCardModal"; // import job modal
 import StatusSidebar from "../components/StatusTracking/StatusSidebar"; // import status sidebar
 
 export default function Layout({ children }) {
-  const { user, logout, status, setStatus } = useUser(); // include status state
-  const router = useRouter(); // get router object
-  const hideSidebar = router.pathname === "/login"; // hide sidebar on login page
-  const [isModalOpen, setIsModalOpen] = useState(false); // modal state
-  const [darkMode, setDarkMode] = useState(false); // dark mode state
-  const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false); // status sidebar state
-  
-  // NEW: Extract jobId from URL if present (e.g., /job-cards/view/12345 or ?id=12345)
-  const urlJobId = router.query.id || router.query.jobId || null;
-  
-  // NEW: State for manually searched job (when not on a job page)
-  const [searchedJobId, setSearchedJobId] = useState(null);
-  
-  // NEW: Determine which jobId to use (URL takes priority over search)
-  const activeJobId = urlJobId || searchedJobId;
-  
-  // Get current job status from API
-  const [currentJobStatus, setCurrentJobStatus] = useState('booked');
+  const { user, logout, status, setStatus } = useUser(); // get user context data
+  const router = useRouter();
+  const hideSidebar = router.pathname === "/login";
 
-  // Define roles that can see the status sidebar
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false);
+
+  const urlJobId = router.query.id || router.query.jobId || null;
+  const [searchedJobId, setSearchedJobId] = useState(null);
+  const activeJobId = urlJobId || searchedJobId;
+  const [currentJobStatus, setCurrentJobStatus] = useState("booked");
+
   const statusSidebarRoles = [
     "admin manager",
     "service",
-    "service manager", 
+    "service manager",
     "workshop manager",
     "after sales director",
     "techs",
     "parts",
     "parts manager",
     "mot tester",
-    "valet service"
+    "valet service",
   ];
 
-  // Check if current user has access to status sidebar
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
-  const canViewStatusSidebar = userRoles.some(role => 
+  const canViewStatusSidebar = userRoles.some((role) =>
     statusSidebarRoles.includes(role)
   );
 
-  // Load saved dark mode setting from localStorage
   useEffect(() => {
-    const savedMode = localStorage.getItem("darkMode"); // get from storage
-    if (savedMode === "true") setDarkMode(true); // enable if saved
+    const savedMode = localStorage.getItem("darkMode");
+    if (savedMode === "true") setDarkMode(true);
   }, []);
 
-  // Apply dark or light mode class to the document body
   useEffect(() => {
     if (darkMode) {
       document.body.classList.add("dark-mode");
@@ -70,31 +60,21 @@ export default function Layout({ children }) {
     }
   }, [user, hideSidebar, router]);
 
-  // NEW: Fetch current job status when activeJobId changes
   useEffect(() => {
-    if (activeJobId) {
-      fetchCurrentJobStatus(activeJobId);
-    }
+    if (activeJobId) fetchCurrentJobStatus(activeJobId);
   }, [activeJobId]);
 
-  // NEW: Clear searched job when URL changes to a job page
   useEffect(() => {
-    if (urlJobId) {
-      setSearchedJobId(null); // Clear manual search when on a job page
-    }
+    if (urlJobId) setSearchedJobId(null);
   }, [urlJobId]);
 
-  // Function to fetch the current status of a job
   const fetchCurrentJobStatus = async (id) => {
     try {
       const response = await fetch(`/api/status/getCurrentStatus?jobId=${id}`);
       const data = await response.json();
-      
-      if (data.success) {
-        setCurrentJobStatus(data.status); // Update current status
-      }
+      if (data.success) setCurrentJobStatus(data.status);
     } catch (error) {
-      console.error('Error fetching job status:', error);
+      console.error("Error fetching job status:", error);
     }
   };
 
@@ -104,7 +84,6 @@ export default function Layout({ children }) {
 
   const role = userRoles[0] || "guest";
 
-  // Sidebar navigation
   const links = [
     { href: "/newsfeed", label: "📰 News Feed" },
     { href: "/dashboard", label: "📊 Dashboard" },
@@ -112,6 +91,14 @@ export default function Layout({ children }) {
 
   const viewRoles = ["manager", "service", "sales"];
   const appointmentRoles = ["admin", "sales", "service", "manager"];
+  const vhcRoles = [
+    "admin",
+    "service",
+    "service manager",
+    "workshop manager",
+    "after sales director",
+    "general manager",
+  ];
   const isActive = (path) => router.pathname.startsWith(path);
 
   const colors = darkMode
@@ -166,7 +153,6 @@ export default function Layout({ children }) {
               H&P DMS
             </h2>
 
-            {/* Dark mode toggle */}
             <button
               onClick={() => setDarkMode((prev) => !prev)}
               style={{
@@ -193,15 +179,14 @@ export default function Layout({ children }) {
                         display: "block",
                         padding: "10px",
                         borderRadius: "6px",
-                        textDecoration: "none",
                         color: isActive(link.href) ? "white" : colors.accent,
                         backgroundColor: isActive(link.href)
                           ? colors.accent
                           : "transparent",
-                        transition: "all 0.2s",
                         fontSize: "0.95rem",
                         fontWeight: 500,
                         cursor: "pointer",
+                        transition: "all 0.2s",
                       }}
                     >
                       {link.label}
@@ -216,7 +201,6 @@ export default function Layout({ children }) {
                 </React.Fragment>
               ))}
 
-              {/* Techs-only links */}
               {userRoles.includes("techs") && (
                 <>
                   <Link href="/job-cards/myjobs">
@@ -225,7 +209,6 @@ export default function Layout({ children }) {
                         display: "block",
                         padding: "10px",
                         borderRadius: "6px",
-                        textDecoration: "none",
                         color: "white",
                         backgroundColor: colors.accent,
                         textAlign: "center",
@@ -269,7 +252,6 @@ export default function Layout({ children }) {
                       padding: "10px",
                       marginTop: "10px",
                       borderRadius: "6px",
-                      textDecoration: "none",
                       color: "white",
                       backgroundColor: colors.accent,
                       textAlign: "center",
@@ -293,7 +275,6 @@ export default function Layout({ children }) {
                       padding: "10px",
                       marginTop: "10px",
                       borderRadius: "6px",
-                      textDecoration: "none",
                       color: "white",
                       backgroundColor: colors.accent,
                       textAlign: "center",
@@ -315,7 +296,6 @@ export default function Layout({ children }) {
                       padding: "10px",
                       marginTop: "10px",
                       borderRadius: "6px",
-                      textDecoration: "none",
                       color: "white",
                       backgroundColor: colors.accent,
                       textAlign: "center",
@@ -337,7 +317,6 @@ export default function Layout({ children }) {
                       padding: "10px",
                       marginTop: "10px",
                       borderRadius: "6px",
-                      textDecoration: "none",
                       color: "white",
                       backgroundColor: colors.accent,
                       textAlign: "center",
@@ -350,10 +329,31 @@ export default function Layout({ children }) {
                   </span>
                 </Link>
               )}
+
+              {/* VHC Dashboard Button in Sidebar */}
+              {vhcRoles.some((r) => userRoles.includes(r)) && (
+                <Link href="/vhc/dashboard">
+                  <span
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      marginTop: "10px",
+                      borderRadius: "6px",
+                      color: "white",
+                      backgroundColor: colors.accent,
+                      textAlign: "center",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    📝 VHC Dashboard
+                  </span>
+                </Link>
+              )}
             </nav>
           </div>
 
-          {/* Logout button */}
           <div>
             <button
               onClick={() => {
@@ -379,7 +379,6 @@ export default function Layout({ children }) {
         </aside>
       )}
 
-      {/* Main content */}
       <div
         style={{
           flex: 1,
@@ -404,7 +403,6 @@ export default function Layout({ children }) {
               Welcome {user?.username || "Guest"} ({role})
             </h1>
 
-            {/* Techs-only status dropdown */}
             {userRoles.includes("techs") && (
               <select
                 value={status}
@@ -431,15 +429,14 @@ export default function Layout({ children }) {
         <main style={{ padding: "24px", boxSizing: "border-box" }}>{children}</main>
       </div>
 
-      {/* NEW: Status Sidebar - always available for authorized users */}
       {canViewStatusSidebar && (
         <StatusSidebar
           jobId={activeJobId}
           currentStatus={currentJobStatus}
           isOpen={isStatusSidebarOpen}
           onToggle={() => setIsStatusSidebarOpen(!isStatusSidebarOpen)}
-          onJobSearch={setSearchedJobId} // NEW: Pass search handler
-          hasUrlJobId={!!urlJobId} // NEW: Tell sidebar if we're on a job page
+          onJobSearch={setSearchedJobId}
+          hasUrlJobId={!!urlJobId}
         />
       )}
 

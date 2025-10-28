@@ -1,121 +1,70 @@
-/* ============================================
-   UPDATE JOB STATUS
-============================================ */
-export const updateJobStatus = async (jobId, newStatus) => {
-  try {
-    const { data, error } = await supabase
-      .from("jobs")
-      .update({ status: newStatus })
-      .eq("id", jobId)
-      .select()
-      .single();
+{/* Main content */}
+      <div
+        style={{
+          flex: 1,
+          backgroundColor: colors.mainBg,
+          display: "flex",
+          flexDirection: "column",
+          overflowY: "auto",
+        }}
+      >
+        {!hideSidebar && (
+          <header
+            style={{
+              backgroundColor: colors.headerBg,
+              padding: "16px",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <h1 style={{ fontSize: "1.25rem", fontWeight: 600, color: colors.accent }}>
+              Welcome {user?.username || "Guest"} ({role})
+            </h1>
 
-    if (error) return { success: false, error };
-    return { success: true, data };
-  } catch (error) {
-    return { success: false, error: { message: error.message } };
-  }
-};
+            {/* Techs-only status dropdown */}
+            {userRoles.includes("techs") && (
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: "6px",
+                  border: `1px solid ${colors.accent}`,
+                  backgroundColor: "white",
+                  color: colors.accent,
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                <option>Waiting for Job</option>
+                <option>In Progress</option>
+                <option>Break</option>
+                <option>Completed</option>
+              </select>
+            )}
+          </header>
+        )}
 
-/* ============================================
-   CREATE OR UPDATE APPOINTMENT
-============================================ */
-export const createOrUpdateAppointment = async (jobNumber, appointmentDate, appointmentTime) => {
-  try {
-    if (!jobNumber || !appointmentDate || !appointmentTime) return { success: false, error: { message: "Job number, date, and time are required" } };
+        <main style={{ padding: "24px", boxSizing: "border-box" }}>{children}</main>
+      </div>
 
-    const { data: job, error: jobError } = await supabase
-      .from("jobs")
-      .select("id, job_number")
-      .eq("job_number", jobNumber)
-      .maybeSingle();
+      {/* NEW: Status Sidebar - always available for authorized users */}
+      {canViewStatusSidebar && (
+        <StatusSidebar
+          jobId={activeJobId}
+          currentStatus={currentJobStatus}
+          isOpen={isStatusSidebarOpen}
+          onToggle={() => setIsStatusSidebarOpen(!isStatusSidebarOpen)}
+          onJobSearch={setSearchedJobId} // NEW: Pass search handler
+          hasUrlJobId={!!urlJobId} // NEW: Tell sidebar if we're on a job page
+        />
+      )}
 
-    if (!job || jobError) return { success: false, error: { message: `Job ${jobNumber} not found` } };
-
-    const scheduledDateTime = `${appointmentDate}T${appointmentTime}:00`;
-
-    const { data: existingAppointment } = await supabase
-      .from("appointments")
-      .select("appointment_id")
-      .eq("job_id", job.id)
-      .maybeSingle();
-
-    let appointmentData;
-    if (existingAppointment) {
-      const { data, error } = await supabase
-        .from("appointments")
-        .update({ scheduled_time: scheduledDateTime, updated_at: new Date().toISOString() })
-        .eq("appointment_id", existingAppointment.appointment_id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      appointmentData = data;
-    } else {
-      const { data, error } = await supabase
-        .from("appointments")
-        .insert([{ job_id: job.id, scheduled_time: scheduledDateTime, status: "Scheduled", created_at: new Date().toISOString() }])
-        .select()
-        .single();
-
-      if (error) throw error;
-      appointmentData = data;
-    }
-
-    await updateJobStatus(job.id, "Booked");
-
-    return { success: true, data: { appointment: appointmentData, jobId: job.id } };
-  } catch (error) {
-    return { success: false, error: { message: error.message || "Failed to create/update appointment" } };
-  }
-};
-
-/* ============================================
-   GET JOBS BY DATE
-============================================ */
-export const getJobsByDate = async (date) => {
-  const { data, error } = await supabase
-    .from("appointments")
-    .select(`
-      appointment_id,
-      scheduled_time,
-      notes,
-      job:job_id(
-        id,
-        job_number,
-        type,
-        status,
-        vehicle:vehicle_id(
-          reg_number,
-          make,
-          model,
-          customer:customer_id(
-            firstname,
-            lastname
-          )
-        )
-      )
-    `)
-    .gte("scheduled_time", `${date}T00:00:00`)
-    .lte("scheduled_time", `${date}T23:59:59`);
-
-  if (error) return [];
-
-  return data.map((a) => ({
-    appointmentId: a.appointment_id,
-    scheduledTime: a.scheduled_time,
-    notes: a.notes,
-    job: {
-      id: a.job?.id,
-      jobNumber: a.job?.job_number,
-      type: a.job?.type,
-      status: a.job?.status,
-      reg: a.job?.vehicle?.reg_number,
-      make: a.job?.vehicle?.make,
-      model: a.job?.vehicle?.model,
-      customer: a.job?.vehicle?.customer
-        ? `${a.job.vehicle.customer.firstname} ${a.job.vehicle.customer.lastname}`
-        : "",
-    },
-  }));
-};
+      {userRoles.includes("techs") && (
+        <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      )}
+    </div>
+  );
+}

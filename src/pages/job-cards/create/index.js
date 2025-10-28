@@ -70,6 +70,17 @@ export default function CreateJobCardPage() {
     servicePlanExpiry: "",
   });
 
+  // ✅ GDPR consent state
+  const [gdprConsent, setGdprConsent] = useState({
+    email: { fromUs: false, fromFranchise: false },
+    sms: { fromUs: false, fromFranchise: false },
+    letter: { fromUs: false, fromFranchise: false },
+    telephone: { fromUs: false, fromFranchise: false },
+    socialMedia: { fromUs: false, fromFranchise: false },
+    marketing: false,
+    serviceDeptFollowUp: false,
+  });
+
   // modern input styling object
   const modernInputStyle = {
     padding: "10px 14px",
@@ -574,7 +585,7 @@ export default function CreateJobCardPage() {
           </button>
         </div>
 
-        {/* Top row: Job Information and Customer Details (50/50 split) */}
+        {/* Top row: Job Information, Maintenance, GDPR Settings */}
         <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
           {/* Job Information Section */}
           <div
@@ -639,6 +650,430 @@ export default function CreateJobCardPage() {
             </div>
           </div>
 
+          {/* Maintenance Section */}
+          <div
+            style={{
+              flex: 1,
+              backgroundColor: "white",
+              padding: "16px",
+              borderRadius: "8px",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+            }}
+          >
+            <h3 style={{ marginTop: 0 }}>Maintenance</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div>
+                <label
+                  style={{
+                    fontSize: "0.85rem",
+                    fontWeight: "500",
+                    color: "#555",
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Next Service Date
+                </label>
+                <input
+                  type="date"
+                  value={maintenance.nextServiceDate}
+                  onChange={(e) => setMaintenance({ ...maintenance, nextServiceDate: e.target.value })}
+                  style={{
+                    ...modernInputStyle,
+                    width: "100%",
+                  }}
+                  onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
+                  onBlur={(e) => {
+                    e.target.style.border = "2px solid #e0e0e0";
+                    e.target.style.backgroundColor = "#fafafa";
+                    e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
+                  }}
+                />
+              </div>
+              <div>
+                <label
+                  style={{
+                    fontSize: "0.85rem",
+                    fontWeight: "500",
+                    color: "#555",
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Next MOT Date
+                </label>
+                <input
+                  type="date"
+                  value={maintenance.nextMotDate}
+                  onChange={(e) => setMaintenance({ ...maintenance, nextMotDate: e.target.value })}
+                  style={{
+                    ...modernInputStyle,
+                    width: "100%",
+                  }}
+                  onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
+                  onBlur={(e) => {
+                    e.target.style.border = "2px solid #e0e0e0";
+                    e.target.style.backgroundColor = "#fafafa";
+                    e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
+                  }}
+                />
+              </div>
+              <div>
+                <label
+                  style={{
+                    fontSize: "0.85rem",
+                    fontWeight: "500",
+                    color: "#555",
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Lease Company
+                </label>
+                <input
+                  type="text"
+                  value={maintenance.leaseCO}
+                  onChange={(e) => setMaintenance({ ...maintenance, leaseCO: e.target.value })}
+                  placeholder="Enter lease company"
+                  style={{
+                    ...modernInputStyle,
+                    width: "100%",
+                  }}
+                  onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
+                  onBlur={(e) => {
+                    e.target.style.border = "2px solid #e0e0e0";
+                    e.target.style.backgroundColor = "#fafafa";
+                    e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
+                  }}
+                />
+              </div>
+              <div>
+                <label
+                  style={{
+                    fontSize: "0.85rem",
+                    fontWeight: "500",
+                    color: "#555",
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Privileges
+                </label>
+                <input
+                  type="text"
+                  value={maintenance.privileges}
+                  onChange={(e) => setMaintenance({ ...maintenance, privileges: e.target.value })}
+                  placeholder="Enter privileges"
+                  style={{
+                    ...modernInputStyle,
+                    width: "100%",
+                  }}
+                  onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
+                  onBlur={(e) => {
+                    e.target.style.border = "2px solid #e0e0e0";
+                    e.target.style.backgroundColor = "#fafafa";
+                    e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* GDPR Settings Section */}
+          <div
+            style={{
+              flex: 1,
+              backgroundColor: "white",
+              padding: "16px",
+              borderRadius: "8px",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+            }}
+          >
+            <h3 style={{ marginTop: 0 }}>GDPR Settings</h3>
+            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px", fontSize: "0.85rem" }}>
+              <thead>
+                <tr>
+                  <th style={{ borderBottom: "1px solid #ddd", textAlign: "left", padding: "4px 0" }}>Contact Type</th>
+                  <th style={{ borderBottom: "1px solid #ddd", textAlign: "left", padding: "4px 0" }}>From Us</th>
+                  <th style={{ borderBottom: "1px solid #ddd", textAlign: "left", padding: "4px 0" }}>
+                    From Franchise
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {["Email", "SMS", "Letter", "Telephone", "Social media"].map((method) => (
+                  <tr key={method}>
+                    <td style={{ padding: "4px 0" }}>{method}</td>
+                    <td>
+                      <input type="checkbox" />
+                    </td>
+                    <td>
+                      <input type="checkbox" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+              <thead>
+                <tr>
+                  <th style={{ borderBottom: "1px solid #ddd", textAlign: "left", padding: "4px 0" }}>
+                    Marketing / Service
+                  </th>
+                  <th style={{ borderBottom: "1px solid #ddd", textAlign: "left", padding: "4px 0" }}>Allowed</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ padding: "4px 0" }}>Marketing Messages</td>
+                  <td>
+                    <input type="checkbox" />
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ padding: "4px 0" }}>Service Dept Follow Up</td>
+                  <td>
+                    <input type="checkbox" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Middle row: Vehicle Details and Customer Details */}
+        <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
+          {/* Vehicle Details Section */}
+          <div
+            style={{
+              flex: 1,
+              backgroundColor: "white",
+              padding: "16px",
+              borderRadius: "8px",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              height: sectionHeight,
+              overflow: "auto",
+            }}
+          >
+            <h3 style={{ marginTop: 0 }}>Vehicle Details</h3>
+
+            {/* ✅ Vehicle notification banner */}
+            {vehicleNotification && (
+              <div
+                style={{
+                  padding: "12px 16px",
+                  marginBottom: "16px",
+                  borderRadius: "8px",
+                  backgroundColor: vehicleNotification.type === "success" ? "#d4edda" : "#f8d7da",
+                  border: `1px solid ${vehicleNotification.type === "success" ? "#c3e6cb" : "#f5c6cb"}`,
+                  color: vehicleNotification.type === "success" ? "#155724" : "#721c24",
+                  fontSize: "0.9rem",
+                  fontWeight: "500",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  animation: "slideIn 0.3s ease",
+                }}
+              >
+                <span>{vehicleNotification.message}</span>
+                <button
+                  onClick={() => setVehicleNotification(null)}
+                  style={{
+                    marginLeft: "auto",
+                    background: "none",
+                    border: "none",
+                    fontSize: "1.2rem",
+                    cursor: "pointer",
+                    color: "inherit",
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            <div style={{ marginBottom: "12px" }}>
+              <label
+                style={{
+                  fontSize: "0.9rem",
+                  fontWeight: "500",
+                  color: "#555",
+                  display: "block",
+                  marginBottom: "6px",
+                }}
+              >
+                Registration Number
+              </label>
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                <input
+                  type="text"
+                  value={vehicle.reg}
+                  onChange={(e) => setVehicle({ ...vehicle, reg: e.target.value })}
+                  placeholder="e.g. AB12 CDE"
+                  style={{
+                    ...modernInputStyle,
+                    flex: 1,
+                    textTransform: "uppercase",
+                  }}
+                  onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
+                  onBlur={(e) => {
+                    e.target.style.border = "2px solid #e0e0e0";
+                    e.target.style.backgroundColor = "#fafafa";
+                    e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
+                  }}
+                />
+                <button
+                  onClick={handleFetchVehicleData}
+                  disabled={isLoadingVehicle}
+                  style={{
+                    padding: "10px 16px",
+                    backgroundColor: isLoadingVehicle ? "#ccc" : "#FF4040",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontWeight: "600",
+                    fontSize: "0.9rem",
+                    cursor: isLoadingVehicle ? "not-allowed" : "pointer",
+                    boxShadow: isLoadingVehicle ? "none" : "0 4px 6px rgba(255,64,64,0.2)",
+                    transition: "all 0.3s ease",
+                  }}
+                  onMouseOver={(e) => {
+                    if (!isLoadingVehicle) {
+                      e.target.style.backgroundColor = "#cc0000";
+                      e.target.style.boxShadow = "0 6px 10px rgba(255,64,64,0.3)";
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (!isLoadingVehicle) {
+                      e.target.style.backgroundColor = "#FF4040";
+                      e.target.style.boxShadow = "0 4px 6px rgba(255,64,64,0.2)";
+                    }
+                  }}
+                >
+                  {isLoadingVehicle ? "Loading..." : "Fetch Data"}
+                </button>
+              </div>
+            </div>
+
+            {/* Display error message if any */}
+            {error && (
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  color: "#dc3545",
+                  marginBottom: "12px",
+                  padding: "8px 12px",
+                  backgroundColor: "#f8d7da",
+                  borderRadius: "6px",
+                  border: "1px solid #f5c6cb",
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+            {/* Display vehicle colour */}
+            <div style={{ marginBottom: "10px" }}>
+              <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", fontWeight: "500", color: "#555" }}>Colour</p>
+              <p
+                style={{
+                  margin: 0,
+                  padding: "8px 12px",
+                  backgroundColor: "#f5f5f5",
+                  borderRadius: "6px",
+                  fontSize: "0.95rem",
+                }}
+              >
+                {vehicle.colour || <span style={{ color: "#999" }}>Not available</span>}
+              </p>
+            </div>
+
+            {/* Display vehicle make and model */}
+            <div style={{ marginBottom: "10px" }}>
+              <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", fontWeight: "500", color: "#555" }}>
+                Make & Model
+              </p>
+              <p
+                style={{
+                  margin: 0,
+                  padding: "8px 12px",
+                  backgroundColor: "#f5f5f5",
+                  borderRadius: "6px",
+                  fontSize: "0.95rem",
+                }}
+              >
+                {vehicle.makeModel || <span style={{ color: "#999" }}>Not available</span>}
+              </p>
+            </div>
+
+            {/* Display chassis number */}
+            <div style={{ marginBottom: "10px" }}>
+              <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", fontWeight: "500", color: "#555" }}>
+                Chassis Number
+              </p>
+              <p
+                style={{
+                  margin: 0,
+                  padding: "8px 12px",
+                  backgroundColor: "#f5f5f5",
+                  borderRadius: "6px",
+                  fontSize: "0.95rem",
+                }}
+              >
+                {vehicle.chassis || <span style={{ color: "#999" }}>Not available</span>}
+              </p>
+            </div>
+
+            {/* Display engine number */}
+            <div style={{ marginBottom: "10px" }}>
+              <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", fontWeight: "500", color: "#555" }}>
+                Engine Number
+              </p>
+              <p
+                style={{
+                  margin: 0,
+                  padding: "8px 12px",
+                  backgroundColor: "#f5f5f5",
+                  borderRadius: "6px",
+                  fontSize: "0.95rem",
+                }}
+              >
+                {vehicle.engine || <span style={{ color: "#999" }}>Not available</span>}
+              </p>
+            </div>
+
+            {/* Editable mileage input */}
+            <div>
+              <label
+                style={{
+                  fontSize: "0.85rem",
+                  fontWeight: "500",
+                  color: "#555",
+                  display: "block",
+                  marginBottom: "6px",
+                }}
+              >
+                Current Mileage
+              </label>
+              <input
+                type="number"
+                value={vehicle.mileage}
+                onChange={(e) => setVehicle({ ...vehicle, mileage: e.target.value })}
+                placeholder="Enter mileage"
+                style={{
+                  ...modernInputStyle,
+                  width: "100%",
+                }}
+                onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
+                onBlur={(e) => {
+                  e.target.style.border = "2px solid #e0e0e0";
+                  e.target.style.backgroundColor = "#fafafa";
+                  e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
+                }}
+              />
+            </div>
+          </div>
+
           {/* Customer Details Section */}
           <div
             style={{
@@ -647,6 +1082,8 @@ export default function CreateJobCardPage() {
               padding: "16px",
               borderRadius: "8px",
               boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              height: sectionHeight,
+              overflow: "auto",
             }}
           >
             <h3 style={{ marginTop: 0 }}>Customer Details</h3>
@@ -827,275 +1264,6 @@ export default function CreateJobCardPage() {
                 >
                   Search Existing Customer
                 </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Vehicle Details Section - Full Width */}
-        <div style={{ marginBottom: "24px" }}>
-          <div
-            style={{
-              backgroundColor: "white",
-              padding: "16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h3 style={{ marginTop: 0 }}>Vehicle Details</h3>
-
-            {/* ✅ Vehicle notification banner */}
-            {vehicleNotification && (
-              <div
-                style={{
-                  padding: "12px 16px",
-                  marginBottom: "16px",
-                  borderRadius: "8px",
-                  backgroundColor: vehicleNotification.type === "success" ? "#d4edda" : "#f8d7da",
-                  border: `1px solid ${vehicleNotification.type === "success" ? "#c3e6cb" : "#f5c6cb"}`,
-                  color: vehicleNotification.type === "success" ? "#155724" : "#721c24",
-                  fontSize: "0.9rem",
-                  fontWeight: "500",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  animation: "slideIn 0.3s ease",
-                }}
-              >
-                <span>{vehicleNotification.message}</span>
-                <button
-                  onClick={() => setVehicleNotification(null)}
-                  style={{
-                    marginLeft: "auto",
-                    background: "none",
-                    border: "none",
-                    fontSize: "1.2rem",
-                    cursor: "pointer",
-                    color: "inherit",
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            )}
-
-            {/* Vehicle fields in a grid layout for better use of space */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
-              {/* Registration Number with Fetch Button */}
-              <div style={{ gridColumn: "1 / 2" }}>
-                <label
-                  style={{
-                    fontSize: "0.9rem",
-                    fontWeight: "500",
-                    color: "#555",
-                    display: "block",
-                    marginBottom: "6px",
-                  }}
-                >
-                  Registration Number
-                </label>
-                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                  <input
-                    type="text"
-                    value={vehicle.reg}
-                    onChange={(e) => setVehicle({ ...vehicle, reg: e.target.value })}
-                    placeholder="e.g. AB12 CDE"
-                    style={{
-                      ...modernInputStyle,
-                      flex: 1,
-                      textTransform: "uppercase",
-                    }}
-                    onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
-                    onBlur={(e) => {
-                      e.target.style.border = "2px solid #e0e0e0";
-                      e.target.style.backgroundColor = "#fafafa";
-                      e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
-                    }}
-                  />
-                  <button
-                    onClick={handleFetchVehicleData}
-                    disabled={isLoadingVehicle}
-                    style={{
-                      padding: "10px 16px",
-                      backgroundColor: isLoadingVehicle ? "#ccc" : "#FF4040",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "8px",
-                      fontWeight: "600",
-                      fontSize: "0.9rem",
-                      cursor: isLoadingVehicle ? "not-allowed" : "pointer",
-                      boxShadow: isLoadingVehicle ? "none" : "0 4px 6px rgba(255,64,64,0.2)",
-                      transition: "all 0.3s ease",
-                      whiteSpace: "nowrap",
-                    }}
-                    onMouseOver={(e) => {
-                      if (!isLoadingVehicle) {
-                        e.target.style.backgroundColor = "#cc0000";
-                        e.target.style.boxShadow = "0 6px 10px rgba(255,64,64,0.3)";
-                      }
-                    }}
-                    onMouseOut={(e) => {
-                      if (!isLoadingVehicle) {
-                        e.target.style.backgroundColor = "#FF4040";
-                        e.target.style.boxShadow = "0 4px 6px rgba(255,64,64,0.2)";
-                      }
-                    }}
-                  >
-                    {isLoadingVehicle ? "Loading..." : "Fetch Data"}
-                  </button>
-                </div>
-              </div>
-
-              {/* Colour */}
-              <div>
-                <label
-                  style={{
-                    fontSize: "0.9rem",
-                    fontWeight: "500",
-                    color: "#555",
-                    display: "block",
-                    marginBottom: "6px",
-                  }}
-                >
-                  Colour
-                </label>
-                <div
-                  style={{
-                    ...modernInputStyle,
-                    backgroundColor: "#f5f5f5",
-                    display: "flex",
-                    alignItems: "center",
-                    minHeight: "42px",
-                  }}
-                >
-                  {vehicle.colour || <span style={{ color: "#999" }}>Not available</span>}
-                </div>
-              </div>
-
-              {/* Make & Model */}
-              <div>
-                <label
-                  style={{
-                    fontSize: "0.9rem",
-                    fontWeight: "500",
-                    color: "#555",
-                    display: "block",
-                    marginBottom: "6px",
-                  }}
-                >
-                  Make & Model
-                </label>
-                <div
-                  style={{
-                    ...modernInputStyle,
-                    backgroundColor: "#f5f5f5",
-                    display: "flex",
-                    alignItems: "center",
-                    minHeight: "42px",
-                  }}
-                >
-                  {vehicle.makeModel || <span style={{ color: "#999" }}>Not available</span>}
-                </div>
-              </div>
-
-              {/* Chassis Number */}
-              <div>
-                <label
-                  style={{
-                    fontSize: "0.9rem",
-                    fontWeight: "500",
-                    color: "#555",
-                    display: "block",
-                    marginBottom: "6px",
-                  }}
-                >
-                  Chassis Number
-                </label>
-                <div
-                  style={{
-                    ...modernInputStyle,
-                    backgroundColor: "#f5f5f5",
-                    display: "flex",
-                    alignItems: "center",
-                    minHeight: "42px",
-                  }}
-                >
-                  {vehicle.chassis || <span style={{ color: "#999" }}>Not available</span>}
-                </div>
-              </div>
-
-              {/* Engine Number */}
-              <div>
-                <label
-                  style={{
-                    fontSize: "0.9rem",
-                    fontWeight: "500",
-                    color: "#555",
-                    display: "block",
-                    marginBottom: "6px",
-                  }}
-                >
-                  Engine Number
-                </label>
-                <div
-                  style={{
-                    ...modernInputStyle,
-                    backgroundColor: "#f5f5f5",
-                    display: "flex",
-                    alignItems: "center",
-                    minHeight: "42px",
-                  }}
-                >
-                  {vehicle.engine || <span style={{ color: "#999" }}>Not available</span>}
-                </div>
-              </div>
-
-              {/* Current Mileage */}
-              <div>
-                <label
-                  style={{
-                    fontSize: "0.9rem",
-                    fontWeight: "500",
-                    color: "#555",
-                    display: "block",
-                    marginBottom: "6px",
-                  }}
-                >
-                  Current Mileage
-                </label>
-                <input
-                  type="number"
-                  value={vehicle.mileage}
-                  onChange={(e) => setVehicle({ ...vehicle, mileage: e.target.value })}
-                  placeholder="Enter mileage"
-                  style={{
-                    ...modernInputStyle,
-                    width: "100%",
-                  }}
-                  onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
-                  onBlur={(e) => {
-                    e.target.style.border = "2px solid #e0e0e0";
-                    e.target.style.backgroundColor = "#fafafa";
-                    e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Display error message if any */}
-            {error && (
-              <div
-                style={{
-                  fontSize: "0.8rem",
-                  color: "#dc3545",
-                  marginTop: "12px",
-                  padding: "8px 12px",
-                  backgroundColor: "#f8d7da",
-                  borderRadius: "6px",
-                  border: "1px solid #f5c6cb",
-                }}
-              >
-                {error}
               </div>
             )}
           </div>
