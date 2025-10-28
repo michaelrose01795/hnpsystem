@@ -8,6 +8,7 @@ export function UserProvider({ children }) {
   const { data: session } = useSession(); // NextAuth session
   const [user, setUser] = useState(null); // user is null by default
   const [loading, setLoading] = useState(true); // loading state
+  const [status, setStatus] = useState("Waiting for Job"); // NEW: default status for techs
 
   // Load saved dev user from localStorage on first render
   useEffect(() => {
@@ -50,14 +51,15 @@ export function UserProvider({ children }) {
     localStorage.setItem("devUser", JSON.stringify(devUser));
   };
 
-  // Logout (clear both session + dev user)
+  // Logout (clear both session + dev user + reset status)
   const logout = () => {
     setUser(null);
+    setStatus("Waiting for Job"); // reset status
     localStorage.removeItem("devUser");
   };
 
   return (
-    <UserContext.Provider value={{ user, loading, devLogin, logout }}>
+    <UserContext.Provider value={{ user, loading, devLogin, logout, status, setStatus }}>
       {children}
     </UserContext.Provider>
   );

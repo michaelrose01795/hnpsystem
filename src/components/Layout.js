@@ -7,7 +7,7 @@ import ClockInButton from "./Clocking/ClockInButton"; // import clock in button
 import JobCardModal from "./JobCards/JobCardModal"; // import job modal
 
 export default function Layout({ children }) {
-  const { user, logout } = useUser(); // get user and logout function
+  const { user, logout, status, setStatus } = useUser(); // NEW: include status state
   const router = useRouter(); // get router object
   const hideSidebar = router.pathname === "/login"; // hide sidebar on login page
   const [isModalOpen, setIsModalOpen] = useState(false); // modal state
@@ -155,27 +155,47 @@ export default function Layout({ children }) {
                 </React.Fragment>
               ))}
 
-              {/* ✅ NEW: My Jobs link visible to techs only */}
+              {/* Techs-only links */}
               {userRoles.includes("techs") && (
-                <Link href="/job-cards/myjobs">
-                  <span
+                <>
+                  <Link href="/job-cards/myjobs">
+                    <span
+                      style={{
+                        display: "block",
+                        padding: "10px",
+                        borderRadius: "6px",
+                        textDecoration: "none",
+                        color: "white",
+                        backgroundColor: colors.accent,
+                        textAlign: "center",
+                        fontSize: "0.9rem",
+                        fontWeight: 600,
+                        marginTop: "10px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      🧰 My Jobs
+                    </span>
+                  </Link>
+
+                  <button
+                    onClick={() => setIsModalOpen(true)}
                     style={{
                       display: "block",
                       padding: "10px",
                       borderRadius: "6px",
-                      textDecoration: "none",
-                      color: "white",
-                      backgroundColor: colors.accent,
-                      textAlign: "center",
-                      fontSize: "0.9rem",
-                      fontWeight: 600,
+                      fontSize: "0.95rem",
+                      fontWeight: 500,
                       marginTop: "10px",
                       cursor: "pointer",
+                      border: `1px solid ${colors.accent}`,
+                      backgroundColor: "transparent",
+                      color: colors.accent,
                     }}
                   >
-                    🧰 My Jobs
-                  </span>
-                </Link>
+                    🔧 Start Job
+                  </button>
+                </>
               )}
 
               {(userRoles.includes("service") ||
@@ -224,26 +244,6 @@ export default function Layout({ children }) {
                     🔜 Next Jobs
                   </span>
                 </Link>
-              )}
-
-              {userRoles.includes("techs") && (
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  style={{
-                    display: "block",
-                    padding: "10px",
-                    borderRadius: "6px",
-                    fontSize: "0.95rem",
-                    fontWeight: 500,
-                    marginTop: "10px",
-                    cursor: "pointer",
-                    border: `1px solid ${colors.accent}`,
-                    backgroundColor: "transparent",
-                    color: colors.accent,
-                  }}
-                >
-                  🔧 Start Job
-                </button>
               )}
 
               {viewRoles.some((r) => userRoles.includes(r)) && (
@@ -334,11 +334,36 @@ export default function Layout({ children }) {
               backgroundColor: colors.headerBg,
               padding: "16px",
               boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
             <h1 style={{ fontSize: "1.25rem", fontWeight: 600, color: colors.accent }}>
               Welcome {user?.username || "Guest"} ({role})
             </h1>
+
+            {/* Techs-only status dropdown */}
+            {userRoles.includes("techs") && (
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: "6px",
+                  border: `1px solid ${colors.accent}`,
+                  backgroundColor: "white",
+                  color: colors.accent,
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                <option>Waiting for Job</option>
+                <option>In Progress</option>
+                <option>Break</option>
+                <option>Completed</option>
+              </select>
+            )}
           </header>
         )}
 
