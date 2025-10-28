@@ -13,11 +13,11 @@ const navItems = [
   { label: "Contractors", href: "/contractors", roles: ["admin"] }, // admin only
   { label: "Vehicle Processing", href: "/vehicle-processing", roles: ["admin", "workshop"] }, // limited access
   { label: "Smart Repair", href: "/smartrepair", roles: ["workshop"] }, // workshop only
-  { label: "Create Job Card", href: "/job-cards/create", roles: ["admin", "sales", "workshop"] }, // allowed for admin/sales/workshop
-  { label: "View Job Cards", href: "/job-cards/view", roles: ["admin", "sales", "workshop", "service", "manager"] }, // view access
-  { label: "Appointments", href: "/appointments", roles: ["admin", "sales", "service", "manager"] }, // appointment roles
-  { label: "Next Jobs", href: "/job-cards/waiting/nextjobs", roles: ["service manager", "workshop manager"] }, // manager-only
-  { label: "My Jobs", href: "/job-cards/myjobs", roles: ["techs"] }, // ✅ new tech-only link
+  { label: "Create Job Card", href: "/job-cards/create", roles: ["admin", "sales", "workshop", "service manager", "workshop manager", "after sales manager"] }, // expanded access for managers
+  { label: "View Job Cards", href: "/job-cards/view", roles: ["admin", "sales", "workshop", "service", "manager", "service manager", "workshop manager", "after sales manager"] }, // view access for managers
+  { label: "Appointments", href: "/appointments", roles: ["admin", "sales", "service", "manager", "service manager", "workshop manager", "after sales manager"] }, // appointment roles including managers
+  { label: "Next Jobs", href: "/job-cards/waiting/nextjobs", roles: ["service manager", "workshop manager", "after sales manager"] }, // manager-only page
+  { label: "My Jobs", href: "/job-cards/myjobs", roles: ["techs", "service manager", "workshop manager", "after sales manager"] }, // ✅ now includes managers
 ];
 
 export default function Sidebar() {

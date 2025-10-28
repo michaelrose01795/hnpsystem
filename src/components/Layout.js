@@ -7,7 +7,7 @@ import ClockInButton from "./Clocking/ClockInButton"; // import clock in button
 import JobCardModal from "./JobCards/JobCardModal"; // import job modal
 
 export default function Layout({ children }) {
-  const { user, logout, status, setStatus } = useUser(); // NEW: include status state
+  const { user, logout, status, setStatus } = useUser(); // include status state
   const router = useRouter(); // get router object
   const hideSidebar = router.pathname === "/login"; // hide sidebar on login page
   const [isModalOpen, setIsModalOpen] = useState(false); // modal state
@@ -30,29 +30,36 @@ export default function Layout({ children }) {
     }
   }, [darkMode]);
 
+  // Redirect to login if no user
   useEffect(() => {
     if (user === null && !hideSidebar) {
       router.replace("/login");
     }
   }, [user, hideSidebar, router]);
 
+  // Show loading state while checking user
   if (user === undefined && !hideSidebar) {
     return <div style={{ padding: "2rem", textAlign: "center" }}>Loading...</div>;
   }
 
+  // Normalize user roles to lowercase
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
-  const role = userRoles[0] || "guest";
+  const role = userRoles[0] || "guest"; // get primary role
 
-  // Sidebar navigation
+  // Sidebar navigation links
   const links = [
     { href: "/newsfeed", label: "📰 News Feed" },
     { href: "/dashboard", label: "📊 Dashboard" },
   ];
 
-  const viewRoles = ["manager", "service", "sales"];
-  const appointmentRoles = ["admin", "sales", "service", "manager"];
+  // Define roles that can view job cards
+  const viewRoles = ["manager", "service", "sales", "service manager", "workshop manager", "after sales manager"];
+  // Define roles that can access appointments
+  const appointmentRoles = ["admin", "sales", "service", "manager", "service manager", "workshop manager", "after sales manager"];
+  // Check if current path is active
   const isActive = (path) => router.pathname.startsWith(path);
 
+  // Define colors for dark and light mode
   const colors = darkMode
     ? {
         sidebarBg: "#1E1E1E",
@@ -69,6 +76,16 @@ export default function Layout({ children }) {
         headerBg: "white",
       };
 
+  // Check if user is a manager (service, workshop, or after sales)
+  const isManager = userRoles.some((r) => 
+    r.includes("service manager") || 
+    r.includes("workshop manager") || 
+    r.includes("after sales manager")
+  );
+
+  // Check if user is a tech
+  const isTech = userRoles.includes("techs");
+
   return (
     <div
       style={{
@@ -79,6 +96,7 @@ export default function Layout({ children }) {
         color: colors.sidebarText,
       }}
     >
+      {/* Sidebar - hidden on login page */}
       {!hideSidebar && (
         <aside
           style={{
@@ -94,6 +112,7 @@ export default function Layout({ children }) {
           }}
         >
           <div>
+            {/* Sidebar header */}
             <h2
               style={{
                 marginBottom: "20px",
@@ -105,7 +124,7 @@ export default function Layout({ children }) {
               H&P DMS
             </h2>
 
-            {/* Dark mode toggle */}
+            {/* Dark mode toggle button */}
             <button
               onClick={() => setDarkMode((prev) => !prev)}
               style={{
@@ -123,6 +142,7 @@ export default function Layout({ children }) {
               {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
             </button>
 
+            {/* Navigation links */}
             <nav style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {links.map((link, index) => (
                 <React.Fragment key={link.href}>
@@ -147,7 +167,8 @@ export default function Layout({ children }) {
                     </span>
                   </Link>
 
-                  {index === 1 && userRoles.includes("techs") && (
+                  {/* Show clock-in button after dashboard for techs and managers */}
+                  {index === 1 && (isTech || isManager) && (
                     <div style={{ marginTop: "10px" }}>
                       <ClockInButton />
                     </div>
@@ -155,8 +176,8 @@ export default function Layout({ children }) {
                 </React.Fragment>
               ))}
 
-              {/* Techs-only links */}
-              {userRoles.includes("techs") && (
+              {/* Show My Jobs and Start Job button for techs AND managers */}
+              {(isTech || isManager) && (
                 <>
                   <Link href="/job-cards/myjobs">
                     <span
@@ -179,7 +200,7 @@ export default function Layout({ children }) {
                   </Link>
 
                   <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => setIsModalOpen(true)} // open job card modal
                     style={{
                       display: "block",
                       padding: "10px",
@@ -198,6 +219,7 @@ export default function Layout({ children }) {
                 </>
               )}
 
+              {/* Create Job Card button - for service, admin, managers */}
               {(userRoles.includes("service") ||
                 userRoles.includes("admin") ||
                 userRoles.some((r) => r.includes("manager"))) && (
@@ -222,7 +244,8 @@ export default function Layout({ children }) {
                 </Link>
               )}
 
-              {["service manager", "workshop manager"].some((r) =>
+              {/* Next Jobs button - for service, workshop, and after sales managers */}
+              {["service manager", "workshop manager", "after sales manager"].some((r) =>
                 userRoles.includes(r.toLowerCase())
               ) && (
                 <Link href="/job-cards/waiting/nextjobs">
@@ -246,6 +269,7 @@ export default function Layout({ children }) {
                 </Link>
               )}
 
+              {/* View Job Cards - for managers, service, sales */}
               {viewRoles.some((r) => userRoles.includes(r)) && (
                 <Link href="/job-cards/view">
                   <span
@@ -268,6 +292,7 @@ export default function Layout({ children }) {
                 </Link>
               )}
 
+              {/* Appointments - for admin, sales, service, managers */}
               {appointmentRoles.some((r) => userRoles.includes(r)) && (
                 <Link href="/appointments">
                   <span
@@ -292,12 +317,12 @@ export default function Layout({ children }) {
             </nav>
           </div>
 
-          {/* Logout button */}
+          {/* Logout button at bottom of sidebar */}
           <div>
             <button
               onClick={() => {
-                logout();
-                router.push("/login");
+                logout(); // logout user
+                router.push("/login"); // redirect to login
               }}
               style={{
                 width: "100%",
@@ -318,7 +343,7 @@ export default function Layout({ children }) {
         </aside>
       )}
 
-      {/* Main content */}
+      {/* Main content area */}
       <div
         style={{
           flex: 1,
@@ -328,6 +353,7 @@ export default function Layout({ children }) {
           overflowY: "auto",
         }}
       >
+        {/* Header - hidden on login page */}
         {!hideSidebar && (
           <header
             style={{
@@ -343,11 +369,11 @@ export default function Layout({ children }) {
               Welcome {user?.username || "Guest"} ({role})
             </h1>
 
-            {/* Techs-only status dropdown */}
-            {userRoles.includes("techs") && (
+            {/* Status dropdown - for techs AND managers */}
+            {(isTech || isManager) && (
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                onChange={(e) => setStatus(e.target.value)} // update status
                 style={{
                   padding: "6px 10px",
                   borderRadius: "6px",
@@ -367,10 +393,12 @@ export default function Layout({ children }) {
           </header>
         )}
 
+        {/* Main content render */}
         <main style={{ padding: "24px", boxSizing: "border-box" }}>{children}</main>
       </div>
 
-      {userRoles.includes("techs") && (
+      {/* Job Card Modal - for techs AND managers */}
+      {(isTech || isManager) && (
         <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       )}
     </div>
