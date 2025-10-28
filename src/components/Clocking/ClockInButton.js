@@ -1,19 +1,16 @@
-// file location: src/components/Clocking/ClockInButton.js
 import React from "react";
 import Link from "next/link";
 import { useUser } from "../../context/UserContext";
 import { useClockingContext } from "../../context/ClockingContext";
 
 export default function ClockInButton() {
-  const { user, status, setStatus } = useUser();
+  const { user, setStatus } = useUser();
   const { clockedIn } = useClockingContext();
 
-  // Only show for Techs role
   if (!user || !user.roles?.includes("TECHS")) return null;
 
   const handleClockIn = () => {
-    setStatus("In Progress"); // NEW: automatically set status
-    // Optionally, redirect to clocking page
+    setStatus("In Progress"); // auto-set status
   };
 
   return (

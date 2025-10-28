@@ -1,4 +1,3 @@
-// file location: /src/context/UserContext.js
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 
@@ -6,20 +5,17 @@ const UserContext = createContext();
 
 export function UserProvider({ children }) {
   const { data: session } = useSession(); // NextAuth session
-  const [user, setUser] = useState(null); // user is null by default
-  const [loading, setLoading] = useState(true); // loading state
-  const [status, setStatus] = useState("Waiting for Job"); // NEW: default status for techs
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("Waiting for Job"); // default tech status
 
-  // Load saved dev user from localStorage on first render
+  // Load dev user from localStorage
   useEffect(() => {
     const stored = localStorage.getItem("devUser");
     if (stored && !session?.user) {
       try {
         const parsed = JSON.parse(stored);
-        setUser({
-          ...parsed,
-          id: parsed.id || Date.now(), // ensure unique id
-        });
+        setUser({ ...parsed, id: parsed.id || Date.now() });
       } catch (err) {
         console.error("Failed to parse dev user from localStorage", err);
       }
@@ -27,31 +23,27 @@ export function UserProvider({ children }) {
     setLoading(false);
   }, [session]);
 
-  // If session comes from Keycloak, set the session user
+  // Set Keycloak session user
   useEffect(() => {
     if (session?.user) {
       const keycloakUser = {
-        id: session.user.id || Date.now(), // fallback id
+        id: session.user.id || Date.now(),
         username: session.user.name || "KeycloakUser",
         roles: (session.user.roles || []).map((r) => r.toUpperCase()),
       };
       setUser(keycloakUser);
-      localStorage.removeItem("devUser"); // remove dev user if real login occurs
+      localStorage.removeItem("devUser");
     }
   }, [session]);
 
-  // Developer login (persist to localStorage)
+  // Developer login
   const devLogin = (username = "dev", role = "WORKSHOP") => {
-    const devUser = {
-      id: Date.now(),
-      username,
-      roles: [role.toUpperCase()],
-    };
+    const devUser = { id: Date.now(), username, roles: [role.toUpperCase()] };
     setUser(devUser);
     localStorage.setItem("devUser", JSON.stringify(devUser));
   };
 
-  // Logout (clear both session + dev user + reset status)
+  // Logout
   const logout = () => {
     setUser(null);
     setStatus("Waiting for Job"); // reset status
@@ -65,5 +57,5 @@ export function UserProvider({ children }) {
   );
 }
 
-// Custom hook for consuming user context safely
+// Custom hook
 export const useUser = () => useContext(UserContext);
