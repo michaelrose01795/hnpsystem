@@ -1,33 +1,148 @@
 // file location: src/pages/job-cards/waiting/nextjobs.js
 "use client";
 
-import React, { useState, useMemo } from "react"; // Core React hooks
-import Layout from "../../../components/Layout"; // Main app layout
+import React, { useState, useMemo, useEffect } from "react"; // Core React hooks
+import Layout from "../../../components/Layout"; // Main layout wrapper
 import { useUser } from "../../../context/UserContext"; // Logged-in user context
 import { usersByRole } from "../../../config/users"; // Role config
-import { useJobs } from "../../../context/JobsContext"; // Jobs data context
+import { getAllJobs } from "../../../lib/database/jobs"; // ✅ Fetch jobs from Supabase
 
-// Create techs list dynamically
+// Build tech list dynamically from usersByRole
 const techsList = (usersByRole["Techs"] || []).map((name, index) => ({
   id: index + 1,
   name,
 }));
 
 export default function NextJobsPage() {
-  const { user } = useUser(); // get current logged-in user
-  const { jobs: realJobs, updateJob } = useJobs(); // get jobs + update function
-  const [selectedJob, setSelectedJob] = useState(null); // job clicked
-  const [assignPopup, setAssignPopup] = useState(false); // assign modal state
-  const [searchTerm, setSearchTerm] = useState(""); // search text
-  const [localJobs, setLocalJobs] = useState([]); // local job state for instant UI update
+  // ✅ Hooks
+  const { user } = useUser(); // Current logged-in user
+  const [jobs, setJobs] = useState([]); // Jobs from database
+  const [selectedJob, setSelectedJob] = useState(null); // Job selected for popup
+  const [assignPopup, setAssignPopup] = useState(false); // Assign popup
+  const [searchTerm, setSearchTerm] = useState(""); // Search filter
+  const [draggingJob, setDraggingJob] = useState(null); // Job being dragged
 
-  // restrict access only to workshop/service managers
+  // ✅ Manager access check
   const username = user?.username;
   const allowedUsers = [
     ...(usersByRole["Workshop Manager"] || []),
     ...(usersByRole["Service Manager"] || []),
   ];
-  if (!allowedUsers.includes(username)) {
+  const hasAccess = allowedUsers.includes(username);
+
+  // ✅ Fetch jobs from Supabase
+  useEffect(() => {
+    const fetchJobs = async () => {
+      const fetchedJobs = await getAllJobs();
+
+      // Only include jobs with a real job number (actual job cards)
+      const filtered = fetchedJobs.filter(
+        (job) => job.jobNumber && job.jobNumber.trim() !== ""
+      );
+
+      setJobs(filtered);
+    };
+    fetchJobs();
+  }, []);
+
+  // ✅ Filter unassigned jobs that are New, Created, or Accepted
+  const unassignedJobs = useMemo(
+    () =>
+      jobs.filter(
+        (job) =>
+          ["New", "Created", "Accepted"].includes(job.status) &&
+          !job.assignedTech
+      ),
+    [jobs]
+  );
+
+  // ✅ Search logic for job cards
+  const filteredJobs = useMemo(() => {
+    if (!searchTerm.trim()) return unassignedJobs;
+    const lower = searchTerm.toLowerCase();
+    return unassignedJobs.filter(
+      (job) =>
+        job.jobNumber?.toLowerCase().includes(lower) ||
+        job.customer?.toLowerCase().includes(lower) ||
+        job.make?.toLowerCase().includes(lower) ||
+        job.model?.toLowerCase().includes(lower) ||
+        job.reg?.toLowerCase().includes(lower)
+    );
+  }, [searchTerm, unassignedJobs]);
+
+  // ✅ Group jobs by technician (using assignedTech.name)
+  const assignedJobs = useMemo(
+    () =>
+      techsList.map((tech) => ({
+        ...tech,
+        jobs: jobs
+          .filter(
+            (job) =>
+              job.assignedTech?.name === tech.name ||
+              job.technician?.includes(tech.name)
+          )
+          .sort((a, b) => (a.position || 0) - (b.position || 0)),
+      })),
+    [jobs]
+  );
+
+  // ✅ Assign technician to a job (local only for now)
+  const assignTechToJob = (tech) => {
+    if (!selectedJob) return;
+    const updatedJob = { ...selectedJob, assignedTech: tech };
+    const newJobs = jobs.map((j) =>
+      j.jobNumber === selectedJob.jobNumber ? updatedJob : j
+    );
+    setJobs(newJobs);
+    setAssignPopup(false);
+    setSelectedJob(null);
+  };
+
+  // ✅ Unassign technician
+  const unassignTechFromJob = () => {
+    if (!selectedJob) return;
+    const updatedJob = { ...selectedJob, assignedTech: null };
+    const newJobs = jobs.map((j) =>
+      j.jobNumber === selectedJob.jobNumber ? updatedJob : j
+    );
+    setJobs(newJobs);
+    setSelectedJob(null);
+  };
+
+  // ✅ Drag handlers for reordering
+  const handleDragStart = (job) => {
+    if (!hasAccess) return;
+    setDraggingJob(job);
+  };
+
+  const handleDragOver = (e) => {
+    if (!hasAccess) return;
+    e.preventDefault();
+  };
+
+  const handleDrop = (targetJob, tech) => {
+    if (!hasAccess || !draggingJob) return;
+    const updatedTechJobs = tech.jobs.filter(
+      (j) => j.jobNumber !== draggingJob.jobNumber
+    );
+    const dropIndex = updatedTechJobs.findIndex(
+      (j) => j.jobNumber === targetJob.jobNumber
+    );
+    updatedTechJobs.splice(dropIndex, 0, draggingJob);
+    const reindexed = updatedTechJobs.map((j, i) => ({
+      ...j,
+      position: i + 1,
+    }));
+    const updatedJobs = jobs.map((j) => {
+      const match = reindexed.find((r) => r.jobNumber === j.jobNumber);
+      return match || j;
+    });
+    setJobs(updatedJobs);
+    setDraggingJob(null);
+  };
+
+  // ✅ Access check
+  if (!hasAccess) {
     return (
       <Layout>
         <p className="p-4 text-red-600 font-bold">
@@ -37,76 +152,7 @@ export default function NextJobsPage() {
     );
   }
 
-  // Dummy filler jobs (visual testing only)
-  const dummyJobs = Array.from({ length: 15 }, (_, i) => ({
-    jobNumber: `DUMMY${i + 1}`,
-    customer: `Customer ${i + 1}`,
-    car: `Car ${i + 1}`,
-    reg: `REG${i + 1}`,
-    description: `Test job ${i + 1}`,
-    status: "New",
-    assignedTech: null,
-  }));
-
-  // Use local jobs if modified, otherwise use realJobs
-  const jobs = localJobs.length > 0 ? localJobs : [...realJobs, ...dummyJobs];
-
-  // Get unassigned jobs (new/created/accepted)
-  const unassignedJobs = jobs.filter(
-    (job) =>
-      ["New", "Created", "Accepted"].includes(job.status) && !job.assignedTech
-  );
-
-  // Search logic
-  const filteredJobs = useMemo(() => {
-    if (!searchTerm.trim()) return unassignedJobs;
-    const lower = searchTerm.toLowerCase();
-    return unassignedJobs.filter(
-      (job) =>
-        job.jobNumber?.toLowerCase().includes(lower) ||
-        job.customer?.toLowerCase().includes(lower) ||
-        job.car?.toLowerCase().includes(lower) ||
-        job.reg?.toLowerCase().includes(lower)
-    );
-  }, [searchTerm, unassignedJobs]);
-
-  // Map jobs by technician
-  const assignedJobs = techsList.map((tech) => ({
-    ...tech,
-    jobs: jobs.filter((job) => job.assignedTech?.id === tech.id),
-  }));
-
-  // Assign job instantly (UI + DB)
-  const assignTechToJob = (tech) => {
-    if (!selectedJob) return;
-
-    // update local state instantly
-    const updatedJob = { ...selectedJob, assignedTech: tech };
-    const newJobs = jobs.map((job) =>
-      job.jobNumber === selectedJob.jobNumber ? updatedJob : job
-    );
-    setLocalJobs(newJobs);
-
-    // update backend
-    updateJob(updatedJob);
-
-    // close modals
-    setAssignPopup(false);
-    setSelectedJob(null);
-  };
-
-  // Unassign job (optional, instant)
-  const unassignTechFromJob = () => {
-    if (!selectedJob) return;
-    const updatedJob = { ...selectedJob, assignedTech: null };
-    const newJobs = jobs.map((job) =>
-      job.jobNumber === selectedJob.jobNumber ? updatedJob : job
-    );
-    setLocalJobs(newJobs);
-    updateJob(updatedJob);
-    setSelectedJob(null);
-  };
-
+  // ✅ Page layout
   return (
     <Layout>
       <div
@@ -145,7 +191,7 @@ export default function NextJobsPage() {
         >
           <input
             type="text"
-            placeholder="Search by job number, reg, or customer..."
+            placeholder="Search job number, reg, or customer..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
@@ -157,13 +203,7 @@ export default function NextJobsPage() {
             }}
           />
 
-          <div
-            style={{
-              overflowX: "auto",
-              whiteSpace: "nowrap",
-              flex: 1,
-            }}
-          >
+          <div style={{ overflowX: "auto", whiteSpace: "nowrap", flex: 1 }}>
             {filteredJobs.length === 0 ? (
               <p style={{ color: "#999", fontSize: "0.875rem" }}>
                 No matching jobs found.
@@ -185,9 +225,9 @@ export default function NextJobsPage() {
                     cursor: "pointer",
                     border: "none",
                   }}
-                  title={`${job.jobNumber} - ${job.customer} - ${job.car}`}
+                  title={`${job.jobNumber} - ${job.customer} - ${job.make} ${job.model}`}
                 >
-                  {`${job.jobNumber} - ${job.customer} - ${job.car}`}
+                  {`${job.jobNumber} - ${job.reg}`}
                 </button>
               ))
             )}
@@ -231,21 +271,32 @@ export default function NextJobsPage() {
                   tech.jobs.map((job) => (
                     <div
                       key={job.jobNumber}
+                      draggable={hasAccess}
+                      onDragStart={() => handleDragStart(job)}
+                      onDragOver={handleDragOver}
+                      onDrop={() => handleDrop(job, tech)}
                       onClick={() => setSelectedJob(job)}
                       style={{
                         border: "1px solid #eee",
                         borderRadius: "6px",
                         padding: "6px",
                         marginBottom: "4px",
-                        backgroundColor: "#f9f9f9",
+                        backgroundColor:
+                          draggingJob?.jobNumber === job.jobNumber
+                            ? "#ffe5e5"
+                            : "#f9f9f9",
                         cursor: "pointer",
                       }}
                     >
-                      <p style={{ fontSize: "0.875rem", fontWeight: "bold" }}>
-                        {job.jobNumber}
+                      <p
+                        style={{
+                          fontSize: "0.875rem",
+                          fontWeight: "bold",
+                          color: "#FF4040",
+                        }}
+                      >
+                        {job.jobNumber} – {job.reg}
                       </p>
-                      <p style={{ fontSize: "0.75rem" }}>{job.customer}</p>
-                      <p style={{ fontSize: "0.75rem" }}>{job.car}</p>
                     </div>
                   ))
                 )}
@@ -257,7 +308,6 @@ export default function NextJobsPage() {
         {/* ==== JOB DETAILS POPUP ==== */}
         {selectedJob && (
           <div
-            className="fixed inset-0 z-50 flex justify-center items-center"
             style={{
               backgroundColor: "rgba(0,0,0,0.5)",
               position: "fixed",
@@ -284,7 +334,7 @@ export default function NextJobsPage() {
                 Job Details
               </h3>
               <p>
-                <strong>Make:</strong> {selectedJob.car}
+                <strong>Make:</strong> {selectedJob.make} {selectedJob.model}
               </p>
               <p>
                 <strong>Reg:</strong> {selectedJob.reg}
@@ -347,7 +397,6 @@ export default function NextJobsPage() {
         {/* ==== ASSIGN TECH POPUP ==== */}
         {assignPopup && (
           <div
-            className="fixed inset-0 z-50 flex justify-center items-center"
             style={{
               backgroundColor: "rgba(0,0,0,0.5)",
               position: "fixed",

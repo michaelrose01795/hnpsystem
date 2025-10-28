@@ -10,13 +10,15 @@ import { useJobs } from "../../../context/JobsContext"; // Context for job data
 export default function MyJobsPage() {
   const { user } = useUser(); // Get current logged-in user
   const { jobs } = useJobs(); // Get all jobs from global context
-  const [myJobs, setMyJobs] = useState([]); // Local state for storing user’s jobs
-  const [selectedJob, setSelectedJob] = useState(null); // For job popup details
+  const [myJobs, setMyJobs] = useState([]); // Local state for user’s assigned jobs
+  const [nextJob, setNextJob] = useState(null); // State for next job assigned
+  const [selectedJob, setSelectedJob] = useState(null); // Popup job details
+  const [startJobPopup, setStartJobPopup] = useState(null); // Start job popup state
 
   // Get username from user context
   const username = user?.username;
 
-  // Create list of technician names
+  // Get technician names list
   const techsList = usersByRole["Techs"] || [];
 
   // Check if user is a technician
@@ -25,10 +27,22 @@ export default function MyJobsPage() {
   useEffect(() => {
     if (isTech && jobs.length > 0) {
       // Filter jobs assigned to this technician
-      const filteredJobs = jobs.filter(
+      const assignedJobs = jobs.filter(
         (job) => job.assignedTech?.name === username
       );
-      setMyJobs(filteredJobs);
+
+      // Sort by job number or created date if available
+      const sortedJobs = assignedJobs.sort((a, b) => {
+        if (a.createdAt && b.createdAt) {
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        }
+        return (b.jobNumber || 0) - (a.jobNumber || 0);
+      });
+
+      setMyJobs(sortedJobs);
+
+      // Pick the latest assigned job as the "next job"
+      setNextJob(sortedJobs.length > 0 ? sortedJobs[0] : null);
     }
   }, [jobs, username, isTech]);
 
@@ -45,6 +59,12 @@ export default function MyJobsPage() {
     );
   }
 
+  // Function to handle starting a job
+  const handleStartJob = (job) => {
+    setSelectedJob(null); // Close "Clock on" popup
+    setStartJobPopup(job); // Open start job popup with job number pre-filled
+  };
+
   return (
     <Layout>
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "16px" }}>
@@ -59,6 +79,66 @@ export default function MyJobsPage() {
           My Jobs
         </h1>
 
+        {/* === NEXT JOB ASSIGNED SECTION === */}
+        {nextJob && (
+          <div
+            style={{
+              marginBottom: "24px",
+              border: "2px solid #FF4040",
+              borderRadius: "10px",
+              padding: "16px",
+              backgroundColor: "#fff5f5",
+            }}
+          >
+            <h2
+              style={{
+                fontSize: "1.2rem",
+                fontWeight: "bold",
+                color: "#FF4040",
+                marginBottom: "12px",
+              }}
+            >
+              Next Job Assigned
+            </h2>
+
+            <div
+              onClick={() => setSelectedJob(nextJob)}
+              style={{
+                border: "1px solid #ccc",
+                borderRadius: "8px",
+                padding: "12px",
+                backgroundColor: "white",
+                cursor: "pointer",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                transition: "transform 0.1s ease",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.transform = "scale(1.02)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.transform = "scale(1)")
+              }
+            >
+              <h3 style={{ fontWeight: "bold", color: "#333" }}>
+                {nextJob.jobNumber}
+              </h3>
+              <p style={{ fontSize: "0.9rem", color: "#555" }}>
+                <strong>Customer:</strong> {nextJob.customer}
+              </p>
+              <p style={{ fontSize: "0.9rem", color: "#555" }}>
+                <strong>Car:</strong> {nextJob.car}
+              </p>
+              <p style={{ fontSize: "0.9rem", color: "#555" }}>
+                <strong>Description:</strong> {nextJob.description}
+              </p>
+              <p style={{ fontSize: "0.9rem", color: "#777" }}>
+                <strong>Status:</strong> {nextJob.status}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* === ALL MY JOBS LIST === */}
         {myJobs.length === 0 ? (
           <p style={{ color: "#777", fontSize: "1rem" }}>
             You currently have no jobs assigned.
@@ -105,7 +185,7 @@ export default function MyJobsPage() {
           </div>
         )}
 
-        {/* Popup for Job Details */}
+        {/* === POPUP: CLOCK ON TO JOB === */}
         {selectedJob && (
           <div
             className="fixed inset-0 z-50 flex justify-center items-center"
@@ -128,8 +208,14 @@ export default function MyJobsPage() {
                 boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
               }}
             >
-              <h3 style={{ fontWeight: "bold", marginBottom: "8px" }}>
-                Job Details
+              <h3
+                style={{
+                  fontWeight: "bold",
+                  marginBottom: "8px",
+                  color: "#FF4040",
+                }}
+              >
+                Clock On To Job
               </h3>
               <p>
                 <strong>Job Number:</strong> {selectedJob.jobNumber}
@@ -143,16 +229,92 @@ export default function MyJobsPage() {
               <p>
                 <strong>Description:</strong> {selectedJob.description}
               </p>
+
+              <div
+                style={{
+                  marginTop: "20px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                }}
+              >
+                <button
+                  onClick={() => handleStartJob(selectedJob)}
+                  style={{
+                    backgroundColor: "#28a745",
+                    color: "white",
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    border: "none",
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Start Job
+                </button>
+                <button
+                  onClick={() => setSelectedJob(null)}
+                  style={{
+                    backgroundColor: "#FF4040",
+                    color: "white",
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    border: "none",
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* === POPUP: START JOB === */}
+        {startJobPopup && (
+          <div
+            className="fixed inset-0 z-50 flex justify-center items-center"
+            style={{
+              backgroundColor: "rgba(0,0,0,0.5)",
+              width: "100%",
+              height: "100%",
+              top: 0,
+              left: 0,
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: "white",
+                padding: "24px",
+                borderRadius: "8px",
+                width: "400px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+              }}
+            >
+              <h3
+                style={{
+                  fontWeight: "bold",
+                  marginBottom: "8px",
+                  color: "#FF4040",
+                }}
+              >
+                Start Job
+              </h3>
               <p>
-                <strong>Status:</strong> {selectedJob.status}
+                <strong>Job Number:</strong> {startJobPopup.jobNumber}
               </p>
               <p>
-                <strong>Assigned Technician:</strong>{" "}
-                {selectedJob.assignedTech?.name || "Unassigned"}
+                <strong>Customer:</strong> {startJobPopup.customer}
+              </p>
+              <p>
+                <strong>Car:</strong> {startJobPopup.car}
+              </p>
+              <p>
+                <strong>Description:</strong> {startJobPopup.description}
               </p>
 
               <button
-                onClick={() => setSelectedJob(null)}
+                onClick={() => setStartJobPopup(null)}
                 style={{
                   marginTop: "16px",
                   backgroundColor: "#FF4040",
