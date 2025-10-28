@@ -5,7 +5,7 @@ import { useRouter } from "next/router"; // import Next.js router
 import { useUser } from "../context/UserContext"; // import user context
 import ClockInButton from "./Clocking/ClockInButton"; // import clock in button
 import JobCardModal from "./JobCards/JobCardModal"; // import job modal
-import StatusSidebar from "../components/StatusTracking/StatusSidebar"; // NEW: import status sidebar
+import StatusSidebar from "../components/StatusTracking/StatusSidebar"; // import status sidebar
 
 export default function Layout({ children }) {
   const { user, logout, status, setStatus } = useUser(); // include status state
@@ -13,18 +13,39 @@ export default function Layout({ children }) {
   const hideSidebar = router.pathname === "/login"; // hide sidebar on login page
   const [isModalOpen, setIsModalOpen] = useState(false); // modal state
   const [darkMode, setDarkMode] = useState(false); // dark mode state
-  const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false); // NEW: status sidebar state
-
-  // NEW: Detect if we're on a job-related page where status sidebar should be available
-  const showStatusSidebar = router.pathname.includes("/job-cards/") || 
-                            router.pathname.includes("/appointments/");
+  const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false); // status sidebar state
   
-  // NEW: Extract jobId from URL if present (e.g., /job-cards/view/12345)
-  const jobId = router.query.id || router.query.jobId || null;
+  // NEW: Extract jobId from URL if present (e.g., /job-cards/view/12345 or ?id=12345)
+  const urlJobId = router.query.id || router.query.jobId || null;
   
-  // NEW: Get current job status from somewhere (could be from context, props, or API)
-  // For now, we'll use a placeholder - you'll replace this with real data
+  // NEW: State for manually searched job (when not on a job page)
+  const [searchedJobId, setSearchedJobId] = useState(null);
+  
+  // NEW: Determine which jobId to use (URL takes priority over search)
+  const activeJobId = urlJobId || searchedJobId;
+  
+  // Get current job status from API
   const [currentJobStatus, setCurrentJobStatus] = useState('booked');
+
+  // Define roles that can see the status sidebar
+  const statusSidebarRoles = [
+    "admin manager",
+    "service",
+    "service manager", 
+    "workshop manager",
+    "after sales director",
+    "techs",
+    "parts",
+    "parts manager",
+    "mot tester",
+    "valet service"
+  ];
+
+  // Check if current user has access to status sidebar
+  const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const canViewStatusSidebar = userRoles.some(role => 
+    statusSidebarRoles.includes(role)
+  );
 
   // Load saved dark mode setting from localStorage
   useEffect(() => {
@@ -49,14 +70,21 @@ export default function Layout({ children }) {
     }
   }, [user, hideSidebar, router]);
 
-  // NEW: Fetch current job status when jobId changes
+  // NEW: Fetch current job status when activeJobId changes
   useEffect(() => {
-    if (jobId) {
-      fetchCurrentJobStatus(jobId);
+    if (activeJobId) {
+      fetchCurrentJobStatus(activeJobId);
     }
-  }, [jobId]);
+  }, [activeJobId]);
 
-  // NEW: Function to fetch the current status of a job
+  // NEW: Clear searched job when URL changes to a job page
+  useEffect(() => {
+    if (urlJobId) {
+      setSearchedJobId(null); // Clear manual search when on a job page
+    }
+  }, [urlJobId]);
+
+  // Function to fetch the current status of a job
   const fetchCurrentJobStatus = async (id) => {
     try {
       const response = await fetch(`/api/status/getCurrentStatus?jobId=${id}`);
@@ -74,7 +102,6 @@ export default function Layout({ children }) {
     return <div style={{ padding: "2rem", textAlign: "center" }}>Loading...</div>;
   }
 
-  const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
   const role = userRoles[0] || "guest";
 
   // Sidebar navigation
@@ -404,13 +431,15 @@ export default function Layout({ children }) {
         <main style={{ padding: "24px", boxSizing: "border-box" }}>{children}</main>
       </div>
 
-      {/* NEW: Status Sidebar - only shows on job-related pages */}
-      {showStatusSidebar && jobId && (
+      {/* NEW: Status Sidebar - always available for authorized users */}
+      {canViewStatusSidebar && (
         <StatusSidebar
-          jobId={jobId}
+          jobId={activeJobId}
           currentStatus={currentJobStatus}
           isOpen={isStatusSidebarOpen}
           onToggle={() => setIsStatusSidebarOpen(!isStatusSidebarOpen)}
+          onJobSearch={setSearchedJobId} // NEW: Pass search handler
+          hasUrlJobId={!!urlJobId} // NEW: Tell sidebar if we're on a job page
         />
       )}
 

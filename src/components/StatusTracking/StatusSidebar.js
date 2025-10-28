@@ -4,16 +4,24 @@ import { useState, useEffect } from 'react';
 import StatusTimeline from './StatusTimeline';
 import { SERVICE_STATUS_FLOW } from '../../lib/status/statusFlow';
 
-// This is the main status sidebar that shows on all job-related pages
+// This is the main status sidebar that shows on all pages
 // It displays the complete process flow with current status highlighted
-export default function StatusSidebar({ jobId, currentStatus, isOpen, onToggle }) {
+export default function StatusSidebar({ jobId, currentStatus, isOpen, onToggle, onJobSearch, hasUrlJobId }) {
   const [statusHistory, setStatusHistory] = useState([]); // Array of past statuses with timestamps
   const [totalTimeSpent, setTotalTimeSpent] = useState(0); // Total working time in minutes
   const [currentTimer, setCurrentTimer] = useState(0); // Current session time
+  const [searchInput, setSearchInput] = useState(''); // Search input state
+  const [searchError, setSearchError] = useState(''); // Error message state
   
   // Fetch status history when component mounts or jobId changes
   useEffect(() => {
-    if (!jobId) return;
+    if (!jobId) {
+      // Clear data when no job selected
+      setStatusHistory([]);
+      setTotalTimeSpent(0);
+      setCurrentTimer(0);
+      return;
+    }
     
     fetchStatusHistory();
   }, [jobId]);
@@ -27,14 +35,53 @@ export default function StatusSidebar({ jobId, currentStatus, isOpen, onToggle }
       if (data.success) {
         setStatusHistory(data.history); // Array of {status, timestamp, userId, duration}
         setTotalTimeSpent(data.totalTime); // Total working time
+        setSearchError(''); // Clear any errors
+      } else {
+        setSearchError(data.error || 'Job not found');
       }
     } catch (error) {
       console.error('Error fetching status history:', error);
+      setSearchError('Failed to load job data');
     }
+  };
+
+  // Handle job search
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    
+    if (!searchInput.trim()) {
+      setSearchError('Please enter a job number');
+      return;
+    }
+
+    // Check if job exists first
+    try {
+      const response = await fetch(`/api/status/getCurrentStatus?jobId=${searchInput}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        onJobSearch(searchInput); // Update parent with searched job ID
+        setSearchInput(''); // Clear search input
+        setSearchError(''); // Clear errors
+      } else {
+        setSearchError('Job not found');
+      }
+    } catch (error) {
+      setSearchError('Failed to search for job');
+    }
+  };
+
+  // Clear current job
+  const handleClearJob = () => {
+    onJobSearch(null);
+    setSearchInput('');
+    setSearchError('');
   };
 
   // Live timer update when job is in progress (not paused)
   useEffect(() => {
+    if (!jobId) return; // Don't run timer if no job selected
+    
     const currentStatusObj = SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()];
     
     // Only run timer if status doesn't pause time
@@ -47,7 +94,7 @@ export default function StatusSidebar({ jobId, currentStatus, isOpen, onToggle }
     } else {
       setCurrentTimer(0); // Reset timer when paused
     }
-  }, [currentStatus]);
+  }, [currentStatus, jobId]);
 
   // Format seconds to HH:MM:SS
   const formatTime = (seconds) => {
@@ -68,112 +115,347 @@ export default function StatusSidebar({ jobId, currentStatus, isOpen, onToggle }
     <>
       {/* Toggle button - always visible */}
       <button
-        onClick={onToggle}
-        className="fixed right-0 top-1/2 -translate-y-1/2 bg-blue-600 text-white p-2 rounded-l-lg shadow-lg z-50 hover:bg-blue-700 transition-colors"
-        style={{ width: '40px', height: '60px' }}
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent event bubbling
+          onToggle(); // Call the toggle function
+        }}
+        style={{ 
+          width: '40px', 
+          height: '60px',
+          position: 'fixed',
+          right: isOpen ? '410px' : '0', // Move with sidebar
+          top: '50%',
+          transform: 'translateY(-50%)',
+          backgroundColor: '#d10000', // Match your red theme
+          color: 'white',
+          border: 'none',
+          borderTopLeftRadius: '8px',
+          borderBottomLeftRadius: '8px',
+          boxShadow: '-4px 4px 12px rgba(0,0,0,0.2)', // Floating shadow
+          cursor: 'pointer',
+          zIndex: 51, // Above sidebar
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '20px',
+          fontWeight: 'bold',
+          transition: 'all 0.3s ease-in-out' // Smooth movement with sidebar
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#a00000';
+          e.currentTarget.style.transform = 'translateY(-50%) translateX(-2px)'; // Slide left on hover
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#d10000';
+          e.currentTarget.style.transform = 'translateY(-50%)';
+        }}
       >
         {/* Icon changes based on open/closed state */}
         {isOpen ? '→' : '←'}
       </button>
 
-      {/* Sidebar panel */}
+      {/* Sidebar panel - FLOATING */}
       <div
-        className={`fixed right-0 top-0 h-full bg-white shadow-2xl border-l-2 border-gray-200 transition-transform duration-300 ease-in-out z-40 ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        style={{ width: '400px' }}
+        style={{
+          position: 'fixed',
+          right: isOpen ? '10px' : '-410px', // Float 10px from edge when open
+          top: '10px', // Float from top
+          height: 'calc(100vh - 20px)', // Leave margin top and bottom
+          width: '400px',
+          backgroundColor: '#fff',
+          boxShadow: isOpen 
+            ? '-8px 0 32px rgba(0,0,0,0.15), 0 8px 32px rgba(0,0,0,0.1)' // Stronger floating shadow
+            : 'none',
+          borderRadius: '16px', // Rounded corners for floating effect
+          transform: isOpen ? 'translateX(0)' : 'translateX(420px)',
+          transition: 'all 0.3s ease-in-out',
+          zIndex: 50,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden' // Keep content inside rounded corners
+        }}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 sticky top-0 z-10">
-          <h2 className="text-xl font-bold mb-2">Job Progress Tracker</h2>
-          <div className="text-sm opacity-90">
-            <div>Job ID: {jobId}</div>
-            <div className="mt-2 font-semibold">
-              Total Time: {formatTime(totalTimeSpent * 60)}
-            </div>
-            {currentTimer > 0 && (
-              <div className="mt-1 text-green-200 animate-pulse">
-                Current Session: {formatTime(currentTimer)}
+        <div style={{
+          background: 'linear-gradient(to right, #d10000, #a00000)', // Red gradient
+          color: 'white',
+          padding: '20px',
+          borderRadius: '16px 16px 0 0' // Match parent border radius
+        }}>
+          <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '12px' }}>
+            Job Progress Tracker
+          </h2>
+          
+          {/* Show search bar if no job ID from URL */}
+          {!hasUrlJobId && !jobId && (
+            <form onSubmit={handleSearch} style={{ marginTop: '12px' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Enter job number..."
+                  style={{
+                    flex: 1,
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '2px solid #e0e0e0',
+                    fontSize: '14px',
+                    color: '#222',
+                    outline: 'none',
+                    backgroundColor: '#fafafa',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                  }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    padding: '10px 16px',
+                    backgroundColor: 'white',
+                    color: '#d10000',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    transition: 'all 0.2s',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#fffafa';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'white';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)';
+                  }}
+                >
+                  🔍 Search
+                </button>
               </div>
-            )}
-          </div>
+              {searchError && (
+                <div style={{
+                  marginTop: '8px',
+                  fontSize: '12px',
+                  color: '#fff',
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(255,255,255,0.3)'
+                }}>
+                  ⚠️ {searchError}
+                </div>
+              )}
+            </form>
+          )}
+
+          {/* Show job info with clear button for searched jobs */}
+          {jobId && (
+            <div style={{ fontSize: '14px', opacity: 0.95 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: '600' }}>Job ID: {jobId}</span>
+                {!hasUrlJobId && (
+                  <button
+                    onClick={handleClearJob}
+                    style={{
+                      marginLeft: '8px',
+                      padding: '4px 10px',
+                      backgroundColor: 'rgba(255,255,255,0.2)',
+                      color: 'white',
+                      border: '1px solid rgba(255,255,255,0.3)',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+                    }}
+                  >
+                    ✕ Clear
+                  </button>
+                )}
+              </div>
+              <div style={{ marginTop: '10px', fontWeight: '600', fontSize: '16px' }}>
+                ⏱️ Total Time: {formatTime(totalTimeSpent * 60)}
+              </div>
+              {currentTimer > 0 && (
+                <div style={{ 
+                  marginTop: '6px', 
+                  color: '#86efac',
+                  fontWeight: '600',
+                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                }}>
+                  ▶️ Current Session: {formatTime(currentTimer)}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Scrollable content area */}
-        <div className="overflow-y-auto h-[calc(100vh-140px)] p-4">
-          {/* Status Timeline */}
-          <StatusTimeline
-            currentStatus={currentStatus}
-            statusHistory={statusHistory}
-            getTimeInStatus={getTimeInStatus}
-          />
-
-          {/* Current Status Card */}
-          <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border-2 border-blue-300">
-            <h3 className="font-bold text-blue-900 mb-2">Current Status</h3>
-            <div className="flex items-center gap-3">
-              <div
-                className="w-4 h-4 rounded-full animate-pulse"
-                style={{
-                  backgroundColor: SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()]?.color || '#gray'
-                }}
-              />
-              <span className="font-semibold text-lg">
-                {SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()]?.label || 'Unknown'}
-              </span>
+        <div style={{ 
+          overflowY: 'auto', 
+          height: 'calc(100% - 180px)', 
+          padding: '20px',
+          background: 'linear-gradient(to bottom, #fffafa, #ffecec)',
+          borderRadius: '0 0 16px 16px' // Match parent border radius
+        }}>
+          {/* Show message when no job selected */}
+          {!jobId ? (
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              height: '100%', 
+              textAlign: 'center', 
+              color: '#999' 
+            }}>
+              <svg style={{ width: '64px', height: '64px', marginBottom: '16px', color: '#ffcccc' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <p style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: '#555' }}>
+                No Job Selected
+              </p>
+              <p style={{ fontSize: '14px' }}>
+                {hasUrlJobId 
+                  ? 'Navigate to a job card page to see status'
+                  : 'Search for a job number above to view its progress'
+                }
+              </p>
             </div>
-            <div className="mt-2 text-sm text-gray-600">
-              Department: {SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()]?.department}
-            </div>
-            {SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()]?.requiresAction && (
-              <div className="mt-3 p-2 bg-amber-100 border-l-4 border-amber-500 text-sm">
-                <strong>Action Required:</strong>{' '}
-                {SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()].requiresAction}
+          ) : (
+            <>
+              {/* Current Status Card - ALWAYS AT TOP */}
+              <div style={{
+                marginBottom: '20px',
+                padding: '16px',
+                background: '#fff',
+                borderRadius: '16px',
+                border: '2px solid #ffe0e0', // Lighter border
+                boxShadow: '0 8px 16px rgba(0,0,0,0.08), 0 0 20px rgba(255,64,64,0.05)',
+                transition: 'all 0.3s ease'
+              }}>
+                <h3 style={{ fontWeight: 'bold', color: '#d10000', marginBottom: '10px', fontSize: '16px' }}>
+                  📍 Current Status
+                </h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()]?.color || '#999',
+                      animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                      boxShadow: `0 0 12px ${SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()]?.color || '#999'}`
+                    }}
+                  />
+                  <span style={{ fontWeight: '600', fontSize: '18px', color: '#222' }}>
+                    {SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()]?.label || 'Unknown'}
+                  </span>
+                </div>
+                <div style={{ marginTop: '8px', fontSize: '14px', color: '#555' }}>
+                  🏢 Department: {SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()]?.department}
+                </div>
+                {SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()]?.requiresAction && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '10px',
+                    backgroundColor: '#fff4e6',
+                    borderLeft: '4px solid #ff9800',
+                    fontSize: '14px',
+                    borderRadius: '6px'
+                  }}>
+                    <strong>⚠️ Action Required:</strong>{' '}
+                    {SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()].requiresAction}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          {/* Recent Activity */}
-          <div className="mt-6">
-            <h3 className="font-bold text-gray-800 mb-3">Recent Activity</h3>
-            <div className="space-y-2">
-              {statusHistory.slice(0, 5).map((history, index) => (
-                <div
-                  key={index}
-                  className="p-3 bg-gray-50 rounded border-l-4"
-                  style={{
-                    borderColor: SERVICE_STATUS_FLOW[history.status.toUpperCase()]?.color
-                  }}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-semibold text-sm">
-                        {SERVICE_STATUS_FLOW[history.status.toUpperCase()]?.label}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {new Date(history.timestamp).toLocaleString()}
+              {/* Completed Activity Timeline - REVERSE ORDER (newest first) */}
+              <div>
+                <h3 style={{ fontWeight: 'bold', color: '#555', marginBottom: '12px', fontSize: '16px' }}>
+                  📋 Status History
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {/* REVERSED: Show newest at top, oldest at bottom */}
+                  {[...statusHistory].reverse().map((history, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        padding: '14px',
+                        backgroundColor: '#fff',
+                        borderRadius: '12px',
+                        borderLeft: `4px solid ${SERVICE_STATUS_FLOW[history.status.toUpperCase()]?.color}`,
+                        boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.05)';
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: '600', fontSize: '14px', color: '#222' }}>
+                            {SERVICE_STATUS_FLOW[history.status.toUpperCase()]?.label}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                            🕐 {new Date(history.timestamp).toLocaleString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </div>
+                        </div>
+                        {history.duration && (
+                          <div style={{ 
+                            fontSize: '13px', 
+                            fontWeight: '600', 
+                            color: '#d10000',
+                            backgroundColor: '#fff0f0',
+                            padding: '4px 10px',
+                            borderRadius: '6px'
+                          }}>
+                            ⏱️ {Math.floor(history.duration / 60)}m {history.duration % 60}s
+                          </div>
+                        )}
                       </div>
                     </div>
-                    {history.duration && (
-                      <div className="text-xs font-semibold text-gray-700">
-                        {Math.floor(history.duration / 60)}m {history.duration % 60}s
-                      </div>
-                    )}
-                  </div>
+                  ))}
+                  
+                  {/* Show message if no history */}
+                  {statusHistory.length === 0 && (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      padding: '20px', 
+                      color: '#999',
+                      fontSize: '14px'
+                    }}>
+                      No status history yet
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Overlay when sidebar is open (click to close) */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-20 z-30"
-          onClick={onToggle}
-        />
-      )}
+      {/* NO OVERLAY - User can interact with page normally */}
     </>
   );
 }
