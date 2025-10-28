@@ -5,6 +5,7 @@ import { useRouter } from "next/router"; // import Next.js router
 import { useUser } from "../context/UserContext"; // import user context
 import ClockInButton from "./Clocking/ClockInButton"; // import clock in button
 import JobCardModal from "./JobCards/JobCardModal"; // import job modal
+import StatusSidebar from "../components/StatusTracking/StatusSidebar"; // NEW: import status sidebar
 
 export default function Layout({ children }) {
   const { user, logout, status, setStatus } = useUser(); // include status state
@@ -12,6 +13,18 @@ export default function Layout({ children }) {
   const hideSidebar = router.pathname === "/login"; // hide sidebar on login page
   const [isModalOpen, setIsModalOpen] = useState(false); // modal state
   const [darkMode, setDarkMode] = useState(false); // dark mode state
+  const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false); // NEW: status sidebar state
+
+  // NEW: Detect if we're on a job-related page where status sidebar should be available
+  const showStatusSidebar = router.pathname.includes("/job-cards/") || 
+                            router.pathname.includes("/appointments/");
+  
+  // NEW: Extract jobId from URL if present (e.g., /job-cards/view/12345)
+  const jobId = router.query.id || router.query.jobId || null;
+  
+  // NEW: Get current job status from somewhere (could be from context, props, or API)
+  // For now, we'll use a placeholder - you'll replace this with real data
+  const [currentJobStatus, setCurrentJobStatus] = useState('booked');
 
   // Load saved dark mode setting from localStorage
   useEffect(() => {
@@ -30,36 +43,50 @@ export default function Layout({ children }) {
     }
   }, [darkMode]);
 
-  // Redirect to login if no user
   useEffect(() => {
     if (user === null && !hideSidebar) {
       router.replace("/login");
     }
   }, [user, hideSidebar, router]);
 
-  // Show loading state while checking user
+  // NEW: Fetch current job status when jobId changes
+  useEffect(() => {
+    if (jobId) {
+      fetchCurrentJobStatus(jobId);
+    }
+  }, [jobId]);
+
+  // NEW: Function to fetch the current status of a job
+  const fetchCurrentJobStatus = async (id) => {
+    try {
+      const response = await fetch(`/api/status/getCurrentStatus?jobId=${id}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setCurrentJobStatus(data.status); // Update current status
+      }
+    } catch (error) {
+      console.error('Error fetching job status:', error);
+    }
+  };
+
   if (user === undefined && !hideSidebar) {
     return <div style={{ padding: "2rem", textAlign: "center" }}>Loading...</div>;
   }
 
-  // Normalize user roles to lowercase
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
-  const role = userRoles[0] || "guest"; // get primary role
+  const role = userRoles[0] || "guest";
 
-  // Sidebar navigation links
+  // Sidebar navigation
   const links = [
     { href: "/newsfeed", label: "📰 News Feed" },
     { href: "/dashboard", label: "📊 Dashboard" },
   ];
 
-  // Define roles that can view job cards
-  const viewRoles = ["manager", "service", "sales", "service manager", "workshop manager", "after sales manager"];
-  // Define roles that can access appointments
-  const appointmentRoles = ["admin", "sales", "service", "manager", "service manager", "workshop manager", "after sales manager"];
-  // Check if current path is active
+  const viewRoles = ["manager", "service", "sales"];
+  const appointmentRoles = ["admin", "sales", "service", "manager"];
   const isActive = (path) => router.pathname.startsWith(path);
 
-  // Define colors for dark and light mode
   const colors = darkMode
     ? {
         sidebarBg: "#1E1E1E",
@@ -76,16 +103,6 @@ export default function Layout({ children }) {
         headerBg: "white",
       };
 
-  // Check if user is a manager (service, workshop, or after sales)
-  const isManager = userRoles.some((r) => 
-    r.includes("service manager") || 
-    r.includes("workshop manager") || 
-    r.includes("after sales manager")
-  );
-
-  // Check if user is a tech
-  const isTech = userRoles.includes("techs");
-
   return (
     <div
       style={{
@@ -96,7 +113,6 @@ export default function Layout({ children }) {
         color: colors.sidebarText,
       }}
     >
-      {/* Sidebar - hidden on login page */}
       {!hideSidebar && (
         <aside
           style={{
@@ -112,7 +128,6 @@ export default function Layout({ children }) {
           }}
         >
           <div>
-            {/* Sidebar header */}
             <h2
               style={{
                 marginBottom: "20px",
@@ -124,7 +139,7 @@ export default function Layout({ children }) {
               H&P DMS
             </h2>
 
-            {/* Dark mode toggle button */}
+            {/* Dark mode toggle */}
             <button
               onClick={() => setDarkMode((prev) => !prev)}
               style={{
@@ -142,7 +157,6 @@ export default function Layout({ children }) {
               {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
             </button>
 
-            {/* Navigation links */}
             <nav style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {links.map((link, index) => (
                 <React.Fragment key={link.href}>
@@ -167,8 +181,7 @@ export default function Layout({ children }) {
                     </span>
                   </Link>
 
-                  {/* Show clock-in button after dashboard for techs and managers */}
-                  {index === 1 && (isTech || isManager) && (
+                  {index === 1 && userRoles.includes("techs") && (
                     <div style={{ marginTop: "10px" }}>
                       <ClockInButton />
                     </div>
@@ -176,8 +189,8 @@ export default function Layout({ children }) {
                 </React.Fragment>
               ))}
 
-              {/* Show My Jobs and Start Job button for techs AND managers */}
-              {(isTech || isManager) && (
+              {/* Techs-only links */}
+              {userRoles.includes("techs") && (
                 <>
                   <Link href="/job-cards/myjobs">
                     <span
@@ -200,7 +213,7 @@ export default function Layout({ children }) {
                   </Link>
 
                   <button
-                    onClick={() => setIsModalOpen(true)} // open job card modal
+                    onClick={() => setIsModalOpen(true)}
                     style={{
                       display: "block",
                       padding: "10px",
@@ -219,7 +232,6 @@ export default function Layout({ children }) {
                 </>
               )}
 
-              {/* Create Job Card button - for service, admin, managers */}
               {(userRoles.includes("service") ||
                 userRoles.includes("admin") ||
                 userRoles.some((r) => r.includes("manager"))) && (
@@ -244,8 +256,7 @@ export default function Layout({ children }) {
                 </Link>
               )}
 
-              {/* Next Jobs button - for service, workshop, and after sales managers */}
-              {["service manager", "workshop manager", "after sales manager"].some((r) =>
+              {["service manager", "workshop manager"].some((r) =>
                 userRoles.includes(r.toLowerCase())
               ) && (
                 <Link href="/job-cards/waiting/nextjobs">
@@ -269,7 +280,6 @@ export default function Layout({ children }) {
                 </Link>
               )}
 
-              {/* View Job Cards - for managers, service, sales */}
               {viewRoles.some((r) => userRoles.includes(r)) && (
                 <Link href="/job-cards/view">
                   <span
@@ -292,7 +302,6 @@ export default function Layout({ children }) {
                 </Link>
               )}
 
-              {/* Appointments - for admin, sales, service, managers */}
               {appointmentRoles.some((r) => userRoles.includes(r)) && (
                 <Link href="/appointments">
                   <span
@@ -317,12 +326,12 @@ export default function Layout({ children }) {
             </nav>
           </div>
 
-          {/* Logout button at bottom of sidebar */}
+          {/* Logout button */}
           <div>
             <button
               onClick={() => {
-                logout(); // logout user
-                router.push("/login"); // redirect to login
+                logout();
+                router.push("/login");
               }}
               style={{
                 width: "100%",
@@ -343,7 +352,7 @@ export default function Layout({ children }) {
         </aside>
       )}
 
-      {/* Main content area */}
+      {/* Main content */}
       <div
         style={{
           flex: 1,
@@ -353,7 +362,6 @@ export default function Layout({ children }) {
           overflowY: "auto",
         }}
       >
-        {/* Header - hidden on login page */}
         {!hideSidebar && (
           <header
             style={{
@@ -369,11 +377,11 @@ export default function Layout({ children }) {
               Welcome {user?.username || "Guest"} ({role})
             </h1>
 
-            {/* Status dropdown - for techs AND managers */}
-            {(isTech || isManager) && (
+            {/* Techs-only status dropdown */}
+            {userRoles.includes("techs") && (
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value)} // update status
+                onChange={(e) => setStatus(e.target.value)}
                 style={{
                   padding: "6px 10px",
                   borderRadius: "6px",
@@ -393,12 +401,20 @@ export default function Layout({ children }) {
           </header>
         )}
 
-        {/* Main content render */}
         <main style={{ padding: "24px", boxSizing: "border-box" }}>{children}</main>
       </div>
 
-      {/* Job Card Modal - for techs AND managers */}
-      {(isTech || isManager) && (
+      {/* NEW: Status Sidebar - only shows on job-related pages */}
+      {showStatusSidebar && jobId && (
+        <StatusSidebar
+          jobId={jobId}
+          currentStatus={currentJobStatus}
+          isOpen={isStatusSidebarOpen}
+          onToggle={() => setIsStatusSidebarOpen(!isStatusSidebarOpen)}
+        />
+      )}
+
+      {userRoles.includes("techs") && (
         <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       )}
     </div>
