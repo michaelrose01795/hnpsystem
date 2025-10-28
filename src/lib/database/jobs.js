@@ -1,4 +1,4 @@
-// ✅ File location: src/lib/database/jobs.js
+// file location: src/lib/database/jobs.js
 import { supabase } from "../supabaseClient";
 import dayjs from "dayjs";
 
@@ -21,6 +21,9 @@ export const getAllJobs = async () => {
       assigned_to,
       customer_id,
       vehicle_id,
+      assigned_tech,
+      technician,
+      position,
       vehicle:vehicle_id(
         vehicle_id,
         reg_number,
@@ -46,7 +49,7 @@ export const getAllJobs = async () => {
           postcode
         )
       ),
-      technician:assigned_to(user_id, first_name, last_name, email),
+      technician_user:assigned_to(user_id, first_name, last_name, email),
       appointments(appointment_id, scheduled_time, status, notes),
       vhc_checks(vhc_id, section, issue_title, issue_description, measurement),
       parts_requests(request_id, part_id, quantity, status),
@@ -76,9 +79,11 @@ export const getAllJobs = async () => {
     mileage: job.vehicle?.mileage || "",
     fuelType: job.vehicle?.fuel_type || "",
     transmission: job.vehicle?.transmission || "",
-    technician: job.technician
-      ? `${job.technician.first_name} ${job.technician.last_name}`
-      : "",
+    technician: job.technician_user
+      ? `${job.technician_user.first_name} ${job.technician_user.last_name}`
+      : job.technician || "",
+    assignedTech: job.assigned_tech || null, // Object with { name: "Tech Name" }
+    position: job.position || 0, // For drag and drop ordering
     customer: job.vehicle?.customer
       ? `${job.vehicle.customer.firstname} ${job.vehicle.customer.lastname}`
       : "",
@@ -283,16 +288,18 @@ const formatJobData = (data) => {
     year: data.vehicle?.year || "",
     colour: data.vehicle?.colour || "",
     vin: data.vehicle?.vin || "",
-    vehicle: data.vehicle,
+    mileage: data.vehicle?.mileage || "",
+    fuelType: data.vehicle?.fuel_type || "",
+    transmission: data.vehicle?.transmission || "",
+    technician: data.technician
+      ? `${data.technician.first_name} ${data.technician.last_name}`
+      : "",
     customer: data.vehicle?.customer
       ? `${data.vehicle.customer.firstname} ${data.vehicle.customer.lastname}`
       : "",
     customerPhone: data.vehicle?.customer?.mobile || data.vehicle?.customer?.telephone || "",
     customerEmail: data.vehicle?.customer?.email || "",
     customerAddress: data.vehicle?.customer?.address || "",
-    technician: data.technician
-      ? `${data.technician.first_name} ${data.technician.last_name}`
-      : "",
     appointment: data.appointments?.[0]
       ? {
           date: dayjs(data.appointments[0].scheduled_time).format("YYYY-MM-DD"),
@@ -308,90 +315,48 @@ const formatJobData = (data) => {
 };
 
 /* ============================================
-   ADD NEW JOB TO DATABASE
-   Enhanced with better error handling and validation
+   ADD JOB TO DATABASE
+   Creates a new job and links it to vehicle and customer
 ============================================ */
-export const addJobToDatabase = async ({
-  jobNumber,
-  reg,
-  customerId,
-  assignedTo,
-  type,
-  description,
+export const addJobToDatabase = async ({ 
+  regNumber, 
+  jobNumber, 
+  description, 
+  type, 
+  assignedTo 
 }) => {
   try {
-    console.log("➕ addJobToDatabase called with:", { jobNumber, reg, customerId, assignedTo, type }); // Debug log
-    
-    // Validate required fields
-    if (!jobNumber) {
-      return { 
-        success: false, 
-        error: { message: "Job number is required" } 
-      };
-    }
+    console.log("➕ addJobToDatabase called with:", { regNumber, jobNumber, description, type, assignedTo });
 
-    if (!reg) {
-      return { 
-        success: false, 
-        error: { message: "Vehicle registration is required" } 
-      };
-    }
-
-    // Check if job number already exists
-    const { data: existingJob, error: checkError } = await supabase
-      .from("jobs")
-      .select("id, job_number")
-      .eq("job_number", jobNumber)
-      .maybeSingle();
-
-    if (existingJob) {
-      console.log("⚠️ Job number already exists:", jobNumber);
-      return { 
-        success: false, 
-        error: { message: `Job number ${jobNumber} already exists` } 
-      };
-    }
-
-    // Try to find existing vehicle by registration
-    let { data: vehicle, error: vehicleError } = await supabase
+    // Find the vehicle by registration number
+    const { data: vehicle, error: vehicleError } = await supabase
       .from("vehicles")
-      .select("*")
-      .eq("reg_number", reg)
+      .select("vehicle_id, reg_number, customer_id")
+      .eq("reg_number", regNumber)
       .maybeSingle();
 
-    // Create new vehicle if not found
+    if (vehicleError) {
+      console.error("❌ Error finding vehicle:", vehicleError);
+      throw vehicleError;
+    }
+
     if (!vehicle) {
-      console.log("⚠️ Vehicle not found, creating new record for:", reg);
-      const { data: newVehicle, error: newVehicleError } = await supabase
-        .from("vehicles")
-        .insert([{ 
-          reg_number: reg,
-          customer_id: customerId || null
-        }])
-        .select()
-        .single();
-
-      if (newVehicleError) {
-        console.error("❌ Error creating vehicle:", newVehicleError);
-        throw newVehicleError;
-      }
-
-      vehicle = newVehicle;
-      console.log("✅ Vehicle created successfully:", vehicle);
+      console.error("❌ Vehicle not found for reg:", regNumber);
+      return { 
+        success: false, 
+        error: { message: `Vehicle with registration ${regNumber} not found` } 
+      };
     }
 
-    // Ensure vehicle is valid before proceeding
-    if (!vehicle || !vehicle.id) {
-      throw new Error("Vehicle record could not be found or created");
-    }
+    console.log("✅ Vehicle found:", vehicle);
 
-    // Create new job linked to vehicle
+    // Create the job
     const { data: job, error: jobError } = await supabase
       .from("jobs")
       .insert([
         {
           job_number: jobNumber,
-          vehicle_id: vehicle.id,
+          vehicle_id: vehicle.vehicle_id,
           assigned_to: assignedTo || null,
           type: type || "Service",
           description: description || "",
@@ -478,6 +443,98 @@ export const updateJobStatus = async (jobId, newStatus) => {
   } catch (error) {
     console.error("❌ Exception updating job status:", error);
     return { success: false, error: { message: error.message } };
+  }
+};
+
+/* ============================================
+   ASSIGN TECHNICIAN TO JOB
+   Assigns a technician and updates status to "Assigned"
+============================================ */
+export const assignTechnicianToJob = async (jobId, technicianName) => {
+  try {
+    console.log("🔧 assignTechnicianToJob:", { jobId, technicianName }); // Debug log
+    
+    const { data, error } = await supabase
+      .from("jobs")
+      .update({
+        assigned_tech: { name: technicianName }, // Store as JSON object
+        technician: technicianName, // Also update technician field for backward compatibility
+        status: "Assigned",
+      })
+      .eq("id", jobId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("❌ Error assigning technician:", error);
+      return null;
+    }
+
+    console.log("✅ Technician assigned successfully:", data);
+    return data;
+  } catch (error) {
+    console.error("❌ Exception assigning technician:", error);
+    return null;
+  }
+};
+
+/* ============================================
+   UNASSIGN TECHNICIAN FROM JOB
+   Removes technician and resets status to "Created"
+============================================ */
+export const unassignTechnicianFromJob = async (jobId) => {
+  try {
+    console.log("🔓 unassignTechnicianFromJob:", jobId); // Debug log
+    
+    const { data, error } = await supabase
+      .from("jobs")
+      .update({
+        assigned_tech: null, // Clear assigned tech
+        technician: null, // Clear technician field
+        status: "Created", // Reset status
+      })
+      .eq("id", jobId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("❌ Error unassigning technician:", error);
+      return null;
+    }
+
+    console.log("✅ Technician unassigned successfully:", data);
+    return data;
+  } catch (error) {
+    console.error("❌ Exception unassigning technician:", error);
+    return null;
+  }
+};
+
+/* ============================================
+   UPDATE JOB POSITION
+   Updates the position field for drag and drop ordering
+============================================ */
+export const updateJobPosition = async (jobId, newPosition) => {
+  try {
+    console.log("📍 updateJobPosition:", { jobId, newPosition }); // Debug log
+    
+    const { data, error } = await supabase
+      .from("jobs")
+      .update({ position: newPosition })
+      .eq("id", jobId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("❌ Error updating job position:", error);
+      return null;
+    }
+
+    console.log("✅ Job position updated successfully:", data);
+    return data;
+  } catch (error) {
+    console.error("❌ Exception updating job position:", error);
+    return null;
   }
 };
 

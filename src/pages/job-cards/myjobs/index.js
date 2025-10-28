@@ -5,12 +5,12 @@ import React, { useEffect, useState } from "react"; // React hooks for state and
 import Layout from "../../../components/Layout"; // Layout wrapper for page structure
 import { useUser } from "../../../context/UserContext"; // Context to get logged-in user
 import { usersByRole } from "../../../config/users"; // Role and user mapping
-import { useJobs } from "../../../context/JobsContext"; // Context for job data
+import { getAllJobs } from "../../../lib/database/jobs"; // ✅ Fetch jobs from Supabase
 
 export default function MyJobsPage() {
   const { user } = useUser(); // Get current logged-in user
-  const { jobs } = useJobs(); // Get all jobs from global context
-  const [myJobs, setMyJobs] = useState([]); // Local state for user’s assigned jobs
+  const [jobs, setJobs] = useState([]); // Local state for all jobs
+  const [myJobs, setMyJobs] = useState([]); // Local state for user's assigned jobs
   const [nextJob, setNextJob] = useState(null); // State for next job assigned
   const [selectedJob, setSelectedJob] = useState(null); // Popup job details
   const [startJobPopup, setStartJobPopup] = useState(null); // Start job popup state
@@ -24,11 +24,21 @@ export default function MyJobsPage() {
   // Check if user is a technician
   const isTech = techsList.includes(username);
 
+  // ✅ Fetch jobs from Supabase when page loads
+  useEffect(() => {
+    const fetchJobs = async () => {
+      const fetchedJobs = await getAllJobs();
+      setJobs(fetchedJobs);
+    };
+    fetchJobs();
+  }, []);
+
+  // ✅ Filter jobs assigned to this technician
   useEffect(() => {
     if (isTech && jobs.length > 0) {
       // Filter jobs assigned to this technician
       const assignedJobs = jobs.filter(
-        (job) => job.assignedTech?.name === username
+        (job) => job.assignedTech?.name === username || job.technician === username
       );
 
       // Sort by job number or created date if available
@@ -126,7 +136,7 @@ export default function MyJobsPage() {
                 <strong>Customer:</strong> {nextJob.customer}
               </p>
               <p style={{ fontSize: "0.9rem", color: "#555" }}>
-                <strong>Car:</strong> {nextJob.car}
+                <strong>Car:</strong> {nextJob.car || `${nextJob.make} ${nextJob.model}`}
               </p>
               <p style={{ fontSize: "0.9rem", color: "#555" }}>
                 <strong>Description:</strong> {nextJob.description}
@@ -172,7 +182,7 @@ export default function MyJobsPage() {
                   <strong>Customer:</strong> {job.customer}
                 </p>
                 <p style={{ fontSize: "0.9rem", color: "#555" }}>
-                  <strong>Car:</strong> {job.car}
+                  <strong>Car:</strong> {job.car || `${job.make} ${job.model}`}
                 </p>
                 <p style={{ fontSize: "0.9rem", color: "#555" }}>
                   <strong>Description:</strong> {job.description}
@@ -224,7 +234,7 @@ export default function MyJobsPage() {
                 <strong>Customer:</strong> {selectedJob.customer}
               </p>
               <p>
-                <strong>Car:</strong> {selectedJob.car}
+                <strong>Car:</strong> {selectedJob.car || `${selectedJob.make} ${selectedJob.model}`}
               </p>
               <p>
                 <strong>Description:</strong> {selectedJob.description}
@@ -307,7 +317,7 @@ export default function MyJobsPage() {
                 <strong>Customer:</strong> {startJobPopup.customer}
               </p>
               <p>
-                <strong>Car:</strong> {startJobPopup.car}
+                <strong>Car:</strong> {startJobPopup.car || `${startJobPopup.make} ${startJobPopup.model}`}
               </p>
               <p>
                 <strong>Description:</strong> {startJobPopup.description}

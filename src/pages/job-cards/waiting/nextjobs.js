@@ -5,7 +5,12 @@ import React, { useState, useMemo, useEffect } from "react"; // Core React hooks
 import Layout from "../../../components/Layout"; // Main layout wrapper
 import { useUser } from "../../../context/UserContext"; // Logged-in user context
 import { usersByRole } from "../../../config/users"; // Role config
-import { getAllJobs } from "../../../lib/database/jobs"; // ✅ Fetch jobs from Supabase
+import { 
+  getAllJobs, 
+  assignTechnicianToJob, 
+  unassignTechnicianFromJob, 
+  updateJobPosition 
+} from "../../../lib/database/jobs"; // ✅ Fetch and update jobs from Supabase
 
 // Build tech list dynamically from usersByRole
 const techsList = (usersByRole["Techs"] || []).map((name, index) => ({
@@ -32,31 +37,37 @@ export default function NextJobsPage() {
 
   // ✅ Fetch jobs from Supabase
   useEffect(() => {
-    const fetchJobs = async () => {
-      const fetchedJobs = await getAllJobs();
-
-      // Only include jobs with a real job number (actual job cards)
-      const filtered = fetchedJobs.filter(
-        (job) => job.jobNumber && job.jobNumber.trim() !== ""
-      );
-
-      setJobs(filtered);
-    };
     fetchJobs();
   }, []);
 
-  // ✅ Filter unassigned jobs that are New, Created, or Accepted
+  const fetchJobs = async () => {
+    const fetchedJobs = await getAllJobs();
+
+    // Only include jobs with a real job number (actual job cards)
+    const filtered = fetchedJobs.filter(
+      (job) => job.jobNumber && job.jobNumber.trim() !== ""
+    );
+
+    setJobs(filtered);
+  };
+
+  // ✅ Filter ALL outstanding/not started jobs (unassigned AND not completed)
+  // These are jobs that are not finished - they show in the top 10% section
   const unassignedJobs = useMemo(
     () =>
       jobs.filter(
-        (job) =>
-          ["New", "Created", "Accepted"].includes(job.status) &&
-          !job.assignedTech
+        (job) => {
+          // Define completed/finished statuses that should NOT appear
+          const completedStatuses = ["Completed", "Finished", "Closed", "Invoiced", "Collected"];
+          
+          // Show job if it's not in completed statuses AND has no tech assigned
+          return !completedStatuses.includes(job.status) && !job.assignedTech;
+        }
       ),
     [jobs]
   );
 
-  // ✅ Search logic for job cards
+  // ✅ Search logic for job cards in the 10% section
   const filteredJobs = useMemo(() => {
     if (!searchTerm.trim()) return unassignedJobs;
     const lower = searchTerm.toLowerCase();
@@ -86,27 +97,39 @@ export default function NextJobsPage() {
     [jobs]
   );
 
-  // ✅ Assign technician to a job (local only for now)
-  const assignTechToJob = (tech) => {
+  // ✅ Assign technician to a job (save to Supabase)
+  const assignTechToJob = async (tech) => {
     if (!selectedJob) return;
-    const updatedJob = { ...selectedJob, assignedTech: tech };
-    const newJobs = jobs.map((j) =>
-      j.jobNumber === selectedJob.jobNumber ? updatedJob : j
-    );
-    setJobs(newJobs);
-    setAssignPopup(false);
-    setSelectedJob(null);
+
+    // Use the dedicated helper function
+    const updatedJob = await assignTechnicianToJob(selectedJob.id, tech.name);
+
+    if (updatedJob) {
+      // Refresh jobs from database
+      await fetchJobs();
+      setAssignPopup(false);
+      setSelectedJob(null);
+      alert(`Job ${selectedJob.jobNumber} assigned to ${tech.name}`);
+    } else {
+      alert("Failed to assign technician. Please try again.");
+    }
   };
 
-  // ✅ Unassign technician
-  const unassignTechFromJob = () => {
+  // ✅ Unassign technician (save to Supabase)
+  const unassignTechFromJob = async () => {
     if (!selectedJob) return;
-    const updatedJob = { ...selectedJob, assignedTech: null };
-    const newJobs = jobs.map((j) =>
-      j.jobNumber === selectedJob.jobNumber ? updatedJob : j
-    );
-    setJobs(newJobs);
-    setSelectedJob(null);
+
+    // Use the dedicated helper function
+    const updatedJob = await unassignTechnicianFromJob(selectedJob.id);
+
+    if (updatedJob) {
+      // Refresh jobs from database
+      await fetchJobs();
+      setSelectedJob(null);
+      alert(`Technician unassigned from job ${selectedJob.jobNumber}`);
+    } else {
+      alert("Failed to unassign technician. Please try again.");
+    }
   };
 
   // ✅ Drag handlers for reordering
@@ -120,8 +143,9 @@ export default function NextJobsPage() {
     e.preventDefault();
   };
 
-  const handleDrop = (targetJob, tech) => {
+  const handleDrop = async (targetJob, tech) => {
     if (!hasAccess || !draggingJob) return;
+
     const updatedTechJobs = tech.jobs.filter(
       (j) => j.jobNumber !== draggingJob.jobNumber
     );
@@ -129,15 +153,20 @@ export default function NextJobsPage() {
       (j) => j.jobNumber === targetJob.jobNumber
     );
     updatedTechJobs.splice(dropIndex, 0, draggingJob);
+
+    // Reindex positions
     const reindexed = updatedTechJobs.map((j, i) => ({
       ...j,
       position: i + 1,
     }));
-    const updatedJobs = jobs.map((j) => {
-      const match = reindexed.find((r) => r.jobNumber === j.jobNumber);
-      return match || j;
-    });
-    setJobs(updatedJobs);
+
+    // Update all reindexed jobs in Supabase using the helper function
+    for (const job of reindexed) {
+      await updateJobPosition(job.id, job.position);
+    }
+
+    // Refresh jobs from database
+    await fetchJobs();
     setDraggingJob(null);
   };
 
@@ -176,10 +205,10 @@ export default function NextJobsPage() {
           Next Jobs
         </h1>
 
-        {/* ==== UNASSIGNED JOBS ==== */}
+        {/* ==== OUTSTANDING/UNASSIGNED JOBS (10% SECTION) ==== */}
         <div
           style={{
-            height: "10%",
+            height: "15%",
             marginBottom: "12px",
             background: "#fff",
             borderRadius: "8px",
@@ -189,6 +218,12 @@ export default function NextJobsPage() {
             flexDirection: "column",
           }}
         >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+            <h2 style={{ fontSize: "1rem", fontWeight: "bold", color: "#333" }}>
+              Outstanding Jobs ({unassignedJobs.length})
+            </h2>
+          </div>
+          
           <input
             type="text"
             placeholder="Search job number, reg, or customer..."
@@ -206,7 +241,7 @@ export default function NextJobsPage() {
           <div style={{ overflowX: "auto", whiteSpace: "nowrap", flex: 1 }}>
             {filteredJobs.length === 0 ? (
               <p style={{ color: "#999", fontSize: "0.875rem" }}>
-                No matching jobs found.
+                {searchTerm.trim() ? "No matching jobs found." : "No outstanding jobs."}
               </p>
             ) : (
               filteredJobs.map((job) => (
@@ -225,7 +260,7 @@ export default function NextJobsPage() {
                     cursor: "pointer",
                     border: "none",
                   }}
-                  title={`${job.jobNumber} - ${job.customer} - ${job.make} ${job.model}`}
+                  title={`${job.jobNumber} - ${job.customer} - ${job.make} ${job.model} - Status: ${job.status}`}
                 >
                   {`${job.jobNumber} - ${job.reg}`}
                 </button>
@@ -260,7 +295,7 @@ export default function NextJobsPage() {
               }}
             >
               <p style={{ fontWeight: "bold", marginBottom: "6px" }}>
-                {tech.name}
+                {tech.name} ({tech.jobs.length})
               </p>
               <div style={{ flex: 1, overflowY: "auto" }}>
                 {tech.jobs.length === 0 ? (
@@ -296,6 +331,14 @@ export default function NextJobsPage() {
                         }}
                       >
                         {job.jobNumber} – {job.reg}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "0.7rem",
+                          color: "#666",
+                        }}
+                      >
+                        {job.status}
                       </p>
                     </div>
                   ))
@@ -334,13 +377,16 @@ export default function NextJobsPage() {
                 Job Details
               </h3>
               <p>
+                <strong>Job Number:</strong> {selectedJob.jobNumber}
+              </p>
+              <p>
+                <strong>Status:</strong> {selectedJob.status}
+              </p>
+              <p>
                 <strong>Make:</strong> {selectedJob.make} {selectedJob.model}
               </p>
               <p>
                 <strong>Reg:</strong> {selectedJob.reg}
-              </p>
-              <p>
-                <strong>Job Number:</strong> {selectedJob.jobNumber}
               </p>
               <p>
                 <strong>Customer:</strong> {selectedJob.customer}
@@ -348,6 +394,11 @@ export default function NextJobsPage() {
               <p>
                 <strong>Description:</strong> {selectedJob.description}
               </p>
+              {selectedJob.assignedTech && (
+                <p>
+                  <strong>Assigned To:</strong> {selectedJob.assignedTech.name}
+                </p>
+              )}
 
               <div
                 style={{
@@ -367,17 +418,19 @@ export default function NextJobsPage() {
                 >
                   Assign Tech
                 </button>
-                <button
-                  style={{
-                    backgroundColor: "#777",
-                    color: "white",
-                    padding: "6px 12px",
-                    borderRadius: "6px",
-                  }}
-                  onClick={unassignTechFromJob}
-                >
-                  Unassign
-                </button>
+                {selectedJob.assignedTech && (
+                  <button
+                    style={{
+                      backgroundColor: "#777",
+                      color: "white",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                    }}
+                    onClick={unassignTechFromJob}
+                  >
+                    Unassign
+                  </button>
+                )}
                 <button
                   style={{
                     backgroundColor: "#FF4040",
