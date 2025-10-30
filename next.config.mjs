@@ -35,7 +35,6 @@ const nextConfig = {
 
   // ✅ Experimental section with allowedDevOrigins for local LAN access
   experimental: {
-    allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.1.157"], // fixes cross-origin dev warning
   },
 
   // ✅ Environment variables for Keycloak (available on client side)
