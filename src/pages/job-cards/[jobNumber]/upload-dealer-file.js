@@ -3,7 +3,7 @@ import nextConnect from "next-connect";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
-import { supabase } from "../../../../lib/supabaseClient";
+import { supabase } from "../../../lib/supabaseClient";
 
 // Temporary file upload destination
 const upload = multer({ dest: "/tmp/uploads" });
