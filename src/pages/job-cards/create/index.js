@@ -1,13 +1,13 @@
 // file location: src/pages/job-cards/create/index.js
-"use client";
+"use client"; // enables client-side rendering for Next.js
 
-import React, { useState } from "react";
-import { useRouter } from "next/router";
-import Layout from "../../../components/Layout";
-import { useJobs } from "../../../context/JobsContext";
-import { supabase } from "../../../lib/supabaseClient";
-import NewCustomerPopup from "../../../components/popups/NewCustomerPopup";
-import ExistingCustomerPopup from "../../../components/popups/ExistingCustomerPopup";
+import React, { useState } from "react"; // import React and hooks
+import { useRouter } from "next/router"; // for navigation
+import Layout from "../../../components/Layout"; // import layout wrapper
+import { useJobs } from "../../../context/JobsContext"; // import jobs context
+import { supabase } from "../../../lib/supabaseClient"; // import Supabase client
+import NewCustomerPopup from "../../../components/popups/NewCustomerPopup"; // import new customer popup
+import ExistingCustomerPopup from "../../../components/popups/ExistingCustomerPopup"; // import existing customer popup
 
 // function to automatically detect job types based on request descriptions
 const detectJobTypes = (requests) => {
@@ -81,46 +81,26 @@ export default function CreateJobCardPage() {
     serviceDeptFollowUp: false,
   });
 
-  // modern input styling object
-  const modernInputStyle = {
-    padding: "10px 14px",
-    border: "2px solid #e0e0e0",
-    borderRadius: "8px",
-    fontSize: "0.95rem",
-    fontFamily: "inherit",
-    transition: "all 0.3s ease",
-    outline: "none",
-    backgroundColor: "#fafafa",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
-  };
-
-  // input focus styling
-  const inputFocusStyle = {
-    border: "2px solid #FF4040",
-    backgroundColor: "#ffffff",
-    boxShadow: "0 4px 8px rgba(255,64,64,0.1)",
-  };
-
   // function to determine background color based on waiting status and job source
   const getBackgroundColor = (status, source) => {
-    let baseColor = "white";
+    let baseColor = "#f9fafb"; // light grey background
     switch (status) {
       case "Waiting":
-        baseColor = "#ffcccc"; // red tint for waiting
+        baseColor = "#fef2f2"; // red tint for waiting
         break;
       case "Loan Car":
-        baseColor = "#cce0ff"; // blue tint for loan car
+        baseColor = "#eff6ff"; // blue tint for loan car
         break;
       case "Collection":
-        baseColor = "#d6f5d6"; // green tint for collection
+        baseColor = "#f0fdf4"; // green tint for collection
         break;
       default:
-        baseColor = "white";
+        baseColor = "#f9fafb";
     }
-    // if warranty job, add orange tint or gradient
+    // if warranty job, add orange tint
     if (source === "Warranty") {
-      if (baseColor === "white") return "#ffeacc";
-      return `linear-gradient(to bottom, ${baseColor} 50%, #ffeacc 50%)`;
+      if (baseColor === "#f9fafb") return "#fff7ed";
+      return baseColor;
     }
     return baseColor;
   };
@@ -537,950 +517,946 @@ export default function CreateJobCardPage() {
     }
   };
 
-  // section height constants for consistent layout
-  const sectionHeight = "320px";
-  const bottomRowHeight = "100px";
-
   return (
     <Layout>
       <div
         style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
           padding: "16px",
+          overflow: "hidden",
           transition: "background 0.3s ease",
           background: getBackgroundColor(waitingStatus, jobSource), // dynamic background based on status
-          borderRadius: "10px",
         }}
       >
-        {/* Header with title and save button */}
+        {/* ✅ Header Section - Modern Design */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: "24px",
+            alignItems: "center",
+            marginBottom: "16px",
+            flexShrink: 0,
           }}
         >
           <div>
-            <h2 style={{ margin: 0, fontSize: "1rem", color: "#555" }}>Retail / Warranty</h2>
-            <h1 style={{ color: "#FF4040", margin: 0 }}>Create New Job Card</h1>
+            <h2 style={{ 
+              margin: 0, 
+              fontSize: "14px", 
+              color: "#666",
+              fontWeight: "500",
+              marginBottom: "4px"
+            }}>
+              {jobSource} Job Card
+            </h2>
+            <h1 style={{ 
+              fontSize: "28px", 
+              fontWeight: "700", 
+              color: "#1a1a1a",
+              margin: 0
+            }}>
+              Create New Job Card
+            </h1>
           </div>
           <button
             onClick={handleSaveJob}
             style={{
-              padding: "12px 24px",
-              backgroundColor: "#28a745",
+              padding: "12px 28px",
+              backgroundColor: "#10b981",
               color: "white",
               border: "none",
               borderRadius: "8px",
               fontWeight: "600",
-              fontSize: "1rem",
+              fontSize: "15px",
               cursor: "pointer",
-              boxShadow: "0 4px 6px rgba(40,167,69,0.2)",
-              transition: "all 0.3s ease",
+              boxShadow: "0 4px 8px rgba(16,185,129,0.2)",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = "#059669";
+              e.target.style.boxShadow = "0 6px 12px rgba(16,185,129,0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = "#10b981";
+              e.target.style.boxShadow = "0 4px 8px rgba(16,185,129,0.2)";
             }}
           >
-            Save Job
+            Save Job Card
           </button>
         </div>
 
-        {/* Top row: Job Information, Maintenance, GDPR Settings */}
-        <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
-          {/* Job Information Section */}
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "white",
-              padding: "16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h3 style={{ marginTop: 0 }}>Job Information</h3>
-            <div style={{ marginBottom: "12px" }}>
-              <strong style={{ width: "150px", display: "inline-block" }}>Customer Status:</strong>
-              {["Waiting", "Loan Car", "Collection", "Neither"].map((status) => (
-                <label key={status} style={{ marginRight: "12px" }}>
-                  <input
-                    type="radio"
-                    name="waiting"
-                    value={status}
-                    checked={waitingStatus === status}
-                    onChange={() => setWaitingStatus(status)}
-                  />{" "}
-                  {status}
-                </label>
-              ))}
-            </div>
-            <div style={{ marginBottom: "12px" }}>
-              <strong style={{ width: "150px", display: "inline-block" }}>Job Source:</strong>
-              {["Retail", "Warranty"].map((src) => (
-                <label key={src} style={{ marginRight: "12px" }}>
-                  <input
-                    type="radio"
-                    name="source"
-                    value={src}
-                    checked={jobSource === src}
-                    onChange={() => setJobSource(src)}
-                  />{" "}
-                  {src}
-                </label>
-              ))}
-            </div>
-            <div>
-              <strong>Detected Job Types:</strong>{" "}
-              {jobCategories.map((type, index) => (
-                <span
-                  key={index}
-                  style={{
-                    display: "inline-block",
-                    marginRight: "8px",
-                    backgroundColor: "#FF4040",
-                    color: "white",
-                    padding: "6px 12px",
-                    borderRadius: "20px",
-                    fontWeight: "600",
-                    fontSize: "0.85rem",
-                  }}
-                >
-                  {type}
-                </span>
-              ))}
-            </div>
-          </div>
+        {/* ✅ Scrollable Content Area */}
+        <div style={{
+          flex: 1,
+          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px"
+        }}>
 
-          {/* Maintenance Section */}
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "white",
-              padding: "16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h3 style={{ marginTop: 0 }}>Maintenance</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              <div>
-                <label
-                  style={{
-                    fontSize: "0.85rem",
-                    fontWeight: "500",
-                    color: "#555",
-                    display: "block",
-                    marginBottom: "4px",
-                  }}
-                >
-                  Next Service Date
-                </label>
-                <input
-                  type="date"
-                  value={maintenance.nextServiceDate}
-                  onChange={(e) => setMaintenance({ ...maintenance, nextServiceDate: e.target.value })}
-                  style={{
-                    ...modernInputStyle,
-                    width: "100%",
-                  }}
-                  onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
-                  onBlur={(e) => {
-                    e.target.style.border = "2px solid #e0e0e0";
-                    e.target.style.backgroundColor = "#fafafa";
-                    e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
-                  }}
-                />
-              </div>
-              <div>
-                <label
-                  style={{
-                    fontSize: "0.85rem",
-                    fontWeight: "500",
-                    color: "#555",
-                    display: "block",
-                    marginBottom: "4px",
-                  }}
-                >
-                  Next MOT Date
-                </label>
-                <input
-                  type="date"
-                  value={maintenance.nextMotDate}
-                  onChange={(e) => setMaintenance({ ...maintenance, nextMotDate: e.target.value })}
-                  style={{
-                    ...modernInputStyle,
-                    width: "100%",
-                  }}
-                  onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
-                  onBlur={(e) => {
-                    e.target.style.border = "2px solid #e0e0e0";
-                    e.target.style.backgroundColor = "#fafafa";
-                    e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
-                  }}
-                />
-              </div>
-              <div>
-                <label
-                  style={{
-                    fontSize: "0.85rem",
-                    fontWeight: "500",
-                    color: "#555",
-                    display: "block",
-                    marginBottom: "4px",
-                  }}
-                >
-                  Lease Company
-                </label>
-                <input
-                  type="text"
-                  value={maintenance.leaseCO}
-                  onChange={(e) => setMaintenance({ ...maintenance, leaseCO: e.target.value })}
-                  placeholder="Enter lease company"
-                  style={{
-                    ...modernInputStyle,
-                    width: "100%",
-                  }}
-                  onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
-                  onBlur={(e) => {
-                    e.target.style.border = "2px solid #e0e0e0";
-                    e.target.style.backgroundColor = "#fafafa";
-                    e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
-                  }}
-                />
-              </div>
-              <div>
-                <label
-                  style={{
-                    fontSize: "0.85rem",
-                    fontWeight: "500",
-                    color: "#555",
-                    display: "block",
-                    marginBottom: "4px",
-                  }}
-                >
-                  Privileges
-                </label>
-                <input
-                  type="text"
-                  value={maintenance.privileges}
-                  onChange={(e) => setMaintenance({ ...maintenance, privileges: e.target.value })}
-                  placeholder="Enter privileges"
-                  style={{
-                    ...modernInputStyle,
-                    width: "100%",
-                  }}
-                  onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
-                  onBlur={(e) => {
-                    e.target.style.border = "2px solid #e0e0e0";
-                    e.target.style.backgroundColor = "#fafafa";
-                    e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* GDPR Settings Section */}
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "white",
-              padding: "16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h3 style={{ marginTop: 0 }}>GDPR Settings</h3>
-            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px", fontSize: "0.85rem" }}>
-              <thead>
-                <tr>
-                  <th style={{ borderBottom: "1px solid #ddd", textAlign: "left", padding: "4px 0" }}>Contact Type</th>
-                  <th style={{ borderBottom: "1px solid #ddd", textAlign: "left", padding: "4px 0" }}>From Us</th>
-                  <th style={{ borderBottom: "1px solid #ddd", textAlign: "left", padding: "4px 0" }}>
-                    From Franchise
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {["Email", "SMS", "Letter", "Telephone", "Social media"].map((method) => (
-                  <tr key={method}>
-                    <td style={{ padding: "4px 0" }}>{method}</td>
-                    <td>
-                      <input type="checkbox" />
-                    </td>
-                    <td>
-                      <input type="checkbox" />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
-              <thead>
-                <tr>
-                  <th style={{ borderBottom: "1px solid #ddd", textAlign: "left", padding: "4px 0" }}>
-                    Marketing / Service
-                  </th>
-                  <th style={{ borderBottom: "1px solid #ddd", textAlign: "left", padding: "4px 0" }}>Allowed</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style={{ padding: "4px 0" }}>Marketing Messages</td>
-                  <td>
-                    <input type="checkbox" />
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ padding: "4px 0" }}>Service Dept Follow Up</td>
-                  <td>
-                    <input type="checkbox" />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Middle row: Vehicle Details and Customer Details */}
-        <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
-          {/* Vehicle Details Section */}
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "white",
-              padding: "16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              height: sectionHeight,
-              overflow: "auto",
-            }}
-          >
-            <h3 style={{ marginTop: 0 }}>Vehicle Details</h3>
-
-            {/* ✅ Vehicle notification banner */}
-            {vehicleNotification && (
-              <div
-                style={{
-                  padding: "12px 16px",
-                  marginBottom: "16px",
-                  borderRadius: "8px",
-                  backgroundColor: vehicleNotification.type === "success" ? "#d4edda" : "#f8d7da",
-                  border: `1px solid ${vehicleNotification.type === "success" ? "#c3e6cb" : "#f5c6cb"}`,
-                  color: vehicleNotification.type === "success" ? "#155724" : "#721c24",
-                  fontSize: "0.9rem",
-                  fontWeight: "500",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  animation: "slideIn 0.3s ease",
-                }}
-              >
-                <span>{vehicleNotification.message}</span>
-                <button
-                  onClick={() => setVehicleNotification(null)}
-                  style={{
-                    marginLeft: "auto",
-                    background: "none",
-                    border: "none",
-                    fontSize: "1.2rem",
-                    cursor: "pointer",
-                    color: "inherit",
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            )}
-
-            <div style={{ marginBottom: "12px" }}>
-              <label
-                style={{
-                  fontSize: "0.9rem",
-                  fontWeight: "500",
-                  color: "#555",
-                  display: "block",
-                  marginBottom: "6px",
-                }}
-              >
-                Registration Number
-              </label>
-              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                <input
-                  type="text"
-                  value={vehicle.reg}
-                  onChange={(e) => setVehicle({ ...vehicle, reg: e.target.value })}
-                  placeholder="e.g. AB12 CDE"
-                  style={{
-                    ...modernInputStyle,
-                    flex: 1,
-                    textTransform: "uppercase",
-                  }}
-                  onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
-                  onBlur={(e) => {
-                    e.target.style.border = "2px solid #e0e0e0";
-                    e.target.style.backgroundColor = "#fafafa";
-                    e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
-                  }}
-                />
-                <button
-                  onClick={handleFetchVehicleData}
-                  disabled={isLoadingVehicle}
-                  style={{
-                    padding: "10px 16px",
-                    backgroundColor: isLoadingVehicle ? "#ccc" : "#FF4040",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontWeight: "600",
-                    fontSize: "0.9rem",
-                    cursor: isLoadingVehicle ? "not-allowed" : "pointer",
-                    boxShadow: isLoadingVehicle ? "none" : "0 4px 6px rgba(255,64,64,0.2)",
-                    transition: "all 0.3s ease",
-                  }}
-                  onMouseOver={(e) => {
-                    if (!isLoadingVehicle) {
-                      e.target.style.backgroundColor = "#cc0000";
-                      e.target.style.boxShadow = "0 6px 10px rgba(255,64,64,0.3)";
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (!isLoadingVehicle) {
-                      e.target.style.backgroundColor = "#FF4040";
-                      e.target.style.boxShadow = "0 4px 6px rgba(255,64,64,0.2)";
-                    }
-                  }}
-                >
-                  {isLoadingVehicle ? "Loading..." : "Fetch Data"}
-                </button>
-              </div>
-            </div>
-
-            {/* Display error message if any */}
-            {error && (
-              <div
-                style={{
-                  fontSize: "0.8rem",
-                  color: "#dc3545",
-                  marginBottom: "12px",
-                  padding: "8px 12px",
-                  backgroundColor: "#f8d7da",
-                  borderRadius: "6px",
-                  border: "1px solid #f5c6cb",
-                }}
-              >
-                {error}
-              </div>
-            )}
-
-            {/* Display vehicle colour */}
-            <div style={{ marginBottom: "10px" }}>
-              <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", fontWeight: "500", color: "#555" }}>Colour</p>
-              <p
-                style={{
-                  margin: 0,
-                  padding: "8px 12px",
-                  backgroundColor: "#f5f5f5",
-                  borderRadius: "6px",
-                  fontSize: "0.95rem",
-                }}
-              >
-                {vehicle.colour || <span style={{ color: "#999" }}>Not available</span>}
-              </p>
-            </div>
-
-            {/* Display vehicle make and model */}
-            <div style={{ marginBottom: "10px" }}>
-              <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", fontWeight: "500", color: "#555" }}>
-                Make & Model
-              </p>
-              <p
-                style={{
-                  margin: 0,
-                  padding: "8px 12px",
-                  backgroundColor: "#f5f5f5",
-                  borderRadius: "6px",
-                  fontSize: "0.95rem",
-                }}
-              >
-                {vehicle.makeModel || <span style={{ color: "#999" }}>Not available</span>}
-              </p>
-            </div>
-
-            {/* Display chassis number */}
-            <div style={{ marginBottom: "10px" }}>
-              <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", fontWeight: "500", color: "#555" }}>
-                Chassis Number
-              </p>
-              <p
-                style={{
-                  margin: 0,
-                  padding: "8px 12px",
-                  backgroundColor: "#f5f5f5",
-                  borderRadius: "6px",
-                  fontSize: "0.95rem",
-                }}
-              >
-                {vehicle.chassis || <span style={{ color: "#999" }}>Not available</span>}
-              </p>
-            </div>
-
-            {/* Display engine number */}
-            <div style={{ marginBottom: "10px" }}>
-              <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", fontWeight: "500", color: "#555" }}>
-                Engine Number
-              </p>
-              <p
-                style={{
-                  margin: 0,
-                  padding: "8px 12px",
-                  backgroundColor: "#f5f5f5",
-                  borderRadius: "6px",
-                  fontSize: "0.95rem",
-                }}
-              >
-                {vehicle.engine || <span style={{ color: "#999" }}>Not available</span>}
-              </p>
-            </div>
-
-            {/* Editable mileage input */}
-            <div>
-              <label
-                style={{
-                  fontSize: "0.85rem",
-                  fontWeight: "500",
-                  color: "#555",
-                  display: "block",
-                  marginBottom: "6px",
-                }}
-              >
-                Current Mileage
-              </label>
-              <input
-                type="number"
-                value={vehicle.mileage}
-                onChange={(e) => setVehicle({ ...vehicle, mileage: e.target.value })}
-                placeholder="Enter mileage"
-                style={{
-                  ...modernInputStyle,
-                  width: "100%",
-                }}
-                onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
-                onBlur={(e) => {
-                  e.target.style.border = "2px solid #e0e0e0";
-                  e.target.style.backgroundColor = "#fafafa";
-                  e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Customer Details Section */}
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "white",
-              padding: "16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              height: sectionHeight,
-              overflow: "auto",
-            }}
-          >
-            <h3 style={{ marginTop: 0 }}>Customer Details</h3>
-
-            {/* ✅ Customer notification banner */}
-            {customerNotification && (
-              <div
-                style={{
-                  padding: "12px 16px",
-                  marginBottom: "16px",
-                  borderRadius: "8px",
-                  backgroundColor: customerNotification.type === "success" ? "#d4edda" : "#f8d7da",
-                  border: `1px solid ${customerNotification.type === "success" ? "#c3e6cb" : "#f5c6cb"}`,
-                  color: customerNotification.type === "success" ? "#155724" : "#721c24",
-                  fontSize: "0.9rem",
-                  fontWeight: "500",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  animation: "slideIn 0.3s ease",
-                }}
-              >
-                <span>{customerNotification.message}</span>
-                <button
-                  onClick={() => setCustomerNotification(null)}
-                  style={{
-                    marginLeft: "auto",
-                    background: "none",
-                    border: "none",
-                    fontSize: "1.2rem",
-                    cursor: "pointer",
-                    color: "inherit",
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            )}
-
-            {customer ? (
-              <div>
-                <div style={{ marginBottom: "10px" }}>
-                  <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", fontWeight: "500", color: "#555" }}>Name</p>
-                  <p
-                    style={{
-                      margin: 0,
-                      padding: "8px 12px",
-                      backgroundColor: "#f5f5f5",
-                      borderRadius: "6px",
-                      fontSize: "0.95rem",
-                    }}
-                  >
-                    {customer.firstName} {customer.lastName}
-                  </p>
-                </div>
-                <div style={{ marginBottom: "10px" }}>
-                  <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", fontWeight: "500", color: "#555" }}>Address</p>
-                  <p
-                    style={{
-                      margin: 0,
-                      padding: "8px 12px",
-                      backgroundColor: "#f5f5f5",
-                      borderRadius: "6px",
-                      fontSize: "0.95rem",
-                    }}
-                  >
-                    {customer.address}
-                  </p>
-                </div>
-                <div style={{ marginBottom: "10px" }}>
-                  <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", fontWeight: "500", color: "#555" }}>Email</p>
-                  <p
-                    style={{
-                      margin: 0,
-                      padding: "8px 12px",
-                      backgroundColor: "#f5f5f5",
-                      borderRadius: "6px",
-                      fontSize: "0.95rem",
-                    }}
-                  >
-                    {customer.email}
-                  </p>
-                </div>
-                <div style={{ marginBottom: "10px" }}>
-                  <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", fontWeight: "500", color: "#555" }}>Phone</p>
-                  <p
-                    style={{
-                      margin: 0,
-                      padding: "8px 12px",
-                      backgroundColor: "#f5f5f5",
-                      borderRadius: "6px",
-                      fontSize: "0.95rem",
-                    }}
-                  >
-                    {customer.mobile || customer.telephone}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setCustomer(null)}
-                  style={{
-                    marginTop: "12px",
-                    padding: "10px 16px",
-                    fontSize: "0.9rem",
-                    backgroundColor: "#FF4040",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    fontWeight: "600",
-                    boxShadow: "0 4px 6px rgba(255,64,64,0.2)",
-                    transition: "all 0.3s ease",
-                  }}
-                  onMouseOver={(e) => {
-                    e.target.style.backgroundColor = "#cc0000";
-                    e.target.style.boxShadow = "0 6px 10px rgba(255,64,64,0.3)";
-                  }}
-                  onMouseOut={(e) => {
-                    e.target.style.backgroundColor = "#FF4040";
-                    e.target.style.boxShadow = "0 4px 6px rgba(255,64,64,0.2)";
-                  }}
-                >
-                  Clear Customer
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "20px" }}>
-                <button
-                  onClick={() => setShowNewCustomer(true)}
-                  style={{
-                    padding: "16px",
-                    fontSize: "1rem",
-                    backgroundColor: "#FF4040",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    fontWeight: "600",
-                    boxShadow: "0 4px 6px rgba(255,64,64,0.2)",
-                    transition: "all 0.3s ease",
-                  }}
-                  onMouseOver={(e) => {
-                    e.target.style.backgroundColor = "#cc0000";
-                    e.target.style.boxShadow = "0 6px 10px rgba(255,64,64,0.3)";
-                    e.target.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseOut={(e) => {
-                    e.target.style.backgroundColor = "#FF4040";
-                    e.target.style.boxShadow = "0 4px 6px rgba(255,64,64,0.2)";
-                    e.target.style.transform = "translateY(0)";
-                  }}
-                >
-                  + New Customer
-                </button>
-                <button
-                  onClick={() => setShowExistingCustomer(true)}
-                  style={{
-                    padding: "16px",
-                    fontSize: "1rem",
-                    backgroundColor: "#FF4040",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    fontWeight: "600",
-                    boxShadow: "0 4px 6px rgba(255,64,64,0.2)",
-                    transition: "all 0.3s ease",
-                  }}
-                  onMouseOver={(e) => {
-                    e.target.style.backgroundColor = "#cc0000";
-                    e.target.style.boxShadow = "0 6px 10px rgba(255,64,64,0.3)";
-                    e.target.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseOut={(e) => {
-                    e.target.style.backgroundColor = "#FF4040";
-                    e.target.style.boxShadow = "0 4px 6px rgba(255,64,64,0.2)";
-                    e.target.style.transform = "translateY(0)";
-                  }}
-                >
-                  Search Existing Customer
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Job Requests Section */}
-        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", marginBottom: "24px" }}>
-          <h3 style={{ marginTop: 0 }}>Job Requests</h3>
-          {requests.map((req, i) => (
+          {/* ✅ Top Row: Job Information, Maintenance, GDPR */}
+          <div style={{ display: "flex", gap: "16px" }}>
+            
+            {/* Job Information Section */}
             <div
-              key={i}
               style={{
-                border: "2px solid #e0e0e0",
-                borderRadius: "8px",
-                marginBottom: "12px",
-                padding: "16px",
-                backgroundColor: "#fafafa",
+                flex: 1,
+                background: "white",
+                padding: "20px",
+                borderRadius: "16px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                border: "1px solid #e0e0e0",
               }}
             >
-              <strong style={{ fontSize: "0.95rem", color: "#333" }}>Request {i + 1}:</strong>
-              <div style={{ marginTop: "10px", display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-                <input
-                  type="text"
-                  value={req.text}
-                  onChange={(e) => handleRequestChange(i, e.target.value)}
-                  placeholder="Enter job request (MOT, Service, Diagnostic)"
-                  style={{
-                    flex: 2,
-                    minWidth: "200px",
-                    ...modernInputStyle,
-                  }}
-                  onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
-                  onBlur={(e) => {
-                    e.target.style.border = "2px solid #e0e0e0";
-                    e.target.style.backgroundColor = "#fafafa";
-                    e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
-                  }}
-                />
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={req.time || ""}
-                    onChange={(e) => handleTimeChange(i, e.target.value)}
-                    placeholder="Hours"
-                    style={{
-                      width: "90px",
-                      ...modernInputStyle,
-                    }}
-                    onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
-                    onBlur={(e) => {
-                      e.target.style.border = "2px solid #e0e0e0";
-                      e.target.style.backgroundColor = "#fafafa";
-                      e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
-                    }}
-                  />
-                  <span style={{ fontSize: "0.9rem", color: "#666", fontWeight: "500", minWidth: "30px" }}>
-                    {req.time !== "" ? `${req.time}h` : ""}
-                  </span>
+              <h3 style={{ 
+                fontSize: "16px", 
+                fontWeight: "600", 
+                color: "#1a1a1a",
+                marginTop: 0,
+                marginBottom: "16px"
+              }}>
+                Job Information
+              </h3>
+              
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ 
+                  fontSize: "13px", 
+                  fontWeight: "600", 
+                  color: "#666",
+                  display: "block",
+                  marginBottom: "8px"
+                }}>
+                  Customer Status
+                </label>
+                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                  {["Waiting", "Loan Car", "Collection", "Neither"].map((status) => (
+                    <label 
+                      key={status} 
+                      style={{ 
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        cursor: "pointer",
+                        padding: "8px 12px",
+                        borderRadius: "8px",
+                        border: waitingStatus === status ? "2px solid #d10000" : "2px solid #e0e0e0",
+                        backgroundColor: waitingStatus === status ? "#fff5f5" : "white",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="waiting"
+                        value={status}
+                        checked={waitingStatus === status}
+                        onChange={() => setWaitingStatus(status)}
+                        style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                      />
+                      <span style={{ fontSize: "13px", fontWeight: "500" }}>{status}</span>
+                    </label>
+                  ))}
                 </div>
-                <select
-                  value={req.paymentType || "Customer"}
-                  onChange={(e) => handlePaymentTypeChange(i, e.target.value)}
-                  style={{
-                    ...modernInputStyle,
-                    width: "160px",
-                    cursor: "pointer",
-                  }}
-                  onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
-                  onBlur={(e) => {
-                    e.target.style.border = "2px solid #e0e0e0";
-                    e.target.style.backgroundColor = "#fafafa";
-                    e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
-                  }}
-                >
-                  <option value="Customer">Customer</option>
-                  <option value="Warranty">Warranty</option>
-                  <option value="Sales Goodwill">Sales Goodwill</option>
-                  <option value="Service Goodwill">Service Goodwill</option>
-                  <option value="Internal">Internal</option>
-                  <option value="Insurance">Insurance</option>
-                  <option value="Lease Company">Lease Company</option>
-                  <option value="Staff">Staff</option>
-                </select>
-                <button
-                  onClick={() => handleRemoveRequest(i)}
-                  style={{
-                    backgroundColor: "#FF4040",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    padding: "10px 16px",
-                    cursor: "pointer",
-                    fontWeight: "600",
-                    fontSize: "0.9rem",
-                    boxShadow: "0 4px 6px rgba(255,64,64,0.2)",
-                    transition: "all 0.3s ease",
-                  }}
-                  onMouseOver={(e) => {
-                    e.target.style.backgroundColor = "#cc0000";
-                    e.target.style.boxShadow = "0 6px 10px rgba(255,64,64,0.3)";
-                  }}
-                  onMouseOut={(e) => {
-                    e.target.style.backgroundColor = "#FF4040";
-                    e.target.style.boxShadow = "0 4px 6px rgba(255,64,64,0.2)";
-                  }}
-                >
-                  Remove
-                </button>
+              </div>
+
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ 
+                  fontSize: "13px", 
+                  fontWeight: "600", 
+                  color: "#666",
+                  display: "block",
+                  marginBottom: "8px"
+                }}>
+                  Job Source
+                </label>
+                <div style={{ display: "flex", gap: "12px" }}>
+                  {["Retail", "Warranty"].map((src) => (
+                    <label 
+                      key={src} 
+                      style={{ 
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        cursor: "pointer",
+                        padding: "8px 12px",
+                        borderRadius: "8px",
+                        border: jobSource === src ? "2px solid #d10000" : "2px solid #e0e0e0",
+                        backgroundColor: jobSource === src ? "#fff5f5" : "white",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="source"
+                        value={src}
+                        checked={jobSource === src}
+                        onChange={() => setJobSource(src)}
+                        style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                      />
+                      <span style={{ fontSize: "13px", fontWeight: "500" }}>{src}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ 
+                  fontSize: "13px", 
+                  fontWeight: "600", 
+                  color: "#666",
+                  display: "block",
+                  marginBottom: "8px"
+                }}>
+                  Detected Job Types
+                </label>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  {jobCategories.map((type, index) => (
+                    <span
+                      key={index}
+                      style={{
+                        backgroundColor: "#d10000",
+                        color: "white",
+                        padding: "6px 14px",
+                        borderRadius: "20px",
+                        fontWeight: "600",
+                        fontSize: "12px",
+                      }}
+                    >
+                      {type}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
-          ))}
-          <button
-            onClick={handleAddRequest}
-            style={{
-              backgroundColor: "#FF4040",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              padding: "12px 20px",
-              cursor: "pointer",
-              fontWeight: "600",
-              fontSize: "0.95rem",
-              boxShadow: "0 4px 6px rgba(255,64,64,0.2)",
-              transition: "all 0.3s ease",
-            }}
-            onMouseOver={(e) => {
-              e.target.style.backgroundColor = "#cc0000";
-              e.target.style.boxShadow = "0 6px 10px rgba(255,64,64,0.3)";
-            }}
-            onMouseOut={(e) => {
-              e.target.style.backgroundColor = "#FF4040";
-              e.target.style.boxShadow = "0 4px 6px rgba(255,64,64,0.2)";
-            }}
-          >
-            + Add Request
-          </button>
-        </div>
 
-        {/* Bottom row: Cosmetic Damage, Add VHC, Full Car Details */}
-        <div style={{ display: "flex", gap: "16px", height: bottomRowHeight }}>
-          <div style={{ flex: 1, backgroundColor: "white", padding: "12px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", overflow: "hidden" }}>
-            <h4 style={{ marginTop: 0, marginBottom: "8px", fontSize: "0.9rem", color: "#333" }}>Cosmetic Damage</h4>
-            <textarea
-              value={cosmeticNotes}
-              onChange={(e) => setCosmeticNotes(e.target.value)}
-              placeholder="Describe any scratches, dents, or cosmetic damage..."
+            {/* Maintenance Section */}
+            <div
               style={{
-                width: "100%",
-                height: "55px",
-                ...modernInputStyle,
-                resize: "none",
-                fontFamily: "inherit",
-                fontSize: "0.85rem",
+                flex: 1,
+                background: "white",
+                padding: "20px",
+                borderRadius: "16px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                border: "1px solid #e0e0e0",
               }}
-              onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
-              onBlur={(e) => {
-                e.target.style.border = "2px solid #e0e0e0";
-                e.target.style.backgroundColor = "#fafafa";
-                e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
+            >
+              <h3 style={{ 
+                fontSize: "16px", 
+                fontWeight: "600", 
+                color: "#1a1a1a",
+                marginTop: 0,
+                marginBottom: "16px"
+              }}>
+                Maintenance
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div>
+                  <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "6px" }}>
+                    Next Service Date
+                  </label>
+                  <input
+                    type="date"
+                    value={maintenance.nextServiceDate}
+                    onChange={(e) => setMaintenance({ ...maintenance, nextServiceDate: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      border: "1px solid #e0e0e0",
+                      borderRadius: "8px",
+                      fontSize: "14px",
+                      outline: "none",
+                      transition: "border-color 0.2s"
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
+                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "6px" }}>
+                    Next MOT Date
+                  </label>
+                  <input
+                    type="date"
+                    value={maintenance.nextMotDate}
+                    onChange={(e) => setMaintenance({ ...maintenance, nextMotDate: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      border: "1px solid #e0e0e0",
+                      borderRadius: "8px",
+                      fontSize: "14px",
+                      outline: "none",
+                      transition: "border-color 0.2s"
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
+                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "6px" }}>
+                    Lease Company
+                  </label>
+                  <input
+                    type="text"
+                    value={maintenance.leaseCO}
+                    onChange={(e) => setMaintenance({ ...maintenance, leaseCO: e.target.value })}
+                    placeholder="Enter lease company"
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      border: "1px solid #e0e0e0",
+                      borderRadius: "8px",
+                      fontSize: "14px",
+                      outline: "none",
+                      transition: "border-color 0.2s"
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
+                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "6px" }}>
+                    Privileges
+                  </label>
+                  <input
+                    type="text"
+                    value={maintenance.privileges}
+                    onChange={(e) => setMaintenance({ ...maintenance, privileges: e.target.value })}
+                    placeholder="Enter privileges"
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      border: "1px solid #e0e0e0",
+                      borderRadius: "8px",
+                      fontSize: "14px",
+                      outline: "none",
+                      transition: "border-color 0.2s"
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
+                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* GDPR Settings Section */}
+            <div
+              style={{
+                flex: 1,
+                background: "white",
+                padding: "20px",
+                borderRadius: "16px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                border: "1px solid #e0e0e0",
               }}
-            />
+            >
+              <h3 style={{ 
+                fontSize: "16px", 
+                fontWeight: "600", 
+                color: "#1a1a1a",
+                marginTop: 0,
+                marginBottom: "16px"
+              }}>
+                GDPR Settings
+              </h3>
+              <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px", fontSize: "12px" }}>
+                <thead>
+                  <tr>
+                    <th style={{ borderBottom: "2px solid #e0e0e0", textAlign: "left", padding: "8px 0", fontWeight: "600", color: "#666" }}>
+                      Contact Type
+                    </th>
+                    <th style={{ borderBottom: "2px solid #e0e0e0", textAlign: "center", padding: "8px 0", fontWeight: "600", color: "#666" }}>
+                      From Us
+                    </th>
+                    <th style={{ borderBottom: "2px solid #e0e0e0", textAlign: "center", padding: "8px 0", fontWeight: "600", color: "#666" }}>
+                      From Franchise
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {["Email", "SMS", "Letter", "Telephone", "Social media"].map((method) => (
+                    <tr key={method}>
+                      <td style={{ padding: "8px 0", color: "#666" }}>{method}</td>
+                      <td style={{ textAlign: "center" }}>
+                        <input type="checkbox" style={{ width: "16px", height: "16px", cursor: "pointer" }} />
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        <input type="checkbox" style={{ width: "16px", height: "16px", cursor: "pointer" }} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                <thead>
+                  <tr>
+                    <th style={{ borderBottom: "2px solid #e0e0e0", textAlign: "left", padding: "8px 0", fontWeight: "600", color: "#666" }}>
+                      Marketing / Service
+                    </th>
+                    <th style={{ borderBottom: "2px solid #e0e0e0", textAlign: "center", padding: "8px 0", fontWeight: "600", color: "#666" }}>
+                      Allowed
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ padding: "8px 0", color: "#666" }}>Marketing Messages</td>
+                    <td style={{ textAlign: "center" }}>
+                      <input type="checkbox" style={{ width: "16px", height: "16px", cursor: "pointer" }} />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: "8px 0", color: "#666" }}>Service Dept Follow Up</td>
+                    <td style={{ textAlign: "center" }}>
+                      <input type="checkbox" style={{ width: "16px", height: "16px", cursor: "pointer" }} />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "#FF4040",
-              color: "white",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              boxShadow: "0 4px 6px rgba(255,64,64,0.2)",
-              transition: "all 0.3s ease",
-            }}
-            onClick={() => setShowVhcPopup(true)}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = "#cc0000";
-              e.currentTarget.style.boxShadow = "0 6px 10px rgba(255,64,64,0.3)";
-              e.currentTarget.style.transform = "translateY(-2px)";
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = "#FF4040";
-              e.currentTarget.style.boxShadow = "0 4px 6px rgba(255,64,64,0.2)";
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
-            <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: "600" }}>Add VHC</h4>
+
+          {/* ✅ Middle Row: Vehicle Details and Customer Details */}
+          <div style={{ display: "flex", gap: "16px" }}>
+            
+            {/* Vehicle Details Section */}
+            <div
+              style={{
+                flex: 1,
+                background: "white",
+                padding: "20px",
+                borderRadius: "16px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                border: "1px solid #e0e0e0",
+              }}
+            >
+              <h3 style={{ 
+                fontSize: "16px", 
+                fontWeight: "600", 
+                color: "#1a1a1a",
+                marginTop: 0,
+                marginBottom: "16px"
+              }}>
+                Vehicle Details
+              </h3>
+
+              {/* ✅ Vehicle notification banner */}
+              {vehicleNotification && (
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    marginBottom: "16px",
+                    borderRadius: "8px",
+                    backgroundColor: vehicleNotification.type === "success" ? "#d4edda" : "#f8d7da",
+                    border: `1px solid ${vehicleNotification.type === "success" ? "#c3e6cb" : "#f5c6cb"}`,
+                    color: vehicleNotification.type === "success" ? "#155724" : "#721c24",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <span>{vehicleNotification.message}</span>
+                  <button
+                    onClick={() => setVehicleNotification(null)}
+                    style={{
+                      marginLeft: "auto",
+                      background: "none",
+                      border: "none",
+                      fontSize: "20px",
+                      cursor: "pointer",
+                      color: "inherit",
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "6px" }}>
+                  Registration Number
+                </label>
+                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                  <input
+                    type="text"
+                    value={vehicle.reg}
+                    onChange={(e) => setVehicle({ ...vehicle, reg: e.target.value })}
+                    placeholder="e.g. AB12 CDE"
+                    style={{
+                      flex: 1,
+                      padding: "10px 12px",
+                      border: "1px solid #e0e0e0",
+                      borderRadius: "8px",
+                      fontSize: "14px",
+                      textTransform: "uppercase",
+                      outline: "none",
+                      transition: "border-color 0.2s"
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
+                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                  />
+                  <button
+                    onClick={handleFetchVehicleData}
+                    disabled={isLoadingVehicle}
+                    style={{
+                      padding: "10px 20px",
+                      backgroundColor: isLoadingVehicle ? "#ccc" : "#d10000",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontWeight: "600",
+                      fontSize: "13px",
+                      cursor: isLoadingVehicle ? "not-allowed" : "pointer",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isLoadingVehicle) e.target.style.backgroundColor = "#b00000";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isLoadingVehicle) e.target.style.backgroundColor = "#d10000";
+                    }}
+                  >
+                    {isLoadingVehicle ? "Loading..." : "Fetch Data"}
+                  </button>
+                </div>
+              </div>
+
+              {error && (
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#dc3545",
+                    marginBottom: "12px",
+                    padding: "10px 12px",
+                    backgroundColor: "#f8d7da",
+                    borderRadius: "8px",
+                    border: "1px solid #f5c6cb",
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {[
+                  { label: "Colour", value: vehicle.colour },
+                  { label: "Make & Model", value: vehicle.makeModel },
+                  { label: "Chassis Number", value: vehicle.chassis },
+                  { label: "Engine Number", value: vehicle.engine }
+                ].map((field, idx) => (
+                  <div key={idx}>
+                    <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "4px" }}>
+                      {field.label}
+                    </label>
+                    <div
+                      style={{
+                        padding: "10px 12px",
+                        backgroundColor: "#f5f5f5",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                        color: field.value ? "#1a1a1a" : "#999"
+                      }}
+                    >
+                      {field.value || "Not available"}
+                    </div>
+                  </div>
+                ))}
+                
+                <div>
+                  <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "6px" }}>
+                    Current Mileage
+                  </label>
+                  <input
+                    type="number"
+                    value={vehicle.mileage}
+                    onChange={(e) => setVehicle({ ...vehicle, mileage: e.target.value })}
+                    placeholder="Enter mileage"
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      border: "1px solid #e0e0e0",
+                      borderRadius: "8px",
+                      fontSize: "14px",
+                      outline: "none",
+                      transition: "border-color 0.2s"
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
+                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Customer Details Section */}
+            <div
+              style={{
+                flex: 1,
+                background: "white",
+                padding: "20px",
+                borderRadius: "16px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                border: "1px solid #e0e0e0",
+              }}
+            >
+              <h3 style={{ 
+                fontSize: "16px", 
+                fontWeight: "600", 
+                color: "#1a1a1a",
+                marginTop: 0,
+                marginBottom: "16px"
+              }}>
+                Customer Details
+              </h3>
+
+              {/* ✅ Customer notification banner */}
+              {customerNotification && (
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    marginBottom: "16px",
+                    borderRadius: "8px",
+                    backgroundColor: customerNotification.type === "success" ? "#d4edda" : "#f8d7da",
+                    border: `1px solid ${customerNotification.type === "success" ? "#c3e6cb" : "#f5c6cb"}`,
+                    color: customerNotification.type === "success" ? "#155724" : "#721c24",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <span>{customerNotification.message}</span>
+                  <button
+                    onClick={() => setCustomerNotification(null)}
+                    style={{
+                      marginLeft: "auto",
+                      background: "none",
+                      border: "none",
+                      fontSize: "20px",
+                      cursor: "pointer",
+                      color: "inherit",
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
+              {customer ? (
+                <div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "16px" }}>
+                    {[
+                      { label: "Name", value: `${customer.firstName} ${customer.lastName}` },
+                      { label: "Address", value: customer.address },
+                      { label: "Email", value: customer.email },
+                      { label: "Phone", value: customer.mobile || customer.telephone }
+                    ].map((field, idx) => (
+                      <div key={idx}>
+                        <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "4px" }}>
+                          {field.label}
+                        </label>
+                        <div
+                          style={{
+                            padding: "10px 12px",
+                            backgroundColor: "#f5f5f5",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            color: "#1a1a1a"
+                          }}
+                        >
+                          {field.value}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setCustomer(null)}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      fontSize: "14px",
+                      backgroundColor: "#ef4444",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      fontWeight: "600",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = "#dc2626"}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = "#ef4444"}
+                  >
+                    Clear Customer
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <button
+                    onClick={() => setShowNewCustomer(true)}
+                    style={{
+                      padding: "16px",
+                      fontSize: "14px",
+                      backgroundColor: "#d10000",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      fontWeight: "600",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
+                  >
+                    + New Customer
+                  </button>
+                  <button
+                    onClick={() => setShowExistingCustomer(true)}
+                    style={{
+                      padding: "16px",
+                      fontSize: "14px",
+                      backgroundColor: "#3b82f6",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      fontWeight: "600",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = "#2563eb"}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = "#3b82f6"}
+                  >
+                    Search Existing Customer
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "#FF4040",
-              color: "white",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              boxShadow: "0 4px 6px rgba(255,64,64,0.2)",
-              transition: "all 0.3s ease",
-            }}
-            onClick={() => alert("Full Car Details Coming Soon")}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = "#cc0000";
-              e.currentTarget.style.boxShadow = "0 6px 10px rgba(255,64,64,0.3)";
-              e.currentTarget.style.transform = "translateY(-2px)";
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = "#FF4040";
-              e.currentTarget.style.boxShadow = "0 4px 6px rgba(255,64,64,0.2)";
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
-            <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: "600" }}>Full Car Details</h4>
+
+          {/* ✅ Job Requests Section */}
+          <div style={{ 
+            background: "white", 
+            padding: "20px", 
+            borderRadius: "16px", 
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            border: "1px solid #e0e0e0"
+          }}>
+            <h3 style={{ 
+              fontSize: "16px", 
+              fontWeight: "600", 
+              color: "#1a1a1a",
+              marginTop: 0,
+              marginBottom: "16px"
+            }}>
+              Job Requests
+            </h3>
+            {requests.map((req, i) => (
+              <div
+                key={i}
+                style={{
+                  border: "1px solid #e0e0e0",
+                  borderRadius: "12px",
+                  marginBottom: "12px",
+                  padding: "16px",
+                  backgroundColor: "#fafafa",
+                }}
+              >
+                <div style={{ fontSize: "13px", fontWeight: "600", color: "#666", marginBottom: "12px" }}>
+                  Request {i + 1}
+                </div>
+                <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+                  <input
+                    type="text"
+                    value={req.text}
+                    onChange={(e) => handleRequestChange(i, e.target.value)}
+                    placeholder="Enter job request (MOT, Service, Diagnostic)"
+                    style={{
+                      flex: 2,
+                      minWidth: "250px",
+                      padding: "10px 12px",
+                      border: "1px solid #e0e0e0",
+                      borderRadius: "8px",
+                      fontSize: "14px",
+                      outline: "none",
+                      transition: "border-color 0.2s"
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
+                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={req.time || ""}
+                      onChange={(e) => handleTimeChange(i, e.target.value)}
+                      placeholder="Hours"
+                      style={{
+                        width: "90px",
+                        padding: "10px 12px",
+                        border: "1px solid #e0e0e0",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                        outline: "none",
+                        transition: "border-color 0.2s"
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = "#d10000"}
+                      onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                    />
+                    <span style={{ fontSize: "13px", color: "#666", fontWeight: "500", minWidth: "30px" }}>
+                      {req.time !== "" ? `${req.time}h` : ""}
+                    </span>
+                  </div>
+                  <select
+                    value={req.paymentType || "Customer"}
+                    onChange={(e) => handlePaymentTypeChange(i, e.target.value)}
+                    style={{
+                      padding: "10px 12px",
+                      border: "1px solid #e0e0e0",
+                      borderRadius: "8px",
+                      fontSize: "14px",
+                      cursor: "pointer",
+                      outline: "none",
+                      transition: "border-color 0.2s",
+                      width: "160px"
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
+                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                  >
+                    <option value="Customer">Customer</option>
+                    <option value="Warranty">Warranty</option>
+                    <option value="Sales Goodwill">Sales Goodwill</option>
+                    <option value="Service Goodwill">Service Goodwill</option>
+                    <option value="Internal">Internal</option>
+                    <option value="Insurance">Insurance</option>
+                    <option value="Lease Company">Lease Company</option>
+                    <option value="Staff">Staff</option>
+                  </select>
+                  <button
+                    onClick={() => handleRemoveRequest(i)}
+                    style={{
+                      backgroundColor: "#ef4444",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      padding: "10px 16px",
+                      cursor: "pointer",
+                      fontWeight: "600",
+                      fontSize: "13px",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = "#dc2626"}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = "#ef4444"}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={handleAddRequest}
+              style={{
+                backgroundColor: "#d10000",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                padding: "12px 20px",
+                cursor: "pointer",
+                fontWeight: "600",
+                fontSize: "14px",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
+              onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
+            >
+              + Add Request
+            </button>
+          </div>
+
+          {/* ✅ Bottom Row: Cosmetic Damage, Add VHC, Full Car Details */}
+          <div style={{ display: "flex", gap: "16px" }}>
+            <div style={{ 
+              flex: 1, 
+              background: "white", 
+              padding: "16px", 
+              borderRadius: "16px", 
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              border: "1px solid #e0e0e0"
+            }}>
+              <h4 style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginTop: 0, marginBottom: "12px" }}>
+                Cosmetic Damage
+              </h4>
+              <textarea
+                value={cosmeticNotes}
+                onChange={(e) => setCosmeticNotes(e.target.value)}
+                placeholder="Describe any scratches, dents, or cosmetic damage..."
+                style={{
+                  width: "100%",
+                  height: "80px",
+                  padding: "10px 12px",
+                  border: "1px solid #e0e0e0",
+                  borderRadius: "8px",
+                  resize: "none",
+                  fontFamily: "inherit",
+                  fontSize: "13px",
+                  outline: "none",
+                  transition: "border-color 0.2s"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#d10000"}
+                onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+              />
+            </div>
+            <div
+              style={{
+                flex: 1,
+                background: "linear-gradient(135deg, #d10000, #b00000)",
+                color: "white",
+                borderRadius: "16px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                boxShadow: "0 4px 8px rgba(209,0,0,0.3)",
+                transition: "all 0.2s",
+              }}
+              onClick={() => setShowVhcPopup(true)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 12px rgba(209,0,0,0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 8px rgba(209,0,0,0.3)";
+              }}
+            >
+              <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600" }}>Add VHC</h4>
+            </div>
+            <div
+              style={{
+                flex: 1,
+                background: "linear-gradient(135deg, #3b82f6, #2563eb)",
+                color: "white",
+                borderRadius: "16px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                boxShadow: "0 4px 8px rgba(59,130,246,0.3)",
+                transition: "all 0.2s",
+              }}
+              onClick={() => alert("Full Car Details Coming Soon")}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 12px rgba(59,130,246,0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 8px rgba(59,130,246,0.3)";
+              }}
+            >
+              <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600" }}>Full Car Details</h4>
+            </div>
           </div>
         </div>
 
@@ -1498,7 +1474,7 @@ export default function CreateJobCardPage() {
           />
         )}
 
-        {/* VHC Popup */}
+        {/* ✅ VHC Popup - Modern Design */}
         {showVhcPopup && (
           <div
             style={{
@@ -1513,26 +1489,34 @@ export default function CreateJobCardPage() {
               justifyContent: "center",
               zIndex: 1000,
             }}
+            onClick={() => setShowVhcPopup(false)}
           >
             <div
+              onClick={(e) => e.stopPropagation()}
               style={{
                 backgroundColor: "white",
                 padding: "32px",
-                borderRadius: "12px",
-                width: "360px",
+                borderRadius: "16px",
+                width: "400px",
                 textAlign: "center",
-                boxShadow: "0 8px 16px rgba(0,0,0,0.2)",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
               }}
             >
-              <h3 style={{ margin: "0 0 20px 0", fontSize: "1.3rem", color: "#333" }}>Add VHC to this job?</h3>
-              <div style={{ display: "flex", justifyContent: "space-around", marginTop: "20px" }}>
+              <h3 style={{ margin: "0 0 24px 0", fontSize: "20px", color: "#1a1a1a", fontWeight: "600" }}>
+                Add VHC to this job?
+              </h3>
+              <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "20px" }}>
                 <label
                   style={{
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
                     cursor: "pointer",
-                    fontSize: "1rem",
+                    padding: "12px 24px",
+                    borderRadius: "8px",
+                    border: vhcRequired === true ? "2px solid #10b981" : "2px solid #e0e0e0",
+                    backgroundColor: vhcRequired === true ? "#f0fdf4" : "white",
+                    transition: "all 0.2s"
                   }}
                 >
                   <input
@@ -1543,7 +1527,7 @@ export default function CreateJobCardPage() {
                     checked={vhcRequired === true}
                     style={{ width: "18px", height: "18px", cursor: "pointer" }}
                   />
-                  <span>Yes</span>
+                  <span style={{ fontSize: "15px", fontWeight: "500" }}>Yes</span>
                 </label>
                 <label
                   style={{
@@ -1551,7 +1535,11 @@ export default function CreateJobCardPage() {
                     alignItems: "center",
                     gap: "8px",
                     cursor: "pointer",
-                    fontSize: "1rem",
+                    padding: "12px 24px",
+                    borderRadius: "8px",
+                    border: vhcRequired === false ? "2px solid #ef4444" : "2px solid #e0e0e0",
+                    backgroundColor: vhcRequired === false ? "#fef2f2" : "white",
+                    transition: "all 0.2s"
                   }}
                 >
                   <input
@@ -1562,32 +1550,25 @@ export default function CreateJobCardPage() {
                     checked={vhcRequired === false}
                     style={{ width: "18px", height: "18px", cursor: "pointer" }}
                   />
-                  <span>No</span>
+                  <span style={{ fontSize: "15px", fontWeight: "500" }}>No</span>
                 </label>
               </div>
               <button
                 onClick={() => setShowVhcPopup(false)}
                 style={{
                   marginTop: "24px",
-                  padding: "12px 24px",
-                  backgroundColor: "#FF4040",
+                  padding: "12px 32px",
+                  backgroundColor: "#d10000",
                   color: "white",
                   border: "none",
                   borderRadius: "8px",
                   cursor: "pointer",
                   fontWeight: "600",
-                  fontSize: "1rem",
-                  boxShadow: "0 4px 6px rgba(255,64,64,0.2)",
-                  transition: "all 0.3s ease",
+                  fontSize: "15px",
+                  transition: "all 0.2s",
                 }}
-                onMouseOver={(e) => {
-                  e.target.style.backgroundColor = "#cc0000";
-                  e.target.style.boxShadow = "0 6px 10px rgba(255,64,64,0.3)";
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.backgroundColor = "#FF4040";
-                  e.target.style.boxShadow = "0 4px 6px rgba(255,64,64,0.2)";
-                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
+                onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
               >
                 Confirm
               </button>
@@ -1595,20 +1576,6 @@ export default function CreateJobCardPage() {
           </div>
         )}
       </div>
-
-      {/* ✅ CSS animation for notifications */}
-      <style jsx>{`
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </Layout>
   );
 }
