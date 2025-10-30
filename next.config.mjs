@@ -1,6 +1,6 @@
 // file location: /workspaces/hnpsystem/next.config.mjs
 
-// Detect if we're in production (GitHub Pages) or development
+// ✅ Detect if we're in production (GitHub Pages) or development
 const isProd = process.env.NODE_ENV === "production";
 
 /** @type {import('next').NextConfig} */
@@ -8,19 +8,19 @@ const nextConfig = {
   // ✅ Enable React strict mode for better error detection
   reactStrictMode: true,
 
-  // ✅ Only use static export on GitHub Pages (no API routes there)
-  // 🚫 Disable export in development so API routes work locally
+  // ✅ Conditional config: export only for production (GitHub Pages)
   ...(isProd
     ? {
-        output: "export", // only export for production build (GitHub Pages)
+        // ✅ Static export for GitHub Pages
+        output: "export",
         basePath: "/hnpsystem",
         assetPrefix: "/hnpsystem/",
         images: {
-          unoptimized: true,
+          unoptimized: true, // disable image optimization for static export
         },
       }
     : {
-        // Normal Next.js dev server mode
+        // ✅ Normal dev server mode (API routes work)
         basePath: "",
         assetPrefix: "",
         images: {
@@ -33,12 +33,12 @@ const nextConfig = {
         },
       }),
 
-  // ✅ Remove deprecated experimental.allowedDevOrigins key
+  // ✅ Experimental section with allowedDevOrigins for local LAN access
   experimental: {
-    // Add other safe experimental flags here if needed later
+    allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.1.157"], // fixes cross-origin dev warning
   },
 
-  // ✅ Environment variables for Keycloak (available client-side)
+  // ✅ Environment variables for Keycloak (available on client side)
   env: {
     NEXT_PUBLIC_KEYCLOAK_URL: process.env.NEXT_PUBLIC_KEYCLOAK_URL,
     NEXT_PUBLIC_KEYCLOAK_REALM: process.env.NEXT_PUBLIC_KEYCLOAK_REALM,
