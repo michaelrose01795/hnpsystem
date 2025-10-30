@@ -8,34 +8,37 @@ const nextConfig = {
   // ✅ Enable React strict mode for better error detection
   reactStrictMode: true,
 
-  // ✅ Enable static export for GitHub Pages (no Node.js server required)
-  output: "export",
+  // ✅ Only use static export on GitHub Pages (no API routes there)
+  // 🚫 Disable export in development so API routes work locally
+  ...(isProd
+    ? {
+        output: "export", // only export for production build (GitHub Pages)
+        basePath: "/hnpsystem",
+        assetPrefix: "/hnpsystem/",
+        images: {
+          unoptimized: true,
+        },
+      }
+    : {
+        // Normal Next.js dev server mode
+        basePath: "",
+        assetPrefix: "",
+        images: {
+          remotePatterns: [
+            {
+              protocol: "https",
+              hostname: "**",
+            },
+          ],
+        },
+      }),
 
-  // ✅ Base path and asset prefix for serving from /hnpsystem subdirectory
-  basePath: isProd ? "/hnpsystem" : "",
-  assetPrefix: isProd ? "/hnpsystem/" : "",
-
-  // ✅ Disable Next.js image optimization (not supported on static export)
-  images: {
-    unoptimized: true,
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "localhost",
-      },
-      {
-        protocol: "http",
-        hostname: "localhost",
-      },
-    ],
-  },
-
-  // ✅ Allow cross-origin requests in development
+  // ✅ Remove deprecated experimental.allowedDevOrigins key
   experimental: {
-    allowedDevOrigins: ["127.0.0.1", "localhost"],
+    // Add other safe experimental flags here if needed later
   },
 
-  // ✅ Environment variables available on client side for Keycloak
+  // ✅ Environment variables for Keycloak (available client-side)
   env: {
     NEXT_PUBLIC_KEYCLOAK_URL: process.env.NEXT_PUBLIC_KEYCLOAK_URL,
     NEXT_PUBLIC_KEYCLOAK_REALM: process.env.NEXT_PUBLIC_KEYCLOAK_REALM,
