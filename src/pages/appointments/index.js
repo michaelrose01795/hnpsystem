@@ -271,7 +271,7 @@ export default function Appointments() {
   
   const toggleTechHoursEditor = () => setShowTechHoursEditor(!showTechHoursEditor);
 
-  // ✅ Enhanced job counts with new job categories
+  // ✅ Enhanced job counts with new job categories - FIXED to handle non-array requests
   const getJobCounts = (date) => {
     const jobsForDate = jobs.filter((j) => j.appointment?.date === date.toISOString().split("T")[0]);
     
@@ -298,11 +298,17 @@ export default function Appointments() {
         !j.type?.toLowerCase().includes("service") &&
         !j.type?.toLowerCase().includes("diagnosis")
       ).length,
-      // ✅ NEW: Calculate total estimated hours
+      // ✅ FIXED: Calculate total estimated hours safely checking if requests is an array
       totalHours: jobsForDate.reduce((sum, j) => {
-        const jobHours = j.requests?.reduce((reqSum, req) => {
+        // ✅ Check if requests exists and is an array before using reduce
+        if (!j.requests || !Array.isArray(j.requests)) {
+          return sum; // Return current sum if no valid requests array
+        }
+        
+        const jobHours = j.requests.reduce((reqSum, req) => {
           return reqSum + (parseFloat(req.time) || 0);
-        }, 0) || 0;
+        }, 0);
+        
         return sum + jobHours;
       }, 0).toFixed(1),
     };
@@ -827,8 +833,8 @@ export default function Appointments() {
                         </span>
                       </td>
                       <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", fontWeight: "600" }}>
-                        {/* ✅ Calculate total estimated hours from requests */}
-                        {job.requests && job.requests.length > 0 ? (
+                        {/* ✅ FIXED: Calculate total estimated hours safely */}
+                        {job.requests && Array.isArray(job.requests) && job.requests.length > 0 ? (
                           job.requests.reduce((sum, req) => sum + (parseFloat(req.time) || 0), 0).toFixed(1) + "h"
                         ) : (
                           "-"
