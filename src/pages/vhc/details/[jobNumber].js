@@ -1,314 +1,146 @@
 // file location: src/pages/vhc/details/[jobNumber].js
-"use client"; // enables client-side rendering for Next.js
+"use client";
 
-import React, { useEffect, useState } from "react"; // import React and hooks
-import { useRouter } from "next/router"; // for getting URL params and navigation
-import { supabase } from "../../../lib/supabaseClient"; // import Supabase client
-import Layout from "../../../components/Layout"; // import layout wrapper
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import { supabase } from "../../../lib/supabaseClient";
+import Layout from "../../../components/Layout";
+import { 
+  getVHCChecksByJob, 
+  createVHCCheck, 
+  updateVHCCheck, 
+  deleteVHCCheck 
+} from "../../../lib/database/vhc";
+import { getJobByNumber } from "../../../lib/database/jobs";
 
-// ✅ Status color mapping (same as dashboard)
+// ✅ Status color mapping
 const STATUS_COLORS = {
-  "Outstanding": "#9ca3af", // grey
-  "Accepted": "#d10000", // red
-  "In Progress": "#3b82f6", // blue
-  "Awaiting Authorization": "#fbbf24", // yellow
-  "Authorized": "#9333ea", // purple
-  "Ready": "#10b981", // green
-  "Carry Over": "#f97316", // orange
-  "Complete": "#06b6d4", // cyan
-  "Sent": "#8b5cf6", // purple for sent status
-  "Viewed": "#06b6d4", // cyan for viewed status
+  "Outstanding": "#9ca3af",
+  "Accepted": "#d10000",
+  "In Progress": "#3b82f6",
+  "Awaiting Authorization": "#fbbf24",
+  "Authorized": "#9333ea",
+  "Ready": "#10b981",
+  "Carry Over": "#f97316",
+  "Complete": "#06b6d4",
+  "Sent": "#8b5cf6",
+  "Viewed": "#06b6d4",
 };
 
-// ✅ Generate dummy VHC detail data for testing
-const generateDummyVHCDetail = (jobNumber) => {
-  const statuses = ["Outstanding", "Accepted", "In Progress", "Awaiting Authorization", "Authorized", "Ready", "Carry Over", "Complete"];
-  const makes = ["Ford", "BMW", "Mercedes", "Audi", "Toyota", "Honda", "Nissan", "Volkswagen"];
-  const names = ["John Smith", "Sarah Johnson", "Michael Brown", "Emma Wilson", "James Taylor"];
-  const randomIndex = parseInt(jobNumber.replace("JOB", "")) % 10;
-
-  return {
-    id: `vhc-${randomIndex}`,
-    job_number: jobNumber,
-    reg: `AB${20 + randomIndex} CDE`,
-    customer_name: names[randomIndex % names.length],
-    customer_phone: `07${Math.floor(Math.random() * 1000000000).toString().padStart(9, "0")}`,
-    customer_email: `${names[randomIndex % names.length].toLowerCase().replace(" ", ".")}@email.com`,
-    vehicle_make: makes[randomIndex % makes.length],
-    vehicle_model: "Model X",
-    vehicle_year: 2015 + (randomIndex % 8),
-    mileage: 15000 + (randomIndex * 5000),
-    status: statuses[randomIndex % statuses.length],
-    technician_name: "Tech A",
-    service_advisor: "MR",
-    technician: "SP",
-    parts_person: "DS",
-    location_person: "JK",
-    admin_person: "LM",
-    last_visit: randomIndex % 3 === 0 ? new Date(Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : "First visit",
-    next_service: randomIndex % 4 === 0 ? new Date(Date.now() + Math.random() * 120 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : "Not scheduled",
-    mot_expiry: new Date(Date.now() + Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    red_work: "475.00",
-    amber_work: "460.00",
-    authorized: "200.00",
-    declined_work: "0.00",
-    created_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-    // VHC Check Items with all categories
-    vhc_items: [
-      { id: 1, category: "Brakes", item: "Front Brake Pads", status: "Red", notes: "Worn below minimum", estimated_cost: "150.00", labor_hours: 1, parts_price: "80.00", total_price: "230.00", authorized: false, declined: false },
-      { id: 2, category: "Brakes", item: "Rear Brake Discs", status: "Amber", notes: "Some wear visible", estimated_cost: "200.00", labor_hours: 1.5, parts_price: "120.00", total_price: "345.00", authorized: false, declined: false },
-      { id: 3, category: "Tyres", item: "Front Left Tyre", status: "Green", notes: "Good condition", estimated_cost: "0.00", labor_hours: 0, parts_price: "0.00", total_price: "0.00", authorized: false, declined: false },
-      { id: 4, category: "Tyres", item: "Front Right Tyre", status: "Amber", notes: "Tread at 3mm", estimated_cost: "80.00", labor_hours: 0.5, parts_price: "60.00", total_price: "135.00", authorized: false, declined: false },
-      { id: 5, category: "Lights", item: "Headlight Bulb", status: "Red", notes: "Not working", estimated_cost: "25.00", labor_hours: 0.25, parts_price: "15.00", total_price: "52.50", authorized: false, declined: false },
-      { id: 6, category: "Fluid Levels", item: "Engine Oil", status: "Green", notes: "Topped up", estimated_cost: "0.00", labor_hours: 0, parts_price: "0.00", total_price: "0.00", authorized: false, declined: false },
-      { id: 7, category: "Suspension", item: "Front Shock Absorbers", status: "Amber", notes: "Minor leak detected", estimated_cost: "180.00", labor_hours: 2, parts_price: "100.00", total_price: "400.00", authorized: false, declined: false },
-      { id: 8, category: "Battery", item: "Battery Health", status: "Green", notes: "Good voltage", estimated_cost: "0.00", labor_hours: 0, parts_price: "0.00", total_price: "0.00", authorized: false, declined: false },
-      { id: 9, category: "Wipers", item: "Wiper Blades", status: "Grey", notes: "Not checked yet", estimated_cost: "0.00", labor_hours: 0, parts_price: "0.00", total_price: "0.00", authorized: false, declined: false },
-      { id: 10, category: "Air Filter", item: "Cabin Air Filter", status: "Amber", notes: "Dirty, needs replacement", estimated_cost: "45.00", labor_hours: 0.25, parts_price: "25.00", total_price: "62.50", authorized: false, declined: false },
-      { id: 11, category: "Exhaust", item: "Exhaust System", status: "Red", notes: "Leak detected at manifold", estimated_cost: "300.00", labor_hours: 2.5, parts_price: "200.00", total_price: "575.00", authorized: false, declined: false },
-      { id: 12, category: "Steering", item: "Power Steering Fluid", status: "Green", notes: "Level OK", estimated_cost: "0.00", labor_hours: 0, parts_price: "0.00", total_price: "0.00", authorized: false, declined: false },
-    ],
-    // Parts data
-    parts_identified: [
-      { id: 1, part_name: "Front Brake Pads Set", part_number: "BP-12345", supplier: "AutoParts Ltd", price: "80.00", quantity: 1, vhc_item_id: 1 },
-      { id: 2, part_name: "Rear Brake Disc Pair", part_number: "BD-67890", supplier: "BrakeCo", price: "120.00", quantity: 1, vhc_item_id: 2 },
-      { id: 3, part_name: "H7 Headlight Bulb", part_number: "HB-11111", supplier: "LightSource", price: "15.00", quantity: 1, vhc_item_id: 5 },
-      { id: 4, part_name: "Front Shock Absorber Pair", part_number: "SA-22222", supplier: "SuspensionPro", price: "100.00", quantity: 1, vhc_item_id: 7 },
-      { id: 5, part_name: "Tyre 205/55R16", part_number: "TY-33333", supplier: "TyreMart", price: "60.00", quantity: 1, vhc_item_id: 4 },
-      { id: 6, part_name: "Cabin Air Filter", part_number: "AF-44444", supplier: "FilterWorld", price: "25.00", quantity: 1, vhc_item_id: 10 },
-      { id: 7, part_name: "Exhaust Manifold Gasket", part_number: "EX-55555", supplier: "ExhaustCo", price: "200.00", quantity: 1, vhc_item_id: 11 },
-    ],
-    // Parts on order
-    parts_on_order: [
-      { id: 2, part_name: "Rear Brake Disc Pair", part_number: "BD-67890", supplier: "BrakeCo", expected_date: "2025-11-05", order_number: "ORD-12345" },
-      { id: 7, part_name: "Exhaust Manifold Gasket", part_number: "EX-55555", supplier: "ExhaustCo", expected_date: "2025-11-08", order_number: "ORD-12346" },
-    ],
-    // Photos uploaded by tech
-    photos: [
-      { id: 1, url: "https://via.placeholder.com/400x300/ff0000/ffffff?text=Brake+Pads", caption: "Front brake pads worn", send_to_customer: false, vhc_item_id: 1 },
-      { id: 2, url: "https://via.placeholder.com/400x300/fbbf24/ffffff?text=Brake+Discs", caption: "Rear brake disc wear", send_to_customer: false, vhc_item_id: 2 },
-      { id: 3, url: "https://via.placeholder.com/400x300/ff0000/ffffff?text=Headlight", caption: "Headlight not working", send_to_customer: false, vhc_item_id: 5 },
-      { id: 4, url: "https://via.placeholder.com/400x300/10b981/ffffff?text=Engine+Bay", caption: "General engine bay view", send_to_customer: false, vhc_item_id: null },
-    ],
-    // Videos uploaded by tech
-    videos: [
-      { id: 1, url: "https://www.w3schools.com/html/mov_bbb.mp4", caption: "Brake noise demonstration", send_to_customer: false, vhc_item_id: 1 },
-      { id: 2, url: "https://www.w3schools.com/html/movie.mp4", caption: "Exhaust leak sound", send_to_customer: false, vhc_item_id: 11 },
-    ],
-    // Notes and comments
-    technician_notes: "Customer reported squeaking noise from brakes. Inspection confirmed front pads need replacement urgently. Advised customer of amber items for next service.",
-    customer_comments: "Please call me before doing any additional work. Available 9am-5pm weekdays.",
-  };
+// ✅ Helper function to get customer name
+const getCustomerName = (customer) => {
+  if (!customer) return "N/A";
+  if (typeof customer === "string") return customer;
+  if (typeof customer === "object") {
+    return `${customer.firstName || ""} ${customer.lastName || ""}`.trim() || customer.email || "N/A";
+  }
+  return "N/A";
 };
 
-// ✅ VHC Details Page Component
 export default function VHCDetails() {
-  const router = useRouter(); // router for navigation and params
-  const { jobNumber } = router.query; // get job number from URL
-  const [vhcData, setVhcData] = useState(null); // VHC job data
-  const [loading, setLoading] = useState(true); // loading state
-  const [activeTab, setActiveTab] = useState("summary"); // active tab state
-  const [selectedItems, setSelectedItems] = useState([]); // selected items for authorization
-  const [editingLabor, setEditingLabor] = useState({}); // track which labor fields are being edited
+  const router = useRouter();
+  const { jobNumber } = router.query;
+  
+  const [jobData, setJobData] = useState(null);
+  const [vhcChecks, setVhcChecks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("summary");
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [vhcStatus, setVhcStatus] = useState("Outstanding");
 
-  // ✅ Fetch VHC details from Supabase (or use dummy data)
+  // ✅ Fetch job and VHC data
   useEffect(() => {
-    if (!jobNumber) return; // wait for jobNumber to be available
+    if (!jobNumber) return;
 
-    const fetchVHCDetails = async () => {
+    const fetchData = async () => {
       setLoading(true);
+      console.log("🔍 Fetching VHC data for job:", jobNumber);
 
-      // Try to fetch from Supabase
-      const { data, error } = await supabase
-        .from("vhc_checks")
-        .select("*")
-        .eq("job_number", jobNumber)
-        .single(); // get single record
+      try {
+        // ✅ Fetch job details
+        const { data: job, error: jobError } = await getJobByNumber(jobNumber);
+        
+        if (jobError || !job) {
+          console.error("❌ Job not found:", jobError);
+          setLoading(false);
+          return;
+        }
 
-      if (error || !data) {
-        console.log("Using dummy data for testing"); // log when using dummy data
-        setVhcData(generateDummyVHCDetail(jobNumber)); // use dummy data
-      } else {
-        setVhcData(data); // use real data from database
+        console.log("✅ Job found:", job);
+        setJobData(job);
+
+        // ✅ Fetch VHC checks
+        const checks = await getVHCChecksByJob(job.id);
+        console.log("✅ VHC checks found:", checks.length);
+        setVhcChecks(checks);
+
+        // ✅ Determine VHC status based on checks
+        if (checks.length === 0) {
+          setVhcStatus("Outstanding");
+        } else if (checks.some(c => c.section === "Brakes" || c.section === "Red")) {
+          setVhcStatus("In Progress");
+        } else {
+          setVhcStatus("Complete");
+        }
+
+      } catch (error) {
+        console.error("❌ Error fetching data:", error);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
-    fetchVHCDetails(); // call on load
+    fetchData();
   }, [jobNumber]);
 
-  // ✅ Recalculate totals when vhcData changes
-  useEffect(() => {
-    if (!vhcData) return;
+  // ✅ Calculate totals from VHC checks
+  const calculateTotals = () => {
+    const redItems = vhcChecks.filter(c => c.section === "Brakes" && c.measurement);
+    const amberItems = vhcChecks.filter(c => c.section === "Tyres" && c.measurement);
+    
+    const redTotal = redItems.reduce((sum, item) => {
+      const price = parseFloat(item.measurement) || 0;
+      return sum + price;
+    }, 0);
 
-    // Calculate red work total (unactioned only)
-    const redTotal = vhcData.vhc_items
-      .filter(item => item.status === "Red" && !item.authorized && !item.declined)
-      .reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+    const amberTotal = amberItems.reduce((sum, item) => {
+      const price = parseFloat(item.measurement) || 0;
+      return sum + price;
+    }, 0);
 
-    // Calculate amber work total (unactioned only)
-    const amberTotal = vhcData.vhc_items
-      .filter(item => item.status === "Amber" && !item.authorized && !item.declined)
-      .reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+    return {
+      redWork: redTotal.toFixed(2),
+      amberWork: amberTotal.toFixed(2),
+      authorized: "0.00",
+      declined: "0.00"
+    };
+  };
 
-    // Calculate authorized total
-    const authorizedTotal = vhcData.vhc_items
-      .filter(item => item.authorized)
-      .reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+  const totals = calculateTotals();
 
-    // Calculate declined total
-    const declinedTotal = vhcData.vhc_items
-      .filter(item => item.declined)
-      .reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
-
-    // Update totals in vhcData
-    setVhcData(prev => ({
-      ...prev,
-      red_work: redTotal.toFixed(2),
-      amber_work: amberTotal.toFixed(2),
-      authorized: authorizedTotal.toFixed(2),
-      declined_work: declinedTotal.toFixed(2)
-    }));
-  }, [vhcData?.vhc_items]);
-
-  // ✅ Handle checkbox selection
-  const handleSelectItem = (itemId) => {
-    setSelectedItems(prev => 
-      prev.includes(itemId) 
-        ? prev.filter(id => id !== itemId) 
-        : [...prev, itemId]
+  // ✅ Handle send VHC
+  const handleSendVHC = async () => {
+    const incompleteItems = vhcChecks.filter(c => 
+      (c.section === "Brakes" || c.section === "Tyres") && !c.measurement
     );
-  };
 
-  // ✅ Handle authorize selected items
-  const handleAuthorizeSelected = () => {
-    setVhcData(prev => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map(item => 
-        selectedItems.includes(item.id) 
-          ? { ...item, authorized: true, declined: false }
-          : item
-      )
-    }));
-    setSelectedItems([]); // clear selection
-  };
-
-  // ✅ Handle decline selected items
-  const handleDeclineSelected = () => {
-    setVhcData(prev => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map(item => 
-        selectedItems.includes(item.id) 
-          ? { ...item, declined: true, authorized: false }
-          : item
-      )
-    }));
-    setSelectedItems([]); // clear selection
-  };
-
-  // ✅ Handle toggle authorize/decline for individual item
-  const handleToggleAuthorize = (itemId) => {
-    setVhcData(prev => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map(item => 
-        item.id === itemId 
-          ? { ...item, authorized: !item.authorized, declined: false }
-          : item
-      )
-    }));
-  };
-
-  const handleToggleDecline = (itemId) => {
-    setVhcData(prev => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map(item => 
-        item.id === itemId 
-          ? { ...item, declined: !item.declined, authorized: false }
-          : item
-      )
-    }));
-  };
-
-  // ✅ Handle labor hours change
-  const handleLaborChange = (itemId, hours) => {
-    const laborCost = parseFloat(hours) * 150; // £150 per hour including VAT
-    setVhcData(prev => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map(item => {
-        if (item.id === itemId) {
-          const partsCost = parseFloat(item.parts_price) || 0;
-          const newTotal = partsCost + laborCost;
-          return { 
-            ...item, 
-            labor_hours: parseFloat(hours) || 0, 
-            labor_cost: laborCost.toFixed(2),
-            total_price: newTotal.toFixed(2)
-          };
-        }
-        return item;
-      })
-    }));
-  };
-
-  // ✅ Handle price change (manual override)
-  const handlePriceChange = (itemId, price) => {
-    setVhcData(prev => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map(item => 
-        item.id === itemId 
-          ? { ...item, total_price: parseFloat(price) || 0 }
-          : item
-      )
-    }));
-  };
-
-  // ✅ Handle send VHC button
-  const handleSendVHC = () => {
-    // Check if all items have labor and parts
-    const allItemsComplete = vhcData.vhc_items
-      .filter(item => item.status === "Red" || item.status === "Amber")
-      .every(item => item.labor_hours > 0 && item.parts_price > 0);
-
-    if (!allItemsComplete) {
-      alert("Please add labor time and parts to all red and amber items before sending VHC");
+    if (incompleteItems.length > 0) {
+      alert("⚠️ Please add measurements to all items before sending VHC");
       return;
     }
 
-    // Update status to "Sent"
-    setVhcData(prev => ({ ...prev, status: "Sent" }));
-    alert("VHC sent to customer!"); // TODO: Replace with proper notification and email system
-  };
+    const confirmed = confirm(
+      `Send VHC to customer?\n\n` +
+      `Job: ${jobNumber}\n` +
+      `Customer: ${getCustomerName(jobData?.customer)}\n` +
+      `Red Work: £${totals.redWork}\n` +
+      `Amber Work: £${totals.amberWork}`
+    );
 
-  // ✅ Toggle send to customer for photos/videos
-  const handleToggleSendMedia = (type, mediaId) => {
-    if (type === "photo") {
-      setVhcData(prev => ({
-        ...prev,
-        photos: prev.photos.map(photo => 
-          photo.id === mediaId 
-            ? { ...photo, send_to_customer: !photo.send_to_customer }
-            : photo
-        )
-      }));
-    } else {
-      setVhcData(prev => ({
-        ...prev,
-        videos: prev.videos.map(video => 
-          video.id === mediaId 
-            ? { ...video, send_to_customer: !video.send_to_customer }
-            : video
-        )
-      }));
+    if (confirmed) {
+      setVhcStatus("Sent");
+      alert("✅ VHC sent to customer!");
     }
-  };
-
-  // ✅ Calculate totals
-  const calculateTotal = (items) => {
-    return items.reduce((sum, item) => {
-      return sum + parseFloat(item.total_price || 0);
-    }, 0);
   };
 
   // ✅ Loading state
@@ -320,17 +152,31 @@ export default function VHCDetails() {
           alignItems: "center", 
           justifyContent: "center", 
           height: "100%",
-          color: "#6B7280",
-          fontSize: "16px"
+          flexDirection: "column",
+          gap: "16px"
         }}>
-          Loading VHC details...
+          <div style={{
+            width: "60px",
+            height: "60px",
+            border: "4px solid #f3f3f3",
+            borderTop: "4px solid #d10000",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite"
+          }}></div>
+          <p style={{ color: "#666", fontSize: "16px" }}>Loading VHC details...</p>
+          <style jsx>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
         </div>
       </Layout>
     );
   }
 
   // ✅ No data found
-  if (!vhcData) {
+  if (!jobData) {
     return (
       <Layout>
         <div style={{ 
@@ -341,19 +187,28 @@ export default function VHCDetails() {
           height: "100%",
           gap: "16px"
         }}>
-          <p style={{ color: "#6B7280", fontSize: "16px" }}>VHC record not found</p>
+          <div style={{ fontSize: "60px" }}>⚠️</div>
+          <p style={{ color: "#666", fontSize: "18px", fontWeight: "600" }}>
+            Job not found
+          </p>
+          <p style={{ color: "#999", fontSize: "14px" }}>
+            Job #{jobNumber} could not be loaded
+          </p>
           <button
             onClick={() => router.push("/vhc/dashboard")}
             style={{
-              padding: "10px 20px",
+              padding: "12px 24px",
               backgroundColor: "#d10000",
               color: "white",
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
               fontSize: "14px",
-              fontWeight: "500"
+              fontWeight: "600",
+              transition: "background-color 0.2s"
             }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
+            onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
           >
             Back to Dashboard
           </button>
@@ -362,15 +217,16 @@ export default function VHCDetails() {
     );
   }
 
-  const statusColor = STATUS_COLORS[vhcData.status] || "#9ca3af";
+  const statusColor = STATUS_COLORS[vhcStatus] || "#9ca3af";
 
-  // Filter items by status (excluding authorized and declined for red/amber sections)
-  const redItems = vhcData.vhc_items.filter(item => item.status === "Red" && !item.authorized && !item.declined);
-  const amberItems = vhcData.vhc_items.filter(item => item.status === "Amber" && !item.authorized && !item.declined);
-  const greenItems = vhcData.vhc_items.filter(item => item.status === "Green");
-  const greyItems = vhcData.vhc_items.filter(item => item.status === "Grey");
-  const authorizedItems = vhcData.vhc_items.filter(item => item.authorized);
-  const declinedItems = vhcData.vhc_items.filter(item => item.declined);
+  // ✅ Group checks by section
+  const checksBySection = vhcChecks.reduce((acc, check) => {
+    if (!acc[check.section]) {
+      acc[check.section] = [];
+    }
+    acc[check.section].push(check);
+    return acc;
+  }, {});
 
   return (
     <Layout>
@@ -381,7 +237,7 @@ export default function VHCDetails() {
         padding: "16px",
         overflow: "hidden" 
       }}>
-        {/* ✅ Header with Back Button and Send VHC Button */}
+        {/* Header */}
         <div style={{ 
           display: "flex", 
           justifyContent: "space-between", 
@@ -392,54 +248,66 @@ export default function VHCDetails() {
           <button
             onClick={() => router.push("/vhc/dashboard")}
             style={{
-              padding: "8px 16px",
+              padding: "10px 20px",
               backgroundColor: "#fff",
               border: "1px solid #e0e0e0",
               borderRadius: "8px",
               cursor: "pointer",
               fontSize: "14px",
-              fontWeight: "500",
+              fontWeight: "600",
               display: "flex",
               alignItems: "center",
-              gap: "8px"
+              gap: "8px",
+              transition: "all 0.2s"
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = "#f5f5f5";
+              e.target.style.borderColor = "#d0d0d0";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = "#fff";
+              e.target.style.borderColor = "#e0e0e0";
             }}
           >
             ← Back
           </button>
           
-          <h1 style={{ fontSize: "24px", fontWeight: "700", color: "#1a1a1a" }}>
-            VHC Details - {vhcData.job_number}
+          <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#1a1a1a", margin: 0 }}>
+            VHC Details - {jobNumber}
           </h1>
           
           <button
             onClick={handleSendVHC}
             style={{
-              padding: "10px 20px",
+              padding: "12px 24px",
               backgroundColor: "#d10000",
               color: "white",
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
               fontSize: "14px",
-              fontWeight: "600"
+              fontWeight: "600",
+              transition: "background-color 0.2s"
             }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
+            onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
           >
-            Send VHC
+            📤 Send VHC
           </button>
         </div>
 
-        {/* ✅ FIXED - Vehicle Info Card - Always Visible */}
+        {/* Vehicle Info Card */}
         <div style={{
           background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)",
           border: "1px solid #ffe5e5",
           borderRadius: "16px",
-          padding: "20px",
+          padding: "24px",
           boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
           marginBottom: "16px",
           flexShrink: 0
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            {/* Left side - Vehicle details */}
+            {/* Left side */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
                 <div style={{
@@ -450,75 +318,45 @@ export default function VHCDetails() {
                   fontSize: "13px",
                   fontWeight: "600"
                 }}>
-                  {vhcData.status}
+                  {vhcStatus}
                 </div>
-                <h2 style={{ fontSize: "28px", fontWeight: "700", color: "#1a1a1a" }}>
-                  {vhcData.reg}
+                <h2 style={{ fontSize: "32px", fontWeight: "700", color: "#1a1a1a", margin: 0 }}>
+                  {jobData.reg || "N/A"}
                 </h2>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <p style={{ fontSize: "16px", color: "#666" }}>
-                  <strong>Make/Model:</strong> {vhcData.vehicle_make} {vhcData.vehicle_model} ({vhcData.vehicle_year})
+                <p style={{ fontSize: "16px", color: "#666", margin: 0 }}>
+                  <strong>Vehicle:</strong> {jobData.makeModel || "N/A"}
                 </p>
-                <p style={{ fontSize: "16px", color: "#666" }}>
-                  <strong>Mileage:</strong> {vhcData.mileage.toLocaleString()} miles
+                <p style={{ fontSize: "16px", color: "#666", margin: 0 }}>
+                  <strong>Customer:</strong> {getCustomerName(jobData.customer)}
                 </p>
-                <p style={{ fontSize: "16px", color: "#666" }}>
-                  <strong>Customer:</strong> {vhcData.customer_name}
-                </p>
-                <p style={{ fontSize: "16px", color: "#666" }}>
-                  <strong>Phone:</strong> {vhcData.customer_phone}
-                </p>
-                <p style={{ fontSize: "16px", color: "#666" }}>
-                  <strong>Email:</strong> {vhcData.customer_email}
-                </p>
+                {jobData.mileage && (
+                  <p style={{ fontSize: "16px", color: "#666", margin: 0 }}>
+                    <strong>Mileage:</strong> {jobData.mileage.toLocaleString()} miles
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Right side - Dates and team */}
+            {/* Right side - Summary */}
             <div style={{ textAlign: "right" }}>
-              <p style={{ fontSize: "14px", color: "#666", marginBottom: "8px" }}>
-                <strong>Last Visit:</strong> {vhcData.last_visit}
+              <p style={{ fontSize: "14px", color: "#666", margin: "0 0 8px 0" }}>
+                <strong>VHC Checks:</strong> {vhcChecks.length}
               </p>
-              <p style={{ fontSize: "14px", color: "#666", marginBottom: "8px" }}>
-                <strong>Next Service:</strong> {vhcData.next_service}
+              <p style={{ fontSize: "14px", color: "#666", margin: "0 0 8px 0" }}>
+                <strong>Job Status:</strong> {jobData.status}
               </p>
-              <p style={{ fontSize: "14px", color: "#666", marginBottom: "8px" }}>
-                <strong>MOT Expiry:</strong> {vhcData.mot_expiry}
-              </p>
-              <div style={{ marginTop: "16px", display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                {[
-                  { letter: "S", initials: vhcData.service_advisor },
-                  { letter: "T", initials: vhcData.technician },
-                  { letter: "P", initials: vhcData.parts_person },
-                  { letter: "L", initials: vhcData.location_person },
-                  { letter: "A", initials: vhcData.admin_person }
-                ].map((person, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      width: "35px",
-                      height: "35px",
-                      borderRadius: "50%",
-                      backgroundColor: person.initials ? "#d10000" : "transparent",
-                      border: person.initials ? "none" : "2px solid #d10000",
-                      color: person.initials ? "white" : "#d10000",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "11px",
-                      fontWeight: "600"
-                    }}
-                  >
-                    {person.initials || person.letter}
-                  </div>
-                ))}
-              </div>
+              {jobData.appointment && (
+                <p style={{ fontSize: "14px", color: "#666", margin: 0 }}>
+                  <strong>Appointment:</strong> {jobData.appointment.date} {jobData.appointment.time}
+                </p>
+              )}
             </div>
           </div>
         </div>
 
-        {/* ✅ Status and Cost Summary Bar - Updated Layout */}
+        {/* Cost Summary Bar */}
         <div style={{
           background: "white",
           border: "1px solid #e0e0e0",
@@ -531,7 +369,6 @@ export default function VHCDetails() {
           marginBottom: "16px",
           flexShrink: 0
         }}>
-          {/* Left - VHC Status Badge */}
           <div style={{
             backgroundColor: statusColor,
             color: "white",
@@ -540,39 +377,32 @@ export default function VHCDetails() {
             fontSize: "15px",
             fontWeight: "600"
           }}>
-            VHC Status: {vhcData.status}
+            VHC Status: {vhcStatus}
           </div>
 
-          {/* Right - Cost Summary - Spread Out More */}
           <div style={{ display: "flex", gap: "48px" }}>
             <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Red Work</p>
-              <p style={{ fontSize: "22px", fontWeight: "700", color: "#ef4444" }}>
-                £{vhcData.red_work}
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px", margin: 0 }}>Red Work</p>
+              <p style={{ fontSize: "24px", fontWeight: "700", color: "#ef4444", margin: "4px 0 0 0" }}>
+                £{totals.redWork}
               </p>
             </div>
             <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Amber Work</p>
-              <p style={{ fontSize: "22px", fontWeight: "700", color: "#fbbf24" }}>
-                £{vhcData.amber_work}
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px", margin: 0 }}>Amber Work</p>
+              <p style={{ fontSize: "24px", fontWeight: "700", color: "#fbbf24", margin: "4px 0 0 0" }}>
+                £{totals.amberWork}
               </p>
             </div>
             <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Authorized</p>
-              <p style={{ fontSize: "22px", fontWeight: "700", color: "#10b981" }}>
-                £{vhcData.authorized}
-              </p>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Declined</p>
-              <p style={{ fontSize: "22px", fontWeight: "700", color: "#ef4444" }}>
-                £{vhcData.declined_work}
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px", margin: 0 }}>Authorized</p>
+              <p style={{ fontSize: "24px", fontWeight: "700", color: "#10b981", margin: "4px 0 0 0" }}>
+                £{totals.authorized}
               </p>
             </div>
           </div>
         </div>
 
-        {/* ✅ Tabs Navigation */}
+        {/* Tabs */}
         <div style={{
           display: "flex",
           gap: "8px",
@@ -580,7 +410,7 @@ export default function VHCDetails() {
           borderBottom: "2px solid #e0e0e0",
           flexShrink: 0
         }}>
-          {["summary", "health-check", "parts-identified", "parts-authorized", "parts-on-order", "photos", "videos"].map(tab => (
+          {["summary", "health-check", "photos", "videos"].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -602,7 +432,7 @@ export default function VHCDetails() {
           ))}
         </div>
 
-        {/* ✅ Tab Content - Scrollable */}
+        {/* Tab Content */}
         <div style={{ 
           flex: 1,
           overflowY: "auto",
@@ -611,997 +441,178 @@ export default function VHCDetails() {
           gap: "16px"
         }}>
           
-          {/* ========== SUMMARY TAB ========== */}
           {activeTab === "summary" && (
             <>
-              {/* Authorized Work Section */}
-              {authorizedItems.length > 0 && (
+              {vhcChecks.length === 0 ? (
                 <div style={{
                   background: "white",
-                  border: "2px solid #10b981",
+                  border: "1px solid #e0e0e0",
                   borderRadius: "16px",
-                  padding: "20px",
+                  padding: "40px",
+                  textAlign: "center",
                   boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
                 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#10b981" }}>
-                      ✓ Authorized Work
-                    </h3>
-                    <p style={{ fontSize: "20px", fontWeight: "700", color: "#10b981" }}>
-                      Total: £{calculateTotal(authorizedItems).toFixed(2)}
-                    </p>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    {authorizedItems.map(item => (
-                      <div key={item.id} style={{
-                        border: "1px solid #10b98130",
-                        borderRadius: "8px",
-                        padding: "12px",
-                        backgroundColor: "#10b98110",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center"
+                  <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
+                  <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#333", marginBottom: "8px" }}>
+                    No VHC Checks Yet
+                  </h3>
+                  <p style={{ fontSize: "14px", color: "#666", marginBottom: "24px" }}>
+                    Start adding checks to build the vehicle health report
+                  </p>
+                  <button
+                    onClick={() => router.push(`/vhc?job=${jobNumber}`)}
+                    style={{
+                      padding: "12px 24px",
+                      backgroundColor: "#d10000",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      fontWeight: "600"
+                    }}
+                  >
+                    Add VHC Checks
+                  </button>
+                </div>
+              ) : (
+                <div style={{
+                  background: "white",
+                  border: "1px solid #e0e0e0",
+                  borderRadius: "16px",
+                  padding: "24px",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
+                }}>
+                  <h3 style={{ fontSize: "20px", fontWeight: "600", marginBottom: "20px", color: "#1a1a1a" }}>
+                    VHC Check Results
+                  </h3>
+                  
+                  {Object.entries(checksBySection).map(([section, checks]) => (
+                    <div key={section} style={{ marginBottom: "24px" }}>
+                      <h4 style={{ 
+                        fontSize: "16px", 
+                        fontWeight: "600", 
+                        color: "#333",
+                        marginBottom: "12px",
+                        paddingBottom: "8px",
+                        borderBottom: "2px solid #f0f0f0"
                       }}>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                            <div style={{
-                              backgroundColor: item.status === "Red" ? "#ef4444" : "#fbbf24",
-                              color: "white",
-                              padding: "2px 8px",
-                              borderRadius: "4px",
-                              fontSize: "10px",
-                              fontWeight: "600"
-                            }}>
-                              {item.status}
+                        {section} ({checks.length})
+                      </h4>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        {checks.map(check => (
+                          <div key={check.vhc_id} style={{
+                            padding: "12px",
+                            border: "1px solid #e0e0e0",
+                            borderRadius: "8px",
+                            backgroundColor: "#fafafa"
+                          }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <div>
+                                <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", margin: "0 0 4px 0" }}>
+                                  {check.issue_title}
+                                </p>
+                                <p style={{ fontSize: "13px", color: "#666", margin: 0 }}>
+                                  {check.issue_description}
+                                </p>
+                              </div>
+                              {check.measurement && (
+                                <div style={{
+                                  padding: "6px 12px",
+                                  backgroundColor: "#e0e0e0",
+                                  borderRadius: "6px",
+                                  fontSize: "13px",
+                                  fontWeight: "600"
+                                }}>
+                                  £{parseFloat(check.measurement).toFixed(2)}
+                                </div>
+                              )}
                             </div>
-                            <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                              {item.category} - {item.item}
-                            </p>
                           </div>
-                          <p style={{ fontSize: "13px", color: "#666" }}>
-                            {item.notes}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleToggleAuthorize(item.id)}
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor: "#ef4444",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                            fontWeight: "600"
-                          }}
-                        >
-                          Unauthorize
-                        </button>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Red Work Section - Immediate Attention - Only show if items exist */}
-              {redItems.length > 0 && (
-                <div style={{
-                  background: "white",
-                  border: "2px solid #ef4444",
-                  borderRadius: "16px",
-                  padding: "20px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#ef4444" }}>
-                      ⚠️ Red - Immediate Attention Required
-                    </h3>
-                    <p style={{ fontSize: "20px", fontWeight: "700", color: "#ef4444" }}>
-                      Total: £{calculateTotal(redItems).toFixed(2)}
-                    </p>
-                  </div>
-                  
-                  {/* Table Header */}
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "2fr 1fr 1fr 1fr 80px 30px",
-                    gap: "12px",
-                    padding: "12px",
-                    backgroundColor: "#f5f5f5",
-                    borderRadius: "8px",
-                    marginBottom: "12px",
-                    fontWeight: "600",
-                    fontSize: "13px"
-                  }}>
-                    <div>Item Details</div>
-                    <div style={{ textAlign: "center" }}>Parts</div>
-                    <div style={{ textAlign: "center" }}>Labor</div>
-                    <div style={{ textAlign: "center" }}>Price</div>
-                    <div style={{ textAlign: "center" }}>Status</div>
-                    <div></div>
-                  </div>
-
-                  {/* Red Items */}
-                  {redItems.map(item => {
-                    const partsCost = parseFloat(item.parts_price) || 0;
-                    const laborCost = (parseFloat(item.labor_hours) || 0) * 150;
-                    
-                    return (
-                      <div key={item.id} style={{
-                        display: "grid",
-                        gridTemplateColumns: "2fr 1fr 1fr 1fr 80px 30px",
-                        gap: "12px",
-                        padding: "12px",
-                        border: "1px solid #ef444430",
-                        borderRadius: "8px",
-                        backgroundColor: "#ef444410",
-                        marginBottom: "8px",
-                        alignItems: "center"
-                      }}>
-                        <div>
-                          <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                            {item.category} - {item.item}
-                          </p>
-                          <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
-                            {item.notes}
-                          </p>
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <p style={{ fontSize: "14px", fontWeight: "600" }}>£{item.parts_price}</p>
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={item.labor_hours || 0}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9.]/g, '');
-                              handleLaborChange(item.id, value);
-                            }}
-                            style={{
-                              width: "70px",
-                              padding: "6px 10px",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "6px",
-                              textAlign: "center",
-                              fontSize: "14px",
-                              fontWeight: "500"
-                            }}
-                          />
-                          <p style={{ fontSize: "11px", color: "#666", marginTop: "4px" }}>
-                            £{laborCost.toFixed(2)}
-                          </p>
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={item.total_price || 0}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9.]/g, '');
-                              handlePriceChange(item.id, value);
-                            }}
-                            style={{
-                              width: "80px",
-                              padding: "6px 10px",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "6px",
-                              textAlign: "center",
-                              fontSize: "15px",
-                              fontWeight: "700"
-                            }}
-                          />
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <div style={{
-                            width: "20px",
-                            height: "20px",
-                            borderRadius: "50%",
-                            backgroundColor: "#fbbf24",
-                            margin: "0 auto"
-                          }}></div>
-                        </div>
-
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.includes(item.id)}
-                          onChange={() => handleSelectItem(item.id)}
-                          style={{ width: "18px", height: "18px", cursor: "pointer" }}
-                        />
-                      </div>
-                    );
-                  })}
-
-                  {/* Action Buttons */}
-                  <div style={{ display: "flex", gap: "12px", marginTop: "16px", justifyContent: "flex-end" }}>
-                    <button
-                      onClick={handleDeclineSelected}
-                      disabled={selectedItems.length === 0}
-                      style={{
-                        padding: "10px 20px",
-                        backgroundColor: selectedItems.length === 0 ? "#ccc" : "#ef4444",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: selectedItems.length === 0 ? "not-allowed" : "pointer",
-                        fontSize: "14px",
-                        fontWeight: "600"
-                      }}
-                    >
-                      Decline Selected
-                    </button>
-                    <button
-                      onClick={handleAuthorizeSelected}
-                      disabled={selectedItems.length === 0}
-                      style={{
-                        padding: "10px 20px",
-                        backgroundColor: selectedItems.length === 0 ? "#ccc" : "#10b981",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: selectedItems.length === 0 ? "not-allowed" : "pointer",
-                        fontSize: "14px",
-                        fontWeight: "600"
-                      }}
-                    >
-                      Authorize Selected
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Amber Work Section - Not Urgent - Only show if items exist */}
-              {amberItems.length > 0 && (
-                <div style={{
-                  background: "white",
-                  border: "2px solid #fbbf24",
-                  borderRadius: "16px",
-                  padding: "20px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#fbbf24" }}>
-                      ⚡ Amber - Not Urgent (Recommended)
-                    </h3>
-                    <p style={{ fontSize: "20px", fontWeight: "700", color: "#fbbf24" }}>
-                      Total: £{calculateTotal(amberItems).toFixed(2)}
-                    </p>
-                  </div>
-                  
-                  {/* Table Header */}
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "2fr 1fr 1fr 1fr 80px 30px",
-                    gap: "12px",
-                    padding: "12px",
-                    backgroundColor: "#f5f5f5",
-                    borderRadius: "8px",
-                    marginBottom: "12px",
-                    fontWeight: "600",
-                    fontSize: "13px"
-                  }}>
-                    <div>Item Details</div>
-                    <div style={{ textAlign: "center" }}>Parts</div>
-                    <div style={{ textAlign: "center" }}>Labor</div>
-                    <div style={{ textAlign: "center" }}>Price</div>
-                    <div style={{ textAlign: "center" }}>Status</div>
-                    <div></div>
-                  </div>
-
-                  {/* Amber Items */}
-                  {amberItems.map(item => {
-                    const partsCost = parseFloat(item.parts_price) || 0;
-                    const laborCost = (parseFloat(item.labor_hours) || 0) * 150;
-                    
-                    return (
-                      <div key={item.id} style={{
-                        display: "grid",
-                        gridTemplateColumns: "2fr 1fr 1fr 1fr 80px 30px",
-                        gap: "12px",
-                        padding: "12px",
-                        border: "1px solid #fbbf2430",
-                        borderRadius: "8px",
-                        backgroundColor: "#fbbf2410",
-                        marginBottom: "8px",
-                        alignItems: "center"
-                      }}>
-                        <div>
-                          <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                            {item.category} - {item.item}
-                          </p>
-                          <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
-                            {item.notes}
-                          </p>
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <p style={{ fontSize: "14px", fontWeight: "600" }}>£{item.parts_price}</p>
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={item.labor_hours || 0}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9.]/g, '');
-                              handleLaborChange(item.id, value);
-                            }}
-                            style={{
-                              width: "70px",
-                              padding: "6px 10px",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "6px",
-                              textAlign: "center",
-                              fontSize: "14px",
-                              fontWeight: "500"
-                            }}
-                          />
-                          <p style={{ fontSize: "11px", color: "#666", marginTop: "4px" }}>
-                            £{laborCost.toFixed(2)}
-                          </p>
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={item.total_price || 0}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9.]/g, '');
-                              handlePriceChange(item.id, value);
-                            }}
-                            style={{
-                              width: "80px",
-                              padding: "6px 10px",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "6px",
-                              textAlign: "center",
-                              fontSize: "15px",
-                              fontWeight: "700"
-                            }}
-                          />
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <div style={{
-                            width: "20px",
-                            height: "20px",
-                            borderRadius: "50%",
-                            backgroundColor: "#fbbf24",
-                            margin: "0 auto"
-                          }}></div>
-                        </div>
-
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.includes(item.id)}
-                          onChange={() => handleSelectItem(item.id)}
-                          style={{ width: "18px", height: "18px", cursor: "pointer" }}
-                        />
-                      </div>
-                    );
-                  })}
-
-                  {/* Action Buttons */}
-                  <div style={{ display: "flex", gap: "12px", marginTop: "16px", justifyContent: "flex-end" }}>
-                    <button
-                      onClick={handleDeclineSelected}
-                      disabled={selectedItems.length === 0}
-                      style={{
-                        padding: "10px 20px",
-                        backgroundColor: selectedItems.length === 0 ? "#ccc" : "#ef4444",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: selectedItems.length === 0 ? "not-allowed" : "pointer",
-                        fontSize: "14px",
-                        fontWeight: "600"
-                      }}
-                    >
-                      Decline Selected
-                    </button>
-                    <button
-                      onClick={handleAuthorizeSelected}
-                      disabled={selectedItems.length === 0}
-                      style={{
-                        padding: "10px 20px",
-                        backgroundColor: selectedItems.length === 0 ? "#ccc" : "#10b981",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: selectedItems.length === 0 ? "not-allowed" : "pointer",
-                        fontSize: "14px",
-                        fontWeight: "600"
-                      }}
-                    >
-                      Authorize Selected
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Declined Work Section - Only show if items exist */}
-              {declinedItems.length > 0 && (
-                <div style={{
-                  background: "white",
-                  border: "2px solid #ef4444",
-                  borderRadius: "16px",
-                  padding: "20px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#ef4444" }}>
-                      ✕ Declined Work
-                    </h3>
-                    <p style={{ fontSize: "20px", fontWeight: "700", color: "#ef4444" }}>
-                      Total: £{calculateTotal(declinedItems).toFixed(2)}
-                    </p>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    {declinedItems.map(item => (
-                      <div key={item.id} style={{
-                        border: "1px solid #ef444430",
-                        borderRadius: "8px",
-                        padding: "12px",
-                        backgroundColor: "#ef444410",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center"
-                      }}>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                            <div style={{
-                              backgroundColor: item.status === "Red" ? "#ef4444" : "#fbbf24",
-                              color: "white",
-                              padding: "2px 8px",
-                              borderRadius: "4px",
-                              fontSize: "10px",
-                              fontWeight: "600"
-                            }}>
-                              {item.status}
-                            </div>
-                            <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                              {item.category} - {item.item}
-                            </p>
-                          </div>
-                          <p style={{ fontSize: "13px", color: "#666" }}>
-                            {item.notes}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleToggleDecline(item.id)}
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor: "#10b981",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                            fontWeight: "600"
-                          }}
-                        >
-                          Undecline
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* All VHC Items Grid - 4 columns */}
-              <div style={{
-                background: "white",
-                border: "1px solid #e0e0e0",
-                borderRadius: "16px",
-                padding: "20px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-              }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
-                  Full VHC Report
-                </h3>
-                
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "16px"
-                }}>
-                  {/* Red Items First (including all red, not just unactioned) */}
-                  {vhcData.vhc_items.filter(item => item.status === "Red").map(item => (
-                    <div key={item.id} style={{
-                      border: "2px solid #ef4444",
-                      borderRadius: "12px",
-                      padding: "16px",
-                      backgroundColor: "#ef444410"
-                    }}>
-                      <div style={{
-                        backgroundColor: "#ef4444",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        marginBottom: "8px",
-                        display: "inline-block"
-                      }}>
-                        RED
-                      </div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
-                        {item.category}
-                      </p>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {item.item}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#999" }}>
-                        {item.notes}
-                      </p>
-                    </div>
-                  ))}
-                  
-                  {/* Amber Items (including all amber, not just unactioned) */}
-                  {vhcData.vhc_items.filter(item => item.status === "Amber").map(item => (
-                    <div key={item.id} style={{
-                      border: "2px solid #fbbf24",
-                      borderRadius: "12px",
-                      padding: "16px",
-                      backgroundColor: "#fbbf2410"
-                    }}>
-                      <div style={{
-                        backgroundColor: "#fbbf24",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        marginBottom: "8px",
-                        display: "inline-block"
-                      }}>
-                        AMBER
-                      </div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
-                        {item.category}
-                      </p>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {item.item}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#999" }}>
-                        {item.notes}
-                      </p>
-                    </div>
-                  ))}
-                  
-                  {/* Green Items */}
-                  {greenItems.map(item => (
-                    <div key={item.id} style={{
-                      border: "2px solid #10b981",
-                      borderRadius: "12px",
-                      padding: "16px",
-                      backgroundColor: "#10b98110"
-                    }}>
-                      <div style={{
-                        backgroundColor: "#10b981",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        marginBottom: "8px",
-                        display: "inline-block"
-                      }}>
-                        GREEN
-                      </div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
-                        {item.category}
-                      </p>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {item.item}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#999" }}>
-                        {item.notes}
-                      </p>
-                    </div>
-                  ))}
-                  
-                  {/* Grey Items */}
-                  {greyItems.map(item => (
-                    <div key={item.id} style={{
-                      border: "2px solid #9ca3af",
-                      borderRadius: "12px",
-                      padding: "16px",
-                      backgroundColor: "#9ca3af10"
-                    }}>
-                      <div style={{
-                        backgroundColor: "#9ca3af",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        marginBottom: "8px",
-                        display: "inline-block"
-                      }}>
-                        NOT CHECKED
-                      </div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
-                        {item.category}
-                      </p>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {item.item}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#999" }}>
-                        {item.notes}
-                      </p>
                     </div>
                   ))}
                 </div>
-              </div>
+              )}
             </>
           )}
 
-          {/* ========== HEALTH CHECK TAB ========== */}
           {activeTab === "health-check" && (
             <div style={{
               background: "white",
               border: "1px solid #e0e0e0",
               borderRadius: "16px",
-              padding: "20px",
+              padding: "24px",
               boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
             }}>
-              <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
-                Vehicle Health Check - Technician View
+              <h3 style={{ fontSize: "20px", fontWeight: "600", marginBottom: "20px", color: "#1a1a1a" }}>
+                Add/Edit VHC Checks
               </h3>
-              <p style={{ fontSize: "14px", color: "#666", marginBottom: "20px" }}>
-                This section will allow technicians to add/edit VHC items with popup modals.
-              </p>
-              {/* TODO: Add popup functionality for editing VHC items */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {vhcData.vhc_items.map(item => (
-                  <div key={item.id} style={{
-                    border: "1px solid #e0e0e0",
-                    borderRadius: "8px",
-                    padding: "12px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    cursor: "pointer"
-                  }}
-                  onClick={() => alert(`Edit popup for: ${item.item} - TODO: Implement modal`)}
-                  >
-                    <div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                        {item.category} - {item.item}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#666" }}>
-                        Status: {item.status} | {item.notes}
-                      </p>
-                    </div>
-                    <div style={{
-                      backgroundColor: STATUS_COLORS[item.status] || "#9ca3af",
-                      color: "white",
-                      padding: "6px 12px",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                      fontWeight: "600"
-                    }}>
-                      {item.status}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <button
+                onClick={() => router.push(`/vhc?job=${jobNumber}`)}
+                style={{
+                  padding: "12px 24px",
+                  backgroundColor: "#d10000",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600"
+                }}
+              >
+                Go to VHC Builder
+              </button>
             </div>
           )}
 
-          {/* ========== PARTS IDENTIFIED TAB ========== */}
-          {activeTab === "parts-identified" && (
-            <div style={{
-              background: "white",
-              border: "1px solid #e0e0e0",
-              borderRadius: "16px",
-              padding: "20px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-            }}>
-              <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
-                Parts Identified
-              </h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {vhcData.parts_identified.map(part => (
-                  <div key={part.id} style={{
-                    border: "1px solid #e0e0e0",
-                    borderRadius: "8px",
-                    padding: "12px",
-                    display: "grid",
-                    gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr",
-                    gap: "12px",
-                    alignItems: "center"
-                  }}>
-                    <div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                        {part.part_name}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#666" }}>
-                        Part #: {part.part_number}
-                      </p>
-                    </div>
-                    <p style={{ fontSize: "13px", color: "#666" }}>
-                      {part.supplier}
-                    </p>
-                    <p style={{ fontSize: "14px", fontWeight: "600", textAlign: "center" }}>
-                      £{part.price}
-                    </p>
-                    <p style={{ fontSize: "13px", textAlign: "center" }}>
-                      Qty: {part.quantity}
-                    </p>
-                    <button
-                      style={{
-                        padding: "6px 12px",
-                        backgroundColor: "#d10000",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        fontWeight: "600"
-                      }}
-                      onClick={() => alert(`Order part: ${part.part_name} - TODO: Implement ordering`)}
-                    >
-                      Order
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ========== PARTS AUTHORIZED TAB ========== */}
-          {activeTab === "parts-authorized" && (
-            <div style={{
-              background: "white",
-              border: "1px solid #e0e0e0",
-              borderRadius: "16px",
-              padding: "20px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-            }}>
-              <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
-                Parts Authorized
-              </h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {vhcData.parts_identified
-                  .filter(part => {
-                    const vhcItem = vhcData.vhc_items.find(item => item.id === part.vhc_item_id);
-                    return vhcItem && vhcItem.authorized;
-                  })
-                  .map(part => (
-                    <div key={part.id} style={{
-                      border: "1px solid #10b98130",
-                      borderRadius: "8px",
-                      padding: "12px",
-                      backgroundColor: "#10b98110",
-                      display: "grid",
-                      gridTemplateColumns: "2fr 1fr 1fr 1fr",
-                      gap: "12px",
-                      alignItems: "center"
-                    }}>
-                      <div>
-                        <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                          {part.part_name}
-                        </p>
-                        <p style={{ fontSize: "12px", color: "#666" }}>
-                          Part #: {part.part_number}
-                        </p>
-                      </div>
-                      <p style={{ fontSize: "13px", color: "#666" }}>
-                        {part.supplier}
-                      </p>
-                      <p style={{ fontSize: "14px", fontWeight: "600", textAlign: "center" }}>
-                        £{part.price}
-                      </p>
-                      <div style={{
-                        backgroundColor: "#10b981",
-                        color: "white",
-                        padding: "6px 12px",
-                        borderRadius: "6px",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        textAlign: "center"
-                      }}>
-                        Authorized
-                      </div>
-                    </div>
-                  ))}
-                {vhcData.parts_identified.filter(part => {
-                  const vhcItem = vhcData.vhc_items.find(item => item.id === part.vhc_item_id);
-                  return vhcItem && vhcItem.authorized;
-                }).length === 0 && (
-                  <p style={{ textAlign: "center", color: "#999", padding: "20px" }}>
-                    No parts have been authorized yet
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ========== PARTS ON ORDER TAB ========== */}
-          {activeTab === "parts-on-order" && (
-            <div style={{
-              background: "white",
-              border: "1px solid #e0e0e0",
-              borderRadius: "16px",
-              padding: "20px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-            }}>
-              <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
-                Parts On Order
-              </h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {vhcData.parts_on_order.map(part => (
-                  <div key={part.id} style={{
-                    border: "1px solid #3b82f630",
-                    borderRadius: "8px",
-                    padding: "12px",
-                    backgroundColor: "#3b82f610",
-                    display: "grid",
-                    gridTemplateColumns: "2fr 1fr 1fr 1fr",
-                    gap: "12px",
-                    alignItems: "center"
-                  }}>
-                    <div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                        {part.part_name}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#666" }}>
-                        Part #: {part.part_number}
-                      </p>
-                    </div>
-                    <p style={{ fontSize: "13px", color: "#666" }}>
-                      {part.supplier}
-                    </p>
-                    <p style={{ fontSize: "13px", color: "#666", textAlign: "center" }}>
-                      Order #: {part.order_number}
-                    </p>
-                    <p style={{ fontSize: "13px", fontWeight: "600", textAlign: "center" }}>
-                      Expected: {part.expected_date}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ========== PHOTOS TAB ========== */}
           {activeTab === "photos" && (
             <div style={{
               background: "white",
               border: "1px solid #e0e0e0",
               borderRadius: "16px",
-              padding: "20px",
+              padding: "24px",
               boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
             }}>
-              <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
+              <h3 style={{ fontSize: "20px", fontWeight: "600", marginBottom: "20px", color: "#1a1a1a" }}>
                 Photos
               </h3>
               <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-                gap: "16px"
+                padding: "40px",
+                textAlign: "center",
+                backgroundColor: "#fafafa",
+                borderRadius: "8px"
               }}>
-                {vhcData.photos.map(photo => (
-                  <div key={photo.id} style={{
-                    border: "1px solid #e0e0e0",
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-                  }}>
-                    <img 
-                      src={photo.url} 
-                      alt={photo.caption}
-                      style={{ width: "100%", height: "200px", objectFit: "cover" }}
-                    />
-                    <div style={{ padding: "12px" }}>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {photo.caption}
-                      </p>
-                      <div style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "8px",
-                        backgroundColor: "#f5f5f5",
-                        borderRadius: "6px"
-                      }}>
-                        <span style={{ fontSize: "12px", fontWeight: "600" }}>
-                          Send to Customer
-                        </span>
-                        <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-                          <input
-                            type="checkbox"
-                            checked={photo.send_to_customer}
-                            onChange={() => handleToggleSendMedia("photo", photo.id)}
-                            style={{ width: "18px", height: "18px" }}
-                          />
-                          <span style={{
-                            fontSize: "12px",
-                            color: photo.send_to_customer ? "#10b981" : "#999"
-                          }}>
-                            {photo.send_to_customer ? "Yes" : "No"}
-                          </span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                <div style={{ fontSize: "48px", marginBottom: "16px" }}>📷</div>
+                <p style={{ fontSize: "14px", color: "#666" }}>
+                  No photos uploaded yet
+                </p>
               </div>
             </div>
           )}
 
-          {/* ========== VIDEOS TAB ========== */}
           {activeTab === "videos" && (
             <div style={{
               background: "white",
               border: "1px solid #e0e0e0",
               borderRadius: "16px",
-              padding: "20px",
+              padding: "24px",
               boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
             }}>
-              <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
+              <h3 style={{ fontSize: "20px", fontWeight: "600", marginBottom: "20px", color: "#1a1a1a" }}>
                 Videos
               </h3>
               <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))",
-                gap: "16px"
+                padding: "40px",
+                textAlign: "center",
+                backgroundColor: "#fafafa",
+                borderRadius: "8px"
               }}>
-                {vhcData.videos.map(video => (
-                  <div key={video.id} style={{
-                    border: "1px solid #e0e0e0",
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-                  }}>
-                    <video 
-                      controls
-                      style={{ width: "100%", height: "250px", backgroundColor: "#000" }}
-                    >
-                      <source src={video.url} type="video/mp4" />
-                      Your browser does not support video playback.
-                    </video>
-                    <div style={{ padding: "12px" }}>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {video.caption}
-                      </p>
-                      <div style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "8px",
-                        backgroundColor: "#f5f5f5",
-                        borderRadius: "6px"
-                      }}>
-                        <span style={{ fontSize: "12px", fontWeight: "600" }}>
-                          Send to Customer
-                        </span>
-                        <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-                          <input
-                            type="checkbox"
-                            checked={video.send_to_customer}
-                            onChange={() => handleToggleSendMedia("video", video.id)}
-                            style={{ width: "18px", height: "18px" }}
-                          />
-                          <span style={{
-                            fontSize: "12px",
-                            color: video.send_to_customer ? "#10b981" : "#999"
-                          }}>
-                            {video.send_to_customer ? "Yes" : "No"}
-                          </span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                <div style={{ fontSize: "48px", marginBottom: "16px" }}>🎥</div>
+                <p style={{ fontSize: "14px", color: "#666" }}>
+                  No videos uploaded yet
+                </p>
               </div>
             </div>
           )}

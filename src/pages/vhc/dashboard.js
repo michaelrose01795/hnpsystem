@@ -1,24 +1,38 @@
 // file location: src/pages/vhc/dashboard.js
-"use client"; // enables client-side rendering for Next.js
+"use client";
 
-import React, { useEffect, useState } from "react"; // import React and hooks
-import { supabase } from "../../lib/supabaseClient"; // import Supabase client - CORRECT PATH
-import Layout from "../../components/Layout"; // import layout wrapper
-import { useRouter } from "next/router"; // for navigation to VHC detail page
+import React, { useEffect, useState } from "react";
+import { supabase } from "../../lib/supabaseClient";
+import Layout from "../../components/Layout";
+import { useRouter } from "next/router";
+import { getAllJobs } from "../../lib/database/jobs";
+import { getVHCChecksByJob } from "../../lib/database/vhc";
 
 // ✅ Status color mapping
 const STATUS_COLORS = {
-  "Outstanding": "#9ca3af", // grey
-  "Accepted": "#d10000", // red
-  "In Progress": "#3b82f6", // blue
-  "Awaiting Authorization": "#fbbf24", // yellow
-  "Authorized": "#9333ea", // purple
-  "Ready": "#10b981", // green
-  "Carry Over": "#f97316", // orange
-  "Complete": "#06b6d4", // cyan
+  "Outstanding": "#9ca3af",
+  "Accepted": "#d10000",
+  "In Progress": "#3b82f6",
+  "Awaiting Authorization": "#fbbf24",
+  "Authorized": "#9333ea",
+  "Ready": "#10b981",
+  "Carry Over": "#f97316",
+  "Complete": "#06b6d4",
+  "Sent": "#8b5cf6",
+  "Viewed": "#06b6d4",
 };
 
-// ✅ Get last visit bubble color based on months
+// ✅ Helper function to get customer name
+const getCustomerName = (customer) => {
+  if (!customer) return "N/A";
+  if (typeof customer === "string") return customer;
+  if (typeof customer === "object") {
+    return `${customer.firstName || ""} ${customer.lastName || ""}`.trim() || customer.email || "N/A";
+  }
+  return "N/A";
+};
+
+// ✅ Get last visit bubble color
 const getLastVisitColor = (lastVisitDate) => {
   if (!lastVisitDate || lastVisitDate === "First visit") return null;
   
@@ -26,11 +40,11 @@ const getLastVisitColor = (lastVisitDate) => {
   const today = new Date();
   const monthsDiff = (today - visitDate) / (1000 * 60 * 60 * 24 * 30);
   
-  if (monthsDiff <= 4) return "#10b981"; // green - 0-4 months
-  return "#fbbf24"; // amber - above 4 months
+  if (monthsDiff <= 4) return "#10b981";
+  return "#fbbf24";
 };
 
-// ✅ Get next service bubble color based on months (same logic as last visit)
+// ✅ Get next service bubble color
 const getNextServiceColor = (nextServiceDate) => {
   if (!nextServiceDate || nextServiceDate === "Not scheduled") return null;
   
@@ -38,12 +52,12 @@ const getNextServiceColor = (nextServiceDate) => {
   const today = new Date();
   const monthsDiff = (serviceDate - today) / (1000 * 60 * 60 * 24 * 30);
   
-  if (monthsDiff <= 1) return "#ef4444"; // red - within 1 month or overdue
-  if (monthsDiff <= 3) return "#fbbf24"; // amber - within 3 months
-  return "#10b981"; // green - more than 3 months
+  if (monthsDiff <= 1) return "#ef4444";
+  if (monthsDiff <= 3) return "#fbbf24";
+  return "#10b981";
 };
 
-// ✅ Get MOT expiry bubble color based on months remaining
+// ✅ Get MOT expiry bubble color
 const getMOTColor = (motExpiry) => {
   if (!motExpiry) return null;
   
@@ -51,25 +65,25 @@ const getMOTColor = (motExpiry) => {
   const today = new Date();
   const monthsDiff = (expiryDate - today) / (1000 * 60 * 60 * 24 * 30);
   
-  if (monthsDiff < 1) return "#ef4444"; // red - less than 1 month
-  if (monthsDiff < 3) return "#fbbf24"; // amber - less than 3 months
-  if (monthsDiff >= 4) return "#10b981"; // green - 4+ months
-  return "#fbbf24"; // amber - default for 1-4 months
+  if (monthsDiff < 1) return "#ef4444";
+  if (monthsDiff < 3) return "#fbbf24";
+  if (monthsDiff >= 4) return "#10b981";
+  return "#fbbf24";
 };
 
-// ✅ Reusable card component for displaying each VHC job
-const SectionCard = ({ job, onClick }) => {
-  const lastVisitColor = getLastVisitColor(job.last_visit);
-  const nextServiceColor = getNextServiceColor(job.next_service);
-  const motColor = getMOTColor(job.mot_expiry);
-  const statusColor = STATUS_COLORS[job.status] || "#9ca3af";
+// ✅ VHC Job Card Component
+const VHCJobCard = ({ job, onClick }) => {
+  const lastVisitColor = getLastVisitColor(job.lastVisit);
+  const nextServiceColor = getNextServiceColor(job.nextService);
+  const motColor = getMOTColor(job.motExpiry);
+  const statusColor = STATUS_COLORS[job.vhcStatus] || "#9ca3af";
 
   return (
     <div
-      onClick={onClick} // open detail page when clicked
+      onClick={onClick}
       style={{
         border: "1px solid #ffe5e5",
-        padding: "14px 18px",
+        padding: "16px 20px",
         borderRadius: "12px",
         backgroundColor: "white",
         boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
@@ -91,29 +105,26 @@ const SectionCard = ({ job, onClick }) => {
         e.currentTarget.style.borderColor = "#ffe5e5";
       }}
     >
-      {/* ✅ LEFT SIDE - Status and Vehicle Info with Fixed Width */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "580px", flexShrink: 0 }}>
-        {/* Status Badge - Larger to fit full text */}
+      {/* Left Side */}
+      <div style={{ display: "flex", alignItems: "center", gap: "14px", width: "600px", flexShrink: 0 }}>
         <div style={{
           backgroundColor: statusColor,
           color: "white",
-          padding: "6px 12px",
-          borderRadius: "6px",
-          fontSize: "11px",
+          padding: "8px 14px",
+          borderRadius: "8px",
+          fontSize: "12px",
           fontWeight: "600",
           whiteSpace: "nowrap",
-          minWidth: "180px",
+          minWidth: "160px",
           textAlign: "center"
         }}>
-          {job.status}
+          {job.vhcStatus}
         </div>
 
-        {/* Vehicle Info - Single Line Layout - Starts at same position for all */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          {/* Reg and Customer Name on same line */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <span style={{ 
-              fontSize: "17px", 
+              fontSize: "18px", 
               fontWeight: "700", 
               color: "#1a1a1a",
               whiteSpace: "nowrap"
@@ -121,166 +132,128 @@ const SectionCard = ({ job, onClick }) => {
               {job.reg || "N/A"}
             </span>
             <span style={{ 
-              fontSize: "13px", 
+              fontSize: "14px", 
               color: "#666",
               whiteSpace: "nowrap"
             }}>
-              {job.customer_name || "N/A"}
+              {getCustomerName(job.customer)}
             </span>
           </div>
-          {/* Vehicle Make on second line */}
           <span style={{ 
-            fontSize: "12px", 
+            fontSize: "13px", 
             color: "#999",
             whiteSpace: "nowrap"
           }}>
-            {job.vehicle_make || "N/A"}
+            {job.makeModel || "N/A"}
           </span>
         </div>
       </div>
 
-      {/* ✅ RIGHT SIDE - Table-like data */}
+      {/* Right Side */}
       <div style={{ 
         display: "flex", 
         alignItems: "center", 
-        gap: "18px",
+        gap: "20px",
         flex: 1,
         justifyContent: "flex-end"
       }}>
-        {/* Last Visit */}
-        <div style={{ textAlign: "center", minWidth: "85px" }}>
+        <div style={{ textAlign: "center", minWidth: "90px" }}>
           {lastVisitColor ? (
             <div style={{
               backgroundColor: lastVisitColor,
               color: "white",
-              padding: "4px 10px",
+              padding: "6px 12px",
               borderRadius: "12px",
               fontSize: "11px",
               fontWeight: "600"
             }}>
-              {job.last_visit}
+              {job.lastVisit}
             </div>
           ) : (
-            <span style={{ fontSize: "11px", color: "#ccc" }}>-</span>
+            <span style={{ fontSize: "11px", color: "#ccc" }}>First visit</span>
           )}
         </div>
 
-        {/* Next Service */}
-        <div style={{ textAlign: "center", minWidth: "85px" }}>
+        <div style={{ textAlign: "center", minWidth: "90px" }}>
           {nextServiceColor ? (
             <div style={{
               backgroundColor: nextServiceColor,
               color: "white",
-              padding: "4px 10px",
+              padding: "6px 12px",
               borderRadius: "12px",
               fontSize: "11px",
               fontWeight: "600"
             }}>
-              {job.next_service}
+              {job.nextService}
             </div>
           ) : (
             <span style={{ fontSize: "11px", color: "#ccc" }}>-</span>
           )}
         </div>
 
-        {/* MOT Expiry */}
-        <div style={{ textAlign: "center", minWidth: "85px" }}>
+        <div style={{ textAlign: "center", minWidth: "90px" }}>
           {motColor ? (
             <div style={{
               backgroundColor: motColor,
               color: "white",
-              padding: "4px 10px",
+              padding: "6px 12px",
               borderRadius: "12px",
               fontSize: "11px",
               fontWeight: "600"
             }}>
-              {job.mot_expiry || "N/A"}
+              {job.motExpiry || "N/A"}
             </div>
           ) : (
             <span style={{ fontSize: "11px", color: "#ccc" }}>-</span>
           )}
         </div>
 
-        {/* Spacer */}
-        <div style={{ width: "1px", height: "30px", backgroundColor: "#e5e5e5" }}></div>
+        <div style={{ width: "1px", height: "35px", backgroundColor: "#e5e5e5" }}></div>
 
-        {/* Red Work */}
-        <div style={{ textAlign: "center", minWidth: "65px" }}>
-          <span style={{ 
-            fontSize: "13px", 
-            fontWeight: "600",
-            color: job.red_work !== "0.00" ? "#ef4444" : "#999" 
+        <div style={{ textAlign: "center", minWidth: "70px" }}>
+          <div style={{
+            backgroundColor: job.vhcChecksCount > 0 ? "#e0f2fe" : "#f5f5f5",
+            color: job.vhcChecksCount > 0 ? "#0369a1" : "#999",
+            padding: "6px 12px",
+            borderRadius: "8px",
+            fontSize: "13px",
+            fontWeight: "600"
           }}>
-            £{job.red_work || "0.00"}
+            {job.vhcChecksCount || 0}
+          </div>
+        </div>
+
+        <div style={{ textAlign: "center", minWidth: "70px" }}>
+          <span style={{ 
+            fontSize: "14px", 
+            fontWeight: "600",
+            color: job.redWork !== "0.00" ? "#ef4444" : "#999" 
+          }}>
+            £{job.redWork || "0.00"}
           </span>
         </div>
 
-        {/* Amber Work */}
-        <div style={{ textAlign: "center", minWidth: "65px" }}>
+        <div style={{ textAlign: "center", minWidth: "70px" }}>
           <span style={{ 
-            fontSize: "13px", 
+            fontSize: "14px", 
             fontWeight: "600",
-            color: job.amber_work !== "0.00" ? "#fbbf24" : "#999" 
+            color: job.amberWork !== "0.00" ? "#fbbf24" : "#999" 
           }}>
-            £{job.amber_work || "0.00"}
+            £{job.amberWork || "0.00"}
           </span>
         </div>
 
-        {/* Authorized */}
-        <div style={{ textAlign: "center", minWidth: "65px" }}>
-          <span style={{ 
-            fontSize: "13px", 
-            fontWeight: "600",
-            color: job.authorized !== "0.00" ? "#10b981" : "#999" 
-          }}>
-            £{job.authorized || "0.00"}
-          </span>
-        </div>
+        <div style={{ width: "1px", height: "35px", backgroundColor: "#e5e5e5" }}></div>
 
-        {/* Spacer */}
-        <div style={{ width: "1px", height: "30px", backgroundColor: "#e5e5e5" }}></div>
-
-        {/* User Initials Bubbles - S, T, P, L, A with placeholders */}
-        <div style={{ display: "flex", gap: "6px", alignItems: "center", minWidth: "180px", justifyContent: "center" }}>
-          {[
-            { letter: "S", initials: job.service_advisor || "" }, 
-            { letter: "T", initials: job.technician || "" }, 
-            { letter: "P", initials: job.parts_person || "" }, 
-            { letter: "L", initials: job.location_person || "" }, 
-            { letter: "A", initials: job.admin_person || "" }
-          ].map((person, index) => (
-            <div
-              key={index}
-              style={{
-                width: "30px",
-                height: "30px",
-                borderRadius: "50%",
-                backgroundColor: person.initials ? "#d10000" : "transparent",
-                border: person.initials ? "none" : "2px solid #d10000",
-                color: person.initials ? "white" : "#d10000",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "10px",
-                fontWeight: "600"
-              }}
-            >
-              {person.initials || person.letter}
-            </div>
-          ))}
-        </div>
-
-        {/* Entry Time/Date */}
         <div style={{ 
           textAlign: "center", 
-          minWidth: "105px",
-          fontSize: "10px",
+          minWidth: "120px",
+          fontSize: "11px",
           color: "#999"
         }}>
-          {job.updated_at ? new Date(job.updated_at).toLocaleString("en-GB", {
+          {job.createdAt ? new Date(job.createdAt).toLocaleString("en-GB", {
             day: "2-digit",
             month: "short",
-            year: "numeric",
             hour: "2-digit",
             minute: "2-digit"
           }) : "N/A"}
@@ -303,107 +276,116 @@ const STATUS_TABS = [
   "Complete",
 ];
 
-// ✅ Generate dummy VHC data for testing
-const generateDummyVHCData = () => {
-  const statuses = ["Outstanding", "Accepted", "In Progress", "Awaiting Authorization", "Authorized", "Ready", "Carry Over", "Complete"];
-  const makes = ["Ford", "BMW", "Mercedes", "Audi", "Toyota", "Honda", "Nissan", "Volkswagen"];
-  const names = ["John Smith", "Sarah Johnson", "Michael Brown", "Emma Wilson", "James Taylor", "Olivia Davis", "William Martinez", "Sophia Anderson"];
-  const techs = ["Tech A", "Tech B", "Tech C", "Tech D"];
-  const placeholderInitials = ["MR", "SP", "DS", "JK", "LM", ""];
-  
-  return Array.from({ length: 45 }, (_, i) => ({ // generate 45 dummy records for testing
-    id: `vhc-${i + 1}`, // unique id
-    job_number: `JOB${1000 + i}`, // job number starting from JOB1000
-    reg: `AB${10 + i} CDE`, // registration number
-    customer_name: names[i % names.length], // cycle through customer names
-    vehicle_make: makes[i % makes.length], // cycle through vehicle makes
-    vehicle_model: "Model X", // placeholder model
-    status: statuses[i % statuses.length], // cycle through statuses
-    technician_name: techs[i % techs.length], // cycle through technicians
-    last_visit: i % 3 === 0 ? new Date(Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : "First visit", // random last visit date
-    next_service: i % 4 === 0 ? new Date(Date.now() + Math.random() * 120 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : "Not scheduled", // random next service date
-    mot_expiry: new Date(Date.now() + Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // random MOT date in future
-    red_work: (Math.random() * 500).toFixed(2), // random red work cost
-    amber_work: (Math.random() * 300).toFixed(2), // random amber work cost
-    authorized: (Math.random() * 200).toFixed(2), // random authorized amount
-    updated_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(), // random date within last 30 days
-    // Team member initials - randomly assigned or empty
-    service_advisor: placeholderInitials[i % placeholderInitials.length],
-    technician: placeholderInitials[(i + 1) % placeholderInitials.length],
-    parts_person: placeholderInitials[(i + 2) % placeholderInitials.length],
-    location_person: placeholderInitials[(i + 3) % placeholderInitials.length],
-    admin_person: placeholderInitials[(i + 4) % placeholderInitials.length],
-  }));
-};
-
-// ✅ Main VHC Dashboard component
 export default function VHCDashboard() {
-  const router = useRouter(); // router for navigation
-  const [vhcJobs, setVhcJobs] = useState([]); // list of VHC jobs
-  const [loading, setLoading] = useState(true); // loading state
-  const [filter, setFilter] = useState("All"); // current status filter
-  const [search, setSearch] = useState({ reg: "", job_number: "", customer_name: "" }); // search filters
-  const [currentPage, setCurrentPage] = useState(1); // current pagination page
-  const itemsPerPage = 10; // number of items per page
+  const router = useRouter();
+  const [vhcJobs, setVhcJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("All");
+  const [search, setSearch] = useState({ reg: "", jobNumber: "", customer: "" });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  // ✅ Fetch all VHC jobs from Supabase (or use dummy data)
   useEffect(() => {
     const fetchVhcJobs = async () => {
       setLoading(true);
-      
-      // Try to fetch from Supabase
-      const { data, error } = await supabase.from("vhc_checks").select("*"); // fetch table
+      console.log("📋 Fetching VHC dashboard data...");
 
-      if (error || !data || data.length === 0) {
-        console.log("Using dummy data for testing"); // log when using dummy data
-        setVhcJobs(generateDummyVHCData()); // use dummy data if no real data
-      } else {
-        setVhcJobs(data); // use real data from database
+      try {
+        const jobs = await getAllJobs();
+        console.log("✅ Jobs fetched:", jobs.length);
+
+        const jobsWithVhc = await Promise.all(
+          jobs.map(async (job) => {
+            const checks = await getVHCChecksByJob(job.id);
+            
+            let vhcStatus = "Outstanding";
+            if (checks.length > 0) {
+              const hasRed = checks.some(c => c.section === "Brakes");
+              const hasAmber = checks.some(c => c.section === "Tyres");
+              
+              if (hasRed) {
+                vhcStatus = "In Progress";
+              } else if (hasAmber) {
+                vhcStatus = "Awaiting Authorization";
+              } else if (checks.length > 5) {
+                vhcStatus = "Complete";
+              }
+            }
+
+            const redWork = checks
+              .filter(c => c.section === "Brakes")
+              .reduce((sum, c) => sum + (parseFloat(c.measurement) || 0), 0)
+              .toFixed(2);
+
+            const amberWork = checks
+              .filter(c => c.section === "Tyres")
+              .reduce((sum, c) => sum + (parseFloat(c.measurement) || 0), 0)
+              .toFixed(2);
+
+            return {
+              id: job.id,
+              jobNumber: job.jobNumber,
+              reg: job.reg,
+              customer: job.customer,
+              makeModel: job.makeModel,
+              vhcStatus,
+              vhcChecksCount: checks.length,
+              redWork,
+              amberWork,
+              lastVisit: job.lastVisit || "First visit",
+              nextService: job.nextService || "Not scheduled",
+              motExpiry: job.motExpiry || null,
+              createdAt: job.createdAt
+            };
+          })
+        );
+
+        console.log("✅ VHC data processed for", jobsWithVhc.length, "jobs");
+        setVhcJobs(jobsWithVhc);
+
+      } catch (error) {
+        console.error("❌ Error fetching VHC data:", error);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
 
-    fetchVhcJobs(); // call on load
+    fetchVhcJobs();
   }, []);
 
-  // ✅ Filter jobs by tab and search input
   const filteredJobs = vhcJobs
-    .filter((job) => filter === "All" || job.status === filter) // filter by status
-    .filter(
-      (job) =>
-        job.reg?.toLowerCase().includes(search.reg.toLowerCase()) && // filter by registration
-        job.job_number?.toString().includes(search.job_number) && // filter by job number
-        job.customer_name?.toLowerCase().includes(search.customer_name.toLowerCase()) // filter by customer name
-    )
-    .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)); // sort by updated_at DESC (newest first)
+    .filter((job) => filter === "All" || job.vhcStatus === filter)
+    .filter((job) => {
+      const customerName = getCustomerName(job.customer).toLowerCase();
+      return (
+        job.reg?.toLowerCase().includes(search.reg.toLowerCase()) &&
+        job.jobNumber?.toString().includes(search.jobNumber) &&
+        customerName.includes(search.customer.toLowerCase())
+      );
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-  // ✅ Pagination logic
-  const totalPages = Math.ceil(filteredJobs.length / itemsPerPage); // calculate total pages
-  const startIndex = (currentPage - 1) * itemsPerPage; // start index for current page
-  const endIndex = startIndex + itemsPerPage; // end index for current page
-  const currentJobs = filteredJobs.slice(startIndex, endIndex); // get jobs for current page
+  const totalPages = Math.ceil(filteredJobs.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentJobs = filteredJobs.slice(startIndex, endIndex);
 
-  // ✅ Handle page change
   const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) { // check if page is valid
-      setCurrentPage(newPage); // update current page
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
     }
   };
 
-  // ✅ Reset to page 1 when filters change
   useEffect(() => {
-    setCurrentPage(1); // reset to first page when filter or search changes
+    setCurrentPage(1);
   }, [filter, search]);
 
-  // ✅ Handle VHC card click - navigate to detail page
-  const handleVHCClick = (jobNumber) => {
-    router.push(`/vhc/details/${jobNumber}`); // navigate to VHC detail page with job number
+  const handleJobClick = (jobNumber) => {
+    router.push(`/vhc/details/${jobNumber}`);
   };
 
   return (
     <Layout>
-      {/* ✅ MAIN CONTAINER - Full page layout */}
       <div style={{ 
         height: "100%", 
         display: "flex", 
@@ -412,7 +394,7 @@ export default function VHCDashboard() {
         overflow: "hidden" 
       }}>
         
-        {/* ✅ Search Section - Top Bar */}
+        {/* Search Section */}
         <div style={{ 
           display: "flex", 
           gap: "12px", 
@@ -426,7 +408,7 @@ export default function VHCDashboard() {
         }}>
           <input
             type="text"
-            placeholder="Search Reg"
+            placeholder="Search Registration"
             value={search.reg}
             onChange={(e) => setSearch({ ...search, reg: e.target.value })}
             style={{
@@ -441,8 +423,8 @@ export default function VHCDashboard() {
           <input
             type="text"
             placeholder="Search Job Number"
-            value={search.job_number}
-            onChange={(e) => setSearch({ ...search, job_number: e.target.value })}
+            value={search.jobNumber}
+            onChange={(e) => setSearch({ ...search, jobNumber: e.target.value })}
             style={{
               flex: 1,
               padding: "10px 16px",
@@ -455,8 +437,8 @@ export default function VHCDashboard() {
           <input
             type="text"
             placeholder="Search Customer"
-            value={search.customer_name}
-            onChange={(e) => setSearch({ ...search, customer_name: e.target.value })}
+            value={search.customer}
+            onChange={(e) => setSearch({ ...search, customer: e.target.value })}
             style={{
               flex: 1,
               padding: "10px 16px",
@@ -468,7 +450,7 @@ export default function VHCDashboard() {
           />
         </div>
 
-        {/* ✅ Status Filter Tabs */}
+        {/* Status Filter Tabs */}
         <div style={{ 
           display: "flex", 
           gap: "12px", 
@@ -478,38 +460,28 @@ export default function VHCDashboard() {
           flexShrink: 0
         }}>
           {STATUS_TABS.map((status) => (
-            <div
+            <button
               key={status}
               onClick={() => setFilter(status)}
               style={{
-                padding: "6px 12px",
+                padding: "8px 16px",
                 border: filter === status ? "2px solid #d10000" : "1px solid #d10000",
                 color: filter === status ? "#fff" : "#d10000",
                 backgroundColor: filter === status ? "#d10000" : "#fff",
-                borderRadius: "6px",
+                borderRadius: "8px",
                 cursor: "pointer",
                 fontWeight: filter === status ? "600" : "500",
                 fontSize: "14px",
                 whiteSpace: "nowrap",
                 transition: "all 0.2s"
               }}
-              onMouseEnter={(e) => {
-                if (filter !== status) {
-                  e.target.style.backgroundColor = "#fff0f0";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (filter !== status) {
-                  e.target.style.backgroundColor = "#fff";
-                }
-              }}
             >
               {status}
-            </div>
+            </button>
           ))}
         </div>
 
-        {/* ✅ Job List Section - FIXED HEIGHT with gradient background */}
+        {/* Job List Section */}
         <div style={{ 
           flex: 1,
           display: "flex",
@@ -518,7 +490,7 @@ export default function VHCDashboard() {
           boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
           border: "1px solid #ffe5e5",
           background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)",
-          padding: "20px",
+          padding: "24px",
           overflow: "hidden",
           minHeight: 0
         }}>
@@ -528,10 +500,24 @@ export default function VHCDashboard() {
               alignItems: "center", 
               justifyContent: "center", 
               flex: 1,
-              color: "#6B7280",
-              fontSize: "16px"
+              flexDirection: "column",
+              gap: "16px"
             }}>
-              Loading VHC reports...
+              <div style={{
+                width: "60px",
+                height: "60px",
+                border: "4px solid #f3f3f3",
+                borderTop: "4px solid #d10000",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite"
+              }}></div>
+              <p style={{ color: "#666", fontSize: "16px" }}>Loading VHC reports...</p>
+              <style jsx>{`
+                @keyframes spin {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+              `}</style>
             </div>
           ) : filteredJobs.length === 0 ? (
             <div style={{ 
@@ -539,114 +525,104 @@ export default function VHCDashboard() {
               alignItems: "center", 
               justifyContent: "center", 
               flex: 1,
-              color: "#6B7280",
-              fontSize: "16px"
+              flexDirection: "column",
+              gap: "16px"
             }}>
-              No VHC reports found for this filter/search.
+              <div style={{ fontSize: "64px" }}>🔍</div>
+              <p style={{ color: "#666", fontSize: "18px", fontWeight: "600" }}>
+                No VHC reports found
+              </p>
             </div>
           ) : (
             <>
-              {/* ✅ Column Headers - Properly aligned and shifted left */}
+              {/* Column Headers */}
               <div style={{ 
                 display: "flex", 
                 justifyContent: "space-between",
-                alignItems: "center",
-                paddingBottom: "12px",
-                marginBottom: "12px",
-                borderBottom: "1px solid #ffd6d6"
+                paddingBottom: "16px",
+                marginBottom: "16px",
+                borderBottom: "2px solid #ffd6d6",
+                flexShrink: 0
               }}>
-                {/* Left section header - matches left side width */}
-                <div style={{ width: "580px", flexShrink: 0 }}>
-                  <span style={{ fontSize: "11px", fontWeight: "600", color: "#000", textTransform: "uppercase" }}>
-                    Vehicle Details
+                <div style={{ width: "600px", flexShrink: 0 }}>
+                  <span style={{ fontSize: "12px", fontWeight: "600", color: "#000" }}>
+                    VEHICLE DETAILS
                   </span>
                 </div>
-                {/* Right section headers - aligned with data columns */}
                 <div style={{ 
                   display: "flex", 
-                  gap: "18px", 
+                  gap: "20px", 
                   flex: 1, 
-                  justifyContent: "flex-end",
-                  alignItems: "center"
+                  justifyContent: "flex-end"
                 }}>
-                  <span style={{ fontSize: "11px", fontWeight: "600", color: "#000", minWidth: "85px", textAlign: "center" }}>Last Visit</span>
-                  <span style={{ fontSize: "11px", fontWeight: "600", color: "#000", minWidth: "85px", textAlign: "center" }}>Next Service</span>
-                  <span style={{ fontSize: "11px", fontWeight: "600", color: "#000", minWidth: "85px", textAlign: "center" }}>MOT Expiry</span>
+                  <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "90px", textAlign: "center" }}>Last Visit</span>
+                  <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "90px", textAlign: "center" }}>Next Service</span>
+                  <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "90px", textAlign: "center" }}>MOT</span>
                   <div style={{ width: "1px" }}></div>
-                  <span style={{ fontSize: "11px", fontWeight: "600", color: "#000", minWidth: "65px", textAlign: "center" }}>Red</span>
-                  <span style={{ fontSize: "11px", fontWeight: "600", color: "#000", minWidth: "65px", textAlign: "center" }}>Amber</span>
-                  <span style={{ fontSize: "11px", fontWeight: "600", color: "#000", minWidth: "65px", textAlign: "center" }}>Auth</span>
+                  <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "70px", textAlign: "center" }}>Checks</span>
+                  <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "70px", textAlign: "center" }}>Red</span>
+                  <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "70px", textAlign: "center" }}>Amber</span>
                   <div style={{ width: "1px" }}></div>
-                  <div style={{ minWidth: "180px", textAlign: "center", display: "flex", gap: "8px", justifyContent: "center" }}>
-                    <span style={{ fontSize: "11px", fontWeight: "600", color: "#000" }}>S</span>
-                    <span style={{ fontSize: "11px", fontWeight: "600", color: "#000" }}>T</span>
-                    <span style={{ fontSize: "11px", fontWeight: "600", color: "#000" }}>P</span>
-                    <span style={{ fontSize: "11px", fontWeight: "600", color: "#000" }}>L</span>
-                    <span style={{ fontSize: "11px", fontWeight: "600", color: "#000" }}>A</span>
-                  </div>
-                  <span style={{ fontSize: "11px", fontWeight: "600", color: "#000", minWidth: "105px", textAlign: "center" }}>Entry Time</span>
+                  <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "120px", textAlign: "center" }}>Time</span>
                 </div>
               </div>
 
-              {/* ✅ VHC Cards - Scrollable with fixed height */}
+              {/* Job Cards */}
               <div style={{ 
                 flex: 1,
                 overflowY: "auto",
                 display: "flex",
                 flexDirection: "column",
-                gap: "10px",
+                gap: "12px",
                 paddingRight: "8px",
-                marginBottom: "16px"
+                marginBottom: "16px",
+                minHeight: 0
               }}>
                 {currentJobs.map((job) => (
-                  <SectionCard
+                  <VHCJobCard
                     key={job.id}
                     job={job}
-                    onClick={() => handleVHCClick(job.job_number)} // navigate to detail page
+                    onClick={() => handleJobClick(job.jobNumber)}
                   />
                 ))}
               </div>
 
-              {/* ✅ Pagination Controls - Fixed at bottom */}
+              {/* Pagination */}
               <div style={{ 
                 flexShrink: 0,
                 paddingTop: "16px",
-                borderTop: "1px solid #ffd6d6"
+                borderTop: "2px solid #ffd6d6"
               }}>
                 <div style={{ 
                   display: "flex", 
                   justifyContent: "center", 
-                  alignItems: "center", 
                   gap: "12px",
                   marginBottom: "12px"
                 }}>
-                  {/* Back Button */}
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
                     style={{
-                      padding: "8px 16px",
+                      padding: "10px 20px",
                       borderRadius: "8px",
                       border: "1px solid #e0e0e0",
                       backgroundColor: currentPage === 1 ? "#f5f5f5" : "#fff",
                       color: currentPage === 1 ? "#999" : "#333",
                       cursor: currentPage === 1 ? "not-allowed" : "pointer",
                       fontSize: "14px",
-                      fontWeight: "500",
-                      transition: "all 0.2s"
+                      fontWeight: "600"
                     }}
                   >
-                    Back
+                    ← Back
                   </button>
 
-                  {/* Page Numbers */}
-                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", justifyContent: "center" }}>
+                  <div style={{ display: "flex", gap: "8px" }}>
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                       <button
                         key={page}
                         onClick={() => handlePageChange(page)}
                         style={{
-                          padding: "8px 12px",
+                          padding: "10px 14px",
                           borderRadius: "8px",
                           border: currentPage === page ? "2px solid #d10000" : "1px solid #e0e0e0",
                           backgroundColor: currentPage === page ? "#d10000" : "#fff",
@@ -654,8 +630,7 @@ export default function VHCDashboard() {
                           cursor: "pointer",
                           fontSize: "14px",
                           fontWeight: currentPage === page ? "600" : "500",
-                          minWidth: "40px",
-                          transition: "all 0.2s"
+                          minWidth: "44px"
                         }}
                       >
                         {page}
@@ -663,33 +638,26 @@ export default function VHCDashboard() {
                     ))}
                   </div>
 
-                  {/* Next Button */}
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
                     style={{
-                      padding: "8px 16px",
+                      padding: "10px 20px",
                       borderRadius: "8px",
                       border: "1px solid #e0e0e0",
                       backgroundColor: currentPage === totalPages ? "#f5f5f5" : "#fff",
                       color: currentPage === totalPages ? "#999" : "#333",
                       cursor: currentPage === totalPages ? "not-allowed" : "pointer",
                       fontSize: "14px",
-                      fontWeight: "500",
-                      transition: "all 0.2s"
+                      fontWeight: "600"
                     }}
                   >
-                    Next
+                    Next →
                   </button>
                 </div>
 
-                {/* ✅ Page Info */}
-                <div style={{ 
-                  textAlign: "center", 
-                  color: "#6B7280", 
-                  fontSize: "13px" 
-                }}>
-                  Showing {startIndex + 1} - {Math.min(endIndex, filteredJobs.length)} of {filteredJobs.length} results
+                <div style={{ textAlign: "center", color: "#666", fontSize: "13px" }}>
+                  Showing {startIndex + 1} - {Math.min(endIndex, filteredJobs.length)} of {filteredJobs.length}
                 </div>
               </div>
             </>
