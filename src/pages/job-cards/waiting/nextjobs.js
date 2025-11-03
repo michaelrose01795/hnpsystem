@@ -41,14 +41,14 @@ export default function NextJobsPage() {
   }, []);
 
   const fetchJobs = async () => {
-    const fetchedJobs = await getAllJobs();
+    const fetchedJobs = await getAllJobs(); // Fetch all jobs from database
 
     // Only include jobs with a real job number (actual job cards)
     const filtered = fetchedJobs.filter(
       (job) => job.jobNumber && job.jobNumber.trim() !== ""
     );
 
-    setJobs(filtered);
+    setJobs(filtered); // Update state with filtered jobs
   };
 
   // ✅ Filter ALL outstanding/not started jobs (unassigned AND not completed)
@@ -64,110 +64,129 @@ export default function NextJobsPage() {
           return !completedStatuses.includes(job.status) && !job.assignedTech;
         }
       ),
-    [jobs]
+    [jobs] // Recalculate when jobs change
   );
 
   // ✅ Search logic for job cards in the 10% section
   const filteredJobs = useMemo(() => {
-    if (!searchTerm.trim()) return unassignedJobs;
-    const lower = searchTerm.toLowerCase();
+    if (!searchTerm.trim()) return unassignedJobs; // Return all unassigned jobs if no search term
+    const lower = searchTerm.toLowerCase(); // Convert search term to lowercase for case-insensitive search
     return unassignedJobs.filter(
       (job) =>
-        job.jobNumber?.toLowerCase().includes(lower) ||
-        job.customer?.toLowerCase().includes(lower) ||
-        job.make?.toLowerCase().includes(lower) ||
-        job.model?.toLowerCase().includes(lower) ||
-        job.reg?.toLowerCase().includes(lower)
+        job.jobNumber?.toLowerCase().includes(lower) || // Search in job number
+        job.customer?.toLowerCase().includes(lower) || // Search in customer name
+        job.make?.toLowerCase().includes(lower) || // Search in make
+        job.model?.toLowerCase().includes(lower) || // Search in model
+        job.reg?.toLowerCase().includes(lower) // Search in registration
     );
-  }, [searchTerm, unassignedJobs]);
+  }, [searchTerm, unassignedJobs]); // Recalculate when search term or unassigned jobs change
 
   // ✅ Group jobs by technician (using assignedTech.name)
   const assignedJobs = useMemo(
     () =>
       techsList.map((tech) => ({
-        ...tech,
+        ...tech, // Spread tech info
         jobs: jobs
           .filter(
             (job) =>
-              job.assignedTech?.name === tech.name ||
-              job.technician?.includes(tech.name)
+              job.assignedTech?.name === tech.name || // Match by assignedTech.name
+              job.technician?.includes(tech.name) // Or match by technician field
           )
-          .sort((a, b) => (a.position || 0) - (b.position || 0)),
+          .sort((a, b) => (a.position || 0) - (b.position || 0)), // Sort by position
       })),
-    [jobs]
+    [jobs] // Recalculate when jobs change
   );
 
   // ✅ Assign technician to a job (save to Supabase)
   const assignTechToJob = async (tech) => {
-    if (!selectedJob) return;
+    if (!selectedJob) return; // Exit if no job selected
 
-    // Use the dedicated helper function
+    console.log("🔄 Assigning technician:", tech.name, "to job:", selectedJob.id); // Debug log
+
+    // Use the dedicated helper function - it now returns formatted job data or null
     const updatedJob = await assignTechnicianToJob(selectedJob.id, tech.name);
 
     if (updatedJob) {
+      console.log("✅ Technician assigned successfully:", updatedJob); // Debug log
       // Refresh jobs from database
       await fetchJobs();
-      setAssignPopup(false);
-      setSelectedJob(null);
-      alert(`Job ${selectedJob.jobNumber} assigned to ${tech.name}`);
+      setAssignPopup(false); // Close assign popup
+      setSelectedJob(null); // Clear selected job
+      alert(`Job ${selectedJob.jobNumber} assigned to ${tech.name}`); // Success message
     } else {
-      alert("Failed to assign technician. Please try again.");
+      console.error("❌ Failed to assign technician"); // Debug log
+      alert("Failed to assign technician. Please try again."); // Error message
     }
   };
 
   // ✅ Unassign technician (save to Supabase)
   const unassignTechFromJob = async () => {
-    if (!selectedJob) return;
+    if (!selectedJob) return; // Exit if no job selected
 
-    // Use the dedicated helper function
+    console.log("🔄 Unassigning technician from job:", selectedJob.id); // Debug log
+
+    // Use the dedicated helper function - it now returns formatted job data or null
     const updatedJob = await unassignTechnicianFromJob(selectedJob.id);
 
     if (updatedJob) {
+      console.log("✅ Technician unassigned successfully:", updatedJob); // Debug log
       // Refresh jobs from database
       await fetchJobs();
-      setSelectedJob(null);
-      alert(`Technician unassigned from job ${selectedJob.jobNumber}`);
+      setSelectedJob(null); // Clear selected job
+      alert(`Technician unassigned from job ${selectedJob.jobNumber}`); // Success message
     } else {
-      alert("Failed to unassign technician. Please try again.");
+      console.error("❌ Failed to unassign technician"); // Debug log
+      alert("Failed to unassign technician. Please try again."); // Error message
     }
   };
 
   // ✅ Drag handlers for reordering
   const handleDragStart = (job) => {
-    if (!hasAccess) return;
-    setDraggingJob(job);
+    if (!hasAccess) return; // Only managers can drag
+    setDraggingJob(job); // Set the job being dragged
   };
 
   const handleDragOver = (e) => {
-    if (!hasAccess) return;
-    e.preventDefault();
+    if (!hasAccess) return; // Only managers can drop
+    e.preventDefault(); // Allow drop
   };
 
   const handleDrop = async (targetJob, tech) => {
-    if (!hasAccess || !draggingJob) return;
+    if (!hasAccess || !draggingJob) return; // Only managers can reorder
 
+    console.log("🔄 Reordering jobs for tech:", tech.name); // Debug log
+
+    // Remove the dragged job from the tech's job list
     const updatedTechJobs = tech.jobs.filter(
       (j) => j.jobNumber !== draggingJob.jobNumber
     );
+    
+    // Find where to insert the dragged job (at the target job's position)
     const dropIndex = updatedTechJobs.findIndex(
       (j) => j.jobNumber === targetJob.jobNumber
     );
+    
+    // Insert the dragged job at the drop position
     updatedTechJobs.splice(dropIndex, 0, draggingJob);
 
-    // Reindex positions
+    // Reindex positions (1-based index)
     const reindexed = updatedTechJobs.map((j, i) => ({
       ...j,
-      position: i + 1,
+      position: i + 1, // Position starts at 1
     }));
+
+    console.log("📝 Updating positions for", reindexed.length, "jobs"); // Debug log
 
     // Update all reindexed jobs in Supabase using the helper function
     for (const job of reindexed) {
-      await updateJobPosition(job.id, job.position);
+      await updateJobPosition(job.id, job.position); // Update each job's position
     }
+
+    console.log("✅ Positions updated successfully"); // Debug log
 
     // Refresh jobs from database
     await fetchJobs();
-    setDraggingJob(null);
+    setDraggingJob(null); // Clear dragging state
   };
 
   // ✅ Access check
@@ -228,7 +247,7 @@ export default function NextJobsPage() {
             type="text"
             placeholder="Search job number, reg, or customer..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => setSearchTerm(e.target.value)} // Update search term
             style={{
               padding: "6px 10px",
               marginBottom: "6px",
@@ -247,7 +266,7 @@ export default function NextJobsPage() {
               filteredJobs.map((job) => (
                 <button
                   key={job.jobNumber}
-                  onClick={() => setSelectedJob(job)}
+                  onClick={() => setSelectedJob(job)} // Open job details popup
                   style={{
                     display: "inline-block",
                     backgroundColor: "#FF4040",
@@ -275,8 +294,8 @@ export default function NextJobsPage() {
             flex: 1,
             overflowY: "auto",
             display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            gridTemplateRows: "repeat(3, 1fr)",
+            gridTemplateColumns: "repeat(2, 1fr)", // 2 columns
+            gridTemplateRows: "repeat(3, 1fr)", // 3 rows (6 techs total)
             gap: "12px",
           }}
         >
@@ -306,11 +325,11 @@ export default function NextJobsPage() {
                   tech.jobs.map((job) => (
                     <div
                       key={job.jobNumber}
-                      draggable={hasAccess}
-                      onDragStart={() => handleDragStart(job)}
-                      onDragOver={handleDragOver}
-                      onDrop={() => handleDrop(job, tech)}
-                      onClick={() => setSelectedJob(job)}
+                      draggable={hasAccess} // Only draggable if user has access
+                      onDragStart={() => handleDragStart(job)} // Start dragging
+                      onDragOver={handleDragOver} // Allow drop
+                      onDrop={() => handleDrop(job, tech)} // Handle drop
+                      onClick={() => setSelectedJob(job)} // Open job details popup
                       style={{
                         border: "1px solid #eee",
                         borderRadius: "6px",
@@ -318,7 +337,7 @@ export default function NextJobsPage() {
                         marginBottom: "4px",
                         backgroundColor:
                           draggingJob?.jobNumber === job.jobNumber
-                            ? "#ffe5e5"
+                            ? "#ffe5e5" // Highlight dragging job
                             : "#f9f9f9",
                         cursor: "pointer",
                       }}
@@ -352,7 +371,7 @@ export default function NextJobsPage() {
         {selectedJob && (
           <div
             style={{
-              backgroundColor: "rgba(0,0,0,0.5)",
+              backgroundColor: "rgba(0,0,0,0.5)", // Semi-transparent overlay
               position: "fixed",
               top: 0,
               left: 0,
@@ -413,8 +432,10 @@ export default function NextJobsPage() {
                     color: "white",
                     padding: "6px 12px",
                     borderRadius: "6px",
+                    cursor: "pointer",
+                    border: "none",
                   }}
-                  onClick={() => setAssignPopup(true)}
+                  onClick={() => setAssignPopup(true)} // Open assign popup
                 >
                   Assign Tech
                 </button>
@@ -425,8 +446,10 @@ export default function NextJobsPage() {
                       color: "white",
                       padding: "6px 12px",
                       borderRadius: "6px",
+                      cursor: "pointer",
+                      border: "none",
                     }}
-                    onClick={unassignTechFromJob}
+                    onClick={unassignTechFromJob} // Unassign technician
                   >
                     Unassign
                   </button>
@@ -437,8 +460,10 @@ export default function NextJobsPage() {
                     color: "white",
                     padding: "6px 12px",
                     borderRadius: "6px",
+                    cursor: "pointer",
+                    border: "none",
                   }}
-                  onClick={() => setSelectedJob(null)}
+                  onClick={() => setSelectedJob(null)} // Close popup
                 >
                   Close
                 </button>
@@ -451,7 +476,7 @@ export default function NextJobsPage() {
         {assignPopup && (
           <div
             style={{
-              backgroundColor: "rgba(0,0,0,0.5)",
+              backgroundColor: "rgba(0,0,0,0.5)", // Semi-transparent overlay
               position: "fixed",
               top: 0,
               left: 0,
@@ -460,7 +485,7 @@ export default function NextJobsPage() {
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              zIndex: 1001,
+              zIndex: 1001, // Above job details popup
             }}
           >
             <div
@@ -480,7 +505,7 @@ export default function NextJobsPage() {
                   const selectedTech = techsList.find(
                     (t) => t.name === e.target.value
                   );
-                  if (selectedTech) assignTechToJob(selectedTech);
+                  if (selectedTech) assignTechToJob(selectedTech); // Assign selected tech
                 }}
                 style={{
                   width: "100%",
@@ -507,8 +532,10 @@ export default function NextJobsPage() {
                   padding: "6px 12px",
                   borderRadius: "6px",
                   width: "100%",
+                  cursor: "pointer",
+                  border: "none",
                 }}
-                onClick={() => setAssignPopup(false)}
+                onClick={() => setAssignPopup(false)} // Close assign popup
               >
                 Cancel
               </button>

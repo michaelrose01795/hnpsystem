@@ -1,322 +1,254 @@
-// ✅ File location: src/pages/job-cards/[jobNumber]/vhc.js
-"use client";
+// ✅ File location: src/lib/database/jobs.js
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/router";
-import Layout from "../../../components/Layout";
+// This file handles all database operations for job cards
+// It connects to your database and provides functions to create, read, update, and delete job cards
 
-// 🧩 Import database helper
-import { getJobByNumberOrReg, saveChecksheet } from "@/lib/database/jobs";
+import { openDB } from './db'; // Import the database connection helper
 
-// 🧩 Import section modals
-import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
-import BrakesHubsDetailsModal from "@/components/VHC/BrakesHubsDetailsModal";
-import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetailsModal";
-import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
-import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal";
-import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
-
-// Section labels
-const SECTION_TITLES = {
-  wheelsTyres: "Wheels & Tyres",
-  brakesHubs: "Brakes & Hubs",
-  serviceIndicator: "Service Indicator & Under Bonnet",
-  externalInspection: "External / Drive-in Inspection",
-  internalElectrics: "Internal / Lamps / Electrics",
-  underside: "Underside",
-};
-
-export default function VHCPAGE() {
-  const router = useRouter();
-  const { jobNumber } = router.query;
-
-  // ✅ Initial VHC data structure
-  const [vhcData, setVhcData] = useState({
-    wheelsTyres: null,
-    brakesHubs: [],
-    serviceIndicator: [],
-    externalInspection: [],
-    internalElectrics: {
-      "Lights Front": { concerns: [] },
-      "Lights Rear": { concerns: [] },
-      "Lights Interior": { concerns: [] },
-      "Horn/Washers/Wipers": { concerns: [] },
-      "Air Con/Heating/Ventilation": { concerns: [] },
-      "Warning Lamps": { concerns: [] },
-      Seatbelt: { concerns: [] },
-      Miscellaneous: { concerns: [] },
-    },
-    underside: {
-      "Exhaust System/Catalyst": { concerns: [] },
-      Steering: { concerns: [] },
-      "Front Suspension": { concerns: [] },
-      "Rear Suspension": { concerns: [] },
-      "Driveshafts/Oil Leaks": { concerns: [] },
-      Miscellaneous: { concerns: [] },
-    },
-  });
-
-  const [activeSection, setActiveSection] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  /* ============================================
-     LOAD EXISTING VHC DATA IF IT EXISTS
-  ============================================= */
-  useEffect(() => {
-    if (!jobNumber) return;
-    const loadVhc = async () => {
-      try {
-        setLoading(true);
-        const job = await getJobByNumberOrReg(jobNumber);
-        if (job?.vhcChecks?.length > 0 && job.vhcChecks[0].data) {
-          setVhcData(job.vhcChecks[0].data);
-        }
-      } catch (err) {
-        console.error("❌ Error loading VHC:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadVhc();
-  }, [jobNumber]);
-
-  /* ============================================
-     SAVE VHC DATA TO DATABASE
-  ============================================= */
-  const saveVhcData = async () => {
-    if (!jobNumber) return;
-    try {
-      const result = await saveChecksheet(jobNumber, vhcData);
-      if (!result.success) console.error("❌ Failed to save VHC:", result.error);
-    } catch (err) {
-      console.error("❌ Error saving VHC:", err);
-    }
-  };
-
-  /* ============================================
-     BUTTON HANDLERS
-  ============================================= */
-  const handleBack = async () => {
-    await saveVhcData();
-    router.push(`/job-cards/${jobNumber}`);
-  };
-
-  const handleComplete = async () => {
-    if (!mandatoryComplete) return;
-    await saveVhcData();
-    router.push(`/job-cards/${jobNumber}`);
-  };
-
-  // Mandatory section check
-  const mandatoryComplete =
-    vhcData.wheelsTyres &&
-    vhcData.brakesHubs.length > 0 &&
-    vhcData.serviceIndicator.length > 0;
-
-  // Section card component
-  const SectionCard = ({ title, subtitle, onClick }) => (
-    <div
-      onClick={onClick}
-      style={{
-        flex: 1,
-        backgroundColor: "white",
-        borderRadius: "8px",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-        padding: "16px",
-        cursor: "pointer",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        transition: "all 0.2s",
-      }}
-      onMouseEnter={(e) =>
-        (e.currentTarget.style.transform = "translateY(-2px)")
-      }
-      onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-    >
-      <h3 style={{ margin: 0, fontSize: "1.1rem", color: "#FF4040" }}>
-        {title}
-      </h3>
-      <p style={{ marginTop: "4px", color: "#555" }}>{subtitle}</p>
-    </div>
-  );
-
-  if (loading)
-    return (
-      <Layout>
-        <div style={{ padding: "24px" }}>
-          <h1 style={{ color: "#FF4040" }}>Loading VHC Data...</h1>
-        </div>
-      </Layout>
+/* ============================================
+   GET JOB BY JOB NUMBER OR REGISTRATION
+============================================= */
+// This function retrieves a job card by either job number or vehicle registration
+export async function getJobByNumberOrReg(identifier) {
+  try {
+    const db = await openDB(); // Open database connection
+    
+    // Try to find job by job number first
+    let job = await db.get(
+      'SELECT * FROM jobs WHERE jobNumber = ?',
+      [identifier]
     );
+    
+    // If not found, try by registration number
+    if (!job) {
+      job = await db.get(
+        'SELECT * FROM jobs WHERE registration = ?',
+        [identifier]
+      );
+    }
+    
+    // If job found, parse the JSON fields
+    if (job) {
+      // Parse vhcChecks if it exists and is a string
+      if (job.vhcChecks && typeof job.vhcChecks === 'string') {
+        job.vhcChecks = JSON.parse(job.vhcChecks);
+      }
+      // Parse other JSON fields as needed
+      if (job.parts && typeof job.parts === 'string') {
+        job.parts = JSON.parse(job.parts);
+      }
+    }
+    
+    return job; // Return the job object or null if not found
+  } catch (error) {
+    console.error('❌ Error getting job:', error);
+    throw error;
+  }
+}
 
-  return (
-    <Layout>
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "16px" }}>
-        {/* HEADER */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "24px",
-          }}
-        >
-          <h1 style={{ color: "#FF4040", margin: 0 }}>
-            Vehicle Health Check - Job {jobNumber || "Loading..."}
-          </h1>
-        </div>
+/* ============================================
+   SAVE VHC CHECKSHEET DATA
+============================================= */
+// This function saves or updates the VHC (Vehicle Health Check) data for a job card
+export async function saveChecksheet(jobNumber, vhcData) {
+  try {
+    const db = await openDB(); // Open database connection
+    
+    // First, get the existing job to retrieve current vhcChecks
+    const job = await getJobByNumberOrReg(jobNumber);
+    
+    if (!job) {
+      return { success: false, error: 'Job not found' }; // Return error if job doesn't exist
+    }
+    
+    // Create or update vhcChecks array
+    let vhcChecks = job.vhcChecks || []; // Get existing checks or create empty array
+    
+    // Create new VHC entry with timestamp
+    const newVhcEntry = {
+      timestamp: new Date().toISOString(), // Current date/time in ISO format
+      data: vhcData, // The VHC data being saved
+      completedBy: 'current-user', // TODO: Replace with actual user from session/auth
+    };
+    
+    // Check if there's already a VHC entry for today
+    const todayDate = new Date().toISOString().split('T')[0]; // Get today's date (YYYY-MM-DD)
+    const existingIndex = vhcChecks.findIndex(check => 
+      check.timestamp.startsWith(todayDate) // Find entry from today
+    );
+    
+    if (existingIndex >= 0) {
+      // Update existing entry for today
+      vhcChecks[existingIndex] = newVhcEntry;
+    } else {
+      // Add new entry
+      vhcChecks.push(newVhcEntry);
+    }
+    
+    // Update the job in database with new vhcChecks
+    await db.run(
+      'UPDATE jobs SET vhcChecks = ?, updatedAt = ? WHERE jobNumber = ?',
+      [JSON.stringify(vhcChecks), new Date().toISOString(), jobNumber]
+    );
+    
+    return { success: true }; // Return success response
+  } catch (error) {
+    console.error('❌ Error saving checksheet:', error);
+    return { success: false, error: error.message }; // Return error response
+  }
+}
 
-        {/* MANDATORY SECTIONS */}
-        <h2 style={{ fontSize: "1.2rem", marginBottom: "12px", color: "#555" }}>
-          Mandatory
-        </h2>
-        <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
-          <SectionCard
-            title="Wheels & Tyres"
-            subtitle={
-              vhcData.wheelsTyres ? "Details completed" : "No issues logged yet"
-            }
-            onClick={() => setActiveSection("wheelsTyres")}
-          />
-          <SectionCard
-            title="Brakes & Hubs"
-            subtitle={`${vhcData.brakesHubs.length} issues logged`}
-            onClick={() => setActiveSection("brakesHubs")}
-          />
-          <SectionCard
-            title="Service Indicator & Under Bonnet"
-            subtitle={`${vhcData.serviceIndicator.length} issues logged`}
-            onClick={() => setActiveSection("serviceIndicator")}
-          />
-        </div>
+/* ============================================
+   GET ALL JOBS (WITH OPTIONAL FILTERS)
+============================================= */
+// This function retrieves all jobs with optional filtering
+export async function getAllJobs(filters = {}) {
+  try {
+    const db = await openDB(); // Open database connection
+    
+    let query = 'SELECT * FROM jobs WHERE 1=1'; // Base query (1=1 allows easy appending of conditions)
+    const params = []; // Array to hold query parameters
+    
+    // Apply filters if provided
+    if (filters.status) {
+      query += ' AND status = ?'; // Add status filter
+      params.push(filters.status);
+    }
+    
+    if (filters.department) {
+      query += ' AND department = ?'; // Add department filter
+      params.push(filters.department);
+    }
+    
+    // Order by most recent first
+    query += ' ORDER BY createdAt DESC';
+    
+    const jobs = await db.all(query, params); // Execute query and get all results
+    
+    // Parse JSON fields for each job
+    return jobs.map(job => {
+      if (job.vhcChecks && typeof job.vhcChecks === 'string') {
+        job.vhcChecks = JSON.parse(job.vhcChecks);
+      }
+      if (job.parts && typeof job.parts === 'string') {
+        job.parts = JSON.parse(job.parts);
+      }
+      return job;
+    });
+  } catch (error) {
+    console.error('❌ Error getting all jobs:', error);
+    throw error;
+  }
+}
 
-        {/* OPTIONAL SECTIONS */}
-        <h2 style={{ fontSize: "1.2rem", marginBottom: "12px", color: "#555" }}>
-          Optional
-        </h2>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-          {["externalInspection", "internalElectrics", "underside"].map(
-            (section) => (
-              <SectionCard
-                key={section}
-                title={SECTION_TITLES[section]}
-                subtitle={`${Object.keys(vhcData[section]).length} categories`}
-                onClick={() => setActiveSection(section)}
-              />
-            )
-          )}
-        </div>
+/* ============================================
+   CREATE NEW JOB CARD
+============================================= */
+// This function creates a new job card in the database
+export async function createJob(jobData) {
+  try {
+    const db = await openDB(); // Open database connection
+    
+    // Generate job number (you may want a different format)
+    const jobNumber = `JOB-${Date.now()}`; // Simple timestamp-based job number
+    
+    const result = await db.run(
+      `INSERT INTO jobs (
+        jobNumber, 
+        registration, 
+        customerName, 
+        customerPhone, 
+        customerEmail,
+        vehicleMake,
+        vehicleModel,
+        status,
+        department,
+        description,
+        vhcChecks,
+        parts,
+        createdAt,
+        updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        jobNumber,
+        jobData.registration,
+        jobData.customerName,
+        jobData.customerPhone || null,
+        jobData.customerEmail || null,
+        jobData.vehicleMake || null,
+        jobData.vehicleModel || null,
+        jobData.status || 'pending',
+        jobData.department || 'workshop',
+        jobData.description || '',
+        JSON.stringify([]), // Empty VHC checks array
+        JSON.stringify([]), // Empty parts array
+        new Date().toISOString(),
+        new Date().toISOString()
+      ]
+    );
+    
+    return { success: true, jobNumber, id: result.lastID }; // Return success with job details
+  } catch (error) {
+    console.error('❌ Error creating job:', error);
+    return { success: false, error: error.message };
+  }
+}
 
-        {/* ACTION BUTTONS */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "12px",
-            marginTop: "24px",
-          }}
-        >
-          <button
-            onClick={handleBack}
-            style={{
-              padding: "12px 20px",
-              backgroundColor: "gray",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              fontWeight: "bold",
-              cursor: "pointer",
-              fontSize: "1rem",
-            }}
-          >
-            Back
-          </button>
-          <button
-            onClick={handleComplete}
-            disabled={!mandatoryComplete}
-            style={{
-              padding: "12px 20px",
-              backgroundColor: mandatoryComplete ? "#FF4040" : "#aaa",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              fontWeight: "bold",
-              cursor: mandatoryComplete ? "pointer" : "not-allowed",
-              fontSize: "1rem",
-            }}
-          >
-            Complete VHC
-          </button>
-        </div>
+/* ============================================
+   UPDATE JOB STATUS
+============================================= */
+// This function updates the status of a job card
+export async function updateJobStatus(jobNumber, newStatus) {
+  try {
+    const db = await openDB(); // Open database connection
+    
+    await db.run(
+      'UPDATE jobs SET status = ?, updatedAt = ? WHERE jobNumber = ?',
+      [newStatus, new Date().toISOString(), jobNumber]
+    );
+    
+    return { success: true }; // Return success response
+  } catch (error) {
+    console.error('❌ Error updating job status:', error);
+    return { success: false, error: error.message };
+  }
+}
 
-        {/* MODALS */}
-        {activeSection === "wheelsTyres" && (
-          <WheelsTyresDetailsModal
-            isOpen
-            onClose={() => setActiveSection(null)}
-            onComplete={(data) => {
-              setVhcData((prev) => ({ ...prev, wheelsTyres: data }));
-              setActiveSection(null);
-            }}
-          />
-        )}
-        {activeSection === "brakesHubs" && (
-          <BrakesHubsDetailsModal
-            isOpen
-            initialData={vhcData.brakesHubs}
-            onClose={() => setActiveSection(null)}
-            onComplete={(data) => {
-              setVhcData((prev) => ({ ...prev, brakesHubs: data }));
-              setActiveSection(null);
-            }}
-          />
-        )}
-        {activeSection === "serviceIndicator" && (
-          <ServiceIndicatorDetailsModal
-            isOpen
-            initialData={vhcData.serviceIndicator}
-            onClose={() => setActiveSection(null)}
-            onComplete={(data) => {
-              setVhcData((prev) => ({ ...prev, serviceIndicator: data }));
-              setActiveSection(null);
-            }}
-          />
-        )}
-        {activeSection === "externalInspection" && (
-          <ExternalDetailsModal
-            isOpen
-            initialData={vhcData.externalInspection}
-            onClose={() => setActiveSection(null)}
-            onComplete={(data) => {
-              setVhcData((prev) => ({ ...prev, externalInspection: data }));
-              setActiveSection(null);
-            }}
-          />
-        )}
-        {activeSection === "internalElectrics" && (
-          <InternalElectricsDetailsModal
-            isOpen
-            initialData={vhcData.internalElectrics}
-            onClose={() => setActiveSection(null)}
-            onComplete={(data) => {
-              setVhcData((prev) => ({ ...prev, internalElectrics: data }));
-              setActiveSection(null);
-            }}
-          />
-        )}
-        {activeSection === "underside" && (
-          <UndersideDetailsModal
-            isOpen
-            initialData={vhcData.underside}
-            onClose={() => setActiveSection(null)}
-            onComplete={(data) => {
-              setVhcData((prev) => ({ ...prev, underside: data }));
-              setActiveSection(null);
-            }}
-          />
-        )}
-      </div>
-    </Layout>
-  );
+/* ============================================
+   DELETE JOB FILE/ATTACHMENT
+============================================= */
+// This function deletes a file attachment from a job card
+export async function deleteJobFile(jobNumber, fileId) {
+  try {
+    const db = await openDB(); // Open database connection
+    
+    // Get the job to access its files
+    const job = await getJobByNumberOrReg(jobNumber);
+    
+    if (!job) {
+      return { success: false, error: 'Job not found' };
+    }
+    
+    // Parse files if stored as JSON
+    let files = job.files || [];
+    if (typeof files === 'string') {
+      files = JSON.parse(files);
+    }
+    
+    // Filter out the file to delete
+    files = files.filter(file => file.id !== fileId);
+    
+    // Update job with new files array
+    await db.run(
+      'UPDATE jobs SET files = ?, updatedAt = ? WHERE jobNumber = ?',
+      [JSON.stringify(files), new Date().toISOString(), jobNumber]
+    );
+    
+    // TODO: Also delete the physical file from storage if needed
+    
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error deleting job file:', error);
+    return { success: false, error: error.message };
+  }
 }

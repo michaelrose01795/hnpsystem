@@ -57,29 +57,8 @@ export default function CreateJobCardPage() {
   const [showExistingCustomer, setShowExistingCustomer] = useState(false); // toggle existing customer popup
   const [showVhcPopup, setShowVhcPopup] = useState(false); // toggle VHC popup
 
-  // state for maintenance information
-  const [maintenance, setMaintenance] = useState({
-    nextServiceDate: "",
-    nextMotDate: "",
-    leaseCO: "",
-    privileges: "",
-    nextVHC: "",
-    warrantyExpiry: "",
-    servicePlanSupplier: "",
-    servicePlanType: "",
-    servicePlanExpiry: "",
-  });
-
-  // ✅ GDPR consent state
-  const [gdprConsent, setGdprConsent] = useState({
-    email: { fromUs: false, fromFranchise: false },
-    sms: { fromUs: false, fromFranchise: false },
-    letter: { fromUs: false, fromFranchise: false },
-    telephone: { fromUs: false, fromFranchise: false },
-    socialMedia: { fromUs: false, fromFranchise: false },
-    marketing: false,
-    serviceDeptFollowUp: false,
-  });
+  // state for maintenance information (simplified - only MOT date now)
+  const [nextMotDate, setNextMotDate] = useState("");
 
   // function to determine background color based on waiting status and job source
   const getBackgroundColor = (status, source) => {
@@ -243,7 +222,7 @@ export default function CreateJobCardPage() {
     }
   };
 
-  // ✅ FIXED: DVLA API Fetch - ONLY fetches from DVLA API and populates vehicle fields
+  // ✅ NEW: DVLA API Fetch - Only fetches from DVLA API and saves to database
   const handleFetchVehicleData = async () => {
     // validate that registration number is entered
     if (!vehicle.reg.trim()) {
@@ -260,7 +239,7 @@ export default function CreateJobCardPage() {
       const regUpper = vehicle.reg.trim().toUpperCase(); // normalize registration to uppercase
       console.log("Fetching vehicle data from DVLA API for:", regUpper);
 
-      // ✅ Fetch ONLY from DVLA API via our backend endpoint
+      // ✅ Fetch from DVLA API via our backend endpoint
       const response = await fetch("/api/vehicles/dvla", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -303,52 +282,114 @@ export default function CreateJobCardPage() {
       // ✅ Update vehicle state with DVLA data
       setVehicle(vehicleData);
       
-      // ✅ Update MOT date in maintenance if available from DVLA
+      // ✅ Update MOT date if available from DVLA
       if (data.motExpiryDate) {
-        setMaintenance(prev => ({
-          ...prev,
-          nextMotDate: data.motExpiryDate
-        }));
+        setNextMotDate(data.motExpiryDate);
       }
 
       showNotification("vehicle", "success", "✓ Vehicle details fetched from DVLA!");
 
-      // ✅ After successful DVLA fetch, check if vehicle exists in our database
-      const { data: existingVehicle, error: vehicleSearchError } = await supabase
+      // ✅ NEW: Save vehicle to database immediately after fetching from DVLA
+      console.log("Saving vehicle to database after DVLA fetch...");
+
+      // Check if vehicle already exists
+      const { data: existingVehicle, error: vehicleCheckError } = await supabase
         .from("vehicles")
-        .select("*, customer_id")
+        .select("*")
         .or(`registration.eq.${regUpper},reg_number.eq.${regUpper}`)
         .maybeSingle();
 
-      console.log("Database vehicle check result:", existingVehicle, vehicleSearchError);
+      console.log("Existing vehicle check:", existingVehicle, vehicleCheckError);
 
-      // ✅ If vehicle exists in database AND has a linked customer, auto-fill customer details
-      if (existingVehicle && existingVehicle.customer_id && !vehicleSearchError) {
-        console.log("Vehicle found in database with linked customer, fetching customer...");
+      if (existingVehicle) {
+        // ✅ Vehicle exists - update it with DVLA data
+        console.log("Vehicle exists, updating with DVLA data...");
 
-        const { data: linkedCustomer, error: customerError } = await supabase
-          .from("customers")
-          .select("*")
-          .eq("id", existingVehicle.customer_id)
+        const { error: updateError } = await supabase
+          .from("vehicles")
+          .update({
+            make_model: vehicleData.makeModel,
+            colour: vehicleData.colour,
+            chassis: vehicleData.chassis,
+            vin: vehicleData.chassis, // old column for compatibility
+            engine: vehicleData.engine,
+            engine_number: vehicleData.engine, // old column for compatibility
+            mileage: parseInt(vehicleData.mileage) || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingVehicle.id);
+
+        if (updateError) {
+          console.error("Error updating vehicle:", updateError);
+          throw updateError;
+        }
+
+        console.log("Vehicle updated successfully in database");
+        showNotification("vehicle", "success", "✓ Vehicle updated in database!");
+
+        // ✅ If vehicle has a linked customer, auto-fill customer details
+        if (existingVehicle.customer_id) {
+          console.log("Vehicle has linked customer, fetching customer...");
+
+          const { data: linkedCustomer, error: customerError } = await supabase
+            .from("customers")
+            .select("*")
+            .eq("id", existingVehicle.customer_id)
+            .single();
+
+          console.log("Linked customer result:", linkedCustomer, customerError);
+
+          // if linked customer found, populate customer state
+          if (linkedCustomer && !customerError) {
+            setCustomer({
+              id: linkedCustomer.id,
+              firstName: linkedCustomer.firstname || linkedCustomer.firstName,
+              lastName: linkedCustomer.lastname || linkedCustomer.lastName,
+              email: linkedCustomer.email,
+              mobile: linkedCustomer.mobile,
+              telephone: linkedCustomer.telephone,
+              address: linkedCustomer.address,
+              postcode: linkedCustomer.postcode,
+            });
+            console.log("Customer auto-filled from database");
+            showNotification("customer", "success", "✓ Customer details auto-filled from database!");
+          }
+        }
+      } else {
+        // ✅ Vehicle doesn't exist - create new vehicle entry (without customer link for now)
+        console.log("Vehicle doesn't exist, creating new vehicle...");
+
+        const vehicleToInsert = {
+          registration: regUpper, // NEW column
+          reg_number: regUpper, // OLD column (keep for compatibility)
+          make_model: vehicleData.makeModel, // NEW combined column
+          make: vehicleData.makeModel.split(' ')[0] || 'Unknown', // OLD column
+          model: vehicleData.makeModel.split(' ').slice(1).join(' ') || '', // OLD column
+          colour: vehicleData.colour,
+          chassis: vehicleData.chassis, // NEW column
+          vin: vehicleData.chassis, // OLD column (keep for compatibility)
+          engine: vehicleData.engine, // NEW column
+          engine_number: vehicleData.engine, // OLD column (keep for compatibility)
+          mileage: parseInt(vehicleData.mileage) || null,
+          customer_id: null, // will be linked when job is saved
+          created_at: new Date().toISOString(),
+        };
+
+        console.log("Inserting vehicle:", vehicleToInsert);
+
+        const { data: newVehicle, error: insertError } = await supabase
+          .from("vehicles")
+          .insert([vehicleToInsert])
+          .select()
           .single();
 
-        console.log("Linked customer result:", linkedCustomer, customerError);
-
-        // if linked customer found, populate customer state
-        if (linkedCustomer && !customerError) {
-          setCustomer({
-            id: linkedCustomer.id,
-            firstName: linkedCustomer.firstname || linkedCustomer.firstName,
-            lastName: linkedCustomer.lastname || linkedCustomer.lastName,
-            email: linkedCustomer.email,
-            mobile: linkedCustomer.mobile,
-            telephone: linkedCustomer.telephone,
-            address: linkedCustomer.address,
-            postcode: linkedCustomer.postcode,
-          });
-          console.log("Customer auto-filled from database");
-          showNotification("customer", "success", "✓ Customer details auto-filled from database!");
+        if (insertError) {
+          console.error("Error inserting vehicle:", insertError);
+          throw insertError;
         }
+
+        console.log("Vehicle created successfully in database with ID:", newVehicle.id);
+        showNotification("vehicle", "success", "✓ Vehicle saved to database!");
       }
 
     } catch (err) {
@@ -370,7 +411,7 @@ export default function CreateJobCardPage() {
     }
   };
 
-  // ✅ FIXED: Save Job Function - save vehicle to database and link to customer
+  // ✅ Save Job Function - save or update vehicle and link to customer
   const handleSaveJob = async () => {
     try {
       // ✅ Validate that customer and vehicle are selected
@@ -392,10 +433,10 @@ export default function CreateJobCardPage() {
 
       console.log("Starting save job process...");
 
-      // ✅ STEP 1: Save or update vehicle in database
-      console.log("Saving vehicle to database...");
+      // ✅ STEP 1: Ensure vehicle is linked to customer
+      console.log("Linking vehicle to customer...");
 
-      // check if vehicle already exists using BOTH column names
+      // check if vehicle exists
       const { data: existingVehicle, error: vehicleCheckError } = await supabase
         .from("vehicles")
         .select("*")
@@ -407,20 +448,13 @@ export default function CreateJobCardPage() {
       let vehicleId;
 
       if (existingVehicle) {
-        // ✅ Vehicle exists - update it with new data and link to customer
+        // ✅ Vehicle exists - update it with customer link
         console.log("Vehicle exists, updating with customer link...");
 
         const { error: updateError } = await supabase
           .from("vehicles")
           .update({
             customer_id: customer.id, // link to customer
-            make_model: vehicle.makeModel,
-            colour: vehicle.colour,
-            chassis: vehicle.chassis,
-            vin: vehicle.chassis, // old column for compatibility
-            engine: vehicle.engine,
-            engine_number: vehicle.engine, // old column for compatibility
-            mileage: parseInt(vehicle.mileage) || null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", existingVehicle.id);
@@ -431,10 +465,10 @@ export default function CreateJobCardPage() {
         }
 
         vehicleId = existingVehicle.id;
-        console.log("Vehicle updated successfully with ID:", vehicleId);
+        console.log("Vehicle updated successfully with customer link, ID:", vehicleId);
       } else {
-        // ✅ Vehicle doesn't exist - create new vehicle entry
-        console.log("Vehicle doesn't exist, creating new vehicle...");
+        // ✅ Vehicle doesn't exist - this shouldn't happen if Fetch was used, but handle it
+        console.log("Vehicle doesn't exist, creating new vehicle with customer link...");
 
         const vehicleToInsert = {
           registration: vehicle.reg, // NEW column
@@ -483,7 +517,7 @@ export default function CreateJobCardPage() {
         requests: requests.filter(req => req.text.trim()), // only save requests with text
         cosmetic_notes: cosmeticNotes || null, // save cosmetic damage notes
         vhc_required: vhcRequired, // save VHC requirement
-        maintenance_info: maintenance, // save all maintenance data
+        maintenance_info: { nextMotDate }, // only save MOT date now
         created_at: new Date().toISOString(),
         status: "Open", // default status for new jobs
       };
@@ -595,13 +629,13 @@ export default function CreateJobCardPage() {
           gap: "16px"
         }}>
 
-          {/* ✅ Top Row: Job Information, Maintenance, GDPR */}
+          {/* ✅ NEW LAYOUT: Top Row - Job Information, Vehicle Details, Customer Details (all 33% width) */}
           <div style={{ display: "flex", gap: "16px" }}>
             
-            {/* Job Information Section */}
+            {/* Job Information Section - 33% width */}
             <div
               style={{
-                flex: 1,
+                flex: "0 0 33%",
                 background: "white",
                 padding: "20px",
                 borderRadius: "16px",
@@ -727,202 +761,35 @@ export default function CreateJobCardPage() {
                   ))}
                 </div>
               </div>
-            </div>
 
-            {/* Maintenance Section */}
-            <div
-              style={{
-                flex: 1,
-                background: "white",
-                padding: "20px",
-                borderRadius: "16px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                border: "1px solid #e0e0e0",
-              }}
-            >
-              <h3 style={{ 
-                fontSize: "16px", 
-                fontWeight: "600", 
-                color: "#1a1a1a",
-                marginTop: 0,
-                marginBottom: "16px"
-              }}>
-                Maintenance
-              </h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <div>
-                  <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "6px" }}>
-                    Next Service Date
-                  </label>
-                  <input
-                    type="date"
-                    value={maintenance.nextServiceDate}
-                    onChange={(e) => setMaintenance({ ...maintenance, nextServiceDate: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: "1px solid #e0e0e0",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      outline: "none",
-                      transition: "border-color 0.2s"
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
-                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "6px" }}>
-                    Next MOT Date
-                  </label>
-                  <input
-                    type="date"
-                    value={maintenance.nextMotDate}
-                    onChange={(e) => setMaintenance({ ...maintenance, nextMotDate: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: "1px solid #e0e0e0",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      outline: "none",
-                      transition: "border-color 0.2s"
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
-                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "6px" }}>
-                    Lease Company
-                  </label>
-                  <input
-                    type="text"
-                    value={maintenance.leaseCO}
-                    onChange={(e) => setMaintenance({ ...maintenance, leaseCO: e.target.value })}
-                    placeholder="Enter lease company"
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: "1px solid #e0e0e0",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      outline: "none",
-                      transition: "border-color 0.2s"
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
-                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "6px" }}>
-                    Privileges
-                  </label>
-                  <input
-                    type="text"
-                    value={maintenance.privileges}
-                    onChange={(e) => setMaintenance({ ...maintenance, privileges: e.target.value })}
-                    placeholder="Enter privileges"
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: "1px solid #e0e0e0",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      outline: "none",
-                      transition: "border-color 0.2s"
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
-                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
-                  />
-                </div>
+              {/* ✅ MOT Date field added here */}
+              <div style={{ marginTop: "16px" }}>
+                <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "6px" }}>
+                  Next MOT Date
+                </label>
+                <input
+                  type="date"
+                  value={nextMotDate}
+                  onChange={(e) => setNextMotDate(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    border: "1px solid #e0e0e0",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    outline: "none",
+                    transition: "border-color 0.2s"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "#d10000"}
+                  onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                />
               </div>
             </div>
 
-            {/* GDPR Settings Section */}
+            {/* Vehicle Details Section - 33% width */}
             <div
               style={{
-                flex: 1,
-                background: "white",
-                padding: "20px",
-                borderRadius: "16px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                border: "1px solid #e0e0e0",
-              }}
-            >
-              <h3 style={{ 
-                fontSize: "16px", 
-                fontWeight: "600", 
-                color: "#1a1a1a",
-                marginTop: 0,
-                marginBottom: "16px"
-              }}>
-                GDPR Settings
-              </h3>
-              <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px", fontSize: "12px" }}>
-                <thead>
-                  <tr>
-                    <th style={{ borderBottom: "2px solid #e0e0e0", textAlign: "left", padding: "8px 0", fontWeight: "600", color: "#666" }}>
-                      Contact Type
-                    </th>
-                    <th style={{ borderBottom: "2px solid #e0e0e0", textAlign: "center", padding: "8px 0", fontWeight: "600", color: "#666" }}>
-                      From Us
-                    </th>
-                    <th style={{ borderBottom: "2px solid #e0e0e0", textAlign: "center", padding: "8px 0", fontWeight: "600", color: "#666" }}>
-                      From Franchise
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {["Email", "SMS", "Letter", "Telephone", "Social media"].map((method) => (
-                    <tr key={method}>
-                      <td style={{ padding: "8px 0", color: "#666" }}>{method}</td>
-                      <td style={{ textAlign: "center" }}>
-                        <input type="checkbox" style={{ width: "16px", height: "16px", cursor: "pointer" }} />
-                      </td>
-                      <td style={{ textAlign: "center" }}>
-                        <input type="checkbox" style={{ width: "16px", height: "16px", cursor: "pointer" }} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                <thead>
-                  <tr>
-                    <th style={{ borderBottom: "2px solid #e0e0e0", textAlign: "left", padding: "8px 0", fontWeight: "600", color: "#666" }}>
-                      Marketing / Service
-                    </th>
-                    <th style={{ borderBottom: "2px solid #e0e0e0", textAlign: "center", padding: "8px 0", fontWeight: "600", color: "#666" }}>
-                      Allowed
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td style={{ padding: "8px 0", color: "#666" }}>Marketing Messages</td>
-                    <td style={{ textAlign: "center" }}>
-                      <input type="checkbox" style={{ width: "16px", height: "16px", cursor: "pointer" }} />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: "8px 0", color: "#666" }}>Service Dept Follow Up</td>
-                    <td style={{ textAlign: "center" }}>
-                      <input type="checkbox" style={{ width: "16px", height: "16px", cursor: "pointer" }} />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* ✅ Middle Row: Vehicle Details and Customer Details */}
-          <div style={{ display: "flex", gap: "16px" }}>
-            
-            {/* Vehicle Details Section */}
-            <div
-              style={{
-                flex: 1,
+                flex: "0 0 33%",
                 background: "white",
                 padding: "20px",
                 borderRadius: "16px",
@@ -1089,10 +956,10 @@ export default function CreateJobCardPage() {
               </div>
             </div>
 
-            {/* Customer Details Section */}
+            {/* Customer Details Section - 33% width */}
             <div
               style={{
-                flex: 1,
+                flex: "0 0 33%",
                 background: "white",
                 padding: "20px",
                 borderRadius: "16px",
@@ -1234,7 +1101,7 @@ export default function CreateJobCardPage() {
             </div>
           </div>
 
-          {/* ✅ Job Requests Section */}
+          {/* ✅ Job Requests Section - Full Width */}
           <div style={{ 
             background: "white", 
             padding: "20px", 
