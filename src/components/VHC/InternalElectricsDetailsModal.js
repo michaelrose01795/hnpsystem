@@ -1,3 +1,4 @@
+// file location: src/components/VHC/InternalElectricsDetailsModal.js
 import React, { useState } from "react";
 
 export default function InternalElectricsDetailsModal({ isOpen, onClose, onComplete, initialData }) {

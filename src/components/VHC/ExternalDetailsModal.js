@@ -1,3 +1,4 @@
+// file location: src/components/VHC/ExternalDetailsModal.js
 import React, { useState } from "react";
 
 export default function ExternalDetailsModal({ isOpen, onClose, onComplete, initialData }) {
