@@ -30,7 +30,6 @@ export const getAllJobs = async () => {
       cosmetic_notes,
       vhc_required,
       maintenance_info,
-      position,
       created_at,
       updated_at,
       vehicle:vehicle_id(
@@ -177,7 +176,6 @@ export const getJobByNumber = async (jobNumber) => {
       cosmetic_notes,
       vhc_required,
       maintenance_info,
-      position,
       created_at,
       updated_at,
       vehicle:vehicle_id(
@@ -315,7 +313,6 @@ export const getJobByNumberOrReg = async (searchTerm) => {
       cosmetic_notes,
       vhc_required,
       maintenance_info,
-      position,
       created_at,
       updated_at,
       vehicle:vehicle_id(
@@ -387,7 +384,6 @@ export const getJobByNumberOrReg = async (searchTerm) => {
         cosmetic_notes,
         vhc_required,
         maintenance_info,
-        position,
         created_at,
         updated_at,
         vehicle:vehicle_id(
@@ -451,7 +447,6 @@ const formatJobData = (data) => {
     description: data.description,
     type: data.type,
     status: data.status,
-    position: data.position || 0, // ✅ Added position field
     
     // ✅ Vehicle info from both direct fields and joined table
     reg: data.vehicle_reg || data.vehicle?.registration || data.vehicle?.reg_number || "",
@@ -486,10 +481,6 @@ const formatJobData = (data) => {
     technicianEmail: data.technician?.email || "",
     technicianRole: data.technician?.role || "",
     assignedTo: data.assigned_to,
-    assignedTech: data.technician ? { // ✅ Added for compatibility with nextjobs.js
-      name: `${data.technician.first_name} ${data.technician.last_name}`,
-      id: data.assigned_to,
-    } : null,
     
     // ✅ Customer info
     customer: data.vehicle?.customer
@@ -602,7 +593,6 @@ export const addJobToDatabase = async ({
       cosmetic_notes: cosmeticNotes || null,
       vhc_required: vhcRequired || false,
       maintenance_info: maintenanceInfo || {},
-      position: 0, // ✅ Default position
       created_at: new Date().toISOString(),
     };
 
@@ -627,7 +617,6 @@ export const addJobToDatabase = async ({
         cosmetic_notes,
         vhc_required,
         maintenance_info,
-        position,
         created_at,
         vehicle:vehicle_id(
           vehicle_id,
@@ -679,44 +668,7 @@ export const updateJob = async (jobId, updates) => {
         updated_at: new Date().toISOString(),
       })
       .eq("id", jobId)
-      .select(`
-        id,
-        job_number,
-        description,
-        type,
-        status,
-        assigned_to,
-        customer_id,
-        vehicle_id,
-        vehicle_reg,
-        vehicle_make_model,
-        waiting_status,
-        job_source,
-        job_categories,
-        requests,
-        cosmetic_notes,
-        vhc_required,
-        maintenance_info,
-        position,
-        created_at,
-        updated_at,
-        vehicle:vehicle_id(
-          vehicle_id,
-          registration,
-          reg_number,
-          make,
-          model,
-          make_model,
-          customer:customer_id(
-            id,
-            firstname,
-            lastname,
-            email,
-            mobile
-          )
-        ),
-        technician_user:assigned_to(user_id, first_name, last_name, email, role)
-      `)
+      .select()
       .single();
 
     if (error) {
@@ -740,72 +692,14 @@ export const updateJobStatus = async (jobId, newStatus) => {
 };
 
 /* ============================================
-   ✅ NEW: UPDATE JOB POSITION
-   Updates the position of a job in the technician's queue
-============================================ */
-export const updateJobPosition = async (jobId, newPosition) => {
-  try {
-    console.log("🔄 Updating job position:", jobId, "to position:", newPosition);
-    
-    const { data, error } = await supabase
-      .from("jobs")
-      .update({
-        position: newPosition,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", jobId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("❌ Error updating job position:", error);
-      return null;
-    }
-
-    console.log("✅ Job position updated successfully:", data);
-    return formatJobData(data);
-  } catch (error) {
-    console.error("❌ Exception updating job position:", error);
-    return null;
-  }
-};
-
-/* ============================================
    ASSIGN TECHNICIAN TO JOB
    Assigns a technician and updates status to "Assigned"
 ============================================ */
-export const assignTechnicianToJob = async (jobId, technicianName) => {
-  try {
-    console.log("🔄 Assigning technician:", technicianName, "to job:", jobId);
-    
-    // Find the technician user by name
-    const { data: users, error: userError } = await supabase
-      .from("users")
-      .select("user_id, first_name, last_name")
-      .or(`first_name.ilike.%${technicianName.split(' ')[0]}%,last_name.ilike.%${technicianName.split(' ').pop()}%`);
-
-    if (userError || !users || users.length === 0) {
-      console.error("❌ Technician not found:", technicianName);
-      return null;
-    }
-
-    const technician = users.find(u => 
-      `${u.first_name} ${u.last_name}`.toLowerCase() === technicianName.toLowerCase()
-    ) || users[0];
-
-    console.log("✅ Found technician:", technician);
-
-    // Update the job with technician assignment
-    const result = await updateJob(jobId, {
-      assigned_to: technician.user_id,
-      status: "Assigned",
-    });
-
-    return result.success ? result.data : null;
-  } catch (error) {
-    console.error("❌ Exception assigning technician:", error);
-    return null;
-  }
+export const assignTechnicianToJob = async (jobId, technicianId, technicianName) => {
+  return updateJob(jobId, {
+    assigned_to: technicianId,
+    status: "Assigned",
+  });
 };
 
 /* ============================================
@@ -813,20 +707,10 @@ export const assignTechnicianToJob = async (jobId, technicianName) => {
    Removes technician and resets status to "Open"
 ============================================ */
 export const unassignTechnicianFromJob = async (jobId) => {
-  try {
-    console.log("🔄 Unassigning technician from job:", jobId);
-    
-    const result = await updateJob(jobId, {
-      assigned_to: null,
-      status: "Open",
-      position: 0, // ✅ Reset position when unassigning
-    });
-
-    return result.success ? result.data : null;
-  } catch (error) {
-    console.error("❌ Exception unassigning technician:", error);
-    return null;
-  }
+  return updateJob(jobId, {
+    assigned_to: null,
+    status: "Open",
+  });
 };
 
 /* ============================================
@@ -949,7 +833,10 @@ export const getJobsByDate = async (date) => {
           reg_number,
           make,
           model,
-          make_model
+          customer:customer_id(
+            firstname,
+            lastname
+          )
         )
       )
     `)
@@ -1114,5 +1001,31 @@ export const getVehicleJobHistory = async (vehicleId) => {
   } catch (error) {
     console.error("❌ Error getting vehicle job history:", error);
     return { success: false, error: { message: error.message }, data: [] };
+  }
+};
+
+/* ============================================
+   ✅ FIX: UPDATE JOB POSITION
+   Moves a job to a new position or stage (e.g., from 'waiting' to 'in progress')
+============================================ */
+export const updateJobPosition = async (jobId, newPosition) => {
+  try {
+    console.log("🔄 updateJobPosition:", jobId, newPosition); // Debug log
+
+    const { data, error } = await supabase
+      .from("jobs")
+      .update({
+        waiting_status: newPosition,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", jobId)
+      .select();
+
+    if (error) throw error;
+    console.log("✅ Job position updated:", data);
+    return data;
+  } catch (err) {
+    console.error("❌ Error in updateJobPosition:", err.message);
+    throw err;
   }
 };
