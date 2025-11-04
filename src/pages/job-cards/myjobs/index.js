@@ -8,6 +8,7 @@ import { useUser } from "../../../context/UserContext";
 import { usersByRole } from "../../../config/users";
 import { getAllJobs } from "../../../lib/database/jobs";
 import { getClockingStatus } from "../../../lib/database/clocking";
+import JobCardModal from "../../../components/JobCards/JobCardModal"; // Import Start Job modal
 
 export default function MyJobsPage() {
   const router = useRouter();
@@ -21,6 +22,8 @@ export default function MyJobsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all"); // all, in-progress, pending, complete
   const [searchTerm, setSearchTerm] = useState("");
+  const [showStartJobModal, setShowStartJobModal] = useState(false); // Control Start Job modal visibility
+  const [prefilledJobNumber, setPrefilledJobNumber] = useState(""); // Prefill job number in modal
 
   const username = user?.username;
   const techsList = usersByRole["Techs"] || [];
@@ -101,9 +104,10 @@ export default function MyJobsPage() {
     setFilteredJobs(filtered);
   }, [filter, searchTerm, myJobs]);
 
-  // ✅ Handle job click - navigate to job detail page
+  // ✅ Handle job click - open Start Job modal with job number prefilled
   const handleJobClick = (job) => {
-    router.push(`/job-cards/myjobs/${job.jobNumber}`);
+    setPrefilledJobNumber(job.jobNumber); // Prefill the job number in the modal
+    setShowStartJobModal(true); // Open the Start Job modal
   };
 
   // ✅ Access check
@@ -350,7 +354,7 @@ export default function MyJobsPage() {
             {filteredJobs.map((job) => (
               <div
                 key={job.id}
-                onClick={() => handleJobClick(job)}
+                onClick={() => handleJobClick(job)} // Open Start Job modal when clicked
                 style={{
                   backgroundColor: "white",
                   border: "1px solid #e0e0e0",
@@ -479,7 +483,7 @@ export default function MyJobsPage() {
                 }}>
                   <button
                     onClick={(e) => {
-                      e.stopPropagation();
+                      e.stopPropagation(); // Prevent triggering parent onClick
                       router.push(`/vhc?job=${job.jobNumber}`);
                     }}
                     style={{
@@ -504,7 +508,7 @@ export default function MyJobsPage() {
                   </button>
                   <button
                     onClick={(e) => {
-                      e.stopPropagation();
+                      e.stopPropagation(); // Prevent triggering parent onClick
                       router.push(`/job-cards/${job.jobNumber}/write-up`);
                     }}
                     style={{
@@ -590,98 +594,21 @@ export default function MyJobsPage() {
               Quick Tip
             </p>
             <p style={{ fontSize: "13px", color: "#3730a3", margin: 0 }}>
-              Click on any job card to view full details, add VHC checks, request parts, and update the job status.
+              Click on any job card to open the Start Job popup and begin working on it.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Job Detail Popup (if needed) */}
-      {selectedJob && (
-        <div
-          onClick={() => setSelectedJob(null)}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: "white",
-              padding: "32px",
-              borderRadius: "16px",
-              maxWidth: "600px",
-              width: "90%",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
-            }}
-          >
-            <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#FF4040", marginBottom: "16px" }}>
-              {selectedJob.jobNumber}
-            </h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <p style={{ fontSize: "14px" }}>
-                <strong>Customer:</strong> {selectedJob.customer}
-              </p>
-              <p style={{ fontSize: "14px" }}>
-                <strong>Vehicle:</strong> {selectedJob.reg} - {selectedJob.makeModel}
-              </p>
-              <p style={{ fontSize: "14px" }}>
-                <strong>Status:</strong> {selectedJob.status}
-              </p>
-              {selectedJob.description && (
-                <p style={{ fontSize: "14px" }}>
-                  <strong>Description:</strong> {selectedJob.description}
-                </p>
-              )}
-            </div>
-            <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
-              <button
-                onClick={() => {
-                  setSelectedJob(null);
-                  handleJobClick(selectedJob);
-                }}
-                style={{
-                  flex: 1,
-                  padding: "12px 24px",
-                  backgroundColor: "#10b981",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "600"
-                }}
-              >
-                Open Job
-              </button>
-              <button
-                onClick={() => setSelectedJob(null)}
-                style={{
-                  padding: "12px 24px",
-                  backgroundColor: "#f5f5f5",
-                  color: "#666",
-                  border: "1px solid #e0e0e0",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "600"
-                }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Start Job Modal */}
+      <JobCardModal 
+        isOpen={showStartJobModal} 
+        onClose={() => {
+          setShowStartJobModal(false); // Close modal
+          setPrefilledJobNumber(""); // Clear prefilled job number
+        }}
+        prefilledJobNumber={prefilledJobNumber} // Pass the prefilled job number to modal
+      />
     </Layout>
   );
 }

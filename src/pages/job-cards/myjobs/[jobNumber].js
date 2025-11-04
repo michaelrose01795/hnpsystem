@@ -1,7 +1,7 @@
 // file location: src/pages/job-cards/myjobs/[jobNumber].js
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
 import { useUser } from "../../../context/UserContext";
@@ -194,6 +194,63 @@ export default function TechJobDetailPage() {
   }
 
   const { jobCard, customer, vehicle } = jobData;
+  const jobStatusColor = STATUS_COLORS[jobCard.status] || "#9ca3af";
+  const partsCount = jobCard.partsRequests?.length || 0;
+  const clockedHours = clockingStatus?.clock_in
+    ? `${calculateHoursWorked(clockingStatus.clock_in)}h`
+    : "0.0h";
+
+  const quickStats = [
+    {
+      label: "Status",
+      value: jobCard.status || "Unknown",
+      accent: jobStatusColor,
+      pill: true,
+    },
+    {
+      label: "Job Type",
+      value: jobCard.type || "General",
+      accent: "#1f2937",
+      pill: false,
+    },
+    {
+      label: "VHC Checks",
+      value: vhcChecks.length,
+      accent: "#0369a1",
+      pill: false,
+    },
+    {
+      label: "Parts Requests",
+      value: partsCount,
+      accent: "#f97316",
+      pill: false,
+    },
+    {
+      label: "Clocked Hours",
+      value: clockedHours,
+      accent: "#16a34a",
+      pill: false,
+    },
+  ];
+
+  const handleVhcClick = () => {
+    if (!jobCard.vhcRequired) return;
+    router.push(`/job-cards/${jobNumber}/vhc`);
+  };
+
+  const getVhcButtonText = () => {
+    if (!jobCard.vhcRequired) return "VHC Not Required";
+    if (vhcChecks.length === 0) return "Start VHC";
+    return "Open VHC";
+  };
+
+  const hasAdditionalContents = () => {
+    const filesCount = jobCard.files?.length || 0;
+    const notesCount = jobCard.notes?.length || 0;
+    const partsCount = jobCard.partsRequests?.length || 0;
+    const hasWriteUp = Boolean(jobCard.writeUp);
+    return filesCount > 0 || notesCount > 0 || partsCount > 0 || hasWriteUp;
+  };
 
   return (
     <Layout>

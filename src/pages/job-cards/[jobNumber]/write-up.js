@@ -92,7 +92,7 @@ export default function WriteUpPage() {
       if (result?.success) {
         alert("✅ Write-up saved successfully!");
         
-        // If user is a tech, go back to their job detail page
+        // ✅ UPDATED: Navigate based on user role
         if (isTech) {
           router.push(`/job-cards/myjobs/${jobNumber}`);
         } else {
@@ -107,7 +107,7 @@ export default function WriteUpPage() {
     }
   };
 
-  // ✅ Navigation helpers
+  // ✅ Navigation helpers - UPDATED
   const goBackToJobCard = () => {
     if (isTech) {
       router.push(`/job-cards/myjobs/${jobNumber}`);
@@ -174,7 +174,7 @@ export default function WriteUpPage() {
                 Write-Up - Job #{jobNumber}
               </h2>
               <p style={{ fontSize: "14px", color: "#666", margin: 0 }}>
-                {jobData.customer} | {jobData.vehicle.reg}
+                {jobData.customer?.firstName} {jobData.customer?.lastName} | {jobData.vehicle?.reg}
               </p>
             </div>
             <button
@@ -415,7 +415,7 @@ export default function WriteUpPage() {
             backgroundColor: "#6c757d"
           }}
         >
-          Back to Job Card
+          Back to My Jobs {/* ✅ UPDATED: Changed button text */}
         </button>
         <button 
           onClick={goToCheckSheet} 

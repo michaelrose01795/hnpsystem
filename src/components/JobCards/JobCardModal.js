@@ -109,7 +109,7 @@ const ensureDevDbUserAndGetId = async (devUser) => { // Build/find users row for
 
 /* -------------------------- UI COMPONENT -------------------------- */
 
-export default function JobCardModal({ isOpen, onClose }) { // Main modal component
+export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" }) { // Main modal component - now accepts prefilledJobNumber prop
   const router = useRouter(); // Router for page navigation
   const { user } = useUser(); // Dev auth user from context
   const [jobNumber, setJobNumber] = useState(""); // Input state for job number
@@ -123,6 +123,14 @@ export default function JobCardModal({ isOpen, onClose }) { // Main modal compon
   const [workType, setWorkType] = useState("initial"); // "initial" or "additional"
   const [searchTerm, setSearchTerm] = useState(""); // Filter text for lists
   const inputRef = useRef(null); // Ref for auto-focus on input
+
+  // ✅ Prefill job number when modal opens with a job selected
+  useEffect(() => {
+    if (isOpen && prefilledJobNumber) {
+      setJobNumber(prefilledJobNumber); // Prefill the job number input
+      inputRef.current?.focus(); // Focus the input for immediate action
+    }
+  }, [isOpen, prefilledJobNumber]); // Run when modal opens or prefilled job changes
 
   // Normalize various job object shapes into a single predictable shape
   const normaliseJob = (j) => ({ // Convert DB/job list rows to a standard object
@@ -245,7 +253,7 @@ export default function JobCardModal({ isOpen, onClose }) { // Main modal compon
       const res = await clockInToJob(dbUserId, Number(job.id), job.jobNumber, workType); // Call DB
       if (res.success) { // If OK
         onClose(); // Close modal
-        router.push(`/job-cards/${job.jobNumber}`); // Navigate to job page
+        router.push(`/job-cards/myjobs/${job.jobNumber}`); // Navigate to tech's job page
       } else {
         setError(res.error || "Failed to clock in"); // Show DB error
       }
@@ -315,6 +323,12 @@ export default function JobCardModal({ isOpen, onClose }) { // Main modal compon
     setJobNumber(job.jobNumber); // Set input
     setShowAvailableJobs(false); // Hide list
     inputRef.current?.focus(); // Refocus input
+  };
+
+  // ✅ NEW: Handle clicking on active job - navigate to job page
+  const handleActiveJobClick = (job) => {
+    onClose(); // Close modal
+    router.push(`/job-cards/myjobs/${job.jobNumber}`); // Navigate to tech's job detail page
   };
 
   // Filter the list by search term
@@ -395,6 +409,7 @@ export default function JobCardModal({ isOpen, onClose }) { // Main modal compon
             {activeJobs.map((job) => (
               <div
                 key={job.clockingId} // List key
+                onClick={() => handleActiveJobClick(job)} // ✅ NEW: Click to navigate to job
                 style={{
                   display: "flex", // Row
                   justifyContent: "space-between", // Space between cols
@@ -402,7 +417,18 @@ export default function JobCardModal({ isOpen, onClose }) { // Main modal compon
                   padding: "12px", // Inner spacing
                   backgroundColor: "white", // Card bg
                   borderRadius: "6px", // Rounded
-                  marginBottom: "8px" // Gap between items
+                  marginBottom: "8px", // Gap between items
+                  cursor: "pointer", // ✅ NEW: Show it's clickable
+                  transition: "all 0.2s", // ✅ NEW: Smooth hover effect
+                  border: "1px solid transparent" // ✅ NEW: Invisible border for hover
+                }}
+                onMouseEnter={(e) => { // ✅ NEW: Hover effect
+                  e.currentTarget.style.backgroundColor = "#f9f9f9";
+                  e.currentTarget.style.borderColor = "#FF4040";
+                }}
+                onMouseLeave={(e) => { // ✅ NEW: Remove hover effect
+                  e.currentTarget.style.backgroundColor = "white";
+                  e.currentTarget.style.borderColor = "transparent";
                 }}
               >
                 <div style={{ flex: 1 }}> {/* Left column */}
@@ -421,7 +447,10 @@ export default function JobCardModal({ isOpen, onClose }) { // Main modal compon
                 </div>
 
                 <button
-                  onClick={() => handleClockOut(job.jobId, job.jobNumber)} // Clock out
+                  onClick={(e) => { // ✅ Prevent parent click when clicking clock out
+                    e.stopPropagation();
+                    handleClockOut(job.jobId, job.jobNumber);
+                  }}
                   disabled={loading || dbUserId == null} // Disable if busy or unmapped
                   style={{
                     padding: "8px 16px", // Button padding

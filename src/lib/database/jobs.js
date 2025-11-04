@@ -440,7 +440,41 @@ export const getJobByNumberOrReg = async (searchTerm) => {
 ============================================ */
 const formatJobData = (data) => {
   if (!data) return null;
-  
+
+  // Normalise technician information so UI layers can rely on assignedTech
+  const assignedTech = (() => {
+    if (data.technician_user) {
+      const firstName = data.technician_user.first_name?.trim() || "";
+      const lastName = data.technician_user.last_name?.trim() || "";
+      const derivedName = [firstName, lastName].filter(Boolean).join(" ").trim();
+
+      return {
+        id: data.technician_user.user_id || null,
+        name: firstName || derivedName || data.technician_user.email || "",
+        fullName: derivedName || data.technician_user.email || "",
+        email: data.technician_user.email || "",
+        role: data.technician_user.role || "",
+      };
+    }
+
+    if (data.assigned_to) {
+      const assignedName =
+        typeof data.assigned_to === "string"
+          ? data.assigned_to.trim()
+          : `${data.assigned_to}`;
+
+      return {
+        id: null,
+        name: assignedName,
+        fullName: assignedName,
+        email: "",
+        role: "",
+      };
+    }
+
+    return null;
+  })();
+
   return {
     id: data.id,
     jobNumber: data.job_number,
@@ -477,10 +511,11 @@ const formatJobData = (data) => {
     // ✅ Technician info
     technician: data.technician
       ? `${data.technician.first_name} ${data.technician.last_name}`
-      : "",
-    technicianEmail: data.technician?.email || "",
-    technicianRole: data.technician?.role || "",
+      : assignedTech?.name || "",
+    technicianEmail: data.technician?.email || assignedTech?.email || "",
+    technicianRole: data.technician?.role || assignedTech?.role || "",
     assignedTo: data.assigned_to,
+    assignedTech,
     
     // ✅ Customer info
     customer: data.vehicle?.customer
@@ -695,9 +730,24 @@ export const updateJobStatus = async (jobId, newStatus) => {
    ASSIGN TECHNICIAN TO JOB
    Assigns a technician and updates status to "Assigned"
 ============================================ */
-export const assignTechnicianToJob = async (jobId, technicianId, technicianName) => {
+export const assignTechnicianToJob = async (
+  jobId,
+  technicianIdentifier,
+  technicianName
+) => {
+  let assignedValue = null;
+
+  if (typeof technicianIdentifier !== "undefined" && technicianIdentifier !== null) {
+    assignedValue =
+      typeof technicianIdentifier === "string"
+        ? technicianIdentifier.trim()
+        : technicianIdentifier;
+  } else if (technicianName) {
+    assignedValue = technicianName.trim();
+  }
+
   return updateJob(jobId, {
-    assigned_to: technicianId,
+    assigned_to: assignedValue,
     status: "Assigned",
   });
 };
@@ -1027,5 +1077,141 @@ export const updateJobPosition = async (jobId, newPosition) => {
   } catch (err) {
     console.error("❌ Error in updateJobPosition:", err.message);
     throw err;
+  }
+};
+
+/* ============================================
+   GET WRITE-UP BY JOB NUMBER (ENHANCED VERSION)
+   ✅ WITH ALL FIELDS
+============================================ */
+export const getWriteUpByJobNumber = async (jobNumber) => {
+  console.log("🔍 getWriteUpByJobNumber:", jobNumber);
+  
+  try {
+    const { data: job, error: jobError } = await supabase
+      .from("jobs")
+      .select("id")
+      .eq("job_number", jobNumber)
+      .single();
+
+    if (jobError || !job) {
+      console.error("❌ Job not found:", jobNumber);
+      return null;
+    }
+
+    const { data: writeUp, error } = await supabase
+      .from("job_writeups")
+      .select("*") // Get all fields
+      .eq("job_id", job.id)
+      .maybeSingle();
+
+    if (error && error.code !== "PGRST116") {
+      console.error("❌ Error fetching write-up:", error);
+      return null;
+    }
+
+    if (!writeUp) {
+      console.log("ℹ️ No write-up data for job:", jobNumber);
+      return null;
+    }
+
+    console.log("✅ Write-up found:", writeUp);
+    
+    // Map all database fields to form fields
+    return {
+      fault: writeUp.work_performed || "",
+      caused: writeUp.recommendations || "",
+      ratification: writeUp.ratification || "",
+      warrantyClaim: writeUp.warranty_claim || "",
+      tsrNumber: writeUp.tsr_number || "",
+      pwaNumber: writeUp.pwa_number || "",
+      technicalBulletins: writeUp.technical_bulletins || "",
+      technicalSignature: writeUp.technical_signature || "",
+      qualityControl: writeUp.quality_control || "",
+      additionalParts: writeUp.parts_used || "",
+      qty: writeUp.qty || Array(10).fill(false),
+      booked: writeUp.booked || Array(10).fill(false),
+    };
+  } catch (error) {
+    console.error("❌ getWriteUpByJobNumber error:", error);
+    return null;
+  }
+};
+
+/* ============================================
+   SAVE WRITE-UP TO DATABASE (ENHANCED VERSION)
+   ✅ WITH ALL FIELDS
+============================================ */
+export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
+  console.log("💾 saveWriteUpToDatabase:", jobNumber);
+  
+  try {
+    const { data: job, error: jobError } = await supabase
+      .from("jobs")
+      .select("id, assigned_to")
+      .eq("job_number", jobNumber)
+      .single();
+
+    if (jobError || !job) {
+      console.error("❌ Job not found:", jobNumber);
+      return { success: false, error: "Job not found" };
+    }
+
+    const { data: existing } = await supabase
+      .from("job_writeups")
+      .select("writeup_id")
+      .eq("job_id", job.id)
+      .maybeSingle();
+
+    // Map ALL form fields to database fields
+    const writeUpToSave = {
+      job_id: job.id,
+      work_performed: writeUpData.fault || null,
+      parts_used: writeUpData.additionalParts || null,
+      recommendations: writeUpData.caused || null,
+      ratification: writeUpData.ratification || null,
+      warranty_claim: writeUpData.warrantyClaim || null,
+      tsr_number: writeUpData.tsrNumber || null,
+      pwa_number: writeUpData.pwaNumber || null,
+      technical_bulletins: writeUpData.technicalBulletins || null,
+      technical_signature: writeUpData.technicalSignature || null,
+      quality_control: writeUpData.qualityControl || null,
+      qty: writeUpData.qty || Array(10).fill(false),
+      booked: writeUpData.booked || Array(10).fill(false),
+      labour_time: null, // Calculate if needed
+      technician_id: job.assigned_to || null, // Get from job
+      updated_at: new Date().toISOString()
+    };
+
+    let result;
+
+    if (existing) {
+      console.log("🔄 Updating existing write-up");
+      result = await supabase
+        .from("job_writeups")
+        .update(writeUpToSave)
+        .eq("writeup_id", existing.writeup_id)
+        .select()
+        .single();
+    } else {
+      console.log("➕ Creating new write-up");
+      writeUpToSave.created_at = new Date().toISOString();
+      result = await supabase
+        .from("job_writeups")
+        .insert([writeUpToSave])
+        .select()
+        .single();
+    }
+
+    if (result.error) {
+      console.error("❌ Error saving write-up:", result.error);
+      return { success: false, error: result.error.message };
+    }
+
+    console.log("✅ Write-up saved successfully");
+    return { success: true, data: result.data };
+  } catch (error) {
+    console.error("❌ saveWriteUpToDatabase error:", error);
+    return { success: false, error: error.message };
   }
 };
