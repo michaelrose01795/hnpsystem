@@ -10,6 +10,38 @@ import { getAllJobs } from "../../../lib/database/jobs";
 import { getClockingStatus } from "../../../lib/database/clocking";
 import JobCardModal from "../../../components/JobCards/JobCardModal"; // Import Start Job modal
 
+const STATUS_BADGE_STYLES = {
+  "In Progress": { background: "#dbeafe", color: "#1e40af" },
+  Started: { background: "#dbeafe", color: "#1e40af" },
+  Pending: { background: "#fef3c7", color: "#92400e" },
+  Waiting: { background: "#fef3c7", color: "#92400e" },
+  Open: { background: "#fef3c7", color: "#92400e" },
+  Complete: { background: "#dcfce7", color: "#166534" },
+  Completed: { background: "#dcfce7", color: "#166534" },
+};
+
+const getStatusBadgeStyle = (status) =>
+  STATUS_BADGE_STYLES[status] || { background: "#f3f4f6", color: "#4b5563" };
+
+const getMakeModel = (job) => {
+  if (!job) return "N/A";
+  if (job.makeModel) return job.makeModel;
+  const combined = [job.make, job.model].filter(Boolean).join(" ");
+  return combined || "N/A";
+};
+
+const formatCreatedAt = (value) => {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+};
+
 export default function MyJobsPage() {
   const router = useRouter();
   const { user } = useUser();
@@ -113,6 +145,7 @@ export default function MyJobsPage() {
 
   // ✅ Handle job click - open Start Job modal with job number prefilled
   const handleJobClick = (job) => {
+    if (!job?.jobNumber) return;
     setPrefilledJobNumber(job.jobNumber); // Prefill the job number in the modal
     setShowStartJobModal(true); // Open the Start Job modal
   };
@@ -131,7 +164,7 @@ export default function MyJobsPage() {
           minHeight: "60vh"
         }}>
           <div style={{ fontSize: "60px", marginBottom: "20px" }}>⚠️</div>
-          <h2 style={{ color: "#FF4040", marginBottom: "10px", fontWeight: "700" }}>
+          <h2 style={{ color: "#d10000", marginBottom: "10px", fontWeight: "700" }}>
             Access Denied
           </h2>
           <p style={{ color: "#666", fontSize: "16px" }}>
@@ -158,7 +191,7 @@ export default function MyJobsPage() {
             width: "60px",
             height: "60px",
             border: "4px solid #f3f3f3",
-            borderTop: "4px solid #FF4040",
+            borderTop: "4px solid #d10000",
             borderRadius: "50%",
             animation: "spin 1s linear infinite"
           }}></div>
@@ -176,15 +209,15 @@ export default function MyJobsPage() {
 
   return (
     <Layout>
-      <div style={{ 
-        maxWidth: "1400px", 
-        margin: "0 auto", 
-        padding: "24px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "24px",
-        minHeight: "90vh"
-      }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+          padding: "8px 16px",
+          minHeight: "100vh"
+        }}
+      >
         {/* Header */}
         <div style={{
           display: "flex",
@@ -193,7 +226,7 @@ export default function MyJobsPage() {
         }}>
           <div>
             <h1 style={{
-              color: "#FF4040",
+              color: "#d10000",
               fontSize: "32px",
               fontWeight: "700",
               margin: "0 0 8px 0"
@@ -209,7 +242,7 @@ export default function MyJobsPage() {
             onClick={() => router.push("/tech/dashboard")}
             style={{
               padding: "12px 24px",
-              backgroundColor: "#007bff",
+              backgroundColor: "#d10000",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -218,8 +251,8 @@ export default function MyJobsPage() {
               fontWeight: "600",
               transition: "background-color 0.2s"
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = "#0056b3"}
-            onMouseLeave={(e) => e.target.style.backgroundColor = "#007bff"}
+            onMouseEnter={(e) => e.target.style.backgroundColor = "#a60a0a"}
+            onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
           >
             ← Back to Dashboard
           </button>
@@ -228,13 +261,14 @@ export default function MyJobsPage() {
         {/* Clocking Status Banner */}
         {clockingStatus && (
           <div style={{
-            backgroundColor: "#dcfce7",
-            border: "1px solid #86efac",
+            backgroundColor: "#f0fdf4",
+            border: "1px solid #bbf7d0",
             borderRadius: "12px",
             padding: "16px 24px",
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center"
+            alignItems: "center",
+            boxShadow: "0 2px 6px rgba(16,185,129,0.12)"
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <div style={{
@@ -269,7 +303,12 @@ export default function MyJobsPage() {
         <div style={{
           display: "flex",
           gap: "12px",
-          alignItems: "center"
+          alignItems: "center",
+          flexWrap: "wrap",
+          padding: "12px",
+          backgroundColor: "#fff",
+          borderRadius: "12px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.08)"
         }}>
           {/* Search Input */}
           <input
@@ -279,18 +318,26 @@ export default function MyJobsPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
               flex: 1,
+              minWidth: "220px",
               padding: "12px 16px",
               borderRadius: "8px",
-              border: "1px solid #e0e0e0",
+              border: "1px solid #e5e7eb",
               fontSize: "14px",
-              outline: "none"
+              outline: "none",
+              transition: "border-color 0.2s, box-shadow 0.2s"
             }}
-            onFocus={(e) => e.target.style.borderColor = "#FF4040"}
-            onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+            onFocus={(e) => {
+              e.target.style.borderColor = "#d10000";
+              e.target.style.boxShadow = "0 0 0 3px rgba(209,0,0,0.12)";
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = "#e5e7eb";
+              e.target.style.boxShadow = "none";
+            }}
           />
 
           {/* Filter Buttons */}
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             {[
               { value: "all", label: "All Jobs" },
               { value: "in-progress", label: "In Progress" },
@@ -302,9 +349,9 @@ export default function MyJobsPage() {
                 onClick={() => setFilter(value)}
                 style={{
                   padding: "10px 20px",
-                  backgroundColor: filter === value ? "#FF4040" : "white",
-                  color: filter === value ? "white" : "#666",
-                  border: `1px solid ${filter === value ? "#FF4040" : "#e0e0e0"}`,
+                  backgroundColor: filter === value ? "#d10000" : "#fff",
+                  color: filter === value ? "#fff" : "#d10000",
+                  border: "1px solid #d10000",
                   borderRadius: "8px",
                   cursor: "pointer",
                   fontSize: "14px",
@@ -314,12 +361,12 @@ export default function MyJobsPage() {
                 }}
                 onMouseEnter={(e) => {
                   if (filter !== value) {
-                    e.target.style.backgroundColor = "#f5f5f5";
+                    e.target.style.backgroundColor = "#ffe5e5";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (filter !== value) {
-                    e.target.style.backgroundColor = "white";
+                    e.target.style.backgroundColor = "#fff";
                   }
                 }}
               >
@@ -329,237 +376,319 @@ export default function MyJobsPage() {
           </div>
         </div>
 
-        {/* Jobs Grid */}
-        {filteredJobs.length === 0 ? (
-          <div style={{
-            backgroundColor: "white",
-            padding: "60px",
-            borderRadius: "16px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            border: "1px solid #e0e0e0",
-            textAlign: "center"
-          }}>
-            <div style={{ fontSize: "64px", marginBottom: "20px" }}>
-              {searchTerm ? "🔍" : "📭"}
-            </div>
-            <h3 style={{ fontSize: "20px", fontWeight: "600", color: "#333", marginBottom: "8px" }}>
-              {searchTerm ? "No jobs found" : "No jobs assigned"}
-            </h3>
-            <p style={{ color: "#666", fontSize: "14px" }}>
-              {searchTerm 
-                ? "Try adjusting your search or filter criteria"
-                : "You currently have no jobs assigned to you"
-              }
-            </p>
-          </div>
-        ) : (
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
-            gap: "16px"
-          }}>
-            {filteredJobs.map((job) => (
-              <div
-                key={job.id}
-                onClick={() => handleJobClick(job)} // Open Start Job modal when clicked
-                style={{
-                  backgroundColor: "white",
-                  border: "1px solid #e0e0e0",
-                  borderRadius: "12px",
-                  padding: "20px",
-                  cursor: "pointer",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                  transition: "all 0.3s ease",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "12px"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-4px)";
-                  e.currentTarget.style.boxShadow = "0 8px 16px rgba(209,0,0,0.15)";
-                  e.currentTarget.style.borderColor = "#FF4040";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.05)";
-                  e.currentTarget.style.borderColor = "#e0e0e0";
-                }}
-              >
-                {/* Job Number and Status */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <h3 style={{
-                    fontSize: "20px",
-                    fontWeight: "700",
-                    color: "#FF4040",
-                    margin: 0
-                  }}>
-                    {job.jobNumber}
-                  </h3>
-                  <span style={{
-                    padding: "6px 12px",
-                    backgroundColor: 
-                      job.status === "In Progress" ? "#dbeafe" :
-                      job.status === "Complete" ? "#dcfce7" :
-                      job.status === "Pending" ? "#fef3c7" :
-                      "#f3f4f6",
-                    color:
-                      job.status === "In Progress" ? "#1e40af" :
-                      job.status === "Complete" ? "#166534" :
-                      job.status === "Pending" ? "#92400e" :
-                      "#4b5563",
-                    borderRadius: "12px",
-                    fontSize: "12px",
-                    fontWeight: "600"
-                  }}>
-                    {job.status}
-                  </span>
-                </div>
-
-                {/* Customer Info */}
-                <div style={{ paddingTop: "8px", borderTop: "1px solid #f0f0f0" }}>
-                  <p style={{ fontSize: "14px", color: "#666", margin: "0 0 6px 0" }}>
-                    <strong style={{ color: "#333" }}>Customer:</strong> {job.customer}
-                  </p>
-                  <p style={{ fontSize: "14px", color: "#666", margin: "0 0 6px 0" }}>
-                    <strong style={{ color: "#333" }}>Vehicle:</strong> {job.reg}
-                  </p>
-                  <p style={{ fontSize: "14px", color: "#666", margin: 0 }}>
-                    <strong style={{ color: "#333" }}>Make/Model:</strong> {job.makeModel || `${job.make} ${job.model}`}
-                  </p>
-                </div>
-
-                {/* Job Description */}
-                {job.description && (
-                  <div style={{
-                    padding: "12px",
-                    backgroundColor: "#f9f9f9",
-                    borderRadius: "8px",
-                    borderLeft: "3px solid #FF4040"
-                  }}>
-                    <p style={{
-                      fontSize: "13px",
-                      color: "#666",
-                      margin: 0,
-                      lineHeight: "1.5",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden"
-                    }}>
-                      {job.description}
-                    </p>
-                  </div>
-                )}
-
-                {/* Job Meta Info */}
-                <div style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  paddingTop: "8px",
-                  borderTop: "1px solid #f0f0f0",
-                  fontSize: "12px",
-                  color: "#999"
-                }}>
-                  <span>
-                    {job.createdAt && new Date(job.createdAt).toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "short"
-                    })}
-                  </span>
-                  {job.vhcRequired && (
-                    <span style={{
-                      padding: "4px 8px",
-                      backgroundColor: "#fef2f2",
-                      color: "#991b1b",
-                      borderRadius: "8px",
-                      fontSize: "11px",
-                      fontWeight: "600"
-                    }}>
-                      VHC Required
-                    </span>
-                  )}
-                </div>
-
-                {/* Quick Actions */}
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "8px",
-                  paddingTop: "12px"
-                }}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent triggering parent onClick
-                      router.push(`/vhc?job=${job.jobNumber}`);
-                    }}
-                    style={{
-                      padding: "8px 12px",
-                      backgroundColor: "#f0f9ff",
-                      color: "#0369a1",
-                      border: "1px solid #bfdbfe",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      transition: "all 0.2s"
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = "#dbeafe";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "#f0f9ff";
-                    }}
-                  >
-                    🔍 VHC
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent triggering parent onClick
-                      router.push(`/job-cards/${job.jobNumber}/write-up`);
-                    }}
-                    style={{
-                      padding: "8px 12px",
-                      backgroundColor: "#f0fdf4",
-                      color: "#166534",
-                      border: "1px solid #86efac",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      transition: "all 0.2s"
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = "#dcfce7";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "#f0fdf4";
-                    }}
-                  >
-                    ✍️ Write-Up
-                  </button>
-                </div>
+        {/* Jobs List */}
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            borderRadius: "24px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+            border: "1px solid #ffe5e5",
+            background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)",
+            padding: "24px",
+            overflow: "hidden",
+            minHeight: 0
+          }}
+        >
+          {filteredJobs.length === 0 ? (
+            <div style={{
+              backgroundColor: "transparent",
+              padding: "60px",
+              borderRadius: "16px",
+              boxShadow: "none",
+              border: "1px dashed #ffc9c9",
+              textAlign: "center",
+              margin: "auto",
+              maxWidth: "520px"
+            }}>
+              <div style={{ fontSize: "64px", marginBottom: "20px" }}>
+                {searchTerm ? "🔍" : "📭"}
               </div>
-            ))}
-          </div>
-        )}
+              <h3 style={{ fontSize: "20px", fontWeight: "600", color: "#333", marginBottom: "8px" }}>
+                {searchTerm ? "No jobs found" : "No jobs assigned"}
+              </h3>
+              <p style={{ color: "#666", fontSize: "14px" }}>
+                {searchTerm
+                  ? "Try adjusting your search or filter criteria"
+                  : "You currently have no jobs assigned to you"
+                }
+              </p>
+            </div>
+          ) : (
+            <div
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                paddingRight: "8px",
+                minHeight: 0
+              }}
+            >
+              {filteredJobs.map((job) => {
+                const statusLabel = job.status || "Pending";
+                const statusStyle = getStatusBadgeStyle(statusLabel);
+                const createdAt = formatCreatedAt(job.createdAt);
+                const description = job.description?.trim();
+                const makeModel = getMakeModel(job);
+
+                return (
+                  <div
+                    key={job.id || job.jobNumber}
+                    onClick={() => handleJobClick(job)}
+                    style={{
+                      border: "1px solid #ffe5e5",
+                      padding: "16px 20px",
+                      borderRadius: "12px",
+                      backgroundColor: "white",
+                      boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "16px"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 6px 18px rgba(209,0,0,0.16)";
+                      e.currentTarget.style.borderColor = "#ffb3b3";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.05)";
+                      e.currentTarget.style.borderColor = "#ffe5e5";
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "14px",
+                        width: "560px",
+                        flexShrink: 0
+                      }}
+                    >
+                      <div
+                        style={{
+                          backgroundColor: statusStyle.background,
+                          color: statusStyle.color,
+                          padding: "8px 14px",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          whiteSpace: "nowrap",
+                          minWidth: "140px",
+                          textAlign: "center"
+                        }}
+                      >
+                        {statusLabel}
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            flexWrap: "wrap"
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "18px",
+                              fontWeight: "700",
+                              color: "#1a1a1a"
+                            }}
+                          >
+                            {job.jobNumber || "No Job #"}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "14px",
+                              color: "#555",
+                              fontWeight: "600"
+                            }}
+                          >
+                            {job.reg || "No Reg"}
+                          </span>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            flexWrap: "wrap"
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "13px",
+                              color: "#666"
+                            }}
+                          >
+                            {job.customer || "Unknown customer"}
+                          </span>
+                          {job.vhcRequired && (
+                            <div
+                              style={{
+                                backgroundColor: "#fff5f5",
+                                color: "#d10000",
+                                padding: "4px 10px",
+                                borderRadius: "999px",
+                                fontSize: "11px",
+                                fontWeight: "600"
+                              }}
+                            >
+                              VHC Required
+                            </div>
+                          )}
+                        </div>
+
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            color: "#999"
+                          }}
+                        >
+                          {makeModel}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "20px",
+                        flex: 1,
+                        justifyContent: "flex-end"
+                      }}
+                    >
+                      <div
+                        style={{
+                          maxWidth: "260px",
+                          minWidth: "220px",
+                          fontSize: "12px",
+                          color: "#555",
+                          lineHeight: "1.4"
+                        }}
+                      >
+                        {description ? (
+                          <span
+                            style={{
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden"
+                            }}
+                          >
+                            {description}
+                          </span>
+                        ) : (
+                          <span style={{ color: "#ccc" }}>No notes added</span>
+                        )}
+                      </div>
+
+                      <div
+                        style={{
+                          minWidth: "140px",
+                          textAlign: "center",
+                          fontSize: "12px",
+                          color: "#555"
+                        }}
+                      >
+                        {createdAt || "N/A"}
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          minWidth: "190px",
+                          justifyContent: "flex-end"
+                        }}
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!job.jobNumber) return;
+                            router.push(`/vhc?job=${job.jobNumber}`);
+                          }}
+                          style={{
+                            padding: "8px 14px",
+                            backgroundColor: "#fff5f5",
+                            color: "#d10000",
+                            border: "1px solid #ffc9c9",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            transition: "all 0.2s"
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#ffe1e1";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "#fff5f5";
+                          }}
+                        >
+                          🔍 VHC
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!job.jobNumber) return;
+                            router.push(`/job-cards/${job.jobNumber}/write-up`);
+                          }}
+                          style={{
+                            padding: "8px 14px",
+                            backgroundColor: "#f5f3ff",
+                            color: "#5b21b6",
+                            border: "1px solid #ddd6fe",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            transition: "all 0.2s"
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#ede9fe";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "#f5f3ff";
+                          }}
+                        >
+                          ✍️ Write-Up
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         {/* Job Count Summary */}
         <div style={{
           backgroundColor: "white",
           padding: "20px",
-          borderRadius: "12px",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-          border: "1px solid #e0e0e0"
+          borderRadius: "16px",
+          boxShadow: "0 2px 6px rgba(209,0,0,0.08)",
+          border: "1px solid #ffe5e5"
         }}>
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
             gap: "16px",
             textAlign: "center"
           }}>
             <div>
-              <div style={{ fontSize: "28px", fontWeight: "700", color: "#0369a1", marginBottom: "4px" }}>
+              <div style={{ fontSize: "28px", fontWeight: "700", color: "#d10000", marginBottom: "4px" }}>
                 {myJobs.length}
               </div>
               <div style={{ fontSize: "13px", color: "#666" }}>Total Jobs</div>
@@ -571,7 +700,7 @@ export default function MyJobsPage() {
               <div style={{ fontSize: "13px", color: "#666" }}>In Progress</div>
             </div>
             <div>
-              <div style={{ fontSize: "28px", fontWeight: "700", color: "#fbbf24", marginBottom: "4px" }}>
+              <div style={{ fontSize: "28px", fontWeight: "700", color: "#f97316", marginBottom: "4px" }}>
                 {myJobs.filter(j => j.status === "Pending" || j.status === "Open").length}
               </div>
               <div style={{ fontSize: "13px", color: "#666" }}>Pending</div>
@@ -587,21 +716,22 @@ export default function MyJobsPage() {
 
         {/* Quick Info Box */}
         <div style={{
-          backgroundColor: "#f0f9ff",
-          border: "1px solid #bfdbfe",
+          background: "linear-gradient(90deg, #fff5f5, #ffe5e5)",
+          border: "1px solid #ffc9c9",
           borderRadius: "12px",
           padding: "16px 20px",
           display: "flex",
           alignItems: "center",
-          gap: "12px"
+          gap: "12px",
+          boxShadow: "0 2px 6px rgba(209,0,0,0.08)"
         }}>
           <div style={{ fontSize: "24px" }}>💡</div>
           <div>
-            <p style={{ fontSize: "14px", fontWeight: "600", color: "#1e40af", margin: "0 0 4px 0" }}>
+            <p style={{ fontSize: "14px", fontWeight: "600", color: "#b91c1c", margin: "0 0 4px 0" }}>
               Quick Tip
             </p>
-            <p style={{ fontSize: "13px", color: "#3730a3", margin: 0 }}>
-              Click on any job card to open the Start Job popup and begin working on it.
+            <p style={{ fontSize: "13px", color: "#7f1d1d", margin: 0 }}>
+              Click any job row to open the Start Job popup and begin working instantly.
             </p>
           </div>
         </div>

@@ -130,7 +130,7 @@ export default function TechJobDetailPage() {
     return (
       <Layout>
         <div style={{ padding: "40px", textAlign: "center" }}>
-          <h2 style={{ color: "#FF4040" }}>Access Denied</h2>
+          <h2 style={{ color: "#d10000" }}>Access Denied</h2>
           <p>This page is only for Technicians.</p>
         </div>
       </Layout>
@@ -153,7 +153,7 @@ export default function TechJobDetailPage() {
             width: "60px",
             height: "60px",
             border: "4px solid #f3f3f3",
-            borderTop: "4px solid #FF4040",
+            borderTop: "4px solid #d10000",
             borderRadius: "50%",
             animation: "spin 1s linear infinite"
           }}></div>
@@ -173,12 +173,12 @@ export default function TechJobDetailPage() {
     return (
       <Layout>
         <div style={{ padding: "40px", textAlign: "center" }}>
-          <h2 style={{ color: "#FF4040" }}>Job Not Found</h2>
+          <h2 style={{ color: "#d10000" }}>Job Not Found</h2>
           <button
             onClick={() => router.push("/job-cards/myjobs")}
             style={{
               padding: "12px 24px",
-              backgroundColor: "#FF4040",
+              backgroundColor: "#d10000",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -252,43 +252,64 @@ export default function TechJobDetailPage() {
     return filesCount > 0 || notesCount > 0 || partsCount > 0 || hasWriteUp;
   };
 
+  const additionalAvailable = hasAdditionalContents();
+
   return (
     <Layout>
-      <div style={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        padding: "16px",
-        gap: "16px",
-        maxWidth: "1400px",
-        margin: "0 auto",
-        backgroundColor: "#f9fafb"
-      }}>
-        {/* Header */}
-        <div style={{
+      <div
+        style={{
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px"
-        }}>
+          flexDirection: "column",
+          gap: "16px",
+          padding: "8px 16px",
+          minHeight: "100vh",
+          background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)"
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "1400px",
+            margin: "0 auto",
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+            flex: 1,
+            minHeight: 0
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "20px"
+            }}
+          >
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <button
               onClick={() => router.push("/job-cards/myjobs")}
               style={{
-                padding: "10px 20px",
-                backgroundColor: "#fff",
-                border: "1px solid #e0e0e0",
+                padding: "10px 24px",
+                backgroundColor: "#d10000",
+                color: "white",
+                border: "none",
                 borderRadius: "8px",
                 cursor: "pointer",
                 fontSize: "14px",
-                fontWeight: "600"
+                fontWeight: "600",
+                boxShadow: "0 4px 10px rgba(209,0,0,0.16)",
+                transition: "background-color 0.2s"
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#a60a0a")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#d10000")}
             >
               ← Back
             </button>
             <div>
               <h1 style={{ 
-                color: "#FF4040", 
+                color: "#d10000", 
                 fontSize: "28px", 
                 fontWeight: "700",
                 margin: "0 0 4px 0"
@@ -511,7 +532,7 @@ export default function TechJobDetailPage() {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
                   <div>
                     <span style={{ fontSize: "13px", color: "#666" }}>Registration:</span>
-                    <p style={{ fontSize: "16px", fontWeight: "600", color: "#FF4040", margin: "4px 0 0 0" }}>
+                    <p style={{ fontSize: "16px", fontWeight: "600", color: "#d10000", margin: "4px 0 0 0" }}>
                       {vehicle.reg}
                     </p>
                   </div>
@@ -891,14 +912,14 @@ export default function TechJobDetailPage() {
             onClick={() => router.push("/job-cards/myjobs")}
             style={{
               padding: "14px",
-              backgroundColor: "#3b82f6",
+              backgroundColor: "#d10000",
               color: "white",
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: "0 6px 12px rgba(59,130,246,0.18)"
+              boxShadow: "0 6px 12px rgba(209,0,0,0.18)"
             }}
           >
             ← Back to My Jobs
@@ -928,14 +949,14 @@ export default function TechJobDetailPage() {
             onClick={() => router.push(`/job-cards/${jobNumber}/write-up`)}
             style={{
               padding: "14px",
-              backgroundColor: "white",
-              color: "#16a34a",
-              border: "1px solid #86efac",
+              backgroundColor: "#f5f3ff",
+              color: "#5b21b6",
+              border: "1px solid #ddd6fe",
               borderRadius: "12px",
               cursor: "pointer",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: "0 6px 12px rgba(22,163,74,0.18)"
+              boxShadow: "0 6px 12px rgba(91,33,182,0.16)"
             }}
           >
             ✍️ Write-Up
@@ -944,24 +965,26 @@ export default function TechJobDetailPage() {
           {/* Additional Contents Button - Dynamic based on availability */}
           <button
             onClick={() => {
-              if (hasAdditionalContents()) {
+              if (additionalAvailable) {
                 setShowAdditionalContents(true);
               }
             }}
-            disabled={!hasAdditionalContents()}
+            disabled={!additionalAvailable}
             style={{
               padding: "14px",
-              backgroundColor: "#10b981",
-              color: "white",
+              backgroundColor: additionalAvailable ? "#10b981" : "#d1fae5",
+              color: additionalAvailable ? "white" : "#6b7280",
               border: "none",
               borderRadius: "8px",
-              cursor: "pointer",
+              cursor: additionalAvailable ? "pointer" : "not-allowed",
               fontSize: "14px",
-              fontWeight: "600"
+              fontWeight: "600",
+              boxShadow: additionalAvailable ? "0 6px 12px rgba(16,185,129,0.18)" : "none"
             }}
           >
             ✓ Complete Job
           </button>
+        </div>
         </div>
       </div>
     </Layout>
