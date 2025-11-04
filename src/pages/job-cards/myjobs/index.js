@@ -42,9 +42,16 @@ export default function MyJobsPage() {
         setJobs(fetchedJobs);
 
         // Filter jobs assigned to this technician
-        const assignedJobs = fetchedJobs.filter(
-          (job) => job.assignedTech?.name === username || job.technician === username
-        );
+        const assignedJobs = fetchedJobs.filter((job) => {
+          const assignedNameRaw =
+            job.assignedTech?.name ||
+            job.technician ||
+            (typeof job.assignedTo === "string" ? job.assignedTo : "");
+
+          if (!assignedNameRaw || !username) return false;
+
+          return assignedNameRaw.trim().toLowerCase() === username.trim().toLowerCase();
+        });
 
         // Sort by created date (newest first)
         const sortedJobs = assignedJobs.sort((a, b) => {

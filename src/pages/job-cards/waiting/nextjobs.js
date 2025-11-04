@@ -59,9 +59,14 @@ export default function NextJobsPage() {
         (job) => {
           // Define completed/finished statuses that should NOT appear
           const completedStatuses = ["Completed", "Finished", "Closed", "Invoiced", "Collected"];
+
+          const assignedName =
+            job.assignedTech?.name ||
+            job.technician ||
+            (typeof job.assignedTo === "string" ? job.assignedTo : "");
           
           // Show job if it's not in completed statuses AND has no tech assigned
-          return !completedStatuses.includes(job.status) && !job.assignedTech;
+          return !completedStatuses.includes(job.status) && !assignedName?.trim();
         }
       ),
     [jobs] // Recalculate when jobs change
@@ -87,11 +92,17 @@ export default function NextJobsPage() {
       techsList.map((tech) => ({
         ...tech, // Spread tech info
         jobs: jobs
-          .filter(
-            (job) =>
-              job.assignedTech?.name === tech.name || // Match by assignedTech.name
-              job.technician?.includes(tech.name) // Or match by technician field
-          )
+          .filter((job) => {
+            const assignedNameRaw =
+              job.assignedTech?.name ||
+              job.technician ||
+              (typeof job.assignedTo === "string" ? job.assignedTo : "");
+
+            const assignedName = assignedNameRaw?.toLowerCase().trim();
+            const techName = tech.name.toLowerCase().trim();
+
+            return assignedName && assignedName === techName;
+          })
           .sort((a, b) => (a.position || 0) - (b.position || 0)), // Sort by position
       })),
     [jobs] // Recalculate when jobs change
@@ -105,6 +116,16 @@ export default function NextJobsPage() {
 
     // Use the dedicated helper function - it now returns formatted job data or null
     const updatedJob = await assignTechnicianToJob(selectedJob.id, tech.name);
+
+    if (!updatedJob?.success) {
+      console.error("❌ Failed to assign technician:", updatedJob?.error);
+      alert(
+        `Failed to assign technician. ${
+          updatedJob?.error?.message ? `Reason: ${updatedJob.error.message}` : ""
+        }`
+      );
+      return;
+    }
 
     if (updatedJob) {
       console.log("✅ Technician assigned successfully:", updatedJob); // Debug log
@@ -127,6 +148,16 @@ export default function NextJobsPage() {
 
     // Use the dedicated helper function - it now returns formatted job data or null
     const updatedJob = await unassignTechnicianFromJob(selectedJob.id);
+
+    if (!updatedJob?.success) {
+      console.error("❌ Failed to unassign technician:", updatedJob?.error);
+      alert(
+        `Failed to unassign technician. ${
+          updatedJob?.error?.message ? `Reason: ${updatedJob.error.message}` : ""
+        }`
+      );
+      return;
+    }
 
     if (updatedJob) {
       console.log("✅ Technician unassigned successfully:", updatedJob); // Debug log
