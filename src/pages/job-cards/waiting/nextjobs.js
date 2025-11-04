@@ -27,6 +27,7 @@ export default function NextJobsPage() {
   const [searchTerm, setSearchTerm] = useState(""); // Search filter
   const [draggingJob, setDraggingJob] = useState(null); // Job being dragged
   const [feedbackMessage, setFeedbackMessage] = useState(null); // Success/error feedback
+  const [loading, setLoading] = useState(true); // Loading state
 
   // ✅ Manager access check
   const username = user?.username;
@@ -36,12 +37,13 @@ export default function NextJobsPage() {
   ];
   const hasAccess = allowedUsers.includes(username);
 
-  // ✅ Fetch jobs from Supabase
+  // ✅ Fetch jobs from Supabase on component mount
   useEffect(() => {
     fetchJobs();
   }, []);
 
   const fetchJobs = async () => {
+    setLoading(true); // Start loading
     const fetchedJobs = await getAllJobs(); // Fetch all jobs from database
 
     // Only include jobs with a real job number (actual job cards)
@@ -50,11 +52,12 @@ export default function NextJobsPage() {
     );
 
     setJobs(filtered); // Update state with filtered jobs
+    setLoading(false); // Stop loading
     return filtered;
   };
 
   // ✅ Filter ALL outstanding/not started jobs (unassigned AND not completed)
-  // These are jobs that are not finished - they show in the top 10% section
+  // These are jobs that are not finished - they show in the top section
   const unassignedJobs = useMemo(
     () =>
       jobs.filter(
@@ -74,7 +77,7 @@ export default function NextJobsPage() {
     [jobs] // Recalculate when jobs change
   );
 
-  // ✅ Search logic for job cards in the 10% section
+  // ✅ Search logic for job cards in the outstanding section
   const filteredJobs = useMemo(() => {
     if (!searchTerm.trim()) return unassignedJobs; // Return all unassigned jobs if no search term
     const lower = searchTerm.toLowerCase(); // Convert search term to lowercase for case-insensitive search
@@ -272,9 +275,42 @@ export default function NextJobsPage() {
   if (!hasAccess) {
     return (
       <Layout>
-        <p className="p-4 text-red-600 font-bold">
-          You do not have access to Next Jobs.
-        </p>
+        <div style={{ padding: "40px", textAlign: "center" }}>
+          <h2 style={{ color: "#d10000" }}>Access Denied</h2>
+          <p>You do not have access to Next Jobs.</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  // ✅ Loading state with spinner animation
+  if (loading) {
+    return (
+      <Layout>
+        <div style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "center", 
+          height: "80vh",
+          flexDirection: "column",
+          gap: "16px"
+        }}>
+          <div style={{
+            width: "60px",
+            height: "60px",
+            border: "4px solid #f3f3f3",
+            borderTop: "4px solid #d10000",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite"
+          }}></div>
+          <p style={{ color: "#666" }}>Loading jobs...</p>
+          <style jsx>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
       </Layout>
     );
   }
@@ -282,42 +318,63 @@ export default function NextJobsPage() {
   // ✅ Page layout
   return (
     <Layout>
-      <div
-        style={{
-          maxWidth: "1400px",
-          margin: "0 auto",
+      <div style={{ 
+        height: "100%", 
+        display: "flex", 
+        flexDirection: "column", 
+        padding: "8px 16px",
+        overflow: "hidden" 
+      }}>
+        
+        {/* ✅ Header Section */}
+        <div style={{
+          display: "flex",
+          gap: "12px",
+          alignItems: "center",
+          marginBottom: "12px",
+          padding: "12px",
+          backgroundColor: "#fff",
+          borderRadius: "8px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+          flexShrink: 0
+        }}>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ 
+              color: "#d10000", 
+              fontSize: "28px", 
+              fontWeight: "700",
+              margin: 0
+            }}>
+              Next Jobs
+            </h1>
+          </div>
+        </div>
+
+        {/* ✅ Outstanding Jobs Section */}
+        <div style={{
+          marginBottom: "12px",
+          background: "#fff",
+          borderRadius: "8px",
+          border: "1px solid #ffe5e5",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
           padding: "16px",
-          height: "90vh",
           display: "flex",
           flexDirection: "column",
-        }}
-      >
-        <h1
-          style={{
-            color: "#FF4040",
-            fontSize: "1.5rem",
-            fontWeight: "bold",
-            marginBottom: "8px",
-          }}
-        >
-          Next Jobs
-        </h1>
-
-        {/* ==== OUTSTANDING/UNASSIGNED JOBS (10% SECTION) ==== */}
-        <div
-          style={{
-            height: "15%",
-            marginBottom: "12px",
-            background: "#fff",
-            borderRadius: "8px",
-            border: "1px solid #ddd",
-            padding: "8px",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-            <h2 style={{ fontSize: "1rem", fontWeight: "bold", color: "#333" }}>
+          maxHeight: "180px",
+          flexShrink: 0
+        }}>
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "center", 
+            marginBottom: "12px" 
+          }}>
+            <h2 style={{ 
+              fontSize: "18px", 
+              fontWeight: "600", 
+              color: "#1f2937",
+              margin: 0
+            }}>
               Outstanding Jobs ({unassignedJobs.length})
             </h2>
           </div>
@@ -328,17 +385,26 @@ export default function NextJobsPage() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)} // Update search term
             style={{
-              padding: "6px 10px",
-              marginBottom: "6px",
-              borderRadius: "6px",
-              border: "1px solid #ccc",
-              fontSize: "0.9rem",
+              padding: "10px 12px",
+              marginBottom: "12px",
+              borderRadius: "8px",
+              border: "1px solid #e0e0e0",
+              fontSize: "14px",
+              outline: "none",
+              transition: "border-color 0.2s"
             }}
+            onFocus={(e) => e.currentTarget.style.borderColor = "#d10000"}
+            onBlur={(e) => e.currentTarget.style.borderColor = "#e0e0e0"}
           />
 
-          <div style={{ overflowX: "auto", whiteSpace: "nowrap", flex: 1 }}>
+          <div style={{ 
+            overflowX: "auto", 
+            whiteSpace: "nowrap", 
+            flex: 1,
+            paddingBottom: "8px"
+          }}>
             {filteredJobs.length === 0 ? (
-              <p style={{ color: "#999", fontSize: "0.875rem" }}>
+              <p style={{ color: "#9ca3af", fontSize: "14px", margin: 0 }}>
                 {searchTerm.trim() ? "No matching jobs found." : "No outstanding jobs."}
               </p>
             ) : (
@@ -348,16 +414,20 @@ export default function NextJobsPage() {
                   onClick={() => handleOpenJobDetails(job)} // Open job details popup
                   style={{
                     display: "inline-block",
-                    backgroundColor: "#FF4040",
+                    backgroundColor: "#d10000",
                     color: "white",
-                    padding: "6px 8px",
-                    marginRight: "6px",
-                    borderRadius: "6px",
-                    fontSize: "0.75rem",
-                    fontWeight: "bold",
+                    padding: "8px 12px",
+                    marginRight: "8px",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    fontWeight: "600",
                     cursor: "pointer",
                     border: "none",
+                    boxShadow: "0 2px 4px rgba(209,0,0,0.18)",
+                    transition: "background-color 0.2s"
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#a60a0a")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#d10000")}
                   title={`${job.jobNumber} - ${job.customer} - ${job.make} ${job.model} - Status: ${job.status}`}
                 >
                   {`${job.jobNumber} - ${job.reg}`}
@@ -367,86 +437,130 @@ export default function NextJobsPage() {
           </div>
         </div>
 
-        {/* ==== TECHNICIANS GRID ==== */}
-        <div
-          style={{
+        {/* ✅ Technicians Grid Section */}
+        <div style={{ 
+          flex: 1,
+          borderRadius: "8px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+          border: "1px solid #ffe5e5",
+          background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)",
+          padding: "24px",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0
+        }}>
+          
+          <div style={{ 
             flex: 1,
             overflowY: "auto",
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)", // 2 columns
-            gridTemplateRows: "repeat(3, 1fr)", // 3 rows (6 techs total)
-            gap: "12px",
-          }}
-        >
-          {assignedJobs.map((tech) => (
-            <div
-              key={tech.id}
-              style={{
-                background: "white",
-                border: "1px solid #ccc",
-                borderRadius: "8px",
-                padding: "12px",
-                display: "flex",
-                flexDirection: "column",
-                minHeight: "200px",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              }}
-            >
-              <p style={{ fontWeight: "bold", marginBottom: "6px" }}>
-                {tech.name} ({tech.jobs.length})
-              </p>
-              <div style={{ flex: 1, overflowY: "auto" }}>
-                {tech.jobs.length === 0 ? (
-                  <p style={{ color: "#999", fontSize: "0.875rem" }}>
-                    No jobs assigned
+            paddingRight: "8px",
+            minHeight: 0
+          }}>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, 1fr)", // 2 columns
+              gridTemplateRows: "repeat(3, 1fr)", // 3 rows (6 techs total)
+              gap: "16px",
+              height: "100%"
+            }}>
+              {assignedJobs.map((tech) => (
+                <div
+                  key={tech.id}
+                  style={{
+                    background: "white",
+                    border: "1px solid #ffe5e5",
+                    borderRadius: "8px",
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    minHeight: 0,
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+                  }}
+                >
+                  <p style={{ 
+                    fontWeight: "600", 
+                    marginBottom: "12px",
+                    fontSize: "16px",
+                    color: "#1f2937",
+                    flexShrink: 0
+                  }}>
+                    {tech.name} ({tech.jobs.length})
                   </p>
-                ) : (
-                  tech.jobs.map((job) => (
-                    <div
-                      key={job.jobNumber}
-                      draggable={hasAccess} // Only draggable if user has access
-                      onDragStart={() => handleDragStart(job)} // Start dragging
-                      onDragOver={handleDragOver} // Allow drop
-                      onDrop={() => handleDrop(job, tech)} // Handle drop
-                      onClick={() => handleOpenJobDetails(job)} // Open job details popup
-                      style={{
-                        border: "1px solid #eee",
-                        borderRadius: "6px",
-                        padding: "6px",
-                        marginBottom: "4px",
-                        backgroundColor:
-                          draggingJob?.jobNumber === job.jobNumber
-                            ? "#ffe5e5" // Highlight dragging job
-                            : "#f9f9f9",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <p
-                        style={{
-                          fontSize: "0.875rem",
-                          fontWeight: "bold",
-                          color: "#FF4040",
-                        }}
-                      >
-                        {job.jobNumber} – {job.reg}
+                  <div style={{ 
+                    flex: 1, 
+                    overflowY: "auto",
+                    minHeight: 0,
+                    paddingRight: "4px"
+                  }}>
+                    {tech.jobs.length === 0 ? (
+                      <p style={{ 
+                        color: "#9ca3af", 
+                        fontSize: "14px",
+                        margin: 0
+                      }}>
+                        No jobs assigned
                       </p>
-                      <p
-                        style={{
-                          fontSize: "0.7rem",
-                          color: "#666",
-                        }}
-                      >
-                        {job.status}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
+                    ) : (
+                      tech.jobs.map((job) => (
+                        <div
+                          key={job.jobNumber}
+                          draggable={hasAccess} // Only draggable if user has access
+                          onDragStart={() => handleDragStart(job)} // Start dragging
+                          onDragOver={handleDragOver} // Allow drop
+                          onDrop={() => handleDrop(job, tech)} // Handle drop
+                          onClick={() => handleOpenJobDetails(job)} // Open job details popup
+                          style={{
+                            border: "1px solid #ffd6d6",
+                            borderRadius: "8px",
+                            padding: "10px",
+                            marginBottom: "8px",
+                            backgroundColor:
+                              draggingJob?.jobNumber === job.jobNumber
+                                ? "#ffe5e5" // Highlight dragging job
+                                : "#fff5f5",
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                          onMouseEnter={(e) => {
+                            if (draggingJob?.jobNumber !== job.jobNumber) {
+                              e.currentTarget.style.backgroundColor = "#ffecec";
+                              e.currentTarget.style.boxShadow = "0 2px 6px rgba(209,0,0,0.12)";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (draggingJob?.jobNumber !== job.jobNumber) {
+                              e.currentTarget.style.backgroundColor = "#fff5f5";
+                              e.currentTarget.style.boxShadow = "none";
+                            }
+                          }}
+                        >
+                          <p style={{
+                            fontSize: "14px",
+                            fontWeight: "600",
+                            color: "#d10000",
+                            margin: "0 0 4px 0"
+                          }}>
+                            {job.jobNumber} – {job.reg}
+                          </p>
+                          <p style={{
+                            fontSize: "12px",
+                            color: "#6b7280",
+                            margin: 0
+                          }}>
+                            {job.status}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
 
-        {/* ==== JOB DETAILS POPUP ==== */}
+        {/* ✅ JOB DETAILS POPUP */}
         {selectedJob && (
           <div
             style={{
@@ -461,104 +575,134 @@ export default function NextJobsPage() {
               alignItems: "center",
               zIndex: 1000,
             }}
+            onClick={handleCloseJobDetails} // Close when clicking overlay
           >
             <div
               style={{
                 backgroundColor: "white",
-                padding: "20px",
-                borderRadius: "8px",
-                width: "400px",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+                padding: "24px",
+                borderRadius: "12px",
+                width: "500px",
+                maxWidth: "90%",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+                border: "1px solid #ffe5e5"
               }}
+              onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
             >
-              <h3 style={{ fontWeight: "bold", marginBottom: "10px" }}>
+              <h3 style={{ 
+                fontWeight: "700", 
+                marginBottom: "16px",
+                fontSize: "20px",
+                color: "#d10000"
+              }}>
                 Job Details
               </h3>
+              
               {feedbackMessage && (
                 <div
                   style={{
-                    marginBottom: "12px",
-                    padding: "8px 10px",
-                    borderRadius: "6px",
+                    marginBottom: "16px",
+                    padding: "12px 14px",
+                    borderRadius: "8px",
                     backgroundColor:
-                      feedbackMessage.type === "error" ? "#ffe6e6" : "#e6f6ea",
-                    color: feedbackMessage.type === "error" ? "#a94442" : "#1b5e20",
-                    fontSize: "0.85rem",
+                      feedbackMessage.type === "error" ? "#fee2e2" : "#d1fae5",
+                    color: feedbackMessage.type === "error" ? "#991b1b" : "#065f46",
+                    fontSize: "14px",
                     fontWeight: 600,
+                    border: feedbackMessage.type === "error" ? "1px solid #fca5a5" : "1px solid #6ee7b7"
                   }}
                 >
                   {feedbackMessage.text}
                 </div>
               )}
-              <p>
-                <strong>Job Number:</strong> {selectedJob.jobNumber}
-              </p>
-              <p>
-                <strong>Status:</strong> {selectedJob.status}
-              </p>
-              <p>
-                <strong>Make:</strong> {selectedJob.make} {selectedJob.model}
-              </p>
-              <p>
-                <strong>Reg:</strong> {selectedJob.reg}
-              </p>
-              <p>
-                <strong>Customer:</strong> {selectedJob.customer}
-              </p>
-              <p>
-                <strong>Description:</strong> {selectedJob.description}
-              </p>
-              {selectedJob.assignedTech && (
-                <p>
-                  <strong>Assigned To:</strong> {selectedJob.assignedTech.name}
+              
+              <div style={{ marginBottom: "20px" }}>
+                <p style={{ marginBottom: "8px", fontSize: "14px" }}>
+                  <strong style={{ color: "#6b7280" }}>Job Number:</strong> {selectedJob.jobNumber}
                 </p>
-              )}
+                <p style={{ marginBottom: "8px", fontSize: "14px" }}>
+                  <strong style={{ color: "#6b7280" }}>Status:</strong> {selectedJob.status}
+                </p>
+                <p style={{ marginBottom: "8px", fontSize: "14px" }}>
+                  <strong style={{ color: "#6b7280" }}>Make:</strong> {selectedJob.make} {selectedJob.model}
+                </p>
+                <p style={{ marginBottom: "8px", fontSize: "14px" }}>
+                  <strong style={{ color: "#6b7280" }}>Reg:</strong> {selectedJob.reg}
+                </p>
+                <p style={{ marginBottom: "8px", fontSize: "14px" }}>
+                  <strong style={{ color: "#6b7280" }}>Customer:</strong> {selectedJob.customer}
+                </p>
+                <p style={{ marginBottom: "8px", fontSize: "14px" }}>
+                  <strong style={{ color: "#6b7280" }}>Description:</strong> {selectedJob.description}
+                </p>
+                {selectedJob.assignedTech && (
+                  <p style={{ marginBottom: "8px", fontSize: "14px" }}>
+                    <strong style={{ color: "#6b7280" }}>Assigned To:</strong> {selectedJob.assignedTech.name}
+                  </p>
+                )}
+              </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginTop: "14px",
-                }}
-              >
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: "12px"
+              }}>
                 <button
                   style={{
-                    backgroundColor: "#333",
+                    flex: 1,
+                    backgroundColor: "#6c757d",
                     color: "white",
-                    padding: "6px 12px",
-                    borderRadius: "6px",
+                    padding: "12px 16px",
+                    borderRadius: "8px",
                     cursor: "pointer",
                     border: "none",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    transition: "background-color 0.2s"
                   }}
                   onClick={handleOpenAssignPopup} // Open assign popup
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#5a6268")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#6c757d")}
                 >
                   Assign Tech
                 </button>
                 {selectedJob.assignedTech && (
                   <button
                     style={{
-                      backgroundColor: "#777",
+                      flex: 1,
+                      backgroundColor: "#f59e0b",
                       color: "white",
-                      padding: "6px 12px",
-                      borderRadius: "6px",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
                       cursor: "pointer",
                       border: "none",
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      transition: "background-color 0.2s"
                     }}
                     onClick={unassignTechFromJob} // Unassign technician
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#d97706")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#f59e0b")}
                   >
                     Unassign
                   </button>
                 )}
                 <button
                   style={{
-                    backgroundColor: "#FF4040",
+                    flex: 1,
+                    backgroundColor: "#d10000",
                     color: "white",
-                    padding: "6px 12px",
-                    borderRadius: "6px",
+                    padding: "12px 16px",
+                    borderRadius: "8px",
                     cursor: "pointer",
                     border: "none",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    transition: "background-color 0.2s"
                   }}
                   onClick={handleCloseJobDetails} // Close popup
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#a60a0a")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#d10000")}
                 >
                   Close
                 </button>
@@ -567,7 +711,7 @@ export default function NextJobsPage() {
           </div>
         )}
 
-        {/* ==== ASSIGN TECH POPUP ==== */}
+        {/* ✅ ASSIGN TECH POPUP */}
         {assignPopup && (
           <div
             style={{
@@ -582,19 +726,29 @@ export default function NextJobsPage() {
               alignItems: "center",
               zIndex: 1001, // Above job details popup
             }}
+            onClick={() => setAssignPopup(false)} // Close when clicking overlay
           >
             <div
               style={{
                 backgroundColor: "white",
-                padding: "20px",
-                borderRadius: "8px",
-                width: "400px",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+                padding: "24px",
+                borderRadius: "12px",
+                width: "450px",
+                maxWidth: "90%",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+                border: "1px solid #ffe5e5"
               }}
+              onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
             >
-              <h3 style={{ fontWeight: "bold", marginBottom: "10px" }}>
+              <h3 style={{ 
+                fontWeight: "700", 
+                marginBottom: "16px",
+                fontSize: "20px",
+                color: "#d10000"
+              }}>
                 Assign Technician
               </h3>
+              
               <select
                 onChange={(e) => {
                   const selectedTech = techsList.find(
@@ -604,10 +758,17 @@ export default function NextJobsPage() {
                 }}
                 style={{
                   width: "100%",
-                  padding: "6px",
-                  borderRadius: "6px",
-                  border: "1px solid #ccc",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  border: "1px solid #e0e0e0",
+                  fontSize: "14px",
+                  marginBottom: "16px",
+                  outline: "none",
+                  cursor: "pointer",
+                  transition: "border-color 0.2s"
                 }}
+                onFocus={(e) => e.currentTarget.style.borderColor = "#d10000"}
+                onBlur={(e) => e.currentTarget.style.borderColor = "#e0e0e0"}
                 defaultValue=""
               >
                 <option value="" disabled>
@@ -619,18 +780,23 @@ export default function NextJobsPage() {
                   </option>
                 ))}
               </select>
+              
               <button
                 style={{
-                  marginTop: "12px",
-                  backgroundColor: "#FF4040",
-                  color: "white",
-                  padding: "6px 12px",
-                  borderRadius: "6px",
                   width: "100%",
+                  backgroundColor: "#d10000",
+                  color: "white",
+                  padding: "12px 16px",
+                  borderRadius: "8px",
                   cursor: "pointer",
                   border: "none",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  transition: "background-color 0.2s"
                 }}
                 onClick={() => setAssignPopup(false)} // Close assign popup
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#a60a0a")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#d10000")}
               >
                 Cancel
               </button>

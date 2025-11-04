@@ -10,6 +10,7 @@ import { getJobByNumber, updateJobStatus } from "../../../lib/database/jobs";
 import { getVHCChecksByJob } from "../../../lib/database/vhc";
 import { getClockingStatus } from "../../../lib/database/clocking";
 
+// ✅ Status color mapping for consistency
 const STATUS_COLORS = {
   "Outstanding": "#9ca3af",
   "Accepted": "#d10000",
@@ -23,6 +24,7 @@ const STATUS_COLORS = {
   "Viewed": "#06b6d4",
 };
 
+// ✅ Format date and time helper
 const formatDateTime = (date) => {
   if (!date) return "N/A";
   try {
@@ -37,11 +39,21 @@ const formatDateTime = (date) => {
   }
 };
 
+// ✅ Calculate hours worked helper
+function calculateHoursWorked(clockInTime) {
+  if (!clockInTime) return "0.0";
+  const now = new Date();
+  const clockIn = new Date(clockInTime);
+  const hours = (now - clockIn) / (1000 * 60 * 60);
+  return hours.toFixed(1);
+}
+
 export default function TechJobDetailPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
   const { user } = useUser();
 
+  // ✅ State management
   const [jobData, setJobData] = useState(null);
   const [vhcChecks, setVhcChecks] = useState([]);
   const [clockingStatus, setClockingStatus] = useState(null);
@@ -49,13 +61,13 @@ export default function TechJobDetailPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [showAddNote, setShowAddNote] = useState(false);
   const [newNote, setNewNote] = useState("");
-  const [showAdditionalContents, setShowAdditionalContents] = useState(false); // ✅ NEW: Control Additional Contents popup
+  const [showAdditionalContents, setShowAdditionalContents] = useState(false);
 
   const username = user?.username;
   const techsList = usersByRole["Techs"] || [];
   const isTech = techsList.includes(username);
 
-  // ✅ Fetch job data
+  // ✅ Fetch job data on component mount
   useEffect(() => {
     if (!jobNumber) return;
 
@@ -63,7 +75,7 @@ export default function TechJobDetailPage() {
       setLoading(true);
 
       try {
-        // Fetch job
+        // Fetch job details
         const { data: job, error: jobError } = await getJobByNumber(jobNumber);
 
         if (jobError || !job) {
@@ -74,11 +86,11 @@ export default function TechJobDetailPage() {
 
         setJobData(job);
 
-        // Fetch VHC checks
+        // Fetch VHC checks for this job
         const checks = await getVHCChecksByJob(job.id);
         setVhcChecks(checks);
 
-        // Get clocking status
+        // Get clocking status for current user
         if (username) {
           const { data: clockData } = await getClockingStatus(username);
           setClockingStatus(clockData);
@@ -119,13 +131,13 @@ export default function TechJobDetailPage() {
       return;
     }
 
-    // TODO: Implement notes system
+    // TODO: Implement notes system with database integration
     alert("Note saved: " + newNote);
     setNewNote("");
     setShowAddNote(false);
   };
 
-  // ✅ Access check
+  // ✅ Access check - only technicians can view this page
   if (!isTech) {
     return (
       <Layout>
@@ -137,7 +149,7 @@ export default function TechJobDetailPage() {
     );
   }
 
-  // ✅ Loading state
+  // ✅ Loading state with spinner animation
   if (loading) {
     return (
       <Layout>
@@ -169,6 +181,7 @@ export default function TechJobDetailPage() {
     );
   }
 
+  // ✅ Handle case where job is not found
   if (!jobData) {
     return (
       <Layout>
@@ -193,6 +206,7 @@ export default function TechJobDetailPage() {
     );
   }
 
+  // ✅ Extract job data
   const { jobCard, customer, vehicle } = jobData;
   const jobStatusColor = STATUS_COLORS[jobCard.status] || "#9ca3af";
   const partsCount = jobCard.partsRequests?.length || 0;
@@ -200,6 +214,7 @@ export default function TechJobDetailPage() {
     ? `${calculateHoursWorked(clockingStatus.clock_in)}h`
     : "0.0h";
 
+  // ✅ Quick stats data for display
   const quickStats = [
     {
       label: "Status",
@@ -233,17 +248,20 @@ export default function TechJobDetailPage() {
     },
   ];
 
+  // ✅ Handle VHC button click
   const handleVhcClick = () => {
     if (!jobCard.vhcRequired) return;
     router.push(`/job-cards/${jobNumber}/vhc`);
   };
 
+  // ✅ Get dynamic VHC button text
   const getVhcButtonText = () => {
     if (!jobCard.vhcRequired) return "VHC Not Required";
     if (vhcChecks.length === 0) return "Start VHC";
     return "Open VHC";
   };
 
+  // ✅ Check if additional contents are available
   const hasAdditionalContents = () => {
     const filesCount = jobCard.files?.length || 0;
     const notesCount = jobCard.notes?.length || 0;
@@ -256,73 +274,58 @@ export default function TechJobDetailPage() {
 
   return (
     <Layout>
-      <div
-        style={{
+      <div style={{ 
+        height: "100%", 
+        display: "flex", 
+        flexDirection: "column", 
+        padding: "8px 16px",
+        overflow: "hidden" 
+      }}>
+        
+        {/* ✅ Header Section */}
+        <div style={{
           display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-          padding: "8px 16px",
-          minHeight: "100vh",
-          background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)"
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1400px",
-            margin: "0 auto",
-            width: "100%",
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-            flex: 1,
-            minHeight: 0
-          }}
-        >
-          {/* Header */}
-          <div
+          gap: "12px",
+          alignItems: "center",
+          marginBottom: "12px",
+          padding: "12px",
+          backgroundColor: "#fff",
+          borderRadius: "8px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+          flexShrink: 0
+        }}>
+          <button
+            onClick={() => router.push("/job-cards/myjobs")}
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "20px"
+              padding: "10px 24px",
+              backgroundColor: "#d10000",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "600",
+              boxShadow: "0 4px 10px rgba(209,0,0,0.16)",
+              transition: "background-color 0.2s"
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#a60a0a")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#d10000")}
           >
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <button
-              onClick={() => router.push("/job-cards/myjobs")}
-              style={{
-                padding: "10px 24px",
-                backgroundColor: "#d10000",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: "600",
-                boxShadow: "0 4px 10px rgba(209,0,0,0.16)",
-                transition: "background-color 0.2s"
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#a60a0a")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#d10000")}
-            >
-              ← Back
-            </button>
-            <div>
-              <h1 style={{ 
-                color: "#d10000", 
-                fontSize: "28px", 
-                fontWeight: "700",
-                margin: "0 0 4px 0"
-              }}>
-                Job #{jobCard.jobNumber}
-              </h1>
-              <p style={{ color: "#666", fontSize: "14px", margin: 0 }}>
-                {customer.firstName} {customer.lastName} | {vehicle.reg}
-              </p>
-            </div>
+            ← Back
+          </button>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ 
+              color: "#d10000", 
+              fontSize: "28px", 
+              fontWeight: "700",
+              margin: "0 0 4px 0"
+            }}>
+              Job #{jobCard.jobNumber}
+            </h1>
+            <p style={{ color: "#666", fontSize: "14px", margin: 0 }}>
+              {customer.firstName} {customer.lastName} | {vehicle.reg}
+            </p>
           </div>
-
-          {/* Status Badge */}
           <div style={{
             display: "flex",
             alignItems: "center",
@@ -331,9 +334,7 @@ export default function TechJobDetailPage() {
             border: "1px solid #ffe5e5",
             borderRadius: "12px",
             padding: "10px 18px",
-            boxShadow: "0 4px 12px rgba(209,0,0,0.08)",
-            color: "white",
-            fontWeight: "600"
+            boxShadow: "0 4px 12px rgba(209,0,0,0.08)"
           }}>
             <span style={{
               backgroundColor: jobStatusColor,
@@ -341,7 +342,8 @@ export default function TechJobDetailPage() {
               borderRadius: "8px",
               fontSize: "13px",
               letterSpacing: "0.02em",
-              color: "white"
+              color: "white",
+              fontWeight: "600"
             }}>
               {jobCard.status}
             </span>
@@ -351,29 +353,32 @@ export default function TechJobDetailPage() {
           </div>
         </div>
 
+        {/* ✅ Job Summary Card */}
         <div style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           padding: "20px 24px",
-          borderRadius: "16px",
+          borderRadius: "8px",
           backgroundColor: "white",
           border: "1px solid #ffe5e5",
-          boxShadow: "0 4px 12px rgba(209,0,0,0.1)",
-          gap: "24px"
+          boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+          gap: "24px",
+          marginBottom: "12px",
+          flexShrink: 0
         }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <span style={{ fontSize: "12px", color: "#d10000", fontWeight: "600", letterSpacing: "0.06em" }}>
               JOB SUMMARY
             </span>
-            <h1 style={{
+            <h2 style={{
               color: "#1f2937",
               fontSize: "28px",
               fontWeight: "700",
               margin: 0
             }}>
               #{jobCard.jobNumber} • {vehicle.reg}
-            </h1>
+            </h2>
             <span style={{ fontSize: "15px", color: "#6b7280" }}>
               {customer.firstName} {customer.lastName} • {vehicle.makeModel}
             </span>
@@ -401,10 +406,13 @@ export default function TechJobDetailPage() {
           </div>
         </div>
 
+        {/* ✅ Quick Stats Grid */}
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-          gap: "12px"
+          gap: "12px",
+          marginBottom: "12px",
+          flexShrink: 0
         }}>
           {quickStats.map((stat) => (
             <div
@@ -412,8 +420,8 @@ export default function TechJobDetailPage() {
               style={{
                 backgroundColor: "white",
                 border: "1px solid #ffe5e5",
-                borderRadius: "12px",
-                boxShadow: "0 2px 6px rgba(209,0,0,0.06)",
+                borderRadius: "8px",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
                 padding: "16px",
                 display: "flex",
                 flexDirection: "column",
@@ -442,14 +450,14 @@ export default function TechJobDetailPage() {
           ))}
         </div>
 
-        {/* Tabs */}
+        {/* ✅ Tabs Navigation */}
         <div style={{
           display: "flex",
           gap: "12px",
-          marginTop: "8px",
           marginBottom: "12px",
-          borderBottom: "2px solid #ffd6d6",
-          paddingBottom: "6px"
+          overflowX: "auto",
+          paddingBottom: "4px",
+          flexShrink: 0
         }}>
           {["overview", "vhc", "parts", "notes", "write-up"].map(tab => (
             <button
@@ -459,13 +467,14 @@ export default function TechJobDetailPage() {
                 padding: "10px 18px",
                 backgroundColor: activeTab === tab ? "#d10000" : "white",
                 color: activeTab === tab ? "white" : "#d10000",
-                border: activeTab === tab ? "2px solid #d10000" : "1px solid #ffd6d6",
-                borderBottom: activeTab === tab ? "2px solid #d10000" : "1px solid #ffd6d6",
+                border: activeTab === tab ? "2px solid #d10000" : "1px solid #ffe5e5",
+                borderRadius: "8px",
                 cursor: "pointer",
                 fontSize: "14px",
                 fontWeight: activeTab === tab ? "600" : "500",
                 textTransform: "capitalize",
-                transition: "all 0.2s"
+                transition: "all 0.2s",
+                whiteSpace: "nowrap"
               }}
             >
               {tab.replace("-", " ")}
@@ -473,20 +482,32 @@ export default function TechJobDetailPage() {
           ))}
         </div>
 
-        {/* Tab Content */}
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        {/* ✅ Main Content Area with Scrolling */}
+        <div style={{ 
+          flex: 1,
+          borderRadius: "8px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+          border: "1px solid #ffe5e5",
+          background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)",
+          padding: "24px",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0
+        }}>
           
-          {/* OVERVIEW TAB */}
+          <div style={{ flex: 1, overflowY: "auto", paddingRight: "8px", minHeight: 0 }}>
+          
+          {/* ✅ OVERVIEW TAB */}
           {activeTab === "overview" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {/* Job Details */}
               <div style={{
                 backgroundColor: "white",
                 padding: "24px",
-                borderRadius: "16px",
-                boxShadow: "0 6px 18px rgba(209,0,0,0.08)",
-                border: "1px solid #ffe5e5",
-                backgroundImage: "linear-gradient(135deg, rgba(255,245,245,0.6), white)"
+                borderRadius: "12px",
+                boxShadow: "0 2px 8px rgba(209,0,0,0.08)",
+                border: "1px solid #ffe5e5"
               }}>
                 <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
                   Job Details
@@ -502,7 +523,7 @@ export default function TechJobDetailPage() {
                           borderLeft: "4px solid #d10000",
                           borderRadius: "10px",
                           color: "#1f2937",
-                          boxShadow: "0 4px 10px rgba(209,0,0,0.08)"
+                          boxShadow: "0 2px 6px rgba(209,0,0,0.08)"
                         }}>
                           {req.text || req}
                         </div>
@@ -522,8 +543,8 @@ export default function TechJobDetailPage() {
               <div style={{
                 backgroundColor: "white",
                 padding: "24px",
-                borderRadius: "16px",
-                boxShadow: "0 6px 18px rgba(209,0,0,0.08)",
+                borderRadius: "12px",
+                boxShadow: "0 2px 8px rgba(209,0,0,0.08)",
                 border: "1px solid #ffe5e5"
               }}>
                 <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
@@ -565,8 +586,8 @@ export default function TechJobDetailPage() {
               <div style={{
                 backgroundColor: "white",
                 padding: "24px",
-                borderRadius: "16px",
-                boxShadow: "0 6px 18px rgba(209,0,0,0.08)",
+                borderRadius: "12px",
+                boxShadow: "0 2px 8px rgba(209,0,0,0.08)",
                 border: "1px solid #ffe5e5"
               }}>
                 <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
@@ -598,13 +619,13 @@ export default function TechJobDetailPage() {
             </div>
           )}
 
-          {/* VHC TAB */}
+          {/* ✅ VHC TAB */}
           {activeTab === "vhc" && (
             <div style={{
               backgroundColor: "white",
               padding: "24px",
-              borderRadius: "16px",
-              boxShadow: "0 6px 18px rgba(209,0,0,0.08)",
+              borderRadius: "12px",
+              boxShadow: "0 2px 8px rgba(209,0,0,0.08)",
               border: "1px solid #ffe5e5",
               display: "flex",
               flexDirection: "column",
@@ -621,7 +642,7 @@ export default function TechJobDetailPage() {
                     backgroundColor: "#d10000",
                     color: "white",
                     border: "1px solid #b91c1c",
-                    borderRadius: "10px",
+                    borderRadius: "8px",
                     cursor: "pointer",
                     fontSize: "14px",
                     fontWeight: "600"
@@ -654,7 +675,7 @@ export default function TechJobDetailPage() {
                       border: "1px solid #ffd6d6",
                       borderRadius: "12px",
                       backgroundColor: "#fff",
-                      boxShadow: "0 4px 12px rgba(209,0,0,0.08)"
+                      boxShadow: "0 2px 6px rgba(209,0,0,0.08)"
                     }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                         <div>
@@ -698,13 +719,13 @@ export default function TechJobDetailPage() {
             </div>
           )}
 
-          {/* PARTS TAB */}
+          {/* ✅ PARTS TAB */}
           {activeTab === "parts" && (
             <div style={{
               backgroundColor: "white",
               padding: "24px",
-              borderRadius: "16px",
-              boxShadow: "0 6px 18px rgba(209,0,0,0.08)",
+              borderRadius: "12px",
+              boxShadow: "0 2px 8px rgba(209,0,0,0.08)",
               border: "1px solid #ffe5e5",
               textAlign: "center",
               display: "flex",
@@ -726,11 +747,11 @@ export default function TechJobDetailPage() {
                   backgroundColor: "#d10000",
                   color: "white",
                   border: "1px solid #b91c1c",
-                  borderRadius: "12px",
+                  borderRadius: "8px",
                   cursor: "pointer",
                   fontSize: "15px",
                   fontWeight: "600",
-                  boxShadow: "0 10px 20px rgba(209,0,0,0.18)"
+                  boxShadow: "0 4px 12px rgba(209,0,0,0.18)"
                 }}
               >
                 + Request Parts
@@ -748,13 +769,13 @@ export default function TechJobDetailPage() {
             </div>
           )}
 
-          {/* NOTES TAB */}
+          {/* ✅ NOTES TAB */}
           {activeTab === "notes" && (
             <div style={{
               backgroundColor: "white",
               padding: "24px",
-              borderRadius: "16px",
-              boxShadow: "0 6px 18px rgba(209,0,0,0.08)",
+              borderRadius: "12px",
+              boxShadow: "0 2px 8px rgba(209,0,0,0.08)",
               border: "1px solid #ffe5e5",
               display: "flex",
               flexDirection: "column",
@@ -771,7 +792,7 @@ export default function TechJobDetailPage() {
                     backgroundColor: "#d10000",
                     color: "white",
                     border: "1px solid #b91c1c",
-                    borderRadius: "10px",
+                    borderRadius: "8px",
                     cursor: "pointer",
                     fontSize: "14px",
                     fontWeight: "600"
@@ -812,7 +833,7 @@ export default function TechJobDetailPage() {
                         backgroundColor: "white",
                         color: "#6b7280",
                         border: "1px solid #d1d5db",
-                        borderRadius: "10px",
+                        borderRadius: "8px",
                         cursor: "pointer",
                         fontSize: "14px",
                         fontWeight: "500"
@@ -827,11 +848,11 @@ export default function TechJobDetailPage() {
                         backgroundColor: "#10b981",
                         color: "white",
                         border: "1px solid #0f766e",
-                        borderRadius: "10px",
+                        borderRadius: "8px",
                         cursor: "pointer",
                         fontSize: "14px",
                         fontWeight: "600",
-                        boxShadow: "0 8px 14px rgba(16,185,129,0.2)"
+                        boxShadow: "0 4px 10px rgba(16,185,129,0.2)"
                       }}
                     >
                       Save Note
@@ -857,13 +878,13 @@ export default function TechJobDetailPage() {
             </div>
           )}
 
-          {/* WRITE-UP TAB */}
+          {/* ✅ WRITE-UP TAB */}
           {activeTab === "write-up" && (
             <div style={{
               backgroundColor: "white",
               padding: "24px",
-              borderRadius: "16px",
-              boxShadow: "0 6px 18px rgba(209,0,0,0.08)",
+              borderRadius: "12px",
+              boxShadow: "0 2px 8px rgba(209,0,0,0.08)",
               border: "1px solid #ffe5e5",
               textAlign: "center",
               display: "flex",
@@ -885,11 +906,11 @@ export default function TechJobDetailPage() {
                   backgroundColor: "#d10000",
                   color: "white",
                   border: "1px solid #b91c1c",
-                  borderRadius: "12px",
+                  borderRadius: "8px",
                   cursor: "pointer",
                   fontSize: "15px",
                   fontWeight: "600",
-                  boxShadow: "0 12px 24px rgba(209,0,0,0.18)"
+                  boxShadow: "0 6px 16px rgba(209,0,0,0.18)"
                 }}
               >
                 Open Write-Up Form →
@@ -897,15 +918,17 @@ export default function TechJobDetailPage() {
             </div>
           )}
         </div>
+        </div>
 
-        {/* Bottom Action Bar - ✅ UPDATED with new button layout */}
+        {/* ✅ Bottom Action Bar */}
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
           gap: "12px",
-          marginTop: "20px",
-          paddingTop: "20px",
-          borderTop: "2px solid #ffd6d6"
+          marginTop: "12px",
+          paddingTop: "12px",
+          borderTop: "2px solid #ffd6d6",
+          flexShrink: 0
         }}>
           {/* Back to My Jobs Button */}
           <button
@@ -919,7 +942,7 @@ export default function TechJobDetailPage() {
               cursor: "pointer",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: "0 6px 12px rgba(209,0,0,0.18)"
+              boxShadow: "0 2px 8px rgba(209,0,0,0.18)"
             }}
           >
             ← Back to My Jobs
@@ -931,14 +954,14 @@ export default function TechJobDetailPage() {
             disabled={!jobCard.vhcRequired}
             style={{
               padding: "14px",
-              backgroundColor: "#0369a1",
+              backgroundColor: jobCard.vhcRequired ? "#0369a1" : "#e0e0e0",
               color: "white",
               border: "none",
               borderRadius: "8px",
-              cursor: "pointer",
+              cursor: jobCard.vhcRequired ? "pointer" : "not-allowed",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: "0 6px 12px rgba(3,105,161,0.18)"
+              boxShadow: jobCard.vhcRequired ? "0 2px 8px rgba(3,105,161,0.18)" : "none"
             }}
           >
             {getVhcButtonText()}
@@ -952,17 +975,17 @@ export default function TechJobDetailPage() {
               backgroundColor: "#f5f3ff",
               color: "#5b21b6",
               border: "1px solid #ddd6fe",
-              borderRadius: "12px",
+              borderRadius: "8px",
               cursor: "pointer",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: "0 6px 12px rgba(91,33,182,0.16)"
+              boxShadow: "0 2px 8px rgba(91,33,182,0.16)"
             }}
           >
             ✍️ Write-Up
           </button>
 
-          {/* Additional Contents Button - Dynamic based on availability */}
+          {/* Complete Job Button - Dynamic based on availability */}
           <button
             onClick={() => {
               if (additionalAvailable) {
@@ -979,23 +1002,13 @@ export default function TechJobDetailPage() {
               cursor: additionalAvailable ? "pointer" : "not-allowed",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: additionalAvailable ? "0 6px 12px rgba(16,185,129,0.18)" : "none"
+              boxShadow: additionalAvailable ? "0 2px 8px rgba(16,185,129,0.18)" : "none"
             }}
           >
             ✓ Complete Job
           </button>
         </div>
-        </div>
       </div>
     </Layout>
   );
-}
-
-// ✅ Helper function
-function calculateHoursWorked(clockInTime) {
-  if (!clockInTime) return "0.0";
-  const now = new Date();
-  const clockIn = new Date(clockInTime);
-  const hours = (now - clockIn) / (1000 * 60 * 60);
-  return hours.toFixed(1);
 }
