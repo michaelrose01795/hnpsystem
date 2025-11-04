@@ -5,6 +5,7 @@ import React, { useState, useMemo, useEffect } from "react"; // Core React hooks
 import Layout from "../../../components/Layout"; // Main layout wrapper
 import { useUser } from "../../../context/UserContext"; // Logged-in user context
 import { usersByRole } from "../../../config/users"; // Role config
+import { useRouter } from "next/router"; // Next.js router for navigation
 import { 
   getAllJobs, 
   assignTechnicianToJob, 
@@ -21,11 +22,14 @@ const techsList = (usersByRole["Techs"] || []).map((name, index) => ({
 export default function NextJobsPage() {
   // ✅ Hooks
   const { user } = useUser(); // Current logged-in user
+  const router = useRouter(); // Next.js router for navigation
   const [jobs, setJobs] = useState([]); // Jobs from database
   const [selectedJob, setSelectedJob] = useState(null); // Job selected for popup
   const [assignPopup, setAssignPopup] = useState(false); // Assign popup
   const [searchTerm, setSearchTerm] = useState(""); // Search filter
   const [draggingJob, setDraggingJob] = useState(null); // Job being dragged
+  const [dragOverTarget, setDragOverTarget] = useState(null); // Track which section/tech is being hovered over
+  const [dragOverJob, setDragOverJob] = useState(null); // Track which specific job is being hovered over
   const [feedbackMessage, setFeedbackMessage] = useState(null); // Success/error feedback
   const [loading, setLoading] = useState(true); // Loading state
 
@@ -128,6 +132,12 @@ export default function NextJobsPage() {
     setAssignPopup(true);
   };
 
+  // ✅ NEW: Handle Edit Job - Navigate to create page with job data
+  const handleEditJob = () => {
+    if (!selectedJob) return;
+    router.push(`/job-cards/create?edit=${selectedJob.id}`);
+  };
+
   // ✅ Assign technician to a job (save to Supabase)
   const assignTechToJob = async (tech) => {
     if (!selectedJob) return; // Exit if no job selected
@@ -222,21 +232,58 @@ export default function NextJobsPage() {
     });
   };
 
-  // ✅ Drag handlers for reordering
-  const handleDragStart = (job) => {
+  // ✅ Drag handlers for reordering and reassigning
+  const handleDragStart = (job, e) => {
     if (!hasAccess) return; // Only managers can drag
     setDraggingJob(job); // Set the job being dragged
+    e.dataTransfer.effectAllowed = "move"; // Set cursor effect
   };
 
   const handleDragOver = (e) => {
     if (!hasAccess) return; // Only managers can drop
     e.preventDefault(); // Allow drop
+    e.dataTransfer.dropEffect = "move"; // Set cursor effect
   };
 
-  const handleDrop = async (targetJob, tech) => {
+  // ✅ IMPROVED: Track which section is being hovered over (works for entire box)
+  const handleDragEnterSection = (target, e) => {
+    if (!hasAccess || !draggingJob) return;
+    e.stopPropagation(); // Prevent event bubbling
+    setDragOverTarget(target); // Set the target being hovered over
+  };
+
+  // ✅ IMPROVED: Track which specific job is being hovered over
+  const handleDragEnterJob = (jobNumber, techName, e) => {
+    if (!hasAccess || !draggingJob) return;
+    e.stopPropagation(); // Prevent event bubbling
+    setDragOverJob(jobNumber); // Set the specific job being hovered over
+    setDragOverTarget(techName); // Also set the tech section as active
+  };
+
+  const handleDragLeave = (e) => {
+    if (!hasAccess || !draggingJob) return;
+    // Only clear if we're leaving the container entirely
+    const relatedTarget = e.relatedTarget;
+    if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
+      setDragOverTarget(null); // Clear hover target
+      setDragOverJob(null); // Clear job hover
+    }
+  };
+
+  // ✅ NEW: Handle drop on tech section (assign tech and reorder)
+  const handleDropOnTech = async (targetJob, tech) => {
     if (!hasAccess || !draggingJob) return; // Only managers can reorder
 
-    console.log("🔄 Reordering jobs for tech:", tech.name); // Debug log
+    console.log("🔄 Dropping job on tech section:", tech.name); // Debug log
+
+    // Get the current technician of the dragged job
+    const draggingJobTech = draggingJob.assignedTech?.name || draggingJob.technician || "";
+
+    // If dropping on a different technician, reassign the job
+    if (draggingJobTech !== tech.name) {
+      console.log("🔄 Reassigning job to new technician:", tech.name); // Debug log
+      await assignTechnicianToJob(draggingJob.id, tech.name);
+    }
 
     // Remove the dragged job from the tech's job list
     const updatedTechJobs = tech.jobs.filter(
@@ -244,9 +291,9 @@ export default function NextJobsPage() {
     );
     
     // Find where to insert the dragged job (at the target job's position)
-    const dropIndex = updatedTechJobs.findIndex(
-      (j) => j.jobNumber === targetJob.jobNumber
-    );
+    const dropIndex = targetJob 
+      ? updatedTechJobs.findIndex((j) => j.jobNumber === targetJob.jobNumber)
+      : updatedTechJobs.length; // If no target job, add to end
     
     // Insert the dragged job at the drop position
     updatedTechJobs.splice(dropIndex, 0, draggingJob);
@@ -269,6 +316,24 @@ export default function NextJobsPage() {
     // Refresh jobs from database
     await fetchJobs();
     setDraggingJob(null); // Clear dragging state
+    setDragOverTarget(null); // Clear hover target
+    setDragOverJob(null); // Clear job hover
+  };
+
+  // ✅ NEW: Handle drop on outstanding section (unassign tech)
+  const handleDropOnOutstanding = async () => {
+    if (!hasAccess || !draggingJob) return;
+
+    console.log("🔄 Dropping job on outstanding section"); // Debug log
+
+    // Unassign the technician from the job
+    await unassignTechnicianFromJob(draggingJob.id);
+
+    // Refresh jobs from database
+    await fetchJobs();
+    setDraggingJob(null); // Clear dragging state
+    setDragOverTarget(null); // Clear hover target
+    setDragOverJob(null); // Clear job hover
   };
 
   // ✅ Access check
@@ -350,19 +415,27 @@ export default function NextJobsPage() {
           </div>
         </div>
 
-        {/* ✅ Outstanding Jobs Section */}
-        <div style={{
-          marginBottom: "12px",
-          background: "#fff",
-          borderRadius: "8px",
-          border: "1px solid #ffe5e5",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-          padding: "16px",
-          display: "flex",
-          flexDirection: "column",
-          maxHeight: "180px",
-          flexShrink: 0
-        }}>
+        {/* ✅ Outstanding Jobs Section with Drop Zone */}
+        <div 
+          style={{
+            marginBottom: "12px",
+            background: "#fff",
+            borderRadius: "8px",
+            border: dragOverTarget === "outstanding" ? "3px solid #d10000" : "1px solid #ffe5e5",
+            boxShadow: dragOverTarget === "outstanding" ? "0 4px 12px rgba(209,0,0,0.2)" : "0 2px 4px rgba(0,0,0,0.08)",
+            padding: "16px",
+            display: "flex",
+            flexDirection: "column",
+            maxHeight: "180px",
+            flexShrink: 0,
+            transition: "all 0.2s ease",
+            backgroundColor: dragOverTarget === "outstanding" ? "#fff5f5" : "#fff" // Highlight entire box
+          }}
+          onDragOver={handleDragOver}
+          onDragEnter={(e) => handleDragEnterSection("outstanding", e)}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDropOnOutstanding}
+        >
           <div style={{ 
             display: "flex", 
             justifyContent: "space-between", 
@@ -411,23 +484,34 @@ export default function NextJobsPage() {
               filteredJobs.map((job) => (
                 <button
                   key={job.jobNumber}
+                  draggable={hasAccess}
+                  onDragStart={(e) => handleDragStart(job, e)}
                   onClick={() => handleOpenJobDetails(job)} // Open job details popup
                   style={{
                     display: "inline-block",
-                    backgroundColor: "#d10000",
+                    backgroundColor: draggingJob?.jobNumber === job.jobNumber ? "#ffe5e5" : "#d10000",
                     color: "white",
                     padding: "8px 12px",
                     marginRight: "8px",
                     borderRadius: "8px",
                     fontSize: "13px",
                     fontWeight: "600",
-                    cursor: "pointer",
+                    cursor: hasAccess ? "grab" : "pointer",
                     border: "none",
                     boxShadow: "0 2px 4px rgba(209,0,0,0.18)",
-                    transition: "background-color 0.2s"
+                    transition: "background-color 0.2s",
+                    opacity: draggingJob?.jobNumber === job.jobNumber ? 0.5 : 1
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#a60a0a")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#d10000")}
+                  onMouseEnter={(e) => {
+                    if (draggingJob?.jobNumber !== job.jobNumber) {
+                      e.currentTarget.style.backgroundColor = "#a60a0a";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (draggingJob?.jobNumber !== job.jobNumber) {
+                      e.currentTarget.style.backgroundColor = "#d10000";
+                    }
+                  }}
                   title={`${job.jobNumber} - ${job.customer} - ${job.make} ${job.model} - Status: ${job.status}`}
                 >
                   {`${job.jobNumber} - ${job.reg}`}
@@ -469,13 +553,23 @@ export default function NextJobsPage() {
                   key={tech.id}
                   style={{
                     background: "white",
-                    border: "1px solid #ffe5e5",
+                    border: dragOverTarget === tech.name ? "3px solid #d10000" : "1px solid #ffe5e5",
                     borderRadius: "8px",
                     padding: "16px",
                     display: "flex",
                     flexDirection: "column",
                     minHeight: 0,
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+                    boxShadow: dragOverTarget === tech.name ? "0 4px 12px rgba(209,0,0,0.2)" : "0 2px 4px rgba(0,0,0,0.08)",
+                    transition: "all 0.2s ease",
+                    backgroundColor: dragOverTarget === tech.name ? "#fff5f5" : "white" // Highlight entire box
+                  }}
+                  onDragOver={handleDragOver}
+                  onDragEnter={(e) => handleDragEnterSection(tech.name, e)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    // Drop at end of list if not over a specific job
+                    handleDropOnTech(null, tech);
                   }}
                 >
                   <p style={{ 
@@ -502,56 +596,102 @@ export default function NextJobsPage() {
                         No jobs assigned
                       </p>
                     ) : (
-                      tech.jobs.map((job) => (
-                        <div
-                          key={job.jobNumber}
-                          draggable={hasAccess} // Only draggable if user has access
-                          onDragStart={() => handleDragStart(job)} // Start dragging
-                          onDragOver={handleDragOver} // Allow drop
-                          onDrop={() => handleDrop(job, tech)} // Handle drop
-                          onClick={() => handleOpenJobDetails(job)} // Open job details popup
-                          style={{
-                            border: "1px solid #ffd6d6",
-                            borderRadius: "8px",
-                            padding: "10px",
-                            marginBottom: "8px",
-                            backgroundColor:
-                              draggingJob?.jobNumber === job.jobNumber
-                                ? "#ffe5e5" // Highlight dragging job
-                                : "#fff5f5",
-                            cursor: "pointer",
-                            transition: "all 0.2s"
-                          }}
-                          onMouseEnter={(e) => {
-                            if (draggingJob?.jobNumber !== job.jobNumber) {
-                              e.currentTarget.style.backgroundColor = "#ffecec";
-                              e.currentTarget.style.boxShadow = "0 2px 6px rgba(209,0,0,0.12)";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (draggingJob?.jobNumber !== job.jobNumber) {
-                              e.currentTarget.style.backgroundColor = "#fff5f5";
-                              e.currentTarget.style.boxShadow = "none";
-                            }
-                          }}
-                        >
-                          <p style={{
-                            fontSize: "14px",
-                            fontWeight: "600",
-                            color: "#d10000",
-                            margin: "0 0 4px 0"
-                          }}>
-                            {job.jobNumber} – {job.reg}
-                          </p>
-                          <p style={{
-                            fontSize: "12px",
-                            color: "#6b7280",
-                            margin: 0
-                          }}>
-                            {job.status}
-                          </p>
-                        </div>
+                      tech.jobs.map((job, index) => (
+                        <React.Fragment key={job.jobNumber}>
+                          {/* ✅ NEW: Drop indicator line ABOVE job */}
+                          {dragOverJob === job.jobNumber && dragOverTarget === tech.name && (
+                            <div style={{
+                              height: "3px",
+                              backgroundColor: "#d10000",
+                              marginBottom: "8px",
+                              borderRadius: "2px",
+                              boxShadow: "0 0 8px rgba(209,0,0,0.4)"
+                            }} />
+                          )}
+                          
+                          <div
+                            draggable={hasAccess} // Only draggable if user has access
+                            onDragStart={(e) => handleDragStart(job, e)} // Start dragging
+                            onDragOver={handleDragOver} // Allow drop
+                            onDragEnter={(e) => handleDragEnterJob(job.jobNumber, tech.name, e)}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation(); // Prevent bubbling to parent
+                              handleDropOnTech(job, tech);
+                            }}
+                            onClick={() => handleOpenJobDetails(job)} // Open job details popup
+                            style={{
+                              border: "1px solid #ffd6d6",
+                              borderRadius: "8px",
+                              padding: "10px",
+                              marginBottom: "8px",
+                              backgroundColor:
+                                draggingJob?.jobNumber === job.jobNumber
+                                  ? "#ffe5e5" // Highlight dragging job
+                                  : "#fff5f5",
+                              cursor: hasAccess ? "grab" : "pointer",
+                              transition: "all 0.2s",
+                              opacity: draggingJob?.jobNumber === job.jobNumber ? 0.5 : 1
+                            }}
+                            onMouseEnter={(e) => {
+                              if (draggingJob?.jobNumber !== job.jobNumber) {
+                                e.currentTarget.style.backgroundColor = "#ffecec";
+                                e.currentTarget.style.boxShadow = "0 2px 6px rgba(209,0,0,0.12)";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (draggingJob?.jobNumber !== job.jobNumber) {
+                                e.currentTarget.style.backgroundColor = "#fff5f5";
+                                e.currentTarget.style.boxShadow = "none";
+                              }
+                            }}
+                          >
+                            <p style={{
+                              fontSize: "14px",
+                              fontWeight: "600",
+                              color: "#d10000",
+                              margin: "0 0 4px 0"
+                            }}>
+                              {job.jobNumber} – {job.reg}
+                            </p>
+                            <p style={{
+                              fontSize: "12px",
+                              color: "#6b7280",
+                              margin: 0
+                            }}>
+                              {job.status}
+                            </p>
+                          </div>
+
+                          {/* ✅ NEW: Drop indicator line at END if hovering over empty space */}
+                          {index === tech.jobs.length - 1 && 
+                           dragOverTarget === tech.name && 
+                           !dragOverJob && 
+                           draggingJob && (
+                            <div style={{
+                              height: "3px",
+                              backgroundColor: "#d10000",
+                              marginTop: "-8px",
+                              marginBottom: "8px",
+                              borderRadius: "2px",
+                              boxShadow: "0 0 8px rgba(209,0,0,0.4)"
+                            }} />
+                          )}
+                        </React.Fragment>
                       ))
+                    )}
+                    
+                    {/* ✅ NEW: Drop indicator line for EMPTY tech section */}
+                    {tech.jobs.length === 0 && 
+                     dragOverTarget === tech.name && 
+                     draggingJob && (
+                      <div style={{
+                        height: "3px",
+                        backgroundColor: "#d10000",
+                        borderRadius: "2px",
+                        boxShadow: "0 0 8px rgba(209,0,0,0.4)"
+                      }} />
                     )}
                   </div>
                 </div>
@@ -560,7 +700,7 @@ export default function NextJobsPage() {
           </div>
         </div>
 
-        {/* ✅ JOB DETAILS POPUP */}
+        {/* ✅ JOB DETAILS POPUP WITH EDIT BUTTON */}
         {selectedJob && (
           <div
             style={{
@@ -585,15 +725,41 @@ export default function NextJobsPage() {
                 width: "500px",
                 maxWidth: "90%",
                 boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-                border: "1px solid #ffe5e5"
+                border: "1px solid #ffe5e5",
+                position: "relative"
               }}
               onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
             >
+              {/* ✅ NEW: Edit Job Button in top right */}
+              <button
+                onClick={handleEditJob}
+                style={{
+                  position: "absolute",
+                  top: "20px",
+                  right: "20px",
+                  backgroundColor: "#3b82f6",
+                  color: "white",
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  border: "none",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  transition: "background-color 0.2s",
+                  boxShadow: "0 2px 4px rgba(59,130,246,0.2)"
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#2563eb"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#3b82f6"}
+              >
+                Edit Job
+              </button>
+
               <h3 style={{ 
                 fontWeight: "700", 
                 marginBottom: "16px",
                 fontSize: "20px",
-                color: "#d10000"
+                color: "#d10000",
+                paddingRight: "100px" // Make space for edit button
               }}>
                 Job Details
               </h3>
