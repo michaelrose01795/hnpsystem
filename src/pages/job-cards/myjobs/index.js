@@ -71,6 +71,7 @@ export default function MyJobsPage() {
       try {
         // Fetch all jobs
         const fetchedJobs = await getAllJobs();
+        console.log("📦 Fetched jobs:", fetchedJobs); // Debug log
         setJobs(fetchedJobs);
 
         // Filter jobs assigned to this technician
@@ -434,6 +435,12 @@ export default function MyJobsPage() {
                 const description = job.description?.trim();
                 const makeModel = getMakeModel(job);
 
+                // ✅ VHC Status Indicator
+                const vhcRequired = job.vhcRequired === true;
+                const vhcColor = vhcRequired ? "#10b981" : "#ef4444"; // Green if required, Red if not
+                const vhcBgColor = vhcRequired ? "#d1fae5" : "#fee2e2";
+                const vhcText = vhcRequired ? "VHC Required" : "No VHC";
+
                 return (
                   <div
                     key={job.id || job.jobNumber}
@@ -487,6 +494,33 @@ export default function MyJobsPage() {
                         {statusLabel}
                       </div>
 
+                      {/* ✅ NEW: VHC Status Indicator */}
+                      <div
+                        style={{
+                          backgroundColor: vhcBgColor,
+                          color: vhcColor,
+                          padding: "6px 12px",
+                          borderRadius: "999px",
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          whiteSpace: "nowrap",
+                          border: `2px solid ${vhcColor}`,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px"
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "8px",
+                            height: "8px",
+                            borderRadius: "50%",
+                            backgroundColor: vhcColor
+                          }}
+                        />
+                        {vhcText}
+                      </div>
+
                       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <div
                           style={{
@@ -532,20 +566,6 @@ export default function MyJobsPage() {
                           >
                             {job.customer || "Unknown customer"}
                           </span>
-                          {job.vhcRequired && (
-                            <div
-                              style={{
-                                backgroundColor: "#fff5f5",
-                                color: "#d10000",
-                                padding: "4px 10px",
-                                borderRadius: "999px",
-                                fontSize: "11px",
-                                fontWeight: "600"
-                              }}
-                            >
-                              VHC Required
-                            </div>
-                          )}
                         </div>
 
                         <span
@@ -728,10 +748,11 @@ export default function MyJobsPage() {
           <div style={{ fontSize: "24px" }}>💡</div>
           <div>
             <p style={{ fontSize: "14px", fontWeight: "600", color: "#b91c1c", margin: "0 0 4px 0" }}>
-              Quick Tip
+              VHC Status Legend
             </p>
             <p style={{ fontSize: "13px", color: "#7f1d1d", margin: 0 }}>
-              Click any job row to open the Start Job popup and begin working instantly.
+              🟢 <strong>Green Badge</strong> = VHC Required for this job | 
+              🔴 <strong>Red Badge</strong> = VHC Not Required
             </p>
           </div>
         </div>

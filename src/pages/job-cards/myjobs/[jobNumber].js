@@ -137,6 +137,37 @@ export default function TechJobDetailPage() {
     setShowAddNote(false);
   };
 
+  // ✅ NEW: Handle VHC button click - only navigate if VHC is required
+  const handleVhcClick = () => {
+    if (!jobData?.vhcRequired) {
+      alert("VHC is not required for this job.");
+      return;
+    }
+    // Navigate to VHC builder page
+    router.push(`/job-cards/${jobNumber}/vhc`);
+  };
+
+  // ✅ NEW: Get dynamic VHC button text based on job status
+  const getVhcButtonText = () => {
+    if (!jobData?.vhcRequired) return "VHC Not Required";
+    if (vhcChecks.length === 0) return "🚀 Start VHC";
+    return "📋 Continue VHC";
+  };
+
+  // ✅ NEW: Calculate VHC summary (red and amber items)
+  const getVhcSummary = () => {
+    const redItems = vhcChecks.filter(c => 
+      c.section === "Brakes" || c.severity === "Red"
+    );
+    const amberItems = vhcChecks.filter(c => 
+      c.section === "Tyres" || c.severity === "Amber"
+    );
+    
+    return { redCount: redItems.length, amberCount: amberItems.length };
+  };
+
+  const vhcSummary = getVhcSummary();
+
   // ✅ Access check - only technicians can view this page
   if (!isTech) {
     return (
@@ -247,19 +278,6 @@ export default function TechJobDetailPage() {
       pill: false,
     },
   ];
-
-  // ✅ Handle VHC button click
-  const handleVhcClick = () => {
-    if (!jobCard.vhcRequired) return;
-    router.push(`/job-cards/${jobNumber}/vhc`);
-  };
-
-  // ✅ Get dynamic VHC button text
-  const getVhcButtonText = () => {
-    if (!jobCard.vhcRequired) return "VHC Not Required";
-    if (vhcChecks.length === 0) return "Start VHC";
-    return "Open VHC";
-  };
 
   // ✅ Check if additional contents are available
   const hasAdditionalContents = () => {
@@ -619,7 +637,7 @@ export default function TechJobDetailPage() {
             </div>
           )}
 
-          {/* ✅ VHC TAB */}
+          {/* ✅ VHC TAB - UPDATED WITH START VHC BUTTON */}
           {activeTab === "vhc" && (
             <div style={{
               backgroundColor: "white",
@@ -631,90 +649,213 @@ export default function TechJobDetailPage() {
               flexDirection: "column",
               gap: "20px"
             }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                 <h3 style={{ fontSize: "18px", fontWeight: "600", margin: 0 }}>
-                  Vehicle Health Checks ({vhcChecks.length})
+                  Vehicle Health Check
                 </h3>
+                
+                {/* ✅ NEW: Start/Continue VHC Button */}
                 <button
-                  onClick={() => router.push(`/job-cards/${jobNumber}/vhc`)}
+                  onClick={handleVhcClick}
+                  disabled={!jobData?.vhcRequired}
                   style={{
-                    padding: "10px 20px",
-                    backgroundColor: "#d10000",
+                    padding: "12px 24px",
+                    backgroundColor: jobData?.vhcRequired ? "#d10000" : "#e0e0e0",
                     color: "white",
-                    border: "1px solid #b91c1c",
+                    border: "none",
                     borderRadius: "8px",
-                    cursor: "pointer",
+                    cursor: jobData?.vhcRequired ? "pointer" : "not-allowed",
                     fontSize: "14px",
-                    fontWeight: "600"
+                    fontWeight: "600",
+                    boxShadow: jobData?.vhcRequired ? "0 4px 12px rgba(209,0,0,0.2)" : "none",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (jobData?.vhcRequired) {
+                      e.currentTarget.style.backgroundColor = "#b00000";
+                      e.currentTarget.style.boxShadow = "0 6px 16px rgba(209,0,0,0.3)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (jobData?.vhcRequired) {
+                      e.currentTarget.style.backgroundColor = "#d10000";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(209,0,0,0.2)";
+                    }
                   }}
                 >
-                  + Add VHC Check
+                  {getVhcButtonText()}
                 </button>
               </div>
 
-              {vhcChecks.length === 0 ? (
+              {/* ✅ VHC Not Required Message */}
+              {!jobData?.vhcRequired && (
                 <div style={{
                   textAlign: "center",
                   padding: "40px",
                   color: "#9ca3af",
-                  backgroundColor: "#fff5f5",
+                  backgroundColor: "#f9fafb",
                   borderRadius: "12px",
-                  border: "1px solid #ffd6d6"
+                  border: "1px solid #e5e7eb"
                 }}>
-                  <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
-                  <p style={{ fontSize: "16px", fontWeight: "600" }}>No VHC checks added yet</p>
-                  <p style={{ fontSize: "14px", color: "#6b7280", marginTop: "4px" }}>
-                    Start a new check to capture the vehicle condition.
+                  <div style={{ fontSize: "48px", marginBottom: "16px" }}>ℹ️</div>
+                  <p style={{ fontSize: "16px", fontWeight: "600", color: "#6b7280" }}>
+                    VHC Not Required
+                  </p>
+                  <p style={{ fontSize: "14px", color: "#9ca3af", marginTop: "8px" }}>
+                    A Vehicle Health Check was not added to this job.
                   </p>
                 </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {vhcChecks.map(check => (
-                    <div key={check.vhc_id} style={{
-                      padding: "16px",
-                      border: "1px solid #ffd6d6",
+              )}
+
+              {/* ✅ VHC Required - Show Summary */}
+              {jobData?.vhcRequired && (
+                <>
+                  {/* VHC Summary Stats */}
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: "16px",
+                    marginBottom: "16px"
+                  }}>
+                    <div style={{
+                      padding: "20px",
+                      backgroundColor: "#fef2f2",
                       borderRadius: "12px",
-                      backgroundColor: "#fff",
-                      boxShadow: "0 2px 6px rgba(209,0,0,0.08)"
+                      border: "1px solid #fecaca",
+                      textAlign: "center"
                     }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                        <div>
-                          <p style={{ fontSize: "16px", fontWeight: "600", margin: "0 0 8px 0" }}>
-                            {check.issue_title}
-                          </p>
-                          <p style={{ fontSize: "14px", color: "#666", margin: "0 0 8px 0" }}>
-                            {check.issue_description}
-                          </p>
-                          <span style={{
-                            padding: "4px 12px",
-                            backgroundColor: "#fff5f5",
-                            borderRadius: "999px",
-                            fontSize: "12px",
-                            fontWeight: "600",
-                            color: "#d10000",
-                            border: "1px solid #ffd6d6",
-                            letterSpacing: "0.04em"
-                          }}>
-                            {check.section}
-                          </span>
-                        </div>
-                        {check.measurement && (
-                          <div style={{
-                            padding: "10px 18px",
-                            backgroundColor: "#fef2f2",
-                            color: "#b91c1c",
-                            borderRadius: "10px",
-                            fontSize: "16px",
-                            fontWeight: "700",
-                            border: "1px solid #fca5a5"
-                          }}>
-                            £{parseFloat(check.measurement).toFixed(2)}
-                          </div>
-                        )}
+                      <div style={{ fontSize: "32px", fontWeight: "700", color: "#dc2626" }}>
+                        {vhcSummary.redCount}
+                      </div>
+                      <div style={{ fontSize: "13px", color: "#991b1b", fontWeight: "600", marginTop: "4px" }}>
+                        RED ITEMS
                       </div>
                     </div>
-                  ))}
-                </div>
+                    <div style={{
+                      padding: "20px",
+                      backgroundColor: "#fffbeb",
+                      borderRadius: "12px",
+                      border: "1px solid #fde68a",
+                      textAlign: "center"
+                    }}>
+                      <div style={{ fontSize: "32px", fontWeight: "700", color: "#d97706" }}>
+                        {vhcSummary.amberCount}
+                      </div>
+                      <div style={{ fontSize: "13px", color: "#92400e", fontWeight: "600", marginTop: "4px" }}>
+                        AMBER ITEMS
+                      </div>
+                    </div>
+                    <div style={{
+                      padding: "20px",
+                      backgroundColor: "#f0f9ff",
+                      borderRadius: "12px",
+                      border: "1px solid #bfdbfe",
+                      textAlign: "center"
+                    }}>
+                      <div style={{ fontSize: "32px", fontWeight: "700", color: "#0369a1" }}>
+                        {vhcChecks.length}
+                      </div>
+                      <div style={{ fontSize: "13px", color: "#075985", fontWeight: "600", marginTop: "4px" }}>
+                        TOTAL CHECKS
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* VHC Checks List */}
+                  {vhcChecks.length === 0 ? (
+                    <div style={{
+                      textAlign: "center",
+                      padding: "40px",
+                      color: "#9ca3af",
+                      backgroundColor: "#fff5f5",
+                      borderRadius: "12px",
+                      border: "1px solid #ffd6d6"
+                    }}>
+                      <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
+                      <p style={{ fontSize: "16px", fontWeight: "600" }}>No VHC Checks Added Yet</p>
+                      <p style={{ fontSize: "14px", color: "#6b7280", marginTop: "8px" }}>
+                        Click "Start VHC" above to begin the vehicle health check.
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <h4 style={{ 
+                        fontSize: "14px", 
+                        fontWeight: "600", 
+                        color: "#6b7280", 
+                        textTransform: "uppercase", 
+                        letterSpacing: "0.05em",
+                        marginBottom: "8px"
+                      }}>
+                        Items Found ({vhcChecks.length})
+                      </h4>
+                      {vhcChecks.map(check => {
+                        const isRed = check.section === "Brakes" || check.severity === "Red";
+                        const isAmber = check.section === "Tyres" || check.severity === "Amber";
+                        const badgeColor = isRed ? "#dc2626" : isAmber ? "#d97706" : "#6b7280";
+                        const bgColor = isRed ? "#fef2f2" : isAmber ? "#fffbeb" : "#f9fafb";
+                        const borderColor = isRed ? "#fecaca" : isAmber ? "#fde68a" : "#e5e7eb";
+
+                        return (
+                          <div key={check.vhc_id} style={{
+                            padding: "16px",
+                            border: `1px solid ${borderColor}`,
+                            borderLeft: `4px solid ${badgeColor}`,
+                            borderRadius: "12px",
+                            backgroundColor: bgColor,
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.06)"
+                          }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+                                  <span style={{
+                                    padding: "4px 10px",
+                                    backgroundColor: badgeColor,
+                                    borderRadius: "6px",
+                                    fontSize: "11px",
+                                    fontWeight: "700",
+                                    color: "white",
+                                    letterSpacing: "0.05em",
+                                    textTransform: "uppercase"
+                                  }}>
+                                    {isRed ? "RED" : isAmber ? "AMBER" : "INFO"}
+                                  </span>
+                                  <span style={{
+                                    fontSize: "12px",
+                                    color: "#6b7280",
+                                    fontWeight: "600"
+                                  }}>
+                                    {check.section}
+                                  </span>
+                                </div>
+                                <p style={{ fontSize: "16px", fontWeight: "600", margin: "0 0 6px 0", color: "#1f2937" }}>
+                                  {check.issue_title}
+                                </p>
+                                <p style={{ fontSize: "14px", color: "#6b7280", margin: 0, lineHeight: 1.5 }}>
+                                  {check.issue_description}
+                                </p>
+                              </div>
+                              {check.measurement && (
+                                <div style={{
+                                  padding: "10px 18px",
+                                  backgroundColor: "white",
+                                  color: badgeColor,
+                                  borderRadius: "10px",
+                                  fontSize: "18px",
+                                  fontWeight: "700",
+                                  border: `2px solid ${badgeColor}`,
+                                  marginLeft: "16px"
+                                }}>
+                                  £{parseFloat(check.measurement).toFixed(2)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -951,17 +1092,17 @@ export default function TechJobDetailPage() {
           {/* VHC Button - Dynamic text based on status */}
           <button
             onClick={handleVhcClick}
-            disabled={!jobCard.vhcRequired}
+            disabled={!jobData?.vhcRequired}
             style={{
               padding: "14px",
-              backgroundColor: jobCard.vhcRequired ? "#0369a1" : "#e0e0e0",
+              backgroundColor: jobData?.vhcRequired ? "#0369a1" : "#e0e0e0",
               color: "white",
               border: "none",
               borderRadius: "8px",
-              cursor: jobCard.vhcRequired ? "pointer" : "not-allowed",
+              cursor: jobData?.vhcRequired ? "pointer" : "not-allowed",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: jobCard.vhcRequired ? "0 2px 8px rgba(3,105,161,0.18)" : "none"
+              boxShadow: jobData?.vhcRequired ? "0 2px 8px rgba(3,105,161,0.18)" : "none"
             }}
           >
             {getVhcButtonText()}
