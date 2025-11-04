@@ -1,0 +1,151 @@
+// file location: src/lib/users/devUsers.js
+
+import { supabase } from "../supabaseClient";
+import { usersByRole } from "../../config/users";
+
+// Create a slug from display name for deterministic fake emails
+const slugify = (txt) =>
+  String(txt || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+
+// Infer a role for a display name using the roster config
+const inferRoleFromRoster = (displayName) => {
+  const norm = String(displayName || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!norm) return "Technician";
+
+  for (const [role, names] of Object.entries(usersByRole)) {
+    for (const entry of names) {
+      const rosterName = String(entry || "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (rosterName === norm) return role;
+
+      const cleanRoster = rosterName
+        .replace(/\(.*?\)/g, "")
+        .replace(/\s-\s.*$/, "")
+        .trim();
+      const cleanNorm = norm
+        .replace(/\(.*?\)/g, "")
+        .replace(/\s-\s.*$/, "")
+        .trim();
+
+      if (cleanRoster && cleanRoster === cleanNorm) return role;
+      if (cleanRoster && (cleanRoster.includes(cleanNorm) || cleanNorm.includes(cleanRoster))) {
+        return role;
+      }
+    }
+  }
+
+  return "Technician";
+};
+
+// Split a display name into first/last names for users table inserts
+const splitName = (displayName) => {
+  const safe = String(displayName || "").trim();
+  if (!safe) return { first: "Dev", last: "User" };
+  const parts = safe.split(/\s+/);
+  if (parts.length === 1) return { first: parts[0], last: "" };
+  return { first: parts[0], last: parts.slice(1).join(" ") };
+};
+
+// Try to find an existing users row that matches the display name
+const findUserByName = async (displayName) => {
+  const { first, last } = splitName(displayName);
+  const patterns = [];
+
+  if (first) patterns.push(`first_name.ilike.%${first}%`);
+  if (last) patterns.push(`last_name.ilike.%${last}%`);
+
+  const orFilter = patterns.join(",");
+
+  const query = supabase
+    .from("users")
+    .select("user_id, first_name, last_name, email, role")
+    .limit(1);
+
+  const { data, error } = patterns.length
+    ? await query.or(orFilter)
+    : await query;
+
+  if (error && error.code !== "PGRST116") throw error;
+  return data?.[0] || null;
+};
+
+// Ensure a users row exists for the supplied display name and return user_id
+export const ensureUserIdForDisplayName = async (displayName) => {
+  const trimmedName = String(displayName || "").trim();
+  const role = inferRoleFromRoster(trimmedName);
+
+  if (!trimmedName) return null;
+
+  // Try exact match by name before creating a new record
+  try {
+    const existingByName = await findUserByName(trimmedName);
+    if (existingByName?.user_id) {
+      if (role && existingByName.role !== role) {
+        await supabase.from("users").update({ role }).eq("user_id", existingByName.user_id);
+      }
+      return existingByName.user_id;
+    }
+  } catch (nameLookupError) {
+    console.warn("⚠️ ensureUserIdForDisplayName name lookup failed:", nameLookupError?.message);
+  }
+
+  const slug = slugify(trimmedName) || `tech-${Date.now()}`;
+  const fakeEmail = `${slug}@dev.local`;
+
+  const { data: existingByEmail, error: findErr } = await supabase
+    .from("users")
+    .select("user_id, role")
+    .eq("email", fakeEmail)
+    .maybeSingle();
+
+  if (findErr && findErr.code !== "PGRST116") throw findErr;
+
+  if (existingByEmail?.user_id) {
+    if (role && existingByEmail.role !== role) {
+      await supabase.from("users").update({ role }).eq("user_id", existingByEmail.user_id);
+    }
+    return existingByEmail.user_id;
+  }
+
+  const { first, last } = splitName(trimmedName);
+
+  const { data: inserted, error: insertErr } = await supabase
+    .from("users")
+    .insert([
+      {
+        first_name: first,
+        last_name: last,
+        email: fakeEmail,
+        password_hash: "external_auth",
+        role,
+        phone: null,
+      },
+    ])
+    .select("user_id")
+    .single();
+
+  if (insertErr) throw insertErr;
+  return inserted.user_id;
+};
+
+// Convenience helper mirroring the previous ensureDevDbUserAndGetId signature
+export const ensureDevDbUserAndGetId = async (devUser) => {
+  const displayName =
+    devUser?.name ||
+    devUser?.fullName ||
+    devUser?.displayName ||
+    devUser?.username ||
+    `Tech-${devUser?.id || "dev"}`;
+
+  return ensureUserIdForDisplayName(displayName);
+};

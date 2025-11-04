@@ -26,6 +26,7 @@ export default function NextJobsPage() {
   const [assignPopup, setAssignPopup] = useState(false); // Assign popup
   const [searchTerm, setSearchTerm] = useState(""); // Search filter
   const [draggingJob, setDraggingJob] = useState(null); // Job being dragged
+  const [feedbackMessage, setFeedbackMessage] = useState(null); // Success/error feedback
 
   // ✅ Manager access check
   const username = user?.username;
@@ -49,6 +50,7 @@ export default function NextJobsPage() {
     );
 
     setJobs(filtered); // Update state with filtered jobs
+    return filtered;
   };
 
   // ✅ Filter ALL outstanding/not started jobs (unassigned AND not completed)
@@ -108,67 +110,113 @@ export default function NextJobsPage() {
     [jobs] // Recalculate when jobs change
   );
 
+  const handleOpenJobDetails = (job) => {
+    setFeedbackMessage(null);
+    setSelectedJob(job);
+  };
+
+  const handleCloseJobDetails = () => {
+    setFeedbackMessage(null);
+    setSelectedJob(null);
+  };
+
+  const handleOpenAssignPopup = () => {
+    setFeedbackMessage(null);
+    setAssignPopup(true);
+  };
+
   // ✅ Assign technician to a job (save to Supabase)
   const assignTechToJob = async (tech) => {
     if (!selectedJob) return; // Exit if no job selected
+    const jobId = selectedJob.id;
+    const jobNumber = selectedJob.jobNumber;
+    const technicianName = tech.name;
 
-    console.log("🔄 Assigning technician:", tech.name, "to job:", selectedJob.id); // Debug log
+    console.log("🔄 Assigning technician:", technicianName, "to job:", jobId); // Debug log
+    setFeedbackMessage(null);
 
     // Use the dedicated helper function - it now returns formatted job data or null
-    const updatedJob = await assignTechnicianToJob(selectedJob.id, tech.name);
-
-    if (!updatedJob?.success) {
-      console.error("❌ Failed to assign technician:", updatedJob?.error);
-      alert(
-        `Failed to assign technician. ${
-          updatedJob?.error?.message ? `Reason: ${updatedJob.error.message}` : ""
-        }`
-      );
+    let updatedJob;
+    try {
+      updatedJob = await assignTechnicianToJob(jobId, technicianName);
+    } catch (err) {
+      console.error("❌ Exception assigning technician:", err);
+      setAssignPopup(false);
+      setFeedbackMessage({
+        type: "error",
+        text: `Failed to assign ${jobNumber} to ${technicianName}: ${err?.message || "Unknown error"}`,
+      });
       return;
     }
 
-    if (updatedJob) {
-      console.log("✅ Technician assigned successfully:", updatedJob); // Debug log
-      // Refresh jobs from database
-      await fetchJobs();
-      setAssignPopup(false); // Close assign popup
-      setSelectedJob(null); // Clear selected job
-      alert(`Job ${selectedJob.jobNumber} assigned to ${tech.name}`); // Success message
-    } else {
-      console.error("❌ Failed to assign technician"); // Debug log
-      alert("Failed to assign technician. Please try again."); // Error message
+    if (!updatedJob?.success) {
+      console.error("❌ Failed to assign technician:", updatedJob?.error);
+      setAssignPopup(false);
+      setFeedbackMessage({
+        type: "error",
+        text: `Failed to assign ${jobNumber} to ${technicianName}${
+          updatedJob?.error?.message ? `: ${updatedJob.error.message}` : ""
+        }`,
+      });
+      return;
     }
+
+    console.log("✅ Technician assigned successfully:", updatedJob); // Debug log
+
+    const latestJobs = await fetchJobs();
+    const refreshedJob = latestJobs.find((job) => job.id === jobId);
+
+    setAssignPopup(false); // Close assign popup
+    setSelectedJob(refreshedJob || selectedJob); // Keep modal open with latest info
+    setFeedbackMessage({
+      type: "success",
+      text: `Job ${jobNumber} assigned to ${technicianName}`,
+    });
   };
 
   // ✅ Unassign technician (save to Supabase)
   const unassignTechFromJob = async () => {
     if (!selectedJob) return; // Exit if no job selected
+    const jobId = selectedJob.id;
+    const jobNumber = selectedJob.jobNumber;
 
-    console.log("🔄 Unassigning technician from job:", selectedJob.id); // Debug log
+    console.log("🔄 Unassigning technician from job:", jobId); // Debug log
+    setFeedbackMessage(null);
 
     // Use the dedicated helper function - it now returns formatted job data or null
-    const updatedJob = await unassignTechnicianFromJob(selectedJob.id);
-
-    if (!updatedJob?.success) {
-      console.error("❌ Failed to unassign technician:", updatedJob?.error);
-      alert(
-        `Failed to unassign technician. ${
-          updatedJob?.error?.message ? `Reason: ${updatedJob.error.message}` : ""
-        }`
-      );
+    let updatedJob;
+    try {
+      updatedJob = await unassignTechnicianFromJob(jobId);
+    } catch (err) {
+      console.error("❌ Exception unassigning technician:", err);
+      setFeedbackMessage({
+        type: "error",
+        text: `Failed to unassign technician from ${jobNumber}: ${err?.message || "Unknown error"}`,
+      });
       return;
     }
 
-    if (updatedJob) {
-      console.log("✅ Technician unassigned successfully:", updatedJob); // Debug log
-      // Refresh jobs from database
-      await fetchJobs();
-      setSelectedJob(null); // Clear selected job
-      alert(`Technician unassigned from job ${selectedJob.jobNumber}`); // Success message
-    } else {
-      console.error("❌ Failed to unassign technician"); // Debug log
-      alert("Failed to unassign technician. Please try again."); // Error message
+    if (!updatedJob?.success) {
+      console.error("❌ Failed to unassign technician:", updatedJob?.error);
+      setFeedbackMessage({
+        type: "error",
+        text: `Failed to unassign technician from ${jobNumber}${
+          updatedJob?.error?.message ? `: ${updatedJob.error.message}` : ""
+        }`,
+      });
+      return;
     }
+
+    console.log("✅ Technician unassigned successfully:", updatedJob); // Debug log
+
+    const latestJobs = await fetchJobs();
+    const refreshedJob = latestJobs.find((job) => job.id === jobId);
+
+    setSelectedJob(refreshedJob || selectedJob);
+    setFeedbackMessage({
+      type: "success",
+      text: `Technician unassigned from job ${jobNumber}`,
+    });
   };
 
   // ✅ Drag handlers for reordering
@@ -297,7 +345,7 @@ export default function NextJobsPage() {
               filteredJobs.map((job) => (
                 <button
                   key={job.jobNumber}
-                  onClick={() => setSelectedJob(job)} // Open job details popup
+                  onClick={() => handleOpenJobDetails(job)} // Open job details popup
                   style={{
                     display: "inline-block",
                     backgroundColor: "#FF4040",
@@ -360,7 +408,7 @@ export default function NextJobsPage() {
                       onDragStart={() => handleDragStart(job)} // Start dragging
                       onDragOver={handleDragOver} // Allow drop
                       onDrop={() => handleDrop(job, tech)} // Handle drop
-                      onClick={() => setSelectedJob(job)} // Open job details popup
+                      onClick={() => handleOpenJobDetails(job)} // Open job details popup
                       style={{
                         border: "1px solid #eee",
                         borderRadius: "6px",
@@ -426,6 +474,22 @@ export default function NextJobsPage() {
               <h3 style={{ fontWeight: "bold", marginBottom: "10px" }}>
                 Job Details
               </h3>
+              {feedbackMessage && (
+                <div
+                  style={{
+                    marginBottom: "12px",
+                    padding: "8px 10px",
+                    borderRadius: "6px",
+                    backgroundColor:
+                      feedbackMessage.type === "error" ? "#ffe6e6" : "#e6f6ea",
+                    color: feedbackMessage.type === "error" ? "#a94442" : "#1b5e20",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {feedbackMessage.text}
+                </div>
+              )}
               <p>
                 <strong>Job Number:</strong> {selectedJob.jobNumber}
               </p>
@@ -466,7 +530,7 @@ export default function NextJobsPage() {
                     cursor: "pointer",
                     border: "none",
                   }}
-                  onClick={() => setAssignPopup(true)} // Open assign popup
+                  onClick={handleOpenAssignPopup} // Open assign popup
                 >
                   Assign Tech
                 </button>
@@ -494,7 +558,7 @@ export default function NextJobsPage() {
                     cursor: "pointer",
                     border: "none",
                   }}
-                  onClick={() => setSelectedJob(null)} // Close popup
+                  onClick={handleCloseJobDetails} // Close popup
                 >
                   Close
                 </button>

@@ -1,5 +1,6 @@
 // file location: src/lib/database/jobs.js
 import { supabase } from "../supabaseClient";
+import { ensureUserIdForDisplayName } from "../users/devUsers";
 import dayjs from "dayjs";
 
 /* ============================================
@@ -450,8 +451,8 @@ const formatJobData = (data) => {
 
       return {
         id: data.technician_user.user_id || null,
-        name: firstName || derivedName || data.technician_user.email || "",
-        fullName: derivedName || data.technician_user.email || "",
+        name: derivedName || firstName || data.technician_user.email || "",
+        fullName: derivedName || firstName || data.technician_user.email || "",
         email: data.technician_user.email || "",
         role: data.technician_user.role || "",
       };
@@ -735,19 +736,48 @@ export const assignTechnicianToJob = async (
   technicianIdentifier,
   technicianName
 ) => {
-  let assignedValue = null;
+  let resolvedTechnicianId = null;
 
   if (typeof technicianIdentifier !== "undefined" && technicianIdentifier !== null) {
-    assignedValue =
-      typeof technicianIdentifier === "string"
-        ? technicianIdentifier.trim()
-        : technicianIdentifier;
-  } else if (technicianName) {
-    assignedValue = technicianName.trim();
+    const parsed = Number(technicianIdentifier);
+    if (Number.isInteger(parsed) && !Number.isNaN(parsed)) {
+      resolvedTechnicianId = parsed;
+    }
+  }
+
+  if (resolvedTechnicianId == null) {
+    const displayName = String(technicianName || technicianIdentifier || "").trim();
+
+    if (!displayName) {
+      return {
+        success: false,
+        error: { message: "Technician name or id is required" },
+      };
+    }
+
+    try {
+      const ensuredId = await ensureUserIdForDisplayName(displayName);
+      if (ensuredId != null) {
+        resolvedTechnicianId = ensuredId;
+      }
+    } catch (err) {
+      console.error("❌ Failed to resolve technician id:", err);
+      return {
+        success: false,
+        error: { message: err?.message || "Failed to resolve technician id" },
+      };
+    }
+  }
+
+  if (resolvedTechnicianId == null) {
+    return {
+      success: false,
+      error: { message: "Unable to resolve technician id" },
+    };
   }
 
   return updateJob(jobId, {
-    assigned_to: assignedValue,
+    assigned_to: resolvedTechnicianId,
     status: "Assigned",
   });
 };
