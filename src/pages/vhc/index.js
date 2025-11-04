@@ -1,4 +1,4 @@
-// file location: src/pages/vhc/index.js
+// file location: src/pages/vhc/check.js
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -258,8 +258,8 @@ const AddCheckModal = ({ isOpen, onClose, section, onSave }) => {
   );
 };
 
-// ✅ Main VHC Page Component
-export default function VHCPage() {
+// ✅ Main VHC Check Page Component
+export default function VHCCheckPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const jobNumber = searchParams.get("job");
@@ -274,7 +274,7 @@ export default function VHCPage() {
   useEffect(() => {
     if (!jobNumber) {
       alert("No job number provided");
-      router.push("/vhc/dashboard");
+      router.push("/vhc");
       return;
     }
 
@@ -288,7 +288,7 @@ export default function VHCPage() {
         
         if (!job) {
           alert("Job not found");
-          router.push("/vhc/dashboard");
+          router.push("/vhc");
           return;
         }
 
@@ -413,24 +413,44 @@ export default function VHCPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => router.push(`/vhc/details/${jobNumber}`)}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "#d10000",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
-              transition: "background-color 0.2s"
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
-            onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
-          >
-            View Full Report →
-          </button>
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button
+              onClick={() => router.push("/vhc")}
+              style={{
+                padding: "12px 24px",
+                backgroundColor: "#f5f5f5",
+                color: "#333",
+                border: "1px solid #e0e0e0",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "600",
+                transition: "background-color 0.2s"
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = "#e0e0e0"}
+              onMouseLeave={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+            >
+              ← Back to Dashboard
+            </button>
+            <button
+              onClick={() => router.push(`/vhc/details?job=${jobNumber}`)}
+              style={{
+                padding: "12px 24px",
+                backgroundColor: "#d10000",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "600",
+                transition: "background-color 0.2s"
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
+              onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
+            >
+              View Full Report →
+            </button>
+          </div>
         </div>
 
         {/* Summary Stats */}

@@ -1,15 +1,23 @@
-// ✅ File location: src/pages/job-cards/[jobNumber]/write-up.js
+// file location: src/pages/job-cards/[jobNumber]/write-up.js
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
-import { getWriteUpByJobNumber, saveWriteUpToDatabase } from "../../../lib/database/jobs";
+import { 
+  getWriteUpByJobNumber, 
+  saveWriteUpToDatabase,
+  getJobByNumber 
+} from "../../../lib/database/jobs";
+import { useUser } from "../../../context/UserContext";
+import { usersByRole } from "../../../config/users";
 
 export default function WriteUpPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
+  const { user } = useUser();
 
+  const [jobData, setJobData] = useState(null);
   const [writeUpData, setWriteUpData] = useState({
     fault: "",
     caused: "",
@@ -27,12 +35,23 @@ export default function WriteUpPage() {
 
   const [loading, setLoading] = useState(true);
 
-  // ✅ Fetch existing write-up if available
+  const username = user?.username;
+  const techsList = usersByRole["Techs"] || [];
+  const isTech = techsList.includes(username);
+
+  // ✅ Fetch job and write-up data
   useEffect(() => {
     if (!jobNumber) return;
 
-    const fetchWriteUp = async () => {
+    const fetchData = async () => {
       try {
+        // Fetch job details
+        const { data: job } = await getJobByNumber(jobNumber);
+        if (job) {
+          setJobData(job);
+        }
+
+        // Fetch existing write-up if available
         const data = await getWriteUpByJobNumber(jobNumber);
         if (data) {
           setWriteUpData((prev) => ({
@@ -43,13 +62,13 @@ export default function WriteUpPage() {
           }));
         }
       } catch (err) {
-        console.error("Error fetching write-up:", err);
+        console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchWriteUp();
+    fetchData();
   }, [jobNumber]);
 
   // ✅ Handle text field updates
@@ -72,6 +91,13 @@ export default function WriteUpPage() {
       const result = await saveWriteUpToDatabase(jobNumber, writeUpData);
       if (result?.success) {
         alert("✅ Write-up saved successfully!");
+        
+        // If user is a tech, go back to their job detail page
+        if (isTech) {
+          router.push(`/job-cards/myjobs/${jobNumber}`);
+        } else {
+          router.push(`/job-cards/${jobNumber}`);
+        }
       } else {
         alert("❌ Failed to save write-up");
       }
@@ -82,19 +108,94 @@ export default function WriteUpPage() {
   };
 
   // ✅ Navigation helpers
-  const goBackToJobCard = () => router.push(`/job-cards/${jobNumber}`);
+  const goBackToJobCard = () => {
+    if (isTech) {
+      router.push(`/job-cards/myjobs/${jobNumber}`);
+    } else {
+      router.push(`/job-cards/${jobNumber}`);
+    }
+  };
+
   const goToCheckSheet = () => router.push(`/job-cards/${jobNumber}/check-box`);
   const goToVehicleDetails = () => router.push(`/job-cards/${jobNumber}/car-details`);
 
-  if (loading)
+  if (loading) {
     return (
       <Layout>
-        <p style={{ padding: "20px" }}>Loading...</p>
+        <div style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "center", 
+          height: "80vh",
+          flexDirection: "column",
+          gap: "16px"
+        }}>
+          <div style={{
+            width: "60px",
+            height: "60px",
+            border: "4px solid #f3f3f3",
+            borderTop: "4px solid #FF4040",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite"
+          }}></div>
+          <p style={{ color: "#666" }}>Loading write-up...</p>
+          <style jsx>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
       </Layout>
     );
+  }
 
   return (
     <Layout>
+      {/* Header with job info */}
+      {jobData && (
+        <div style={{
+          maxWidth: "1400px",
+          margin: "0 auto 16px auto",
+          padding: "16px 16px 0 16px"
+        }}>
+          <div style={{
+            backgroundColor: "white",
+            padding: "16px 24px",
+            borderRadius: "12px",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+            border: "1px solid #e0e0e0",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}>
+            <div>
+              <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#FF4040", margin: "0 0 4px 0" }}>
+                Write-Up - Job #{jobNumber}
+              </h2>
+              <p style={{ fontSize: "14px", color: "#666", margin: 0 }}>
+                {jobData.customer} | {jobData.vehicle.reg}
+              </p>
+            </div>
+            <button
+              onClick={goBackToJobCard}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: "#6c757d",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "600"
+              }}
+            >
+              ← Back to Job
+            </button>
+          </div>
+        </div>
+      )}
+
       <div
         style={{
           maxWidth: "1400px",
@@ -125,7 +226,17 @@ export default function WriteUpPage() {
                 placeholder={`Enter ${field} details...`}
                 value={writeUpData[field]}
                 onChange={(e) => handleChange(field, e.target.value)}
-                style={{ flex: 1, padding: "8px", width: "100%", resize: "none" }}
+                style={{ 
+                  flex: 1, 
+                  padding: "12px", 
+                  width: "100%", 
+                  resize: "vertical",
+                  minHeight: "150px",
+                  border: "1px solid #e0e0e0",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  fontFamily: "inherit"
+                }}
               />
             </div>
           ))}
@@ -148,15 +259,21 @@ export default function WriteUpPage() {
                 boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
               }}
             >
-              <label>
+              <label style={{ fontSize: "14px", fontWeight: "600", color: "#333", display: "block", marginBottom: "8px" }}>
                 {label}
-                <input
-                  type="text"
-                  value={writeUpData[field]}
-                  onChange={(e) => handleChange(field, e.target.value)}
-                  style={{ width: "100%", padding: "6px", marginTop: "4px" }}
-                />
               </label>
+              <input
+                type="text"
+                value={writeUpData[field]}
+                onChange={(e) => handleChange(field, e.target.value)}
+                style={{ 
+                  width: "100%", 
+                  padding: "10px 12px",
+                  border: "1px solid #e0e0e0",
+                  borderRadius: "6px",
+                  fontSize: "14px"
+                }}
+              />
             </div>
           ))}
 
@@ -169,14 +286,23 @@ export default function WriteUpPage() {
               boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
             }}
           >
-            <label>
+            <label style={{ fontSize: "14px", fontWeight: "600", color: "#333", display: "block", marginBottom: "8px" }}>
               Technical Bulletins
-              <textarea
-                value={writeUpData.technicalBulletins}
-                onChange={(e) => handleChange("technicalBulletins", e.target.value)}
-                style={{ width: "100%", padding: "6px", marginTop: "4px", resize: "none" }}
-              />
             </label>
+            <textarea
+              value={writeUpData.technicalBulletins}
+              onChange={(e) => handleChange("technicalBulletins", e.target.value)}
+              style={{ 
+                width: "100%", 
+                padding: "10px 12px",
+                border: "1px solid #e0e0e0",
+                borderRadius: "6px",
+                fontSize: "14px",
+                resize: "vertical",
+                minHeight: "80px",
+                fontFamily: "inherit"
+              }}
+            />
           </div>
 
           {/* Technical Signature & Quality Control */}
@@ -193,15 +319,21 @@ export default function WriteUpPage() {
                 boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
               }}
             >
-              <label>
+              <label style={{ fontSize: "14px", fontWeight: "600", color: "#333", display: "block", marginBottom: "8px" }}>
                 {label}
-                <input
-                  type="text"
-                  value={writeUpData[field]}
-                  onChange={(e) => handleChange(field, e.target.value)}
-                  style={{ width: "100%", padding: "6px", marginTop: "4px" }}
-                />
               </label>
+              <input
+                type="text"
+                value={writeUpData[field]}
+                onChange={(e) => handleChange(field, e.target.value)}
+                style={{ 
+                  width: "100%", 
+                  padding: "10px 12px",
+                  border: "1px solid #e0e0e0",
+                  borderRadius: "6px",
+                  fontSize: "14px"
+                }}
+              />
             </div>
           ))}
 
@@ -214,14 +346,23 @@ export default function WriteUpPage() {
               boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
             }}
           >
-            <label>
+            <label style={{ fontSize: "14px", fontWeight: "600", color: "#333", display: "block", marginBottom: "8px" }}>
               Additional Parts
-              <textarea
-                value={writeUpData.additionalParts}
-                onChange={(e) => handleChange("additionalParts", e.target.value)}
-                style={{ width: "100%", padding: "6px", marginTop: "4px", resize: "none" }}
-              />
             </label>
+            <textarea
+              value={writeUpData.additionalParts}
+              onChange={(e) => handleChange("additionalParts", e.target.value)}
+              style={{ 
+                width: "100%", 
+                padding: "10px 12px",
+                border: "1px solid #e0e0e0",
+                borderRadius: "6px",
+                fontSize: "14px",
+                resize: "vertical",
+                minHeight: "80px",
+                fontFamily: "inherit"
+              }}
+            />
           </div>
 
           {/* Qty / Booked */}
@@ -237,15 +378,18 @@ export default function WriteUpPage() {
                   boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                 }}
               >
-                <h4 style={{ marginTop: 0 }}>{field.toUpperCase()}</h4>
+                <h4 style={{ marginTop: 0, fontSize: "14px", fontWeight: "600", color: "#333", marginBottom: "12px" }}>
+                  {field.toUpperCase()}
+                </h4>
                 {writeUpData[field].map((checked, idx) => (
-                  <label key={idx} style={{ display: "block" }}>
+                  <label key={idx} style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
                     <input
                       type="checkbox"
                       checked={checked}
                       onChange={() => handleCheckboxChange(field, idx)}
-                      style={{ marginRight: "8px" }}
+                      style={{ marginRight: "8px", width: "16px", height: "16px" }}
                     />
+                    <span style={{ fontSize: "13px", color: "#666" }}>Item {idx + 1}</span>
                   </label>
                 ))}
               </div>
@@ -259,21 +403,41 @@ export default function WriteUpPage() {
         style={{
           maxWidth: "1400px",
           margin: "24px auto 0 auto",
+          padding: "0 16px 16px 16px",
           display: "flex",
           gap: "12px",
         }}
       >
-        <button onClick={goBackToJobCard} style={btnStyle}>
+        <button 
+          onClick={goBackToJobCard} 
+          style={{
+            ...btnStyle,
+            backgroundColor: "#6c757d"
+          }}
+        >
           Back to Job Card
         </button>
-        <button onClick={goToCheckSheet} style={btnStyle}>
+        <button 
+          onClick={goToCheckSheet} 
+          style={btnStyle}
+        >
           Check Sheet
         </button>
-        <button onClick={goToVehicleDetails} style={btnStyle}>
+        <button 
+          onClick={goToVehicleDetails} 
+          style={btnStyle}
+        >
           Vehicle Details
         </button>
-        <button onClick={handleSave} style={{ ...btnStyle, backgroundColor: "green" }}>
-          Save Write-Up
+        <button 
+          onClick={handleSave} 
+          style={{ 
+            ...btnStyle, 
+            backgroundColor: "#10b981",
+            flex: 2
+          }}
+        >
+          💾 Save Write-Up
         </button>
       </div>
     </Layout>
@@ -283,10 +447,13 @@ export default function WriteUpPage() {
 // ✅ Reusable button style
 const btnStyle = {
   flex: 1,
-  padding: "12px",
+  padding: "14px 20px",
   backgroundColor: "#FF4040",
   color: "white",
   border: "none",
-  borderRadius: "6px",
+  borderRadius: "8px",
   cursor: "pointer",
+  fontSize: "14px",
+  fontWeight: "600",
+  transition: "background-color 0.2s"
 };
