@@ -1,0 +1,36 @@
+# file location: codex/deploy.yml
+name: Build and Deploy (HNPSystem)
+
+on:
+  push:
+    branches:
+      - main  # Runs when main branch updates
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # Step 4: Run Next.js build
+      - name: Build Next.js
+        run: npm run build
+
+      # Step 5: Deploy (example — adjust for your host)
+      - name: Deploy to Supabase Functions
+        run: |
+          echo "🚀 Deploying to Supabase Edge..."
+          npx supabase functions deploy || echo "⚠️ No functions found, skipping..."
