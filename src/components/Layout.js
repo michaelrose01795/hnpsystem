@@ -234,6 +234,19 @@ export default function Layout({ children }) {
     );
   }
 
+  if (
+    userRoles.includes("valet service") ||
+    userRoles.includes("service manager") ||
+    userRoles.includes("admin")
+  ) {
+    addNavItem(
+      "🧽 Valet Jobs",
+      "/valet",
+      ["valet", "wash", "valeting"],
+      "View vehicles awaiting wash"
+    );
+  }
+
   addNavItem(
     "🛎️ Workshop Check-In",
     "/workshop/check-in",
@@ -513,6 +526,29 @@ export default function Layout({ children }) {
                     }}
                   >
                     📝 VHC Dashboard
+                  </span>
+                </Link>
+              )}
+
+              {(userRoles.includes("valet service") ||
+                userRoles.includes("service manager") ||
+                userRoles.includes("admin")) && (
+                <Link href="/valet">
+                  <span
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      marginTop: "10px",
+                      borderRadius: "6px",
+                      color: "white",
+                      backgroundColor: colors.accent,
+                      textAlign: "center",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    🧽 Valet Jobs
                   </span>
                 </Link>
               )}

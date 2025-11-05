@@ -441,6 +441,20 @@ export default function MyJobsPage() {
                 const vhcBgColor = vhcRequired ? "#d1fae5" : "#fee2e2";
                 const vhcText = vhcRequired ? "VHC Required" : "No VHC";
 
+                const handleVhcBadgeClick = (event) => {
+                  if (!vhcRequired || !job.jobNumber) return;
+                  event.stopPropagation();
+                  router.push(`/job-cards/${job.jobNumber}/vhc`);
+                };
+
+                const handleVhcBadgeKeyDown = (event) => {
+                  if (!vhcRequired) return;
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    handleVhcBadgeClick(event);
+                  }
+                };
+
                 return (
                   <div
                     key={job.id || job.jobNumber}
@@ -496,6 +510,15 @@ export default function MyJobsPage() {
 
                       {/* ✅ NEW: VHC Status Indicator */}
                       <div
+                        role={vhcRequired ? "button" : undefined}
+                        tabIndex={vhcRequired ? 0 : -1}
+                        onClick={handleVhcBadgeClick}
+                        onKeyDown={handleVhcBadgeKeyDown}
+                        title={
+                          vhcRequired
+                            ? "Open the VHC checklist for this job"
+                            : "This job does not require a VHC"
+                        }
                         style={{
                           backgroundColor: vhcBgColor,
                           color: vhcColor,
@@ -507,7 +530,18 @@ export default function MyJobsPage() {
                           border: `2px solid ${vhcColor}`,
                           display: "flex",
                           alignItems: "center",
-                          gap: "6px"
+                          gap: "6px",
+                          cursor: vhcRequired ? "pointer" : "default",
+                          opacity: vhcRequired ? 1 : 0.85,
+                          transition: "transform 0.2s ease"
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!vhcRequired) return;
+                          e.currentTarget.style.transform = "translateY(-1px)";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!vhcRequired) return;
+                          e.currentTarget.style.transform = "translateY(0)";
                         }}
                       >
                         <div
@@ -632,32 +666,6 @@ export default function MyJobsPage() {
                           justifyContent: "flex-end"
                         }}
                       >
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!job.jobNumber) return;
-                            router.push(`/vhc?job=${job.jobNumber}`);
-                          }}
-                          style={{
-                            padding: "8px 14px",
-                            backgroundColor: "#fff5f5",
-                            color: "#d10000",
-                            border: "1px solid #ffc9c9",
-                            borderRadius: "8px",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                            fontWeight: "600",
-                            transition: "all 0.2s"
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = "#ffe1e1";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = "#fff5f5";
-                          }}
-                        >
-                          🔍 VHC
-                        </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

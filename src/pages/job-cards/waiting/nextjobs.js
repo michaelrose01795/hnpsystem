@@ -19,6 +19,13 @@ const techsList = (usersByRole["Techs"] || []).map((name, index) => ({
   name,
 }));
 
+const motTestersList = (usersByRole["MOT Tester"] || []).map((name, index) => ({
+  id: `mot-${index + 1}`,
+  name,
+}));
+
+const assignableStaffList = [...techsList, ...motTestersList];
+
 export default function NextJobsPage() {
   // ✅ Hooks
   const { user } = useUser(); // Current logged-in user
@@ -96,25 +103,39 @@ export default function NextJobsPage() {
   }, [searchTerm, unassignedJobs]); // Recalculate when search term or unassigned jobs change
 
   // ✅ Group jobs by technician (using assignedTech.name)
+  const getJobsForAssignee = (assigneeName) => {
+    const normalizedAssignee = (assigneeName || "").toLowerCase().trim();
+
+    return jobs
+      .filter((job) => {
+        const assignedNameRaw =
+          job.assignedTech?.name ||
+          job.technician ||
+          (typeof job.assignedTo === "string" ? job.assignedTo : "");
+
+        const jobAssignedName = (assignedNameRaw || "").toLowerCase().trim();
+
+        return jobAssignedName && jobAssignedName === normalizedAssignee;
+      })
+      .sort((a, b) => (a.position || 0) - (b.position || 0));
+  };
+
   const assignedJobs = useMemo(
     () =>
       techsList.map((tech) => ({
-        ...tech, // Spread tech info
-        jobs: jobs
-          .filter((job) => {
-            const assignedNameRaw =
-              job.assignedTech?.name ||
-              job.technician ||
-              (typeof job.assignedTo === "string" ? job.assignedTo : "");
-
-            const assignedName = assignedNameRaw?.toLowerCase().trim();
-            const techName = tech.name.toLowerCase().trim();
-
-            return assignedName && assignedName === techName;
-          })
-          .sort((a, b) => (a.position || 0) - (b.position || 0)), // Sort by position
+        ...tech,
+        jobs: getJobsForAssignee(tech.name),
       })),
-    [jobs] // Recalculate when jobs change
+    [jobs]
+  );
+
+  const assignedMotJobs = useMemo(
+    () =>
+      motTestersList.map((tester) => ({
+        ...tester,
+        jobs: getJobsForAssignee(tester.name),
+      })),
+    [jobs]
   );
 
   const handleOpenJobDetails = (job) => {
@@ -336,6 +357,149 @@ export default function NextJobsPage() {
     setDragOverJob(null); // Clear job hover
   };
 
+  const renderAssigneePanel = (assignee) => (
+    <div
+      key={assignee.id}
+      style={{
+        background: "white",
+        border: dragOverTarget === assignee.name ? "3px solid #d10000" : "1px solid #ffe5e5",
+        borderRadius: "8px",
+        padding: "16px",
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+        boxShadow: dragOverTarget === assignee.name ? "0 4px 12px rgba(209,0,0,0.2)" : "0 2px 4px rgba(0,0,0,0.08)",
+        transition: "all 0.2s ease",
+        backgroundColor: dragOverTarget === assignee.name ? "#fff5f5" : "white"
+      }}
+      onDragOver={handleDragOver}
+      onDragEnter={(e) => handleDragEnterSection(assignee.name, e)}
+      onDragLeave={handleDragLeave}
+      onDrop={(e) => {
+        e.preventDefault();
+        handleDropOnTech(null, assignee);
+      }}
+    >
+      <p style={{
+        fontWeight: "600",
+        marginBottom: "12px",
+        fontSize: "16px",
+        color: "#1f2937",
+        flexShrink: 0
+      }}>
+        {assignee.name} ({assignee.jobs.length})
+      </p>
+      <div style={{
+        flex: 1,
+        overflowY: "auto",
+        minHeight: 0,
+        paddingRight: "4px"
+      }}>
+        {assignee.jobs.length === 0 ? (
+          <p style={{
+            color: "#9ca3af",
+            fontSize: "14px",
+            margin: 0
+          }}>
+            No jobs assigned
+          </p>
+        ) : (
+          assignee.jobs.map((job, index) => (
+            <React.Fragment key={job.jobNumber}>
+              {dragOverJob === job.jobNumber && dragOverTarget === assignee.name && (
+                <div style={{
+                  height: "3px",
+                  backgroundColor: "#d10000",
+                  marginBottom: "8px",
+                  borderRadius: "2px",
+                  boxShadow: "0 0 8px rgba(209,0,0,0.4)"
+                }} />
+              )}
+
+              <div
+                draggable={hasAccess}
+                onDragStart={(e) => handleDragStart(job, e)}
+                onDragOver={handleDragOver}
+                onDragEnter={(e) => handleDragEnterJob(job.jobNumber, assignee.name, e)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDropOnTech(job, assignee);
+                }}
+                onClick={() => handleOpenJobDetails(job)}
+                style={{
+                  border: "1px solid #ffd6d6",
+                  borderRadius: "8px",
+                  padding: "10px",
+                  marginBottom: "8px",
+                  backgroundColor:
+                    draggingJob?.jobNumber === job.jobNumber ? "#ffe5e5" : "#fff5f5",
+                  cursor: hasAccess ? "grab" : "pointer",
+                  transition: "all 0.2s",
+                  opacity: draggingJob?.jobNumber === job.jobNumber ? 0.5 : 1
+                }}
+                onMouseEnter={(e) => {
+                  if (draggingJob?.jobNumber !== job.jobNumber) {
+                    e.currentTarget.style.backgroundColor = "#ffecec";
+                    e.currentTarget.style.boxShadow = "0 2px 6px rgba(209,0,0,0.12)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (draggingJob?.jobNumber !== job.jobNumber) {
+                    e.currentTarget.style.backgroundColor = "#fff5f5";
+                    e.currentTarget.style.boxShadow = "none";
+                  }
+                }}
+              >
+                <p style={{
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#d10000",
+                  margin: "0 0 4px 0"
+                }}>
+                  {job.jobNumber} – {job.reg}
+                </p>
+                <p style={{
+                  fontSize: "12px",
+                  color: "#6b7280",
+                  margin: 0
+                }}>
+                  {job.status}
+                </p>
+              </div>
+
+              {index === assignee.jobs.length - 1 &&
+                dragOverTarget === assignee.name &&
+                !dragOverJob &&
+                draggingJob && (
+                  <div style={{
+                    height: "3px",
+                    backgroundColor: "#d10000",
+                    marginTop: "-8px",
+                    marginBottom: "8px",
+                    borderRadius: "2px",
+                    boxShadow: "0 0 8px rgba(209,0,0,0.4)"
+                  }} />
+                )}
+            </React.Fragment>
+          ))
+        )}
+
+        {assignee.jobs.length === 0 &&
+          dragOverTarget === assignee.name &&
+          draggingJob && (
+            <div style={{
+              height: "3px",
+              backgroundColor: "#d10000",
+              borderRadius: "2px",
+              boxShadow: "0 0 8px rgba(209,0,0,0.4)"
+            }} />
+          )}
+      </div>
+    </div>
+  );
+
   // ✅ Access check
   if (!hasAccess) {
     return (
@@ -548,156 +712,29 @@ export default function NextJobsPage() {
               gap: "16px",
               height: "100%"
             }}>
-              {assignedJobs.map((tech) => (
-                <div
-                  key={tech.id}
-                  style={{
-                    background: "white",
-                    border: dragOverTarget === tech.name ? "3px solid #d10000" : "1px solid #ffe5e5",
-                    borderRadius: "8px",
-                    padding: "16px",
-                    display: "flex",
-                    flexDirection: "column",
-                    minHeight: 0,
-                    boxShadow: dragOverTarget === tech.name ? "0 4px 12px rgba(209,0,0,0.2)" : "0 2px 4px rgba(0,0,0,0.08)",
-                    transition: "all 0.2s ease",
-                    backgroundColor: dragOverTarget === tech.name ? "#fff5f5" : "white" // Highlight entire box
-                  }}
-                  onDragOver={handleDragOver}
-                  onDragEnter={(e) => handleDragEnterSection(tech.name, e)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    // Drop at end of list if not over a specific job
-                    handleDropOnTech(null, tech);
-                  }}
-                >
-                  <p style={{ 
-                    fontWeight: "600", 
-                    marginBottom: "12px",
-                    fontSize: "16px",
-                    color: "#1f2937",
-                    flexShrink: 0
-                  }}>
-                    {tech.name} ({tech.jobs.length})
-                  </p>
-                  <div style={{ 
-                    flex: 1, 
-                    overflowY: "auto",
-                    minHeight: 0,
-                    paddingRight: "4px"
-                  }}>
-                    {tech.jobs.length === 0 ? (
-                      <p style={{ 
-                        color: "#9ca3af", 
-                        fontSize: "14px",
-                        margin: 0
-                      }}>
-                        No jobs assigned
-                      </p>
-                    ) : (
-                      tech.jobs.map((job, index) => (
-                        <React.Fragment key={job.jobNumber}>
-                          {/* ✅ NEW: Drop indicator line ABOVE job */}
-                          {dragOverJob === job.jobNumber && dragOverTarget === tech.name && (
-                            <div style={{
-                              height: "3px",
-                              backgroundColor: "#d10000",
-                              marginBottom: "8px",
-                              borderRadius: "2px",
-                              boxShadow: "0 0 8px rgba(209,0,0,0.4)"
-                            }} />
-                          )}
-                          
-                          <div
-                            draggable={hasAccess} // Only draggable if user has access
-                            onDragStart={(e) => handleDragStart(job, e)} // Start dragging
-                            onDragOver={handleDragOver} // Allow drop
-                            onDragEnter={(e) => handleDragEnterJob(job.jobNumber, tech.name, e)}
-                            onDragLeave={handleDragLeave}
-                            onDrop={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation(); // Prevent bubbling to parent
-                              handleDropOnTech(job, tech);
-                            }}
-                            onClick={() => handleOpenJobDetails(job)} // Open job details popup
-                            style={{
-                              border: "1px solid #ffd6d6",
-                              borderRadius: "8px",
-                              padding: "10px",
-                              marginBottom: "8px",
-                              backgroundColor:
-                                draggingJob?.jobNumber === job.jobNumber
-                                  ? "#ffe5e5" // Highlight dragging job
-                                  : "#fff5f5",
-                              cursor: hasAccess ? "grab" : "pointer",
-                              transition: "all 0.2s",
-                              opacity: draggingJob?.jobNumber === job.jobNumber ? 0.5 : 1
-                            }}
-                            onMouseEnter={(e) => {
-                              if (draggingJob?.jobNumber !== job.jobNumber) {
-                                e.currentTarget.style.backgroundColor = "#ffecec";
-                                e.currentTarget.style.boxShadow = "0 2px 6px rgba(209,0,0,0.12)";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (draggingJob?.jobNumber !== job.jobNumber) {
-                                e.currentTarget.style.backgroundColor = "#fff5f5";
-                                e.currentTarget.style.boxShadow = "none";
-                              }
-                            }}
-                          >
-                            <p style={{
-                              fontSize: "14px",
-                              fontWeight: "600",
-                              color: "#d10000",
-                              margin: "0 0 4px 0"
-                            }}>
-                              {job.jobNumber} – {job.reg}
-                            </p>
-                            <p style={{
-                              fontSize: "12px",
-                              color: "#6b7280",
-                              margin: 0
-                            }}>
-                              {job.status}
-                            </p>
-                          </div>
-
-                          {/* ✅ NEW: Drop indicator line at END if hovering over empty space */}
-                          {index === tech.jobs.length - 1 && 
-                           dragOverTarget === tech.name && 
-                           !dragOverJob && 
-                           draggingJob && (
-                            <div style={{
-                              height: "3px",
-                              backgroundColor: "#d10000",
-                              marginTop: "-8px",
-                              marginBottom: "8px",
-                              borderRadius: "2px",
-                              boxShadow: "0 0 8px rgba(209,0,0,0.4)"
-                            }} />
-                          )}
-                        </React.Fragment>
-                      ))
-                    )}
-                    
-                    {/* ✅ NEW: Drop indicator line for EMPTY tech section */}
-                    {tech.jobs.length === 0 && 
-                     dragOverTarget === tech.name && 
-                     draggingJob && (
-                      <div style={{
-                        height: "3px",
-                        backgroundColor: "#d10000",
-                        borderRadius: "2px",
-                        boxShadow: "0 0 8px rgba(209,0,0,0.4)"
-                      }} />
-                    )}
-                  </div>
-                </div>
-              ))}
+              {assignedJobs.map(renderAssigneePanel)}
             </div>
           </div>
+
+          {motTestersList.length > 0 && (
+            <div style={{ marginTop: "24px" }}>
+              <h3 style={{
+                margin: "0 0 12px 0",
+                fontSize: "18px",
+                fontWeight: "600",
+                color: "#1f2937"
+              }}>
+                MOT Testers
+              </h3>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                gap: "16px"
+              }}>
+                {assignedMotJobs.map(renderAssigneePanel)}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ✅ JOB DETAILS POPUP WITH EDIT BUTTON */}
@@ -917,7 +954,7 @@ export default function NextJobsPage() {
               
               <select
                 onChange={(e) => {
-                  const selectedTech = techsList.find(
+                  const selectedTech = assignableStaffList.find(
                     (t) => t.name === e.target.value
                   );
                   if (selectedTech) assignTechToJob(selectedTech); // Assign selected tech
@@ -940,7 +977,7 @@ export default function NextJobsPage() {
                 <option value="" disabled>
                   Select Technician...
                 </option>
-                {techsList.map((tech) => (
+                {assignableStaffList.map((tech) => (
                   <option key={tech.id} value={tech.name}>
                     {tech.name}
                   </option>

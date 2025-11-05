@@ -434,6 +434,17 @@ export const getJobByNumberOrReg = async (searchTerm) => {
   return formatJobData(jobData);
 };
 
+const normalizeBooleanField = (value) => {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["true", "yes", "y", "1"].includes(normalized)) return true;
+    if (["false", "no", "n", "0"].includes(normalized)) return false;
+  }
+  return Boolean(value);
+};
+
 /* ============================================
    HELPER: FORMAT JOB DATA
    Converts database format to application format
@@ -476,6 +487,26 @@ const formatJobData = (data) => {
     return null;
   })();
 
+  const partsRequests = (data.parts_requests || []).map((partRequest) => ({
+    requestId: partRequest.request_id,
+    request_id: partRequest.request_id,
+    partId: partRequest.part_id,
+    part_id: partRequest.part_id,
+    quantity: partRequest.quantity ?? null,
+    status: partRequest.status || null,
+    requestedBy: partRequest.requested_by || null,
+    approvedBy: partRequest.approved_by || null,
+    createdAt: partRequest.created_at || null,
+    updatedAt: partRequest.updated_at || null,
+    part: partRequest.part
+      ? {
+          id: partRequest.part.id || null,
+          partNumber: partRequest.part.part_number || "",
+          name: partRequest.part.name || "",
+        }
+      : null,
+  }));
+
   return {
     id: data.id,
     jobNumber: data.job_number,
@@ -506,7 +537,7 @@ const formatJobData = (data) => {
     jobCategories: data.job_categories || [],
     requests: data.requests || [],
     cosmeticNotes: data.cosmetic_notes || "",
-    vhcRequired: data.vhc_required || false,
+    vhcRequired: normalizeBooleanField(data.vhc_required),
     maintenanceInfo: data.maintenance_info || {},
     
     // ✅ Technician info
@@ -544,7 +575,7 @@ const formatJobData = (data) => {
     
     // ✅ Related data
     vhcChecks: data.vhc_checks || [],
-    partsRequests: data.parts_requests || [],
+    partsRequests,
     notes: data.job_notes || [],
     writeUp: data.job_writeups?.[0] || null,
     files: data.job_files || [], // ✅ NEW: File attachments
@@ -627,7 +658,7 @@ export const addJobToDatabase = async ({
       job_categories: jobCategories || [],
       requests: requests || [],
       cosmetic_notes: cosmeticNotes || null,
-      vhc_required: vhcRequired || false,
+      vhc_required: normalizeBooleanField(vhcRequired),
       maintenance_info: maintenanceInfo || {},
       created_at: new Date().toISOString(),
     };
@@ -696,13 +727,19 @@ export const addJobToDatabase = async ({
 export const updateJob = async (jobId, updates) => {
   try {
     console.log("🔄 Updating job:", jobId, "with updates:", updates);
+
+    const payload = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (Object.prototype.hasOwnProperty.call(updates, "vhc_required")) {
+      payload.vhc_required = normalizeBooleanField(updates.vhc_required);
+    }
     
     const { data, error } = await supabase
       .from("jobs")
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
+      .update(payload)
       .eq("id", jobId)
       .select()
       .single();

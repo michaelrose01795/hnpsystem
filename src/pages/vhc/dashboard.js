@@ -20,6 +20,7 @@ const STATUS_COLORS = {
   "Complete": "#06b6d4",
   "Sent": "#8b5cf6",
   "Viewed": "#06b6d4",
+  "Parts Request": "#f97316",
 };
 
 // ✅ Helper function to get customer name
@@ -77,6 +78,15 @@ const VHCJobCard = ({ job, onClick }) => {
   const nextServiceColor = getNextServiceColor(job.nextService);
   const motColor = getMOTColor(job.motExpiry);
   const statusColor = STATUS_COLORS[job.vhcStatus] || "#9ca3af";
+  const isPartsOnly = job.vhcStatus === "Parts Request";
+  const counterValue = isPartsOnly ? job.partsCount || 0 : job.vhcChecksCount || 0;
+  const counterLabel = isPartsOnly ? "Parts" : "Checks";
+  const counterBackground = counterValue > 0
+    ? isPartsOnly ? "#fef3c7" : "#e0f2fe"
+    : "#f5f5f5";
+  const counterColor = counterValue > 0
+    ? isPartsOnly ? "#b45309" : "#0369a1"
+    : "#999";
 
   return (
     <div
@@ -210,16 +220,23 @@ const VHCJobCard = ({ job, onClick }) => {
 
         <div style={{ width: "1px", height: "35px", backgroundColor: "#e5e5e5" }}></div>
 
-        <div style={{ textAlign: "center", minWidth: "70px" }}>
+        <div style={{ textAlign: "center", minWidth: "80px" }}>
           <div style={{
-            backgroundColor: job.vhcChecksCount > 0 ? "#e0f2fe" : "#f5f5f5",
-            color: job.vhcChecksCount > 0 ? "#0369a1" : "#999",
+            backgroundColor: counterBackground,
+            color: counterColor,
             padding: "6px 12px",
             borderRadius: "8px",
             fontSize: "13px",
-            fontWeight: "600"
+            fontWeight: "600",
+            display: "flex",
+            flexDirection: "column",
+            gap: "2px",
+            alignItems: "center"
           }}>
-            {job.vhcChecksCount || 0}
+            <span>{counterValue}</span>
+            <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              {counterLabel}
+            </span>
           </div>
         </div>
 
@@ -273,6 +290,7 @@ const STATUS_TABS = [
   "Authorized",
   "Ready",
   "Carry Over",
+  "Parts Request",
   "Complete",
 ];
 
@@ -294,9 +312,15 @@ export default function VHCDashboard() {
         const jobs = await getAllJobs();
         console.log("✅ Jobs fetched:", jobs.length);
 
+        const vhcEligibleJobs = jobs.filter((job) => job.vhcRequired === true);
+        console.log("✅ Jobs requiring VHC:", vhcEligibleJobs.length);
+
         const jobsWithVhc = await Promise.all(
-          jobs.map(async (job) => {
+          vhcEligibleJobs.map(async (job) => {
             const checks = await getVHCChecksByJob(job.id);
+
+            const partsCount = job.partsRequests?.length || 0;
+            const effectiveChecksCount = checks.length > 0 ? checks.length : partsCount;
             
             let vhcStatus = "Outstanding";
             if (checks.length > 0) {
@@ -310,6 +334,8 @@ export default function VHCDashboard() {
               } else if (checks.length > 5) {
                 vhcStatus = "Complete";
               }
+            } else if (partsCount > 0) {
+              vhcStatus = "Parts Request";
             }
 
             const redWork = checks
@@ -329,7 +355,8 @@ export default function VHCDashboard() {
               customer: job.customer,
               makeModel: job.makeModel,
               vhcStatus,
-              vhcChecksCount: checks.length,
+              vhcChecksCount: effectiveChecksCount,
+              partsCount,
               redWork,
               amberWork,
               lastVisit: job.lastVisit || "First visit",
