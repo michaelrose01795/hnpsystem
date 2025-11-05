@@ -10,6 +10,29 @@ import { getJobByNumber, updateJob } from "../../lib/database/jobs";
 import { getNotesByJob, createJobNote, deleteJobNote } from "../../lib/database/notes";
 import { getCustomerJobs } from "../../lib/database/customers";
 
+const normalizeRequests = (rawRequests) => {
+  if (Array.isArray(rawRequests)) {
+    return rawRequests;
+  }
+
+  if (typeof rawRequests === "string") {
+    try {
+      const parsed = JSON.parse(rawRequests);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (parseError) {
+      console.warn("Unable to parse requests string into array:", parseError);
+      return [];
+    }
+  }
+
+  if (rawRequests && typeof rawRequests === "object") {
+    // Supabase jsonb can come back as null or object; only arrays are valid here.
+    return [];
+  }
+
+  return [];
+};
+
 export default function JobCardDetailPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
@@ -537,8 +560,12 @@ export default function JobCardDetailPage() {
 
 // ✅ Customer Requests Tab
 function CustomerRequestsTab({ jobData, canEdit, onUpdate }) {
-  const [requests, setRequests] = useState(jobData.requests || []);
+  const [requests, setRequests] = useState(() => normalizeRequests(jobData.requests));
   const [editing, setEditing] = useState(false);
+
+  useEffect(() => {
+    setRequests(normalizeRequests(jobData.requests));
+  }, [jobData.requests]);
 
   const handleSave = () => {
     onUpdate(requests);
@@ -601,7 +628,7 @@ function CustomerRequestsTab({ jobData, canEdit, onUpdate }) {
             </button>
             <button
               onClick={() => {
-                setRequests(jobData.requests || []);
+                setRequests(normalizeRequests(jobData.requests));
                 setEditing(false);
               }}
               style={{

@@ -23,6 +23,7 @@ export default function Sidebar() {
     { label: "Appointments", href: "/appointments", roles: ["admin", "sales", "service", "manager"] },
     { label: "Next Jobs", href: "/job-cards/waiting/nextjobs", roles: ["service manager", "workshop manager"] },
     { label: "VHC", href: "/vhc", roles: ["techs", "service", "manager", "workshop manager"] },
+    { label: "Messages", href: "/messages" },
   ];
 
   // Filter items based on user roles

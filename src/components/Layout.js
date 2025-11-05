@@ -93,6 +93,7 @@ export default function Layout({ children }) {
   const links = [
     { href: "/newsfeed", label: "📰 News Feed" },
     { href: "/dashboard", label: "📊 Dashboard" },
+    { href: "/messages", label: "💬 Messages" },
   ];
 
   const viewRoles = ["manager", "service", "sales"];
