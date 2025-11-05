@@ -30,6 +30,25 @@ export const clockInToJob = async (userId, jobId, jobNumber, workType = "initial
   console.log(`🔧 Clocking in: User ${userIdInt} → Job ${jobNumberText} (${workTypeText})`); // log
 
   try {
+    // Ensure technician is not already clocked into another active job
+    const { data: activeJobs, error: activeJobsError } = await supabase
+      .from("job_clocking")
+      .select("id, job_id, job_number")
+      .eq("user_id", userIdInt)
+      .is("clock_out", null);
+
+    if (activeJobsError && activeJobsError.code !== "PGRST116") throw activeJobsError;
+
+    const conflictingJob = (activeJobs || []).find((entry) => entry.job_id !== jobIdInt);
+    if (conflictingJob) {
+      const jobLabel = conflictingJob.job_number || `ID ${conflictingJob.job_id}`;
+      return {
+        success: false,
+        error: `Already clocked onto Job ${jobLabel}. Please clock out before starting another job.`,
+        data: conflictingJob
+      };
+    }
+
     const { data: existingClock, error: checkError } = await supabase
       .from("job_clocking")
       .select("*")
@@ -87,25 +106,46 @@ export const clockInToJob = async (userId, jobId, jobNumber, workType = "initial
 /* ============================================
    CLOCK OUT FROM JOB
 ============================================ */
-export const clockOutFromJob = async (userId, jobId) => {
+export const clockOutFromJob = async (userId, jobId, clockingId = null) => {
   const userIdInt = toInt(userId, "userId"); // int32
-  const jobIdInt = toInt(jobId, "jobId"); // int32
+  const jobIdInt =
+    jobId === null || jobId === undefined ? null : toInt(jobId, "jobId"); // optional
+  const clockingIdInt =
+    clockingId === null || clockingId === undefined ? null : toInt(clockingId, "clockingId"); // optional
 
-  console.log(`⏸️ Clocking out: User ${userIdInt} from Job ${jobIdInt}`); // log
+  if (clockingIdInt == null && jobIdInt == null) {
+    throw new Error("clockOutFromJob requires a jobId or clockingId");
+  }
+
+  const logContext =
+    clockingIdInt != null
+      ? `clocking record ${clockingIdInt}`
+      : `Job ${jobIdInt}`;
+  console.log(`⏸️ Clocking out: User ${userIdInt} from ${logContext}`); // log
 
   try {
-    const { data: activeClocking, error: findError } = await supabase
+    let query = supabase
       .from("job_clocking")
       .select("*")
       .eq("user_id", userIdInt)
-      .eq("job_id", jobIdInt)
-      .is("clock_out", null)
-      .order("clock_in", { ascending: false })
-      .limit(1)
-      .maybeSingle(); // open row
+      .is("clock_out", null);
+
+    if (clockingIdInt != null) {
+      query = query.eq("id", clockingIdInt).limit(1);
+    } else {
+      query = query.eq("job_id", jobIdInt).order("clock_in", { ascending: false }).limit(1);
+    }
+
+    const { data: activeClocking, error: findError } = await query.maybeSingle(); // open row
 
     if (findError && findError.code !== "PGRST116") throw findError; // real error
-    if (!activeClocking) return { success: false, error: "No active clock-in found for this job" }; // none open
+    if (!activeClocking) {
+      const msg =
+        clockingIdInt != null
+          ? "No active clock-in found for this entry"
+          : "No active clock-in found for this job";
+      return { success: false, error: msg };
+    }
 
     const clockOutTime = new Date().toISOString(); // ts
     const { data: updatedClock, error: updateError } = await supabase

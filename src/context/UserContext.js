@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { ensureDevDbUserAndGetId } from "../lib/users/devUsers";
+import { getUserActiveJobs } from "../lib/database/jobClocking";
 
 const UserContext = createContext();
 
@@ -8,6 +10,8 @@ export function UserProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("Waiting for Job"); // default tech status
+  const [dbUserId, setDbUserId] = useState(null);
+  const [currentJob, setCurrentJob] = useState(null);
 
   // Load dev user from localStorage
   useEffect(() => {
@@ -36,6 +40,64 @@ export function UserProvider({ children }) {
     }
   }, [session]);
 
+  // Resolve Supabase users.user_id when a user is set
+  useEffect(() => {
+    let cancelled = false;
+
+    const resolveDbUser = async () => {
+      if (!user) {
+        setDbUserId(null);
+        setCurrentJob(null);
+        return;
+      }
+
+      try {
+        const ensuredId = await ensureDevDbUserAndGetId(user);
+        if (!cancelled) {
+          setDbUserId(ensuredId || null);
+        }
+      } catch (err) {
+        console.error("Failed to resolve workshop user id", err?.message || err);
+        if (!cancelled) {
+          setDbUserId(null);
+        }
+      }
+    };
+
+    resolveDbUser();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  // Helper to refresh the technician's active job from job_clocking table
+  const refreshCurrentJob = useCallback(async () => {
+    if (!dbUserId) {
+      setCurrentJob(null);
+      return null;
+    }
+
+    try {
+      const active = await getUserActiveJobs(dbUserId);
+      if (active.success && Array.isArray(active.data) && active.data.length > 0) {
+        const nextJob = active.data[0];
+        setCurrentJob(nextJob);
+        return nextJob;
+      } else {
+        setCurrentJob(null);
+        return null;
+      }
+    } catch (err) {
+      console.error("Failed to refresh current job", err?.message || err);
+      return null;
+    }
+  }, [dbUserId]);
+
+  // Keep current job in sync when DB user id changes
+  useEffect(() => {
+    refreshCurrentJob();
+  }, [refreshCurrentJob]);
+
   // Developer login
   const devLogin = (username = "dev", role = "WORKSHOP") => {
     const devUser = { id: Date.now(), username, roles: [role.toUpperCase()] };
@@ -47,14 +109,25 @@ export function UserProvider({ children }) {
   const logout = () => {
     setUser(null);
     setStatus("Waiting for Job"); // reset status
+    setDbUserId(null);
+    setCurrentJob(null);
     localStorage.removeItem("devUser");
   };
 
-  return (
-    <UserContext.Provider value={{ user, loading, devLogin, logout, status, setStatus }}>
-      {children}
-    </UserContext.Provider>
-  );
+  const contextValue = {
+    user,
+    loading,
+    devLogin,
+    logout,
+    status,
+    setStatus,
+    dbUserId,
+    currentJob,
+    setCurrentJob,
+    refreshCurrentJob
+  };
+
+  return <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>;
 }
 
 // Custom hook

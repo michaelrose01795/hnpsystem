@@ -1,7 +1,7 @@
 // file location: src/pages/job-cards/myjobs/[jobNumber].js
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
 import { useUser } from "../../../context/UserContext";
@@ -9,6 +9,7 @@ import { usersByRole } from "../../../config/users";
 import { getJobByNumber, updateJobStatus } from "../../../lib/database/jobs";
 import { getVHCChecksByJob } from "../../../lib/database/vhc";
 import { getClockingStatus } from "../../../lib/database/clocking";
+import { clockOutFromJob, getUserActiveJobs } from "../../../lib/database/jobClocking";
 
 // ✅ Status color mapping for consistency
 const STATUS_COLORS = {
@@ -51,7 +52,7 @@ function calculateHoursWorked(clockInTime) {
 export default function TechJobDetailPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
-  const { user } = useUser();
+  const { user, dbUserId, setStatus, refreshCurrentJob, setCurrentJob } = useUser();
 
   // ✅ State management
   const [jobData, setJobData] = useState(null);
@@ -62,6 +63,75 @@ export default function TechJobDetailPage() {
   const [showAddNote, setShowAddNote] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [showAdditionalContents, setShowAdditionalContents] = useState(false);
+  const [jobClocking, setJobClocking] = useState(null);
+  const [clockOutLoading, setClockOutLoading] = useState(false);
+
+  const jobCardId = jobData?.jobCard?.id ?? null;
+  const jobCardNumber = jobData?.jobCard?.jobNumber ?? jobNumber;
+
+  const refreshJobClocking = useCallback(async () => {
+    const workshopUserId = dbUserId ?? user?.id;
+    if (!workshopUserId || !jobCardId) {
+      setJobClocking(null);
+      return;
+    }
+
+    try {
+      const result = await getUserActiveJobs(workshopUserId);
+      if (result.success) {
+        const match = result.data.find(
+          (job) => Number(job.jobId) === Number(jobCardId)
+        );
+        setJobClocking(match || null);
+      } else {
+        setJobClocking(null);
+      }
+    } catch (refreshError) {
+      console.error("❌ Failed to refresh job clocking", refreshError);
+      setJobClocking(null);
+    }
+  }, [dbUserId, user?.id, jobCardId]);
+
+  useEffect(() => {
+    refreshJobClocking();
+  }, [refreshJobClocking]);
+
+  const handleJobClockOut = async () => {
+    const workshopUserId = dbUserId ?? user?.id;
+    if (!workshopUserId) {
+      alert("Unable to clock out because your workshop profile is not linked.");
+      return;
+    }
+    if (!jobClocking || !jobCardId) {
+      alert("You are not clocked onto this job.");
+      return;
+    }
+
+    const confirmed = confirm(`Clock out from Job ${jobCardNumber}?`);
+    if (!confirmed) return;
+
+    setClockOutLoading(true);
+    try {
+      const result = await clockOutFromJob(workshopUserId, jobCardId, jobClocking.clockingId);
+      if (result.success) {
+        alert(`✅ Clocked out from Job ${jobCardNumber}\n\nHours worked: ${result.hoursWorked}h`);
+        setCurrentJob(null);
+        const nextJob = await refreshCurrentJob();
+        if (!nextJob) {
+          setStatus("Waiting for Job");
+        }
+        setJobClocking(null);
+        await refreshJobClocking();
+      } else {
+        alert(result.error || "Failed to clock out of this job.");
+      }
+    } catch (clockOutError) {
+      console.error("❌ Error clocking out from job:", clockOutError);
+      alert(clockOutError.message || "Error clocking out. Please try again.");
+    } finally {
+      setClockOutLoading(false);
+    }
+  };
 
   const username = user?.username;
   const techsList = usersByRole["Techs"] || [];
@@ -150,8 +220,18 @@ export default function TechJobDetailPage() {
   // ✅ NEW: Get dynamic VHC button text based on job status
   const getVhcButtonText = () => {
     if (!jobData?.vhcRequired) return "VHC Not Required";
+    if (["VHC Complete", "VHC Sent"].includes(jobData?.status)) return "✅ VHC Complete";
     if (vhcChecks.length === 0) return "🚀 Start VHC";
     return "📋 Continue VHC";
+  };
+
+  const getVhcStatusMessage = () => {
+    if (!jobData?.vhcRequired) return "This job does not require a Vehicle Health Check.";
+    if (["VHC Complete", "VHC Sent"].includes(jobData?.status)) {
+      return "VHC completed. Review or resend if required.";
+    }
+    if (vhcChecks.length === 0) return "Ready to start the Vehicle Health Check.";
+    return "Continue working through the outstanding VHC items.";
   };
 
   // ✅ NEW: Calculate VHC summary (red and amber items)
@@ -686,6 +766,9 @@ export default function TechJobDetailPage() {
                   {getVhcButtonText()}
                 </button>
               </div>
+              <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                {getVhcStatusMessage()}
+              </div>
 
               {/* ✅ VHC Not Required Message */}
               {!jobData?.vhcRequired && (
@@ -1064,7 +1147,7 @@ export default function TechJobDetailPage() {
         {/* ✅ Bottom Action Bar */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateColumns: "repeat(5, 1fr)",
           gap: "12px",
           marginTop: "12px",
           paddingTop: "12px",
@@ -1106,6 +1189,27 @@ export default function TechJobDetailPage() {
             }}
           >
             {getVhcButtonText()}
+          </button>
+
+          {/* Clock Out Button */}
+          <button
+            onClick={handleJobClockOut}
+            disabled={!jobClocking || clockOutLoading}
+            style={{
+              padding: "14px",
+              backgroundColor: jobClocking ? "#ef4444" : "#f3f4f6",
+              color: jobClocking ? "white" : "#9ca3af",
+              border: "none",
+              borderRadius: "8px",
+              cursor: jobClocking ? "pointer" : "not-allowed",
+              fontSize: "14px",
+              fontWeight: "600",
+              boxShadow: jobClocking ? "0 2px 8px rgba(239,68,68,0.18)" : "none",
+              opacity: clockOutLoading ? 0.8 : 1,
+              transition: "background-color 0.2s ease"
+            }}
+          >
+            {clockOutLoading ? "Clocking Out..." : "⏸️ Clock Out"}
           </button>
 
           {/* Write-Up Button */}

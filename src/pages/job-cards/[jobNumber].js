@@ -33,6 +33,28 @@ const normalizeRequests = (rawRequests) => {
   return [];
 };
 
+const deriveVhcSeverity = (check = {}) => {
+  const fields = [
+    check.severity,
+    check.traffic_light,
+    check.trafficLight,
+    check.status,
+    check.section,
+    check.issue_title,
+    check.issueDescription,
+    check.issue_description
+  ];
+
+  for (const field of fields) {
+    if (!field || typeof field !== "string") continue;
+    const lower = field.toLowerCase();
+    if (lower.includes("red")) return "red";
+    if (lower.includes("amber") || lower.includes("orange")) return "amber";
+  }
+
+  return null;
+};
+
 export default function JobCardDetailPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
@@ -165,6 +187,33 @@ export default function JobCardDetailPage() {
     }
   };
 
+  const handleToggleVhcRequired = async (nextValue) => {
+    if (!canEdit || !jobData?.id) return;
+
+    if (!nextValue) {
+      const confirmed = confirm(
+        "Mark the VHC as not required for this job? Technicians will see this immediately."
+      );
+      if (!confirmed) return;
+    }
+
+    try {
+      const result = await updateJob(jobData.id, {
+        vhc_required: nextValue
+      });
+
+      if (result.success) {
+        setJobData((prev) => (prev ? { ...prev, vhcRequired: nextValue } : prev));
+        alert(nextValue ? "✅ VHC marked as required" : "✅ VHC marked as not required");
+      } else {
+        alert(result?.error?.message || "Failed to update VHC requirement");
+      }
+    } catch (toggleError) {
+      console.error("Error updating VHC requirement:", toggleError);
+      alert("Failed to update VHC requirement");
+    }
+  };
+
   // ✅ Loading State
   if (loading) {
     return (
@@ -242,6 +291,20 @@ export default function JobCardDetailPage() {
     );
   }
 
+  const jobVhcChecks = Array.isArray(jobData.vhcChecks) ? jobData.vhcChecks : [];
+  const redIssues = jobVhcChecks.filter((check) => deriveVhcSeverity(check) === "red");
+  const amberIssues = jobVhcChecks.filter((check) => deriveVhcSeverity(check) === "amber");
+  const vhcSummaryCounts = {
+    total: jobVhcChecks.length,
+    red: redIssues.length,
+    amber: amberIssues.length
+  };
+  const vhcTabBadge = vhcSummaryCounts.red
+    ? `⚠ ${vhcSummaryCounts.red}`
+    : vhcSummaryCounts.amber
+      ? `⚠ ${vhcSummaryCounts.amber}`
+      : undefined;
+
   // ✅ Tab Configuration
   const tabs = [
     { id: "customer-requests", label: "Customer Requests", icon: "📋" },
@@ -250,7 +313,7 @@ export default function JobCardDetailPage() {
     { id: "service-history", label: "Service History", icon: "🔧" },
     { id: "parts", label: "Parts", icon: "🔩", badge: "TODO" },
     { id: "notes", label: "Notes", icon: "📝", badge: notes.length },
-    { id: "vhc", label: "VHC", icon: "✅" },
+    { id: "vhc", label: "VHC", icon: "✅", badge: vhcTabBadge },
     { id: "messages", label: "Messages", icon: "💬", badge: "TODO" },
     { id: "documents", label: "Documents", icon: "📄", badge: "TODO" }
   ];
@@ -486,6 +549,9 @@ export default function JobCardDetailPage() {
               jobData={jobData} 
               canEdit={canEdit}
               onUpdate={handleUpdateRequests}
+              onToggleVhcRequired={handleToggleVhcRequired}
+              vhcSummary={vhcSummaryCounts}
+              vhcChecks={jobVhcChecks}
             />
           )}
 
@@ -559,9 +625,19 @@ export default function JobCardDetailPage() {
 // ============================================
 
 // ✅ Customer Requests Tab
-function CustomerRequestsTab({ jobData, canEdit, onUpdate }) {
+function CustomerRequestsTab({
+  jobData,
+  canEdit,
+  onUpdate,
+  onToggleVhcRequired = () => {},
+  vhcSummary = { total: 0, red: 0, amber: 0 },
+  vhcChecks = []
+}) {
   const [requests, setRequests] = useState(() => normalizeRequests(jobData.requests));
   const [editing, setEditing] = useState(false);
+  const highlightedItems = (vhcChecks || [])
+    .map((check) => ({ check, severity: deriveVhcSeverity(check) }))
+    .filter(({ severity }) => severity === "red" || severity === "amber");
 
   useEffect(() => {
     setRequests(normalizeRequests(jobData.requests));
@@ -820,6 +896,146 @@ function CustomerRequestsTab({ jobData, canEdit, onUpdate }) {
         <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#333", marginBottom: "16px" }}>
           Additional Information
         </h3>
+        <div style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "16px",
+          alignItems: "stretch",
+          marginBottom: "16px"
+        }}>
+          <div style={{
+            flex: "1 1 320px",
+            padding: "16px",
+            backgroundColor: "#f9fafb",
+            borderRadius: "12px",
+            border: "1px solid #e5e7eb",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+          }}>
+            <div style={{ fontSize: "13px", fontWeight: "700", color: "#374151", marginBottom: "6px" }}>
+              Vehicle Health Check
+            </div>
+            <p style={{ margin: "0 0 12px 0", fontSize: "14px", color: "#4b5563" }}>
+              {jobData.vhcRequired
+                ? "A VHC is required for this job card."
+                : "VHC has been marked as not required for this job."}
+            </p>
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "12px" }}>
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "6px 10px",
+                borderRadius: "999px",
+                backgroundColor: "#fee2e2",
+                color: "#b91c1c",
+                fontSize: "12px",
+                fontWeight: "600"
+              }}>
+                🔴 Red: {vhcSummary.red}
+              </span>
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "6px 10px",
+                borderRadius: "999px",
+                backgroundColor: "#fef3c7",
+                color: "#b45309",
+                fontSize: "12px",
+                fontWeight: "600"
+              }}>
+                🟠 Amber: {vhcSummary.amber}
+              </span>
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "6px 10px",
+                borderRadius: "999px",
+                backgroundColor: "#e0f2fe",
+                color: "#0369a1",
+                fontSize: "12px",
+                fontWeight: "600"
+              }}>
+                📋 Total Checks: {vhcSummary.total}
+              </span>
+            </div>
+
+            {jobData.vhcRequired ? (
+              highlightedItems.length > 0 ? (
+                <div>
+                  <div style={{ fontSize: "12px", fontWeight: "600", color: "#374151", marginBottom: "6px" }}>
+                    Items requiring attention
+                  </div>
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {highlightedItems.slice(0, 3).map(({ check, severity }) => {
+                      const severityStyle = severity === "red"
+                        ? { label: "Red", color: "#b91c1c" }
+                        : { label: "Amber", color: "#b45309" };
+                      return (
+                        <li key={check.vhc_id} style={{ fontSize: "13px", color: "#4b5563", display: "flex", gap: "8px", alignItems: "center" }}>
+                          <span style={{
+                            padding: "4px 8px",
+                            borderRadius: "8px",
+                            fontWeight: "700",
+                            color: "#ffffff",
+                            backgroundColor: severity === "red" ? "#dc2626" : "#d97706",
+                            fontSize: "11px",
+                            letterSpacing: "0.04em"
+                          }}>
+                            {severityStyle.label.toUpperCase()}
+                          </span>
+                          <span style={{ fontWeight: "600", color: severityStyle.color }}>
+                            {check.issue_title || check.section}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {highlightedItems.length > 3 && (
+                    <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "6px" }}>
+                      +{highlightedItems.length - 3} more issues logged
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>
+                  No red or amber items have been logged yet.
+                </p>
+              )
+            ) : (
+              <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>
+                Service or management can enable the VHC if it becomes required.
+              </p>
+            )}
+          </div>
+          {canEdit && (
+            <button
+              onClick={() => onToggleVhcRequired(!jobData.vhcRequired)}
+              style={{
+                padding: "12px 20px",
+                borderRadius: "10px",
+                border: "none",
+                fontSize: "14px",
+                fontWeight: "600",
+                cursor: "pointer",
+                backgroundColor: jobData.vhcRequired ? "#ef4444" : "#10b981",
+                color: "white",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                alignSelf: "center"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = "0.9";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = "1";
+              }}
+            >
+              {jobData.vhcRequired ? "Mark VHC Not Required" : "Mark VHC Required"}
+            </button>
+          )}
+        </div>
         
         {jobData.cosmeticNotes && (
           <div style={{ marginBottom: "16px" }}>
@@ -836,20 +1052,6 @@ function CustomerRequestsTab({ jobData, canEdit, onUpdate }) {
                 {jobData.cosmeticNotes}
               </p>
             </div>
-          </div>
-        )}
-
-        {jobData.vhcRequired && (
-          <div style={{
-            padding: "12px 16px",
-            backgroundColor: "#e8f5e9",
-            border: "1px solid #4caf50",
-            borderRadius: "8px",
-            display: "inline-block"
-          }}>
-            <span style={{ fontSize: "14px", fontWeight: "600", color: "#2e7d32" }}>
-              ✅ VHC Required
-            </span>
           </div>
         )}
       </div>

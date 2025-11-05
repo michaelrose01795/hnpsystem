@@ -12,7 +12,7 @@ import {
 import { getAllJobs } from "../../lib/database/jobs"; // Import jobs function
 
 export default function JobClockingCard() {
-  const { user } = useUser(); // Get logged-in user from context
+  const { user, setStatus, refreshCurrentJob, setCurrentJob, dbUserId } = useUser(); // Get logged-in user and helpers
   const [activeJobs, setActiveJobs] = useState([]); // Jobs user is currently clocked into
   const [availableJobs, setAvailableJobs] = useState([]); // Jobs available to clock into
   const [dailySummary, setDailySummary] = useState(null); // Daily hours summary
@@ -25,7 +25,8 @@ export default function JobClockingCard() {
 
   // ✅ Fetch data on component mount and every 30 seconds
   useEffect(() => {
-    if (!user) return;
+    const workshopUserId = dbUserId ?? user?.id;
+    if (!user || workshopUserId == null) return;
     
     fetchData();
     
@@ -33,22 +34,23 @@ export default function JobClockingCard() {
     const interval = setInterval(fetchData, 30000);
     
     return () => clearInterval(interval); // Cleanup on unmount
-  }, [user]);
+  }, [user, dbUserId]);
 
   // ✅ Fetch all required data
   const fetchData = async () => {
-    if (!user) return;
+    const workshopUserId = dbUserId ?? user?.id;
+    if (!user || workshopUserId == null) return;
     
     console.log("🔄 Refreshing clocking data...");
     
     // Fetch active jobs user is clocked into
-    const activeResult = await getUserActiveJobs(user.id);
+    const activeResult = await getUserActiveJobs(workshopUserId);
     if (activeResult.success) {
       setActiveJobs(activeResult.data);
     }
     
     // Fetch daily summary
-    const summaryResult = await getTechnicianDailySummary(user.id);
+    const summaryResult = await getTechnicianDailySummary(workshopUserId);
     if (summaryResult.success) {
       setDailySummary(summaryResult.data);
     }
@@ -66,7 +68,8 @@ export default function JobClockingCard() {
 
   // ✅ Handle clock in to job
   const handleClockIn = async () => {
-    if (!selectedJobId || !selectedJobNumber) {
+    const workshopUserId = dbUserId ?? user?.id;
+    if (!selectedJobId || !selectedJobNumber || workshopUserId == null) {
       alert("⚠️ Please select a job first");
       return;
     }
@@ -77,7 +80,7 @@ export default function JobClockingCard() {
       console.log(`🔧 Clocking in to job ${selectedJobNumber}...`);
       
       const result = await clockInToJob(
-        user.id, 
+        workshopUserId, 
         selectedJobId, 
         selectedJobNumber, 
         workType
@@ -86,6 +89,8 @@ export default function JobClockingCard() {
       if (result.success) {
         console.log("✅ Clocked in successfully");
         alert(`✅ Clocked in to Job ${selectedJobNumber}`);
+        setStatus("In Progress");
+        await refreshCurrentJob();
         
         // Reset form
         setSelectedJobId("");
@@ -108,7 +113,8 @@ export default function JobClockingCard() {
   };
 
   // ✅ Handle clock out from job
-  const handleClockOut = async (jobId, jobNumber) => {
+  const handleClockOut = async (jobId, jobNumber, clockingId) => {
+    const workshopUserId = dbUserId ?? user?.id;
     const confirmed = confirm(`Clock out from Job ${jobNumber}?`);
     if (!confirmed) return;
     
@@ -117,11 +123,16 @@ export default function JobClockingCard() {
     try {
       console.log(`⏸️ Clocking out from job ${jobNumber}...`);
       
-      const result = await clockOutFromJob(user.id, jobId);
+      const result = await clockOutFromJob(workshopUserId, jobId, clockingId);
       
       if (result.success) {
         console.log("✅ Clocked out successfully");
         alert(`✅ Clocked out from Job ${jobNumber}\n\nHours worked: ${result.hoursWorked}h`);
+        setCurrentJob(null);
+        const nextJob = await refreshCurrentJob();
+        if (!nextJob) {
+          setStatus("Waiting for Job");
+        }
         
         // Refresh data
         await fetchData();
@@ -139,6 +150,9 @@ export default function JobClockingCard() {
 
   // ✅ Handle switch job (clock out of one, clock into another)
   const handleSwitchJob = async (newJobId, newJobNumber) => {
+    const workshopUserId = dbUserId ?? user?.id;
+    if (workshopUserId == null) return;
+
     if (activeJobs.length === 0) {
       // No active job, just clock in
       setSelectedJobId(newJobId);
@@ -159,7 +173,7 @@ export default function JobClockingCard() {
     
     try {
       const result = await switchJob(
-        user.id,
+        workshopUserId,
         currentJob.jobId,
         newJobId,
         newJobNumber,
@@ -169,6 +183,8 @@ export default function JobClockingCard() {
       if (result.success) {
         alert(`✅ Switched to Job ${newJobNumber}`);
         setShowAvailableJobs(false);
+        setStatus("In Progress");
+        await refreshCurrentJob();
         await fetchData();
       } else {
         alert(`❌ Failed to switch jobs: ${result.error}`);
@@ -394,7 +410,7 @@ export default function JobClockingCard() {
                 </div>
 
                 <button
-                  onClick={() => handleClockOut(job.jobId, job.jobNumber)}
+                  onClick={() => handleClockOut(job.jobId, job.jobNumber, job.clockingId)}
                   disabled={loading}
                   style={{
                     padding: "10px 20px",

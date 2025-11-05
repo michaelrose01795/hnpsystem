@@ -15,7 +15,7 @@ import { ensureDevDbUserAndGetId } from "../../lib/users/devUsers";
 
 export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" }) { // Main modal component - now accepts prefilledJobNumber prop
   const router = useRouter(); // Router for page navigation
-  const { user } = useUser(); // Dev auth user from context
+  const { user, setStatus, refreshCurrentJob, setCurrentJob } = useUser(); // Dev auth user & helpers from context
   const [jobNumber, setJobNumber] = useState(""); // Input state for job number
   const [error, setError] = useState(""); // Error banner text
   const [loading, setLoading] = useState(false); // Loading flag
@@ -156,6 +156,8 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
       // Do the clock-in with real integer ids
       const res = await clockInToJob(dbUserId, Number(job.id), job.jobNumber, workType); // Call DB
       if (res.success) { // If OK
+        setStatus("In Progress"); // Reflect active work in status bar
+        await refreshCurrentJob(); // Keep context in sync with active job
         onClose(); // Close modal
         router.push(`/job-cards/myjobs/${job.jobNumber}`); // Navigate to tech's job page
       } else {
@@ -170,7 +172,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
   };
 
   // Clock out from a specific job
-  const handleClockOut = async (jobId, jobNumText) => { // Finish work on a job
+  const handleClockOut = async (jobId, jobNumText, clockingId) => { // Finish work on a job
     if (dbUserId == null) { // Ensure user id exists
       setError("Could not resolve your workshop user id. Please reopen this modal."); // Message
       return; // Stop
@@ -180,9 +182,14 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
 
     setLoading(true); // Start loader
     try {
-      const res = await clockOutFromJob(dbUserId, jobId); // Call DB
+      const res = await clockOutFromJob(dbUserId, jobId, clockingId); // Call DB
       if (res.success) { // If OK
         alert(`✅ Clocked out from Job ${jobNumText}\n\nHours worked: ${res.hoursWorked}h`); // Show hours
+        setCurrentJob(null); // Immediately clear cached current job
+        const nextJob = await refreshCurrentJob(); // Sync active job state
+        if (!nextJob) {
+          setStatus("Waiting for Job"); // Return to waiting status when free
+        }
         await fetchData(); // Refresh lists
       } else {
         setError(res.error || "Failed to clock out"); // Show DB error
@@ -353,22 +360,23 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                 <button
                   onClick={(e) => { // ✅ Prevent parent click when clicking clock out
                     e.stopPropagation();
-                    handleClockOut(job.jobId, job.jobNumber);
+                    handleClockOut(job.jobId, job.jobNumber, job.clockingId);
                   }}
                   disabled={loading || dbUserId == null} // Disable if busy or unmapped
-                  style={{
-                    padding: "8px 16px", // Button padding
-                    backgroundColor: loading ? "#ccc" : "#ef4444", // Grey when loading
-                    color: "white", // Text colour
-                    border: "none", // No border
-                    borderRadius: "6px", // Rounded
-                    cursor: loading || dbUserId == null ? "not-allowed" : "pointer", // Cursor state
-                    fontSize: "13px", // Font size
-                    fontWeight: "600" // Bold
-                  }}
-                >
-                  Clock Out {/* Button label */}
-                </button>
+                style={{
+                  padding: "8px 16px", // Button padding
+                  backgroundColor: loading ? "#ccc" : "#ef4444", // Grey when loading
+                  color: "white", // Text colour
+                  border: "none", // No border
+                  borderRadius: "6px", // Rounded
+                  cursor: loading || dbUserId == null ? "not-allowed" : "pointer", // Cursor state
+                  fontSize: "13px", // Font size
+                  fontWeight: "600", // Bold
+                  transform: "none" // Keep hit target aligned
+                }}
+              >
+                Clock Out {/* Button label */}
+              </button>
               </div>
             ))}
           </div>
@@ -460,7 +468,8 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               fontSize: "16px", // Size
               cursor:
                 loading || !jobNumber.trim() || dbUserId == null ? "not-allowed" : "pointer", // Cursor
-              transition: "background-color 0.2s" // Smooth hover
+              transition: "background-color 0.2s", // Smooth hover
+              transform: "none" // Prevent hover shift offset
             }}
           >
             {loading ? "Clocking In..." : "⏱️ Clock In"} {/* Label */}
@@ -481,7 +490,8 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               borderRadius: "6px", // Rounded
               cursor: "pointer", // Pointer
               fontSize: "14px", // Size
-              fontWeight: "600" // Bold
+              fontWeight: "600", // Bold
+              transform: "none" // Prevent hover offset
             }}
           >
             {showAvailableJobs ? "Hide Available Jobs" : "Show Available Jobs"} {/* Toggle text */}
@@ -579,7 +589,8 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
             border: "none", // No border
             borderRadius: "6px", // Rounded
             fontWeight: "600", // Bold
-            cursor: loading ? "not-allowed" : "pointer" // Cursor state
+            cursor: loading ? "not-allowed" : "pointer", // Cursor state
+            transform: "none" // Prevent hover offset
           }}
         >
           Cancel {/* Label */}

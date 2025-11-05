@@ -9,7 +9,7 @@ import JobCardModal from "./JobCards/JobCardModal"; // import job modal
 import StatusSidebar from "../components/StatusTracking/StatusSidebar"; // import status sidebar
 
 export default function Layout({ children }) {
-  const { user, logout, status, setStatus } = useUser(); // get user context data
+  const { user, logout, status, setStatus, currentJob } = useUser(); // get user context data
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
 
@@ -551,13 +551,15 @@ export default function Layout({ children }) {
                 />
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                }}
-              >
-                {isTech && (
+              {isTech && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    gap: "12px",
+                  }}
+                >
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
@@ -578,8 +580,26 @@ export default function Layout({ children }) {
                     <option>Break</option>
                     <option>Completed</option>
                   </select>
-                )}
-              </div>
+                  <button
+                    type="button"
+                    disabled={!currentJob?.jobNumber}
+                    onClick={() => currentJob?.jobNumber && router.push(`/job-cards/myjobs/${currentJob.jobNumber}`)}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "999px",
+                      border: "none",
+                      backgroundColor: currentJob?.jobNumber ? colors.accent : "#d1d5db",
+                      color: currentJob?.jobNumber ? "#ffffff" : "#6b7280",
+                      fontWeight: 600,
+                      cursor: currentJob?.jobNumber ? "pointer" : "not-allowed",
+                      boxShadow: currentJob?.jobNumber ? "0 4px 12px rgba(0,0,0,0.12)" : "none",
+                      transition: "background-color 0.2s ease",
+                    }}
+                  >
+                    {currentJob?.jobNumber ? "Current Job" : "No Current Job"}
+                  </button>
+                </div>
+              )}
             </div>
           </header>
         )}
