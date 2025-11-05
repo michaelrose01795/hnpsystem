@@ -30,7 +30,11 @@ export const navLinksByRole = {
   ],
   Techs: [{ href: "/dashboard", label: "Dashboard" }, { href: "/jobs", label: "My Jobs" }],
   Parts: [{ href: "/dashboard", label: "Dashboard" }, { href: "/parts", label: "My Parts" }],
-  "Parts Manager": [{ href: "/dashboard", label: "Dashboard" }, { href: "/parts", label: "All Parts" }],
+  "Parts Manager": [
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/parts", label: "Parts Workspace" },
+    { href: "/parts/manager", label: "Manager Overview" },
+  ],
   "MOT Tester": [{ href: "/dashboard", label: "Dashboard" }, { href: "/mot", label: "MOT Testing" }],
   "Valet Service": [{ href: "/dashboard", label: "Dashboard" }, { href: "/valet", label: "Valet Jobs" }],
   "Valet Sales": [{ href: "/dashboard", label: "Dashboard" }, { href: "/valet/sales", label: "Valet Sales" }],

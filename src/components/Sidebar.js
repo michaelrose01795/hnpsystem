@@ -23,6 +23,8 @@ export default function Sidebar() {
     { label: "Appointments", href: "/appointments", roles: ["admin", "sales", "service", "manager"] },
     { label: "Next Jobs", href: "/job-cards/waiting/nextjobs", roles: ["service manager", "workshop manager"] },
     { label: "VHC", href: "/vhc", roles: ["techs", "service", "manager", "workshop manager"] },
+    { label: "Parts Workspace", href: "/parts", roles: ["parts", "parts manager"] },
+    { label: "Parts Manager Overview", href: "/parts/manager", roles: ["parts manager"] },
     { label: "Messages", href: "/messages" },
   ];
 

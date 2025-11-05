@@ -200,6 +200,24 @@ export default function Layout({ children }) {
     );
   }
 
+  if (userRoles.includes("parts") || userRoles.includes("parts manager")) {
+    addNavItem(
+      "🧰 Parts Workspace",
+      "/parts",
+      ["parts", "inventory", "vhc parts"],
+      "Manage parts allocations and deliveries"
+    );
+  }
+
+  if (userRoles.includes("parts manager")) {
+    addNavItem(
+      "📈 Parts Manager Overview",
+      "/parts/manager",
+      ["parts manager", "stock value", "parts dashboard"],
+      "View stock, spending, and income KPIs"
+    );
+  }
+
   if (appointmentRoles.some((r) => userRoles.includes(r))) {
     addNavItem(
       "📅 Appointments",
@@ -410,6 +428,48 @@ export default function Layout({ children }) {
                     }}
                   >
                     👀 View Job Cards
+                  </span>
+                </Link>
+              )}
+
+              {(userRoles.includes("parts") || userRoles.includes("parts manager")) && (
+                <Link href="/parts">
+                  <span
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      marginTop: "10px",
+                      borderRadius: "6px",
+                      color: "white",
+                      backgroundColor: colors.accent,
+                      textAlign: "center",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    🧰 Parts Workspace
+                  </span>
+                </Link>
+              )}
+
+              {userRoles.includes("parts manager") && (
+                <Link href="/parts/manager">
+                  <span
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      marginTop: "10px",
+                      borderRadius: "6px",
+                      color: "white",
+                      backgroundColor: colors.accent,
+                      textAlign: "center",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    📈 Parts Manager Overview
                   </span>
                 </Link>
               )}
