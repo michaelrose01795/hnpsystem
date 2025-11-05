@@ -4,6 +4,7 @@ import Link from "next/link"; // import Next.js link component
 import { useRouter } from "next/router"; // import router for navigation
 import { useUser } from "../context/UserContext"; // import user context
 import ClockInButton from "./Clocking/ClockInButton"; // import clock in button
+import GlobalSearch from "./GlobalSearch"; // import global search component
 import JobCardModal from "./JobCards/JobCardModal"; // import job modal
 import StatusSidebar from "../components/StatusTracking/StatusSidebar"; // import status sidebar
 
@@ -35,6 +36,7 @@ export default function Layout({ children }) {
   ];
 
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const isTech = userRoles.includes("techs");
   const canViewStatusSidebar = userRoles.some((role) =>
     statusSidebarRoles.includes(role)
   );
@@ -83,6 +85,10 @@ export default function Layout({ children }) {
   }
 
   const role = userRoles[0] || "guest";
+  const roleDisplay = role
+    .split(" ")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 
   const links = [
     { href: "/newsfeed", label: "📰 News Feed" },
@@ -116,6 +122,104 @@ export default function Layout({ children }) {
         mainBg: "#FFF8F8",
         headerBg: "white",
       };
+
+  const navigationItems = [];
+  const seenNavItems = new Set();
+  const addNavItem = (label, href, keywords = [], description) => {
+    if (!label || !href) return;
+    const key = `${label}|${href}`;
+    if (seenNavItems.has(key)) return;
+    seenNavItems.add(key);
+
+    const sanitized = label.replace(/[^a-zA-Z0-9\s]/g, " ").toLowerCase();
+    const baseKeywords = sanitized
+      .split(" ")
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    const finalKeywords = Array.from(
+      new Set([
+        ...baseKeywords,
+        ...keywords.map((keyword) => keyword.toLowerCase()),
+      ])
+    );
+
+    navigationItems.push({
+      label,
+      href,
+      keywords: finalKeywords,
+      description,
+    });
+  };
+
+  links.forEach((link) => addNavItem(link.label, link.href));
+
+  if (isTech) {
+    addNavItem("🧰 My Jobs", "/job-cards/myjobs", ["my jobs", "jobs", "tech"]);
+    addNavItem("🔧 Start Job", "/job-cards/myjobs", ["start job", "tech"]);
+    addNavItem(
+      "Clock In",
+      "/workshop/Clocking",
+      ["clock in", "clocking", "view clocking"],
+      "Go to workshop clocking"
+    );
+  }
+
+  if (
+    userRoles.includes("service") ||
+    userRoles.includes("admin") ||
+    userRoles.some((r) => r.includes("manager"))
+  ) {
+    addNavItem(
+      "➕ Create Job Card",
+      "/job-cards/create",
+      ["create job", "new job", "job card"],
+      "Create a new job card"
+    );
+  }
+
+  if (
+    ["service manager", "workshop manager"].some((roleName) =>
+      userRoles.includes(roleName)
+    )
+  ) {
+    addNavItem(
+      "🔜 Next Jobs",
+      "/job-cards/waiting/nextjobs",
+      ["next jobs", "waiting list", "queue"]
+    );
+  }
+
+  if (viewRoles.some((r) => userRoles.includes(r))) {
+    addNavItem(
+      "👀 View Job Cards",
+      "/job-cards/view",
+      ["view job", "job cards"],
+      "Browse all job cards"
+    );
+  }
+
+  if (appointmentRoles.some((r) => userRoles.includes(r))) {
+    addNavItem(
+      "📅 Appointments",
+      "/appointments",
+      ["appointments", "schedule", "bookings"]
+    );
+  }
+
+  if (vhcRoles.some((r) => userRoles.includes(r))) {
+    addNavItem(
+      "📝 VHC Dashboard",
+      "/vhc/dashboard",
+      ["vhc", "vehicle health check", "dashboard"]
+    );
+  }
+
+  addNavItem(
+    "🛎️ Workshop Check-In",
+    "/workshop/check-in",
+    ["check in", "arrival", "workshop"]
+  );
 
   return (
     <div
@@ -392,37 +496,90 @@ export default function Layout({ children }) {
           <header
             style={{
               backgroundColor: colors.headerBg,
-              padding: "16px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              padding: "20px 28px",
+              boxShadow: "0 6px 16px rgba(0,0,0,0.06)",
             }}
           >
-            <h1 style={{ fontSize: "1.25rem", fontWeight: 600, color: colors.accent }}>
-              Welcome {user?.username || "Guest"} ({role})
-            </h1>
-
-            {userRoles.includes("techs") && (
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isTech
+                  ? "1.2fr minmax(320px, 2.2fr) auto"
+                  : "1.2fr minmax(320px, 2.2fr) 1fr",
+                alignItems: "center",
+                gap: "24px",
+              }}
+            >
+              <div
                 style={{
-                  padding: "6px 10px",
-                  borderRadius: "6px",
-                  border: `1px solid ${colors.accent}`,
-                  backgroundColor: "white",
-                  color: colors.accent,
-                  fontWeight: "bold",
-                  cursor: "pointer",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
                 }}
               >
-                <option>Waiting for Job</option>
-                <option>In Progress</option>
-                <option>Break</option>
-                <option>Completed</option>
-              </select>
-            )}
+                <h1
+                  style={{
+                    fontSize: "1.3rem",
+                    fontWeight: 600,
+                    margin: 0,
+                    color: colors.accent,
+                  }}
+                >
+                  Welcome back, {user?.username || "Guest"}
+                </h1>
+                <span
+                  style={{
+                    fontSize: "0.85rem",
+                    color: darkMode ? "#bdbdbd" : "#666666",
+                  }}
+                >
+                  Role: {roleDisplay}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                }}
+              >
+                <GlobalSearch
+                  accentColor={colors.accent}
+                  isDarkMode={darkMode}
+                  navigationItems={navigationItems}
+                />
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
+                {isTech && (
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "999px",
+                      border: `1px solid ${colors.accent}`,
+                      backgroundColor: darkMode ? "#1f1f1f" : "#ffffff",
+                      color: colors.accent,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                      minWidth: "170px",
+                    }}
+                  >
+                    <option>Waiting for Job</option>
+                    <option>In Progress</option>
+                    <option>Break</option>
+                    <option>Completed</option>
+                  </select>
+                )}
+              </div>
+            </div>
           </header>
         )}
 
