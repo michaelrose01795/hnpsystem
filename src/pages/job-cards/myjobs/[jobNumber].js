@@ -157,8 +157,13 @@ export default function TechJobDetailPage() {
         setJobData(job);
 
         // Fetch VHC checks for this job
-        const checks = await getVHCChecksByJob(job.id);
-        setVhcChecks(checks);
+        const jobCardId = job?.jobCard?.id;
+        if (jobCardId) {
+          const checks = await getVHCChecksByJob(jobCardId);
+          setVhcChecks(checks);
+        } else {
+          setVhcChecks([]);
+        }
 
         // Get clocking status for current user
         if (username) {
@@ -179,16 +184,26 @@ export default function TechJobDetailPage() {
 
   // ✅ Handle status update
   const handleUpdateStatus = async (newStatus) => {
-    if (!jobData) return;
+    const jobCardId = jobData?.jobCard?.id;
+    if (!jobCardId) return;
 
     const confirmed = confirm(`Update job status to "${newStatus}"?`);
     if (!confirmed) return;
 
-    const result = await updateJobStatus(jobData.id, newStatus);
+    const result = await updateJobStatus(jobCardId, newStatus);
     
     if (result) {
       alert("✅ Status updated successfully!");
-      setJobData({ ...jobData, status: newStatus });
+      setJobData((prev) => {
+        if (!prev?.jobCard) return prev;
+        return {
+          ...prev,
+          jobCard: {
+            ...prev.jobCard,
+            status: newStatus,
+          },
+        };
+      });
     } else {
       alert("❌ Failed to update status");
     }
@@ -209,25 +224,28 @@ export default function TechJobDetailPage() {
 
   // ✅ NEW: Handle VHC button click - only navigate if VHC is required
   const handleVhcClick = () => {
-    if (!jobData?.vhcRequired) {
+    if (!jobData?.jobCard?.vhcRequired) {
       alert("VHC is not required for this job.");
       return;
     }
     // Navigate to VHC builder page
-    router.push(`/job-cards/${jobNumber}/vhc`);
+    const targetJobNumber = jobData?.jobCard?.jobNumber || jobNumber;
+    router.push(`/job-cards/${targetJobNumber}/vhc`);
   };
 
   // ✅ NEW: Get dynamic VHC button text based on job status
   const getVhcButtonText = () => {
-    if (!jobData?.vhcRequired) return "VHC Not Required";
-    if (["VHC Complete", "VHC Sent"].includes(jobData?.status)) return "✅ VHC Complete";
+    const jobCardStatus = jobData?.jobCard?.status;
+    if (!jobData?.jobCard?.vhcRequired) return "VHC Not Required";
+    if (["VHC Complete", "VHC Sent"].includes(jobCardStatus)) return "✅ VHC Complete";
     if (vhcChecks.length === 0) return "🚀 Start VHC";
     return "📋 Continue VHC";
   };
 
   const getVhcStatusMessage = () => {
-    if (!jobData?.vhcRequired) return "This job does not require a Vehicle Health Check.";
-    if (["VHC Complete", "VHC Sent"].includes(jobData?.status)) {
+    const jobCardStatus = jobData?.jobCard?.status;
+    if (!jobData?.jobCard?.vhcRequired) return "This job does not require a Vehicle Health Check.";
+    if (["VHC Complete", "VHC Sent"].includes(jobCardStatus)) {
       return "VHC completed. Review or resend if required.";
     }
     if (vhcChecks.length === 0) return "Ready to start the Vehicle Health Check.";
@@ -293,7 +311,7 @@ export default function TechJobDetailPage() {
   }
 
   // ✅ Handle case where job is not found
-  if (!jobData) {
+  if (!jobData?.jobCard) {
     return (
       <Layout>
         <div style={{ padding: "40px", textAlign: "center" }}>
@@ -319,7 +337,9 @@ export default function TechJobDetailPage() {
 
   // ✅ Extract job data
   const { jobCard, customer, vehicle } = jobData;
-  const jobStatusColor = STATUS_COLORS[jobCard.status] || "#9ca3af";
+  const jobRequiresVhc = jobCard?.vhcRequired === true;
+  const jobCardStatus = jobCard?.status || "Unknown";
+  const jobStatusColor = STATUS_COLORS[jobCardStatus] || "#9ca3af";
   const partsCount = jobCard.partsRequests?.length || 0;
   const clockedHours = clockingStatus?.clock_in
     ? `${calculateHoursWorked(clockingStatus.clock_in)}h`
@@ -329,7 +349,7 @@ export default function TechJobDetailPage() {
   const quickStats = [
     {
       label: "Status",
-      value: jobCard.status || "Unknown",
+      value: jobCardStatus,
       accent: jobStatusColor,
       pill: true,
     },
@@ -737,27 +757,27 @@ export default function TechJobDetailPage() {
                 {/* ✅ NEW: Start/Continue VHC Button */}
                 <button
                   onClick={handleVhcClick}
-                  disabled={!jobData?.vhcRequired}
+                  disabled={!jobRequiresVhc}
                   style={{
                     padding: "12px 24px",
-                    backgroundColor: jobData?.vhcRequired ? "#d10000" : "#e0e0e0",
+                    backgroundColor: jobRequiresVhc ? "#d10000" : "#e0e0e0",
                     color: "white",
                     border: "none",
                     borderRadius: "8px",
-                    cursor: jobData?.vhcRequired ? "pointer" : "not-allowed",
+                    cursor: jobRequiresVhc ? "pointer" : "not-allowed",
                     fontSize: "14px",
                     fontWeight: "600",
-                    boxShadow: jobData?.vhcRequired ? "0 4px 12px rgba(209,0,0,0.2)" : "none",
+                    boxShadow: jobRequiresVhc ? "0 4px 12px rgba(209,0,0,0.2)" : "none",
                     transition: "all 0.2s"
                   }}
                   onMouseEnter={(e) => {
-                    if (jobData?.vhcRequired) {
+                    if (jobRequiresVhc) {
                       e.currentTarget.style.backgroundColor = "#b00000";
                       e.currentTarget.style.boxShadow = "0 6px 16px rgba(209,0,0,0.3)";
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (jobData?.vhcRequired) {
+                    if (jobRequiresVhc) {
                       e.currentTarget.style.backgroundColor = "#d10000";
                       e.currentTarget.style.boxShadow = "0 4px 12px rgba(209,0,0,0.2)";
                     }
@@ -771,7 +791,7 @@ export default function TechJobDetailPage() {
               </div>
 
               {/* ✅ VHC Not Required Message */}
-              {!jobData?.vhcRequired && (
+              {!jobRequiresVhc && (
                 <div style={{
                   textAlign: "center",
                   padding: "40px",
@@ -791,7 +811,7 @@ export default function TechJobDetailPage() {
               )}
 
               {/* ✅ VHC Required - Show Summary */}
-              {jobData?.vhcRequired && (
+              {jobRequiresVhc && (
                 <>
                   {/* VHC Summary Stats */}
                   <div style={{
@@ -1147,7 +1167,7 @@ export default function TechJobDetailPage() {
         {/* ✅ Bottom Action Bar */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(5, 1fr)",
+          gridTemplateColumns: "repeat(4, 1fr)",
           gap: "12px",
           marginTop: "12px",
           paddingTop: "12px",
@@ -1170,25 +1190,6 @@ export default function TechJobDetailPage() {
             }}
           >
             ← Back to My Jobs
-          </button>
-
-          {/* VHC Button - Dynamic text based on status */}
-          <button
-            onClick={handleVhcClick}
-            disabled={!jobData?.vhcRequired}
-            style={{
-              padding: "14px",
-              backgroundColor: jobData?.vhcRequired ? "#0369a1" : "#e0e0e0",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: jobData?.vhcRequired ? "pointer" : "not-allowed",
-              fontSize: "14px",
-              fontWeight: "600",
-              boxShadow: jobData?.vhcRequired ? "0 2px 8px rgba(3,105,161,0.18)" : "none"
-            }}
-          >
-            {getVhcButtonText()}
           </button>
 
           {/* Clock Out Button */}
