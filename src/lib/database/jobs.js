@@ -450,6 +450,29 @@ const normalizeBooleanField = (value) => {
    Converts database format to application format
    NOW INCLUDES ALL FIELDS FROM DATABASE
 ============================================ */
+const hydrateVhcChecks = (checks = []) =>
+  (checks || []).map((check) => {
+    if (!check || typeof check !== "object") return check;
+
+    let structuredData = null;
+    const candidate = check.data ?? check.issue_description;
+
+    if (candidate) {
+      try {
+        const parsed =
+          typeof candidate === "string" ? JSON.parse(candidate) : candidate;
+
+        if (parsed && typeof parsed === "object") {
+          structuredData = parsed;
+        }
+      } catch (_err) {
+        // Ignore parse errors – some legacy rows store plain text
+      }
+    }
+
+    return { ...check, data: structuredData };
+  });
+
 const formatJobData = (data) => {
   if (!data) return null;
 
@@ -574,7 +597,7 @@ const formatJobData = (data) => {
       : null,
     
     // ✅ Related data
-    vhcChecks: data.vhc_checks || [],
+    vhcChecks: hydrateVhcChecks(data.vhc_checks),
     partsRequests,
     notes: data.job_notes || [],
     writeUp: data.job_writeups?.[0] || null,
@@ -1280,5 +1303,126 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
   } catch (error) {
     console.error("❌ saveWriteUpToDatabase error:", error);
     return { success: false, error: error.message };
+  }
+};
+
+/* ============================================
+   SAVE / UPDATE VHC CHECKSHEET
+   Persists technician VHC builder data against a job
+============================================ */
+const upsertVhcJsonBlob = async ({ jobId, section, title, data }) => {
+  const now = new Date().toISOString();
+  const safeJson = data != null ? JSON.stringify(data) : null;
+
+  const { data: existing, error: existingError } = await supabase
+    .from("vhc_checks")
+    .select("vhc_id")
+    .eq("job_id", jobId)
+    .eq("section", section)
+    .maybeSingle();
+
+  if (existingError && existingError.code !== "PGRST116") {
+    throw existingError;
+  }
+
+  const payload = {
+    job_id: jobId,
+    section,
+    issue_title: title,
+    issue_description: safeJson,
+    measurement: null,
+    updated_at: now,
+  };
+
+  if (existing) {
+    const { error } = await supabase
+      .from("vhc_checks")
+      .update(payload)
+      .eq("vhc_id", existing.vhc_id);
+
+    if (error) throw error;
+    return existing.vhc_id;
+  }
+
+  const insertPayload = {
+    ...payload,
+    created_at: now,
+  };
+
+  const { data: inserted, error } = await supabase
+    .from("vhc_checks")
+    .insert([insertPayload])
+    .select("vhc_id")
+    .single();
+
+  if (error) throw error;
+  return inserted.vhc_id;
+};
+
+export const saveChecksheet = async (jobNumber, vhcData) => {
+  console.log("💾 saveChecksheet:", jobNumber);
+
+  try {
+    if (!jobNumber) {
+      throw new Error("Job number is required");
+    }
+
+    const { data: job, error: jobError } = await supabase
+      .from("jobs")
+      .select("id")
+      .eq("job_number", jobNumber)
+      .maybeSingle();
+
+    if (jobError) throw jobError;
+
+    if (!job) {
+      return { success: false, error: { message: "Job not found" } };
+    }
+
+    await upsertVhcJsonBlob({
+      jobId: job.id,
+      section: "VHC_CHECKSHEET",
+      title: "Technician VHC Checksheet",
+      data: vhcData,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("❌ saveChecksheet error:", error);
+    return { success: false, error: { message: error.message } };
+  }
+};
+
+export const updateJobVhcCheck = async (jobNumber, checkData) => {
+  console.log("💾 updateJobVhcCheck:", jobNumber);
+
+  try {
+    if (!jobNumber) {
+      throw new Error("Job number is required");
+    }
+
+    const { data: job, error: jobError } = await supabase
+      .from("jobs")
+      .select("id")
+      .eq("job_number", jobNumber)
+      .maybeSingle();
+
+    if (jobError) throw jobError;
+
+    if (!job) {
+      return { success: false, error: { message: "Job not found" } };
+    }
+
+    await upsertVhcJsonBlob({
+      jobId: job.id,
+      section: "TECHNICIAN_CHECKSHEET",
+      title: "Technician Check Sheet",
+      data: checkData,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("❌ updateJobVhcCheck error:", error);
+    return { success: false, error: { message: error.message } };
   }
 };
