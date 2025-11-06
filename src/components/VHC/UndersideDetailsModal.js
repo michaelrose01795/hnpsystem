@@ -1,7 +1,7 @@
 // file location: src/components/VHC/UndersideDetailsModal.js
 import React, { useMemo, useState } from "react";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
-import themeConfig, { createVhcButtonStyle } from "@/styles/appTheme";
+import themeConfig, { createVhcButtonStyle, vhcModalContentStyles } from "@/styles/appTheme";
 
 const palette = themeConfig.palette;
 
@@ -15,33 +15,6 @@ const CATEGORY_ORDER = [
 ];
 
 const STATUS_OPTIONS = ["Red", "Amber"];
-
-const baseCardStyle = {
-  border: `1px solid ${palette.border}`,
-  background: palette.surface,
-  borderRadius: "18px",
-  padding: "18px",
-  boxShadow: "0 8px 20px rgba(209,0,0,0.10)",
-  display: "flex",
-  flexDirection: "column",
-  gap: "12px",
-  alignItems: "flex-start",
-  transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
-  cursor: "pointer",
-};
-
-const concernBadgeStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "6px",
-  padding: "6px 12px",
-  borderRadius: "999px",
-  backgroundColor: palette.accentSurface,
-  border: `1px solid ${palette.border}`,
-  fontSize: "12px",
-  fontWeight: 600,
-  color: palette.accent,
-};
 
 const fieldLabelStyle = {
   fontSize: "12px",
@@ -68,6 +41,30 @@ const statusSelectStyle = {
 };
 
 export default function UndersideDetailsModal({ isOpen, onClose, onComplete, initialData }) {
+  const contentWrapperStyle = vhcModalContentStyles.contentWrapper;
+  const summaryCardStyle = vhcModalContentStyles.summaryCard;
+  const summaryTextBlockStyle = vhcModalContentStyles.summaryTextBlock;
+  const summaryBadgesStyle = vhcModalContentStyles.summaryBadges;
+  const summaryBadgeBase = vhcModalContentStyles.badge;
+  const baseCardStyle = {
+    ...vhcModalContentStyles.baseCard,
+    alignItems: "flex-start",
+  };
+  const cardGridStyle = vhcModalContentStyles.cardGrid;
+
+  const setCardHoverState = (element, hovering) => {
+    const source = hovering
+      ? vhcModalContentStyles.baseCardHover
+      : {
+          transform: vhcModalContentStyles.baseCard.transform,
+          boxShadow: vhcModalContentStyles.baseCard.boxShadow,
+          borderColor: vhcModalContentStyles.baseCard.borderColor,
+        };
+    Object.entries(source).forEach(([key, value]) => {
+      element.style[key] = value;
+    });
+  };
+
   const [data, setData] = useState(() => ({
     "Exhaust system/catalyst": { concerns: [] },
     Steering: { concerns: [] },
@@ -146,50 +143,29 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
       onClose={onClose}
       title="Underside Inspection"
       subtitle="Match dashboard styling while documenting underside inspections."
-      width="960px"
-      height="620px"
       footer={modalFooter}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "16px 20px",
-            borderRadius: "18px",
-            border: `1px solid ${palette.border}`,
-            background: palette.accentSurface,
-            boxShadow: "0 6px 16px rgba(209,0,0,0.12)",
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600, letterSpacing: "0.2px" }}>
-              Concerns Logged
-            </span>
-            <span style={{ fontSize: "20px", fontWeight: 700, color: palette.textPrimary }}>
+      <div style={contentWrapperStyle}>
+        <div style={summaryCardStyle}>
+          <div style={summaryTextBlockStyle}>
+            <span style={vhcModalContentStyles.summaryTitle}>Concerns Logged</span>
+            <span style={vhcModalContentStyles.summaryMetric}>
               {totals.count} underside issues captured
             </span>
           </div>
-          <div style={{ display: "flex", gap: "12px" }}>
-            <div style={concernBadgeStyle}>
+          <div style={summaryBadgesStyle}>
+            <div style={summaryBadgeBase}>
               <span style={{ width: "10px", height: "10px", borderRadius: "999px", background: palette.danger }} />
               {totals.red} Red
             </div>
-            <div style={concernBadgeStyle}>
+            <div style={summaryBadgeBase}>
               <span style={{ width: "10px", height: "10px", borderRadius: "999px", background: palette.warning }} />
               {totals.amber} Amber
             </div>
           </div>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: "18px",
-          }}
-        >
+        <div style={{ ...cardGridStyle, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
           {CATEGORY_ORDER.map((category) => {
             const concerns = data[category]?.concerns ?? [];
             const redCount = concerns.filter((c) => c.status === "Red").length;
@@ -201,16 +177,8 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                 type="button"
                 onClick={() => enableConcern(category)}
                 style={baseCardStyle}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-3px)";
-                  e.currentTarget.style.boxShadow = "0 12px 28px rgba(209,0,0,0.16)";
-                  e.currentTarget.style.borderColor = palette.accentSoft;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 8px 20px rgba(209,0,0,0.10)";
-                  e.currentTarget.style.borderColor = palette.border;
-                }}
+                onMouseEnter={(e) => setCardHoverState(e.currentTarget, true)}
+                onMouseLeave={(e) => setCardHoverState(e.currentTarget, false)}
               >
                 <span style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, textAlign: "left" }}>
                   {category}
@@ -219,14 +187,14 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                   Tap to log underside observations or amend existing notes.
                 </span>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                  <div style={concernBadgeStyle}>{concerns.length} logged</div>
+                  <div style={summaryBadgeBase}>{concerns.length} logged</div>
                   {redCount > 0 ? (
-                    <div style={{ ...concernBadgeStyle, color: palette.danger, borderColor: palette.danger }}>
+                    <div style={{ ...summaryBadgeBase, color: palette.danger, borderColor: palette.danger }}>
                       {redCount} Red
                     </div>
                   ) : null}
                   {amberCount > 0 ? (
-                    <div style={{ ...concernBadgeStyle, color: palette.warning, borderColor: palette.warning }}>
+                    <div style={{ ...summaryBadgeBase, color: palette.warning, borderColor: palette.warning }}>
                       {amberCount} Amber
                     </div>
                   ) : null}

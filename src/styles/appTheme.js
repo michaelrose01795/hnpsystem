@@ -280,7 +280,7 @@ export const vhcModalStyles = {
     zIndex: 1100,
     padding: "24px",
   },
-  container: ({ width = "980px", height = "620px" } = {}) => ({
+  container: ({ width = "1080px", height = "640px" } = {}) => ({
     width,
     maxWidth: "96vw",
     height,
@@ -320,6 +320,7 @@ export const vhcModalStyles = {
     display: "flex",
     flexDirection: "column",
     gap: "16px",
+    minHeight: 0,
   },
   footer: {
     padding: "16px 24px",
@@ -328,6 +329,85 @@ export const vhcModalStyles = {
     justifyContent: "flex-end",
     gap: "12px",
     backgroundColor: palette.surface,
+  },
+};
+
+export const vhcModalContentStyles = {
+  contentWrapper: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "18px",
+    minHeight: 0,
+  },
+  summaryCard: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "16px 20px",
+    borderRadius: radii.lg,
+    border: `1px solid ${palette.border}`,
+    background: palette.accentSurface,
+    boxShadow: "0 6px 16px rgba(209,0,0,0.12)",
+  },
+  summaryTextBlock: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+  },
+  summaryTitle: {
+    fontSize: "13px",
+    color: palette.textMuted,
+    fontWeight: 600,
+    letterSpacing: "0.2px",
+  },
+  summaryMetric: {
+    fontSize: "20px",
+    fontWeight: 700,
+    color: palette.textPrimary,
+  },
+  summaryBadges: {
+    display: "flex",
+    gap: "12px",
+    flexWrap: "wrap",
+    alignItems: "center",
+  },
+  badge: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: "6px 12px",
+    borderRadius: radii.pill,
+    fontSize: "12px",
+    fontWeight: 600,
+    backgroundColor: palette.accentSurface,
+    border: `1px solid ${palette.border}`,
+    color: palette.accent,
+  },
+  cardGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: "18px",
+  },
+  baseCard: {
+    position: "relative",
+    textAlign: "left",
+    border: `1px solid ${palette.border}`,
+    borderColor: palette.border,
+    backgroundColor: palette.surface,
+    borderRadius: radii.lg,
+    padding: "20px",
+    boxShadow: shadows.sm,
+    cursor: "pointer",
+    transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+    transform: "translateY(0)",
+  },
+  baseCardHover: {
+    transform: "translateY(-3px)",
+    boxShadow: shadows.md,
+    borderColor: palette.accentSoft,
   },
 };
 

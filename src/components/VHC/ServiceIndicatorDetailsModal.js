@@ -1,7 +1,7 @@
 // file location: src/components/VHC/ServiceIndicatorDetailsModal.js
 import React, { useEffect, useMemo, useState } from "react";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
-import themeConfig, { createVhcButtonStyle } from "@/styles/appTheme";
+import themeConfig, { createVhcButtonStyle, vhcModalContentStyles } from "@/styles/appTheme";
 
 const palette = themeConfig.palette;
 
@@ -33,18 +33,20 @@ const statusPillStyles = {
   Green: { background: "rgba(16,185,129,0.16)", color: palette.success, border: "rgba(16,185,129,0.32)" },
 };
 
-const cardShellStyle = {
-  borderRadius: "20px",
-  border: `1px solid ${palette.border}`,
-  background: palette.surface,
-  boxShadow: "0 12px 28px rgba(209,0,0,0.10)",
-  padding: "20px",
-  display: "flex",
-  flexDirection: "column",
-  gap: "16px",
-};
-
 export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onClose, onComplete }) {
+  const contentWrapperStyle = {
+    ...vhcModalContentStyles.contentWrapper,
+    gap: "20px",
+  };
+  const summaryCardStyle = vhcModalContentStyles.summaryCard;
+  const summaryTextBlockStyle = vhcModalContentStyles.summaryTextBlock;
+  const summaryBadgesStyle = vhcModalContentStyles.summaryBadges;
+  const summaryBadgeBase = vhcModalContentStyles.badge;
+  const cardShellStyle = {
+    ...vhcModalContentStyles.baseCard,
+    cursor: "default",
+  };
+
   const [serviceChoice, setServiceChoice] = useState(initialData?.serviceChoice ?? null);
   const [oilStatus, setOilStatus] = useState(initialData?.oilStatus ?? null);
   const [concerns, setConcerns] = useState(() => initialData?.concerns ?? []);
@@ -120,59 +122,33 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
       isOpen={isOpen}
       title="Service Indicator & Under Bonnet"
       subtitle="Capture service reminder status and under bonnet checks."
-      width="1020px"
-      height="640px"
       onClose={onClose}
       footer={footer}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "20px", position: "relative" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "16px 20px",
-            borderRadius: "18px",
-            border: `1px solid ${palette.border}`,
-            background: palette.accentSurface,
-            boxShadow: "0 10px 24px rgba(209,0,0,0.12)",
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600, letterSpacing: "0.3px" }}>
-              Concern Summary
-            </span>
-            <span style={{ fontSize: "20px", fontWeight: 700, color: palette.textPrimary }}>
+      <div style={contentWrapperStyle}>
+        <div style={summaryCardStyle}>
+          <div style={summaryTextBlockStyle}>
+            <span style={vhcModalContentStyles.summaryTitle}>Concern Summary</span>
+            <span style={vhcModalContentStyles.summaryMetric}>
               {totals.count} logged across service checks
             </span>
           </div>
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            {["red", "amber", "green"].map((key) => {
-              const value = totals[key];
+          <div style={summaryBadgesStyle}>
+            {["Red", "Amber", "Green"].map((key) => {
+              const value = totals[key.toLowerCase()];
               if (!value) return null;
-              const map = {
-                red: statusPillStyles.Red,
-                amber: statusPillStyles.Amber,
-                green: statusPillStyles.Green,
-              }[key];
-              const label = key.charAt(0).toUpperCase() + key.slice(1);
+              const map = statusPillStyles[key];
               return (
                 <div
                   key={key}
                   style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "6px 12px",
-                    borderRadius: "999px",
-                    fontSize: "12px",
-                    fontWeight: 600,
+                    ...summaryBadgeBase,
                     background: map.background,
                     color: map.color,
                     border: `1px solid ${map.border}`,
                   }}
                 >
-                  {value} {label}
+                  {value} {key}
                 </div>
               );
             })}

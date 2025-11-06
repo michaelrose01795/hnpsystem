@@ -1,17 +1,126 @@
 // file location: src/components/VHC/BrakesHubsDetailsModal.js
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
-import themeConfig, { createVhcButtonStyle } from "@/styles/appTheme";
+import themeConfig, { createVhcButtonStyle, vhcModalContentStyles } from "@/styles/appTheme";
 
 const palette = themeConfig.palette;
+
+const sanitizeNumericListInput = (value = "") =>
+  value.replace(/[^0-9.,\s]/g, "");
+
+const sanitizeDecimalInput = (value = "") => {
+  const cleaned = value.replace(/[^0-9.]/g, "");
+  const [integerPart, ...decimalParts] = cleaned.split(".");
+  const decimals = decimalParts.length > 0 ? `.${decimalParts.join("")}` : "";
+  return `${integerPart}${decimals}`;
+};
+
+const normalisePadSection = (pad = {}) => {
+  const measurement = sanitizeNumericListInput(pad.measurement ?? "");
+  return {
+    measurement,
+    status: pad.status || "Green",
+    concerns: Array.isArray(pad.concerns) ? pad.concerns : [],
+  };
+};
+
+const normaliseDiscSection = (disc = {}) => {
+  const base = {
+    tab: "measurements",
+    measurements: { values: [""], thickness: "", status: "Green" },
+    visual: { status: "Green" },
+    concerns: [],
+  };
+
+  const merged = {
+    ...base,
+    ...disc,
+    concerns: Array.isArray(disc.concerns) ? disc.concerns : [],
+  };
+
+  const measurementSource = disc.measurements || {};
+
+  let values = Array.isArray(measurementSource.values)
+    ? measurementSource.values.map((item) => sanitizeDecimalInput(String(item)))
+    : [];
+
+  if (values.length === 0 && typeof measurementSource.thickness === "string") {
+    values = measurementSource.thickness
+      .split(/[, ]+/)
+      .map((item) => sanitizeDecimalInput(item.trim()))
+      .filter(Boolean);
+  }
+
+  if (values.length === 0 && typeof disc.thickness === "string") {
+    values = disc.thickness
+      .split(/[, ]+/)
+      .map((item) => sanitizeDecimalInput(item.trim()))
+      .filter(Boolean);
+  }
+
+  if (values.length === 0) {
+    values = [""];
+  }
+
+  const thickness = values.filter((item) => item !== "").join(", ");
+
+  return {
+    ...merged,
+    tab: merged.tab || "measurements",
+    measurements: {
+      ...base.measurements,
+      ...measurementSource,
+      values,
+      thickness,
+      status: measurementSource.status || "Green",
+    },
+    visual: {
+      ...base.visual,
+      ...disc.visual,
+      status: disc.visual?.status || base.visual.status,
+    },
+  };
+};
+
+const normaliseBrakesState = (initialData = {}) => {
+  const source =
+    initialData && typeof initialData === "object" && !Array.isArray(initialData)
+      ? initialData
+      : {};
+
+  const frontDiscs = normaliseDiscSection(source.frontDiscs);
+  const rearDiscs = normaliseDiscSection(source.rearDiscs);
+
+  const data = {
+    frontPads: normalisePadSection(source.frontPads),
+    rearPads: normalisePadSection(source.rearPads),
+    frontDiscs,
+    rearDiscs,
+    rearDrums: {
+      status: source.rearDrums?.status || "",
+    },
+  };
+
+  const showDrum = !!source.rearDrums?.status && !source.rearDiscs?.measurements;
+
+  return { data, showDrum };
+};
 
 // ✅ Autocomplete small component
 function AutoCompleteInput({ value, onChange, options }) {
   const [filtered, setFiltered] = useState([]);
   const handleChange = (val) => {
-    onChange(val);
-    setFiltered(options.filter((opt) => opt.toString().includes(val)));
+    const sanitized = sanitizeNumericListInput(val);
+    onChange(sanitized);
+    const segments = sanitized.split(/[, ]+/);
+    const lastSegment = segments[segments.length - 1] || "";
+    const numericFilter = lastSegment.replace(/[^0-9]/g, "");
+    const nextFiltered =
+      numericFilter.length === 0
+        ? []
+        : options.filter((opt) => opt.toString().includes(numericFilter));
+    setFiltered(nextFiltered);
   };
   return (
     <div style={{ position: "relative", width: "100%" }}>
@@ -91,33 +200,36 @@ function AutoCompleteInput({ value, onChange, options }) {
 }
 
 export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, initialData }) {
-  const [data, setData] = useState({
-    frontPads: { measurement: "", status: "Green", concerns: [] },
-    rearPads: { measurement: "", status: "Green", concerns: [] },
-    frontDiscs: { tab: "measurements", measurements: { thickness: "", status: "Green" }, visual: { status: "Green" }, concerns: [] },
-    rearDiscs: { tab: "measurements", measurements: { thickness: "", status: "Green" }, visual: { status: "Green" }, concerns: [] },
-    rearDrums: { status: "" },
-    ...initialData,
-  });
+  const normalisedInitial = useMemo(() => normaliseBrakesState(initialData), [initialData]);
 
+  const [data, setData] = useState(normalisedInitial.data);
+  const [showDrum, setShowDrum] = useState(normalisedInitial.showDrum);
   const [activeSide, setActiveSide] = useState("front");
-  const [showDrum, setShowDrum] = useState(false);
   const [concernPopup, setConcernPopup] = useState({ open: false, category: "", tempConcern: { issue: "", status: "Red" } });
+
+  useEffect(() => {
+    setData(normalisedInitial.data);
+    setShowDrum(normalisedInitial.showDrum);
+  }, [normalisedInitial]);
 
   const padOptions = Array.from({ length: 15 }, (_, i) => i);
   const padLabels = { frontPads: "Front Pads", rearPads: "Rear Pads" };
   const discLabels = { frontDiscs: "Front Discs", rearDiscs: "Rear Discs" };
 
+  const contentWrapperStyle = {
+    ...vhcModalContentStyles.contentWrapper,
+    gap: "24px",
+  };
+  const summaryCardStyle = vhcModalContentStyles.summaryCard;
+  const summaryTextBlockStyle = vhcModalContentStyles.summaryTextBlock;
+  const summaryBadgesStyle = vhcModalContentStyles.summaryBadges;
+  const summaryBadgeBase = vhcModalContentStyles.badge;
   const sectionPanelBase = {
+    ...vhcModalContentStyles.baseCard,
     flex: 1,
-    display: "flex",
-    flexDirection: "column",
     gap: "12px",
-    background: palette.surface,
-    borderRadius: "18px",
-    border: `1px solid ${palette.border}`,
-    padding: "20px",
-    boxShadow: "0 12px 28px rgba(15,23,42,0.08)",
+    alignItems: "stretch",
+    cursor: "default",
   };
 
   const fieldLabelStyle = {
@@ -182,8 +294,20 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   };
 
   const updatePadMeasurement = (category, value) => {
-    setData((prev) => ({ ...prev, [category]: { ...prev[category], measurement: value } }));
-    const numbers = value.split(",").map((v) => parseFloat(v.trim())).filter((v) => !isNaN(v));
+    const sanitized = sanitizeNumericListInput(value);
+    const cleaned = sanitized.replace(/[,\s]+$/g, "");
+    setData((prev) => ({
+      ...prev,
+      [category]: { ...prev[category], measurement: cleaned },
+    }));
+
+    const numbers = cleaned
+      .split(/[, ]+/)
+      .map((v) => parseFloat(v.trim()))
+      .filter((v) => !Number.isNaN(v));
+
+    if (numbers.length === 0) return;
+
     const min = Math.min(...numbers);
     if (min >= 5) updatePadStatus(category, "Green");
     else if (min >= 3) updatePadStatus(category, "Amber");
@@ -195,32 +319,162 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   };
 
   const updateDisc = (category, field, value) => {
-    setData((prev) => ({ ...prev, [category]: { ...prev[category], [field]: { ...prev[category][field], ...value } } }));
+    setData((prev) => {
+      const section = prev[category];
+      if (!section) return prev;
+
+      if (field === "measurements") {
+        const incomingValues = Array.isArray(value.values) ? value.values : section.measurements.values;
+        const sanitizedValues = incomingValues.map((item) => sanitizeDecimalInput(String(item)));
+        const measurements = {
+          ...section.measurements,
+          ...value,
+          values: sanitizedValues,
+          thickness: sanitizedValues.filter((item) => item !== "").join(", "),
+        };
+
+        return {
+          ...prev,
+          [category]: {
+            ...section,
+            measurements,
+          },
+        };
+      }
+
+      return {
+        ...prev,
+        [category]: {
+          ...section,
+          [field]: { ...section[field], ...value },
+        },
+      };
+    });
   };
 
   const addConcern = (category, concern) => {
     setData((prev) => ({ ...prev, [category]: { ...prev[category], concerns: [...prev[category].concerns, concern] } }));
   };
 
+  const handleDiscMeasurementValue = (category, index, value) => {
+    const sanitized = sanitizeDecimalInput(value);
+    setData((prev) => {
+      const section = prev[category];
+      if (!section) return prev;
+      const nextValues = [...section.measurements.values];
+      nextValues[index] = sanitized;
+      const thickness = nextValues.filter((item) => item !== "").join(", ");
+      return {
+        ...prev,
+        [category]: {
+          ...section,
+          measurements: {
+            ...section.measurements,
+            values: nextValues,
+            thickness,
+          },
+        },
+      };
+    });
+  };
+
+  const addDiscMeasurement = (category) => {
+    setData((prev) => {
+      const section = prev[category];
+      if (!section) return prev;
+      const nextValues = [...section.measurements.values, ""];
+      return {
+        ...prev,
+        [category]: {
+          ...section,
+          measurements: {
+            ...section.measurements,
+            values: nextValues,
+            thickness: nextValues.filter((item) => item !== "").join(", "),
+          },
+        },
+      };
+    });
+  };
+
+  const removeDiscMeasurement = (category, index) => {
+    setData((prev) => {
+      const section = prev[category];
+      if (!section) return prev;
+      const nextValues = section.measurements.values.filter((_, idx) => idx !== index);
+      if (nextValues.length === 0) nextValues.push("");
+      return {
+        ...prev,
+        [category]: {
+          ...section,
+          measurements: {
+            ...section.measurements,
+            values: nextValues,
+            thickness: nextValues.filter((item) => item !== "").join(", "),
+          },
+        },
+      };
+    });
+  };
+
+  const buildPayload = () => {
+    const next = { ...data };
+    ["frontDiscs", "rearDiscs"].forEach((category) => {
+      if (!next[category]) return;
+      const values = next[category].measurements.values || [];
+      next[category] = {
+        ...next[category],
+        measurements: {
+          ...next[category].measurements,
+          thickness: values.filter((item) => item !== "").join(", "),
+        },
+      };
+    });
+    return next;
+  };
+
+  const concernTotals = useMemo(() => {
+    const targets = ["frontPads", "rearPads", "frontDiscs", "rearDiscs"];
+    let total = 0;
+    let red = 0;
+    let amber = 0;
+    targets.forEach((key) => {
+      const concerns = data[key]?.concerns ?? [];
+      total += concerns.length;
+      concerns.forEach(({ status }) => {
+        if (status === "Red") red += 1;
+        if (status === "Amber") amber += 1;
+      });
+    });
+    return { total, red, amber };
+  }, [data]);
+
   // ✅ New completion logic
   const isCompleteEnabled = () => {
-    // Front must always be complete
-    const frontPadsDone = data.frontPads.measurement !== "" && data.frontPads.status !== "";
-    const frontDiscsDone = data.frontDiscs.measurements.thickness !== "" && data.frontDiscs.measurements.status && data.frontDiscs.visual.status;
+    const discComplete = (section) => {
+      if (!section) return false;
+      const hasMeasurementValues = section.measurements.values?.some((value) => value && value.trim() !== "");
+      const measurementReady = hasMeasurementValues && section.measurements.status;
+      const visualReady = section.visual.status;
+      return section.tab === "visual" ? Boolean(visualReady) : Boolean(measurementReady);
+    };
+
+    const frontPadMeasurement = (data.frontPads.measurement || "").trim();
+    const rearPadMeasurement = (data.rearPads.measurement || "").trim();
+
+    const frontPadsDone =
+      frontPadMeasurement !== "" && data.frontPads.status !== "";
+    const frontDiscsDone = discComplete(data.frontDiscs);
 
     if (!frontPadsDone || !frontDiscsDone) return false;
 
+    const rearPadsDone = rearPadMeasurement !== "" && data.rearPads.status !== "";
+
     if (showDrum) {
-      // ✅ Rear drum setup: pads filled + drum button selected
-      const rearPadsDone = data.rearPads.measurement !== "" && data.rearPads.status !== "";
-      const drumSelected = data.rearDrums.status !== "";
-      return rearPadsDone && drumSelected;
-    } else {
-      // ✅ Rear disc setup: pads and discs filled
-      const rearPadsDone = data.rearPads.measurement !== "" && data.rearPads.status !== "";
-      const rearDiscsDone = data.rearDiscs.measurements.thickness !== "" && data.rearDiscs.measurements.status && data.rearDiscs.visual.status;
-      return rearPadsDone && rearDiscsDone;
+      return rearPadsDone && data.rearDrums.status !== "";
     }
+
+    return rearPadsDone && discComplete(data.rearDiscs);
   };
 
   if (!isOpen) return null;
@@ -384,19 +638,45 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
         {discData.tab === "measurements" && (
           <>
             <label style={fieldLabelStyle}>Disc Thickness (mm)</label>
-            <input
-              type="text"
-              value={discData.measurements.thickness}
-              onChange={(e) =>
-                updateDisc(category, "measurements", { thickness: e.target.value })
-              }
-              style={{
-                ...selectBaseStyle,
-                boxShadow: "inset 0 1px 3px rgba(15,23,42,0.04)",
-              }}
-              onFocus={enhanceFocus}
-              onBlur={resetFocus}
-            />
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {discData.measurements.values.map((reading, idx) => (
+                <div
+                  key={`${category}-reading-${idx}`}
+                  style={{ display: "flex", gap: "8px", alignItems: "center" }}
+                >
+                  <input
+                    value={reading}
+                    onChange={(e) => handleDiscMeasurementValue(category, idx, e.target.value)}
+                    placeholder={`Reading ${idx + 1}`}
+                    inputMode="decimal"
+                    style={inputStyle}
+                    onFocus={enhanceFocus}
+                    onBlur={resetFocus}
+                  />
+                  {discData.measurements.values.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeDiscMeasurement(category, idx)}
+                      style={{
+                        ...createVhcButtonStyle("ghost"),
+                        padding: "6px 14px",
+                        color: palette.danger,
+                        borderColor: palette.border,
+                      }}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addDiscMeasurement(category)}
+                style={{ ...createVhcButtonStyle("ghost"), alignSelf: "flex-start", padding: "8px 16px" }}
+              >
+                + Add Reading
+              </button>
+            </div>
 
             <label style={fieldLabelStyle}>Status</label>
             <select
@@ -569,8 +849,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       isOpen={isOpen}
       title="Brakes & Hubs"
       subtitle="Capture pad wear, disc condition, and drum checks."
-      width="1080px"
-      height="640px"
       onClose={() => {
         setConcernPopup({ open: false, category: "", tempConcern: { issue: "", status: "Red" } });
         onClose();
@@ -582,7 +860,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           </button>
           <button
             type="button"
-            onClick={() => onComplete(data)}
+            onClick={() => onComplete(buildPayload())}
             disabled={!isCompleteEnabled()}
             style={buildModalButton("primary", { disabled: !isCompleteEnabled() })}
           >
@@ -591,149 +869,188 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
         </>
       }
     >
-      <div style={{ display: "flex", gap: "24px", height: "100%", position: "relative" }}>
-        <aside style={leftPanelStyle}>
-          <div style={{ textAlign: "center" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
-              Select Axle
-            </h3>
-            <p style={{ fontSize: "13px", color: palette.textMuted, margin: "4px 0 0" }}>
-              Tap a diagram to switch between front and rear checks.
-            </p>
+      <div style={contentWrapperStyle}>
+        <div style={summaryCardStyle}>
+          <div style={summaryTextBlockStyle}>
+            <span style={vhcModalContentStyles.summaryTitle}>Brakes Overview</span>
+            <span style={vhcModalContentStyles.summaryMetric}>
+              {concernTotals.total} concerns across front and rear checks
+            </span>
+            <span style={{ fontSize: "13px", color: palette.textMuted }}>
+              Front pads {data.frontPads.status || "Pending"} · Rear pads {data.rearPads.status || "Pending"}
+            </span>
           </div>
-          <Image
-            src="/images/Brakes3.png"
-            alt="Front Brakes"
-            width={172}
-            height={172}
-            style={imageStyle(activeSide === "front")}
-            onClick={() => {
-              setActiveSide("front");
-              setShowDrum(false);
+          <div style={summaryBadgesStyle}>
+            <div style={{ ...summaryBadgeBase, color: palette.danger, borderColor: palette.danger }}>
+              {concernTotals.red} Red
+            </div>
+            <div style={{ ...summaryBadgeBase, color: palette.warning, borderColor: palette.warning }}>
+              {concernTotals.amber} Amber
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "24px",
+            height: "100%",
+            minHeight: 0,
+            position: "relative",
+          }}
+        >
+          <aside style={leftPanelStyle}>
+            <div style={{ textAlign: "center" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
+                Select Axle
+              </h3>
+              <p style={{ fontSize: "13px", color: palette.textMuted, margin: "4px 0 0" }}>
+                Tap a diagram to switch between front and rear checks.
+              </p>
+            </div>
+            <Image
+              src="/images/Brakes3.png"
+              alt="Front Brakes"
+              width={172}
+              height={172}
+              style={imageStyle(activeSide === "front")}
+              onClick={() => {
+                setActiveSide("front");
+                setShowDrum(false);
+              }}
+            />
+            <Image
+              src="/images/Brakes3.png"
+              alt="Rear Brakes"
+              width={172}
+              height={172}
+              style={imageStyle(activeSide === "rear")}
+              onClick={() => setActiveSide("rear")}
+            />
+          </aside>
+
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              gap: "24px",
+              position: "relative",
+              minHeight: 0,
             }}
-          />
-          <Image
-            src="/images/Brakes3.png"
-            alt="Rear Brakes"
-            width={172}
-            height={172}
-            style={imageStyle(activeSide === "rear")}
-            onClick={() => setActiveSide("rear")}
-          />
-        </aside>
+          >
+            {activeSide === "front" && (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                  gap: "20px",
+                }}
+              >
+                <PadsSection category="frontPads" />
+                <DiscsSection category="frontDiscs" />
+              </div>
+            )}
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "24px", position: "relative" }}>
-          {activeSide === "front" && (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-                gap: "20px",
-              }}
-            >
-              <PadsSection category="frontPads" />
-              <DiscsSection category="frontDiscs" />
-            </div>
-          )}
+            {activeSide === "rear" && !showDrum && (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                  gap: "20px",
+                }}
+              >
+                <PadsSection category="rearPads" showDrumButton />
+                <DiscsSection category="rearDiscs" />
+              </div>
+            )}
 
-          {activeSide === "rear" && !showDrum && (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-                gap: "20px",
-              }}
-            >
-              <PadsSection category="rearPads" showDrumButton />
-              <DiscsSection category="rearDiscs" />
-            </div>
-          )}
+            {activeSide === "rear" && showDrum && <DrumBrakesSection />}
 
-          {activeSide === "rear" && showDrum && <DrumBrakesSection />}
-
-          {concernPopup.open && (
-            <div style={popupOverlayStyle}>
-              <div style={popupCardStyle}>
-                <h4 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
-                  Add Concern
-                </h4>
-                <p style={{ fontSize: "12px", color: palette.textMuted, margin: "4px 0 12px" }}>
-                  Document an issue for{" "}
-                  {padLabels[concernPopup.category] ||
-                    discLabels[concernPopup.category] ||
-                    "this area"}
-                  .
-                </p>
-                <label style={fieldLabelStyle}>Concern</label>
-                <input
-                  type="text"
-                  value={concernPopup.tempConcern.issue}
-                  onChange={(e) =>
-                    setConcernPopup((prev) => ({
-                      ...prev,
-                      tempConcern: { ...prev.tempConcern, issue: e.target.value },
-                    }))
-                  }
-                  placeholder="Describe the issue…"
-                  style={{
-                    ...selectBaseStyle,
-                    width: "100%",
-                    boxShadow: "inset 0 1px 3px rgba(15,23,42,0.04)",
-                  }}
-                  onFocus={enhanceFocus}
-                  onBlur={resetFocus}
-                />
-
-                <label style={fieldLabelStyle}>Severity</label>
-                <select
-                  value={concernPopup.tempConcern.status}
-                  onChange={(e) =>
-                    setConcernPopup((prev) => ({
-                      ...prev,
-                      tempConcern: { ...prev.tempConcern, status: e.target.value },
-                    }))
-                  }
-                  style={{ ...selectBaseStyle, width: "100%" }}
-                  onFocus={enhanceFocus}
-                  onBlur={resetFocus}
-                >
-                  <option>Red</option>
-                  <option>Amber</option>
-                </select>
-
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "16px" }}>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setConcernPopup({
-                        open: false,
-                        category: "",
-                        tempConcern: { issue: "", status: "Red" },
-                      })
-                    }
-                    style={buildModalButton("ghost")}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!concernPopup.tempConcern.issue.trim()) return;
-                      addConcern(concernPopup.category, concernPopup.tempConcern);
-                      setConcernPopup({
-                        open: false,
-                        category: "",
-                        tempConcern: { issue: "", status: "Red" },
-                      });
-                    }}
-                    style={buildModalButton("primary")}
-                  >
+            {concernPopup.open && (
+              <div style={popupOverlayStyle}>
+                <div style={popupCardStyle}>
+                  <h4 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
                     Add Concern
-                  </button>
+                  </h4>
+                  <p style={{ fontSize: "12px", color: palette.textMuted, margin: "4px 0 12px" }}>
+                    Document an issue for{" "}
+                    {padLabels[concernPopup.category] ||
+                      discLabels[concernPopup.category] ||
+                      "this area"}
+                    .
+                  </p>
+                  <label style={fieldLabelStyle}>Concern</label>
+                  <input
+                    type="text"
+                    value={concernPopup.tempConcern.issue}
+                    onChange={(e) =>
+                      setConcernPopup((prev) => ({
+                        ...prev,
+                        tempConcern: { ...prev.tempConcern, issue: e.target.value },
+                      }))
+                    }
+                    placeholder="Describe the issue…"
+                    style={{
+                      ...selectBaseStyle,
+                      width: "100%",
+                      boxShadow: "inset 0 1px 3px rgba(15,23,42,0.04)",
+                    }}
+                    onFocus={enhanceFocus}
+                    onBlur={resetFocus}
+                  />
+
+                  <label style={fieldLabelStyle}>Severity</label>
+                  <select
+                    value={concernPopup.tempConcern.status}
+                    onChange={(e) =>
+                      setConcernPopup((prev) => ({
+                        ...prev,
+                        tempConcern: { ...prev.tempConcern, status: e.target.value },
+                      }))
+                    }
+                    style={{ ...selectBaseStyle, width: "100%" }}
+                    onFocus={enhanceFocus}
+                    onBlur={resetFocus}
+                  >
+                    <option>Red</option>
+                    <option>Amber</option>
+                  </select>
+
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "16px" }}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setConcernPopup({
+                          open: false,
+                          category: "",
+                          tempConcern: { issue: "", status: "Red" },
+                        })
+                      }
+                      style={buildModalButton("ghost")}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!concernPopup.tempConcern.issue.trim()) return;
+                        addConcern(concernPopup.category, concernPopup.tempConcern);
+                        setConcernPopup({
+                          open: false,
+                          category: "",
+                          tempConcern: { issue: "", status: "Red" },
+                        });
+                      }}
+                      style={buildModalButton("primary")}
+                    >
+                      Add Concern
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </VHCModalShell>
