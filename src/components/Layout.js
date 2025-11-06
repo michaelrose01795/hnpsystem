@@ -8,6 +8,7 @@ import GlobalSearch from "./GlobalSearch"; // import global search component
 import JobCardModal from "./JobCards/JobCardModal"; // import job modal
 import StatusSidebar from "../components/StatusTracking/StatusSidebar"; // import status sidebar
 import { appShellTheme } from "@/styles/appTheme";
+import { sidebarSections } from "@/config/navigation";
 
 export default function Layout({ children }) {
   const { user, logout, status, setStatus, currentJob } = useUser(); // get user context data
@@ -91,12 +92,6 @@ export default function Layout({ children }) {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
-  const links = [
-    { href: "/newsfeed", label: "📰 News Feed" },
-    { href: "/dashboard", label: "📊 Dashboard" },
-    { href: "/messages", label: "💬 Messages" },
-  ];
-
   const viewRoles = ["manager", "service", "sales"];
   const appointmentRoles = ["admin", "sales", "service", "manager"];
   const vhcRoles = [
@@ -111,9 +106,27 @@ export default function Layout({ children }) {
 
   const colors = darkMode ? appShellTheme.dark : appShellTheme.light;
 
+  const [navOpenSections, setNavOpenSections] = useState(() =>
+    Object.fromEntries(sidebarSections.map((section) => [section.label, true]))
+  );
+
+  const toggleNavSection = (label) => {
+    setNavOpenSections((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
+
   const navigationItems = [];
   const seenNavItems = new Set();
-  const addNavItem = (label, href, keywords = [], description) => {
+  const roleMatches = (requiredRoles = []) => {
+    if (!requiredRoles || requiredRoles.length === 0) return true;
+    return requiredRoles.some((role) => userRoles.includes(role.toLowerCase()));
+  };
+
+  const addNavItem = (
+    label,
+    href,
+    { keywords = [], description, section = "General", roles: requiredRoles = [] } = {}
+  ) => {
+    if (!roleMatches(requiredRoles)) return;
     if (!label || !href) return;
     const key = `${label}|${href}`;
     if (seenNavItems.has(key)) return;
@@ -137,29 +150,43 @@ export default function Layout({ children }) {
       href,
       keywords: finalKeywords,
       description,
+      section,
     });
   };
 
-  links.forEach((link) => addNavItem(link.label, link.href));
+  sidebarSections.forEach((section) => {
+    (section.items || []).forEach((item) => {
+      addNavItem(item.label, item.href, {
+        keywords: item.keywords || [],
+        description: item.description,
+        section: section.label,
+        roles: item.roles || [],
+      });
+    });
+  });
 
   if (user) {
-    addNavItem(
-      "🙋 My Profile",
-      "/profile",
-      ["profile", "employee profile", "my profile"],
-      "View your personal employment info"
-    );
+    addNavItem("🙋 My Profile", "/profile", {
+      keywords: ["profile", "employee profile", "my profile"],
+      description: "View your personal employment info",
+      section: "General",
+    });
   }
 
   if (isTech) {
-    addNavItem("🧰 My Jobs", "/job-cards/myjobs", ["my jobs", "jobs", "tech"]);
-    addNavItem("🔧 Start Job", "/job-cards/myjobs", ["start job", "tech"]);
-    addNavItem(
-      "Clock In",
-      "/workshop/Clocking",
-      ["clock in", "clocking", "view clocking"],
-      "Go to workshop clocking"
-    );
+    addNavItem("🧰 My Jobs", "/job-cards/myjobs", {
+      keywords: ["my jobs", "jobs", "tech"],
+      section: "Workshop",
+    });
+    addNavItem("🔧 Start Job", "/job-cards/myjobs", {
+      keywords: ["start job", "tech"],
+      section: "Workshop",
+    });
+    addNavItem("Clock In", "/workshop/Clocking", {
+      keywords: ["clock in", "clocking", "view clocking"],
+      description: "Go to workshop clocking",
+      section: "Workshop",
+    });
   }
 
   if (
@@ -167,12 +194,11 @@ export default function Layout({ children }) {
     userRoles.includes("admin") ||
     userRoles.some((r) => r.includes("manager"))
   ) {
-    addNavItem(
-      "➕ Create Job Card",
-      "/job-cards/create",
-      ["create job", "new job", "job card"],
-      "Create a new job card"
-    );
+    addNavItem("➕ Create Job Card", "/job-cards/create", {
+      keywords: ["create job", "new job", "job card"],
+      description: "Create a new job card",
+      section: "Workshop",
+    });
   }
 
   if (
@@ -180,146 +206,126 @@ export default function Layout({ children }) {
       userRoles.includes(roleName)
     )
   ) {
-    addNavItem(
-      "🔜 Next Jobs",
-      "/job-cards/waiting/nextjobs",
-      ["next jobs", "waiting list", "queue"]
-    );
+    addNavItem("🔜 Next Jobs", "/job-cards/waiting/nextjobs", {
+      keywords: ["next jobs", "waiting list", "queue"],
+      section: "Workshop",
+    });
   }
 
   if (viewRoles.some((r) => userRoles.includes(r))) {
-    addNavItem(
-      "👀 View Job Cards",
-      "/job-cards/view",
-      ["view job", "job cards"],
-      "Browse all job cards"
-    );
+    addNavItem("👀 View Job Cards", "/job-cards/view", {
+      keywords: ["view job", "job cards"],
+      description: "Browse all job cards",
+      section: "Workshop",
+    });
   }
 
   if (userRoles.includes("parts") || userRoles.includes("parts manager")) {
-    addNavItem(
-      "🧰 Parts Workspace",
-      "/parts",
-      ["parts", "inventory", "vhc parts"],
-      "Manage parts allocations and deliveries"
-    );
+    addNavItem("🧰 Parts Workspace", "/parts", {
+      keywords: ["parts", "inventory", "vhc parts"],
+      description: "Manage parts allocations and deliveries",
+      section: "Parts",
+    });
   }
 
   if (userRoles.includes("parts manager")) {
-    addNavItem(
-      "📈 Parts Manager Overview",
-      "/parts/manager",
-      ["parts manager", "stock value", "parts dashboard"],
-      "View stock, spending, and income KPIs"
-    );
+    addNavItem("📈 Parts Manager Overview", "/parts/manager", {
+      keywords: ["parts manager", "stock value", "parts dashboard"],
+      description: "View stock, spending, and income KPIs",
+      section: "Parts",
+    });
   }
 
   if (appointmentRoles.some((r) => userRoles.includes(r))) {
-    addNavItem(
-      "📅 Appointments",
-      "/appointments",
-      ["appointments", "schedule", "bookings"]
-    );
+    addNavItem("📅 Appointments", "/appointments", {
+      keywords: ["appointments", "schedule", "bookings"],
+      section: "Sales & Service",
+    });
   }
 
   if (vhcRoles.some((r) => userRoles.includes(r))) {
-    addNavItem(
-      "📝 VHC Dashboard",
-      "/vhc/dashboard",
-      ["vhc", "vehicle health check", "dashboard"]
-    );
+    addNavItem("📝 VHC Dashboard", "/vhc/dashboard", {
+      keywords: ["vhc", "vehicle health check", "dashboard"],
+      section: "Workshop",
+    });
   }
 
   const hrAccessRoles = ["hr manager", "admin manager", "owner", "admin"];
   if (userRoles.some((role) => hrAccessRoles.includes(role))) {
-    addNavItem(
-      "👥 HR Dashboard",
-      "/hr",
-      ["hr", "people", "culture", "training"],
-      "Headcount, attendance, and compliance overview"
-    );
-    addNavItem(
-      "📇 Employee Records",
-      "/hr/employees",
-      ["hr employees", "directory", "profiles"],
-      "Manage employee profiles, documents, and permissions"
-    );
-    addNavItem(
-      "🕒 Attendance",
-      "/hr/attendance",
-      ["attendance", "clocking", "overtime"],
-      "Clocking logs, absences, and overtime summaries"
-    );
-    addNavItem(
-      "💷 Payroll",
-      "/hr/payroll",
-      ["payroll", "pay rates", "compensation"],
-      "Pay rates, approvals, and overtime exports"
-    );
-    addNavItem(
-      "🏖️ Leave",
-      "/hr/leave",
-      ["leave", "holiday", "absence"],
-      "Leave requests, balances, and calendar sync"
-    );
-    addNavItem(
-      "⭐ Performance",
-      "/hr/performance",
-      ["performance", "reviews", "appraisals"],
-      "Manage reviews and development plans"
-    );
-    addNavItem(
-      "🎓 Training",
-      "/hr/training",
-      ["training", "qualifications"],
-      "Track training completions and renewals"
-    );
-    addNavItem(
-      "⚠️ Incidents",
-      "/hr/disciplinary",
-      ["disciplinary", "incidents"],
-      "Log warnings and incident reports"
-    );
-    addNavItem(
-      "📨 Recruitment",
-      "/hr/recruitment",
-      ["recruitment", "applicants", "jobs"],
-      "Manage hiring pipelines and onboarding"
-    );
-    addNavItem(
-      "📈 HR Reports",
-      "/hr/reports",
-      ["reports", "exports", "analytics"],
-      "Generate HR analytics and exports"
-    );
-    addNavItem(
-      "⚙️ HR Settings",
-      "/hr/settings",
-      ["settings", "policies", "access"],
-      "Configure policies, schedules, and access"
-    );
+    addNavItem("👥 HR Dashboard", "/hr", {
+      keywords: ["hr", "people", "culture", "training"],
+      description: "Headcount, attendance, and compliance overview",
+      section: "HR",
+    });
+    addNavItem("📇 Employee Records", "/hr/employees", {
+      keywords: ["hr employees", "directory", "profiles"],
+      description: "Manage employee profiles, documents, and permissions",
+      section: "HR",
+    });
+    addNavItem("🕒 Attendance", "/hr/attendance", {
+      keywords: ["attendance", "clocking", "overtime"],
+      description: "Clocking logs, absences, and overtime summaries",
+      section: "HR",
+    });
+    addNavItem("💷 Payroll", "/hr/payroll", {
+      keywords: ["payroll", "pay rates", "compensation"],
+      description: "Pay rates, approvals, and overtime exports",
+      section: "HR",
+    });
+    addNavItem("🏖️ Leave", "/hr/leave", {
+      keywords: ["leave", "holiday", "absence"],
+      description: "Leave requests, balances, and calendar sync",
+      section: "HR",
+    });
+    addNavItem("⭐ Performance", "/hr/performance", {
+      keywords: ["performance", "reviews", "appraisals"],
+      description: "Manage reviews and development plans",
+      section: "HR",
+    });
+    addNavItem("🎓 Training", "/hr/training", {
+      keywords: ["training", "qualifications"],
+      description: "Track training completions and renewals",
+      section: "HR",
+    });
+    addNavItem("⚠️ Incidents", "/hr/disciplinary", {
+      keywords: ["disciplinary", "incidents"],
+      description: "Log warnings and incident reports",
+      section: "HR",
+    });
+    addNavItem("📨 Recruitment", "/hr/recruitment", {
+      keywords: ["recruitment", "applicants", "jobs"],
+      description: "Manage hiring pipelines and onboarding",
+      section: "HR",
+    });
+    addNavItem("📈 HR Reports", "/hr/reports", {
+      keywords: ["reports", "exports", "analytics"],
+      description: "Generate HR analytics and exports",
+      section: "HR",
+    });
+    addNavItem("⚙️ HR Settings", "/hr/settings", {
+      keywords: ["settings", "policies", "access"],
+      description: "Configure policies, schedules, and access",
+      section: "HR",
+    });
   } else if (userRoles.some((role) => role.includes("manager"))) {
-    addNavItem(
-      "👥 Team HR",
-      "/hr/employees",
-      ["team hr", "people", "hr"],
-      "View team employee directory and leave"
-    );
-    addNavItem(
-      "🏖️ Leave",
-      "/hr/leave",
-      ["leave", "holiday"],
-      "Review departmental leave requests"
-    );
+    addNavItem("👥 Team HR", "/hr/employees", {
+      keywords: ["team hr", "people", "hr"],
+      description: "View team employee directory and leave",
+      section: "HR",
+    });
+    addNavItem("🏖️ Leave", "/hr/leave", {
+      keywords: ["leave", "holiday"],
+      description: "Review departmental leave requests",
+      section: "HR",
+    });
   }
 
   if (userRoles.includes("admin manager")) {
-    addNavItem(
-      "🛠️ User Admin",
-      "/admin/users",
-      ["admin users", "create user", "user management"],
-      "Create and manage platform accounts"
-    );
+    addNavItem("🛠️ User Admin", "/admin/users", {
+      keywords: ["admin users", "create user", "user management"],
+      description: "Create and manage platform accounts",
+      section: "Admin",
+    });
   }
 
   if (
@@ -327,19 +333,17 @@ export default function Layout({ children }) {
     userRoles.includes("service manager") ||
     userRoles.includes("admin")
   ) {
-    addNavItem(
-      "🧽 Valet Jobs",
-      "/valet",
-      ["valet", "wash", "valeting"],
-      "View vehicles awaiting wash"
-    );
+    addNavItem("🧽 Valet Jobs", "/valet", {
+      keywords: ["valet", "wash", "valeting"],
+      description: "View vehicles awaiting wash",
+      section: "Workshop",
+    });
   }
 
-  addNavItem(
-    "🛎️ Workshop Check-In",
-    "/workshop/check-in",
-    ["check in", "arrival", "workshop"]
-  );
+  addNavItem("🛎️ Workshop Check-In", "/workshop/check-in", {
+    keywords: ["check in", "arrival", "workshop"],
+    section: "Workshop",
+  });
 
   return (
     <div
@@ -394,36 +398,57 @@ export default function Layout({ children }) {
               {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
             </button>
 
-            <nav style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {links.map((link, index) => (
-                <React.Fragment key={link.href}>
-                  <Link href={link.href}>
-                    <span
+            <nav style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {sidebarSections.map((section) => {
+                const items = (section.items || []).filter((item) => roleMatches(item.roles));
+                if (!items.length) return null;
+                const isOpen = navOpenSections[section.label];
+                return (
+                  <div key={section.label}>
+                    <button
+                      type="button"
+                      onClick={() => toggleNavSection(section.label)}
                       style={{
-                        display: "block",
-                        padding: "10px",
-                        borderRadius: "6px",
-                        color: isActive(link.href) ? "white" : colors.accent,
-                        backgroundColor: isActive(link.href)
-                          ? colors.accent
-                          : "transparent",
+                        width: "100%",
+                        border: "none",
+                        background: "transparent",
+                        color: colors.accent,
+                        fontWeight: 700,
                         fontSize: "0.95rem",
-                        fontWeight: 500,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
                         cursor: "pointer",
-                        transition: "all 0.2s",
                       }}
                     >
-                      {link.label}
-                    </span>
-                  </Link>
-
-                  {index === 1 && userRoles.includes("techs") && (
-                    <div style={{ marginTop: "10px" }}>
-                      <ClockInButton />
-                    </div>
-                  )}
-                </React.Fragment>
-              ))}
+                      {section.label}
+                      <span>{isOpen ? "−" : "+"}</span>
+                    </button>
+                    {isOpen &&
+                      items.map((item) => (
+                        <Link key={item.href} href={item.href}>
+                          <span
+                            style={{
+                              display: "block",
+                              padding: "10px",
+                              borderRadius: "6px",
+                              color: isActive(item.href) ? "white" : colors.accent,
+                              backgroundColor: isActive(item.href)
+                                ? colors.accent
+                                : "transparent",
+                              fontSize: "0.95rem",
+                              fontWeight: 500,
+                              cursor: "pointer",
+                              transition: "all 0.2s",
+                            }}
+                          >
+                            {item.label}
+                          </span>
+                        </Link>
+                      ))}
+                  </div>
+                );
+              })}
 
               {userRoles.includes("techs") && (
                 <>

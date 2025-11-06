@@ -3,36 +3,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useMemo } from "react";
 import { useUser } from "@/context/UserContext";
+import { sidebarSections } from "@/config/navigation";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { user } = useUser();
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
 
-  // Define all navigation items for the sidebar
-  const navItems = [
-    { label: "Home", href: "/" },
-    { label: "Dashboard", href: "/dashboard" },
-    { label: "Car Buying", href: "/car-buying", roles: ["admin", "sales", "workshop"] },
-    { label: "Contractors", href: "/contractors", roles: ["admin"] },
-    { label: "Vehicle Processing", href: "/vehicle-processing", roles: ["admin", "workshop"] },
-    { label: "Smart Repair", href: "/smartrepair", roles: ["workshop"] },
-    { label: "Create Job Card", href: "/job-cards/create", roles: ["admin", "sales", "workshop"] },
-    { label: "View Job Cards", href: "/job-cards/view", roles: ["admin", "sales", "workshop", "service", "manager"] },
-    { label: "Appointments", href: "/appointments", roles: ["admin", "sales", "service", "manager"] },
-    { label: "Next Jobs", href: "/job-cards/waiting/nextjobs", roles: ["service manager", "workshop manager"] },
-    { label: "VHC", href: "/vhc", roles: ["techs", "service", "manager", "workshop manager"] },
-    { label: "Parts Workspace", href: "/parts", roles: ["parts", "parts manager"] },
-    { label: "Parts Manager Overview", href: "/parts/manager", roles: ["parts manager"] },
-    { label: "Messages", href: "/messages" },
-  ];
-
-  // Filter items based on user roles
-  const visibleNav = navItems.filter(
-    (item) =>
-      !item.roles || item.roles.some((role) => userRoles.includes(role.toLowerCase()))
+  const initialState = useMemo(
+    () =>
+      Object.fromEntries(sidebarSections.map((section) => [section.label, true])),
+    []
   );
+  const [openSections, setOpenSections] = useState(initialState);
+
+  const hasAccess = (item) => {
+    if (!item.roles || item.roles.length === 0) return true;
+    return item.roles.some((role) => userRoles.includes(role.toLowerCase()));
+  };
+
+  const toggleSection = (label) => {
+    setOpenSections((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
 
   return (
     <aside
@@ -46,24 +40,56 @@ export default function Sidebar() {
         gap: "10px",
       }}
     >
-      {visibleNav.map((item) => (
-        <Link key={item.href} href={item.href}>
-          <span
-            style={{
-              display: "block",
-              padding: "10px",
-              backgroundColor: pathname === item.href ? "#FF4040" : "transparent",
-              color: pathname === item.href ? "white" : "#FF4040",
-              borderRadius: "6px",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "background 0.2s, color 0.2s",
-            }}
-          >
-            {item.label}
-          </span>
-        </Link>
-      ))}
+      {sidebarSections.map((section) => {
+        const items = section.items.filter(hasAccess);
+        if (items.length === 0) return null;
+        const isOpen = openSections[section.label];
+        return (
+          <div key={section.label} style={{ marginBottom: "12px" }}>
+            <button
+              type="button"
+              onClick={() => toggleSection(section.label)}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                background: "transparent",
+                border: "none",
+                color: "#FF4040",
+                fontWeight: 700,
+                fontSize: "0.95rem",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                cursor: "pointer",
+                padding: "6px 0",
+              }}
+            >
+              {section.label}
+              <span>{isOpen ? "−" : "+"}</span>
+            </button>
+            {isOpen &&
+              items.map((item) => (
+                <Link key={item.href} href={item.href}>
+                  <span
+                    style={{
+                      display: "block",
+                      padding: "8px 10px",
+                      marginLeft: "6px",
+                      backgroundColor: pathname === item.href ? "#FF4040" : "transparent",
+                      color: pathname === item.href ? "white" : "#FF4040",
+                      borderRadius: "6px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      transition: "background 0.2s, color 0.2s",
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                </Link>
+              ))}
+          </div>
+        );
+      })}
     </aside>
   );
 }

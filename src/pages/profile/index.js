@@ -19,14 +19,21 @@ function formatCurrency(value) {
   return `£${Number(value ?? 0).toFixed(2)}`;
 }
 
-export default function MyProfile() {
+export function ProfilePage({
+  forcedUserName = null,
+  embeddedOverride = null,
+  adminPreviewOverride = null,
+} = {}) {
   const router = useRouter();
   const { user } = useUser();
   const { data, isLoading, error } = useHrMockData();
 
-  const previewUserParam = typeof router.query.user === "string" ? router.query.user : null;
-  const isEmbedded = router.query.embedded === "1";
-  const isAdminPreview = router.query.adminPreview === "1";
+  const previewUserParam =
+    forcedUserName || (typeof router.query.user === "string" ? router.query.user : null);
+  const isEmbeddedQuery = router.query.embedded === "1";
+  const isEmbedded = embeddedOverride ?? isEmbeddedQuery;
+  const isAdminPreviewQuery = router.query.adminPreview === "1";
+  const isAdminPreview = adminPreviewOverride ?? isAdminPreviewQuery;
 
   const employeeDirectory = data?.employeeDirectory ?? [];
   const attendanceLogs = data?.attendanceLogs ?? [];
@@ -114,7 +121,14 @@ export default function MyProfile() {
   }
 
   const content = (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: isEmbedded ? "0" : "8px 8px 32px" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "24px",
+        padding: isEmbedded ? "0" : "8px 8px 32px",
+      }}
+    >
       <header style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#111827" }}>
           {profile ? profile.name : activeUserName || "My Profile"}
@@ -425,6 +439,10 @@ export default function MyProfile() {
     </div>
   );
   return isEmbedded ? content : <Layout>{content}</Layout>;
+}
+
+export default function ProfileRoute() {
+  return <ProfilePage />;
 }
 
 function ProfileItem({ label, value }) {

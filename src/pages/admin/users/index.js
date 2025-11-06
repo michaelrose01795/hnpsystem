@@ -92,20 +92,11 @@ export default function AdminUserManagement() {
   return (
     <Layout>
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
-        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px" }}>
-          <div>
-            <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#111827" }}>Admin User Management</h1>
-            <p style={{ color: "#6B7280", marginTop: "6px" }}>
-              Provision platform accounts and review department ownership. These records are driven by the shared confirmation roster for consistent testing.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowAddForm((prev) => !prev)}
-            style={primaryHeaderButtonStyle}
-          >
-            {showAddForm ? "Close Add User" : "Add User"}
-          </button>
+        <header>
+          <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#111827" }}>Admin User Management</h1>
+          <p style={{ color: "#6B7280", marginTop: "6px" }}>
+            Provision platform accounts and review department ownership. These records are driven by the shared confirmation roster for consistent testing.
+          </p>
         </header>
 
         {showAddForm && <AdminUserForm onCreated={handleUserCreated} />}
@@ -113,7 +104,16 @@ export default function AdminUserManagement() {
         <SectionCard
           title="Live Platform Users"
           subtitle={dbLoading ? "Loading user roster" : "Manage accounts stored in Supabase"}
-          action={<button type="button" onClick={fetchDbUsers} style={refreshButtonStyle}>Refresh</button>}
+          action={
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button type="button" onClick={() => setShowAddForm((prev) => !prev)} style={primaryActionButtonStyle}>
+                {showAddForm ? "Close Form" : "Add User"}
+              </button>
+              <button type="button" onClick={fetchDbUsers} style={refreshButtonStyle}>
+                Refresh
+              </button>
+            </div>
+          }
         >
           {dbError && (
             <div style={{ color: "#B91C1C", marginBottom: "12px", fontWeight: 600 }}>{dbError}</div>
@@ -122,6 +122,10 @@ export default function AdminUserManagement() {
             <div style={{ color: "#6B7280" }}>Reading users…</div>
           ) : (
             <div style={{ overflowX: "auto" }}>
+              <p style={{ color: "#4B5563", margin: "0 0 12px" }}>
+                This table reflects the live <code>users</code> table in Supabase. Any additions or deletions
+                performed here instantly update the database and associated activity logs.
+              </p>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
@@ -256,7 +260,7 @@ export default function AdminUserManagement() {
               </div>
               <iframe
                 title={`${previewMember.displayName} profile`}
-                src={`/profile?user=${encodeURIComponent(previewMember.key || previewMember.displayName)}&adminPreview=1&embedded=1`}
+                src={`/admin/profiles/${encodeURIComponent(previewMember.key || previewMember.displayName)}`}
                 style={{ width: "100%", height: "500px", border: "1px solid #E5E7EB", borderRadius: "12px" }}
               />
               <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
@@ -274,16 +278,6 @@ export default function AdminUserManagement() {
     </Layout>
   );
 }
-
-const primaryHeaderButtonStyle = {
-  padding: "10px 18px",
-  borderRadius: "10px",
-  border: "none",
-  background: "#1D4ED8",
-  color: "white",
-  fontWeight: 600,
-  cursor: "pointer",
-};
 
 const refreshButtonStyle = {
   padding: "8px 14px",
@@ -344,4 +338,14 @@ const secondaryButtonStyle = {
   fontWeight: 600,
   cursor: "not-allowed",
   opacity: 0.6,
+};
+
+const primaryActionButtonStyle = {
+  padding: "8px 14px",
+  borderRadius: "10px",
+  border: "none",
+  background: "#1D4ED8",
+  color: "white",
+  fontWeight: 600,
+  cursor: "pointer",
 };
