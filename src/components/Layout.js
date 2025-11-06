@@ -7,6 +7,7 @@ import ClockInButton from "./Clocking/ClockInButton"; // import clock in button
 import GlobalSearch from "./GlobalSearch"; // import global search component
 import JobCardModal from "./JobCards/JobCardModal"; // import job modal
 import StatusSidebar from "../components/StatusTracking/StatusSidebar"; // import status sidebar
+import { appShellTheme } from "@/styles/appTheme";
 
 export default function Layout({ children }) {
   const { user, logout, status, setStatus, currentJob } = useUser(); // get user context data
@@ -108,21 +109,7 @@ export default function Layout({ children }) {
   ];
   const isActive = (path) => router.pathname.startsWith(path);
 
-  const colors = darkMode
-    ? {
-        sidebarBg: "#1E1E1E",
-        sidebarText: "#E0E0E0",
-        accent: "#FF4040",
-        mainBg: "#121212",
-        headerBg: "#222",
-      }
-    : {
-        sidebarBg: "#FFF0F0",
-        sidebarText: "black",
-        accent: "#FF4040",
-        mainBg: "#FFF8F8",
-        headerBg: "white",
-      };
+  const colors = darkMode ? appShellTheme.dark : appShellTheme.light;
 
   const navigationItems = [];
   const seenNavItems = new Set();
@@ -259,8 +246,8 @@ export default function Layout({ children }) {
         display: "flex",
         minHeight: "100vh",
         fontFamily: "sans-serif",
-        backgroundColor: colors.mainBg,
-        color: colors.sidebarText,
+        background: colors.mainBg,
+        color: colors.text,
       }}
     >
       {!hideSidebar && (
@@ -274,7 +261,7 @@ export default function Layout({ children }) {
             flexDirection: "column",
             justifyContent: "space-between",
             padding: "20px",
-            borderRight: `1px solid ${darkMode ? "#333" : "#FFCCCC"}`,
+            borderRight: `1px solid ${colors.sidebarBorder}`,
           }}
         >
           <div>

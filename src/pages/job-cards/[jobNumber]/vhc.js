@@ -1,9 +1,14 @@
 // ✅ File location: src/pages/job-cards/[jobNumber]/vhc.js
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
+import themeConfig, {
+  vhcLayoutStyles,
+  createVhcButtonStyle,
+  vhcCardStates,
+} from "@/styles/appTheme";
 
 // 🧩 Import database helper
 import { getJobByNumberOrReg, saveChecksheet } from "@/lib/database/jobs";
@@ -27,201 +32,7 @@ const SECTION_TITLES = {
 };
 
 // 🎨 Shared VHC design tokens so dashboard + tech view stay aligned
-const styles = {
-  page: {
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    padding: "12px 16px",
-    gap: "16px",
-    background: "linear-gradient(to bottom right, #ffffff, #fff5f5, #ffecec)",
-  },
-  headerCard: {
-    backgroundColor: "#ffffff",
-    border: "1px solid #ffe0e0",
-    borderRadius: "16px",
-    padding: "24px",
-    boxShadow: "0 4px 18px rgba(209,0,0,0.08)",
-    display: "flex",
-    flexDirection: "column",
-    gap: "18px",
-  },
-  headerTopRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: "24px",
-  },
-  headerTitleBlock: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px",
-  },
-  headerTitle: {
-    fontSize: "28px",
-    fontWeight: "700",
-    color: "#d10000",
-    margin: 0,
-  },
-  headerSubtitle: {
-    fontSize: "14px",
-    color: "#6b7280",
-    margin: 0,
-  },
-  progressWrapper: {
-    minWidth: "220px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-  },
-  progressLabel: {
-    fontSize: "12px",
-    fontWeight: "600",
-    color: "#6b7280",
-  },
-  progressTrack: {
-    width: "100%",
-    height: "10px",
-    borderRadius: "999px",
-    backgroundColor: "#fee2e2",
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: "999px",
-    background: "linear-gradient(90deg, #d10000, #f97316)",
-    transition: "width 0.3s ease",
-  },
-  metaRow: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-    gap: "16px",
-  },
-  metaItem: {
-    backgroundColor: "#fff5f5",
-    borderRadius: "12px",
-    padding: "12px",
-    border: "1px solid #ffd6d6",
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px",
-  },
-  metaLabel: {
-    fontSize: "11px",
-    fontWeight: "700",
-    color: "#b91c1c",
-    letterSpacing: "0.4px",
-    textTransform: "uppercase",
-  },
-  metaValue: {
-    fontSize: "16px",
-    fontWeight: "600",
-    color: "#1f2937",
-  },
-  mainCard: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    gap: "24px",
-    padding: "24px",
-    borderRadius: "24px",
-    border: "1px solid #ffe0e0",
-    background: "linear-gradient(to bottom right, #ffffff, #fff9f9, #ffecec)",
-    boxShadow: "0 6px 24px rgba(209,0,0,0.08)",
-    overflow: "hidden",
-  },
-  sectionHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  sectionTitle: {
-    fontSize: "18px",
-    fontWeight: "700",
-    color: "#d10000",
-    margin: 0,
-  },
-  sectionSubtitle: {
-    fontSize: "13px",
-    color: "#6b7280",
-    margin: 0,
-  },
-  sectionsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-    gap: "16px",
-  },
-  sectionCard: {
-    position: "relative",
-    textAlign: "left",
-    border: "1px solid #ffe0e0",
-    backgroundColor: "#ffffff",
-    borderRadius: "16px",
-    padding: "20px",
-    boxShadow: "0 4px 12px rgba(209,0,0,0.08)",
-    cursor: "pointer",
-    transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-  },
-  sectionCardHover: {
-    transform: "translateY(-3px)",
-    boxShadow: "0 8px 20px rgba(209,0,0,0.16)",
-    borderColor: "#ffb3b3",
-  },
-  cardTitle: {
-    fontSize: "16px",
-    fontWeight: "700",
-    color: "#1f2937",
-    margin: 0,
-  },
-  cardSubtitle: {
-    fontSize: "13px",
-    color: "#6b7280",
-    margin: 0,
-    lineHeight: 1.4,
-  },
-  badge: {
-    alignSelf: "flex-start",
-    padding: "4px 10px",
-    borderRadius: "999px",
-    fontSize: "11px",
-    fontWeight: "700",
-    letterSpacing: "0.4px",
-    textTransform: "uppercase",
-    border: "1px solid transparent",
-  },
-  actionBar: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "12px",
-    justifyContent: "flex-end",
-    paddingTop: "12px",
-    borderTop: "2px solid #ffd6d6",
-  },
-};
-
-const CARD_STATES = {
-  complete: {
-    label: "Complete",
-    background: "#dcfce7",
-    color: "#047857",
-    border: "#bbf7d0",
-  },
-  inProgress: {
-    label: "In Progress",
-    background: "#fffbeb",
-    color: "#b45309",
-    border: "#fde68a",
-  },
-  pending: {
-    label: "Not Started",
-    background: "#f3f4f6",
-    color: "#4b5563",
-    border: "#e5e7eb",
-  },
-};
+const styles = vhcLayoutStyles;
 
 export default function VHCPAGE() {
   const router = useRouter();
@@ -254,6 +65,11 @@ export default function VHCPAGE() {
     },
   });
 
+  const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | error
+  const [saveError, setSaveError] = useState("");
+  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const saveTimeoutRef = useRef(null);
+
   const [activeSection, setActiveSection] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -284,33 +100,73 @@ export default function VHCPAGE() {
   /* ============================================
      SAVE VHC DATA TO DATABASE
   ============================================= */
-  const saveVhcData = async () => {
-    if (!jobNumber) return;
-    try {
-      const result = await saveChecksheet(jobNumber, vhcData);
-      if (!result.success) console.error("❌ Failed to save VHC:", result.error);
-    } catch (err) {
-      console.error("❌ Error saving VHC:", err);
-    }
-  };
+  const persistVhcData = useCallback(
+    async (payload, { quiet = false } = {}) => {
+      if (!jobNumber) return false;
+      try {
+        setSaveStatus("saving");
+        setSaveError("");
+        const result = await saveChecksheet(jobNumber, payload);
+        if (result.success) {
+          setLastSavedAt(new Date());
+          if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+          }
+          if (quiet) {
+            setSaveStatus("idle");
+          } else {
+            setSaveStatus("saved");
+            saveTimeoutRef.current = setTimeout(() => setSaveStatus("idle"), 2500);
+          }
+          return true;
+        }
+        setSaveStatus("error");
+        setSaveError(result.error?.message || "Failed to save VHC data.");
+        return false;
+      } catch (err) {
+        console.error("❌ Error saving VHC:", err);
+        setSaveStatus("error");
+        setSaveError(err.message || "Unexpected error saving VHC data.");
+        return false;
+      }
+    },
+    [jobNumber]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   /* ============================================
      BUTTON HANDLERS
   ============================================= */
   const handleBack = async () => {
-    await saveVhcData();
-    const targetJobNumber = jobInfo?.jobNumber || jobNumber;
-    if (targetJobNumber) {
-      router.push(`/job-cards/myjobs/${targetJobNumber}`);
-    } else {
-      router.push("/job-cards/myjobs");
+    const success = await persistVhcData(vhcData, { quiet: true });
+    if (!success) {
+      alert("Unable to save your VHC progress. Please try again before leaving.");
+      return;
     }
+    const targetJobNumber = jobInfo?.jobNumber || jobNumber;
+    router.push(
+      targetJobNumber ? `/job-cards/myjobs/${targetJobNumber}` : "/job-cards/myjobs"
+    );
   };
 
   const handleComplete = async () => {
     if (!mandatoryComplete) return;
-    await saveVhcData();
-    router.push(`/job-cards/${jobNumber}`);
+    const success = await persistVhcData(vhcData);
+    if (!success) {
+      alert("We couldn't save your VHC data. Please try again.");
+      return;
+    }
+    const targetJobNumber = jobInfo?.jobNumber || jobNumber;
+    router.push(
+      targetJobNumber ? `/job-cards/myjobs/${targetJobNumber}` : "/job-cards/myjobs"
+    );
   };
 
   const mandatoryStates = {
@@ -358,7 +214,15 @@ export default function VHCPAGE() {
     return `${count} concerns recorded`;
   };
 
-  const getBadgeState = (stateKey) => CARD_STATES[stateKey] || CARD_STATES.pending;
+  const getBadgeState = (stateKey) =>
+    vhcCardStates[stateKey] || vhcCardStates.pending;
+
+  const handleSectionComplete = (sectionKey, sectionData, options = {}) => {
+    const next = { ...vhcData, [sectionKey]: sectionData };
+    setVhcData(next);
+    setActiveSection(null);
+    persistVhcData(next, { quiet: true, ...options });
+  };
 
   const SectionCard = ({ title, subtitle, badgeState, onClick }) => {
     const badgeStyles = {
@@ -404,34 +268,8 @@ export default function VHCPAGE() {
     );
   };
 
-  const buttonStyle = (variant = "primary", disabled = false) => {
-    const base = {
-      padding: "12px 24px",
-      borderRadius: "12px",
-      fontSize: "14px",
-      fontWeight: "600",
-      border: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      transition: "transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
-    };
-
-    if (variant === "secondary") {
-      return {
-        ...base,
-        backgroundColor: "#ffffff",
-        color: "#d10000",
-        border: "1px solid #d10000",
-        boxShadow: disabled ? "none" : "0 4px 12px rgba(209,0,0,0.08)",
-      };
-    }
-
-    return {
-      ...base,
-      backgroundColor: disabled ? "#f3f4f6" : "#d10000",
-      color: disabled ? "#9ca3af" : "#ffffff",
-      boxShadow: disabled ? "none" : "0 6px 16px rgba(209,0,0,0.18)",
-    };
-  };
+  const buttonStyle = (variant = "primary", disabled = false) =>
+    createVhcButtonStyle(variant, { disabled });
 
   if (loading) {
     return (
@@ -489,6 +327,28 @@ export default function VHCPAGE() {
     [jobMeta.make, jobMeta.model].filter(Boolean).join(" ").trim() ||
     "N/A";
 
+  const saveStatusMessage = (() => {
+    if (saveStatus === "saving") return "Saving progress…";
+    if (saveStatus === "saved") {
+      if (!lastSavedAt) return "Saved";
+      return `Saved ${lastSavedAt.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`;
+    }
+    if (saveStatus === "error") {
+      return saveError || "Failed to save";
+    }
+    return "";
+  })();
+
+  const saveStatusColor =
+    saveStatus === "error"
+      ? themeConfig.palette.danger
+      : saveStatus === "saving"
+      ? themeConfig.palette.accent
+      : themeConfig.palette.textMuted;
+
   return (
     <Layout>
       <div style={styles.page}>
@@ -507,10 +367,21 @@ export default function VHCPAGE() {
               <span style={styles.progressLabel}>
                 {completedMandatorySections}/{totalMandatorySections} mandatory sections complete
               </span>
-              <div style={styles.progressTrack}>
-                <div style={{ ...styles.progressFill, width: progressWidth }} />
-              </div>
+            <div style={styles.progressTrack}>
+              <div style={{ ...styles.progressFill, width: progressWidth }} />
             </div>
+            {saveStatusMessage && (
+              <span
+                style={{
+                  fontSize: "12px",
+                  color: saveStatusColor,
+                  fontWeight: saveStatus === "error" ? "600" : "500",
+                }}
+              >
+                {saveStatusMessage}
+              </span>
+            )}
+          </div>
           </div>
 
           <div style={styles.metaRow}>
@@ -605,10 +476,7 @@ export default function VHCPAGE() {
           <WheelsTyresDetailsModal
             isOpen
             onClose={() => setActiveSection(null)}
-            onComplete={(data) => {
-              setVhcData((prev) => ({ ...prev, wheelsTyres: data }));
-              setActiveSection(null);
-            }}
+            onComplete={(data) => handleSectionComplete("wheelsTyres", data)}
           />
         )}
         {activeSection === "brakesHubs" && (
@@ -616,10 +484,7 @@ export default function VHCPAGE() {
             isOpen
             initialData={vhcData.brakesHubs}
             onClose={() => setActiveSection(null)}
-            onComplete={(data) => {
-              setVhcData((prev) => ({ ...prev, brakesHubs: data }));
-              setActiveSection(null);
-            }}
+            onComplete={(data) => handleSectionComplete("brakesHubs", data)}
           />
         )}
         {activeSection === "serviceIndicator" && (
@@ -627,10 +492,7 @@ export default function VHCPAGE() {
             isOpen
             initialData={vhcData.serviceIndicator}
             onClose={() => setActiveSection(null)}
-            onComplete={(data) => {
-              setVhcData((prev) => ({ ...prev, serviceIndicator: data }));
-              setActiveSection(null);
-            }}
+            onComplete={(data) => handleSectionComplete("serviceIndicator", data)}
           />
         )}
         {activeSection === "externalInspection" && (
@@ -638,10 +500,7 @@ export default function VHCPAGE() {
             isOpen
             initialData={vhcData.externalInspection}
             onClose={() => setActiveSection(null)}
-            onComplete={(data) => {
-              setVhcData((prev) => ({ ...prev, externalInspection: data }));
-              setActiveSection(null);
-            }}
+            onComplete={(data) => handleSectionComplete("externalInspection", data)}
           />
         )}
         {activeSection === "internalElectrics" && (
@@ -649,10 +508,7 @@ export default function VHCPAGE() {
             isOpen
             initialData={vhcData.internalElectrics}
             onClose={() => setActiveSection(null)}
-            onComplete={(data) => {
-              setVhcData((prev) => ({ ...prev, internalElectrics: data }));
-              setActiveSection(null);
-            }}
+            onComplete={(data) => handleSectionComplete("internalElectrics", data)}
           />
         )}
         {activeSection === "underside" && (
@@ -660,10 +516,7 @@ export default function VHCPAGE() {
             isOpen
             initialData={vhcData.underside}
             onClose={() => setActiveSection(null)}
-            onComplete={(data) => {
-              setVhcData((prev) => ({ ...prev, underside: data }));
-              setActiveSection(null);
-            }}
+            onComplete={(data) => handleSectionComplete("underside", data)}
           />
         )}
       </div>

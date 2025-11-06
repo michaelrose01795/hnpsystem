@@ -1,6 +1,10 @@
 // file location: src/components/VHC/BrakesHubsDetailsModal.js
 import React, { useState } from "react";
 import Image from "next/image";
+import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
+import themeConfig, { createVhcButtonStyle } from "@/styles/appTheme";
+
+const palette = themeConfig.palette;
 
 // ✅ Autocomplete small component
 function AutoCompleteInput({ value, onChange, options }) {
@@ -16,37 +20,69 @@ function AutoCompleteInput({ value, onChange, options }) {
         value={value}
         onChange={(e) => handleChange(e.target.value)}
         style={{
-          padding: "6px",
-          borderRadius: "4px",
-          border: "1px solid #ccc",
           width: "100%",
+          padding: "10px 12px",
+          borderRadius: "12px",
+          border: `1px solid ${palette.border}`,
+          backgroundColor: palette.surface,
+          fontSize: "14px",
+          color: palette.textPrimary,
+          outline: "none",
+          boxShadow: "inset 0 1px 3px rgba(15,23,42,0.04)",
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = palette.accent;
+          e.target.style.boxShadow = "0 0 0 3px rgba(209,0,0,0.12)";
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = palette.border;
+          e.target.style.boxShadow = "inset 0 1px 3px rgba(15,23,42,0.04)";
         }}
       />
       {filtered.length > 0 && (
         <div
           style={{
             position: "absolute",
-            top: "100%",
+            top: "calc(100% + 6px)",
             left: 0,
-            background: "white",
-            border: "1px solid #ccc",
-            width: "100%",
-            maxHeight: "100px",
+            right: 0,
+            background: palette.surface,
+            border: `1px solid ${palette.border}`,
+            borderRadius: "12px",
+            boxShadow: "0 12px 32px rgba(15,23,42,0.18)",
+            maxHeight: "160px",
             overflowY: "auto",
-            zIndex: 10,
+            zIndex: 20,
+            padding: "6px 0",
           }}
         >
           {filtered.map((opt, idx) => (
-            <div
+            <button
               key={idx}
+              type="button"
               onClick={() => {
                 onChange(opt);
                 setFiltered([]);
               }}
-              style={{ padding: "4px", cursor: "pointer" }}
+              style={{
+                width: "100%",
+                background: "transparent",
+                border: "none",
+                textAlign: "left",
+                padding: "10px 16px",
+                cursor: "pointer",
+                fontSize: "13px",
+                color: palette.textPrimary,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = palette.accentSurface;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
             >
               {opt}
-            </div>
+            </button>
           ))}
         </div>
       )}
@@ -69,6 +105,81 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   const [concernPopup, setConcernPopup] = useState({ open: false, category: "", tempConcern: { issue: "", status: "Red" } });
 
   const padOptions = Array.from({ length: 15 }, (_, i) => i);
+  const padLabels = { frontPads: "Front Pads", rearPads: "Rear Pads" };
+  const discLabels = { frontDiscs: "Front Discs", rearDiscs: "Rear Discs" };
+
+  const sectionPanelBase = {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+    background: palette.surface,
+    borderRadius: "18px",
+    border: `1px solid ${palette.border}`,
+    padding: "20px",
+    boxShadow: "0 12px 28px rgba(15,23,42,0.08)",
+  };
+
+  const fieldLabelStyle = {
+    fontSize: "12px",
+    fontWeight: 600,
+    color: palette.textMuted,
+    letterSpacing: "0.2px",
+    marginTop: "4px",
+  };
+
+  const selectBaseStyle = {
+    padding: "10px 12px",
+    borderRadius: "12px",
+    border: `1px solid ${palette.border}`,
+    backgroundColor: palette.surface,
+    color: palette.textPrimary,
+    fontSize: "14px",
+    outline: "none",
+  };
+
+  const concernItemStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    padding: "10px 12px",
+    borderRadius: "12px",
+    backgroundColor: palette.accentSurface,
+    border: `1px solid ${palette.border}`,
+  };
+
+  const popupOverlayStyle = {
+    position: "absolute",
+    inset: 0,
+    background: "rgba(15,23,42,0.45)",
+    backdropFilter: "blur(6px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 50,
+  };
+
+  const popupCardStyle = {
+    width: "360px",
+    padding: "24px",
+    borderRadius: "18px",
+    background: palette.surface,
+    border: `1px solid ${palette.border}`,
+    boxShadow: "0 18px 36px rgba(15,23,42,0.18)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+  };
+
+  const enhanceFocus = (event) => {
+    event.target.style.borderColor = palette.accent;
+    event.target.style.boxShadow = "0 0 0 3px rgba(209,0,0,0.12)";
+  };
+
+  const resetFocus = (event) => {
+    event.target.style.borderColor = palette.border;
+    event.target.style.boxShadow = "none";
+  };
 
   const updatePadMeasurement = (category, value) => {
     setData((prev) => ({ ...prev, [category]: { ...prev[category], measurement: value } }));
@@ -114,136 +225,517 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
   if (!isOpen) return null;
 
-  // ✅ Pads Section
-  const PadsSection = ({ category, showDrumButton }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, paddingRight: "12px" }}>
-      <label style={{ marginTop: "12px" }}>Pad Measurement (mm):</label>
-      <AutoCompleteInput value={data[category].measurement} onChange={(val) => updatePadMeasurement(category, val)} options={padOptions} />
-      <label>Status:</label>
-      <select value={data[category].status} onChange={(e) => updatePadStatus(category, e.target.value)} style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}>
-        <option>Red</option>
-        <option>Amber</option>
-        <option>Green</option>
-      </select>
+  const PadsSection = ({ category, showDrumButton }) => {
+    const padData = data[category];
+    const title = padLabels[category] || "Pads";
 
-      <button onClick={() => setConcernPopup({ open: true, category, tempConcern: { issue: "", status: "Red" } })} style={{ padding: "6px 12px", borderRadius: "4px", border: "none", background: "#FF4040", color: "white", cursor: "pointer", marginTop: "8px" }}>
-        + Add Concern
-      </button>
-
-      {data[category].concerns.map((c, idx) => (
-        <div key={idx} style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "4px" }}>
-          <span>{c.issue}</span>
-          <select value={c.status} onChange={(e) => { const updated = [...data[category].concerns]; updated[idx].status = e.target.value; setData((prev) => ({ ...prev, [category]: { ...prev[category], concerns: updated } })); }} style={{ padding: "4px", borderRadius: "4px", border: "1px solid #ccc" }}>
-            <option>Red</option>
-            <option>Amber</option>
-          </select>
+    return (
+      <div style={sectionPanelBase}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
+            {title}
+          </h3>
+          <span style={{ fontSize: "12px", fontWeight: 600, color: palette.textMuted }}>
+            {padData.status || "Status"}
+          </span>
         </div>
-      ))}
 
-      {/* ✅ Drum Brakes button under rear pads */}
-      {showDrumButton && (
-        <button onClick={() => setShowDrum(true)} style={{ padding: "6px 12px", borderRadius: "6px", border: "none", background: "#FF4040", color: "white", cursor: "pointer", fontWeight: "bold", marginTop: "12px" }}>
-          Drum Brakes
+        <label style={fieldLabelStyle}>Pad Measurement (mm)</label>
+        <AutoCompleteInput
+          value={padData.measurement}
+          onChange={(val) => updatePadMeasurement(category, val)}
+          options={padOptions}
+        />
+
+        <label style={fieldLabelStyle}>Status</label>
+        <select
+          value={padData.status}
+          onChange={(e) => updatePadStatus(category, e.target.value)}
+          style={selectBaseStyle}
+          onFocus={enhanceFocus}
+          onBlur={resetFocus}
+        >
+          <option>Red</option>
+          <option>Amber</option>
+          <option>Green</option>
+        </select>
+
+        <button
+          type="button"
+          onClick={() =>
+            setConcernPopup({
+              open: true,
+              category,
+              tempConcern: { issue: "", status: "Red" },
+            })
+          }
+          style={{
+            ...buildModalButton("primary"),
+            alignSelf: "flex-start",
+            padding: "10px 18px",
+          }}
+        >
+          + Add Concern
         </button>
-      )}
-    </div>
-  );
+
+        {padData.concerns?.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {padData.concerns.map((c, idx) => (
+              <div key={idx} style={concernItemStyle}>
+                <span style={{ flex: 1, fontSize: "13px", color: palette.textPrimary }}>
+                  {c.issue}
+                </span>
+                <select
+                  value={c.status}
+                  onChange={(e) => {
+                    const updated = [...padData.concerns];
+                    updated[idx].status = e.target.value;
+                    setData((prev) => ({
+                      ...prev,
+                      [category]: { ...prev[category], concerns: updated },
+                    }));
+                  }}
+                  style={{ ...selectBaseStyle, width: "120px" }}
+                  onFocus={enhanceFocus}
+                  onBlur={resetFocus}
+                >
+                  <option>Red</option>
+                  <option>Amber</option>
+                </select>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {showDrumButton && (
+          <button
+            type="button"
+            onClick={() => setShowDrum(true)}
+            style={{
+              ...buildModalButton("ghost"),
+              border: `1px dashed ${palette.accent}`,
+              color: palette.accent,
+              background: "transparent",
+              padding: "10px 16px",
+            }}
+          >
+            Drum Brakes
+          </button>
+        )}
+      </div>
+    );
+  };
 
   // ✅ Discs Section
-  const DiscsSection = ({ category }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, borderLeft: "1px solid #ddd", paddingLeft: "12px" }}>
-      {data[category].tab === "measurements" && (
-        <>
-          <label style={{ marginTop: "12px" }}>Disk Thickness (mm):</label>
-          <input type="text" value={data[category].measurements.thickness} onChange={(e) => updateDisc(category, "measurements", { thickness: e.target.value })} style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }} />
-          <label>Status:</label>
-          <select value={data[category].measurements.status} onChange={(e) => updateDisc(category, "measurements", { status: e.target.value })} style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}>
-            <option>Red</option>
-            <option>Amber</option>
-            <option>Green</option>
-          </select>
-        </>
-      )}
-      {data[category].tab === "visual" && (
-        <>
-          <label style={{ marginTop: "12px" }}>Visual check status:</label>
-          <select value={data[category].visual.status} onChange={(e) => updateDisc(category, "visual", { status: e.target.value })} style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}>
-            <option>Red</option>
-            <option>Amber</option>
-            <option>Green</option>
-          </select>
-        </>
-      )}
+  const DiscsSection = ({ category }) => {
+    const discData = data[category];
+    const title = discLabels[category] || "Discs";
 
-      <button onClick={() => setConcernPopup({ open: true, category, tempConcern: { issue: "", status: "Red" } })} style={{ padding: "6px 12px", borderRadius: "4px", border: "none", background: "#FF4040", color: "white", cursor: "pointer", marginTop: "8px" }}>
-        + Add Concern
-      </button>
+    const tabWrapperStyle = {
+      display: "inline-flex",
+      gap: "8px",
+      padding: "4px",
+      borderRadius: "999px",
+      backgroundColor: palette.accentSurface,
+      marginTop: "8px",
+    };
 
-      {/* ✅ Tabs under concerns */}
-      <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
-        {["measurements", "visual"].map((tab) => (
-          <div key={tab} onClick={() => setData((prev) => ({ ...prev, [category]: { ...prev[category], tab } }))} style={{ padding: "6px 12px", cursor: "pointer", borderRadius: "4px", backgroundColor: data[category].tab === tab ? "#FF4040" : "#f5f5f5", color: data[category].tab === tab ? "white" : "black", fontWeight: data[category].tab === tab ? "bold" : "normal" }}>
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </div>
-        ))}
-      </div>
+    const tabButtonStyle = (active) => ({
+      ...createVhcButtonStyle(active ? "primary" : "ghost"),
+      backgroundColor: active ? palette.accent : "transparent",
+      color: active ? "#ffffff" : palette.textPrimary,
+      padding: "8px 16px",
+      fontSize: "12px",
+      border: active ? "none" : "1px solid transparent",
+      boxShadow: active ? "0 6px 18px rgba(209,0,0,0.18)" : "none",
+    });
 
-      {data[category].concerns.map((c, idx) => (
-        <div key={idx} style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "4px" }}>
-          <span>{c.issue}</span>
-          <select value={c.status} onChange={(e) => { const updated = [...data[category].concerns]; updated[idx].status = e.target.value; setData((prev) => ({ ...prev, [category]: { ...prev[category], concerns: updated } })); }} style={{ padding: "4px", borderRadius: "4px", border: "1px solid #ccc" }}>
-            <option>Red</option>
-            <option>Amber</option>
-          </select>
+    return (
+      <div style={sectionPanelBase}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
+            {title}
+          </h3>
+          <span style={{ fontSize: "12px", fontWeight: 600, color: palette.textMuted }}>
+            {discData.tab === "measurements"
+              ? discData.measurements.status || "Status"
+              : discData.visual.status || "Status"}
+          </span>
         </div>
-      ))}
-    </div>
-  );
+
+        <div style={tabWrapperStyle}>
+          {["measurements", "visual"].map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() =>
+                setData((prev) => ({
+                  ...prev,
+                  [category]: { ...prev[category], tab },
+                }))
+              }
+              style={tabButtonStyle(discData.tab === tab)}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        {discData.tab === "measurements" && (
+          <>
+            <label style={fieldLabelStyle}>Disc Thickness (mm)</label>
+            <input
+              type="text"
+              value={discData.measurements.thickness}
+              onChange={(e) =>
+                updateDisc(category, "measurements", { thickness: e.target.value })
+              }
+              style={{
+                ...selectBaseStyle,
+                boxShadow: "inset 0 1px 3px rgba(15,23,42,0.04)",
+              }}
+              onFocus={enhanceFocus}
+              onBlur={resetFocus}
+            />
+
+            <label style={fieldLabelStyle}>Status</label>
+            <select
+              value={discData.measurements.status}
+              onChange={(e) =>
+                updateDisc(category, "measurements", { status: e.target.value })
+              }
+              style={selectBaseStyle}
+              onFocus={enhanceFocus}
+              onBlur={resetFocus}
+            >
+              <option>Red</option>
+              <option>Amber</option>
+              <option>Green</option>
+            </select>
+          </>
+        )}
+
+        {discData.tab === "visual" && (
+          <>
+            <label style={fieldLabelStyle}>Visual Inspection</label>
+            <select
+              value={discData.visual.status}
+              onChange={(e) =>
+                updateDisc(category, "visual", { status: e.target.value })
+              }
+              style={selectBaseStyle}
+              onFocus={enhanceFocus}
+              onBlur={resetFocus}
+            >
+              <option>Red</option>
+              <option>Amber</option>
+              <option>Green</option>
+            </select>
+          </>
+        )}
+
+        <button
+          type="button"
+          onClick={() =>
+            setConcernPopup({
+              open: true,
+              category,
+              tempConcern: { issue: "", status: "Red" },
+            })
+          }
+          style={{
+            ...buildModalButton("primary"),
+            alignSelf: "flex-start",
+            padding: "10px 18px",
+          }}
+        >
+          + Add Concern
+        </button>
+
+        {discData.concerns?.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {discData.concerns.map((c, idx) => (
+              <div key={idx} style={concernItemStyle}>
+                <span style={{ flex: 1, fontSize: "13px", color: palette.textPrimary }}>
+                  {c.issue}
+                </span>
+                <select
+                  value={c.status}
+                  onChange={(e) => {
+                    const updated = [...discData.concerns];
+                    updated[idx].status = e.target.value;
+                    setData((prev) => ({
+                      ...prev,
+                      [category]: { ...prev[category], concerns: updated },
+                    }));
+                  }}
+                  style={{ ...selectBaseStyle, width: "120px" }}
+                  onFocus={enhanceFocus}
+                  onBlur={resetFocus}
+                >
+                  <option>Red</option>
+                  <option>Amber</option>
+                </select>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // ✅ Drum Brakes Section
   const DrumBrakesSection = () => (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "20px" }}>
-      <h3 style={{ marginBottom: "16px" }}>Drum Brakes</h3>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
-        {["Good", "Visual check", "Replace", "Not checked"].map((label) => (
-          <button key={label} onClick={() => setData((prev) => ({ ...prev, rearDrums: { status: label } }))} style={{ padding: "12px 20px", borderRadius: "6px", border: "1px solid #ccc", background: data.rearDrums.status === label ? "#FF4040" : "#f5f5f5", color: data.rearDrums.status === label ? "white" : "black", cursor: "pointer", fontWeight: "bold" }}>
-            {label}
-          </button>
-        ))}
+    <div style={sectionPanelBase}>
+      <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
+        Drum Brakes
+      </h3>
+      <p style={{ fontSize: "13px", color: palette.textMuted, margin: 0 }}>
+        Select the observation that best matches the rear drum condition.
+      </p>
+
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "12px",
+          marginTop: "8px",
+        }}
+      >
+        {["Good", "Visual check", "Replace", "Not checked"].map((label) => {
+          const active = data.rearDrums.status === label;
+          return (
+            <button
+              key={label}
+              type="button"
+              onClick={() =>
+                setData((prev) => ({ ...prev, rearDrums: { status: label } }))
+              }
+              style={{
+                ...createVhcButtonStyle(active ? "primary" : "ghost"),
+                padding: "10px 18px",
+                backgroundColor: active ? palette.accent : palette.surface,
+                color: active ? "#ffffff" : palette.textPrimary,
+                border: active ? "none" : `1px solid ${palette.border}`,
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
-      <div style={{ marginTop: "16px" }}>
-        <button onClick={() => setShowDrum(false)} style={{ padding: "8px 16px", borderRadius: "6px", border: "none", background: "#FF4040", color: "white", fontWeight: "bold", cursor: "pointer" }}>
-          Disk Brakes
-        </button>
-      </div>
+
+      <button
+        type="button"
+        onClick={() => setShowDrum(false)}
+        style={{
+          ...buildModalButton("ghost"),
+          alignSelf: "flex-start",
+          padding: "10px 18px",
+          color: palette.accent,
+        }}
+      >
+        Disc Brakes
+      </button>
     </div>
   );
 
+  const leftPanelStyle = {
+    width: "320px",
+    background: palette.accentSurface,
+    border: `1px solid ${palette.border}`,
+    borderRadius: "24px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "28px",
+    padding: "32px 24px",
+    boxShadow: "0 16px 32px rgba(209,0,0,0.16)",
+  };
+
+  const imageStyle = (active) => ({
+    cursor: "pointer",
+    border: active ? `4px solid ${palette.accent}` : `2px solid ${palette.border}`,
+    borderRadius: "18px",
+    objectFit: "contain",
+    background: palette.surface,
+    padding: "16px",
+    transition: "transform 0.2s ease, border-color 0.2s ease",
+  });
+
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
-      <div style={{ background: "white", borderRadius: "10px", width: "1000px", height: "600px", display: "flex", overflow: "hidden", position: "relative" }}>
-        {/* Left side */}
-        <div style={{ width: "35%", background: "#fff", borderRight: "1px solid #eee", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "24px" }}>
-          <h2 style={{ color: "#FF4040", marginBottom: "8px", fontSize: "24px" }}>Front</h2>
-          <Image src="/images/Brakes3.png" alt="Front Brakes" width={160} height={160} style={{ cursor: "pointer", border: activeSide === "front" ? "3px solid #FF4040" : "none", borderRadius: "8px", objectFit: "contain" }} onClick={() => setActiveSide("front")} />
+    <VHCModalShell
+      isOpen={isOpen}
+      title="Brakes & Hubs"
+      subtitle="Capture pad wear, disc condition, and drum checks."
+      width="1080px"
+      height="640px"
+      onClose={() => {
+        setConcernPopup({ open: false, category: "", tempConcern: { issue: "", status: "Red" } });
+        onClose();
+      }}
+      footer={
+        <>
+          <button type="button" onClick={onClose} style={buildModalButton("secondary")}>
+            Close
+          </button>
+          <button
+            type="button"
+            onClick={() => onComplete(data)}
+            disabled={!isCompleteEnabled()}
+            style={buildModalButton("primary", { disabled: !isCompleteEnabled() })}
+          >
+            Complete Section
+          </button>
+        </>
+      }
+    >
+      <div style={{ display: "flex", gap: "24px", height: "100%", position: "relative" }}>
+        <aside style={leftPanelStyle}>
+          <div style={{ textAlign: "center" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
+              Select Axle
+            </h3>
+            <p style={{ fontSize: "13px", color: palette.textMuted, margin: "4px 0 0" }}>
+              Tap a diagram to switch between front and rear checks.
+            </p>
+          </div>
+          <Image
+            src="/images/Brakes3.png"
+            alt="Front Brakes"
+            width={172}
+            height={172}
+            style={imageStyle(activeSide === "front")}
+            onClick={() => {
+              setActiveSide("front");
+              setShowDrum(false);
+            }}
+          />
+          <Image
+            src="/images/Brakes3.png"
+            alt="Rear Brakes"
+            width={172}
+            height={172}
+            style={imageStyle(activeSide === "rear")}
+            onClick={() => setActiveSide("rear")}
+          />
+        </aside>
 
-          <h2 style={{ color: "#FF4040", marginTop: "16px", marginBottom: "8px", fontSize: "24px" }}>Rear</h2>
-          <Image src="/images/Brakes3.png" alt="Rear Brakes" width={160} height={160} style={{ cursor: "pointer", border: activeSide === "rear" ? "3px solid #FF4040" : "none", borderRadius: "8px", objectFit: "contain" }} onClick={() => setActiveSide("rear")} />
-        </div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "24px", position: "relative" }}>
+          {activeSide === "front" && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                gap: "20px",
+              }}
+            >
+              <PadsSection category="frontPads" />
+              <DiscsSection category="frontDiscs" />
+            </div>
+          )}
 
-        {/* Right side */}
-        <div style={{ flex: 1, padding: "16px", overflowY: "auto" }}>
-          {activeSide === "front" && <div style={{ display: "flex", gap: "16px", height: "100%" }}><PadsSection category="frontPads" /><DiscsSection category="frontDiscs" /></div>}
-          {activeSide === "rear" && !showDrum && <div style={{ display: "flex", gap: "16px", height: "100%" }}><PadsSection category="rearPads" showDrumButton /><DiscsSection category="rearDiscs" /></div>}
+          {activeSide === "rear" && !showDrum && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                gap: "20px",
+              }}
+            >
+              <PadsSection category="rearPads" showDrumButton />
+              <DiscsSection category="rearDiscs" />
+            </div>
+          )}
+
           {activeSide === "rear" && showDrum && <DrumBrakesSection />}
 
-          {/* Fixed Action buttons */}
-          <div style={{ position: "absolute", bottom: "16px", right: "16px", display: "flex", gap: "10px" }}>
-            <button onClick={onClose} style={{ padding: "8px 16px", border: "none", background: "#ccc", color: "#333", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}>Close</button>
-            <button disabled={!isCompleteEnabled()} onClick={() => onComplete(data)} style={{ padding: "8px 16px", border: "none", background: isCompleteEnabled() ? "#FF4040" : "#f5f5f5", color: isCompleteEnabled() ? "white" : "#aaa", borderRadius: "6px", fontWeight: "bold", cursor: isCompleteEnabled() ? "pointer" : "not-allowed" }}>Complete</button>
-          </div>
+          {concernPopup.open && (
+            <div style={popupOverlayStyle}>
+              <div style={popupCardStyle}>
+                <h4 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
+                  Add Concern
+                </h4>
+                <p style={{ fontSize: "12px", color: palette.textMuted, margin: "4px 0 12px" }}>
+                  Document an issue for{" "}
+                  {padLabels[concernPopup.category] ||
+                    discLabels[concernPopup.category] ||
+                    "this area"}
+                  .
+                </p>
+                <label style={fieldLabelStyle}>Concern</label>
+                <input
+                  type="text"
+                  value={concernPopup.tempConcern.issue}
+                  onChange={(e) =>
+                    setConcernPopup((prev) => ({
+                      ...prev,
+                      tempConcern: { ...prev.tempConcern, issue: e.target.value },
+                    }))
+                  }
+                  placeholder="Describe the issue…"
+                  style={{
+                    ...selectBaseStyle,
+                    width: "100%",
+                    boxShadow: "inset 0 1px 3px rgba(15,23,42,0.04)",
+                  }}
+                  onFocus={enhanceFocus}
+                  onBlur={resetFocus}
+                />
+
+                <label style={fieldLabelStyle}>Severity</label>
+                <select
+                  value={concernPopup.tempConcern.status}
+                  onChange={(e) =>
+                    setConcernPopup((prev) => ({
+                      ...prev,
+                      tempConcern: { ...prev.tempConcern, status: e.target.value },
+                    }))
+                  }
+                  style={{ ...selectBaseStyle, width: "100%" }}
+                  onFocus={enhanceFocus}
+                  onBlur={resetFocus}
+                >
+                  <option>Red</option>
+                  <option>Amber</option>
+                </select>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "16px" }}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setConcernPopup({
+                        open: false,
+                        category: "",
+                        tempConcern: { issue: "", status: "Red" },
+                      })
+                    }
+                    style={buildModalButton("ghost")}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!concernPopup.tempConcern.issue.trim()) return;
+                      addConcern(concernPopup.category, concernPopup.tempConcern);
+                      setConcernPopup({
+                        open: false,
+                        category: "",
+                        tempConcern: { issue: "", status: "Red" },
+                      });
+                    }}
+                    style={buildModalButton("primary")}
+                  >
+                    Add Concern
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </VHCModalShell>
   );
 }

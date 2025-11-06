@@ -1,8 +1,74 @@
 // file location: src/components/VHC/UndersideDetailsModal.js
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
+import themeConfig, { createVhcButtonStyle } from "@/styles/appTheme";
+
+const palette = themeConfig.palette;
+
+const CATEGORY_ORDER = [
+  "Exhaust system/catalyst",
+  "Steering",
+  "Front suspension",
+  "Rear suspension",
+  "Driveshafts/oil leaks",
+  "Miscellaneous",
+];
+
+const STATUS_OPTIONS = ["Red", "Amber"];
+
+const baseCardStyle = {
+  border: `1px solid ${palette.border}`,
+  background: palette.surface,
+  borderRadius: "18px",
+  padding: "18px",
+  boxShadow: "0 8px 20px rgba(209,0,0,0.10)",
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px",
+  alignItems: "flex-start",
+  transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+  cursor: "pointer",
+};
+
+const concernBadgeStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: "6px 12px",
+  borderRadius: "999px",
+  backgroundColor: palette.accentSurface,
+  border: `1px solid ${palette.border}`,
+  fontSize: "12px",
+  fontWeight: 600,
+  color: palette.accent,
+};
+
+const fieldLabelStyle = {
+  fontSize: "12px",
+  fontWeight: 600,
+  color: palette.textMuted,
+  letterSpacing: "0.3px",
+};
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  borderRadius: "12px",
+  border: `1px solid ${palette.border}`,
+  backgroundColor: palette.surface,
+  fontSize: "14px",
+  color: palette.textPrimary,
+  outline: "none",
+  boxShadow: "inset 0 1px 3px rgba(15,23,42,0.05)",
+};
+
+const statusSelectStyle = {
+  ...inputStyle,
+  width: "auto",
+};
 
 export default function UndersideDetailsModal({ isOpen, onClose, onComplete, initialData }) {
-  const [data, setData] = useState({
+  const [data, setData] = useState(() => ({
     "Exhaust system/catalyst": { concerns: [] },
     Steering: { concerns: [] },
     "Front suspension": { concerns: [] },
@@ -10,7 +76,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
     "Driveshafts/oil leaks": { concerns: [] },
     Miscellaneous: { concerns: [] },
     ...initialData,
-  });
+  }));
 
   const [activeConcern, setActiveConcern] = useState({
     open: false,
@@ -18,280 +84,328 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
     temp: { issue: "", status: "Red" },
   });
 
-  if (!isOpen) return null;
+  const totals = useMemo(
+    () =>
+      CATEGORY_ORDER.reduce(
+        (acc, key) => ({
+          count: acc.count + (data[key]?.concerns.length || 0),
+          red: acc.red + (data[key]?.concerns.filter((c) => c.status === "Red").length || 0),
+          amber: acc.amber + (data[key]?.concerns.filter((c) => c.status === "Amber").length || 0),
+        }),
+        { count: 0, red: 0, amber: 0 },
+      ),
+    [data],
+  );
 
-  const buttonOrder = [
-    "Exhaust system/catalyst",
-    "Steering",
-    "Front suspension",
-    "Rear suspension",
-    "Driveshafts/oil leaks",
-    "Miscellaneous",
-  ];
-
-  const openConcern = (key) => {
-    setActiveConcern({ open: true, category: key, temp: { issue: "", status: "Red" } });
+  const enableConcern = (category) => {
+    setActiveConcern({ open: true, category, temp: { issue: "", status: "Red" } });
   };
 
   const addConcern = () => {
     const { category, temp } = activeConcern;
-    if (temp.issue.trim() === "") return; // prevent empty concerns
+    if (temp.issue.trim() === "") return;
     setData((prev) => ({
       ...prev,
       [category]: { ...prev[category], concerns: [...prev[category].concerns, temp] },
     }));
-    // Keep popup open after adding concern, reset input
     setActiveConcern((prev) => ({ ...prev, temp: { issue: "", status: "Red" } }));
   };
 
   const updateConcern = (category, idx, field, value) => {
-    const updated = [...data[category].concerns];
-    updated[idx][field] = value;
-    setData((prev) => ({ ...prev, [category]: { ...prev[category], concerns: updated } }));
+    setData((prev) => {
+      const updated = [...prev[category].concerns];
+      updated[idx] = { ...updated[idx], [field]: value };
+      return { ...prev, [category]: { ...prev[category], concerns: updated } };
+    });
   };
 
   const deleteConcern = (category, idx) => {
     setData((prev) => ({
       ...prev,
-      [category]: { ...prev[category], concerns: prev[category].concerns.filter((_, i) => i !== idx) },
+      [category]: {
+        ...prev[category],
+        concerns: prev[category].concerns.filter((_, i) => i !== idx),
+      },
     }));
   };
 
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        background: "rgba(0,0,0,0.5)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
-    >
-      <div
-        style={{
-          background: "white",
-          borderRadius: "10px",
-          width: "850px",
-          height: "550px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "24px",
-          position: "relative",
-        }}
-      >
-        <h2 style={{ color: "#FF4040", marginBottom: "24px" }}>Underside Inspection</h2>
+  const modalFooter = (
+    <>
+      <button type="button" onClick={onClose} style={buildModalButton("ghost")}>
+        Close
+      </button>
+      <button type="button" onClick={() => onComplete(data)} style={buildModalButton("primary")}>
+        Save & Complete
+      </button>
+    </>
+  );
 
-        {/* Button Grid */}
+  return (
+    <VHCModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Underside Inspection"
+      subtitle="Match dashboard styling while documenting underside inspections."
+      width="960px"
+      height="620px"
+      footer={modalFooter}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "16px 20px",
+            borderRadius: "18px",
+            border: `1px solid ${palette.border}`,
+            background: palette.accentSurface,
+            boxShadow: "0 6px 16px rgba(209,0,0,0.12)",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600, letterSpacing: "0.2px" }}>
+              Concerns Logged
+            </span>
+            <span style={{ fontSize: "20px", fontWeight: 700, color: palette.textPrimary }}>
+              {totals.count} underside issues captured
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: "12px" }}>
+            <div style={concernBadgeStyle}>
+              <span style={{ width: "10px", height: "10px", borderRadius: "999px", background: palette.danger }} />
+              {totals.red} Red
+            </div>
+            <div style={concernBadgeStyle}>
+              <span style={{ width: "10px", height: "10px", borderRadius: "999px", background: palette.warning }} />
+              {totals.amber} Amber
+            </div>
+          </div>
+        </div>
+
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gridTemplateRows: "repeat(2, 1fr)",
-            gap: "16px",
-            width: "100%",
-            maxWidth: "750px",
-            marginBottom: "40px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "18px",
           }}
         >
-          {buttonOrder.map((key) => (
-            <button
-              key={key}
-              onClick={() => openConcern(key)}
-              style={{
-                width: "200px",
-                height: "80px",
-                borderRadius: "8px",
-                border: "none",
-                background: "#f5f5f5",
-                color: "black",
-                fontWeight: "bold",
-                cursor: "pointer",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems: "center",
-                textAlign: "center",
-              }}
-            >
-              {key} {data[key].concerns.length > 0 && `(${data[key].concerns.length})`}
-            </button>
-          ))}
+          {CATEGORY_ORDER.map((category) => {
+            const concerns = data[category]?.concerns ?? [];
+            const redCount = concerns.filter((c) => c.status === "Red").length;
+            const amberCount = concerns.filter((c) => c.status === "Amber").length;
+
+            return (
+              <button
+                key={category}
+                type="button"
+                onClick={() => enableConcern(category)}
+                style={baseCardStyle}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-3px)";
+                  e.currentTarget.style.boxShadow = "0 12px 28px rgba(209,0,0,0.16)";
+                  e.currentTarget.style.borderColor = palette.accentSoft;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 8px 20px rgba(209,0,0,0.10)";
+                  e.currentTarget.style.borderColor = palette.border;
+                }}
+              >
+                <span style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, textAlign: "left" }}>
+                  {category}
+                </span>
+                <span style={{ fontSize: "13px", color: palette.textMuted, textAlign: "left" }}>
+                  Tap to log underside observations or amend existing notes.
+                </span>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                  <div style={concernBadgeStyle}>{concerns.length} logged</div>
+                  {redCount > 0 ? (
+                    <div style={{ ...concernBadgeStyle, color: palette.danger, borderColor: palette.danger }}>
+                      {redCount} Red
+                    </div>
+                  ) : null}
+                  {amberCount > 0 ? (
+                    <div style={{ ...concernBadgeStyle, color: palette.warning, borderColor: palette.warning }}>
+                      {amberCount} Amber
+                    </div>
+                  ) : null}
+                </div>
+              </button>
+            );
+          })}
         </div>
+      </div>
 
-        {/* Close & Complete */}
-        <div style={{ display: "flex", gap: "16px" }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: "10px 20px",
-              border: "none",
-              borderRadius: "6px",
-              background: "#ccc",
-              color: "#333",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
-          >
-            Close
-          </button>
-
-          <button
-            onClick={() => onComplete(data)}
-            style={{
-              padding: "10px 20px",
-              border: "none",
-              borderRadius: "6px",
-              background: "#FF4040",
-              color: "white",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
-          >
-            Complete
-          </button>
-        </div>
-
-        {/* Concern Popup */}
-        {activeConcern.open && (
+      {activeConcern.open ? (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(15,23,42,0.55)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10,
+          }}
+        >
           <div
             style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              background: "rgba(0,0,0,0.5)",
+              width: "420px",
+              maxWidth: "90%",
+              maxHeight: "86%",
+              background: palette.surface,
+              borderRadius: "20px",
+              border: `1px solid ${palette.border}`,
+              boxShadow: "0 18px 36px rgba(15,23,42,0.20)",
+              padding: "24px",
               display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 2000,
+              flexDirection: "column",
+              gap: "16px",
+              overflow: "hidden",
             }}
           >
-            <div
-              style={{
-                background: "white",
-                borderRadius: "10px",
-                padding: "24px",
-                width: "450px",
-                maxHeight: "80%",
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
-                overflowY: "auto",
-              }}
-            >
-              <h3 style={{ color: "#FF4040" }}>{activeConcern.category}</h3>
-
-              {/* Input to add new concern */}
-              <input
-                type="text"
-                placeholder="Enter issue"
-                value={activeConcern.temp.issue}
-                onChange={(e) =>
-                  setActiveConcern((prev) => ({ ...prev, temp: { ...prev.temp, issue: e.target.value } }))
-                }
-                style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc", fontSize: "1rem" }}
-              />
-              <label>Status:</label>
-              <select
-                value={activeConcern.temp.status}
-                onChange={(e) =>
-                  setActiveConcern((prev) => ({ ...prev, temp: { ...prev.temp, status: e.target.value } }))
-                }
-                style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc", fontSize: "1rem" }}
-              >
-                <option>Red</option>
-                <option>Amber</option>
-                <option>Green</option>
-              </select>
-
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: 700, color: palette.accent, margin: 0 }}>
+                {activeConcern.category}
+              </h3>
               <button
-                onClick={addConcern}
-                style={{
-                  padding: "8px",
-                  border: "none",
-                  borderRadius: "6px",
-                  background: "#FF4040",
-                  color: "white",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                }}
-              >
-                Add Concern
-              </button>
-
-              {/* List of existing concerns */}
-              {data[activeConcern.category].concerns.map((c, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "8px",
-                    padding: "8px",
-                    background: "#f5f5f5",
-                    borderRadius: "6px",
-                    fontSize: "1rem",
-                  }}
-                >
-                  <input
-                    type="text"
-                    value={c.issue}
-                    onChange={(e) => updateConcern(activeConcern.category, idx, "issue", e.target.value)}
-                    style={{ flex: 1, padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
-                  />
-                  <select
-                    value={c.status}
-                    onChange={(e) => updateConcern(activeConcern.category, idx, "status", e.target.value)}
-                    style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
-                  >
-                    <option>Red</option>
-                    <option>Amber</option>
-                    <option>Green</option>
-                  </select>
-                  <button
-                    onClick={() => deleteConcern(activeConcern.category, idx)}
-                    style={{
-                      padding: "6px 10px",
-                      border: "none",
-                      borderRadius: "6px",
-                      background: "#FF4040",
-                      color: "white",
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              ))}
-
-              {/* Close button */}
-              <button
+                type="button"
                 onClick={() => setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } })}
-                style={{
-                  padding: "8px",
-                  border: "none",
-                  borderRadius: "6px",
-                  background: "#ccc",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                }}
+                style={{ ...createVhcButtonStyle("ghost"), padding: "6px 14px" }}
               >
                 Close
               </button>
             </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <label style={fieldLabelStyle}>Issue</label>
+              <input
+                type="text"
+                placeholder="Describe the issue…"
+                value={activeConcern.temp.issue}
+                onChange={(e) =>
+                  setActiveConcern((prev) => ({
+                    ...prev,
+                    temp: { ...prev.temp, issue: e.target.value },
+                  }))
+                }
+                style={inputStyle}
+                onFocus={(e) => {
+                  e.target.style.borderColor = palette.accent;
+                  e.target.style.boxShadow = "0 0 0 3px rgba(209,0,0,0.12)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = palette.border;
+                  e.target.style.boxShadow = "inset 0 1px 3px rgba(15,23,42,0.05)";
+                }}
+              />
+
+              <label style={fieldLabelStyle}>Status</label>
+              <select
+                value={activeConcern.temp.status}
+                onChange={(e) =>
+                  setActiveConcern((prev) => ({
+                    ...prev,
+                    temp: { ...prev.temp, status: e.target.value },
+                  }))
+                }
+                style={statusSelectStyle}
+              >
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+
+              <button type="button" onClick={addConcern} style={{ ...createVhcButtonStyle("primary"), alignSelf: "flex-end" }}>
+                Add Concern
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                overflowY: "auto",
+                paddingRight: "4px",
+              }}
+            >
+              {(data[activeConcern.category]?.concerns ?? []).length === 0 ? (
+                <div
+                  style={{
+                    padding: "16px",
+                    borderRadius: "16px",
+                    border: `1px dashed ${palette.border}`,
+                    backgroundColor: palette.accentSurface,
+                    color: palette.textMuted,
+                    fontSize: "13px",
+                  }}
+                >
+                  No concerns added yet. Add items to keep this section current.
+                </div>
+              ) : (
+                data[activeConcern.category].concerns.map((concern, idx) => (
+                  <div
+                    key={`${activeConcern.category}-${idx}`}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "10px",
+                      padding: "14px",
+                      borderRadius: "16px",
+                      border: `1px solid ${palette.border}`,
+                      background: palette.surface,
+                      boxShadow: "0 4px 14px rgba(15,23,42,0.08)",
+                    }}
+                  >
+                    <label style={fieldLabelStyle}>Issue</label>
+                    <input
+                      type="text"
+                      value={concern.issue}
+                      onChange={(e) => updateConcern(activeConcern.category, idx, "issue", e.target.value)}
+                      style={inputStyle}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = palette.accent;
+                        e.target.style.boxShadow = "0 0 0 3px rgba(209,0,0,0.12)";
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = palette.border;
+                        e.target.style.boxShadow = "inset 0 1px 3px rgba(15,23,42,0.05)";
+                      }}
+                    />
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                      <select
+                        value={concern.status}
+                        onChange={(e) => updateConcern(activeConcern.category, idx, "status", e.target.value)}
+                        style={{ ...statusSelectStyle, flex: "0 0 130px" }}
+                      >
+                        {STATUS_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => deleteConcern(activeConcern.category, idx)}
+                        style={{ ...createVhcButtonStyle("ghost"), color: palette.danger, borderColor: palette.border }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      ) : null}
+    </VHCModalShell>
   );
 }
