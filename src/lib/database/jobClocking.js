@@ -3,7 +3,8 @@
 import { supabase } from "../supabaseClient"; // Supabase client
 import { // Auto status helpers
   autoSetWorkshopStatus,
-  autoSetAdditionalWorkInProgressStatus
+  autoSetAdditionalWorkInProgressStatus,
+  autoSetBeingWashedStatus
 } from "../services/jobStatusService"; // Status service
 
 const MAX_INT32 = 2147483647; // Postgres INTEGER max
@@ -16,6 +17,21 @@ const toInt = (val, name) => { // Guard function for integer FKs
   if (!Number.isInteger(n)) throw new Error(`${name} must be an integer`); // integer only
   if (n > MAX_INT32 || n < MIN_INT32) throw new Error(`${name} is out of range for type integer`); // bounds
   return n; // ok
+};
+
+// Normalise a department/role combination down to a coarse category
+const inferDepartmentCategory = (department = "", role = "") => {
+  const text = `${department} ${role}`.toLowerCase();
+  if (/(valet|valeting|wash)/.test(text)) return "valeting";
+  if (/(tech|technician|workshop|mot)/.test(text)) return "workshop";
+  return null;
+};
+
+// Format a user's full name for status audit logging
+const formatUserName = (user) => {
+  if (!user) return "Unknown";
+  const parts = [user.first_name, user.last_name].filter(Boolean);
+  return parts.length ? parts.join(" ") : "Unknown";
 };
 
 /* ============================================
@@ -80,17 +96,28 @@ export const clockInToJob = async (userId, jobId, jobNumber, workType = "initial
 
     // Optional: set job status automatically
     try {
-      if (workTypeText === "initial") {
-        // Fetch tech name (optional)
-        const { data: userData } = await supabase
-          .from("users")
-          .select("first_name, last_name")
-          .eq("user_id", userIdInt)
-          .single();
-        const techName = userData ? `${userData.first_name} ${userData.last_name}` : "Unknown";
-        await autoSetWorkshopStatus(jobIdInt, userIdInt, techName);
+      const { data: userData, error: userErr } = await supabase
+        .from("users")
+        .select("first_name, last_name, department, role")
+        .eq("user_id", userIdInt)
+        .maybeSingle();
+
+      if (userErr && userErr.code !== "PGRST116") throw userErr;
+
+      const departmentCategory = inferDepartmentCategory(userData?.department, userData?.role);
+
+      if (departmentCategory === "valeting") {
+        await autoSetBeingWashedStatus(jobIdInt, userIdInt);
       } else if (workTypeText === "additional") {
         await autoSetAdditionalWorkInProgressStatus(jobIdInt, userIdInt);
+      } else if (departmentCategory === "workshop" || workTypeText === "initial") {
+        const techName = formatUserName(userData);
+        await autoSetWorkshopStatus(jobIdInt, userIdInt, techName);
+      } else {
+        console.log(
+          "ℹ️ No auto status update for department",
+          userData?.department || userData?.role || "unknown"
+        );
       }
     } catch (statusErr) {
       console.warn("⚠️ Auto-status update failed:", statusErr?.message || statusErr);

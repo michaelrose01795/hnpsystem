@@ -401,9 +401,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
         <div style={summaryCardStyle}>
           <div style={summaryTextBlockStyle}>
             <span style={vhcModalContentStyles.summaryTitle}>Concern Summary</span>
-            <span style={vhcModalContentStyles.summaryMetric}>
-              {allConcerns} tyre issues logged
-            </span>
+            <span style={vhcModalContentStyles.summaryMetric}>{allConcerns} tyre issues logged</span>
           </div>
           <div style={summaryBadgesStyle}>
             {["Red", "Amber"].map((status) => {
@@ -562,7 +560,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
               minHeight: 0,
             }}
           >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: palette.accent }}>
               {activeWheel === "Spare" ? "Spare / Kit Details" : `${activeWheel} Tyre Details`}
             </h2>
@@ -880,6 +878,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {concernTarget ? (

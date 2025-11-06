@@ -25,3 +25,35 @@ export const usersByRole = {
   Painters: ["Guy 1", "Guy 2"],
   Contractors: ["Smart Repair", "Paints (grey van)", "Dent Man", "Wheel Men", "Windscreen Guy", "Key Guy"],
 };
+
+// Map retail vs sales departments to provide grouped developer login options
+export const roleCategories = {
+  Retail: [
+    "Admin",
+    "Admin Manager",
+    "Accounts",
+    "Accounts Manager",
+    "Owner",
+    "General Manager",
+    "Service",
+    "Service Manager",
+    "Workshop Manager",
+    "After Sales Director",
+    "Techs",
+    "Parts",
+    "Parts Manager",
+    "MOT Tester",
+    "Valet Service",
+    "Receptionist",
+    "Painters",
+    "Contractors",
+  ],
+  Sales: [
+    "Sales Director",
+    "Sales",
+    "Valet Sales",
+    "Buying Director",
+    "Second Hand Buying",
+    "Vehicle Processor & Photographer",
+  ],
+};

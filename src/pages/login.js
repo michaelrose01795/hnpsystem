@@ -7,7 +7,7 @@ import Section from "../components/Section";
 import { useRouter } from "next/router";
 import LoginDropdown from "../components/LoginDropdown";
 import { supabase } from "../lib/supabaseClient"; // Database connection
-import { usersByRole } from "../config/users"; // Dev users config
+import { usersByRole, roleCategories } from "../config/users"; // Dev users config
 
 export default function LoginPage() {
   // Safe destructuring from context
@@ -17,7 +17,8 @@ export default function LoginPage() {
   const setUser = userContext?.setUser;
 
   const router = useRouter();
-  const [selectedRole, setSelectedRole] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedUser, setSelectedUser] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,11 +30,11 @@ export default function LoginPage() {
       alert("Developer login is not available. User context is missing.");
       return;
     }
-    if (!selectedRole || !selectedUser) {
-      alert("Please select a role and a user.");
+    if (!selectedCategory || !selectedDepartment || !selectedUser) {
+      alert("Please select an area, department, and user.");
       return;
     }
-    devLogin(selectedUser, selectedRole);
+    devLogin(selectedUser, selectedDepartment);
   };
 
   // Supabase email/password login
@@ -132,11 +133,14 @@ export default function LoginPage() {
               {/* Developer login */}
               <h3 className="text-lg font-semibold">Developer Login</h3>
               <LoginDropdown
-                selectedRole={selectedRole}
-                setSelectedRole={setSelectedRole}
+                selectedCategory={selectedCategory}
+                setSelectedCategory={setSelectedCategory}
+                selectedDepartment={selectedDepartment}
+                setSelectedDepartment={setSelectedDepartment}
                 selectedUser={selectedUser}
                 setSelectedUser={setSelectedUser}
                 usersByRole={usersByRole}
+                roleCategories={roleCategories}
               />
               <button
                 onClick={handleDevLogin}
