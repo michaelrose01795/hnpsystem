@@ -1,0 +1,118 @@
+// file location: src/components/HR/EmployeeProfilePanel.js
+import React from "react";
+import { SectionCard, StatusTag } from "./MetricCard";
+
+export default function EmployeeProfilePanel({ employee }) {
+  if (!employee) {
+    return (
+      <SectionCard title="Employee Profile" subtitle="Select an employee to view their profile.">
+        <div style={{ color: "#6B7280", fontSize: "0.9rem" }}>
+          Employee details, documents, and employment information will appear here.
+        </div>
+      </SectionCard>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+      <SectionCard
+        title={employee.name}
+        subtitle={`${employee.jobTitle} • ${employee.department}`}
+        action={<StatusTag label={employee.status} tone={employee.status === "Active" ? "success" : "default"} />}
+      >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "12px" }}>
+          <ProfileItem label="Role" value={employee.role} />
+          <ProfileItem label="Employment Type" value={employee.employmentType} />
+          <ProfileItem label="Start Date" value={formatDate(employee.startDate)} />
+          <ProfileItem label="Probation End" value={formatDate(employee.probationEnd)} />
+          <ProfileItem label="Contracted Hours" value={`${employee.contractedHours} hrs`} />
+          <ProfileItem label="Hourly Rate" value={`£${employee.hourlyRate.toFixed(2)}`} />
+          <ProfileItem label="Keycloak ID" value={employee.keycloakId} />
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Contact Information">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+          <ProfileItem label="Email" value={employee.email} />
+          <ProfileItem label="Phone" value={employee.phone} />
+          <ProfileItem label="Emergency Contact" value={employee.emergencyContact} />
+        </div>
+        <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
+          <span style={{ fontWeight: 600, color: "#111827" }}>Address</span>
+          <span style={{ color: "#4B5563" }}>{employee.address}</span>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Documents"
+        subtitle="Contracts, licences, training certificates and other uploads"
+        action={
+          <button
+            type="button"
+            style={{
+              padding: "8px 14px",
+              borderRadius: "999px",
+              border: "1px solid #CBD5F5",
+              background: "white",
+              color: "#2563EB",
+              fontWeight: 600,
+              fontSize: "0.8rem",
+            }}
+          >
+            Upload document
+          </button>
+        }
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {employee.documents?.map((doc) => (
+            <div
+              key={doc.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "10px 12px",
+                borderRadius: "12px",
+                border: "1px solid #E5E7EB",
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontWeight: 600, color: "#111827" }}>{doc.name}</span>
+                <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>
+                  {doc.type} • Uploaded {formatDate(doc.uploadedOn)}
+                </span>
+              </div>
+              <button
+                type="button"
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #D1D5DB",
+                  background: "white",
+                  fontWeight: 600,
+                  fontSize: "0.8rem",
+                }}
+              >
+                View
+              </button>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
+function ProfileItem({ label, value }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+      <span style={{ fontSize: "0.75rem", color: "#6B7280", fontWeight: 600 }}>{label}</span>
+      <span style={{ color: "#1F2937", fontWeight: 600 }}>{value || "—"}</span>
+    </div>
+  );
+}
+
+function formatDate(value) {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString();
+}

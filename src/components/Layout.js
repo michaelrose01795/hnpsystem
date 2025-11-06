@@ -142,6 +142,15 @@ export default function Layout({ children }) {
 
   links.forEach((link) => addNavItem(link.label, link.href));
 
+  if (user) {
+    addNavItem(
+      "🙋 My Profile",
+      "/profile",
+      ["profile", "employee profile", "my profile"],
+      "View your personal employment info"
+    );
+  }
+
   if (isTech) {
     addNavItem("🧰 My Jobs", "/job-cards/myjobs", ["my jobs", "jobs", "tech"]);
     addNavItem("🔧 Start Job", "/job-cards/myjobs", ["start job", "tech"]);
@@ -218,6 +227,98 @@ export default function Layout({ children }) {
       "📝 VHC Dashboard",
       "/vhc/dashboard",
       ["vhc", "vehicle health check", "dashboard"]
+    );
+  }
+
+  const hrAccessRoles = ["hr manager", "admin manager", "owner", "admin"];
+  if (userRoles.some((role) => hrAccessRoles.includes(role))) {
+    addNavItem(
+      "👥 HR Dashboard",
+      "/hr",
+      ["hr", "people", "culture", "training"],
+      "Headcount, attendance, and compliance overview"
+    );
+    addNavItem(
+      "📇 Employee Records",
+      "/hr/employees",
+      ["hr employees", "directory", "profiles"],
+      "Manage employee profiles, documents, and permissions"
+    );
+    addNavItem(
+      "🕒 Attendance",
+      "/hr/attendance",
+      ["attendance", "clocking", "overtime"],
+      "Clocking logs, absences, and overtime summaries"
+    );
+    addNavItem(
+      "💷 Payroll",
+      "/hr/payroll",
+      ["payroll", "pay rates", "compensation"],
+      "Pay rates, approvals, and overtime exports"
+    );
+    addNavItem(
+      "🏖️ Leave",
+      "/hr/leave",
+      ["leave", "holiday", "absence"],
+      "Leave requests, balances, and calendar sync"
+    );
+    addNavItem(
+      "⭐ Performance",
+      "/hr/performance",
+      ["performance", "reviews", "appraisals"],
+      "Manage reviews and development plans"
+    );
+    addNavItem(
+      "🎓 Training",
+      "/hr/training",
+      ["training", "qualifications"],
+      "Track training completions and renewals"
+    );
+    addNavItem(
+      "⚠️ Incidents",
+      "/hr/disciplinary",
+      ["disciplinary", "incidents"],
+      "Log warnings and incident reports"
+    );
+    addNavItem(
+      "📨 Recruitment",
+      "/hr/recruitment",
+      ["recruitment", "applicants", "jobs"],
+      "Manage hiring pipelines and onboarding"
+    );
+    addNavItem(
+      "📈 HR Reports",
+      "/hr/reports",
+      ["reports", "exports", "analytics"],
+      "Generate HR analytics and exports"
+    );
+    addNavItem(
+      "⚙️ HR Settings",
+      "/hr/settings",
+      ["settings", "policies", "access"],
+      "Configure policies, schedules, and access"
+    );
+  } else if (userRoles.some((role) => role.includes("manager"))) {
+    addNavItem(
+      "👥 Team HR",
+      "/hr/employees",
+      ["team hr", "people", "hr"],
+      "View team employee directory and leave"
+    );
+    addNavItem(
+      "🏖️ Leave",
+      "/hr/leave",
+      ["leave", "holiday"],
+      "Review departmental leave requests"
+    );
+  }
+
+  if (userRoles.includes("admin manager")) {
+    addNavItem(
+      "🛠️ User Admin",
+      "/admin/users",
+      ["admin users", "create user", "user management"],
+      "Create and manage platform accounts"
     );
   }
 
@@ -432,6 +533,27 @@ export default function Layout({ children }) {
                 </Link>
               )}
 
+              {userRoles.includes("admin manager") && (
+                <Link href="/admin/users">
+                  <span
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      marginTop: "10px",
+                      borderRadius: "6px",
+                      color: "white",
+                      backgroundColor: colors.accent,
+                      textAlign: "center",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    🛠️ Manage Users
+                  </span>
+                </Link>
+              )}
+
               {(userRoles.includes("parts") || userRoles.includes("parts manager")) && (
                 <Link href="/parts">
                   <span
@@ -539,10 +661,33 @@ export default function Layout({ children }) {
                   </span>
                 </Link>
               )}
+
             </nav>
           </div>
 
           <div>
+            {user && (
+              <Link href="/profile">
+                <span
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "10px",
+                    marginBottom: "12px",
+                    borderRadius: "8px",
+                    color: colors.accent,
+                    backgroundColor: darkMode ? "#f9fafb" : "#eef2ff",
+                    textAlign: "center",
+                    fontSize: "0.9rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    border: `1px solid ${colors.accent}`,
+                  }}
+                >
+                  View Employee Profile
+                </span>
+              </Link>
+            )}
             <button
               onClick={() => {
                 logout();
@@ -633,6 +778,23 @@ export default function Layout({ children }) {
                   navigationItems={navigationItems}
                 />
               </div>
+
+              {userRoles.includes("admin manager") && (
+                <Link
+                  href="/admin/users"
+                  style={{
+                    padding: "10px 18px",
+                    borderRadius: "999px",
+                    backgroundColor: colors.accent,
+                    color: "#ffffff",
+                    fontWeight: 600,
+                    textDecoration: "none",
+                    boxShadow: "0 8px 18px rgba(0,0,0,0.12)",
+                  }}
+                >
+                  ➕ Create User
+                </Link>
+              )}
 
               {isTech && (
                 <div

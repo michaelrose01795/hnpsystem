@@ -6,8 +6,7 @@ import NextAuth from "next-auth"; // import NextAuth
 import KeycloakProvider from "next-auth/providers/keycloak"; // import Keycloak provider
 import jwtDecode from "jwt-decode"; // small helper to decode JWT payloads
 
-// export default NextAuth configuration
-export default NextAuth({
+export const authOptions = {
   // providers array - we add Keycloak as an OpenID Connect provider
   providers: [
     KeycloakProvider({
@@ -65,4 +64,7 @@ export default NextAuth({
       return session; // return the enriched session object
     },
   },
-});
+};
+
+// export default NextAuth configuration
+export default NextAuth(authOptions);
