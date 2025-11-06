@@ -7,8 +7,7 @@ const defaultForm = {
   email: "",
   department: "",
   role: "employee",
-  hourlyRate: "",
-  overtimeRate: "",
+  phone: "",
 };
 
 const roles = [
@@ -20,27 +19,46 @@ const roles = [
 
 const departments = ["Workshop", "Service", "Sales", "Valet", "Parts", "Admin"];
 
-/**
- * Placeholder admin form for creating platform users.
- * TODO: Wire submission to Supabase + Keycloak provisioning service.
- */
-export default function AdminUserForm() {
+export default function AdminUserForm({ onCreated }) {
   const [form, setForm] = useState(defaultForm);
   const [message, setMessage] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // TODO: Replace with API call to create user in Supabase + Keycloak.
-    setMessage({
-      type: "info",
-      text:
-        "User creation flow is a placeholder. Integrate with Keycloak and Supabase mutation before go-live.",
-    });
+    setSubmitting(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email,
+          role: form.role,
+          phone: form.phone,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Failed to create user");
+      }
+
+      setMessage({ type: "success", text: `Created ${payload.data.firstName} ${payload.data.lastName}` });
+      setForm(defaultForm);
+      onCreated?.(payload.data);
+    } catch (err) {
+      setMessage({ type: "error", text: err.message || "Unable to create user" });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleReset = () => {
@@ -65,7 +83,7 @@ export default function AdminUserForm() {
           Create Platform User
         </h2>
         <p style={{ margin: "4px 0 0", color: "#6B7280" }}>
-          Provision employees with access to the DMS. Form currently stores data locally for testing.
+          Provision employees with access to the DMS. Uses the admin API to insert directly into Supabase.
         </p>
       </div>
 
@@ -87,10 +105,8 @@ export default function AdminUserForm() {
           <input name="email" type="email" value={form.email} onChange={handleChange} style={inputStyle} required />
         </Field>
         <Field label="Department">
-          <select name="department" value={form.department} onChange={handleChange} style={inputStyle} required>
-            <option value="" disabled>
-              Select department
-            </option>
+          <select name="department" value={form.department} onChange={handleChange} style={inputStyle}>
+            <option value="">Select department (optional)</option>
             {departments.map((dept) => (
               <option key={dept} value={dept}>
                 {dept}
@@ -107,24 +123,11 @@ export default function AdminUserForm() {
             ))}
           </select>
         </Field>
-        <Field label="Hourly rate (£)">
+        <Field label="Phone">
           <input
-            name="hourlyRate"
-            type="number"
-            min="0"
-            step="0.01"
-            value={form.hourlyRate}
-            onChange={handleChange}
-            style={inputStyle}
-          />
-        </Field>
-        <Field label="Overtime rate (£)">
-          <input
-            name="overtimeRate"
-            type="number"
-            min="0"
-            step="0.01"
-            value={form.overtimeRate}
+            name="phone"
+            type="tel"
+            value={form.phone || ""}
             onChange={handleChange}
             style={inputStyle}
           />
@@ -132,7 +135,7 @@ export default function AdminUserForm() {
 
         <div style={{ gridColumn: "1 / -1", display: "flex", gap: "12px" }}>
           <button type="submit" style={primaryButtonStyle}>
-            Create user (placeholder)
+            {submitting ? "Creating…" : "Create user"}
           </button>
           <button type="button" onClick={handleReset} style={secondaryButtonStyle}>
             Reset form
@@ -143,11 +146,26 @@ export default function AdminUserForm() {
       {message && (
         <div
           style={{
-            background: "rgba(37, 99, 235, 0.1)",
-            border: "1px solid rgba(37, 99, 235, 0.2)",
+            background:
+              message.type === "error"
+                ? "rgba(220,38,38,0.1)"
+                : message.type === "success"
+                ? "rgba(16,185,129,0.12)"
+                : "rgba(37, 99, 235, 0.1)",
+            border:
+              message.type === "error"
+                ? "1px solid rgba(220,38,38,0.3)"
+                : message.type === "success"
+                ? "1px solid rgba(16,185,129,0.3)"
+                : "1px solid rgba(37, 99, 235, 0.2)",
             borderRadius: "12px",
             padding: "12px",
-            color: "#1D4ED8",
+            color:
+              message.type === "error"
+                ? "#B91C1C"
+                : message.type === "success"
+                ? "#047857"
+                : "#1D4ED8",
             fontWeight: 600,
           }}
         >

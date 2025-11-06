@@ -1,6 +1,5 @@
 // file location: src/pages/admin/users/index.js
-import React, { useMemo, useState } from "react";
-import { useRouter } from "next/router";
+import React, { useEffect, useMemo, useState } from "react";
 import Layout from "../../../components/Layout";
 import AdminUserForm from "../../../components/Admin/AdminUserForm";
 import {
@@ -9,12 +8,15 @@ import {
   usersByRoleDetailed,
 } from "../../../config/users";
 import { SectionCard, StatusTag } from "../../../components/HR/MetricCard";
-import { useUser } from "../../../context/UserContext";
 
 export default function AdminUserManagement() {
-  const router = useRouter();
-  const { devLogin } = useUser() || {};
   const [activeUser, setActiveUser] = useState(null);
+  const [dbUsers, setDbUsers] = useState([]);
+  const [dbLoading, setDbLoading] = useState(true);
+  const [dbError, setDbError] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [previewMember, setPreviewMember] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   const departmentList = useMemo(() => {
     return Object.entries(usersByDepartment)
@@ -35,33 +37,135 @@ export default function AdminUserManagement() {
   }, []);
 
   const userCount = Object.keys(confirmationUsers).length;
-  const handleProfileView = (member, fallbackRole) => {
+
+  const fetchDbUsers = async () => {
+    setDbLoading(true);
+    setDbError(null);
+    try {
+      const response = await fetch("/api/admin/users");
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Failed to load users");
+      }
+      setDbUsers(payload.data || []);
+    } catch (err) {
+      setDbError(err.message || "Unable to load users");
+    } finally {
+      setDbLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDbUsers();
+  }, []);
+
+  const handleUserCreated = (user) => {
+    setDbUsers((prev) => [user, ...prev]);
+    setShowAddForm(false);
+  };
+
+  const handleUserDelete = async (userId, name) => {
+    if (!userId) return;
+    const label = name ? `${name}` : "this user";
+    const confirmed = window.confirm(
+      `Are you sure you want to remove ${label} from the system? All linked records will be deleted.`
+    );
+    if (!confirmed) return;
+    try {
+      const response = await fetch(`/api/admin/users?userId=${userId}`, { method: "DELETE" });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Failed to delete user");
+      }
+      setDbUsers((prev) => prev.filter((user) => user.id !== userId));
+    } catch (err) {
+      alert(err.message || "Unable to delete user");
+    }
+  };
+  const handleProfileView = (member) => {
     if (!member) return;
     setActiveUser(member.displayName);
-    const roleToApply = (member.roles && member.roles[0]) || fallbackRole || "employee";
-    devLogin?.(member.displayName, roleToApply);
-    router
-      .push({
-        pathname: "/profile",
-        query: {
-          user: member.key || member.displayName,
-          adminPreview: "1",
-        },
-      })
-      .finally(() => setActiveUser(null));
+    setPreviewMember(member);
+    setShowModal(true);
   };
 
   return (
     <Layout>
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
-        <header>
-          <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#111827" }}>Admin User Management</h1>
-          <p style={{ color: "#6B7280", marginTop: "6px" }}>
-            Provision platform accounts and review department ownership. These records are driven by the shared confirmation roster for consistent testing.
-          </p>
+        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px" }}>
+          <div>
+            <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#111827" }}>Admin User Management</h1>
+            <p style={{ color: "#6B7280", marginTop: "6px" }}>
+              Provision platform accounts and review department ownership. These records are driven by the shared confirmation roster for consistent testing.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAddForm((prev) => !prev)}
+            style={primaryHeaderButtonStyle}
+          >
+            {showAddForm ? "Close Add User" : "Add User"}
+          </button>
         </header>
 
-        <AdminUserForm />
+        {showAddForm && <AdminUserForm onCreated={handleUserCreated} />}
+
+        <SectionCard
+          title="Live Platform Users"
+          subtitle={dbLoading ? "Loading user roster" : "Manage accounts stored in Supabase"}
+          action={<button type="button" onClick={fetchDbUsers} style={refreshButtonStyle}>Refresh</button>}
+        >
+          {dbError && (
+            <div style={{ color: "#B91C1C", marginBottom: "12px", fontWeight: 600 }}>{dbError}</div>
+          )}
+          {dbLoading ? (
+            <div style={{ color: "#6B7280" }}>Reading users…</div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                    <th style={{ textAlign: "left", paddingBottom: "10px" }}>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Phone</th>
+                    <th>Created</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dbUsers.map((account) => (
+                    <tr key={account.id} style={{ borderTop: "1px solid #E5E7EB" }}>
+                      <td style={{ padding: "12px 0", fontWeight: 600 }}>
+                        {account.firstName} {account.lastName}
+                      </td>
+                      <td>{account.email}</td>
+                      <td>{account.role}</td>
+                      <td>{account.phone || "—"}</td>
+                      <td>{new Date(account.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => handleUserDelete(account.id, `${account.firstName} ${account.lastName}`.trim())}
+                          style={dangerButtonStyle}
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {dbUsers.length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ padding: "14px", textAlign: "center", color: "#6B7280" }}>
+                        No platform users available.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </SectionCard>
 
         <SectionCard
           title="User Directory Snapshot"
@@ -105,7 +209,7 @@ export default function AdminUserManagement() {
                             <button
                               key={`${role}-${member.displayName}`}
                               type="button"
-                              onClick={() => handleProfileView(member, role)}
+                          onClick={() => handleProfileView(member)}
                               style={{
                                 padding: "6px 10px",
                                 borderRadius: "999px",
@@ -129,16 +233,115 @@ export default function AdminUserManagement() {
                         {Array.from(
                           new Set(
                             members.flatMap((member) => member.departments || [])
-                        )
-                      ).join(", ")}
-                    </td>
+                          )
+                        ).join(", ")}
+                      </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </SectionCard>
+
+        {showModal && previewMember && (
+          <div style={modalOverlayStyle}>
+            <div style={modalContentStyle}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700 }}>
+                  {previewMember.displayName} &mdash; Profile Preview
+                </h3>
+                <button type="button" onClick={() => { setShowModal(false); setActiveUser(null); }} style={modalCloseButtonStyle}>
+                  ✕
+                </button>
+              </div>
+              <iframe
+                title={`${previewMember.displayName} profile`}
+                src={`/profile?user=${encodeURIComponent(previewMember.key || previewMember.displayName)}&adminPreview=1&embedded=1`}
+                style={{ width: "100%", height: "500px", border: "1px solid #E5E7EB", borderRadius: "12px" }}
+              />
+              <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
+                <button type="button" style={secondaryButtonStyle} disabled>
+                  Edit profile (coming soon)
+                </button>
+                <button type="button" style={secondaryButtonStyle} disabled>
+                  Manage documents
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );
 }
+
+const primaryHeaderButtonStyle = {
+  padding: "10px 18px",
+  borderRadius: "10px",
+  border: "none",
+  background: "#1D4ED8",
+  color: "white",
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
+const refreshButtonStyle = {
+  padding: "8px 14px",
+  borderRadius: "10px",
+  border: "1px solid #DBEAFE",
+  background: "white",
+  color: "#2563EB",
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
+const dangerButtonStyle = {
+  padding: "6px 12px",
+  borderRadius: "8px",
+  border: "1px solid #FECACA",
+  background: "#FEF2F2",
+  color: "#B91C1C",
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
+const modalOverlayStyle = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0,0,0,0.4)",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: "20px",
+  zIndex: 1000,
+};
+
+const modalContentStyle = {
+  background: "white",
+  borderRadius: "16px",
+  padding: "20px",
+  width: "min(900px, 100%)",
+  boxShadow: "0 15px 40px rgba(15,23,42,0.25)",
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px",
+};
+
+const modalCloseButtonStyle = {
+  border: "none",
+  background: "transparent",
+  fontSize: "1.25rem",
+  cursor: "pointer",
+  color: "#6B7280",
+};
+
+const secondaryButtonStyle = {
+  padding: "8px 14px",
+  borderRadius: "10px",
+  border: "1px solid #E5E7EB",
+  background: "white",
+  color: "#1F2937",
+  fontWeight: 600,
+  cursor: "not-allowed",
+  opacity: 0.6,
+};

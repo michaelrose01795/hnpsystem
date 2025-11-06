@@ -235,4 +235,3 @@ export const databaseColumns = [
   { table_name: "vhc_workflow_status", column_name: "vhc_completed_at", data_type: "timestamp with time zone", is_nullable: "YES", column_default: null },
   { table_name: "vhc_workflow_status", column_name: "vhc_sent_at", data_type: "timestamp with time zone", is_nullable: "YES", column_default: null },
 ];
-*** End Patch

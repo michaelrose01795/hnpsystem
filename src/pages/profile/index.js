@@ -25,6 +25,7 @@ export default function MyProfile() {
   const { data, isLoading, error } = useHrMockData();
 
   const previewUserParam = typeof router.query.user === "string" ? router.query.user : null;
+  const isEmbedded = router.query.embedded === "1";
   const isAdminPreview = router.query.adminPreview === "1";
 
   const employeeDirectory = data?.employeeDirectory ?? [];
@@ -104,22 +105,20 @@ export default function MyProfile() {
   }, [aggregatedStats]);
 
   if (!user && !previewUserParam) {
-    return (
-      <Layout>
-        <div style={{ padding: "24px", color: "#6B7280" }}>
-          You need to be signed in to view your profile.
-        </div>
-      </Layout>
+    const fallback = (
+      <div style={{ padding: "24px", color: "#6B7280" }}>
+        You need to be signed in to view your profile.
+      </div>
     );
+    return isEmbedded ? fallback : <Layout>{fallback}</Layout>;
   }
 
-  return (
-    <Layout>
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
-        <header style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#111827" }}>
-            {profile ? profile.name : activeUserName || "My Profile"}
-          </h1>
+  const content = (
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: isEmbedded ? "0" : "8px 8px 32px" }}>
+      <header style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#111827" }}>
+          {profile ? profile.name : activeUserName || "My Profile"}
+        </h1>
           <p style={{ color: "#6B7280" }}>
             Personal dashboard with employment details, attendance, overtime, and leave summary.
           </p>
@@ -423,9 +422,9 @@ export default function MyProfile() {
             </p>
           </SectionCard>
         )}
-      </div>
-    </Layout>
+    </div>
   );
+  return isEmbedded ? content : <Layout>{content}</Layout>;
 }
 
 function ProfileItem({ label, value }) {
