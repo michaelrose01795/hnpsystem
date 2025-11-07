@@ -11,7 +11,7 @@ import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
 
 export default function Layout({ children }) {
-  const { user, logout, status, setStatus, currentJob } = useUser(); // get user context data
+  const { user, status, setStatus, currentJob } = useUser(); // get user context data
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
 
@@ -21,7 +21,6 @@ export default function Layout({ children }) {
   const [viewportWidth, setViewportWidth] = useState(getViewportWidth());
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -68,11 +67,6 @@ export default function Layout({ children }) {
   );
 
   useEffect(() => {
-    const savedMode = localStorage.getItem("darkMode");
-    if (savedMode === "true") setDarkMode(true);
-  }, []);
-
-  useEffect(() => {
     if (typeof window === "undefined") return;
     const handleResize = () => setViewportWidth(getViewportWidth());
     handleResize();
@@ -94,16 +88,6 @@ export default function Layout({ children }) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isMobileMenuOpen]);
-
-  useEffect(() => {
-    if (darkMode) {
-      document.body.classList.add("dark-mode");
-      localStorage.setItem("darkMode", "true");
-    } else {
-      document.body.classList.remove("dark-mode");
-      localStorage.setItem("darkMode", "false");
-    }
-  }, [darkMode]);
 
   useEffect(() => {
     if (user === null && !hideSidebar) {
@@ -151,7 +135,7 @@ export default function Layout({ children }) {
   ];
   const isActive = (path) => router.pathname.startsWith(path);
 
-  const colors = darkMode ? appShellTheme.dark : appShellTheme.light;
+  const colors = appShellTheme.light;
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -409,32 +393,28 @@ export default function Layout({ children }) {
     <div
       style={{
         width: isFullWidth ? "100%" : "220px",
-        background: "linear-gradient(135deg, rgba(209,0,0,0.95), rgba(160,0,0,0.95))",
+        backgroundColor: "#ffffff",
         borderRadius: "16px",
         padding: "18px",
-        color: "#ffffff",
-        boxShadow: "0 15px 35px rgba(161,0,0,0.35)",
+        color: colors.text,
+        boxShadow: "0 16px 30px rgba(209, 0, 0, 0.12)",
+        border: "1px solid #ffe0e0",
         display: "flex",
         flexDirection: "column",
         gap: "12px",
       }}
     >
-      <button
-        onClick={() => setDarkMode((prev) => !prev)}
+      <div
         style={{
-          width: "100%",
-          padding: "10px 14px",
-          borderRadius: "999px",
-          backgroundColor: "#ffffff",
-          color: colors.accent,
-          border: "none",
+          fontSize: "0.75rem",
           fontWeight: 700,
-          cursor: "pointer",
-          boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+          color: colors.accent,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
         }}
       >
-        {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
-      </button>
+        Quick Actions
+      </div>
 
       {userRoles.includes("techs") && (
         <>
@@ -450,14 +430,12 @@ export default function Layout({ children }) {
                 padding: "10px 14px",
                 borderRadius: "12px",
                 backgroundColor: isRouteActive("/job-cards/myjobs")
-                  ? "#ffffff"
-                  : "rgba(255,255,255,0.12)",
-                border: isRouteActive("/job-cards/myjobs")
-                  ? `1px solid ${colors.accent}`
-                  : "1px solid rgba(255,255,255,0.3)",
-                color: isRouteActive("/job-cards/myjobs") ? colors.accent : "#ffffff",
+                  ? colors.accent
+                  : "#fff5f5",
+                border: `1px solid ${colors.accent}`,
+                color: isRouteActive("/job-cards/myjobs") ? "#ffffff" : colors.accent,
                 boxShadow: isRouteActive("/job-cards/myjobs")
-                  ? "0 10px 25px rgba(0,0,0,0.12)"
+                  ? "0 12px 22px rgba(209, 0, 0, 0.25)"
                   : "none",
                 fontWeight: 600,
                 textAlign: "center",
@@ -473,9 +451,9 @@ export default function Layout({ children }) {
               width: "100%",
               padding: "10px 14px",
               borderRadius: "12px",
-              border: "1px dashed rgba(255,255,255,0.5)",
-              backgroundColor: "transparent",
-              color: "#ffffff",
+              border: `1px dashed ${colors.accent}`,
+              backgroundColor: "#fff5f5",
+              color: colors.accent,
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -493,15 +471,15 @@ export default function Layout({ children }) {
             style={{
               padding: "10px 14px",
               borderRadius: "12px",
-              backgroundColor: isRouteActive("/job-cards/create") ? "#ffffff" : "rgba(255,255,255,0.12)",
-              color: isRouteActive("/job-cards/create") ? colors.accent : "#ffffff",
-              border: isRouteActive("/job-cards/create")
-                ? `1px solid ${colors.accent}`
-                : "1px solid rgba(255,255,255,0.3)",
+              backgroundColor: isRouteActive("/job-cards/create")
+                ? colors.accent
+                : "#fff5f5",
+              color: isRouteActive("/job-cards/create") ? "#ffffff" : colors.accent,
+              border: `1px solid ${colors.accent}`,
               fontWeight: 700,
               textAlign: "center",
               boxShadow: isRouteActive("/job-cards/create")
-                ? "0 10px 25px rgba(0,0,0,0.12)"
+                ? "0 12px 22px rgba(209, 0, 0, 0.25)"
                 : "none",
             }}
           >
@@ -516,15 +494,15 @@ export default function Layout({ children }) {
             style={{
               padding: "10px 14px",
               borderRadius: "12px",
-              backgroundColor: isRouteActive("/vhc/dashboard") ? "#ffffff" : "rgba(255,255,255,0.12)",
-              color: isRouteActive("/vhc/dashboard") ? colors.accent : "#ffffff",
-              border: isRouteActive("/vhc/dashboard")
-                ? `1px solid ${colors.accent}`
-                : "1px solid rgba(255,255,255,0.3)",
+              backgroundColor: isRouteActive("/vhc/dashboard")
+                ? colors.accent
+                : "#fff5f5",
+              color: isRouteActive("/vhc/dashboard") ? "#ffffff" : colors.accent,
+              border: `1px solid ${colors.accent}`,
               fontWeight: 700,
               textAlign: "center",
               boxShadow: isRouteActive("/vhc/dashboard")
-                ? "0 10px 25px rgba(0,0,0,0.12)"
+                ? "0 12px 22px rgba(209, 0, 0, 0.25)"
                 : "none",
             }}
           >
@@ -541,15 +519,15 @@ export default function Layout({ children }) {
             style={{
               padding: "10px 14px",
               borderRadius: "12px",
-              backgroundColor: isRouteActive("/valet") ? "#ffffff" : "rgba(255,255,255,0.12)",
-              border: isRouteActive("/valet")
-                ? `1px solid ${colors.accent}`
-                : "1px solid rgba(255,255,255,0.3)",
+              backgroundColor: isRouteActive("/valet")
+                ? colors.accent
+                : "#fff5f5",
+              border: `1px solid ${colors.accent}`,
               fontWeight: 600,
               textAlign: "center",
-              color: isRouteActive("/valet") ? colors.accent : "#ffffff",
+              color: isRouteActive("/valet") ? "#ffffff" : colors.accent,
               boxShadow: isRouteActive("/valet")
-                ? "0 10px 25px rgba(0,0,0,0.12)"
+                ? "0 12px 22px rgba(209, 0, 0, 0.25)"
                 : "none",
             }}
           >
@@ -557,44 +535,6 @@ export default function Layout({ children }) {
           </div>
         </Link>
       )}
-
-      {user && (
-        <Link href="/profile" style={{ textDecoration: "none", width: "100%" }}>
-          <div
-            style={{
-              padding: "10px 14px",
-              borderRadius: "12px",
-              backgroundColor: "rgba(255,255,255,0.2)",
-              border: "1px solid rgba(255,255,255,0.35)",
-              fontWeight: 600,
-              textAlign: "center",
-              color: "#ffffff",
-            }}
-          >
-            View Employee Profile
-          </div>
-        </Link>
-      )}
-
-      <button
-        onClick={() => {
-          logout();
-          router.push("/login");
-        }}
-        style={{
-          width: "100%",
-          padding: "10px 14px",
-          borderRadius: "12px",
-          backgroundColor: "#000000",
-          color: "#ffffff",
-          fontWeight: 700,
-          border: "none",
-          cursor: "pointer",
-          marginTop: "4px",
-        }}
-      >
-        Logout
-      </button>
     </div>
   );
 
@@ -684,9 +624,8 @@ export default function Layout({ children }) {
             <div
               style={{
                 display: "flex",
-                gap: "12px",
                 alignItems: "center",
-                justifyContent: "space-between",
+                justifyContent: "center",
                 position: "sticky",
                 top: 0,
                 zIndex: 5,
@@ -698,7 +637,7 @@ export default function Layout({ children }) {
                 type="button"
                 onClick={() => setIsMobileMenuOpen(true)}
                 style={{
-                  flex: 1,
+                  width: "100%",
                   padding: "10px 16px",
                   borderRadius: "12px",
                   border: `1px solid ${colors.accent}`,
@@ -710,24 +649,6 @@ export default function Layout({ children }) {
                 }}
               >
                 ☰ Navigation
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setDarkMode((prev) => !prev)}
-                style={{
-                  padding: "10px 14px",
-                  borderRadius: "12px",
-                  border: "none",
-                  background: colors.accent,
-                  color: "#ffffff",
-                  fontWeight: 600,
-                  boxShadow: "0 8px 18px rgba(209,0,0,0.25)",
-                  minWidth: "120px",
-                  cursor: "pointer",
-                }}
-              >
-                {darkMode ? "☀️ Light" : "🌙 Dark"}
               </button>
             </div>
 
@@ -924,7 +845,7 @@ export default function Layout({ children }) {
                   maxWidth: isTablet ? "100%" : "380px",
                 }}
               >
-                <GlobalSearch accentColor={colors.accent} isDarkMode={darkMode} navigationItems={navigationItems} />
+                <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />
               </div>
 
               {userRoles.includes("admin manager") && (

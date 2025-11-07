@@ -1,47 +1,138 @@
 // file location: src/components/Sidebar.js
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState, useMemo } from "react";
-import { useUser } from "@/context/UserContext";
-import { sidebarSections } from "@/config/navigation";
+import Link from "next/link"; // import Next.js navigation link
+import { usePathname, useRouter } from "next/navigation"; // import routing helpers
+import { useEffect, useMemo, useState } from "react"; // import React hooks
+import { useUser } from "@/context/UserContext"; // import user context for roles and logout
+import { sidebarSections } from "@/config/navigation"; // import sidebar configuration
 
 export default function Sidebar({ onToggle, isCondensed = false }) {
-  const pathname = usePathname();
-  const { user } = useUser();
-  const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const pathname = usePathname(); // get current path
+  const router = useRouter(); // get router instance for redirects
+  const { user, logout } = useUser(); // get user data and logout helper
+  const userRoles = user?.roles?.map((role) => role.toLowerCase()) || []; // normalise roles
   const isCustomerOnly =
-    userRoles.length > 0 && userRoles.every((role) => role === "customer");
-  const isPartsUser = userRoles.some(
-    (role) => role === "parts" || role === "parts manager"
-  );
-  const trackingRoles = [
-    "techs",
-    "service",
-    "service manager",
-    "workshop manager",
-    "valet service",
-    "admin",
-  ];
-  const canSeeTrackingButton = userRoles.some((role) =>
-    trackingRoles.includes(role)
-  );
+    userRoles.length > 0 && userRoles.every((role) => role === "customer"); // check for customer-only accounts
 
-  const initialState = useMemo(
-    () =>
-      Object.fromEntries(sidebarSections.map((section) => [section.label, true])),
-    []
-  );
-  const [openSections, setOpenSections] = useState(initialState);
+  const groupedSections = useMemo(() => {
+    const groups = { general: [], departments: [], account: [] }; // prepare grouped structure
+    sidebarSections.forEach((section) => {
+      const category = section.category || "departments"; // default category
+      if (!groups[category]) {
+        groups[category] = []; // ensure array exists
+      }
+      groups[category].push(section); // add section to the correct group
+    });
+    return groups;
+  }, []);
 
   const hasAccess = (item) => {
-    if (!item.roles || item.roles.length === 0) return true;
-    return item.roles.some((role) => userRoles.includes(role.toLowerCase()));
+    if (!item.roles || item.roles.length === 0) return true; // allow items without role requirements
+    return item.roles.some((role) => userRoles.includes(role.toLowerCase())); // check access
   };
 
+  const filterAccessibleSections = (sections = []) =>
+    sections
+      .map((section) => ({
+        ...section,
+        items: (section.items || []).filter(hasAccess), // keep only allowed items
+      }))
+      .filter((section) => section.items.length > 0); // keep sections with content
+
+  const generalSections = filterAccessibleSections(groupedSections.general); // accessible general links
+  const departmentSections = filterAccessibleSections(
+    groupedSections.departments
+  ); // accessible department sections
+  const accountSections = filterAccessibleSections(groupedSections.account); // accessible account links
+
+  const [openSections, setOpenSections] = useState(() =>
+    Object.fromEntries(departmentSections.map((section) => [section.label, true]))
+  ); // track open/closed state for department groups
+
+  useEffect(() => {
+    setOpenSections((prev) => {
+      const nextState = {};
+      departmentSections.forEach((section) => {
+        nextState[section.label] = prev[section.label] ?? true; // keep previous state or default to open
+      });
+      return nextState;
+    });
+  }, [departmentSections]);
+
   const toggleSection = (label) => {
-    setOpenSections((prev) => ({ ...prev, [label]: !prev[label] }));
+    setOpenSections((prev) => ({ ...prev, [label]: !prev[label] })); // toggle collapse state
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout?.(); // call logout if available
+    } finally {
+      router.push("/login"); // always redirect to login page
+    }
+  };
+
+  const renderNavItem = (item) => {
+    if (!item.href) return null; // guard against items without a destination
+    const isActive = pathname === item.href; // determine active state
+    return (
+      <Link
+        key={item.href || item.label}
+        href={item.href}
+        style={{ textDecoration: "none" }}
+      >
+        <div
+          style={{
+            marginTop: "10px",
+            padding: "10px 14px",
+            borderRadius: "10px",
+            background: isActive ? "linear-gradient(90deg, #d10000, #a00000)" : "#ffffff",
+            color: isActive ? "#ffffff" : "#a00000",
+            fontWeight: 600,
+            boxShadow: isActive
+              ? "0 12px 20px rgba(161, 0, 0, 0.25)"
+              : "0 4px 12px rgba(0, 0, 0, 0.05)",
+            border: isActive ? "none" : "1px solid #ffe0e0",
+            transition: "all 0.2s ease",
+            display: "block",
+          }}
+        >
+          {item.label}
+        </div>
+      </Link>
+    );
+  };
+
+  const renderAccountItem = (item) => {
+    if (item.action === "logout") {
+      return (
+        <button
+          key={item.label}
+          type="button"
+          onClick={handleLogout}
+          style={{
+            marginTop: "10px",
+            padding: "10px 14px",
+            borderRadius: "10px",
+            background: "linear-gradient(90deg, #a00000, #700000)",
+            color: "#ffffff",
+            fontWeight: 700,
+            border: "none",
+            cursor: "pointer",
+            boxShadow: "0 12px 20px rgba(112, 0, 0, 0.3)",
+            width: "100%",
+          }}
+        >
+          {item.label}
+        </button>
+      );
+    }
+
+    if (item.href) {
+      return renderNavItem(item); // reuse navigation renderer for profile link
+    }
+
+    return null; // ignore unsupported patterns
   };
 
   if (isCustomerOnly) {
@@ -149,10 +240,19 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
           position: "relative",
         }}
       >
-        <p style={{ margin: 0, fontSize: "0.85rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+        <p
+          style={{
+            margin: 0,
+            fontSize: "0.85rem",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+          }}
+        >
           Navigation
         </p>
-        <h2 style={{ margin: "6px 0 0", fontSize: "1.4rem", fontWeight: 700 }}>Workspace</h2>
+        <h2 style={{ margin: "6px 0 0", fontSize: "1.4rem", fontWeight: 700 }}>
+          Workspace
+        </h2>
         {onToggle && (
           <button
             type="button"
@@ -179,48 +279,33 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
       </div>
 
       <div style={{ padding: "20px", flex: 1, overflowY: "auto" }}>
-        {isPartsUser && (
-          <Link href="/vhc/dashboard" style={{ textDecoration: "none" }}>
+        {generalSections.length > 0 && (
+          <div
+            style={{
+              padding: "12px 14px",
+              borderRadius: "12px",
+              backgroundColor: "#fff5f5",
+              marginBottom: "12px",
+              border: "1px solid #ffe0e0",
+              boxShadow: "inset 0 0 0 1px rgba(255, 255, 255, 0.4)",
+            }}
+          >
             <div
               style={{
-                padding: "12px 16px",
-                borderRadius: "12px",
-                marginBottom: "16px",
-                background: "linear-gradient(90deg, #fde68a, #fca5a5)",
-                color: "#7c2d12",
+                color: "#a00000",
                 fontWeight: 700,
-                border: "1px solid rgba(124,45,18,0.2)",
-                boxShadow: "0 10px 18px rgba(124,45,18,0.18)",
-                textAlign: "center",
+                fontSize: "0.85rem",
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
               }}
             >
-              🧾 VHC Dashboard
+              General
             </div>
-          </Link>
-        )}
-        {canSeeTrackingButton && (
-          <Link href="/tracking" style={{ textDecoration: "none" }}>
-            <div
-              style={{
-                padding: "12px 16px",
-                borderRadius: "12px",
-                marginBottom: "16px",
-                background: "linear-gradient(90deg, #e0f2fe, #fecaca)",
-                color: "#0f172a",
-                fontWeight: 700,
-                border: "1px solid rgba(15, 23, 42, 0.15)",
-                boxShadow: "0 12px 22px rgba(15, 23, 42, 0.18)",
-                textAlign: "center",
-              }}
-            >
-              🚗 Tracking Hub
-            </div>
-          </Link>
+            {generalSections.flatMap((section) => section.items).map(renderNavItem)}
+          </div>
         )}
 
-        {sidebarSections.map((section) => {
-          const items = section.items.filter(hasAccess);
-          if (items.length === 0) return null;
+        {departmentSections.map((section) => {
           const isOpen = openSections[section.label];
           return (
             <div
@@ -257,41 +342,35 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
                 {section.label}
                 <span style={{ fontSize: "1rem" }}>{isOpen ? "−" : "+"}</span>
               </button>
-              {isOpen &&
-                items.map((item) => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      style={{ textDecoration: "none" }}
-                    >
-                      <div
-                        style={{
-                          marginTop: "10px",
-                          padding: "10px 14px",
-                          borderRadius: "10px",
-                          background: isActive
-                            ? "linear-gradient(90deg, #d10000, #a00000)"
-                            : "#ffffff",
-                          color: isActive ? "#ffffff" : "#a00000",
-                          fontWeight: 600,
-                          boxShadow: isActive
-                            ? "0 12px 20px rgba(161, 0, 0, 0.25)"
-                            : "0 4px 12px rgba(0, 0, 0, 0.05)",
-                          border: isActive ? "none" : "1px solid #ffe0e0",
-                          transition: "all 0.2s ease",
-                          display: "block",
-                        }}
-                      >
-                        {item.label}
-                      </div>
-                    </Link>
-                  );
-                })}
+              {isOpen && section.items.map(renderNavItem)}
             </div>
           );
         })}
+
+        {accountSections.length > 0 && (
+          <div
+            style={{
+              padding: "12px 14px",
+              borderRadius: "12px",
+              backgroundColor: "#fff5f5",
+              border: "1px solid #ffe0e0",
+              boxShadow: "inset 0 0 0 1px rgba(255, 255, 255, 0.4)",
+            }}
+          >
+            <div
+              style={{
+                color: "#a00000",
+                fontWeight: 700,
+                fontSize: "0.85rem",
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+              }}
+            >
+              Account
+            </div>
+            {accountSections.flatMap((section) => section.items).map(renderAccountItem)}
+          </div>
+        )}
       </div>
     </aside>
   );
