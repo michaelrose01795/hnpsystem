@@ -18,20 +18,28 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     const { limit = 50, before, userId } = req.query;
     const parsedLimit = Number(limit) > 0 ? Number(limit) : 50;
+    const parsedUserId = Number(userId);
+
+    if (!Number.isFinite(parsedUserId) || parsedUserId <= 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "userId query parameter is required." });
+    }
 
     try {
-      const messages = await getThreadMessages(threadId, parsedLimit, before);
-      if (userId) {
-        const parsedUserId = Number(userId);
-        if (Number.isFinite(parsedUserId) && parsedUserId > 0) {
-          await markThreadRead({ threadId, userId: parsedUserId });
-        }
-      }
+      const messages = await getThreadMessages(
+        threadId,
+        parsedUserId,
+        parsedLimit,
+        before
+      );
+      await markThreadRead({ threadId, userId: parsedUserId });
       return res.status(200).json({ success: true, data: messages });
     } catch (error) {
       console.error("❌ GET /api/messages/threads/[id]/messages error:", error);
+      const status = /not a participant/i.test(error.message) ? 403 : 500;
       return res
-        .status(500)
+        .status(status)
         .json({ success: false, message: error.message || "Server error" });
     }
   }
@@ -54,8 +62,13 @@ export default async function handler(req, res) {
       return res.status(201).json({ success: true, data: message });
     } catch (error) {
       console.error("❌ POST /api/messages/threads/[id]/messages error:", error);
+      const status =
+        error.message?.includes("group leader") ||
+        error.message?.includes("part of this conversation")
+          ? 403
+          : 500;
       return res
-        .status(500)
+        .status(status)
         .json({ success: false, message: error.message || "Server error" });
     }
   }

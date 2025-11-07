@@ -75,7 +75,7 @@ const ComposeToggleButton = ({ active, children, onClick }) => (
   </button>
 );
 
-const Chip = ({ label, onRemove }) => (
+const Chip = ({ label, onRemove, disabled = false }) => (
   <span
     style={{
       display: "inline-flex",
@@ -93,12 +93,13 @@ const Chip = ({ label, onRemove }) => (
     {onRemove && (
       <button
         type="button"
-        onClick={onRemove}
+        onClick={disabled ? undefined : onRemove}
+        disabled={disabled}
         style={{
           border: "none",
           background: "transparent",
-          color: palette.accent,
-          cursor: "pointer",
+          color: disabled ? palette.textMuted : palette.accent,
+          cursor: disabled ? "not-allowed" : "pointer",
           fontSize: "0.9rem",
         }}
       >
@@ -108,7 +109,35 @@ const Chip = ({ label, onRemove }) => (
   </span>
 );
 
+const AvatarBadge = ({ name }) => {
+  const initial = (name || "?").trim().charAt(0)?.toUpperCase() || "?";
+  return (
+    <div
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: "50%",
+        backgroundColor: palette.accentSurface,
+        color: palette.accent,
+        fontWeight: 700,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
+      }}
+    >
+      {initial}
+    </div>
+  );
+};
+
 const MessageBubble = ({ message, isMine }) => {
+  const senderName = message.sender?.name || "Unknown";
+  const timestamp = new Date(message.createdAt).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
   const bubbleStyles = {
     padding: "14px 18px",
     borderRadius: isMine
@@ -116,28 +145,49 @@ const MessageBubble = ({ message, isMine }) => {
       : `${radii.sm} ${radii.lg} ${radii.lg} ${radii.lg}`,
     backgroundColor: isMine ? palette.accent : "#ffffff",
     color: isMine ? "#ffffff" : palette.textPrimary,
-    maxWidth: "70%",
-    alignSelf: isMine ? "flex-end" : "flex-start",
+    maxWidth: "480px",
     boxShadow: isMine ? shadows.md : "0 8px 20px rgba(0,0,0,0.08)",
+    lineHeight: 1.45,
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-      <span
+    <div
+      style={{
+        display: "flex",
+        justifyContent: isMine ? "flex-end" : "flex-start",
+        width: "100%",
+      }}
+    >
+      <div
         style={{
-          fontSize: "0.75rem",
-          fontWeight: 600,
-          color: isMine ? palette.accent : "#b45309",
-          textAlign: isMine ? "right" : "left",
+          display: "flex",
+          flexDirection: "row",
+          gap: "12px",
+          alignItems: "flex-start",
         }}
       >
-        {message.sender?.name || "Unknown"} •{" "}
-        {new Date(message.createdAt).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
-      </span>
-      <div style={bubbleStyles}>{message.content}</div>
+        <AvatarBadge name={senderName} />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+            alignItems: isMine ? "flex-end" : "flex-start",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "0.8rem",
+              fontWeight: 700,
+              color: palette.accent,
+            }}
+          >
+            {senderName}
+          </span>
+          <span style={{ fontSize: "0.75rem", color: palette.textMuted }}>{timestamp}</span>
+          <div style={bubbleStyles}>{message.content}</div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -171,12 +221,26 @@ function MessagesPage() {
   const [groupName, setGroupName] = useState("");
   const [composeError, setComposeError] = useState("");
 
+  const [groupSearchTerm, setGroupSearchTerm] = useState("");
+  const [groupSearchResults, setGroupSearchResults] = useState([]);
+  const [groupSearchLoading, setGroupSearchLoading] = useState(false);
+  const [groupManageError, setGroupManageError] = useState("");
+  const [groupManageBusy, setGroupManageBusy] = useState(false);
+  const [conversationError, setConversationError] = useState("");
+
   const scrollerRef = useRef(null);
 
   const activeThread = useMemo(
     () => threads.find((thread) => thread.id === activeThreadId) || null,
     [threads, activeThreadId]
   );
+
+  const isGroupLeader = useMemo(() => {
+    if (!activeThread || activeThread.type !== "group" || !dbUserId) return false;
+    return activeThread.members.some(
+      (member) => member.userId === dbUserId && member.role === "leader"
+    );
+  }, [activeThread, dbUserId]);
 
   const mergeThread = useCallback((nextThread) => {
     if (!nextThread) return;
@@ -240,6 +304,7 @@ function MessagesPage() {
       if (!threadId || !dbUserId) return;
       setActiveThreadId(threadId);
       setLoadingMessages(true);
+       setConversationError("");
       try {
         const response = await fetch(
           `/api/messages/threads/${threadId}/messages${buildQuery({
@@ -249,8 +314,10 @@ function MessagesPage() {
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.message || "Failed to load messages");
         setMessages(payload.data || []);
+        setConversationError("");
       } catch (error) {
         console.error("❌ Failed to load conversation:", error);
+        setConversationError(error.message || "Unable to load conversation.");
       } finally {
         setLoadingMessages(false);
       }
@@ -334,6 +401,7 @@ function MessagesPage() {
       event?.preventDefault();
       if (!messageDraft.trim() || !activeThreadId || !dbUserId) return;
       setSending(true);
+      setConversationError("");
       try {
         const response = await fetch(`/api/messages/threads/${activeThreadId}/messages`, {
           method: "POST",
@@ -353,6 +421,7 @@ function MessagesPage() {
         await openThread(activeThreadId);
       } catch (error) {
         console.error("❌ Failed to send message:", error);
+        setConversationError(error.message || "Unable to send message.");
       } finally {
         setSending(false);
       }
@@ -390,6 +459,62 @@ function MessagesPage() {
     }
   }, [messages]);
 
+  useEffect(() => {
+    setGroupSearchTerm("");
+    setGroupSearchResults([]);
+    setGroupManageError("");
+  }, [activeThreadId]);
+
+  useEffect(() => {
+    if (
+      !isGroupLeader ||
+      !activeThread ||
+      activeThread.type !== "group" ||
+      !groupSearchTerm.trim() ||
+      groupSearchTerm.trim().length < 2
+    ) {
+      setGroupSearchResults([]);
+      setGroupSearchLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+    setGroupSearchLoading(true);
+    const excludeIds = [
+      ...new Set([
+        ...(activeThread?.members || []).map((member) => member.userId),
+        dbUserId,
+      ]),
+    ].join(",");
+
+    fetch(
+      `/api/messages/users${buildQuery({
+        q: groupSearchTerm,
+        exclude: excludeIds,
+      })}`,
+      { signal: controller.signal }
+    )
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.message || "Unable to search users");
+        if (!cancelled) setGroupSearchResults(payload.data || []);
+      })
+      .catch((error) => {
+        if (cancelled || error.name === "AbortError") return;
+        console.error("❌ Group search failed:", error);
+        setGroupSearchResults([]);
+      })
+      .finally(() => {
+        if (!cancelled) setGroupSearchLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [activeThread, dbUserId, groupSearchTerm, isGroupLeader]);
+
   const handleDirectoryUser = (userEntry) => {
     if (composeMode === "direct") {
       startDirectThread(userEntry.id);
@@ -407,6 +532,67 @@ function MessagesPage() {
 
   const isRecipientSelected = (userEntry) =>
     selectedRecipients.some((user) => user.id === userEntry.id);
+
+  const handleAddMemberToGroup = useCallback(
+    async (userId) => {
+      if (!activeThreadId || !dbUserId || !userId) return;
+      setGroupManageBusy(true);
+      setGroupManageError("");
+      try {
+        const response = await fetch(
+          `/api/messages/threads/${activeThreadId}/members`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ actorId: dbUserId, userIds: [userId] }),
+          }
+        );
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.message || "Unable to add member");
+        if (payload.data) {
+          mergeThread(payload.data);
+          setGroupSearchTerm("");
+          setGroupSearchResults([]);
+        }
+      } catch (error) {
+        console.error("❌ Failed to add member:", error);
+        setGroupManageError(error.message || "Unable to add member.");
+      } finally {
+        setGroupManageBusy(false);
+      }
+    },
+    [activeThreadId, dbUserId, mergeThread]
+  );
+
+  const handleRemoveMemberFromGroup = useCallback(
+    async (userId) => {
+      if (!activeThreadId || !dbUserId || !userId) return;
+      setGroupManageBusy(true);
+      setGroupManageError("");
+      try {
+        const response = await fetch(
+          `/api/messages/threads/${activeThreadId}/members`,
+          {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ actorId: dbUserId, userIds: [userId] }),
+          }
+        );
+        const payload = await response.json();
+        if (!response.ok)
+          throw new Error(payload.message || "Unable to remove member");
+        if (payload.data) {
+          mergeThread(payload.data);
+        }
+      } catch (error) {
+        console.error("❌ Failed to remove member:", error);
+        setGroupManageError(error.message || "Unable to remove member.");
+      } finally {
+        setGroupManageBusy(false);
+      }
+    },
+    [activeThreadId, dbUserId, mergeThread]
+  );
 
   const canSend = Boolean(
     messageDraft.trim() && activeThread && !loadingMessages && !sending
@@ -749,21 +935,156 @@ function MessagesPage() {
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    marginTop: "12px",
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "6px",
-                  }}
-                >
-                  {activeThread.members.map((member) => (
-                    <Chip
-                      key={member.userId}
-                      label={member.profile?.name || "Unknown"}
-                    />
-                  ))}
+                <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <strong style={{ fontSize: "0.85rem", color: palette.textMuted }}>
+                    Participants
+                  </strong>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "6px",
+                    }}
+                  >
+                    {activeThread.members.map((member) => {
+                      const label = `${member.profile?.name || "Unknown"}${
+                        member.role === "leader" ? " • Leader" : ""
+                      }`;
+                      const canRemove =
+                        isGroupLeader &&
+                        member.userId !== dbUserId &&
+                        activeThread.type === "group";
+                      return (
+                        <Chip
+                          key={member.userId}
+                          label={label}
+                          onRemove={
+                            canRemove
+                              ? () => !groupManageBusy && handleRemoveMemberFromGroup(member.userId)
+                              : undefined
+                          }
+                          disabled={groupManageBusy}
+                        />
+                      );
+                    })}
+                  </div>
+                  {activeThread.type === "group" && (
+                    <span style={{ fontSize: "0.75rem", color: palette.textMuted }}>
+                      Group leaders can add or remove teammates to keep the chat focused.
+                    </span>
+                  )}
                 </div>
+
+                {activeThread.type === "group" && isGroupLeader && (
+                  <div
+                    style={{
+                      marginTop: "12px",
+                      border: `1px dashed ${palette.border}`,
+                      borderRadius: "16px",
+                      padding: "12px",
+                      backgroundColor: "#fff",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "10px",
+                    }}
+                  >
+                    <strong style={{ fontSize: "0.85rem", color: palette.accent }}>
+                      Manage group members
+                    </strong>
+                    <input
+                      type="search"
+                      value={groupSearchTerm}
+                      onChange={(event) => setGroupSearchTerm(event.target.value)}
+                      placeholder="Search colleagues to add (min 2 letters)…"
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: radii.lg,
+                        border: `1px solid ${palette.border}`,
+                        backgroundColor: "#ffffff",
+                      }}
+                    />
+                    {groupSearchTerm.trim().length > 0 && groupSearchTerm.trim().length < 2 && (
+                      <p style={{ margin: 0, fontSize: "0.75rem", color: palette.textMuted }}>
+                        Keep typing at least 2 letters to search.
+                      </p>
+                    )}
+                    {groupSearchLoading && (
+                      <p style={{ margin: 0, fontSize: "0.8rem", color: palette.textMuted }}>
+                        Looking up colleagues…
+                      </p>
+                    )}
+                    {!groupSearchLoading && groupSearchResults.length > 0 && (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                          maxHeight: "160px",
+                          overflowY: "auto",
+                        }}
+                      >
+                        {groupSearchResults.map((entry) => (
+                          <div
+                            key={entry.id}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              border: `1px solid ${palette.border}`,
+                              borderRadius: "12px",
+                              padding: "8px 12px",
+                              backgroundColor: "#fff",
+                            }}
+                          >
+                            <div>
+                              <strong style={{ fontSize: "0.9rem", color: palette.textPrimary }}>
+                                {entry.name}
+                              </strong>
+                              <p
+                                style={{
+                                  margin: 0,
+                                  fontSize: "0.75rem",
+                                  color: palette.textMuted,
+                                }}
+                              >
+                                {entry.role || "Team member"}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              disabled={groupManageBusy}
+                              onClick={() => handleAddMemberToGroup(entry.id)}
+                              style={{
+                                border: "none",
+                                borderRadius: radii.pill,
+                                padding: "8px 14px",
+                                backgroundColor: groupManageBusy ? "#f3f4f6" : palette.accent,
+                                color: groupManageBusy ? "#9ca3af" : "#ffffff",
+                                fontWeight: 600,
+                                cursor: groupManageBusy ? "not-allowed" : "pointer",
+                              }}
+                            >
+                              Add
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {!groupSearchLoading &&
+                      groupSearchTerm.trim().length >= 2 &&
+                      groupSearchResults.length === 0 && (
+                        <p style={{ margin: 0, fontSize: "0.8rem", color: palette.textMuted }}>
+                          No colleagues match that search.
+                        </p>
+                      )}
+                    {groupManageError && (
+                      <p style={{ margin: 0, fontSize: "0.8rem", color: "#b91c1c" }}>
+                        {groupManageError}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div
                   ref={scrollerRef}
@@ -835,6 +1156,11 @@ function MessagesPage() {
                       {sending ? "Sending…" : "Send"}
                     </button>
                   </div>
+                  {conversationError && (
+                    <p style={{ color: "#b91c1c", margin: 0, fontSize: "0.85rem" }}>
+                      {conversationError}
+                    </p>
+                  )}
                 </form>
               </>
             ) : (
