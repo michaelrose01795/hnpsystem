@@ -43,6 +43,9 @@ export default function Layout({ children }) {
   const canViewStatusSidebar = userRoles.some((role) =>
     statusSidebarRoles.includes(role)
   );
+  const isPartsUser = userRoles.some(
+    (role) => role === "parts" || role === "parts manager"
+  );
 
   useEffect(() => {
     const savedMode = localStorage.getItem("darkMode");
@@ -100,6 +103,8 @@ export default function Layout({ children }) {
     "workshop manager",
     "after sales director",
     "general manager",
+    "parts",
+    "parts manager",
   ];
   const isActive = (path) => router.pathname.startsWith(path);
 
@@ -396,26 +401,9 @@ export default function Layout({ children }) {
             position: "relative",
           }}
         >
-          <button
-            onClick={toggleSidebar}
-            style={{
-              width: "40px",
-              height: "40px",
-              borderRadius: "10px",
-              border: "1px solid rgba(209,0,0,0.25)",
-              backgroundColor: "#ffffff",
-              color: colors.accent,
-              fontWeight: 700,
-              cursor: "pointer",
-              boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
-            }}
-          >
-            {isSidebarOpen ? "⟨" : "⟩"}
-          </button>
-
-          {isSidebarOpen && (
+          {isSidebarOpen ? (
             <>
-              <Sidebar />
+              <Sidebar onToggle={toggleSidebar} />
 
               <div
                 style={{
@@ -548,6 +536,29 @@ export default function Layout({ children }) {
                   </Link>
                 )}
 
+                {isPartsUser && (
+                  <Link href="/vhc/dashboard" style={{ textDecoration: "none", width: "100%" }}>
+                    <div
+                      style={{
+                        padding: "10px 14px",
+                        borderRadius: "12px",
+                        backgroundColor: isRouteActive("/vhc/dashboard") ? "#ffffff" : "rgba(255,255,255,0.12)",
+                        color: isRouteActive("/vhc/dashboard") ? colors.accent : "#ffffff",
+                        border: isRouteActive("/vhc/dashboard")
+                          ? `1px solid ${colors.accent}`
+                          : "1px solid rgba(255,255,255,0.3)",
+                        fontWeight: 700,
+                        textAlign: "center",
+                        boxShadow: isRouteActive("/vhc/dashboard")
+                          ? "0 10px 25px rgba(0,0,0,0.12)"
+                          : "none",
+                      }}
+                    >
+                      🧾 Parts VHC Dashboard
+                    </div>
+                  </Link>
+                )}
+
                 {(userRoles.includes("valet service") ||
                   userRoles.includes("service manager") ||
                   userRoles.includes("admin")) && (
@@ -612,6 +623,23 @@ export default function Layout({ children }) {
                 </button>
               </div>
             </>
+          ) : (
+            <button
+              onClick={toggleSidebar}
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "10px",
+                border: "1px solid rgba(209,0,0,0.25)",
+                backgroundColor: "#ffffff",
+                color: colors.accent,
+                fontWeight: 700,
+                cursor: "pointer",
+                boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
+              }}
+            >
+              ⟩
+            </button>
           )}
         </div>
       )}

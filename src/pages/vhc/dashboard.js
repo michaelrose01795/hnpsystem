@@ -2,12 +2,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabaseClient";
 import Layout from "../../components/Layout";
 import CustomLoader from "../../components/Loading/CustomLoader";
 import { useRouter } from "next/router";
 import { getAllJobs } from "../../lib/database/jobs";
 import { getVHCChecksByJob } from "../../lib/database/vhc";
+import { useUser } from "../../context/UserContext";
 
 // ✅ Status color mapping
 const STATUS_COLORS = {
@@ -74,19 +74,19 @@ const getMOTColor = (motExpiry) => {
 };
 
 // ✅ VHC Job Card Component
-const VHCJobCard = ({ job, onClick }) => {
+const VHCJobCard = ({ job, onClick, partsMode }) => {
   const lastVisitColor = getLastVisitColor(job.lastVisit);
   const nextServiceColor = getNextServiceColor(job.nextService);
   const motColor = getMOTColor(job.motExpiry);
   const statusColor = STATUS_COLORS[job.vhcStatus] || "#9ca3af";
-  const isPartsOnly = job.vhcStatus === "Parts Request";
-  const counterValue = isPartsOnly ? job.partsCount || 0 : job.vhcChecksCount || 0;
-  const counterLabel = isPartsOnly ? "Parts" : "Checks";
+  const showPartsCounter = partsMode || job.vhcStatus === "Parts Request";
+  const counterValue = showPartsCounter ? job.partsCount || 0 : job.vhcChecksCount || 0;
+  const counterLabel = showPartsCounter ? "Parts" : "Checks";
   const counterBackground = counterValue > 0
-    ? isPartsOnly ? "#fef3c7" : "#e0f2fe"
+    ? showPartsCounter ? "#fef3c7" : "#e0f2fe"
     : "#f5f5f5";
   const counterColor = counterValue > 0
-    ? isPartsOnly ? "#b45309" : "#0369a1"
+    ? showPartsCounter ? "#b45309" : "#0369a1"
     : "#999";
 
   return (
@@ -241,6 +241,21 @@ const VHCJobCard = ({ job, onClick }) => {
           </div>
         </div>
 
+        {job.partsCount > 0 && (
+          <div style={{ textAlign: "center", minWidth: "80px" }}>
+            <span style={{
+              fontSize: "14px",
+              fontWeight: "600",
+              color: "#b45309"
+            }}>
+              £{job.partsValue || "0.00"}
+            </span>
+            <div style={{ fontSize: "10px", color: "#b45309", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Parts
+            </div>
+          </div>
+        )}
+
         <div style={{ textAlign: "center", minWidth: "70px" }}>
           <span style={{ 
             fontSize: "14px", 
@@ -303,6 +318,24 @@ export default function VHCDashboard() {
   const [search, setSearch] = useState({ reg: "", jobNumber: "", customer: "" });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const { user } = useUser();
+  const userRoles = (user?.roles || []).map((role) => role.toLowerCase());
+  const isPartsRole = userRoles.some(
+    (role) => role === "parts" || role === "parts manager"
+  );
+  const workshopViewRoles = [
+    "service",
+    "service manager",
+    "workshop manager",
+    "after sales director",
+    "general manager",
+    "admin",
+    "techs",
+  ];
+  const hasWorkshopPrivileges = userRoles.some((role) =>
+    workshopViewRoles.includes(role)
+  );
+  const partsOnlyMode = isPartsRole && !hasWorkshopPrivileges;
 
   useEffect(() => {
     const fetchVhcJobs = async () => {
@@ -320,14 +353,18 @@ export default function VHCDashboard() {
           vhcEligibleJobs.map(async (job) => {
             const checks = await getVHCChecksByJob(job.id);
 
-            const partsCount = job.partsRequests?.length || 0;
-            const effectiveChecksCount = checks.length > 0 ? checks.length : partsCount;
-            
+            const partsCount =
+              job.partsAllocations?.length ||
+              job.partsRequests?.length ||
+              0;
+            const effectiveChecksCount =
+              checks.length > 0 ? checks.length : partsCount;
+
             let vhcStatus = "Outstanding";
             if (checks.length > 0) {
-              const hasRed = checks.some(c => c.section === "Brakes");
-              const hasAmber = checks.some(c => c.section === "Tyres");
-              
+              const hasRed = checks.some((c) => c.section === "Brakes");
+              const hasAmber = checks.some((c) => c.section === "Tyres");
+
               if (hasRed) {
                 vhcStatus = "In Progress";
               } else if (hasAmber) {
@@ -340,14 +377,26 @@ export default function VHCDashboard() {
             }
 
             const redWork = checks
-              .filter(c => c.section === "Brakes")
+              .filter((c) => c.section === "Brakes")
               .reduce((sum, c) => sum + (parseFloat(c.measurement) || 0), 0)
               .toFixed(2);
 
             const amberWork = checks
-              .filter(c => c.section === "Tyres")
+              .filter((c) => c.section === "Tyres")
               .reduce((sum, c) => sum + (parseFloat(c.measurement) || 0), 0)
               .toFixed(2);
+
+            const partsValue = (job.partsAllocations || []).reduce(
+              (sum, allocation) => {
+                const qty =
+                  allocation.quantityRequested ||
+                  allocation.quantityAllocated ||
+                  0;
+                const price = Number.parseFloat(allocation.unitPrice) || 0;
+                return sum + qty * price;
+              },
+              0
+            );
 
             return {
               id: job.id,
@@ -358,19 +407,28 @@ export default function VHCDashboard() {
               vhcStatus,
               vhcChecksCount: effectiveChecksCount,
               partsCount,
+              partsValue: partsValue.toFixed(2),
               redWork,
               amberWork,
               lastVisit: job.lastVisit || "First visit",
               nextService: job.nextService || "Not scheduled",
               motExpiry: job.motExpiry || null,
-              createdAt: job.createdAt
+              createdAt: job.createdAt,
             };
           })
         );
 
-        console.log("✅ VHC data processed for", jobsWithVhc.length, "jobs");
-        setVhcJobs(jobsWithVhc);
+        const scopedJobs = partsOnlyMode
+          ? jobsWithVhc.filter((job) => {
+              if (job.partsCount > 0) return true;
+              const red = Number.parseFloat(job.redWork) || 0;
+              const amber = Number.parseFloat(job.amberWork) || 0;
+              return red > 0 || amber > 0;
+            })
+          : jobsWithVhc;
 
+        console.log("✅ VHC data processed for", scopedJobs.length, "jobs");
+        setVhcJobs(scopedJobs);
       } catch (error) {
         console.error("❌ Error fetching VHC data:", error);
       } finally {
@@ -379,7 +437,7 @@ export default function VHCDashboard() {
     };
 
     fetchVhcJobs();
-  }, []);
+  }, [partsOnlyMode]);
 
   const filteredJobs = vhcJobs
     .filter((job) => filter === "All" || job.vhcStatus === filter)
@@ -510,6 +568,30 @@ export default function VHCDashboard() {
           ))}
         </div>
 
+        {partsOnlyMode && (
+          <div
+            style={{
+              backgroundColor: "#fff8ed",
+              border: "1px solid #ffddaf",
+              borderRadius: "12px",
+              padding: "14px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              marginBottom: "12px",
+              color: "#92400e",
+            }}
+          >
+            <span style={{ fontSize: "20px" }}>🧰</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              <strong>Parts-focused VHC view</strong>
+              <span style={{ fontSize: "13px" }}>
+                Showing jobs with outstanding part requests or costed VHC recommendations so you can update customer-ready information.
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Job List Section */}
         <div style={{ 
           flex: 1,
@@ -586,6 +668,7 @@ export default function VHCDashboard() {
                   <VHCJobCard
                     key={job.id}
                     job={job}
+                    partsMode={partsOnlyMode}
                     onClick={() => handleJobClick(job.jobNumber)}
                   />
                 ))}

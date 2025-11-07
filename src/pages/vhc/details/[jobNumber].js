@@ -1,9 +1,8 @@
 // file location: src/pages/vhc/details/[jobNumber].js
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import { supabase } from "../../../lib/supabaseClient";
 import Layout from "../../../components/Layout";
 import { 
   getVHCChecksByJob, 
@@ -12,6 +11,8 @@ import {
   deleteVHCCheck 
 } from "../../../lib/database/vhc";
 import { getJobByNumber } from "../../../lib/database/jobs";
+import { getJobParts } from "../../../lib/database/parts";
+import { useUser } from "../../../context/UserContext";
 
 // ✅ Status color mapping
 const STATUS_COLORS = {
@@ -27,6 +28,28 @@ const STATUS_COLORS = {
   "Viewed": "#06b6d4",
 };
 
+const PRE_PICK_OPTIONS = [
+  { value: "", label: "Not assigned" },
+  { value: "service_rack_1", label: "Service Rack 1" },
+  { value: "service_rack_2", label: "Service Rack 2" },
+  { value: "service_rack_3", label: "Service Rack 3" },
+  { value: "service_rack_4", label: "Service Rack 4" },
+  { value: "sales_rack_1", label: "Sales Rack 1" },
+  { value: "sales_rack_2", label: "Sales Rack 2" },
+  { value: "sales_rack_3", label: "Sales Rack 3" },
+  { value: "sales_rack_4", label: "Sales Rack 4" },
+  { value: "stairs_pre_pick", label: "Stairs (Sales Pre-pick)" },
+];
+
+const PART_STATUS_COLORS = {
+  pending: { bg: "#f3f4f6", text: "#4b5563" },
+  awaiting_stock: { bg: "#fff7ed", text: "#c2410c" },
+  allocated: { bg: "#e0f2fe", text: "#0369a1" },
+  picked: { bg: "#ede9fe", text: "#5b21b6" },
+  fitted: { bg: "#ecfdf5", text: "#047857" },
+  cancelled: { bg: "#f3f4f6", text: "#6b7280" },
+};
+
 // ✅ Helper function to get customer name
 const getCustomerName = (customer) => {
   if (!customer) return "N/A";
@@ -40,6 +63,24 @@ const getCustomerName = (customer) => {
 export default function VHCDetails() {
   const router = useRouter();
   const { jobNumber } = router.query;
+  const { user, dbUserId } = useUser();
+  const userRoles = (user?.roles || []).map((role) => role.toLowerCase());
+  const isPartsRole = userRoles.some(
+    (role) => role === "parts" || role === "parts manager"
+  );
+  const workshopEditorRoles = [
+    "service",
+    "service manager",
+    "workshop manager",
+    "after sales director",
+    "general manager",
+    "admin",
+  ];
+  const hasWorkshopEditorRole = userRoles.some((role) =>
+    workshopEditorRoles.includes(role)
+  );
+  const partsOnlyView = isPartsRole && !hasWorkshopEditorRole;
+  const canEditVhcChecks = hasWorkshopEditorRole || !isPartsRole;
   
   const [jobData, setJobData] = useState(null);
   const [vhcChecks, setVhcChecks] = useState([]);
@@ -47,6 +88,24 @@ export default function VHCDetails() {
   const [activeTab, setActiveTab] = useState("summary");
   const [selectedItems, setSelectedItems] = useState([]);
   const [vhcStatus, setVhcStatus] = useState("Outstanding");
+  const [jobParts, setJobParts] = useState([]);
+  const [partsLoading, setPartsLoading] = useState(false);
+  const [partsError, setPartsError] = useState("");
+  const [partLookup, setPartLookup] = useState("");
+  const [inventoryResults, setInventoryResults] = useState([]);
+  const [inventoryLoading, setInventoryLoading] = useState(false);
+  const [selectedPart, setSelectedPart] = useState(null);
+  const [partForm, setPartForm] = useState({
+    quantity: 1,
+    allocateFromStock: true,
+    prePickLocation: "",
+    requestNotes: "",
+    storageLocation: "",
+    unitCost: "",
+    unitPrice: "",
+  });
+  const [partFormError, setPartFormError] = useState("");
+  const [partSaving, setPartSaving] = useState(false);
 
   // ✅ Fetch job and VHC data
   useEffect(() => {
@@ -93,6 +152,33 @@ export default function VHCDetails() {
     fetchData();
   }, [jobNumber]);
 
+  const fetchJobParts = useCallback(async () => {
+    if (!jobData?.id) return;
+    setPartsLoading(true);
+    setPartsError("");
+    try {
+      const result = await getJobParts(jobData.id);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Unable to load parts");
+      }
+      setJobParts(result.data || []);
+    } catch (error) {
+      setPartsError(error.message || "Unable to load parts");
+    } finally {
+      setPartsLoading(false);
+    }
+  }, [jobData?.id]);
+
+  useEffect(() => {
+    fetchJobParts();
+  }, [fetchJobParts]);
+
+  useEffect(() => {
+    if (partsOnlyView) {
+      setActiveTab("parts");
+    }
+  }, [partsOnlyView]);
+
   // ✅ Calculate totals from VHC checks
   const calculateTotals = () => {
     const redItems = vhcChecks.filter(c => c.section === "Brakes" && c.measurement);
@@ -115,6 +201,37 @@ export default function VHCDetails() {
       declined: "0.00"
     };
   };
+
+  const partsSummary = useMemo(() => {
+    if (!jobParts || jobParts.length === 0) {
+      return { total: 0, awaiting: 0, allocated: 0, value: "0.00" };
+    }
+
+    const awaiting = jobParts.filter((item) =>
+      ["pending", "awaiting_stock"].includes(item.status)
+    ).length;
+    const allocated = jobParts.filter((item) =>
+      ["allocated", "picked", "fitted"].includes(item.status)
+    ).length;
+    const value = jobParts.reduce((sum, item) => {
+      const qty =
+        item.quantity_requested ||
+        item.quantity_allocated ||
+        0;
+      const price =
+        Number.parseFloat(item.unit_price) ||
+        Number.parseFloat(item.part?.unit_price) ||
+        0;
+      return sum + qty * price;
+    }, 0);
+
+    return {
+      total: jobParts.length,
+      awaiting,
+      allocated,
+      value: value.toFixed(2),
+    };
+  }, [jobParts]);
 
   const totals = calculateTotals();
 
@@ -140,6 +257,172 @@ export default function VHCDetails() {
     if (confirmed) {
       setVhcStatus("Sent");
       alert("✅ VHC sent to customer!");
+    }
+  };
+
+  const resetPartFormState = () => {
+    setPartLookup("");
+    setInventoryResults([]);
+    setSelectedPart(null);
+    setPartForm({
+      quantity: 1,
+      allocateFromStock: true,
+      prePickLocation: "",
+      requestNotes: "",
+      storageLocation: "",
+      unitCost: "",
+      unitPrice: "",
+    });
+    setPartFormError("");
+  };
+
+  const handleSelectPart = (part) => {
+    if (!part) return;
+    setSelectedPart(part);
+    setPartLookup(part.part_number || partLookup);
+    setInventoryResults([]);
+    const defaultZone =
+      part.service_default_zone ||
+      part.sales_default_zone ||
+      part.stairs_default_zone ||
+      "";
+
+    setPartForm((prev) => ({
+      ...prev,
+      quantity: 1,
+      allocateFromStock: (part.qty_in_stock || 0) > 0,
+      prePickLocation: defaultZone,
+      storageLocation: part.storage_location || "",
+      unitCost:
+        part.unit_cost !== undefined && part.unit_cost !== null
+          ? Number(part.unit_cost).toFixed(2)
+          : prev.unitCost,
+      unitPrice:
+        part.unit_price !== undefined && part.unit_price !== null
+          ? Number(part.unit_price).toFixed(2)
+          : prev.unitPrice,
+    }));
+  };
+
+  const handlePartLookup = async () => {
+    if (!partLookup.trim()) {
+      setPartFormError("Enter a part number to search");
+      return;
+    }
+    setInventoryLoading(true);
+    setPartFormError("");
+    try {
+      const query = new URLSearchParams({
+        search: partLookup.trim(),
+        limit: "5",
+      });
+      const response = await fetch(`/api/parts/inventory?${query.toString()}`);
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Unable to find that part number");
+      }
+
+      setInventoryResults(data.parts || []);
+      if (Array.isArray(data.parts) && data.parts.length > 0) {
+        const exactMatch = data.parts.find(
+          (part) =>
+            part.part_number?.toLowerCase() === partLookup.trim().toLowerCase()
+        );
+        if (exactMatch) {
+          handleSelectPart(exactMatch);
+        }
+      } else {
+        setSelectedPart(null);
+      }
+    } catch (error) {
+      setPartFormError(error.message || "Unable to search inventory");
+      setInventoryResults([]);
+      setSelectedPart(null);
+    } finally {
+      setInventoryLoading(false);
+    }
+  };
+
+  const handleQuantityChange = (value) => {
+    const qty = Math.max(1, Number(value) || 1);
+    setPartForm((prev) => {
+      const hasStock =
+        selectedPart && (selectedPart.qty_in_stock || 0) >= qty;
+      return {
+        ...prev,
+        quantity: qty,
+        allocateFromStock: hasStock ? prev.allocateFromStock : false,
+      };
+    });
+  };
+
+  const handlePartFieldChange = (field, value) => {
+    setPartForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleAllocateToggle = (nextValue) => {
+    if (
+      nextValue &&
+      selectedPart &&
+      (selectedPart.qty_in_stock || 0) < partForm.quantity
+    ) {
+      setPartFormError("Not enough stock to allocate that quantity right now.");
+      return;
+    }
+    setPartFormError("");
+    setPartForm((prev) => ({ ...prev, allocateFromStock: nextValue }));
+  };
+
+  const handleAddPart = async () => {
+    if (!jobData?.id) {
+      setPartFormError("Job not ready yet. Please wait a moment.");
+      return;
+    }
+    if (!selectedPart) {
+      setPartFormError("Select a part from stock first.");
+      return;
+    }
+
+    setPartSaving(true);
+    setPartFormError("");
+    try {
+      const quantity = partForm.quantity || 1;
+      const payload = {
+        jobId: jobData.id,
+        partId: selectedPart.id,
+        quantityRequested: quantity,
+        allocateFromStock: partForm.allocateFromStock,
+        prePickLocation: partForm.prePickLocation || null,
+        storageLocation:
+          partForm.storageLocation || selectedPart.storage_location || null,
+        unitCost:
+          Number.parseFloat(partForm.unitCost) ||
+          Number.parseFloat(selectedPart.unit_cost) ||
+          0,
+        unitPrice:
+          Number.parseFloat(partForm.unitPrice) ||
+          Number.parseFloat(selectedPart.unit_price) ||
+          0,
+        requestNotes: partForm.requestNotes || "",
+        userId: dbUserId || null,
+      };
+
+      const response = await fetch("/api/parts/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Failed to save part allocation");
+      }
+
+      await fetchJobParts();
+      resetPartFormState();
+    } catch (error) {
+      setPartFormError(error.message || "Unable to add this part right now");
+    } finally {
+      setPartSaving(false);
     }
   };
 
@@ -276,24 +559,26 @@ export default function VHCDetails() {
             VHC Details - {jobNumber}
           </h1>
           
-          <button
-            onClick={handleSendVHC}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "#d10000",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
-              transition: "background-color 0.2s"
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
-            onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
-          >
-            📤 Send VHC
-          </button>
+          {!partsOnlyView && (
+            <button
+              onClick={handleSendVHC}
+              style={{
+                padding: "12px 24px",
+                backgroundColor: "#d10000",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "600",
+                transition: "background-color 0.2s"
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
+              onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
+            >
+              📤 Send VHC
+            </button>
+          )}
         </div>
 
         {/* Vehicle Info Card */}
@@ -399,6 +684,15 @@ export default function VHCDetails() {
                 £{totals.authorized}
               </p>
             </div>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px", margin: 0 }}>Parts</p>
+              <p style={{ fontSize: "24px", fontWeight: "700", color: "#b45309", margin: "4px 0 0 0" }}>
+                £{partsSummary.value}
+              </p>
+              <p style={{ fontSize: "12px", color: "#b45309", margin: "4px 0 0 0" }}>
+                {partsSummary.total} item{partsSummary.total === 1 ? "" : "s"}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -410,7 +704,7 @@ export default function VHCDetails() {
           borderBottom: "2px solid #e0e0e0",
           flexShrink: 0
         }}>
-          {["summary", "health-check", "photos", "videos"].map(tab => (
+          {["summary", "health-check", "parts", "photos", "videos"].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -459,21 +753,23 @@ export default function VHCDetails() {
                   <p style={{ fontSize: "14px", color: "#666", marginBottom: "24px" }}>
                     Start adding checks to build the vehicle health report
                   </p>
-                  <button
-                    onClick={() => router.push(`/vhc?job=${jobNumber}`)}
-                    style={{
-                      padding: "12px 24px",
-                      backgroundColor: "#d10000",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      fontWeight: "600"
-                    }}
-                  >
-                    Add VHC Checks
-                  </button>
+                  {canEditVhcChecks && (
+                    <button
+                      onClick={() => router.push(`/vhc?job=${jobNumber}`)}
+                      style={{
+                        padding: "12px 24px",
+                        backgroundColor: "#d10000",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "600"
+                      }}
+                    >
+                      Add VHC Checks
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div style={{
@@ -549,21 +845,499 @@ export default function VHCDetails() {
               <h3 style={{ fontSize: "20px", fontWeight: "600", marginBottom: "20px", color: "#1a1a1a" }}>
                 Add/Edit VHC Checks
               </h3>
-              <button
-                onClick={() => router.push(`/vhc?job=${jobNumber}`)}
-                style={{
-                  padding: "12px 24px",
-                  backgroundColor: "#d10000",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "600"
-                }}
-              >
-                Go to VHC Builder
-              </button>
+              {canEditVhcChecks ? (
+                <button
+                  onClick={() => router.push(`/vhc?job=${jobNumber}`)}
+                  style={{
+                    padding: "12px 24px",
+                    backgroundColor: "#d10000",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: "600"
+                  }}
+                >
+                  Go to VHC Builder
+                </button>
+              ) : (
+                <p style={{ color: "#a16207", margin: 0 }}>
+                  Parts-only access: the service team controls VHC checks. Use the Parts tab to update customer-facing parts notes.
+                </p>
+              )}
+            </div>
+          )}
+
+          {activeTab === "parts" && (
+            <div style={{
+              background: "white",
+              border: "1px solid #e0e0e0",
+              borderRadius: "16px",
+              padding: "24px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
+            }}>
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: "16px",
+                flexWrap: "wrap",
+                marginBottom: "20px"
+              }}>
+                <h3 style={{ fontSize: "20px", fontWeight: "600", color: "#1a1a1a", margin: 0 }}>
+                  Parts Requirements
+                </h3>
+                <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
+                  <div style={{ textAlign: "center" }}>
+                    <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>Total</p>
+                    <strong style={{ fontSize: "20px", color: "#111827" }}>
+                      {partsSummary.total}
+                    </strong>
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>Awaiting Stock</p>
+                    <strong style={{ fontSize: "20px", color: "#b45309" }}>
+                      {partsSummary.awaiting}
+                    </strong>
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>Allocated / Fitted</p>
+                    <strong style={{ fontSize: "20px", color: "#047857" }}>
+                      {partsSummary.allocated}
+                    </strong>
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>Value</p>
+                    <strong style={{ fontSize: "20px", color: "#b45309" }}>
+                      £{partsSummary.value}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              {partsError && (
+                <div style={{
+                  backgroundColor: "#fef2f2",
+                  border: "1px solid #fecaca",
+                  color: "#b91c1c",
+                  padding: "12px",
+                  borderRadius: "12px",
+                  marginBottom: "16px"
+                }}>
+                  {partsError}
+                </div>
+              )}
+
+              {isPartsRole ? (
+                <div style={{
+                  border: "1px dashed #ffd6d6",
+                  padding: "16px",
+                  borderRadius: "12px",
+                  marginBottom: "24px",
+                  backgroundColor: "#fff8f8"
+                }}>
+                  <h4 style={{ margin: "0 0 12px 0", color: "#991b1b" }}>Auto-fill from stock</h4>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+                    <div style={{ flex: "1 1 240px", minWidth: "200px" }}>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px" }}>
+                        Part Number
+                      </label>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <input
+                          type="text"
+                          value={partLookup}
+                          onChange={(e) => setPartLookup(e.target.value)}
+                          placeholder="e.g. 5Q0615301"
+                          style={{
+                            flex: 1,
+                            padding: "10px 12px",
+                            borderRadius: "10px",
+                            border: "1px solid #e5e7eb",
+                            fontSize: "14px"
+                          }}
+                          disabled={partSaving}
+                        />
+                        <button
+                          type="button"
+                          onClick={handlePartLookup}
+                          disabled={inventoryLoading || partSaving}
+                          style={{
+                            padding: "10px 16px",
+                            borderRadius: "10px",
+                            border: "none",
+                            backgroundColor: "#d10000",
+                            color: "white",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            opacity: inventoryLoading ? 0.8 : 1
+                          }}
+                        >
+                          {inventoryLoading ? "Searching..." : "Search"}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ flex: "1 1 120px", minWidth: "120px" }}>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px" }}>
+                        Quantity
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={partForm.quantity}
+                        onChange={(e) => handleQuantityChange(e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          borderRadius: "10px",
+                          border: "1px solid #e5e7eb",
+                          fontSize: "14px"
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ flex: "1 1 200px", minWidth: "180px" }}>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px" }}>
+                        Allocate From Stock
+                      </label>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <input
+                          type="checkbox"
+                          checked={partForm.allocateFromStock}
+                          onChange={(e) => handleAllocateToggle(e.target.checked)}
+                          disabled={
+                            !selectedPart ||
+                            (selectedPart.qty_in_stock || 0) < partForm.quantity
+                          }
+                        />
+                        <span style={{ fontSize: "13px", color: "#4b5563" }}>
+                          {selectedPart
+                            ? (selectedPart.qty_in_stock || 0) > 0
+                              ? `${selectedPart.qty_in_stock} in stock`
+                              : "Out of stock"
+                            : "Search to view stock"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ flex: "1 1 200px", minWidth: "200px" }}>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px" }}>
+                        Pre-pick Location
+                      </label>
+                      <select
+                        value={partForm.prePickLocation}
+                        onChange={(e) => handlePartFieldChange("prePickLocation", e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          borderRadius: "10px",
+                          border: "1px solid #e5e7eb",
+                          fontSize: "14px"
+                        }}
+                      >
+                        {PRE_PICK_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div style={{ flex: "1 1 200px", minWidth: "200px" }}>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px" }}>
+                        Storage Reference
+                      </label>
+                      <input
+                        type="text"
+                        value={partForm.storageLocation}
+                        onChange={(e) => handlePartFieldChange("storageLocation", e.target.value)}
+                        placeholder="Rack / bay reference"
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          borderRadius: "10px",
+                          border: "1px solid #e5e7eb",
+                          fontSize: "14px"
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ flex: "1 1 160px", minWidth: "140px" }}>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px" }}>
+                        Unit Price (£)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={partForm.unitPrice}
+                        onChange={(e) => handlePartFieldChange("unitPrice", e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          borderRadius: "10px",
+                          border: "1px solid #e5e7eb",
+                          fontSize: "14px"
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ flex: "1 1 160px", minWidth: "140px" }}>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px" }}>
+                        Unit Cost (£)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={partForm.unitCost}
+                        onChange={(e) => handlePartFieldChange("unitCost", e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          borderRadius: "10px",
+                          border: "1px solid #e5e7eb",
+                          fontSize: "14px"
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ flex: "1 1 100%" }}>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px" }}>
+                        Customer Notes
+                      </label>
+                      <textarea
+                        value={partForm.requestNotes}
+                        onChange={(e) => handlePartFieldChange("requestNotes", e.target.value)}
+                        rows={3}
+                        placeholder="Notes for service team / customer authorization"
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          borderRadius: "10px",
+                          border: "1px solid #e5e7eb",
+                          fontSize: "14px",
+                          resize: "vertical"
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {inventoryResults.length > 0 && (
+                    <div style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "8px",
+                      marginTop: "12px"
+                    }}>
+                      {inventoryResults.slice(0, 5).map((part) => (
+                        <button
+                          type="button"
+                          key={part.id}
+                          onClick={() => handleSelectPart(part)}
+                          style={{
+                            padding: "8px 12px",
+                            borderRadius: "999px",
+                            border: part.part_number === selectedPart?.part_number ? "2px solid #d10000" : "1px solid #fca5a5",
+                            backgroundColor: part.part_number === selectedPart?.part_number ? "#fee2e2" : "#fff",
+                            color: "#991b1b",
+                            fontSize: "12px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          {part.part_number} · {part.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {selectedPart && (
+                    <div style={{
+                      marginTop: "16px",
+                      border: "1px solid #fde68a",
+                      borderRadius: "12px",
+                      padding: "16px",
+                      backgroundColor: "#fffbeb"
+                    }}>
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                        gap: "12px"
+                      }}>
+                        <div>
+                          <p style={{ margin: 0, fontSize: "12px", color: "#92400e" }}>Part</p>
+                          <strong style={{ color: "#78350f" }}>
+                            {selectedPart.part_number} · {selectedPart.name}
+                          </strong>
+                        </div>
+                        <div>
+                          <p style={{ margin: 0, fontSize: "12px", color: "#92400e" }}>Stock</p>
+                          <strong style={{ color: "#78350f" }}>
+                            {(selectedPart.qty_in_stock ?? 0)} in stock / {(selectedPart.qty_reserved ?? 0)} reserved
+                          </strong>
+                        </div>
+                        <div>
+                          <p style={{ margin: 0, fontSize: "12px", color: "#92400e" }}>Selling Price</p>
+                          <strong style={{ color: "#78350f" }}>
+                            £{Number(selectedPart.unit_price || 0).toFixed(2)}
+                          </strong>
+                        </div>
+                        <div>
+                          <p style={{ margin: 0, fontSize: "12px", color: "#92400e" }}>Default Zone</p>
+                          <strong style={{ color: "#78350f" }}>
+                            {selectedPart.service_default_zone || selectedPart.storage_location || "Not set"}
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {partFormError && (
+                    <p style={{ color: "#b91c1c", marginTop: "12px" }}>{partFormError}</p>
+                  )}
+
+                  <div style={{ marginTop: "16px", display: "flex", gap: "12px" }}>
+                    <button
+                      type="button"
+                      onClick={handleAddPart}
+                      disabled={partSaving || !selectedPart}
+                      style={{
+                        padding: "12px 18px",
+                        borderRadius: "10px",
+                        border: "none",
+                        backgroundColor: "#d10000",
+                        color: "white",
+                        fontWeight: 600,
+                        cursor: partSaving || !selectedPart ? "not-allowed" : "pointer",
+                        opacity: partSaving || !selectedPart ? 0.7 : 1
+                      }}
+                    >
+                      {partSaving ? "Saving..." : "Add part to job"}
+                    </button>
+                    {selectedPart && (
+                      <button
+                        type="button"
+                        onClick={resetPartFormState}
+                        style={{
+                          padding: "12px 18px",
+                          borderRadius: "10px",
+                          border: "1px solid #d10000",
+                          backgroundColor: "white",
+                          color: "#d10000",
+                          fontWeight: 600,
+                          cursor: partSaving ? "not-allowed" : "pointer",
+                          opacity: partSaving ? 0.7 : 1
+                        }}
+                        disabled={partSaving}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div style={{
+                  marginBottom: "24px",
+                  backgroundColor: "#f5f5f5",
+                  borderRadius: "12px",
+                  border: "1px solid #e5e7eb",
+                  padding: "16px"
+                }}>
+                  <p style={{ margin: 0, color: "#4b5563", fontSize: "14px" }}>
+                    Parts allocations are managed by the Parts department. Any updates they make will appear here automatically.
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <h4 style={{ margin: "0 0 12px 0", fontSize: "16px", color: "#111827" }}>Current requests</h4>
+                {partsLoading ? (
+                  <div style={{
+                    padding: "24px",
+                    textAlign: "center",
+                    color: "#6b7280"
+                  }}>
+                    Loading parts allocations...
+                  </div>
+                ) : jobParts.length === 0 ? (
+                  <div style={{
+                    padding: "24px",
+                    textAlign: "center",
+                    color: "#6b7280",
+                    border: "1px dashed #e5e7eb",
+                    borderRadius: "12px"
+                  }}>
+                    No parts have been requested for this job yet.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    {jobParts.map((item) => {
+                      const statusColors =
+                        PART_STATUS_COLORS[item.status] || PART_STATUS_COLORS.pending;
+                      const qty = item.quantity_requested || 0;
+                      const allocatedQty = item.quantity_allocated || 0;
+                      const unitPrice =
+                        Number.parseFloat(item.unit_price) ||
+                        Number.parseFloat(item.part?.unit_price) ||
+                        0;
+                      const lineTotal = (unitPrice * qty).toFixed(2);
+                      return (
+                        <div
+                          key={item.id}
+                          style={{
+                            border: "1px solid #f3f4f6",
+                            borderRadius: "12px",
+                            padding: "16px",
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "16px",
+                            alignItems: "center",
+                            backgroundColor: "#fafafa"
+                          }}
+                        >
+                          <div style={{ flex: "2 1 220px" }}>
+                            <strong style={{ color: "#111827" }}>
+                              {item.part?.part_number || "Manual entry"}
+                            </strong>
+                            <p style={{ margin: "4px 0 0", color: "#4b5563", fontSize: "14px" }}>
+                              {item.part?.name || "Custom part request"}
+                            </p>
+                            {item.request_notes && (
+                              <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "13px" }}>
+                                {item.request_notes}
+                              </p>
+                            )}
+                          </div>
+                          <div style={{ flex: "1 1 160px" }}>
+                            <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>Quantity</p>
+                            <strong style={{ color: "#111827" }}>
+                              {qty} requested · {allocatedQty} allocated
+                            </strong>
+                          </div>
+                          <div style={{ flex: "1 1 140px" }}>
+                            <span
+                              style={{
+                                padding: "6px 12px",
+                                borderRadius: "999px",
+                                backgroundColor: statusColors.bg,
+                                color: statusColors.text,
+                                fontWeight: 600,
+                                fontSize: "12px"
+                              }}
+                            >
+                              {item.status.replace("_", " ")}
+                            </span>
+                          </div>
+                          <div style={{ flex: "1 1 140px", textAlign: "right" }}>
+                            <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>Line Value</p>
+                            <strong style={{ color: "#111827" }}>£{lineTotal}</strong>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

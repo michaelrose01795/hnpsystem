@@ -7,10 +7,13 @@ import { useState, useMemo } from "react";
 import { useUser } from "@/context/UserContext";
 import { sidebarSections } from "@/config/navigation";
 
-export default function Sidebar() {
+export default function Sidebar({ onToggle }) {
   const pathname = usePathname();
   const { user } = useUser();
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const isPartsUser = userRoles.some(
+    (role) => role === "parts" || role === "parts manager"
+  );
 
   const initialState = useMemo(
     () =>
@@ -51,15 +54,59 @@ export default function Sidebar() {
           background: "linear-gradient(to right, #d10000, #a00000)",
           padding: "24px",
           color: "white",
+          position: "relative",
         }}
       >
         <p style={{ margin: 0, fontSize: "0.85rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
           Navigation
         </p>
         <h2 style={{ margin: "6px 0 0", fontSize: "1.4rem", fontWeight: 700 }}>Workspace</h2>
+        {onToggle && (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-label="Collapse sidebar"
+            style={{
+              position: "absolute",
+              top: "16px",
+              right: "16px",
+              width: "36px",
+              height: "36px",
+              borderRadius: "10px",
+              border: "1px solid rgba(255,255,255,0.4)",
+              backgroundColor: "rgba(255,255,255,0.12)",
+              color: "#ffffff",
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: "0 6px 16px rgba(0,0,0,0.15)",
+            }}
+          >
+            X
+          </button>
+        )}
       </div>
 
       <div style={{ padding: "20px", flex: 1, overflowY: "auto" }}>
+        {isPartsUser && (
+          <Link href="/vhc/dashboard" style={{ textDecoration: "none" }}>
+            <div
+              style={{
+                padding: "12px 16px",
+                borderRadius: "12px",
+                marginBottom: "16px",
+                background: "linear-gradient(90deg, #fde68a, #fca5a5)",
+                color: "#7c2d12",
+                fontWeight: 700,
+                border: "1px solid rgba(124,45,18,0.2)",
+                boxShadow: "0 10px 18px rgba(124,45,18,0.18)",
+                textAlign: "center",
+              }}
+            >
+              🧾 VHC Dashboard
+            </div>
+          </Link>
+        )}
+
         {sidebarSections.map((section) => {
           const items = section.items.filter(hasAccess);
           if (items.length === 0) return null;

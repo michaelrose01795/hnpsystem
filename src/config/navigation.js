@@ -33,6 +33,7 @@ export const sidebarSections = [
     items: [
       { label: "Parts Workspace", href: "/parts", roles: ["parts", "parts manager"] },
       { label: "Parts Manager Overview", href: "/parts/manager", roles: ["parts manager"] },
+      { label: "VHC Dashboard", href: "/vhc/dashboard", roles: ["parts", "parts manager"] },
     ],
   },
   {
