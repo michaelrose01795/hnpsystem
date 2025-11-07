@@ -41,7 +41,11 @@ const statusSelectStyle = {
 };
 
 export default function UndersideDetailsModal({ isOpen, onClose, onComplete, initialData }) {
-  const contentWrapperStyle = vhcModalContentStyles.contentWrapper;
+  const contentWrapperStyle = {
+    ...vhcModalContentStyles.contentWrapper,
+    gap: "24px",
+    height: "100%",
+  };
   const summaryCardStyle = vhcModalContentStyles.summaryCard;
   const summaryTextBlockStyle = vhcModalContentStyles.summaryTextBlock;
   const summaryBadgesStyle = vhcModalContentStyles.summaryBadges;
@@ -143,6 +147,8 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
       onClose={onClose}
       title="Underside Inspection"
       subtitle="Match dashboard styling while documenting underside inspections."
+      width="1280px"
+      height="780px"
       footer={modalFooter}
     >
       <div style={contentWrapperStyle}>
@@ -165,7 +171,24 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
           </div>
         </div>
 
-        <div style={{ ...cardGridStyle, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+            minHeight: 0,
+          }}
+        >
+          <div
+            style={{
+              ...cardGridStyle,
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              flex: 1,
+              overflowY: "auto",
+              paddingRight: "6px",
+            }}
+          >
           {CATEGORY_ORDER.map((category) => {
             const concerns = data[category]?.concerns ?? [];
             const redCount = concerns.filter((c) => c.status === "Red").length;
@@ -372,6 +395,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
               )}
             </div>
           </div>
+        </div>
         </div>
       ) : null}
     </VHCModalShell>

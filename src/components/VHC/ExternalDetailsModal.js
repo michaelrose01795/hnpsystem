@@ -43,7 +43,11 @@ const statusSelectStyle = {
 };
 
 export default function ExternalDetailsModal({ isOpen, onClose, onComplete, initialData }) {
-  const contentWrapperStyle = vhcModalContentStyles.contentWrapper;
+  const contentWrapperStyle = {
+    ...vhcModalContentStyles.contentWrapper,
+    gap: "24px",
+    height: "100%",
+  };
   const summaryCardStyle = vhcModalContentStyles.summaryCard;
   const summaryTextBlockStyle = vhcModalContentStyles.summaryTextBlock;
   const summaryBadgesStyle = vhcModalContentStyles.summaryBadges;
@@ -165,6 +169,8 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
       onClose={onClose}
       title="External / Drive-in Inspection"
       subtitle="Log exterior and drive-in checks with consistent styling."
+      width="1280px"
+      height="780px"
       footer={modalFooter}
     >
       <div style={contentWrapperStyle}>
@@ -187,7 +193,24 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
           </div>
         </div>
 
-        <div style={cardGridStyle}>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+            minHeight: 0,
+          }}
+        >
+          <div
+            style={{
+              ...cardGridStyle,
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              flex: 1,
+              overflowY: "auto",
+              paddingRight: "6px",
+            }}
+          >
           {CATEGORY_ORDER.map((category) => {
             const concerns = data[category]?.concerns ?? [];
             const redCount = concerns.filter((c) => c.status === "Red").length;
@@ -227,6 +250,8 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
             );
           })}
         </div>
+        </div>
+
       </div>
 
       {activeConcern.open ? (

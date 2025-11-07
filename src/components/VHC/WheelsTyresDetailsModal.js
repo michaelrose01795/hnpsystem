@@ -383,6 +383,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "20px",
+    height: "100%",
   };
   const summaryCardStyle = vhcModalContentStyles.summaryCard;
   const summaryTextBlockStyle = vhcModalContentStyles.summaryTextBlock;
@@ -413,6 +414,8 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
       onClose={onClose}
       title="Wheels & Tyres"
       subtitle="Detailed tyre measurements and concerns styled to mirror the dashboard."
+      width="1280px"
+      height="780px"
       footer={footer}
     >
       <div style={contentWrapperStyle}>
@@ -454,10 +457,15 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
         >
           <div
             style={{
-              flex: "0 0 320px",
+              flex: "0 0 360px",
               display: "flex",
-              flexDirection: "column",
-              gap: "16px",
+              alignItems: "center",
+              justifyContent: "center",
+              background: palette.surface,
+              border: `1px solid ${palette.border}`,
+              borderRadius: "24px",
+              padding: "16px",
+              boxShadow: "0 18px 32px rgba(15,23,42,0.12)",
             }}
           >
             <TyreDiagram
@@ -467,33 +475,9 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
                 if (!key) return;
                 setActiveWheel(key.toUpperCase());
               }}
+              spareActive={activeWheel === "Spare"}
+              onSpareSelect={() => setActiveWheel("Spare")}
             />
-
-            <button
-              type="button"
-              onClick={() => setActiveWheel("Spare")}
-              style={{
-                borderRadius: "18px",
-                border: `1px solid ${activeWheel === "Spare" ? palette.accent : palette.border}`,
-                padding: "18px",
-                background: activeWheel === "Spare" ? palette.accentSoft : palette.surface,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "10px",
-                cursor: "pointer",
-                boxShadow: activeWheel === "Spare" ? "0 12px 28px rgba(209,0,0,0.18)" : "0 6px 18px rgba(15,23,42,0.08)",
-                transition: "transform 0.2s ease, box-shadow 0.2s ease",
-              }}
-            >
-              <span style={{ fontWeight: 700, color: palette.accent, fontSize: "14px" }}>Spare / Kit</span>
-              <span style={{ fontSize: "13px", color: palette.textMuted, textAlign: "center" }}>
-                Tap to record spare or repair kit details.
-              </span>
-              {tyres.Spare.concerns?.length ? (
-                <span style={{ ...concernBadge(statusColors.Amber), padding: "4px 10px" }}>{tyres.Spare.concerns.length}</span>
-              ) : null}
-            </button>
           </div>
 
           <div
@@ -502,329 +486,338 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
               display: "flex",
               flexDirection: "column",
               gap: "20px",
-              overflow: "hidden",
               minHeight: 0,
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: palette.accent }}>
-              {activeWheel === "Spare" ? "Spare / Kit Details" : `${activeWheel} Tyre Details`}
-            </h2>
-            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-              <button type="button" onClick={() => setConcernTarget(activeWheel)} style={createVhcButtonStyle("ghost")}>
-                + Add Concern
-              </button>
-              {activeWheel !== "Spare" ? (
-                <>
-                  <button type="button" onClick={copyToAll} style={pillButton({ active: copyActive })}>
-                    Copy To All
-                  </button>
-                  <button type="button" onClick={toggleRunFlat} style={pillButton({ active: currentTyre.runFlat })}>
-                    Run Flat: {currentTyre.runFlat ? "Yes" : "No"}
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={toggleRunFlat}
-                  style={pillButton({ active: currentTyre.details.runFlat })}
-                >
-                  Run Flat: {currentTyre.details.runFlat ? "Yes" : "No"}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+              <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: palette.accent }}>
+                {activeWheel === "Spare" ? "Spare / Kit Details" : `${activeWheel} Tyre Details`}
+              </h2>
+              <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                <button type="button" onClick={() => setConcernTarget(activeWheel)} style={createVhcButtonStyle("ghost")}>
+                  + Add Concern
                 </button>
-              )}
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: activeWheel === "Spare" ? "1fr" : "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: "18px",
-              alignItems: "flex-start",
-              overflowY: "auto",
-              paddingRight: "6px",
-            }}
-          >
-            {activeWheel !== "Spare" ? (
-              <>
-                <div style={sectionCardStyle}>
-                  <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Manufacturer</span>
-                  <AutoCompleteInput
-                    value={currentTyre.manufacturer}
-                    onChange={(value) => updateTyre("manufacturer", value)}
-                    options={tyreBrands}
-                    placeholder="Select manufacturer"
-                  />
-                  <span style={{ fontSize: "12px", color: palette.textMuted }}>
-                    Autocomplete keeps data entry quick and on-brand.
-                  </span>
-                </div>
-
-                <div style={sectionCardStyle}>
-                  <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Tyre Size</span>
-                  <input
-                    value={currentTyre.size}
-                    onChange={(event) => updateTyre("size", event.target.value)}
-                    placeholder="e.g. 205/55 R16"
-                    style={baseInputStyle}
-                  />
-                  <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Load Index</span>
-                  <input
-                    value={currentTyre.load}
-                    onChange={(event) => updateTyre("load", event.target.value)}
-                    placeholder="e.g. 91"
-                    style={baseInputStyle}
-                  />
-                  <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Speed Rating</span>
-                  <input
-                    value={currentTyre.speed}
-                    onChange={(event) => updateTyre("speed", event.target.value)}
-                    placeholder="e.g. V"
-                    style={baseInputStyle}
-                  />
-                </div>
-
-                <div style={sectionCardStyle}>
-                  <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Tread Depth (mm)</span>
-                  <div style={{ display: "flex", gap: "12px" }}>
-                    {TREAD_SECTIONS.map((section) => (
-                      <input
-                        key={section.key}
-                        value={currentTyre.tread[section.key]}
-                        onChange={(event) => updateTread(section.key, event.target.value)}
-                        placeholder={section.label}
-                        style={{
-                          ...baseInputStyle,
-                          textAlign: "center",
-                          fontWeight: 600,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={sectionCardStyle}>
-                  <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Spare Type</span>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-                    {SPARE_TYPES.map((type) => (
-                      <button
-                        key={type.key}
-                        type="button"
-                        onClick={() =>
-                          setTyres((prev) => ({
-                            ...prev,
-                            Spare: { ...prev.Spare, type: type.key },
-                          }))
-                        }
-                        style={pillButton({ active: tyres.Spare.type === type.key })}
-                      >
-                        {type.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {tyres.Spare.type === "spare" ? (
-                  <div style={sectionCardStyle}>
-                    <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Spare Details</span>
-                    <AutoCompleteInput
-                      value={tyres.Spare.details.manufacturer}
-                      onChange={(value) => updateTyre("manufacturer", value)}
-                      options={tyreBrands}
-                      placeholder="Manufacturer"
-                    />
-                    <input
-                      value={tyres.Spare.details.size}
-                      onChange={(event) => updateTyre("size", event.target.value)}
-                      placeholder="Size"
-                      style={baseInputStyle}
-                    />
-                    <input
-                      value={tyres.Spare.details.load}
-                      onChange={(event) => updateTyre("load", event.target.value)}
-                      placeholder="Load"
-                      style={baseInputStyle}
-                    />
-                    <input
-                      value={tyres.Spare.details.speed}
-                      onChange={(event) => updateTyre("speed", event.target.value)}
-                      placeholder="Speed"
-                      style={baseInputStyle}
-                    />
-                  </div>
-                ) : null}
-
-                {tyres.Spare.type === "repair_kit" ? (
-                  <div style={sectionCardStyle}>
-                    <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Repair Kit Date</span>
-                    <div style={{ display: "flex", gap: "12px" }}>
-                      <select
-                        value={tyres.Spare.month}
-                        onChange={(event) =>
-                          setTyres((prev) => ({
-                            ...prev,
-                            Spare: { ...prev.Spare, month: event.target.value },
-                          }))
-                        }
-                        style={baseInputStyle}
-                      >
-                        <option value="">Month</option>
-                        {months.map((month) => (
-                          <option key={month} value={month}>
-                            {month}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={tyres.Spare.year}
-                        onChange={(event) =>
-                          setTyres((prev) => ({
-                            ...prev,
-                            Spare: { ...prev.Spare, year: event.target.value },
-                          }))
-                        }
-                        style={baseInputStyle}
-                      >
-                        <option value="">Year</option>
-                        {years.map((year) => (
-                          <option key={year} value={year}>
-                            {year}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                ) : null}
-
-                {tyres.Spare.type === "space_saver" ? (
-                  <div style={sectionCardStyle}>
-                    <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>
-                      Space Saver Condition
-                    </span>
-                    <div style={{ display: "flex", gap: "12px" }}>
-                      {["Good", "Bad"].map((condition) => (
-                        <button
-                          key={condition}
-                          type="button"
-                          onClick={() =>
-                            setTyres((prev) => ({
-                              ...prev,
-                              Spare: { ...prev.Spare, condition },
-                            }))
-                          }
-                          style={pillButton({ active: tyres.Spare.condition === condition })}
-                        >
-                          {condition}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                {tyres.Spare.type === "not_checked" ? (
-                  <div style={sectionCardStyle}>
-                    <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Notes</span>
-                    <textarea
-                      value={tyres.Spare.note}
-                      onChange={(event) =>
-                        setTyres((prev) => ({
-                          ...prev,
-                          Spare: { ...prev.Spare, note: event.target.value },
-                        }))
-                      }
-                      placeholder="Explain why a spare check was not completed."
-                      rows={4}
-                      style={{
-                        ...baseInputStyle,
-                        resize: "vertical",
-                      }}
-                    />
-                  </div>
-                ) : null}
-
-                {tyres.Spare.type === "boot_full" ? (
-                  <div style={sectionCardStyle}>
-                    <span style={{ fontSize: "13px", color: palette.textMuted }}>
-                      Boot contents prevented inspection. No extra data required.
-                    </span>
-                  </div>
-                ) : null}
-              </>
-            )}
-          </div>
-
-          <div style={{ ...sectionCardStyle, flex: "0 0 auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
-                Logged Concerns
-              </h3>
-              <div style={{ display: "flex", gap: "12px" }}>
-                <div style={concernBadge(statusColors.Amber)}>{allConcerns} total</div>
+                {activeWheel !== "Spare" ? (
+                  <>
+                    <button type="button" onClick={copyToAll} style={pillButton({ active: copyActive })}>
+                      Copy To All
+                    </button>
+                    <button type="button" onClick={toggleRunFlat} style={pillButton({ active: currentTyre.runFlat })}>
+                      Run Flat: {currentTyre.runFlat ? "Yes" : "No"}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={toggleRunFlat}
+                    style={pillButton({ active: currentTyre.details.runFlat })}
+                  >
+                    Run Flat: {currentTyre.details.runFlat ? "Yes" : "No"}
+                  </button>
+                )}
               </div>
-            </div>
-
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-              {[...WHEELS, "Spare"].map((wheel) => {
-                const count = tyres[wheel].concerns?.length ?? 0;
-                if (count === 0) return null;
-                return (
-                  <div key={wheel} style={{ ...concernBadge(statusColors.Amber), backgroundColor: palette.surfaceAlt }}>
-                    {wheel}: {count}
-                  </div>
-                );
-              })}
             </div>
 
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "12px",
-                maxHeight: "160px",
+                gap: "18px",
                 overflowY: "auto",
+                paddingRight: "8px",
+                minHeight: 0,
               }}
             >
-              {(currentTyre.concerns ?? []).length === 0 ? (
-                <div
-                  style={{
-                    padding: "16px",
-                    borderRadius: "16px",
-                    border: `1px dashed ${palette.border}`,
-                    backgroundColor: palette.accentSurface,
-                    color: palette.textMuted,
-                    fontSize: "13px",
-                  }}
-                >
-                  No concerns logged for {activeWheel}. Use “Add Concern” to capture issues for this wheel.
-                </div>
-              ) : (
-                currentTyre.concerns.map((concern, idx) => (
-                  <div
-                    key={`${activeWheel}-concern-${idx}`}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      borderRadius: "16px",
-                      border: `1px solid ${palette.border}`,
-                      padding: "12px 16px",
-                      background: palette.surface,
-                      boxShadow: "0 6px 18px rgba(15,23,42,0.08)",
-                    }}
-                  >
-                    <span style={{ fontSize: "13px", fontWeight: 600, color: palette.textPrimary }}>{concern.text}</span>
-                    <span style={concernBadge(statusColors[concern.status] || statusColors.Amber)}>
-                      {concern.status}
+              {activeWheel !== "Spare" ? (
+                <>
+                  <div style={sectionCardStyle}>
+                    <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Tyre Manufacturer</span>
+                    <AutoCompleteInput
+                      value={currentTyre.manufacturer}
+                      onChange={(value) => updateTyre("manufacturer", value)}
+                      options={tyreBrands}
+                      placeholder="Select manufacturer"
+                    />
+                    <span style={{ fontSize: "12px", color: palette.textMuted }}>
+                      Tap a tyre on the diagram to switch wheels instantly.
                     </span>
                   </div>
-                ))
+
+                  <div style={sectionCardStyle}>
+                    <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Tyre Specification</span>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+                      <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
+                        Size
+                        <input
+                          value={currentTyre.size}
+                          onChange={(event) => updateTyre("size", event.target.value)}
+                          placeholder="e.g. 205/55 R16"
+                          style={baseInputStyle}
+                        />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
+                        Load Index
+                        <input
+                          value={currentTyre.load}
+                          onChange={(event) => updateTyre("load", event.target.value)}
+                          placeholder="e.g. 91"
+                          style={baseInputStyle}
+                        />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
+                        Speed Rating
+                        <input
+                          value={currentTyre.speed}
+                          onChange={(event) => updateTyre("speed", event.target.value)}
+                          placeholder="e.g. V"
+                          style={baseInputStyle}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div style={sectionCardStyle}>
+                    <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Tread Depth (mm)</span>
+                    <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                      {TREAD_SECTIONS.map((section) => (
+                        <input
+                          key={section.key}
+                          value={currentTyre.tread[section.key]}
+                          onChange={(event) => updateTread(section.key, event.target.value)}
+                          placeholder={section.label}
+                          style={{
+                            ...baseInputStyle,
+                            textAlign: "center",
+                            fontWeight: 600,
+                            flex: "1 1 120px",
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={sectionCardStyle}>
+                    <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Spare Type</span>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+                      {SPARE_TYPES.map((type) => (
+                        <button
+                          key={type.key}
+                          type="button"
+                          onClick={() =>
+                            setTyres((prev) => ({
+                              ...prev,
+                              Spare: { ...prev.Spare, type: type.key },
+                            }))
+                          }
+                          style={pillButton({ active: tyres.Spare.type === type.key })}
+                        >
+                          {type.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {tyres.Spare.type === "spare" ? (
+                    <div style={sectionCardStyle}>
+                      <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Spare Details</span>
+                      <AutoCompleteInput
+                        value={tyres.Spare.details.manufacturer}
+                        onChange={(value) => updateTyre("manufacturer", value)}
+                        options={tyreBrands}
+                        placeholder="Manufacturer"
+                      />
+                      <input
+                        value={tyres.Spare.details.size}
+                        onChange={(event) => updateTyre("size", event.target.value)}
+                        placeholder="Size"
+                        style={baseInputStyle}
+                      />
+                      <input
+                        value={tyres.Spare.details.load}
+                        onChange={(event) => updateTyre("load", event.target.value)}
+                        placeholder="Load"
+                        style={baseInputStyle}
+                      />
+                      <input
+                        value={tyres.Spare.details.speed}
+                        onChange={(event) => updateTyre("speed", event.target.value)}
+                        placeholder="Speed"
+                        style={baseInputStyle}
+                      />
+                    </div>
+                  ) : null}
+
+                  {tyres.Spare.type === "repair_kit" ? (
+                    <div style={sectionCardStyle}>
+                      <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Repair Kit Date</span>
+                      <div style={{ display: "flex", gap: "12px" }}>
+                        <select
+                          value={tyres.Spare.month}
+                          onChange={(event) =>
+                            setTyres((prev) => ({
+                              ...prev,
+                              Spare: { ...prev.Spare, month: event.target.value },
+                            }))
+                          }
+                          style={baseInputStyle}
+                        >
+                          <option value="">Month</option>
+                          {months.map((month) => (
+                            <option key={month} value={month}>
+                              {month}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={tyres.Spare.year}
+                          onChange={(event) =>
+                            setTyres((prev) => ({
+                              ...prev,
+                              Spare: { ...prev.Spare, year: event.target.value },
+                            }))
+                          }
+                          style={baseInputStyle}
+                        >
+                          <option value="">Year</option>
+                          {years.map((year) => (
+                            <option key={year} value={year}>
+                              {year}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {tyres.Spare.type === "space_saver" ? (
+                    <div style={sectionCardStyle}>
+                      <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>
+                        Space Saver Condition
+                      </span>
+                      <div style={{ display: "flex", gap: "12px" }}>
+                        {["Good", "Bad"].map((condition) => (
+                          <button
+                            key={condition}
+                            type="button"
+                            onClick={() =>
+                              setTyres((prev) => ({
+                                ...prev,
+                                Spare: { ...prev.Spare, condition },
+                              }))
+                            }
+                            style={pillButton({ active: tyres.Spare.condition === condition })}
+                          >
+                            {condition}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {tyres.Spare.type === "not_checked" ? (
+                    <div style={sectionCardStyle}>
+                      <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Notes</span>
+                      <textarea
+                        value={tyres.Spare.note}
+                        onChange={(event) =>
+                          setTyres((prev) => ({
+                            ...prev,
+                            Spare: { ...prev.Spare, note: event.target.value },
+                          }))
+                        }
+                        placeholder="Explain why a spare check was not completed."
+                        rows={4}
+                        style={{
+                          ...baseInputStyle,
+                          resize: "vertical",
+                        }}
+                      />
+                    </div>
+                  ) : null}
+
+                  {tyres.Spare.type === "boot_full" ? (
+                    <div style={sectionCardStyle}>
+                      <span style={{ fontSize: "13px", color: palette.textMuted }}>
+                        Boot contents prevented inspection. No extra data required.
+                      </span>
+                    </div>
+                  ) : null}
+                </>
               )}
+
+              <div style={{ ...sectionCardStyle, flex: "0 0 auto" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
+                    Logged Concerns
+                  </h3>
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <div style={concernBadge(statusColors.Amber)}>{allConcerns} total</div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                  {[...WHEELS, "Spare"].map((wheel) => {
+                    const count = tyres[wheel].concerns?.length ?? 0;
+                    if (count === 0) return null;
+                    return (
+                      <div key={wheel} style={{ ...concernBadge(statusColors.Amber), backgroundColor: palette.surfaceAlt }}>
+                        {wheel}: {count}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                    maxHeight: "180px",
+                    overflowY: "auto",
+                  }}
+                >
+                  {(currentTyre.concerns ?? []).length === 0 ? (
+                    <div
+                      style={{
+                        padding: "16px",
+                        borderRadius: "16px",
+                        border: `1px dashed ${palette.border}`,
+                        backgroundColor: palette.accentSurface,
+                        color: palette.textMuted,
+                        fontSize: "13px",
+                      }}
+                    >
+                      No concerns logged for {activeWheel}. Use “Add Concern” to capture issues for this wheel.
+                    </div>
+                  ) : (
+                    currentTyre.concerns.map((concern, idx) => (
+                      <div
+                        key={`${activeWheel}-concern-${idx}`}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          borderRadius: "16px",
+                          border: `1px solid ${palette.border}`,
+                          padding: "12px 16px",
+                          background: palette.surface,
+                          boxShadow: "0 6px 18px rgba(15,23,42,0.08)",
+                        }}
+                      >
+                        <span style={{ fontSize: "13px", fontWeight: 600, color: palette.textPrimary }}>{concern.text}</span>
+                        <span style={concernBadge(statusColors[concern.status] || statusColors.Amber)}>
+                          {concern.status}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
       </div>
 
       {concernTarget ? (

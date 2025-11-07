@@ -1,8 +1,8 @@
 // file location: src/components/VHC/BrakesHubsDetailsModal.js
 import React, { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
 import themeConfig, { createVhcButtonStyle, vhcModalContentStyles } from "@/styles/appTheme";
+import BrakeDiagram from "@/components/VHC/BrakeDiagram";
 
 const palette = themeConfig.palette;
 
@@ -219,6 +219,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "24px",
+    height: "100%",
   };
   const summaryCardStyle = vhcModalContentStyles.summaryCard;
   const summaryTextBlockStyle = vhcModalContentStyles.summaryTextBlock;
@@ -459,6 +460,41 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     });
     return { total, red, amber };
   }, [data]);
+
+  const concernGroups = useMemo(() => {
+    const entries = [
+      { key: "frontPads", label: padLabels.frontPads },
+      { key: "rearPads", label: padLabels.rearPads },
+      { key: "frontDiscs", label: discLabels.frontDiscs },
+      { key: "rearDiscs", label: discLabels.rearDiscs },
+    ];
+    return entries
+      .map(({ key, label }) => ({
+        key,
+        label,
+        concerns: data[key]?.concerns ?? [],
+      }))
+      .filter(({ concerns }) => concerns.length > 0);
+  }, [data]);
+
+  const parsePadValue = (measurement) => {
+    const first = (measurement || "")
+      .split(/[, ]+/)
+      .map((val) => val.trim())
+      .find((val) => val !== "");
+    const parsed = parseFloat(first);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const brakeDiagramValues = useMemo(
+    () => ({
+      nsf: parsePadValue(data.frontPads.measurement),
+      osf: parsePadValue(data.frontPads.measurement),
+      nsr: parsePadValue(data.rearPads.measurement),
+      osr: parsePadValue(data.rearPads.measurement),
+    }),
+    [data.frontPads.measurement, data.rearPads.measurement],
+  );
 
   // ✅ New completion logic
   const isCompleteEnabled = () => {
@@ -832,34 +868,26 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   );
 
   const leftPanelStyle = {
-    width: "320px",
-    background: palette.accentSurface,
+    width: "360px",
+    background: palette.surface,
     border: `1px solid ${palette.border}`,
     borderRadius: "24px",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: "28px",
-    padding: "32px 24px",
-    boxShadow: "0 16px 32px rgba(209,0,0,0.16)",
+    gap: "18px",
+    padding: "24px",
+    boxShadow: "0 18px 32px rgba(15,23,42,0.12)",
   };
-
-  const imageStyle = (active) => ({
-    cursor: "pointer",
-    border: active ? `4px solid ${palette.accent}` : `2px solid ${palette.border}`,
-    borderRadius: "18px",
-    objectFit: "contain",
-    background: palette.surface,
-    padding: "16px",
-    transition: "transform 0.2s ease, border-color 0.2s ease",
-  });
 
   return (
     <VHCModalShell
       isOpen={isOpen}
       title="Brakes & Hubs"
       subtitle="Capture pad wear, disc condition, and drum checks."
+      width="1280px"
+      height="780px"
       onClose={() => {
         setConcernPopup({ open: false, category: "", tempConcern: { issue: "", status: "Red" } });
         onClose();
@@ -904,7 +932,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
         <div
           style={{
             display: "flex",
-            gap: "24px",
+            gap: "20px",
             height: "100%",
             minHeight: 0,
             position: "relative",
@@ -916,28 +944,24 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                 Select Axle
               </h3>
               <p style={{ fontSize: "13px", color: palette.textMuted, margin: "4px 0 0" }}>
-                Tap a diagram to switch between front and rear checks.
+                Tap a wheel to jump between front and rear brake checks.
               </p>
             </div>
-            <Image
-              src="/images/Brakes3.png"
-              alt="Front Brakes"
-              width={172}
-              height={172}
-              style={imageStyle(activeSide === "front")}
-              onClick={() => {
-                setActiveSide("front");
-                setShowDrum(false);
+            <BrakeDiagram
+              brakes={brakeDiagramValues}
+              activeBrake={activeSide === "front" ? "nsf" : "nsr"}
+              onSelect={(key) => {
+                if (["nsf", "osf"].includes(key)) {
+                  setActiveSide("front");
+                  setShowDrum(false);
+                } else if (["nsr", "osr"].includes(key)) {
+                  setActiveSide("rear");
+                }
               }}
             />
-            <Image
-              src="/images/Brakes3.png"
-              alt="Rear Brakes"
-              width={172}
-              height={172}
-              style={imageStyle(activeSide === "rear")}
-              onClick={() => setActiveSide("rear")}
-            />
+            <span style={{ fontSize: "12px", color: palette.textMuted, textAlign: "center" }}>
+              Rear drum details available via the “Drum Brakes” button in the rear pads section.
+            </span>
           </aside>
 
           <div
@@ -945,38 +969,131 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
               flex: 1,
               display: "flex",
               flexDirection: "column",
-              gap: "24px",
+              gap: "20px",
               position: "relative",
               minHeight: 0,
             }}
           >
-            {activeSide === "front" && (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-                  gap: "20px",
-                }}
-              >
-                <PadsSection category="frontPads" />
-                <DiscsSection category="frontDiscs" />
-              </div>
-            )}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+              <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: palette.accent }}>
+                {activeSide === "front" ? "Front Axle Checks" : showDrum ? "Rear Drum Checks" : "Rear Axle Checks"}
+              </h2>
+              <span style={{ fontSize: "13px", color: palette.textMuted }}>
+                Pads status: {activeSide === "front" ? data.frontPads.status || "Pending" : data.rearPads.status || "Pending"}
+              </span>
+            </div>
 
-            {activeSide === "rear" && !showDrum && (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-                  gap: "20px",
-                }}
-              >
-                <PadsSection category="rearPads" showDrumButton />
-                <DiscsSection category="rearDiscs" />
-              </div>
-            )}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "18px",
+                overflowY: "auto",
+                paddingRight: "8px",
+                minHeight: 0,
+              }}
+            >
+              {activeSide === "front" && (
+                <>
+                  <PadsSection category="frontPads" />
+                  <DiscsSection category="frontDiscs" />
+                </>
+              )}
 
-            {activeSide === "rear" && showDrum && <DrumBrakesSection />}
+              {activeSide === "rear" && !showDrum && (
+                <>
+                  <PadsSection category="rearPads" showDrumButton />
+                  <DiscsSection category="rearDiscs" />
+                </>
+              )}
+
+              {activeSide === "rear" && showDrum && (
+                <>
+                  <PadsSection category="rearPads" />
+                  <DrumBrakesSection />
+                </>
+              )}
+
+              <div style={{ ...sectionPanelBase, flex: "0 0 auto" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.textPrimary }}>Logged Concerns</h3>
+                  <div
+                    style={{
+                      ...vhcModalContentStyles.badge,
+                      backgroundColor: palette.surfaceAlt,
+                      color: palette.textPrimary,
+                      border: `1px solid ${palette.border}`,
+                    }}
+                  >
+                    {concernTotals.total} total
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                  {concernGroups.length === 0 ? (
+                    <span style={{ fontSize: "13px", color: palette.textMuted }}>
+                      No concerns recorded yet. Use the “+ Add Concern” buttons within each section.
+                    </span>
+                  ) : (
+                    concernGroups.map(({ key, label, concerns }) => (
+                      <div
+                        key={key}
+                        style={{
+                          ...vhcModalContentStyles.badge,
+                          backgroundColor: palette.surface,
+                          border: `1px solid ${palette.border}`,
+                          color: palette.textPrimary,
+                        }}
+                      >
+                        {label}: {concerns.length}
+                      </div>
+                    ))
+                  )}
+                </div>
+                {concernGroups.length > 0 ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "10px",
+                      maxHeight: "200px",
+                      overflowY: "auto",
+                    }}
+                  >
+                    {concernGroups.map(({ key, label, concerns }) => (
+                      <div key={key} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <span style={{ fontSize: "13px", fontWeight: 600, color: palette.textPrimary }}>{label}</span>
+                        {concerns.map((c, idx) => (
+                          <div
+                            key={`${key}-${idx}`}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              borderRadius: "12px",
+                              border: `1px solid ${palette.border}`,
+                              padding: "10px 12px",
+                              background: palette.surface,
+                            }}
+                          >
+                            <span style={{ fontSize: "13px", color: palette.textPrimary }}>{c.issue}</span>
+                            <span
+                              style={{
+                                fontSize: "12px",
+                                fontWeight: 700,
+                                color: c.status === "Red" ? palette.danger : palette.warning,
+                              }}
+                            >
+                              {c.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
 
             {concernPopup.open && (
               <div style={popupOverlayStyle}>
@@ -1063,7 +1180,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             )}
           </div>
         </div>
-      </div>
     </VHCModalShell>
   );
 }

@@ -37,6 +37,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "20px",
+    height: "100%",
   };
   const summaryCardStyle = vhcModalContentStyles.summaryCard;
   const summaryTextBlockStyle = vhcModalContentStyles.summaryTextBlock;
@@ -123,6 +124,8 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
       title="Service Indicator & Under Bonnet"
       subtitle="Capture service reminder status and under bonnet checks."
       onClose={onClose}
+      width="1280px"
+      height="780px"
       footer={footer}
     >
       <div style={contentWrapperStyle}>
@@ -155,7 +158,25 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+            minHeight: 0,
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: "20px",
+              flex: 1,
+              overflowY: "auto",
+              paddingRight: "6px",
+            }}
+          >
           <div style={{ ...cardShellStyle, position: "relative" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
@@ -211,6 +232,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
               })}
             </div>
           </div>
+        </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             <div style={{ ...cardShellStyle, flex: 1 }}>
