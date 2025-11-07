@@ -1,7 +1,7 @@
 import React from "react";
 import themeConfig from "@/styles/appTheme";
 
-const palette = themeConfig.palette;
+const { palette, shadows } = themeConfig;
 
 const TYRE_KEYS = [
   { key: "nsf", label: "N/S/F", position: { x: 38, y: 78 } },
@@ -30,28 +30,29 @@ const getReadingStatus = (value) => {
 
 export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareActive = false, onSpareSelect }) {
   const activeKey = activeTyre?.toLowerCase();
-  const svgPrimary = "#F8FAFC";
-  const svgMuted = "#94A3B8";
-  const bodyFill = "rgba(148,163,184,0.15)";
-  const cabinFill = "rgba(148,163,184,0.08)";
-  const axleColor = "#94A3B8";
+  const svgPrimary = palette.textPrimary;
+  const svgMuted = palette.textMuted;
+  const bodyFill = palette.accentSurface;
+  const cabinFill = palette.surfaceAlt;
+  const axleColor = palette.border;
+
+  const containerStyle = {
+    width: "100%",
+    borderRadius: "24px",
+    padding: "24px",
+    border: `1px solid ${palette.border}`,
+    background: palette.surface,
+    display: "flex",
+    flexDirection: "column",
+    gap: "20px",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: shadows.lg,
+    color: svgPrimary,
+  };
 
   return (
-    <div
-      style={{ // change this section to meet the same desing as the WheelTyreDetailsModal.js
-        width: "100%",
-        background: "#ffffffff",
-        borderRadius: "24px",
-        padding: "28px 24px 24px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "20px",
-        alignItems: "center",
-        justifyContent: "center",
-        color: svgPrimary,
-        boxShadow: "0 24px 48px rgba(0,0,0,0.55)",
-      }}
-    >
+    <div style={containerStyle}>
       <svg
         viewBox="0 0 306 300"
         role="img"
@@ -64,7 +65,7 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
           textAnchor="middle"
           fontSize="16"
           fontWeight="700"
-          fill={svgPrimary}
+          fill={palette.accent}
           letterSpacing="1.2"
         >
           Vehicle Tyre Overview
@@ -77,12 +78,12 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
           height="220"
           rx="48"
           fill={bodyFill}
-          stroke="#CBD5F5"
+          stroke={palette.border}
           strokeWidth="2"
           strokeDasharray="10 8"
-          opacity="0.6"
+          opacity="0.9"
         />
-        <rect x="82" y="72" width="142" height="168" rx="34" fill={cabinFill} stroke="#CBD5F5" strokeWidth="1" opacity="0.5" />
+        <rect x="82" y="72" width="142" height="168" rx="34" fill={cabinFill} stroke={palette.border} strokeWidth="1" opacity="0.8" />
         <line x1="58" y1="148" x2="248" y2="148" stroke={axleColor} strokeWidth="5" strokeLinecap="round" />
         <line x1="58" y1="198" x2="248" y2="198" stroke={axleColor} strokeWidth="5" strokeLinecap="round" />
 
@@ -105,7 +106,7 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
                 height={TYRE_HEIGHT}
                 rx="12"
                 fill={colors.fill}
-                stroke={isActive ? palette.accent : "#0F172A"}
+                stroke={isActive ? palette.accent : palette.border}
                 strokeWidth={isActive ? 3 : 1.5}
                 filter="url(#tyreShadow)"
               />
@@ -159,20 +160,20 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
         onClick={onSpareSelect}
         style={{
           borderRadius: "18px",
-          border: `1px solid ${spareActive ? palette.accent : "#334155"}`,
-          padding: "12px 20px",
-          background: spareActive ? palette.accent : "#0f172a",
-          color: spareActive ? "#ffffff" : "#e2e8f0",
+          border: `1px solid ${spareActive ? palette.accent : palette.border}`,
+          padding: "10px 20px",
+          background: spareActive ? palette.accent : palette.surfaceAlt,
+          color: spareActive ? "#ffffff" : palette.textPrimary,
           fontWeight: 600,
           cursor: onSpareSelect ? "pointer" : "default",
-          boxShadow: spareActive ? "0 10px 24px rgba(209,0,0,0.35)" : "0 4px 18px rgba(0,0,0,0.45)",
+          boxShadow: spareActive ? shadows.md : shadows.sm,
           transition: "transform 0.2s ease, box-shadow 0.2s ease",
         }}
       >
         Spare / Kit
       </button>
 
-      <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap", color: palette.textPrimary }}>
         {[
           { label: "Not Checked", status: "unknown" },
           { label: "0–2.5 mm", status: "danger" },
@@ -187,7 +188,7 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
               gap: "6px",
               fontSize: "12px",
               fontWeight: 600,
-              color: svgPrimary,
+              color: palette.textPrimary,
             }}
           >
             <span

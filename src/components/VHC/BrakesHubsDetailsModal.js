@@ -867,20 +867,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     </div>
   );
 
-  const leftPanelStyle = {
-    width: "360px",
-    background: palette.surface,
-    border: `1px solid ${palette.border}`,
-    borderRadius: "24px",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "18px",
-    padding: "24px",
-    boxShadow: "0 18px 32px rgba(15,23,42,0.12)",
-  };
-
   return (
     <VHCModalShell
       isOpen={isOpen}
@@ -938,15 +924,14 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             position: "relative",
           }}
         >
-          <aside style={leftPanelStyle}>
-            <div style={{ textAlign: "center" }}>
-              <h3 style={{ fontSize: "18px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
-                Select Axle
-              </h3>
-              <p style={{ fontSize: "13px", color: palette.textMuted, margin: "4px 0 0" }}>
-                Tap a wheel to jump between front and rear brake checks.
-              </p>
-            </div>
+          <div
+            style={{
+              flex: "0 0 360px",
+              display: "flex",
+              alignItems: "stretch",
+              justifyContent: "center",
+            }}
+          >
             <BrakeDiagram
               brakes={brakeDiagramValues}
               activeBrake={activeSide === "front" ? "nsf" : "nsr"}
@@ -959,10 +944,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                 }
               }}
             />
-            <span style={{ fontSize: "12px", color: palette.textMuted, textAlign: "center" }}>
-              Rear drum details available via the “Drum Brakes” button in the rear pads section.
-            </span>
-          </aside>
+          </div>
 
           <div
             style={{

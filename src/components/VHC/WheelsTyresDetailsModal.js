@@ -446,39 +446,34 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
           </div>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "20px",
-            height: "100%",
-            minHeight: 0,
-            position: "relative",
-          }}
-        >
           <div
             style={{
-              flex: "0 0 360px",
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: palette.surface,
-              border: `1px solid ${palette.border}`,
-              borderRadius: "24px",
-              padding: "16px",
-              boxShadow: "0 18px 32px rgba(15,23,42,0.12)",
+              gap: "20px",
+              height: "100%",
+              minHeight: 0,
+              position: "relative",
             }}
           >
-            <TyreDiagram
-              tyres={tyreDiagramReadings}
-              activeTyre={activeWheel === "Spare" ? null : activeWheel}
-              onSelect={(key) => {
-                if (!key) return;
-                setActiveWheel(key.toUpperCase());
+            <div
+              style={{
+                flex: "0 0 360px",
+                display: "flex",
+                alignItems: "stretch",
+                justifyContent: "center",
               }}
-              spareActive={activeWheel === "Spare"}
-              onSpareSelect={() => setActiveWheel("Spare")}
-            />
-          </div>
+            >
+              <TyreDiagram
+                tyres={tyreDiagramReadings}
+                activeTyre={activeWheel === "Spare" ? null : activeWheel}
+                onSelect={(key) => {
+                  if (!key) return;
+                  setActiveWheel(key.toUpperCase());
+                }}
+                spareActive={activeWheel === "Spare"}
+                onSpareSelect={() => setActiveWheel("Spare")}
+              />
+            </div>
 
           <div
             style={{

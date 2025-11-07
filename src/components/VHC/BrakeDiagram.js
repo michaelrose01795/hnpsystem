@@ -1,7 +1,7 @@
 import React from "react";
 import themeConfig from "@/styles/appTheme";
 
-const palette = themeConfig.palette;
+const { palette, shadows } = themeConfig;
 
 const BRAKE_KEYS = [
   { key: "nsf", label: "NSF", position: { x: 36, y: 76 } },
@@ -31,22 +31,23 @@ const getPadStatus = (value) => {
 export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
   const activeKey = activeBrake?.toLowerCase();
 
+  const containerStyle = {
+    width: "100%",
+    background: palette.surface,
+    borderRadius: "24px",
+    padding: "24px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "20px",
+    alignItems: "center",
+    justifyContent: "center",
+    color: palette.textPrimary,
+    border: `1px solid ${palette.border}`,
+    boxShadow: shadows.lg,
+  };
+
   return (
-    <div
-      style={{ // change this section to meet the same desing as the BrakeDetailsModal.js
-        width: "100%",
-        background: "#1e1e1e",
-        borderRadius: "24px",
-        padding: "28px 24px 24px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "20px",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#ffffff",
-        boxShadow: "0 24px 48px rgba(0,0,0,0.55)",
-      }}
-    >
+    <div style={containerStyle}>
       <svg
         viewBox="0 0 308 300"
         role="img"
@@ -59,7 +60,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
           textAnchor="middle"
           fontSize="16"
           fontWeight="700"
-          fill="#F8FAFC"
+          fill={palette.accent}
           letterSpacing="1.2"
         >
           Brake Pad / Disc Overview
@@ -71,25 +72,25 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
           width="188"
           height="220"
           rx="48"
-          fill="none"
-          stroke="#CBD5F5"
+          fill={palette.accentSurface}
+          stroke={palette.border}
           strokeWidth="2"
           strokeDasharray="10 8"
           opacity="0.6"
         />
-        <line x1="60" y1="148" x2="248" y2="148" stroke="#94A3B8" strokeWidth="4" strokeLinecap="round" />
-        <line x1="60" y1="198" x2="248" y2="198" stroke="#94A3B8" strokeWidth="4" strokeLinecap="round" />
+        <line x1="60" y1="148" x2="248" y2="148" stroke={palette.border} strokeWidth="4" strokeLinecap="round" />
+        <line x1="60" y1="198" x2="248" y2="198" stroke={palette.border} strokeWidth="4" strokeLinecap="round" />
 
-        <text x="154" y="60" textAnchor="middle" fontSize="11" fill="#CBD5F5" letterSpacing="2">
+        <text x="154" y="60" textAnchor="middle" fontSize="11" fill={palette.textMuted} letterSpacing="2">
           FRONT
         </text>
-        <text x="154" y="282" textAnchor="middle" fontSize="11" fill="#CBD5F5" letterSpacing="2">
+        <text x="154" y="282" textAnchor="middle" fontSize="11" fill={palette.textMuted} letterSpacing="2">
           REAR
         </text>
-        <text x="14" y="170" textAnchor="middle" fontSize="11" fill="#CBD5F5" transform="rotate(-90 14 170)">
+        <text x="14" y="170" textAnchor="middle" fontSize="11" fill={palette.textMuted} transform="rotate(-90 14 170)">
           N / S · LEFT
         </text>
-        <text x="294" y="170" textAnchor="middle" fontSize="11" fill="#CBD5F5" transform="rotate(90 294 170)">
+        <text x="294" y="170" textAnchor="middle" fontSize="11" fill={palette.textMuted} transform="rotate(90 294 170)">
           O / S · RIGHT
         </text>
 
@@ -112,7 +113,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
                 height={PAD_HEIGHT}
                 rx="12"
                 fill={colors.fill}
-                stroke={isActive ? palette.accent : "#0F172A"}
+                stroke={isActive ? palette.accent : palette.border}
                 strokeWidth={isActive ? 3 : 1.5}
                 filter="url(#brakeShadow)"
               />
