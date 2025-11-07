@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react"; // Import React and useState
 import Layout from "../../components/Layout"; // Main layout wrapper
 import Popup from "../../components/popups/Popup"; // Reusable popup modal
 import { useSearchParams } from "next/navigation"; // For reading query params
+import CustomLoader from "../../components/Loading/CustomLoader";
 import { 
   getAllJobs, 
   createOrUpdateAppointment, 
@@ -71,13 +72,11 @@ export default function Appointments() {
   const [searchQuery, setSearchQuery] = useState("");
   const [timeSlots] = useState(generateTimeSlots());
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState("Loading..."); // ✅ NEW: Loading state message
 
   // ---------------- Fetch Jobs ----------------
   const fetchJobs = async () => {
     console.log("📋 Fetching all jobs...");
     setIsLoading(true);
-    setLoadingMessage("Fetching appointments...");
     
     try {
       const jobsFromDb = await getAllJobs();
@@ -93,7 +92,6 @@ export default function Appointments() {
       alert("Failed to load appointments. Please refresh the page.");
     } finally {
       setIsLoading(false);
-      setLoadingMessage("");
     }
   };
 
@@ -148,7 +146,6 @@ export default function Appointments() {
     }
 
     setIsLoading(true);
-    setLoadingMessage("Booking appointment...");
 
     try {
       const normalizedJobNumber = jobNumber.toString().trim();
@@ -168,7 +165,6 @@ export default function Appointments() {
         if (!fetchedJob) {
           alert(`❌ Error: Job ${normalizedJobNumber} does not exist in the system.\n\nPlease create the job card first before booking an appointment.`);
           setIsLoading(false);
-          setLoadingMessage("");
           return;
         }
         
@@ -195,7 +191,6 @@ export default function Appointments() {
         console.error("❌ Appointment booking failed:", errorMessage);
         alert(`❌ Error booking appointment:\n\n${errorMessage}\n\nPlease check the job number and try again.`);
         setIsLoading(false);
-        setLoadingMessage("");
         return;
       }
 
@@ -248,7 +243,6 @@ export default function Appointments() {
       alert(`❌ Unexpected error:\n\n${error.message}\n\nPlease try again or contact support.`);
     } finally {
       setIsLoading(false);
-      setLoadingMessage("");
     }
   };
 
@@ -338,49 +332,8 @@ export default function Appointments() {
   // ---------------- Render ----------------
   return (
     <Layout>
+      <CustomLoader isVisible={isLoading} />
       <div style={{ height: "100%", display: "flex", flexDirection: "column", padding: "8px 16px" }}>
-        {/* ✅ Loading Overlay */}
-        {isLoading && (
-          <div style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999
-          }}>
-            <div style={{
-              backgroundColor: "white",
-              padding: "32px 48px",
-              borderRadius: "12px",
-              textAlign: "center",
-              boxShadow: "0 8px 16px rgba(0,0,0,0.2)"
-            }}>
-              <div style={{
-                width: "50px",
-                height: "50px",
-                border: "4px solid #f3f3f3",
-                borderTop: "4px solid #FF4040",
-                borderRadius: "50%",
-                animation: "spin 1s linear infinite",
-                margin: "0 auto 20px"
-              }}></div>
-              <div style={{ fontSize: "16px", fontWeight: "600", color: "#333" }}>
-                {loadingMessage}
-              </div>
-              <style jsx>{`
-                @keyframes spin {
-                  0% { transform: rotate(0deg); }
-                  100% { transform: rotate(360deg); }
-                }
-              `}</style>
-            </div>
-          </div>
-        )}
 
         {/* Top Bar */}
         <div style={{ 

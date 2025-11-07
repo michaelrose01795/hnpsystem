@@ -1,0 +1,3 @@
+car_ratio=35.058594
+car_left=57.031250
+start_left=-35.058594

@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import Layout from "../../components/Layout";
+import CustomLoader from "../../components/Loading/CustomLoader";
 import { 
   createOrUpdateAppointment, 
   getJobByNumberOrReg 
@@ -132,6 +133,7 @@ export default function AppointmentsPage() {
 
   return (
     <Layout>
+      <CustomLoader isVisible={loading} />
       <div style={{ 
         maxWidth: "700px", 
         margin: "0 auto", 

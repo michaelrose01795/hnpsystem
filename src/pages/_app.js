@@ -6,7 +6,7 @@ import { JobsProvider, useJobs } from "../context/JobsContext";
 import { ClockingProvider } from "../context/ClockingContext"; // ✅ Added
 import { getAllJobs } from "../lib/database/jobs";
 import { useRouter } from "next/router";
-import LoadingScreen from "../components/LoadingScreen";
+import CustomLoader from "../components/Loading/CustomLoader";
 import "../styles/globals.css";
 
 // Inner wrapper for job fetching
@@ -14,7 +14,6 @@ function AppWrapper({ Component, pageProps }) {
   const { user } = useUser() || {};
   const { setJobs } = useJobs() || {};
   const router = useRouter();
-  const [isRouting, setIsRouting] = useState(false);
   const [displayLoader, setDisplayLoader] = useState(false);
   const showTimeoutRef = useRef(null);
   const fadeTimeoutRef = useRef(null);
@@ -38,7 +37,6 @@ function AppWrapper({ Component, pageProps }) {
   useEffect(() => {
     const handleRouteStart = (url) => {
       if (url !== router.asPath) {
-        setIsRouting(true);
         clearTimeout(fadeTimeoutRef.current);
         clearTimeout(showTimeoutRef.current);
         // Small delay prevents flicker on fast in-app transitions.
@@ -51,15 +49,12 @@ function AppWrapper({ Component, pageProps }) {
     const finishLoading = () => {
       clearTimeout(showTimeoutRef.current);
       showTimeoutRef.current = null;
-      setIsRouting(false);
 
       if (displayLoaderRef.current) {
         clearTimeout(fadeTimeoutRef.current);
         fadeTimeoutRef.current = setTimeout(() => {
           setDisplayLoader(false);
         }, 200);
-      } else {
-        setIsRouting(true);
       }
     };
 
@@ -78,7 +73,7 @@ function AppWrapper({ Component, pageProps }) {
 
   return (
     <>
-      {displayLoader && <LoadingScreen isFadingOut={!isRouting} />}
+      <CustomLoader isVisible={displayLoader} />
       <Component {...pageProps} />
     </>
   );

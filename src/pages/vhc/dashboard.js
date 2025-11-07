@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import Layout from "../../components/Layout";
+import CustomLoader from "../../components/Loading/CustomLoader";
 import { useRouter } from "next/router";
 import { getAllJobs } from "../../lib/database/jobs";
 import { getVHCChecksByJob } from "../../lib/database/vhc";
@@ -413,6 +414,7 @@ export default function VHCDashboard() {
 
   return (
     <Layout>
+      <CustomLoader isVisible={loading} />
       <div style={{ 
         height: "100%", 
         display: "flex", 
@@ -521,32 +523,7 @@ export default function VHCDashboard() {
           overflow: "hidden",
           minHeight: 0
         }}>
-          {loading ? (
-            <div style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              justifyContent: "center", 
-              flex: 1,
-              flexDirection: "column",
-              gap: "16px"
-            }}>
-              <div style={{
-                width: "60px",
-                height: "60px",
-                border: "4px solid #f3f3f3",
-                borderTop: "4px solid #d10000",
-                borderRadius: "50%",
-                animation: "spin 1s linear infinite"
-              }}></div>
-              <p style={{ color: "#666", fontSize: "16px" }}>Loading VHC reports...</p>
-              <style jsx>{`
-                @keyframes spin {
-                  0% { transform: rotate(0deg); }
-                  100% { transform: rotate(360deg); }
-                }
-              `}</style>
-            </div>
-          ) : filteredJobs.length === 0 ? (
+          {loading ? null : filteredJobs.length === 0 ? (
             <div style={{ 
               display: "flex", 
               alignItems: "center", 
