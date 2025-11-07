@@ -4,15 +4,19 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
-import { 
-  getVHCChecksByJob, 
-  createVHCCheck, 
-  updateVHCCheck, 
-  deleteVHCCheck 
+import {
+  getVHCChecksByJob,
+  createVHCCheck,
+  updateVHCCheck,
+  deleteVHCCheck
 } from "../../../lib/database/vhc";
 import { getJobByNumber } from "../../../lib/database/jobs";
 import { getJobParts } from "../../../lib/database/parts";
 import { useUser } from "../../../context/UserContext";
+import {
+  authorizeAdditionalWork,
+  declineAdditionalWork
+} from "../../../lib/services/vhcStatusService";
 
 // ✅ Status color mapping
 const STATUS_COLORS = {
@@ -50,6 +54,25 @@ const PART_STATUS_COLORS = {
   cancelled: { bg: "#f3f4f6", text: "#6b7280" },
 };
 
+// ✅ Options for decline reasons presented to the user
+const DECLINE_REASON_OPTIONS = [
+  { value: "cost", label: "Cost too high" },
+  { value: "time", label: "Customer lacks time" },
+  { value: "defer", label: "Customer wants to defer" },
+  { value: "warranty", label: "Covered elsewhere / warranty" },
+  { value: "sold", label: "Vehicle being sold or part-ex" },
+  { value: "other", label: "Other" }
+];
+
+// ✅ Options for reminder periods in months (1-12)
+const REMINDER_OPTIONS = Array.from({ length: 12 }, (_, index) => {
+  const monthValue = (index + 1).toString();
+  return {
+    value: monthValue,
+    label: `${index + 1} month${index + 1 === 1 ? "" : "s"}`
+  };
+});
+
 // ✅ Helper function to get customer name
 const getCustomerName = (customer) => {
   if (!customer) return "N/A";
@@ -86,7 +109,7 @@ export default function VHCDetails() {
   const [vhcChecks, setVhcChecks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("summary");
-  const [selectedItems, setSelectedItems] = useState([]);
+  const [selectedItems, setSelectedItems] = useState({}); // Stores currently selected VHC items for authorization/decline actions
   const [vhcStatus, setVhcStatus] = useState("Outstanding");
   const [jobParts, setJobParts] = useState([]);
   const [partsLoading, setPartsLoading] = useState(false);
@@ -106,6 +129,13 @@ export default function VHCDetails() {
   });
   const [partFormError, setPartFormError] = useState("");
   const [partSaving, setPartSaving] = useState(false);
+  const [customerNotes, setCustomerNotes] = useState(""); // Captures optional notes entered by the service team
+  const [declineReason, setDeclineReason] = useState(DECLINE_REASON_OPTIONS[0]?.value || "cost"); // Default decline reason selection
+  const [reminderMonths, setReminderMonths] = useState(REMINDER_OPTIONS[0]?.value || "1"); // Default reminder period selection
+  const [authorizing, setAuthorizing] = useState(false); // Tracks when an authorization request is running
+  const [declining, setDeclining] = useState(false); // Tracks when a decline request is running
+  const [actionMessage, setActionMessage] = useState(""); // Stores success feedback for VHC actions
+  const [actionError, setActionError] = useState(""); // Stores error feedback for VHC actions
 
   // ✅ Fetch job and VHC data
   useEffect(() => {
@@ -234,6 +264,161 @@ export default function VHCDetails() {
   }, [jobParts]);
 
   const totals = calculateTotals();
+
+  const selectedItemsArray = useMemo(() => Object.values(selectedItems), [selectedItems]); // Converts selected items map into an array for processing
+  const selectedItemCount = selectedItemsArray.length; // Provides a quick count of selected items
+  const selectionIsFull = selectedItemCount === vhcChecks.length && vhcChecks.length > 0; // Checks whether all items are currently selected
+  const sectionNames = useMemo(
+    () => Array.from(new Set(vhcChecks.map((check) => check.section || "General"))),
+    [vhcChecks]
+  ); // Builds a list of unique sections to drive quick-select buttons
+
+  useEffect(() => {
+    setSelectedItems((previousSelection) => {
+      const nextSelection = {}; // Prepares a new selection map
+      vhcChecks.forEach((check) => {
+        if (previousSelection[check.vhc_id]) {
+          nextSelection[check.vhc_id] = previousSelection[check.vhc_id]; // Carries over selections that still exist
+        }
+      });
+      return nextSelection;
+    });
+  }, [vhcChecks]);
+
+  const handleToggleItemSelection = useCallback((check) => {
+    setSelectedItems((previousSelection) => {
+      const nextSelection = { ...previousSelection }; // Copies the previous selection state
+      if (nextSelection[check.vhc_id]) {
+        delete nextSelection[check.vhc_id]; // Deselects the item if it was already selected
+      } else {
+        nextSelection[check.vhc_id] = {
+          id: check.vhc_id,
+          section: check.section || "General",
+          title: check.issue_title,
+          description: check.issue_description || "",
+          amount: parseFloat(check.measurement) || 0
+        }; // Adds a structured entry for the selected item
+      }
+      return nextSelection;
+    });
+  }, []);
+
+  const handleSectionToggleAll = useCallback((sectionName) => {
+    setSelectedItems((previousSelection) => {
+      const nextSelection = { ...previousSelection }; // Copies the previous selection state
+      const sectionChecks = vhcChecks.filter(
+        (check) => (check.section || "General") === sectionName
+      ); // Collects all checks that belong to the requested section
+      const everySelected = sectionChecks.every((check) => nextSelection[check.vhc_id]); // Verifies if every check is already selected
+      if (everySelected) {
+        sectionChecks.forEach((check) => {
+          delete nextSelection[check.vhc_id]; // Clears the section when everything was selected
+        });
+      } else {
+        sectionChecks.forEach((check) => {
+          nextSelection[check.vhc_id] = {
+            id: check.vhc_id,
+            section: check.section || "General",
+            title: check.issue_title,
+            description: check.issue_description || "",
+            amount: parseFloat(check.measurement) || 0
+          }; // Adds any unselected check from the section
+        });
+      }
+      return nextSelection;
+    });
+  }, [vhcChecks]);
+
+  const handleSelectAllChecks = useCallback(() => {
+    setSelectedItems((previousSelection) => {
+      if (Object.keys(previousSelection).length === vhcChecks.length) {
+        return {}; // Clears all selections when everything was already selected
+      }
+      const nextSelection = {}; // Builds a new selection map containing every check
+      vhcChecks.forEach((check) => {
+        nextSelection[check.vhc_id] = {
+          id: check.vhc_id,
+          section: check.section || "General",
+          title: check.issue_title,
+          description: check.issue_description || "",
+          amount: parseFloat(check.measurement) || 0
+        };
+      });
+      return nextSelection;
+    });
+  }, [vhcChecks]);
+
+  const handleAuthorizeSelected = useCallback(async () => {
+    if (!jobData?.id) {
+      setActionError("Job details are unavailable."); // Warns the user when job data has not loaded
+      return;
+    }
+    if (selectedItemsArray.length === 0) {
+      setActionError("Select at least one check to authorize."); // Prompts the user to choose items before continuing
+      return;
+    }
+    const authorizedBy = dbUserId || user?.id || user?.email || user?.username || "unknown"; // Determines the identifier recorded in the audit trail
+    setAuthorizing(true); // Marks the start of the async authorization flow
+    setActionError(""); // Clears any previous errors
+    setActionMessage(""); // Clears any previous success banner
+    try {
+      const payload = selectedItemsArray.map((item) => ({
+        check_id: item.id,
+        section: item.section,
+        title: item.title,
+        amount: item.amount
+      })); // Structures the payload expected by the authorization service
+      const notes = customerNotes.trim(); // Captures optional notes for storage
+      const result = await authorizeAdditionalWork(jobData.id, authorizedBy, payload, notes); // Calls Supabase RPC to log authorization
+      if (!result?.success) {
+        throw new Error(result?.error || "Unable to authorize the selected checks right now."); // Surfaces backend errors
+      }
+      setActionMessage("Selected checks authorized successfully."); // Confirms success to the user
+      setSelectedItems({}); // Clears selection to avoid double submissions
+      setCustomerNotes(""); // Resets notes after a successful submission
+    } catch (error) {
+      setActionError(error.message || "Unable to authorize the selected checks."); // Displays errors received from the service
+    } finally {
+      setAuthorizing(false); // Marks the end of the async flow
+    }
+  }, [jobData, selectedItemsArray, dbUserId, user, customerNotes]);
+
+  const handleDeclineSelected = useCallback(async () => {
+    if (!jobData?.id) {
+      setActionError("Job details are unavailable."); // Warns when job data is missing
+      return;
+    }
+    if (selectedItemsArray.length === 0) {
+      setActionError("Select at least one check to decline."); // Prompts for a selection before declining
+      return;
+    }
+    const declinedBy = dbUserId || user?.id || user?.email || user?.username || "unknown"; // Determines who recorded the decline
+    setDeclining(true); // Marks the async decline flow as running
+    setActionError(""); // Clears previous errors
+    setActionMessage(""); // Clears previous success banner
+    try {
+      const summaryLine = selectedItemsArray
+        .map((item) => `${item.section}: ${item.title}`)
+        .join("; "); // Builds a readable summary of declined items
+      const notesParts = [
+        `Reason: ${DECLINE_REASON_OPTIONS.find((option) => option.value === declineReason)?.label || declineReason}`,
+        `Reminder: Follow up in ${reminderMonths} month${reminderMonths === "1" ? "" : "s"}`,
+        summaryLine ? `Items: ${summaryLine}` : null,
+        customerNotes.trim() ? `Notes: ${customerNotes.trim()}` : null
+      ].filter(Boolean); // Collects reason, reminder, items, and optional notes into one message
+      const result = await declineAdditionalWork(jobData.id, declinedBy, notesParts.join(" | "));
+      if (!result?.success) {
+        throw new Error(result?.error || "Unable to record the decline right now."); // Surfaces backend errors
+      }
+      setActionMessage("Decline recorded successfully."); // Confirms success to the user
+      setSelectedItems({}); // Clears the selection after storing the decision
+      setCustomerNotes(""); // Clears the notes to prevent reuse
+    } catch (error) {
+      setActionError(error.message || "Unable to record the decline for the selected checks."); // Displays error feedback
+    } finally {
+      setDeclining(false); // Marks the end of the async flow
+    }
+  }, [jobData, selectedItemsArray, dbUserId, user, declineReason, reminderMonths, customerNotes]);
 
   // ✅ Handle send VHC
   const handleSendVHC = async () => {
@@ -504,10 +689,11 @@ export default function VHCDetails() {
 
   // ✅ Group checks by section
   const checksBySection = vhcChecks.reduce((acc, check) => {
-    if (!acc[check.section]) {
-      acc[check.section] = [];
+    const sectionKey = check.section || "General"; // Normalizes section names for consistent grouping
+    if (!acc[sectionKey]) {
+      acc[sectionKey] = [];
     }
-    acc[check.section].push(check);
+    acc[sectionKey].push(check);
     return acc;
   }, {});
 
@@ -772,64 +958,328 @@ export default function VHCDetails() {
                   )}
                 </div>
               ) : (
-                <div style={{
-                  background: "white",
-                  border: "1px solid #e0e0e0",
-                  borderRadius: "16px",
-                  padding: "24px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-                }}>
-                  <h3 style={{ fontSize: "20px", fontWeight: "600", marginBottom: "20px", color: "#1a1a1a" }}>
-                    VHC Check Results
-                  </h3>
-                  
-                  {Object.entries(checksBySection).map(([section, checks]) => (
-                    <div key={section} style={{ marginBottom: "24px" }}>
-                      <h4 style={{ 
-                        fontSize: "16px", 
-                        fontWeight: "600", 
-                        color: "#333",
-                        marginBottom: "12px",
-                        paddingBottom: "8px",
-                        borderBottom: "2px solid #f0f0f0"
-                      }}>
-                        {section} ({checks.length})
-                      </h4>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                        {checks.map(check => (
-                          <div key={check.vhc_id} style={{
-                            padding: "12px",
-                            border: "1px solid #e0e0e0",
-                            borderRadius: "8px",
-                            backgroundColor: "#fafafa"
-                          }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <div>
-                                <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", margin: "0 0 4px 0" }}>
-                                  {check.issue_title}
-                                </p>
-                                <p style={{ fontSize: "13px", color: "#666", margin: 0 }}>
-                                  {check.issue_description}
-                                </p>
-                              </div>
-                              {check.measurement && (
-                                <div style={{
-                                  padding: "6px 12px",
-                                  backgroundColor: "#e0e0e0",
-                                  borderRadius: "6px",
-                                  fontSize: "13px",
-                                  fontWeight: "600"
-                                }}>
-                                  £{parseFloat(check.measurement).toFixed(2)}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                <>
+                  {hasWorkshopEditorRole && (
+                    <div style={{
+                      background: "white",
+                      border: "1px solid #ffe0e0",
+                      borderRadius: "16px",
+                      padding: "20px",
+                      boxShadow: "0 2px 8px rgba(209,0,0,0.06)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "16px"
+                    }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px" }}>
+                        <div>
+                          <h3 style={{ margin: "0 0 4px 0", fontSize: "18px", color: "#1f2937", fontWeight: "700" }}>
+                            Authorization Controls
+                          </h3>
+                          <p style={{ margin: 0, fontSize: "14px", color: "#6b7280" }}>
+                            {selectedItemCount} item{selectedItemCount === 1 ? "" : "s"} selected
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleSelectAllChecks}
+                          style={{
+                            padding: "10px 18px",
+                            backgroundColor: selectionIsFull ? "#991b1b" : "#d10000",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "999px",
+                            cursor: "pointer",
+                            fontSize: "13px",
+                            fontWeight: "600",
+                            transition: "background-color 0.2s"
+                          }}
+                        >
+                          {selectionIsFull ? "Clear All Checks" : "Check All Checks"}
+                        </button>
                       </div>
+
+                      <div>
+                        <p style={{ margin: "0 0 8px 0", fontSize: "13px", color: "#6b7280", fontWeight: "600" }}>
+                          Quick check-all by section
+                        </p>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                          {sectionNames.map((sectionName) => {
+                            const sectionChecks = vhcChecks.filter(
+                              (check) => (check.section || "General") === sectionName
+                            ); // Collects checks per section for button states
+                            const sectionSelected = sectionChecks.length > 0 && sectionChecks.every(
+                              (check) => selectedItems[check.vhc_id]
+                            ); // Determines if the entire section is already selected
+                            return (
+                              <button
+                                key={sectionName}
+                                onClick={() => handleSectionToggleAll(sectionName)}
+                                style={{
+                                  padding: "8px 14px",
+                                  borderRadius: "999px",
+                                  border: sectionSelected ? "2px solid #d10000" : "1px solid #fecaca",
+                                  backgroundColor: sectionSelected ? "#fee2e2" : "#fff5f5",
+                                  color: "#991b1b",
+                                  fontSize: "12px",
+                                  fontWeight: "600",
+                                  cursor: "pointer",
+                                  transition: "all 0.2s"
+                                }}
+                              >
+                                {sectionSelected ? "Uncheck" : "Check"} {sectionName}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                        gap: "16px",
+                        alignItems: "flex-end"
+                      }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          <label style={{ fontSize: "12px", fontWeight: "700", color: "#991b1b" }}>
+                            Customer Notes (optional)
+                          </label>
+                          <textarea
+                            value={customerNotes}
+                            onChange={(event) => setCustomerNotes(event.target.value)}
+                            rows={3}
+                            placeholder="Include any customer conversation points"
+                            style={{
+                              width: "100%",
+                              padding: "10px 12px",
+                              borderRadius: "10px",
+                              border: "1px solid #fca5a5",
+                              backgroundColor: "#fff",
+                              fontSize: "13px",
+                              color: "#1f2937",
+                              resize: "vertical"
+                            }}
+                          />
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                            <label style={{ fontSize: "12px", fontWeight: "700", color: "#991b1b" }}>
+                              Decline Reason
+                            </label>
+                            <select
+                              value={declineReason}
+                              onChange={(event) => setDeclineReason(event.target.value)}
+                              style={{
+                                padding: "10px 12px",
+                                borderRadius: "10px",
+                                border: "1px solid #fca5a5",
+                                fontSize: "13px",
+                                color: "#1f2937",
+                                backgroundColor: "white"
+                              }}
+                            >
+                              {DECLINE_REASON_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                            <label style={{ fontSize: "12px", fontWeight: "700", color: "#991b1b" }}>
+                              Reminder Period
+                            </label>
+                            <select
+                              value={reminderMonths}
+                              onChange={(event) => setReminderMonths(event.target.value)}
+                              style={{
+                                padding: "10px 12px",
+                                borderRadius: "10px",
+                                border: "1px solid #fca5a5",
+                                fontSize: "13px",
+                                color: "#1f2937",
+                                backgroundColor: "white"
+                              }}
+                            >
+                              {REMINDER_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                          <button
+                            onClick={handleAuthorizeSelected}
+                            disabled={authorizing || selectedItemCount === 0}
+                            style={{
+                              padding: "12px 18px",
+                              backgroundColor: selectedItemCount === 0 ? "#fca5a5" : "#d10000",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "10px",
+                              fontSize: "14px",
+                              fontWeight: "700",
+                              cursor: selectedItemCount === 0 ? "not-allowed" : "pointer",
+                              opacity: authorizing ? 0.8 : 1,
+                              transition: "background-color 0.2s"
+                            }}
+                          >
+                            {authorizing ? "Authorising..." : "Authorise Selected"}
+                          </button>
+                          <button
+                            onClick={handleDeclineSelected}
+                            disabled={declining || selectedItemCount === 0}
+                            style={{
+                              padding: "12px 18px",
+                              backgroundColor: selectedItemCount === 0 ? "#fbcfe8" : "#be123c",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "10px",
+                              fontSize: "14px",
+                              fontWeight: "700",
+                              cursor: selectedItemCount === 0 ? "not-allowed" : "pointer",
+                              opacity: declining ? 0.8 : 1,
+                              transition: "background-color 0.2s"
+                            }}
+                          >
+                            {declining ? "Recording Decline..." : "Decline Selected"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {actionMessage && (
+                        <div style={{
+                          backgroundColor: "#ecfdf5",
+                          border: "1px solid #bbf7d0",
+                          color: "#047857",
+                          padding: "12px",
+                          borderRadius: "12px",
+                          fontSize: "13px",
+                          fontWeight: "600"
+                        }}>
+                          {actionMessage}
+                        </div>
+                      )}
+
+                      {actionError && (
+                        <div style={{
+                          backgroundColor: "#fef2f2",
+                          border: "1px solid #fecaca",
+                          color: "#b91c1c",
+                          padding: "12px",
+                          borderRadius: "12px",
+                          fontSize: "13px",
+                          fontWeight: "600"
+                        }}>
+                          {actionError}
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
+                  )}
+
+                  <div style={{
+                    background: "white",
+                    border: "1px solid #e0e0e0",
+                    borderRadius: "16px",
+                    padding: "24px",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
+                  }}>
+                    <h3 style={{ fontSize: "20px", fontWeight: "600", marginBottom: "20px", color: "#1a1a1a" }}>
+                      VHC Check Results
+                    </h3>
+
+                    {Object.entries(checksBySection).map(([section, checks]) => {
+                      const sectionSelected = checks.length > 0 && checks.every(
+                        (check) => selectedItems[check.vhc_id]
+                      ); // Determines if all checks in this section are selected
+                      return (
+                        <div key={section} style={{ marginBottom: "24px" }}>
+                          <div style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            marginBottom: "12px",
+                            paddingBottom: "8px",
+                            borderBottom: "2px solid #f0f0f0"
+                          }}>
+                            <h4 style={{
+                              fontSize: "16px",
+                              fontWeight: "600",
+                              color: "#333",
+                              margin: 0
+                            }}>
+                              {section} ({checks.length})
+                            </h4>
+                            {hasWorkshopEditorRole && (
+                              <button
+                                onClick={() => handleSectionToggleAll(section)}
+                                style={{
+                                  padding: "6px 12px",
+                                  borderRadius: "999px",
+                                  border: "1px solid #fecaca",
+                                  backgroundColor: sectionSelected ? "#fee2e2" : "#fff",
+                                  color: "#991b1b",
+                                  fontSize: "12px",
+                                  fontWeight: "600",
+                                  cursor: "pointer"
+                                }}
+                              >
+                                {sectionSelected ? "Uncheck Section" : "Check Section"}
+                              </button>
+                            )}
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                            {checks.map(check => {
+                              const itemSelected = Boolean(selectedItems[check.vhc_id]); // Checks if this individual item is selected
+                              return (
+                                <div key={check.vhc_id} style={{
+                                  padding: "12px",
+                                  border: itemSelected ? "1px solid #fca5a5" : "1px solid #e0e0e0",
+                                  borderRadius: "8px",
+                                  backgroundColor: itemSelected ? "#fff1f2" : "#fafafa"
+                                }}>
+                                  <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", justifyContent: "space-between" }}>
+                                    {hasWorkshopEditorRole && (
+                                      <input
+                                        type="checkbox"
+                                        checked={itemSelected}
+                                        onChange={() => handleToggleItemSelection(check)}
+                                        style={{ marginTop: "4px" }}
+                                      />
+                                    )}
+                                    <div style={{ flex: 1 }}>
+                                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", margin: "0 0 4px 0" }}>
+                                        {check.issue_title}
+                                      </p>
+                                      <p style={{ fontSize: "13px", color: "#666", margin: 0 }}>
+                                        {check.issue_description}
+                                      </p>
+                                    </div>
+                                    {check.measurement && (
+                                      <div style={{
+                                        padding: "6px 12px",
+                                        backgroundColor: itemSelected ? "#fee2e2" : "#e0e0e0",
+                                        borderRadius: "6px",
+                                        fontSize: "13px",
+                                        fontWeight: "600",
+                                        color: itemSelected ? "#991b1b" : "#1f2937"
+                                      }}>
+                                        £{parseFloat(check.measurement).toFixed(2)}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </>
           )}

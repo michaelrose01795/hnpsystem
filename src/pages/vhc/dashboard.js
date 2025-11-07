@@ -346,19 +346,29 @@ export default function VHCDashboard() {
         const jobs = await getAllJobs();
         console.log("✅ Jobs fetched:", jobs.length);
 
-        const vhcEligibleJobs = jobs.filter((job) => job.vhcRequired === true);
-        console.log("✅ Jobs requiring VHC:", vhcEligibleJobs.length);
+        const vhcEligibleJobs = jobs.filter((job) => {
+          const requiresVhc = job.vhcRequired === true; // ✅ Track if the job has an actual VHC requirement
+          const hasStandalonePartRequest = !requiresVhc && (
+            (Array.isArray(job.partsRequests) && job.partsRequests.length > 0) ||
+            (Array.isArray(job.partsAllocations) && job.partsAllocations.length > 0)
+          ); // ✅ Capture jobs that only have a part request so they can still land on the dashboard
+          return requiresVhc || hasStandalonePartRequest; // ✅ Surface both traditional VHC jobs and single-part requests
+        });
+        console.log("✅ Jobs requiring VHC or carrying standalone part requests:", vhcEligibleJobs.length);
 
         const jobsWithVhc = await Promise.all(
           vhcEligibleJobs.map(async (job) => {
             const checks = await getVHCChecksByJob(job.id);
 
-            const partsCount =
-              job.partsAllocations?.length ||
-              job.partsRequests?.length ||
-              0;
+            const allocationCount = Array.isArray(job.partsAllocations)
+              ? job.partsAllocations.length
+              : 0; // ✅ Count any allocated parts tied to the job
+            const requestCount = Array.isArray(job.partsRequests)
+              ? job.partsRequests.length
+              : 0; // ✅ Count pending part requests raised without a full VHC
+            const partsCount = allocationCount + requestCount; // ✅ Combine both sources so single-part requests appear correctly
             const effectiveChecksCount =
-              checks.length > 0 ? checks.length : partsCount;
+              checks.length > 0 ? checks.length : partsCount; // ✅ Fall back to the parts tally when no formal checks exist
 
             let vhcStatus = "Outstanding";
             if (checks.length > 0) {
@@ -386,17 +396,26 @@ export default function VHCDashboard() {
               .reduce((sum, c) => sum + (parseFloat(c.measurement) || 0), 0)
               .toFixed(2);
 
-            const partsValue = (job.partsAllocations || []).reduce(
+            const allocationValue = (job.partsAllocations || []).reduce(
               (sum, allocation) => {
                 const qty =
                   allocation.quantityRequested ||
                   allocation.quantityAllocated ||
-                  0;
-                const price = Number.parseFloat(allocation.unitPrice) || 0;
-                return sum + qty * price;
+                  0; // ✅ Respect either requested or allocated quantities
+                const price = Number.parseFloat(allocation.unitPrice) || 0; // ✅ Use the stored allocation price when present
+                return sum + qty * price; // ✅ Accumulate allocation totals
               },
               0
             );
+            const requestValue = (job.partsRequests || []).reduce(
+              (sum, request) => {
+                const qty = request.quantity || request.quantityRequested || 0; // ✅ Support quantity data coming from request records
+                const price = Number.parseFloat(request.unitPrice) || 0; // ✅ Allow managers to add pricing on raw requests
+                return sum + qty * price; // ✅ Add the request value to the running total
+              },
+              0
+            );
+            const partsValue = allocationValue + requestValue; // ✅ Merge allocated and requested values so managers can cost single-part jobs
 
             return {
               id: job.id,
