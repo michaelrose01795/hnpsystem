@@ -12,9 +12,11 @@ import {
   unassignTechnicianFromJob, 
   updateJobPosition 
 } from "../../../lib/database/jobs"; // ✅ Fetch and update jobs from Supabase
+import { getTechnicianUsers, getMotTesterUsers } from "../../../lib/database/users";
+import { normalizeDisplayName } from "../../../utils/nameUtils";
 
 // Build tech list dynamically from usersByRole
-const techsList = (usersByRole["Techs"] || []).map((name, index) => ({
+const staticTechsList = (usersByRole["Techs"] || []).map((name, index) => ({
   id: index + 1,
   name,
 }));
@@ -24,13 +26,19 @@ const motTestersList = (usersByRole["MOT Tester"] || []).map((name, index) => ({
   name,
 }));
 
-const assignableStaffList = [...techsList, ...motTestersList];
+const isAllowedTechRole = (role) => {
+  if (!role) return false;
+  const normalized = String(role).toLowerCase();
+  return normalized.includes("tech") || normalized.includes("mot");
+};
 
 export default function NextJobsPage() {
   // ✅ Hooks
   const { user } = useUser(); // Current logged-in user
   const router = useRouter(); // Next.js router for navigation
   const [jobs, setJobs] = useState([]); // Jobs from database
+  const [dbTechnicians, setDbTechnicians] = useState([]);
+  const [dbMotTesters, setDbMotTesters] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null); // Job selected for popup
   const [assignPopup, setAssignPopup] = useState(false); // Assign popup
   const [searchTerm, setSearchTerm] = useState(""); // Search filter
@@ -51,6 +59,7 @@ export default function NextJobsPage() {
   // ✅ Fetch jobs from Supabase on component mount
   useEffect(() => {
     fetchJobs();
+    fetchTechnicians();
   }, []);
 
   const fetchJobs = async () => {
@@ -67,25 +76,123 @@ export default function NextJobsPage() {
     return filtered;
   };
 
+  const fetchTechnicians = async () => {
+    try {
+      const [techList, testerList] = await Promise.all([
+        getTechnicianUsers(),
+        getMotTesterUsers(),
+      ]);
+      setDbTechnicians(techList);
+      setDbMotTesters(testerList);
+    } catch (err) {
+      console.error("❌ Error fetching technicians:", err);
+    }
+  };
+
+  const displayTechsList = useMemo(() => {
+    const map = new Map();
+
+    const sourceList =
+      dbTechnicians.length > 0 ? dbTechnicians : staticTechsList;
+
+    sourceList.forEach((tech, index) => {
+      const label =
+        tech.name ||
+        tech.displayName ||
+        tech.fullName ||
+        tech.email ||
+        "";
+      const normalized = normalizeDisplayName(label);
+      if (!normalized) return;
+
+      const entry = {
+        id: tech.id ?? tech.user_id ?? `tech-${index}`,
+        name: label || `Technician ${index + 1}`,
+        email: tech.email || "",
+        role: tech.role || "",
+      };
+
+      if (!map.has(normalized)) {
+        map.set(normalized, entry);
+      }
+    });
+
+    jobs.forEach((job) => {
+      const rawName =
+        job.assignedTech?.name ||
+        job.technician ||
+        (typeof job.assignedTo === "string" ? job.assignedTo : "");
+
+      const normalized = normalizeDisplayName(rawName);
+      if (!normalized || map.has(normalized)) return;
+
+      const roleHint =
+        job.assignedTech?.role ||
+        job.technicianRole ||
+        job.technician?.role ||
+        "";
+      if (roleHint && !isAllowedTechRole(roleHint)) return;
+
+      map.set(normalized, {
+        id: job.assignedTech?.id || `db-tech-${normalized}`,
+        name: rawName?.trim() || "Unnamed Tech",
+        email: job.assignedTech?.email || "",
+        role: roleHint || "",
+      });
+    });
+
+    return Array.from(map.values());
+  }, [jobs, dbTechnicians]);
+
+  const motDisplayList = useMemo(() => {
+    if (dbMotTesters.length > 0) return dbMotTesters;
+    return motTestersList;
+  }, [dbMotTesters]);
+
+  const assignableStaffList = useMemo(() => {
+    const map = new Map();
+    const addEntry = (tech) => {
+      const label =
+        tech.name ||
+        tech.displayName ||
+        tech.fullName ||
+        tech.email ||
+        "";
+      const normalized = normalizeDisplayName(label);
+      if (!normalized) return;
+      if (!map.has(normalized)) {
+        map.set(normalized, {
+          id: tech.id ?? tech.user_id ?? normalized,
+          name: label || "Unnamed Tech",
+        });
+      }
+    };
+
+    displayTechsList.forEach(addEntry);
+    motDisplayList.forEach(addEntry);
+
+    return Array.from(map.values());
+  }, [displayTechsList, motDisplayList]);
+
   // ✅ Filter ALL outstanding/not started jobs (unassigned AND not completed)
   // These are jobs that are not finished - they show in the top section
   const unassignedJobs = useMemo(
     () =>
-      jobs.filter(
-        (job) => {
-          // Define completed/finished statuses that should NOT appear
-          const completedStatuses = ["Completed", "Finished", "Closed", "Invoiced", "Collected"];
+      jobs.filter((job) => {
+        const completedStatuses = ["Completed", "Finished", "Closed", "Invoiced", "Collected"];
+        const assignedName =
+          job.assignedTech?.name ||
+          job.technician ||
+          (typeof job.assignedTo === "string" ? job.assignedTo : "");
 
-          const assignedName =
-            job.assignedTech?.name ||
-            job.technician ||
-            (typeof job.assignedTo === "string" ? job.assignedTo : "");
-          
-          // Show job if it's not in completed statuses AND has no tech assigned
-          return !completedStatuses.includes(job.status) && !assignedName?.trim();
-        }
-      ),
-    [jobs] // Recalculate when jobs change
+        const normalizedAssigned = normalizeDisplayName(assignedName);
+        const hasAssignedTech =
+          (normalizedAssigned && normalizedAssigned.length > 0) ||
+          (typeof job.assignedTo === "number" && job.assignedTo !== null);
+
+        return !completedStatuses.includes(job.status) && !hasAssignedTech;
+      }),
+    [jobs]
   );
 
   // ✅ Search logic for job cards in the outstanding section
@@ -104,7 +211,7 @@ export default function NextJobsPage() {
 
   // ✅ Group jobs by technician (using assignedTech.name)
   const getJobsForAssignee = (assigneeName) => {
-    const normalizedAssignee = (assigneeName || "").toLowerCase().trim();
+    const normalizedAssignee = normalizeDisplayName(assigneeName);
 
     return jobs
       .filter((job) => {
@@ -113,7 +220,7 @@ export default function NextJobsPage() {
           job.technician ||
           (typeof job.assignedTo === "string" ? job.assignedTo : "");
 
-        const jobAssignedName = (assignedNameRaw || "").toLowerCase().trim();
+        const jobAssignedName = normalizeDisplayName(assignedNameRaw);
 
         return jobAssignedName && jobAssignedName === normalizedAssignee;
       })
@@ -122,20 +229,20 @@ export default function NextJobsPage() {
 
   const assignedJobs = useMemo(
     () =>
-      techsList.map((tech) => ({
+      displayTechsList.map((tech) => ({
         ...tech,
         jobs: getJobsForAssignee(tech.name),
       })),
-    [jobs]
+    [jobs, displayTechsList]
   );
 
   const assignedMotJobs = useMemo(
     () =>
-      motTestersList.map((tester) => ({
+      motDisplayList.map((tester) => ({
         ...tester,
         jobs: getJobsForAssignee(tester.name),
       })),
-    [jobs]
+    [jobs, motDisplayList]
   );
 
   const handleOpenJobDetails = (job) => {
@@ -165,6 +272,11 @@ export default function NextJobsPage() {
     const jobId = selectedJob.id;
     const jobNumber = selectedJob.jobNumber;
     const technicianName = tech.name;
+    const rawIdentifier = tech.id ?? tech.user_id ?? technicianName;
+    const technicianIdentifier =
+      rawIdentifier && Number.isInteger(Number(rawIdentifier))
+        ? Number(rawIdentifier)
+        : rawIdentifier;
 
     console.log("🔄 Assigning technician:", technicianName, "to job:", jobId); // Debug log
     setFeedbackMessage(null);
@@ -172,7 +284,11 @@ export default function NextJobsPage() {
     // Use the dedicated helper function - it now returns formatted job data or null
     let updatedJob;
     try {
-      updatedJob = await assignTechnicianToJob(jobId, technicianName);
+      updatedJob = await assignTechnicianToJob(
+        jobId,
+        technicianIdentifier,
+        technicianName
+      );
     } catch (err) {
       console.error("❌ Exception assigning technician:", err);
       setAssignPopup(false);
@@ -298,12 +414,19 @@ export default function NextJobsPage() {
     console.log("🔄 Dropping job on tech section:", tech.name); // Debug log
 
     // Get the current technician of the dragged job
-    const draggingJobTech = draggingJob.assignedTech?.name || draggingJob.technician || "";
+    const draggingJobTechRaw =
+      draggingJob.assignedTech?.name || draggingJob.technician || "";
+    const draggingJobTech = normalizeDisplayName(draggingJobTechRaw);
+    const targetTech = normalizeDisplayName(tech.name);
 
     // If dropping on a different technician, reassign the job
-    if (draggingJobTech !== tech.name) {
+    if (draggingJobTech !== targetTech) {
       console.log("🔄 Reassigning job to new technician:", tech.name); // Debug log
-      await assignTechnicianToJob(draggingJob.id, tech.name);
+      const identifier =
+        tech.id && Number.isInteger(Number(tech.id))
+          ? Number(tech.id)
+          : tech.id || tech.name;
+      await assignTechnicianToJob(draggingJob.id, identifier, tech.name);
     }
 
     // Remove the dragged job from the tech's job list
@@ -548,11 +671,12 @@ export default function NextJobsPage() {
   return (
     <Layout>
       <div style={{ 
-        height: "100%", 
+        minHeight: "100vh", 
         display: "flex", 
         flexDirection: "column", 
         padding: "8px 16px",
-        overflow: "hidden" 
+        gap: "12px",
+        overflowY: "auto" 
       }}>
         
         {/* ✅ Header Section */}
@@ -687,37 +811,28 @@ export default function NextJobsPage() {
 
         {/* ✅ Technicians Grid Section */}
         <div style={{ 
-          flex: 1,
+          flex: "1 0 auto",
           borderRadius: "8px",
           boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
           border: "1px solid #ffe5e5",
           background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)",
           padding: "24px",
-          overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          minHeight: 0
+          gap: "24px"
         }}>
           
-          <div style={{ 
-            flex: 1,
-            overflowY: "auto",
-            paddingRight: "8px",
-            minHeight: 0
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: "16px",
+            width: "100%"
           }}>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)", // 2 columns
-              gridTemplateRows: "repeat(3, 1fr)", // 3 rows (6 techs total)
-              gap: "16px",
-              height: "100%"
-            }}>
-              {assignedJobs.map(renderAssigneePanel)}
-            </div>
+            {assignedJobs.map(renderAssigneePanel)}
           </div>
 
-          {motTestersList.length > 0 && (
-            <div style={{ marginTop: "24px" }}>
+          {motDisplayList.length > 0 && (
+            <div>
               <h3 style={{
                 margin: "0 0 12px 0",
                 fontSize: "18px",
@@ -728,7 +843,7 @@ export default function NextJobsPage() {
               </h3>
               <div style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
                 gap: "16px"
               }}>
                 {assignedMotJobs.map(renderAssigneePanel)}
@@ -954,8 +1069,10 @@ export default function NextJobsPage() {
               
               <select
                 onChange={(e) => {
+                  const value = e.target.value;
                   const selectedTech = assignableStaffList.find(
-                    (t) => t.name === e.target.value
+                    (t) =>
+                      String(t.id ?? t.name) === value || t.name === value
                   );
                   if (selectedTech) assignTechToJob(selectedTech); // Assign selected tech
                 }}
@@ -978,7 +1095,10 @@ export default function NextJobsPage() {
                   Select Technician...
                 </option>
                 {assignableStaffList.map((tech) => (
-                  <option key={tech.id} value={tech.name}>
+                  <option
+                    key={tech.id ?? tech.name}
+                    value={String(tech.id ?? tech.name)}
+                  >
                     {tech.name}
                   </option>
                 ))}

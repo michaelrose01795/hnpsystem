@@ -9,6 +9,7 @@ import LoginDropdown from "../components/LoginDropdown";
 import CustomerViewPreview from "../components/CustomerViewPreview";
 import { supabase } from "../lib/supabaseClient"; // Database connection
 import { usersByRole, roleCategories } from "../config/users"; // Dev users config
+import { getUsersGroupedByRole } from "../lib/database/users";
 
 export default function LoginPage() {
   const CUSTOMER_PORTAL_URL =
@@ -22,13 +23,15 @@ export default function LoginPage() {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
-  const [selectedUser, setSelectedUser] = useState("");
+  const [selectedUser, setSelectedUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [devUsersByRole, setDevUsersByRole] = useState(usersByRole);
+  const [loadingDevUsers, setLoadingDevUsers] = useState(true);
 
   // Developer login handler
-  const handleDevLogin = () => {
+  const handleDevLogin = async () => {
     if (!devLogin) {
       alert("Developer login is not available. User context is missing.");
       return;
@@ -37,7 +40,10 @@ export default function LoginPage() {
       alert("Please select an area, department, and user.");
       return;
     }
-    devLogin(selectedUser, selectedDepartment);
+    const result = await devLogin(selectedUser, selectedDepartment);
+    if (result?.success === false) {
+      alert("Dev login failed. Please try again.");
+    }
   };
 
   // Supabase email/password login
@@ -81,6 +87,24 @@ export default function LoginPage() {
       router.push("/newsfeed");
     }
   }, [user, router]);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadUsers = async () => {
+      setLoadingDevUsers(true);
+      const grouped = await getUsersGroupedByRole();
+      if (mounted && Object.keys(grouped).length > 0) {
+        setDevUsersByRole(grouped);
+      }
+      if (mounted) {
+        setLoadingDevUsers(false);
+      }
+    };
+    loadUsers();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <Layout>
@@ -146,13 +170,18 @@ export default function LoginPage() {
                 setSelectedDepartment={setSelectedDepartment}
                 selectedUser={selectedUser}
                 setSelectedUser={setSelectedUser}
-                usersByRole={usersByRole}
+                usersByRole={devUsersByRole}
                 roleCategories={roleCategories}
               />
+              {loadingDevUsers && (
+                <p className="text-xs text-gray-500">
+                  Loading database users for dev login...
+                </p>
+              )}
               {selectedCategory === "Customers" && (
                 <CustomerViewPreview
                   portalUrl={CUSTOMER_PORTAL_URL}
-                  selectedPersona={selectedUser}
+                  selectedPersona={selectedUser?.name || ""}
                   selectedDepartment={selectedDepartment}
                 />
               )}

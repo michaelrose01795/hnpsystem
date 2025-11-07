@@ -9,6 +9,7 @@ import { usersByRole } from "../../../config/users";
 import { getAllJobs } from "../../../lib/database/jobs";
 import { getClockingStatus } from "../../../lib/database/clocking";
 import JobCardModal from "../../../components/JobCards/JobCardModal"; // Import Start Job modal
+import { normalizeDisplayName } from "../../../utils/nameUtils";
 
 const STATUS_BADGE_STYLES = {
   "In Progress": { background: "#dbeafe", color: "#1e40af" },
@@ -69,6 +70,7 @@ export default function MyJobsPage() {
       setLoading(true);
 
       try {
+        const normalizedUsername = normalizeDisplayName(username);
         // Fetch all jobs
         const fetchedJobs = await getAllJobs();
         console.log("📦 Fetched jobs:", fetchedJobs); // Debug log
@@ -81,9 +83,9 @@ export default function MyJobsPage() {
             job.technician ||
             (typeof job.assignedTo === "string" ? job.assignedTo : "");
 
-          if (!assignedNameRaw || !username) return false;
+          if (!assignedNameRaw || !normalizedUsername) return false;
 
-          return assignedNameRaw.trim().toLowerCase() === username.trim().toLowerCase();
+          return normalizeDisplayName(assignedNameRaw) === normalizedUsername;
         });
 
         // Sort by created date (newest first)

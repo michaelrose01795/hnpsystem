@@ -217,7 +217,7 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
       style={{
         width: isCondensed ? "100%" : "260px",
         minWidth: isCondensed ? "auto" : "220px",
-        maxHeight: isCondensed ? "none" : "calc(100vh - 20px)",
+        height: isCondensed ? "auto" : "calc(100vh - 20px)",
         position: isCondensed ? "relative" : "sticky",
         top: isCondensed ? "auto" : "10px",
         display: "flex",
@@ -278,38 +278,25 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
         )}
       </div>
 
-      <div style={{ padding: "20px", flex: 1, overflowY: "auto" }}>
-        {generalSections.length > 0 && (
-          <div
-            style={{
-              padding: "12px 14px",
-              borderRadius: "12px",
-              backgroundColor: "#fff5f5",
-              marginBottom: "12px",
-              border: "1px solid #ffe0e0",
-              boxShadow: "inset 0 0 0 1px rgba(255, 255, 255, 0.4)",
-            }}
-          >
+      <div
+        style={{
+          padding: "20px",
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            paddingRight: "6px",
+          }}
+        >
+          {generalSections.length > 0 && (
             <div
-              style={{
-                color: "#a00000",
-                fontWeight: 700,
-                fontSize: "0.85rem",
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-              }}
-            >
-              General
-            </div>
-            {generalSections.flatMap((section) => section.items).map(renderNavItem)}
-          </div>
-        )}
-
-        {departmentSections.map((section) => {
-          const isOpen = openSections[section.label];
-          return (
-            <div
-              key={section.label}
               style={{
                 padding: "12px 14px",
                 borderRadius: "12px",
@@ -319,33 +306,63 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
                 boxShadow: "inset 0 0 0 1px rgba(255, 255, 255, 0.4)",
               }}
             >
-              <button
-                type="button"
-                onClick={() => toggleSection(section.label)}
+              <div
                 style={{
-                  width: "100%",
-                  textAlign: "left",
-                  background: "transparent",
-                  border: "none",
                   color: "#a00000",
                   fontWeight: 700,
                   fontSize: "0.85rem",
                   letterSpacing: "0.05em",
                   textTransform: "uppercase",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  cursor: "pointer",
-                  padding: 0,
                 }}
               >
-                {section.label}
-                <span style={{ fontSize: "1rem" }}>{isOpen ? "−" : "+"}</span>
-              </button>
-              {isOpen && section.items.map(renderNavItem)}
+                General
+              </div>
+              {generalSections.flatMap((section) => section.items).map(renderNavItem)}
             </div>
-          );
-        })}
+          )}
+
+          {departmentSections.map((section) => {
+            const isOpen = openSections[section.label];
+            return (
+              <div
+                key={section.label}
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: "12px",
+                  backgroundColor: "#fff5f5",
+                  marginBottom: "12px",
+                  border: "1px solid #ffe0e0",
+                  boxShadow: "inset 0 0 0 1px rgba(255, 255, 255, 0.4)",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleSection(section.label)}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    background: "transparent",
+                    border: "none",
+                    color: "#a00000",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    letterSpacing: "0.05em",
+                    textTransform: "uppercase",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
+                >
+                  {section.label}
+                  <span style={{ fontSize: "1rem" }}>{isOpen ? "−" : "+"}</span>
+                </button>
+                {isOpen && section.items.map(renderNavItem)}
+              </div>
+            );
+          })}
+        </div>
 
         {accountSections.length > 0 && (
           <div
@@ -355,6 +372,7 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
               backgroundColor: "#fff5f5",
               border: "1px solid #ffe0e0",
               boxShadow: "inset 0 0 0 1px rgba(255, 255, 255, 0.4)",
+              marginTop: "auto",
             }}
           >
             <div

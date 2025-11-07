@@ -51,20 +51,6 @@ export default function Layout({ children }) {
   const canViewStatusSidebar = userRoles.some((role) =>
     statusSidebarRoles.includes(role)
   );
-  const isPartsUser = userRoles.some(
-    (role) => role === "parts" || role === "parts manager"
-  );
-  const trackingAccessRoles = [
-    "techs",
-    "service",
-    "service manager",
-    "workshop manager",
-    "valet service",
-    "admin",
-  ];
-  const canAccessTracking = userRoles.some((role) =>
-    trackingAccessRoles.includes(role)
-  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -384,160 +370,6 @@ export default function Layout({ children }) {
     section: "Workshop",
   });
 
-  const isRouteActive = (href) => {
-    if (!href) return false;
-    return router.pathname === href || router.pathname.startsWith(`${href}/`);
-  };
-
-  const renderSidebarUtilityCard = (isFullWidth = false) => (
-    <div
-      style={{
-        width: isFullWidth ? "100%" : "220px",
-        backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        padding: "18px",
-        color: colors.text,
-        boxShadow: "0 16px 30px rgba(209, 0, 0, 0.12)",
-        border: "1px solid #ffe0e0",
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-      }}
-    >
-      <div
-        style={{
-          fontSize: "0.75rem",
-          fontWeight: 700,
-          color: colors.accent,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-        }}
-      >
-        Quick Actions
-      </div>
-
-      {userRoles.includes("techs") && (
-        <>
-          <Link
-            href="/job-cards/myjobs"
-            style={{
-              textDecoration: "none",
-              width: "100%",
-            }}
-          >
-            <div
-              style={{
-                padding: "10px 14px",
-                borderRadius: "12px",
-                backgroundColor: isRouteActive("/job-cards/myjobs")
-                  ? colors.accent
-                  : "#fff5f5",
-                border: `1px solid ${colors.accent}`,
-                color: isRouteActive("/job-cards/myjobs") ? "#ffffff" : colors.accent,
-                boxShadow: isRouteActive("/job-cards/myjobs")
-                  ? "0 12px 22px rgba(209, 0, 0, 0.25)"
-                  : "none",
-                fontWeight: 600,
-                textAlign: "center",
-              }}
-            >
-              🧰 My Jobs
-            </div>
-          </Link>
-
-          <button
-            onClick={() => setIsModalOpen(true)}
-            style={{
-              width: "100%",
-              padding: "10px 14px",
-              borderRadius: "12px",
-              border: `1px dashed ${colors.accent}`,
-              backgroundColor: "#fff5f5",
-              color: colors.accent,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            🔧 Start Job
-          </button>
-        </>
-      )}
-
-      {(userRoles.includes("service") ||
-        userRoles.includes("admin") ||
-        userRoles.some((r) => r.includes("manager"))) && (
-        <Link href="/job-cards/create" style={{ textDecoration: "none", width: "100%" }}>
-          <div
-            style={{
-              padding: "10px 14px",
-              borderRadius: "12px",
-              backgroundColor: isRouteActive("/job-cards/create")
-                ? colors.accent
-                : "#fff5f5",
-              color: isRouteActive("/job-cards/create") ? "#ffffff" : colors.accent,
-              border: `1px solid ${colors.accent}`,
-              fontWeight: 700,
-              textAlign: "center",
-              boxShadow: isRouteActive("/job-cards/create")
-                ? "0 12px 22px rgba(209, 0, 0, 0.25)"
-                : "none",
-            }}
-          >
-            ➕ Create Job Card
-          </div>
-        </Link>
-      )}
-
-      {userRoles.includes("parts") && (
-        <Link href="/vhc/dashboard" style={{ textDecoration: "none", width: "100%" }}>
-          <div
-            style={{
-              padding: "10px 14px",
-              borderRadius: "12px",
-              backgroundColor: isRouteActive("/vhc/dashboard")
-                ? colors.accent
-                : "#fff5f5",
-              color: isRouteActive("/vhc/dashboard") ? "#ffffff" : colors.accent,
-              border: `1px solid ${colors.accent}`,
-              fontWeight: 700,
-              textAlign: "center",
-              boxShadow: isRouteActive("/vhc/dashboard")
-                ? "0 12px 22px rgba(209, 0, 0, 0.25)"
-                : "none",
-            }}
-          >
-            🧾 Parts VHC Dashboard
-          </div>
-        </Link>
-      )}
-
-      {(userRoles.includes("valet service") ||
-        userRoles.includes("service manager") ||
-        userRoles.includes("admin")) && (
-        <Link href="/valet" style={{ textDecoration: "none", width: "100%" }}>
-          <div
-            style={{
-              padding: "10px 14px",
-              borderRadius: "12px",
-              backgroundColor: isRouteActive("/valet")
-                ? colors.accent
-                : "#fff5f5",
-              border: `1px solid ${colors.accent}`,
-              fontWeight: 600,
-              textAlign: "center",
-              color: isRouteActive("/valet") ? "#ffffff" : colors.accent,
-              boxShadow: isRouteActive("/valet")
-                ? "0 12px 22px rgba(209, 0, 0, 0.25)"
-                : "none",
-            }}
-          >
-            🧽 Valet Jobs
-          </div>
-        </Link>
-      )}
-    </div>
-  );
-
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
   const mainColumnMaxWidth = "100%";
@@ -578,10 +410,7 @@ export default function Layout({ children }) {
           }}
         >
           {isSidebarOpen ? (
-            <>
-              <Sidebar onToggle={toggleSidebar} />
-              {renderSidebarUtilityCard()}
-            </>
+            <Sidebar onToggle={toggleSidebar} />
           ) : (
             <button
               onClick={toggleSidebar}
@@ -710,7 +539,6 @@ export default function Layout({ children }) {
                     </button>
                   </div>
                   <Sidebar onToggle={closeMobileMenu} isCondensed />
-                  <div>{renderSidebarUtilityCard(true)}</div>
                 </div>
               </div>
             )}

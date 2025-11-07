@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useSession } from "next-auth/react";
 import { ensureDevDbUserAndGetId } from "../lib/users/devUsers";
 import { getUserActiveJobs } from "../lib/database/jobClocking";
+import { getUserById } from "../lib/database/users";
 
 const UserContext = createContext();
 
@@ -99,10 +100,49 @@ export function UserProvider({ children }) {
   }, [refreshCurrentJob]);
 
   // Developer login
-  const devLogin = (username = "dev", role = "WORKSHOP") => {
-    const devUser = { id: Date.now(), username, roles: [role.toUpperCase()] };
-    setUser(devUser);
-    localStorage.setItem("devUser", JSON.stringify(devUser));
+  const devLogin = async (userChoice = {}, role = "WORKSHOP") => {
+    try {
+      let resolved = null;
+      const candidateId =
+        userChoice?.id ?? userChoice?.user_id ?? userChoice?.identifier;
+      if (
+        candidateId !== undefined &&
+        candidateId !== null &&
+        Number.isInteger(Number(candidateId))
+      ) {
+        resolved = await getUserById(Number(candidateId));
+      }
+
+      const fallbackName =
+        typeof userChoice === "string"
+          ? userChoice
+          : userChoice?.name ||
+            userChoice?.displayName ||
+            userChoice?.fullName ||
+            userChoice?.email ||
+            "Dev User";
+
+      const finalUser = resolved
+        ? {
+            id: resolved.id,
+            username: resolved.name,
+            email: resolved.email,
+            roles: [resolved.role?.toUpperCase() || role.toUpperCase()],
+          }
+        : {
+            id: Date.now(),
+            username: fallbackName,
+            email: userChoice?.email || "",
+            roles: [role.toUpperCase()],
+          };
+
+      setUser(finalUser);
+      localStorage.setItem("devUser", JSON.stringify(finalUser));
+      return { success: true };
+    } catch (err) {
+      console.error("Dev login failed", err);
+      return { success: false, error: err };
+    }
   };
 
   // Logout

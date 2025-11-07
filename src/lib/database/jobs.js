@@ -68,7 +68,7 @@ export const getAllJobs = async () => {
           contact_preference
         )
       ),
-      technician_user:assigned_to(user_id, first_name, last_name, email, role),
+      technician:assigned_to(user_id, first_name, last_name, email, role),
       appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
       vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, created_at, updated_at),
@@ -602,26 +602,36 @@ const formatJobData = (data) => {
 
   // Normalise technician information so UI layers can rely on assignedTech
   const assignedTech = (() => {
-    if (data.technician_user) {
-      const firstName = data.technician_user.first_name?.trim() || "";
-      const lastName = data.technician_user.last_name?.trim() || "";
+    const technicianRecord =
+      (data.technician_user && typeof data.technician_user === "object"
+        ? data.technician_user
+        : null) ||
+      (data.technician && typeof data.technician === "object"
+        ? data.technician
+        : null);
+
+    if (technicianRecord) {
+      const firstName = technicianRecord.first_name?.trim() || "";
+      const lastName = technicianRecord.last_name?.trim() || "";
       const derivedName = [firstName, lastName].filter(Boolean).join(" ").trim();
 
       return {
-        id: data.technician_user.user_id || null,
-        name: derivedName || firstName || data.technician_user.email || "",
-        fullName: derivedName || firstName || data.technician_user.email || "",
-        email: data.technician_user.email || "",
-        role: data.technician_user.role || "",
+        id: technicianRecord.user_id || null,
+        name: derivedName || firstName || technicianRecord.email || "",
+        fullName: derivedName || firstName || technicianRecord.email || "",
+        email: technicianRecord.email || "",
+        role: technicianRecord.role || "",
       };
     }
 
-    if (data.assigned_to) {
-      const assignedName =
-        typeof data.assigned_to === "string"
-          ? data.assigned_to.trim()
-          : `${data.assigned_to}`;
+    const assignedName =
+      typeof data.technician === "string"
+        ? data.technician.trim()
+        : typeof data.assigned_to === "string"
+        ? data.assigned_to.trim()
+        : null;
 
+    if (assignedName) {
       return {
         id: null,
         name: assignedName,

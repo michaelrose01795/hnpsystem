@@ -40,6 +40,32 @@ export default function LoginDropdown({
     return user;
   };
 
+  const getUsersForDepartment = (department) =>
+    (usersByRole[department] || []).map((user, index) =>
+      typeof user === "string"
+        ? {
+            id: `${department}-${index}`,
+            name: user,
+            role: department,
+          }
+        : {
+            id: String(user.id ?? user.user_id ?? `${department}-${index}`),
+            name:
+              user.name ||
+              user.displayName ||
+              user.fullName ||
+              `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+              user.email ||
+              `User ${index + 1}`,
+            email: user.email || "",
+            role: user.role || department,
+          }
+    );
+
+  const userOptions = selectedDepartment
+    ? getUsersForDepartment(selectedDepartment)
+    : [];
+
   return (
     <div className="flex flex-col space-y-2">
       {/* Retail vs Sales selector */}
@@ -48,7 +74,7 @@ export default function LoginDropdown({
         onChange={(e) => {
           setSelectedCategory(e.target.value);
           setSelectedDepartment("");
-          setSelectedUser("");
+          setSelectedUser(null);
         }}
         className="p-2 border border-gray-300 rounded"
       >
@@ -66,7 +92,7 @@ export default function LoginDropdown({
           value={selectedDepartment}
           onChange={(e) => {
             setSelectedDepartment(e.target.value);
-            setSelectedUser("");
+            setSelectedUser(null);
           }}
           className="p-2 border border-gray-300 rounded"
         >
@@ -84,14 +110,19 @@ export default function LoginDropdown({
       {/* User selector */}
       {selectedDepartment && (
         <select
-          value={selectedUser}
-          onChange={(e) => setSelectedUser(e.target.value)}
+          value={selectedUser?.id || ""}
+          onChange={(e) => {
+            const nextUser = userOptions.find(
+              (user) => String(user.id) === e.target.value
+            );
+            setSelectedUser(nextUser || null);
+          }}
           className="p-2 border border-gray-300 rounded"
         >
           <option value="">Select User</option>
-          {(usersByRole[selectedDepartment] || []).map((user) => (
-            <option key={user} value={user}>
-              {formatUserName(selectedDepartment, user)}
+          {userOptions.map((user) => (
+            <option key={user.id} value={user.id}>
+              {formatUserName(selectedDepartment, user.name)}
             </option>
           ))}
         </select>
