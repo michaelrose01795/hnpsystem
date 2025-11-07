@@ -36,12 +36,6 @@ export const usersByRole = {
 // Map retail vs sales departments to provide grouped developer login options
 export const roleCategories = {
   Retail: [
-    "Admin",
-    "Admin Manager",
-    "Accounts",
-    "Accounts Manager",
-    "Owner",
-    "General Manager",
     "Service",
     "Service Manager",
     "Workshop Manager",
@@ -51,13 +45,16 @@ export const roleCategories = {
     "Parts Manager",
     "MOT Tester",
     "Valet Service",
-    "Receptionist",
-    "Painters",
-    "Contractors",
   ],
   Sales: [
     "Sales Director",
     "Sales",
+    "Admin",
+    "Admin Manager",
+    "Accounts",
+    "Accounts Manager",
+    "Owner",
+    "General Manager",
     "Valet Sales",
     "Buying Director",
     "Second Hand Buying",
