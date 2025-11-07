@@ -83,9 +83,7 @@ export default function Layout({ children }) {
     }
   };
 
-  if (user === undefined && !hideSidebar) {
-    return <div style={{ padding: "2rem", textAlign: "center" }}>Loading...</div>;
-  }
+  const isUserLoading = user === undefined && !hideSidebar;
 
   const role = userRoles[0] || "guest";
   const roleDisplay = role
@@ -106,6 +104,21 @@ export default function Layout({ children }) {
   const isActive = (path) => router.pathname.startsWith(path);
 
   const colors = darkMode ? appShellTheme.dark : appShellTheme.light;
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("sidebarOpen");
+    if (stored !== null) {
+      setIsSidebarOpen(stored === "true");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("sidebarOpen", isSidebarOpen ? "true" : "false");
+  }, [isSidebarOpen]);
 
   const navigationItems = [];
   const seenNavItems = new Set();
@@ -343,301 +356,463 @@ export default function Layout({ children }) {
     return router.pathname === href || router.pathname.startsWith(`${href}/`);
   };
 
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+
+  const mainColumnMaxWidth = hideSidebar
+    ? "100%"
+    : isSidebarOpen
+    ? "1080px"
+    : "1240px";
+  const topBarOffset = hideSidebar ? 0 : 150;
+
   return (
     <div
       style={{
         display: "flex",
         minHeight: "100vh",
+        width: "100%",
         fontFamily: 'Inter, "Segoe UI", system-ui, -apple-system, sans-serif',
         background: colors.background || colors.mainBg,
         color: colors.text,
         justifyContent: "center",
         gap: "24px",
-        padding: hideSidebar ? "0" : "0 24px",
+        padding: hideSidebar ? "0" : "0 16px",
+        boxSizing: "border-box",
+        overflowX: "hidden",
+        overflowY: "auto",
       }}
     >
       {!hideSidebar && (
         <div
           style={{
-            width: "280px",
-            padding: "16px 8px",
-            backgroundColor: "transparent",
+            width: isSidebarOpen ? "260px" : "64px",
+            padding: "16px 0",
+            alignSelf: "stretch",
             display: "flex",
             flexDirection: "column",
-            gap: "16px",
             alignItems: "center",
+            gap: "16px",
+            transition: "width 0.25s ease",
+            position: "relative",
           }}
         >
-          <Sidebar />
-
-          <div
+          <button
+            onClick={toggleSidebar}
             style={{
-              width: "100%",
-              background: "linear-gradient(135deg, rgba(209,0,0,0.95), rgba(160,0,0,0.95))",
-              borderRadius: "16px",
-              padding: "18px",
-              color: "#ffffff",
-              boxShadow: "0 15px 35px rgba(161,0,0,0.35)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
+              width: "40px",
+              height: "40px",
+              borderRadius: "10px",
+              border: "1px solid rgba(209,0,0,0.25)",
+              backgroundColor: "#ffffff",
+              color: colors.accent,
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
             }}
           >
-            <button
-              onClick={() => setDarkMode((prev) => !prev)}
-              style={{
-                width: "100%",
-                padding: "10px 14px",
-                borderRadius: "999px",
-                backgroundColor: "#ffffff",
-                color: colors.accent,
-                border: "none",
-                fontWeight: 700,
-                cursor: "pointer",
-                boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
-              }}
-            >
-              {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
-            </button>
+            {isSidebarOpen ? "⟨" : "⟩"}
+          </button>
 
-            {userRoles.includes("techs") && (
-              <>
-                <Link
-                  href="/job-cards/myjobs"
+          {isSidebarOpen && (
+            <>
+              <Sidebar />
+
+              <div
+                style={{
+                  width: "220px",
+                  background: "linear-gradient(135deg, rgba(209,0,0,0.95), rgba(160,0,0,0.95))",
+                  borderRadius: "16px",
+                  padding: "18px",
+                  color: "#ffffff",
+                  boxShadow: "0 15px 35px rgba(161,0,0,0.35)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                <button
+                  onClick={() => setDarkMode((prev) => !prev)}
                   style={{
-                    textDecoration: "none",
                     width: "100%",
+                    padding: "10px 14px",
+                    borderRadius: "999px",
+                    backgroundColor: "#ffffff",
+                    color: colors.accent,
+                    border: "none",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
                   }}
                 >
-                  <div
-                    style={{
-                      padding: "10px 14px",
-                      borderRadius: "12px",
-                      backgroundColor: isRouteActive("/job-cards/myjobs")
-                        ? "#ffffff"
-                        : "rgba(255,255,255,0.12)",
-                      border: isRouteActive("/job-cards/myjobs")
-                        ? `1px solid ${colors.accent}`
-                        : "1px solid rgba(255,255,255,0.3)",
-                      color: isRouteActive("/job-cards/myjobs") ? colors.accent : "#ffffff",
-                      boxShadow: isRouteActive("/job-cards/myjobs")
-                        ? "0 10px 25px rgba(0,0,0,0.12)"
-                        : "none",
-                      fontWeight: 600,
-                      textAlign: "center",
-                    }}
-                  >
-                    🧰 My Jobs
-                  </div>
-                </Link>
+                  {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
+                </button>
+
+                {userRoles.includes("techs") && (
+                  <>
+                    <Link
+                      href="/job-cards/myjobs"
+                      style={{
+                        textDecoration: "none",
+                        width: "100%",
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: "10px 14px",
+                          borderRadius: "12px",
+                          backgroundColor: isRouteActive("/job-cards/myjobs")
+                            ? "#ffffff"
+                            : "rgba(255,255,255,0.12)",
+                          border: isRouteActive("/job-cards/myjobs")
+                            ? `1px solid ${colors.accent}`
+                            : "1px solid rgba(255,255,255,0.3)",
+                          color: isRouteActive("/job-cards/myjobs") ? colors.accent : "#ffffff",
+                          boxShadow: isRouteActive("/job-cards/myjobs")
+                            ? "0 10px 25px rgba(0,0,0,0.12)"
+                            : "none",
+                          fontWeight: 600,
+                          textAlign: "center",
+                        }}
+                      >
+                        🧰 My Jobs
+                      </div>
+                    </Link>
+
+                    <button
+                      onClick={() => setIsModalOpen(true)}
+                      style={{
+                        width: "100%",
+                        padding: "10px 14px",
+                        borderRadius: "12px",
+                        border: "1px dashed rgba(255,255,255,0.5)",
+                        backgroundColor: "transparent",
+                        color: "#ffffff",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      🔧 Start Job
+                    </button>
+                  </>
+                )}
+
+                {(userRoles.includes("service") ||
+                  userRoles.includes("admin") ||
+                  userRoles.some((r) => r.includes("manager"))) && (
+                  <Link href="/job-cards/create" style={{ textDecoration: "none", width: "100%" }}>
+                    <div
+                      style={{
+                        padding: "10px 14px",
+                        borderRadius: "12px",
+                        backgroundColor: isRouteActive("/job-cards/create") ? "#ffffff" : "rgba(255,255,255,0.12)",
+                        color: isRouteActive("/job-cards/create") ? colors.accent : "#ffffff",
+                        border: isRouteActive("/job-cards/create")
+                          ? `1px solid ${colors.accent}`
+                          : "1px solid rgba(255,255,255,0.3)",
+                        fontWeight: 700,
+                        textAlign: "center",
+                        boxShadow: isRouteActive("/job-cards/create")
+                          ? "0 10px 25px rgba(0,0,0,0.12)"
+                          : "none",
+                      }}
+                    >
+                      ➕ Create Job Card
+                    </div>
+                  </Link>
+                )}
+
+                {["service manager", "workshop manager"].some((r) =>
+                  userRoles.includes(r.toLowerCase())
+                ) && (
+                  <Link href="/job-cards/waiting/nextjobs" style={{ textDecoration: "none", width: "100%" }}>
+                    <div
+                      style={{
+                        padding: "10px 14px",
+                        borderRadius: "12px",
+                        backgroundColor: isRouteActive("/job-cards/waiting/nextjobs")
+                          ? "#ffffff"
+                          : "rgba(255,255,255,0.12)",
+                        border: isRouteActive("/job-cards/waiting/nextjobs")
+                          ? `1px solid ${colors.accent}`
+                          : "1px solid rgba(255,255,255,0.3)",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        color: isRouteActive("/job-cards/waiting/nextjobs") ? colors.accent : "#ffffff",
+                        boxShadow: isRouteActive("/job-cards/waiting/nextjobs")
+                          ? "0 10px 25px rgba(0,0,0,0.12)"
+                          : "none",
+                      }}
+                    >
+                      🔜 Next Jobs
+                    </div>
+                  </Link>
+                )}
+
+                {(userRoles.includes("valet service") ||
+                  userRoles.includes("service manager") ||
+                  userRoles.includes("admin")) && (
+                  <Link href="/valet" style={{ textDecoration: "none", width: "100%" }}>
+                    <div
+                      style={{
+                        padding: "10px 14px",
+                        borderRadius: "12px",
+                        backgroundColor: isRouteActive("/valet") ? "#ffffff" : "rgba(255,255,255,0.12)",
+                        border: isRouteActive("/valet")
+                          ? `1px solid ${colors.accent}`
+                          : "1px solid rgba(255,255,255,0.3)",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        color: isRouteActive("/valet") ? colors.accent : "#ffffff",
+                        boxShadow: isRouteActive("/valet")
+                          ? "0 10px 25px rgba(0,0,0,0.12)"
+                          : "none",
+                      }}
+                    >
+                      🧽 Valet Jobs
+                    </div>
+                  </Link>
+                )}
+
+                {user && (
+                  <Link href="/profile" style={{ textDecoration: "none", width: "100%" }}>
+                    <div
+                      style={{
+                        padding: "10px 14px",
+                        borderRadius: "12px",
+                        backgroundColor: "rgba(255,255,255,0.2)",
+                        border: "1px solid rgba(255,255,255,0.35)",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        color: "#ffffff",
+                      }}
+                    >
+                      View Employee Profile
+                    </div>
+                  </Link>
+                )}
 
                 <button
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={() => {
+                    logout();
+                    router.push("/login");
+                  }}
                   style={{
                     width: "100%",
                     padding: "10px 14px",
                     borderRadius: "12px",
-                    border: "1px dashed rgba(255,255,255,0.5)",
-                    backgroundColor: "transparent",
+                    backgroundColor: "#000000",
                     color: "#ffffff",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  🔧 Start Job
-                </button>
-              </>
-            )}
-
-            {(userRoles.includes("service") ||
-              userRoles.includes("admin") ||
-              userRoles.some((r) => r.includes("manager"))) && (
-              <Link href="/job-cards/create" style={{ textDecoration: "none", width: "100%" }}>
-                <div
-                  style={{
-                    padding: "10px 14px",
-                    borderRadius: "12px",
-                    backgroundColor: isRouteActive("/job-cards/create") ? "#ffffff" : "rgba(255,255,255,0.12)",
-                    color: isRouteActive("/job-cards/create") ? colors.accent : "#ffffff",
-                    border: isRouteActive("/job-cards/create")
-                      ? `1px solid ${colors.accent}`
-                      : "1px solid rgba(255,255,255,0.3)",
                     fontWeight: 700,
-                    textAlign: "center",
-                    boxShadow: isRouteActive("/job-cards/create")
-                      ? "0 10px 25px rgba(0,0,0,0.12)"
-                      : "none",
+                    border: "none",
+                    cursor: "pointer",
+                    marginTop: "4px",
                   }}
                 >
-                  ➕ Create Job Card
-                </div>
-              </Link>
-            )}
-
-            {["service manager", "workshop manager"].some((r) =>
-              userRoles.includes(r.toLowerCase())
-            ) && (
-              <Link href="/job-cards/waiting/nextjobs" style={{ textDecoration: "none", width: "100%" }}>
-                <div
-                  style={{
-                    padding: "10px 14px",
-                    borderRadius: "12px",
-                    backgroundColor: isRouteActive("/job-cards/waiting/nextjobs")
-                      ? "#ffffff"
-                      : "rgba(255,255,255,0.12)",
-                    border: isRouteActive("/job-cards/waiting/nextjobs")
-                      ? `1px solid ${colors.accent}`
-                      : "1px solid rgba(255,255,255,0.3)",
-                    fontWeight: 600,
-                    textAlign: "center",
-                    color: isRouteActive("/job-cards/waiting/nextjobs") ? colors.accent : "#ffffff",
-                    boxShadow: isRouteActive("/job-cards/waiting/nextjobs")
-                      ? "0 10px 25px rgba(0,0,0,0.12)"
-                      : "none",
-                  }}
-                >
-                  🔜 Next Jobs
-                </div>
-              </Link>
-            )}
-
-            {(userRoles.includes("valet service") ||
-              userRoles.includes("service manager") ||
-              userRoles.includes("admin")) && (
-              <Link href="/valet" style={{ textDecoration: "none", width: "100%" }}>
-                <div
-                  style={{
-                    padding: "10px 14px",
-                    borderRadius: "12px",
-                    backgroundColor: isRouteActive("/valet") ? "#ffffff" : "rgba(255,255,255,0.12)",
-                    border: isRouteActive("/valet")
-                      ? `1px solid ${colors.accent}`
-                      : "1px solid rgba(255,255,255,0.3)",
-                    fontWeight: 600,
-                    textAlign: "center",
-                    color: isRouteActive("/valet") ? colors.accent : "#ffffff",
-                    boxShadow: isRouteActive("/valet")
-                      ? "0 10px 25px rgba(0,0,0,0.12)"
-                      : "none",
-                  }}
-                >
-                  🧽 Valet Jobs
-                </div>
-              </Link>
-            )}
-
-            {user && (
-              <Link href="/profile" style={{ textDecoration: "none", width: "100%" }}>
-                <div
-                  style={{
-                    padding: "10px 14px",
-                    borderRadius: "12px",
-                    backgroundColor: "rgba(255,255,255,0.2)",
-                    border: "1px solid rgba(255,255,255,0.35)",
-                    fontWeight: 600,
-                    textAlign: "center",
-                    color: "#ffffff",
-                  }}
-                >
-                  View Employee Profile
-                </div>
-              </Link>
-            )}
-
-            <button
-              onClick={() => {
-                logout();
-                router.push("/login");
-              }}
-              style={{
-                width: "100%",
-                padding: "10px 14px",
-                borderRadius: "12px",
-                backgroundColor: "#000000",
-                color: "#ffffff",
-                fontWeight: 700,
-                border: "none",
-                cursor: "pointer",
-                marginTop: "4px",
-              }}
-            >
-              Logout
-            </button>
-          </div>
+                  Logout
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
       <div
         style={{
           flex: 1,
-          maxWidth: hideSidebar ? "100%" : "1120px",
+          maxWidth: mainColumnMaxWidth,
           display: "flex",
           flexDirection: "column",
           gap: hideSidebar ? 0 : "20px",
           padding: hideSidebar ? "0" : "24px 16px",
           background: colors.mainBg,
-          minHeight: "100vh",
+          height: "100%",
           overflow: "hidden",
+          position: "relative",
         }}
       >
+        {isUserLoading && (
+          <>
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "rgba(255,255,255,0.35)",
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 5,
+              }}
+            >
+              <div
+                style={{
+                  padding: "32px 40px",
+                  borderRadius: "999px",
+                  background: "rgba(255,255,255,0.9)",
+                  boxShadow: "0 20px 45px rgba(0,0,0,0.15)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  position: "relative",
+                  minWidth: "220px",
+                  minHeight: "120px",
+                  border: "1px solid rgba(255,255,255,0.6)",
+                }}
+              >
+                <img
+                  src="/images/loading_car.png"
+                  alt="Loading indicator"
+                  style={{
+                    width: "140px",
+                    animation: "layoutLoaderSlide 3s ease-in-out infinite",
+                    filter: "drop-shadow(0 10px 25px rgba(0,0,0,0.25))",
+                  }}
+                />
+              </div>
+            </div>
+            <style jsx>{`
+              @keyframes layoutLoaderSlide {
+                0% {
+                  transform: translateX(-20%) translateY(0);
+                }
+                50% {
+                  transform: translateX(20%) translateY(-6px);
+                }
+                100% {
+                  transform: translateX(-20%) translateY(0);
+                }
+              }
+            `}</style>
+          </>
+        )}
         {!hideSidebar && (
           <section
             style={{
               background: "linear-gradient(135deg, #ffffff, #fff7f7)",
-              borderRadius: "28px",
+              borderRadius: "24px",
               border: "1px solid #ffe0e0",
-              boxShadow: "0 24px 52px rgba(209,0,0,0.15)",
-              padding: "28px",
+              boxShadow: "0 18px 40px rgba(209,0,0,0.12)",
+              padding: "14px 18px",
               display: "flex",
               flexDirection: "column",
-              gap: "20px",
+              gap: "12px",
             }}
           >
             <div
               style={{
                 display: "flex",
                 flexWrap: "wrap",
-                justifyContent: "space-between",
-                gap: "24px",
-                alignItems: "flex-start",
+                alignItems: "stretch",
+                gap: "12px",
               }}
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxWidth: "520px" }}>
-                <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.2em", textTransform: "uppercase", color: colors.mutedText }}>
-                  Operations Overview
-                </p>
-                <h1
+              <div
+                style={{
+                  display: "flex",
+                  gap: "12px",
+                  flex: 1,
+                  minWidth: "320px",
+                  alignItems: "stretch",
+                }}
+              >
+                <div
                   style={{
-                    fontSize: "1.9rem",
-                    fontWeight: 700,
-                    margin: 0,
-                    color: colors.accent,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "4px",
+                    minWidth: "190px",
+                    flex: "0 0 auto",
                   }}
                 >
-                  Welcome back, {user?.username || "Guest"}
-                </h1>
-                <span
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "0.65rem",
+                      letterSpacing: "0.2em",
+                      textTransform: "uppercase",
+                      color: colors.mutedText,
+                    }}
+                  >
+                    Operations Overview
+                  </p>
+                  <h1
+                    style={{
+                      fontSize: "1.4rem",
+                      fontWeight: 700,
+                      margin: 0,
+                      color: colors.accent,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Welcome back, {user?.username || "Guest"}
+                  </h1>
+                </div>
+
+                <div
                   style={{
-                    fontSize: "0.95rem",
-                    color: colors.mutedText,
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "8px",
+                    flex: 1,
+                    minWidth: "200px",
                   }}
                 >
-                  Role: {roleDisplay}
-                </span>
+                  {[
+                    { label: "Active Role", value: roleDisplay || "Guest" },
+                    { label: "Focus Status", value: status || "Waiting for Job" },
+                    {
+                      label: "Current Job",
+                      value: currentJob?.jobNumber ? `#${currentJob.jobNumber}` : "None assigned",
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      style={{
+                        borderRadius: "14px",
+                        border: "1px solid #ffe0e0",
+                        backgroundColor: "#fff5f5",
+                        padding: "10px 14px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "4px",
+                        minWidth: "160px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "0.65rem",
+                          letterSpacing: "0.08em",
+                          color: "#b91c1c",
+                          textTransform: "uppercase",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {item.label}
+                      </span>
+                      <strong style={{ fontSize: "0.9rem", color: colors.text }}>{item.value}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ flex: "0 1 360px", minWidth: "220px", maxWidth: "380px" }}>
+                <GlobalSearch accentColor={colors.accent} isDarkMode={darkMode} navigationItems={navigationItems} />
               </div>
 
               {userRoles.includes("admin manager") && (
                 <Link
                   href="/admin/users"
                   style={{
-                    padding: "12px 20px",
+                    padding: "9px 16px",
                     borderRadius: "999px",
                     backgroundColor: colors.accent,
                     color: "#ffffff",
                     fontWeight: 600,
                     textDecoration: "none",
-                    boxShadow: "0 12px 24px rgba(209,0,0,0.25)",
-                    alignSelf: "center",
+                    boxShadow: "0 10px 18px rgba(209,0,0,0.22)",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
                   }}
                 >
                   ➕ Create User
@@ -647,51 +822,24 @@ export default function Layout({ children }) {
 
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                gap: "16px",
-              }}
-            >
-              {[
-                { label: "Active Role", value: roleDisplay || "Guest" },
-                { label: "Focus Status", value: status || "Waiting for Job" },
-                { label: "Current Job", value: currentJob?.jobNumber ? `#${currentJob.jobNumber}` : "None assigned" },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  style={{
-                    borderRadius: "18px",
-                    border: "1px solid #ffe0e0",
-                    backgroundColor: "#fff5f5",
-                    padding: "16px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "6px",
-                  }}
-                >
-                  <span style={{ fontSize: "0.75rem", letterSpacing: "0.08em", color: "#b91c1c", textTransform: "uppercase", fontWeight: 700 }}>
-                    {item.label}
-                  </span>
-                  <strong style={{ fontSize: "1rem", color: colors.text }}>{item.value}</strong>
-                </div>
-              ))}
-            </div>
-
-            <div
-              style={{
                 display: "flex",
                 flexWrap: "wrap",
-                gap: "16px",
+                gap: "10px",
                 alignItems: "center",
+                justifyContent: "space-between",
               }}
             >
-              <div style={{ flex: 1, minWidth: "280px" }}>
-                <GlobalSearch
-                  accentColor={colors.accent}
-                  isDarkMode={darkMode}
-                  navigationItems={navigationItems}
-                />
-              </div>
+              <span
+                style={{
+                  fontSize: "0.85rem",
+                  color: colors.mutedText,
+                  fontWeight: 600,
+                  letterSpacing: "0.04em",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Role: {roleDisplay}
+              </span>
 
               {isTech && (
                 <div
@@ -706,7 +854,7 @@ export default function Layout({ children }) {
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
                     style={{
-                      padding: "10px 18px",
+                      padding: "8px 16px",
                       borderRadius: "999px",
                       border: `1px solid ${colors.accent}`,
                       backgroundColor: "#ffffff",
@@ -729,7 +877,7 @@ export default function Layout({ children }) {
                       currentJob?.jobNumber && router.push(`/job-cards/myjobs/${currentJob.jobNumber}`)
                     }
                     style={{
-                      padding: "10px 18px",
+                      padding: "8px 16px",
                       borderRadius: "999px",
                       border: "none",
                       background: currentJob?.jobNumber
@@ -760,13 +908,14 @@ export default function Layout({ children }) {
           style={{
             flex: 1,
             minHeight: 0,
+            height: "100%",
             overflow: "hidden",
           }}
         >
           <div
             style={{
               height: "100%",
-              minHeight: hideSidebar ? "100vh" : "calc(100vh - 220px)",
+              minHeight: hideSidebar ? "100vh" : `calc(100vh - ${topBarOffset}px)`,
               background: "linear-gradient(to bottom right, #ffffff, #fff9f9, #ffecec)",
               borderRadius: hideSidebar ? "0px" : "28px",
               border: hideSidebar ? "none" : "1px solid #ffe0e0",
