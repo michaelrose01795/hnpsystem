@@ -3,15 +3,9 @@ import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
+import CustomerSidebar from "./CustomerSidebar";
 
 const CUSTOMER_ROLE_ALLOWLIST = ["CUSTOMER"];
-const NAV_LINKS = [
-  { href: "/customer", label: "Overview" },
-  { href: "/customer/vhc", label: "VHC & Media" },
-  { href: "/customer/vehicles", label: "My Vehicles" },
-  { href: "/customer/parts", label: "Parts & Accessories" },
-  { href: "/customer/messages", label: "Messages" },
-];
 
 export default function CustomerLayout({ pageTitle = "Customer Portal", children }) {
   const router = useRouter();
@@ -69,56 +63,183 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-red-600">
-              H&P Automotive
+    <div style={{ minHeight: "100vh", background: "#f7f7fb" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "20px",
+          padding: "24px",
+          minHeight: "100vh",
+        }}
+      >
+        <CustomerSidebar />
+
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+            paddingBottom: "40px",
+          }}
+        >
+          <header
+            style={{
+              borderRadius: "18px",
+              border: "1px solid #ffe5e5",
+              background: "#ffffff",
+              padding: "24px",
+              boxShadow: "0 12px 34px rgba(209,0,0,0.08)",
+            }}
+          >
+            <p
+              style={{
+                textTransform: "uppercase",
+                letterSpacing: "0.35em",
+                fontSize: "0.7rem",
+                color: "#d10000",
+                marginBottom: "8px",
+              }}
+            >
+              Customer Experience
             </p>
-            <h1 className="text-2xl font-bold text-slate-900">{pageTitle}</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <a
-              href={portalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden md:inline-flex items-center rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "12px",
+                alignItems: "center",
+              }}
             >
-              Main website
-            </a>
-            <div className="hidden text-right md:block">
-              <p className="text-xs uppercase tracking-wide text-slate-400">Signed in as</p>
-              <p className="text-sm font-semibold text-slate-800">{user.username || "Customer"}</p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-red-700"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-        <nav className="mx-auto flex max-w-6xl gap-3 overflow-x-auto px-4 pb-4 pt-2 text-sm font-semibold">
-          {NAV_LINKS.map((link) => {
-            const isActive = router.pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`rounded-full px-4 py-2 transition ${
-                  isActive
-                    ? "bg-red-600 text-white shadow"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
+              <h1 style={{ fontSize: "2rem", fontWeight: 700, margin: 0, color: "#1f2937" }}>
+                {pageTitle}
+              </h1>
+              <span
+                style={{
+                  borderRadius: "999px",
+                  background: "#fff1f1",
+                  color: "#b91c1c",
+                  padding: "6px 16px",
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                }}
               >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
-      </header>
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+                VHC linked
+              </span>
+            </div>
+            <div
+              style={{
+                marginTop: "20px",
+                display: "grid",
+                gap: "16px",
+                gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+              }}
+            >
+              <div
+                style={{
+                  borderRadius: "16px",
+                  border: "1px solid #ffe0e0",
+                  padding: "16px",
+                  background: "#fff5f5",
+                }}
+              >
+                <p
+                  style={{
+                    textTransform: "uppercase",
+                    letterSpacing: "0.25em",
+                    fontSize: "0.65rem",
+                    color: "#d10000",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Signed in
+                </p>
+                <p style={{ margin: 0, fontWeight: 600, color: "#1f2937" }}>
+                  {user.username || "Customer"}
+                </p>
+              </div>
+              <div
+                style={{
+                  borderRadius: "16px",
+                  border: "1px solid #ffe0e0",
+                  padding: "16px",
+                  background: "#fff5f5",
+                }}
+              >
+                <p
+                  style={{
+                    textTransform: "uppercase",
+                    letterSpacing: "0.25em",
+                    fontSize: "0.65rem",
+                    color: "#d10000",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Portal link
+                </p>
+                <a
+                  href={portalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: "#a00000",
+                    fontWeight: 600,
+                    textDecoration: "underline",
+                  }}
+                >
+                  Open website
+                </a>
+              </div>
+              <div
+                style={{
+                  borderRadius: "16px",
+                  border: "1px solid #ffe0e0",
+                  padding: "16px",
+                  background: "#fff5f5",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                }}
+              >
+                <div>
+                  <p
+                    style={{
+                      textTransform: "uppercase",
+                      letterSpacing: "0.25em",
+                      fontSize: "0.65rem",
+                      color: "#d10000",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    Session
+                  </p>
+                  <p style={{ margin: 0, color: "#1f2937", fontWeight: 600 }}>Active</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  style={{
+                    border: "none",
+                    background: "linear-gradient(90deg, #d10000, #a00000)",
+                    color: "#ffffff",
+                    fontWeight: 600,
+                    borderRadius: "999px",
+                    padding: "10px 18px",
+                    cursor: "pointer",
+                    boxShadow: "0 10px 24px rgba(209,0,0,0.25)",
+                  }}
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <main style={{ display: "flex", flexDirection: "column", gap: "20px" }}>{children}</main>
+        </div>
+      </div>
     </div>
   );
 }

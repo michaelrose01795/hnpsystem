@@ -8,13 +8,13 @@ const vehicleLookup = Object.fromEntries(
 
 export default function VHCSummaryList({ summaries = [] }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="rounded-3xl border border-[#ffe0e0] bg-white p-5 shadow-[0_12px_34px_rgba(209,0,0,0.08)]">
       <header className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-emerald-500">VHC status</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">VHC status</p>
           <h3 className="text-xl font-semibold text-slate-900">Vehicle health checks</h3>
         </div>
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <span className="text-xs font-semibold uppercase tracking-wide text-[#d10000]">
           Connected to workshop
         </span>
       </header>
@@ -25,7 +25,7 @@ export default function VHCSummaryList({ summaries = [] }) {
           return (
             <div
               key={summary.id}
-              className="rounded-xl border border-slate-100 bg-gradient-to-r from-white to-slate-50/70 px-4 py-3 text-sm text-slate-700"
+              className="rounded-2xl border border-[#ffe5e5] bg-gradient-to-r from-white to-[#fff8f8] px-4 py-4 text-sm text-slate-700 shadow-[0_6px_20px_rgba(209,0,0,0.06)]"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
@@ -36,7 +36,7 @@ export default function VHCSummaryList({ summaries = [] }) {
                     Shared on {summary.createdAt} · {summary.status}
                   </p>
                 </div>
-                <button className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100">
+                <button className="rounded-full border border-[#ffd0d0] px-4 py-2 text-xs font-semibold text-[#a00000] hover:bg-[#fff5f5]">
                   View VHC
                 </button>
               </div>
@@ -55,7 +55,7 @@ export default function VHCSummaryList({ summaries = [] }) {
           );
         })}
         {summaries.length === 0 && (
-          <p className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
+          <p className="rounded-2xl border border-dashed border-[#ffd0d0] px-4 py-8 text-center text-sm text-slate-500">
             Your vehicle health checks will appear here once the workshop sends them to you.
           </p>
         )}

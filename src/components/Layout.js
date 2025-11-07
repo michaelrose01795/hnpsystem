@@ -243,11 +243,6 @@ export default function Layout({ children }) {
       keywords: ["start job", "tech"],
       section: "Workshop",
     });
-    addNavItem("Clock In", "/workshop/Clocking", {
-      keywords: ["clock in", "clocking", "view clocking"],
-      description: "Go to workshop clocking",
-      section: "Workshop",
-    });
   }
 
   if (
