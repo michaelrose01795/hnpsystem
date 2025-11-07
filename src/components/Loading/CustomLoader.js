@@ -35,12 +35,6 @@ const CustomLoader = ({ isVisible = true, className = '' }) => {
       aria-live="polite"
     >
       <div className="loader-content">
-        <img
-          src="/images/loading_full.png"
-          alt="Humphries & Parks logo"
-          className="logo-base"
-          draggable="false"
-        />
         <div className="logo-mask" aria-hidden="true" />
         <img
           src="/images/loading_car.png"
