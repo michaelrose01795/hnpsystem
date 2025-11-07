@@ -31,65 +31,110 @@ export default function Sidebar() {
   return (
     <aside
       style={{
-        background: "#FFF0F0",
-        padding: "20px",
-        width: "200px",
-        height: "100vh",
+        width: "260px",
+        minWidth: "220px",
+        maxHeight: "calc(100vh - 20px)",
+        position: "sticky",
+        top: "10px",
         display: "flex",
         flexDirection: "column",
-        gap: "10px",
+        backgroundColor: "#ffffff",
+        borderRadius: "16px",
+        boxShadow: "0 20px 40px rgba(209, 0, 0, 0.12)",
+        border: "1px solid #ffe0e0",
+        overflow: "hidden",
+        flexShrink: 0,
       }}
     >
-      {sidebarSections.map((section) => {
-        const items = section.items.filter(hasAccess);
-        if (items.length === 0) return null;
-        const isOpen = openSections[section.label];
-        return (
-          <div key={section.label} style={{ marginBottom: "12px" }}>
-            <button
-              type="button"
-              onClick={() => toggleSection(section.label)}
+      <div
+        style={{
+          background: "linear-gradient(to right, #d10000, #a00000)",
+          padding: "24px",
+          color: "white",
+        }}
+      >
+        <p style={{ margin: 0, fontSize: "0.85rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          Navigation
+        </p>
+        <h2 style={{ margin: "6px 0 0", fontSize: "1.4rem", fontWeight: 700 }}>Workspace</h2>
+      </div>
+
+      <div style={{ padding: "20px", flex: 1, overflowY: "auto" }}>
+        {sidebarSections.map((section) => {
+          const items = section.items.filter(hasAccess);
+          if (items.length === 0) return null;
+          const isOpen = openSections[section.label];
+          return (
+            <div
+              key={section.label}
               style={{
-                width: "100%",
-                textAlign: "left",
-                background: "transparent",
-                border: "none",
-                color: "#FF4040",
-                fontWeight: 700,
-                fontSize: "0.95rem",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                cursor: "pointer",
-                padding: "6px 0",
+                padding: "12px 14px",
+                borderRadius: "12px",
+                backgroundColor: "#fff5f5",
+                marginBottom: "12px",
+                border: "1px solid #ffe0e0",
+                boxShadow: "inset 0 0 0 1px rgba(255, 255, 255, 0.4)",
               }}
             >
-              {section.label}
-              <span>{isOpen ? "−" : "+"}</span>
-            </button>
-            {isOpen &&
-              items.map((item) => (
-                <Link key={item.href} href={item.href}>
-                  <span
-                    style={{
-                      display: "block",
-                      padding: "8px 10px",
-                      marginLeft: "6px",
-                      backgroundColor: pathname === item.href ? "#FF4040" : "transparent",
-                      color: pathname === item.href ? "white" : "#FF4040",
-                      borderRadius: "6px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      transition: "background 0.2s, color 0.2s",
-                    }}
-                  >
-                    {item.label}
-                  </span>
-                </Link>
-              ))}
-          </div>
-        );
-      })}
+              <button
+                type="button"
+                onClick={() => toggleSection(section.label)}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  background: "transparent",
+                  border: "none",
+                  color: "#a00000",
+                  fontWeight: 700,
+                  fontSize: "0.85rem",
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                {section.label}
+                <span style={{ fontSize: "1rem" }}>{isOpen ? "−" : "+"}</span>
+              </button>
+              {isOpen &&
+                items.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      style={{ textDecoration: "none" }}
+                    >
+                      <div
+                        style={{
+                          marginTop: "10px",
+                          padding: "10px 14px",
+                          borderRadius: "10px",
+                          background: isActive
+                            ? "linear-gradient(90deg, #d10000, #a00000)"
+                            : "#ffffff",
+                          color: isActive ? "#ffffff" : "#a00000",
+                          fontWeight: 600,
+                          boxShadow: isActive
+                            ? "0 12px 20px rgba(161, 0, 0, 0.25)"
+                            : "0 4px 12px rgba(0, 0, 0, 0.05)",
+                          border: isActive ? "none" : "1px solid #ffe0e0",
+                          transition: "all 0.2s ease",
+                          display: "block",
+                        }}
+                      >
+                        {item.label}
+                      </div>
+                    </Link>
+                  );
+                })}
+            </div>
+          );
+        })}
+      </div>
     </aside>
   );
 }
