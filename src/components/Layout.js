@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react"; // import React hooks
 import Link from "next/link"; // import Next.js link component
 import { useRouter } from "next/router"; // import router for navigation
 import { useUser } from "../context/UserContext"; // import user context
-import ClockInButton from "./Clocking/ClockInButton"; // import clock in button
 import GlobalSearch from "./GlobalSearch"; // import global search component
 import JobCardModal from "./JobCards/JobCardModal"; // import job modal
 import StatusSidebar from "../components/StatusTracking/StatusSidebar"; // import status sidebar
@@ -601,13 +600,7 @@ export default function Layout({ children }) {
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
-  const mainColumnMaxWidth = hideSidebar
-    ? "100%"
-    : isTablet
-    ? "100%"
-    : isSidebarOpen
-    ? "1080px"
-    : "1240px";
+  const mainColumnMaxWidth = "100%";
   const topBarOffset = hideSidebar ? 0 : isTablet ? 110 : 150;
   const layoutStyles = {
     display: "flex",
@@ -617,8 +610,8 @@ export default function Layout({ children }) {
     fontFamily: 'Inter, "Segoe UI", system-ui, -apple-system, sans-serif',
     background: colors.background || colors.mainBg,
     color: colors.text,
-    justifyContent: isTablet ? "flex-start" : "center",
-    alignItems: isTablet ? "stretch" : "flex-start",
+    justifyContent: "flex-start",
+    alignItems: "stretch",
     gap: isTablet ? "12px" : "24px",
     padding: hideSidebar ? "0" : isTablet ? "12px" : "0 16px",
     boxSizing: "border-box",
@@ -1032,9 +1025,6 @@ export default function Layout({ children }) {
                 </div>
               )}
 
-              <div style={{ flexShrink: 0, width: isMobile ? "100%" : "auto" }}>
-                <ClockInButton />
-              </div>
             </div>
           </section>
         )}
