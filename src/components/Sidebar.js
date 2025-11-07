@@ -14,6 +14,17 @@ export default function Sidebar({ onToggle }) {
   const isPartsUser = userRoles.some(
     (role) => role === "parts" || role === "parts manager"
   );
+  const trackingRoles = [
+    "techs",
+    "service",
+    "service manager",
+    "workshop manager",
+    "valet service",
+    "admin",
+  ];
+  const canSeeTrackingButton = userRoles.some((role) =>
+    trackingRoles.includes(role)
+  );
 
   const initialState = useMemo(
     () =>
@@ -103,6 +114,25 @@ export default function Sidebar({ onToggle }) {
               }}
             >
               🧾 VHC Dashboard
+            </div>
+          </Link>
+        )}
+        {canSeeTrackingButton && (
+          <Link href="/tracking" style={{ textDecoration: "none" }}>
+            <div
+              style={{
+                padding: "12px 16px",
+                borderRadius: "12px",
+                marginBottom: "16px",
+                background: "linear-gradient(90deg, #e0f2fe, #fecaca)",
+                color: "#0f172a",
+                fontWeight: 700,
+                border: "1px solid rgba(15, 23, 42, 0.15)",
+                boxShadow: "0 12px 22px rgba(15, 23, 42, 0.18)",
+                textAlign: "center",
+              }}
+            >
+              🚗 Tracking Hub
             </div>
           </Link>
         )}

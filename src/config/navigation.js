@@ -17,6 +17,18 @@ export const sidebarSections = [
       { label: "View Job Cards", href: "/job-cards/view", roles: ["admin", "sales", "workshop", "service", "manager"] },
       { label: "Next Jobs", href: "/job-cards/waiting/nextjobs", roles: ["service manager", "workshop manager"] },
       { label: "VHC Dashboard", href: "/vhc", roles: ["techs", "service", "manager", "workshop manager"] },
+      {
+        label: "Tracking",
+        href: "/tracking",
+        roles: [
+          "techs",
+          "service",
+          "service manager",
+          "workshop manager",
+          "valet service",
+          "admin",
+        ],
+      },
       { label: "Smart Repair", href: "/smartrepair", roles: ["workshop"] },
     ],
   },

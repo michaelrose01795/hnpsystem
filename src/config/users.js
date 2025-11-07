@@ -30,6 +30,9 @@ export const usersByRole = {
   Receptionist: ["Carol"],
   Painters: ["Guy 1", "Guy 2"],
   Contractors: ["Smart Repair", "Paints (grey van)", "Dent Man", "Wheel Men", "Windscreen Guy", "Key Guy"],
+  Customer: ["Evelyn Hart", "James Patel"],
+  "Customer Plus": ["Theo Winters"],
+  "Customer Support": ["Lara Bennett"],
 };
 
 // Map retail vs sales departments to provide grouped developer login options
@@ -64,6 +67,11 @@ export const roleCategories = {
     "Receptionist",
     "Painters",
     "Contractors",
+  ],
+  Customers: [
+    "Customer",
+    "Customer Plus",
+    "Customer Support",
   ],
 };
 

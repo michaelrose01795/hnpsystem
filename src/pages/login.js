@@ -2,14 +2,17 @@
 import React, { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useUser } from "../context/UserContext";
+import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import Section from "../components/Section";
-import { useRouter } from "next/router";
 import LoginDropdown from "../components/LoginDropdown";
+import CustomerViewPreview from "../components/CustomerViewPreview";
 import { supabase } from "../lib/supabaseClient"; // Database connection
 import { usersByRole, roleCategories } from "../config/users"; // Dev users config
 
 export default function LoginPage() {
+  const CUSTOMER_PORTAL_URL =
+    process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_URL || "https://www.hpautomotive.co.uk";
   // Safe destructuring from context
   const userContext = useUser();
   const devLogin = userContext?.devLogin;
@@ -132,6 +135,10 @@ export default function LoginPage() {
 
               {/* Developer login */}
               <h3 className="text-lg font-semibold">Developer Login</h3>
+              <p className="text-sm text-gray-600">
+                Switch between Retail, Sales, and the new Customer view to mirror what each user group
+                sees inside the platform.
+              </p>
               <LoginDropdown
                 selectedCategory={selectedCategory}
                 setSelectedCategory={setSelectedCategory}
@@ -142,6 +149,13 @@ export default function LoginPage() {
                 usersByRole={usersByRole}
                 roleCategories={roleCategories}
               />
+              {selectedCategory === "Customers" && (
+                <CustomerViewPreview
+                  portalUrl={CUSTOMER_PORTAL_URL}
+                  selectedPersona={selectedUser}
+                  selectedDepartment={selectedDepartment}
+                />
+              )}
               <button
                 onClick={handleDevLogin}
                 className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-white"

@@ -46,6 +46,17 @@ export default function Layout({ children }) {
   const isPartsUser = userRoles.some(
     (role) => role === "parts" || role === "parts manager"
   );
+  const trackingAccessRoles = [
+    "techs",
+    "service",
+    "service manager",
+    "workshop manager",
+    "valet service",
+    "admin",
+  ];
+  const canAccessTracking = userRoles.some((role) =>
+    trackingAccessRoles.includes(role)
+  );
 
   useEffect(() => {
     const savedMode = localStorage.getItem("darkMode");
@@ -532,6 +543,27 @@ export default function Layout({ children }) {
                       }}
                     >
                       🔜 Next Jobs
+                    </div>
+                  </Link>
+                )}
+
+                {canAccessTracking && (
+                  <Link href="/tracking" style={{ textDecoration: "none", width: "100%" }}>
+                    <div
+                      style={{
+                        padding: "10px 14px",
+                        borderRadius: "12px",
+                        backgroundColor: isRouteActive("/tracking") ? "#ffffff" : "rgba(255,255,255,0.12)",
+                        border: isRouteActive("/tracking")
+                          ? `1px solid ${colors.accent}`
+                          : "1px solid rgba(255,255,255,0.3)",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        color: isRouteActive("/tracking") ? colors.accent : "#ffffff",
+                        boxShadow: isRouteActive("/tracking") ? "0 10px 25px rgba(0,0,0,0.12)" : "none",
+                      }}
+                    >
+                      🚗 Tracking Hub
                     </div>
                   </Link>
                 )}
