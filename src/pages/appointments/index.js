@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react"; // Import React and useState/useEffect hooks
 import Layout from "../../components/Layout"; // Main layout wrapper
 import Popup from "../../components/popups/Popup"; // Reusable popup modal
-import { useSearchParams } from "next/navigation"; // For reading query params
+import { useRouter } from "next/router"; // For reading query params
 import CustomLoader from "../../components/Loading/CustomLoader";
 import { 
   getAllJobs, 
@@ -55,7 +55,10 @@ const getVehicleDisplay = (job) => {
 };
 
 export default function Appointments() {
-  const searchParams = useSearchParams();
+  const router = useRouter();
+  const jobQueryParam = Array.isArray(router.query.jobNumber)
+    ? router.query.jobNumber[0]
+    : router.query.jobNumber;
 
   // ---------------- States ----------------
   const [jobs, setJobs] = useState([]);
@@ -102,8 +105,9 @@ export default function Appointments() {
 
   // ✅ Handle jobNumber from URL parameters
   useEffect(() => {
-    const jobParam = searchParams.get("jobNumber");
-    if (jobParam) {
+    if (!router.isReady) return;
+    const jobParam = typeof jobQueryParam === "string" ? jobQueryParam : "";
+    if (jobParam.trim().length > 0) {
       setJobNumber(jobParam);
       const existingJob = jobs.find((j) => j.jobNumber.toString() === jobParam || j.id.toString() === jobParam);
       if (existingJob && existingJob.appointment) {
@@ -111,7 +115,7 @@ export default function Appointments() {
         setTime(existingJob.appointment.time);
       }
     }
-  }, [searchParams, jobs]);
+  }, [router.isReady, jobQueryParam, jobs]);
 
   // ---------------- Notes ----------------
   const handleAddNote = (date) => {

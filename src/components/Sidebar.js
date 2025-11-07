@@ -2,14 +2,13 @@
 "use client";
 
 import Link from "next/link"; // import Next.js navigation link
-import { usePathname, useRouter } from "next/navigation"; // import routing helpers
+import { usePathname } from "next/navigation"; // import routing helpers
 import { useEffect, useMemo, useState } from "react"; // import React hooks
 import { useUser } from "@/context/UserContext"; // import user context for roles and logout
 import { sidebarSections } from "@/config/navigation"; // import sidebar configuration
 
 export default function Sidebar({ onToggle, isCondensed = false }) {
   const pathname = usePathname(); // get current path
-  const router = useRouter(); // get router instance for redirects
   const { user, logout } = useUser(); // get user data and logout helper
   const userRoles = user?.roles?.map((role) => role.toLowerCase()) || []; // normalise roles
   const isCustomerOnly =
@@ -65,10 +64,9 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
   };
 
   const handleLogout = async () => {
-    try {
-      await logout?.(); // call logout if available
-    } finally {
-      router.push("/login"); // always redirect to login page
+    await logout?.(); // call logout if available
+    if (typeof window !== "undefined") {
+      window.location.assign("/login");
     }
   };
 
@@ -79,26 +77,23 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
       <Link
         key={item.href || item.label}
         href={item.href}
-        style={{ textDecoration: "none" }}
+        style={{
+          marginTop: "10px",
+          padding: "10px 14px",
+          borderRadius: "10px",
+          background: isActive ? "linear-gradient(90deg, #d10000, #a00000)" : "#ffffff",
+          color: isActive ? "#ffffff" : "#a00000",
+          fontWeight: 600,
+          boxShadow: isActive
+            ? "0 12px 20px rgba(161, 0, 0, 0.25)"
+            : "0 4px 12px rgba(0, 0, 0, 0.05)",
+          border: isActive ? "none" : "1px solid #ffe0e0",
+          transition: "all 0.2s ease",
+          display: "block",
+          textDecoration: "none",
+        }}
       >
-        <div
-          style={{
-            marginTop: "10px",
-            padding: "10px 14px",
-            borderRadius: "10px",
-            background: isActive ? "linear-gradient(90deg, #d10000, #a00000)" : "#ffffff",
-            color: isActive ? "#ffffff" : "#a00000",
-            fontWeight: 600,
-            boxShadow: isActive
-              ? "0 12px 20px rgba(161, 0, 0, 0.25)"
-              : "0 4px 12px rgba(0, 0, 0, 0.05)",
-            border: isActive ? "none" : "1px solid #ffe0e0",
-            transition: "all 0.2s ease",
-            display: "block",
-          }}
-        >
-          {item.label}
-        </div>
+        {item.label}
       </Link>
     );
   };
