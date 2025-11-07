@@ -227,6 +227,7 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
           })}
         </div>
       </div>
+      </div>
 
       {activeConcern.open ? (
         <div
