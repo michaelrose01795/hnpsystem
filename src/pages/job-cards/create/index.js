@@ -222,7 +222,7 @@ export default function CreateJobCardPage() {
     }
   };
 
-  // ✅ NEW: DVLA API Fetch - Only fetches from DVLA API and saves to database
+  // ✅ NEW: DVLA API Fetch - Only fetches from DVLA API (no database access)
   const handleFetchVehicleData = async () => {
     // validate that registration number is entered
     if (!vehicle.reg.trim()) {
@@ -288,109 +288,6 @@ export default function CreateJobCardPage() {
       }
 
       showNotification("vehicle", "success", "✓ Vehicle details fetched from DVLA!");
-
-      // ✅ NEW: Save vehicle to database immediately after fetching from DVLA
-      console.log("Saving vehicle to database after DVLA fetch...");
-
-      // Check if vehicle already exists
-      const { data: existingVehicle, error: vehicleCheckError } = await supabase
-        .from("vehicles")
-        .select("*")
-        .or(`registration.eq.${regUpper},reg_number.eq.${regUpper}`)
-        .maybeSingle();
-
-      console.log("Existing vehicle check:", existingVehicle, vehicleCheckError);
-
-      if (existingVehicle) {
-        // ✅ Vehicle exists - update it with DVLA data
-        console.log("Vehicle exists, updating with DVLA data...");
-
-        const { error: updateError } = await supabase
-          .from("vehicles")
-          .update({
-            make_model: vehicleData.makeModel,
-            colour: vehicleData.colour,
-            chassis: vehicleData.chassis,
-            vin: vehicleData.chassis, // old column for compatibility
-            engine: vehicleData.engine,
-            engine_number: vehicleData.engine, // old column for compatibility
-            mileage: parseInt(vehicleData.mileage) || null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existingVehicle.id);
-
-        if (updateError) {
-          console.error("Error updating vehicle:", updateError);
-          throw updateError;
-        }
-
-        console.log("Vehicle updated successfully in database");
-        showNotification("vehicle", "success", "✓ Vehicle updated in database!");
-
-        // ✅ If vehicle has a linked customer, auto-fill customer details
-        if (existingVehicle.customer_id) {
-          console.log("Vehicle has linked customer, fetching customer...");
-
-          const { data: linkedCustomer, error: customerError } = await supabase
-            .from("customers")
-            .select("*")
-            .eq("id", existingVehicle.customer_id)
-            .single();
-
-          console.log("Linked customer result:", linkedCustomer, customerError);
-
-          // if linked customer found, populate customer state
-          if (linkedCustomer && !customerError) {
-            setCustomer({
-              id: linkedCustomer.id,
-              firstName: linkedCustomer.firstname || linkedCustomer.firstName,
-              lastName: linkedCustomer.lastname || linkedCustomer.lastName,
-              email: linkedCustomer.email,
-              mobile: linkedCustomer.mobile,
-              telephone: linkedCustomer.telephone,
-              address: linkedCustomer.address,
-              postcode: linkedCustomer.postcode,
-            });
-            console.log("Customer auto-filled from database");
-            showNotification("customer", "success", "✓ Customer details auto-filled from database!");
-          }
-        }
-      } else {
-        // ✅ Vehicle doesn't exist - create new vehicle entry (without customer link for now)
-        console.log("Vehicle doesn't exist, creating new vehicle...");
-
-        const vehicleToInsert = {
-          registration: regUpper, // NEW column
-          reg_number: regUpper, // OLD column (keep for compatibility)
-          make_model: vehicleData.makeModel, // NEW combined column
-          make: vehicleData.makeModel.split(' ')[0] || 'Unknown', // OLD column
-          model: vehicleData.makeModel.split(' ').slice(1).join(' ') || '', // OLD column
-          colour: vehicleData.colour,
-          chassis: vehicleData.chassis, // NEW column
-          vin: vehicleData.chassis, // OLD column (keep for compatibility)
-          engine: vehicleData.engine, // NEW column
-          engine_number: vehicleData.engine, // OLD column (keep for compatibility)
-          mileage: parseInt(vehicleData.mileage) || null,
-          customer_id: null, // will be linked when job is saved
-          created_at: new Date().toISOString(),
-        };
-
-        console.log("Inserting vehicle:", vehicleToInsert);
-
-        const { data: newVehicle, error: insertError } = await supabase
-          .from("vehicles")
-          .insert([vehicleToInsert])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error("Error inserting vehicle:", insertError);
-          throw insertError;
-        }
-
-        console.log("Vehicle created successfully in database with ID:", newVehicle.id);
-        showNotification("vehicle", "success", "✓ Vehicle saved to database!");
-      }
 
     } catch (err) {
       console.error("Error fetching vehicle data from DVLA:", err);
