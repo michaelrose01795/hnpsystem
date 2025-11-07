@@ -57,6 +57,11 @@ const buildDirectHash = (userA, userB) => {
   return `${DIRECT_HASH_PREFIX}:${sorted[0]}:${sorted[1]}`;
 };
 
+const normalizeUserId = (value) => {
+  const num = Number(value);
+  return Number.isFinite(num) && num > 0 ? num : null;
+};
+
 const formatThreadRow = (row, currentUserId, membershipMap = {}) => {
   if (!row) return null;
 
@@ -109,12 +114,13 @@ const getMembershipMap = (rows = []) =>
   }, {});
 
 export const getThreadsForUser = async (userId) => {
-  if (!userId) return [];
+  const userIdNum = normalizeUserId(userId);
+  if (!userIdNum) return [];
 
   const { data: membershipRows, error: membershipError } = await dbClient
     .from("message_thread_members")
     .select("thread_id, last_read_at")
-    .eq("user_id", userId);
+    .eq("user_id", userIdNum);
 
   if (membershipError) {
     console.error("❌ getThreadsForUser membership error:", membershipError);
@@ -144,7 +150,7 @@ export const getThreadsForUser = async (userId) => {
         last_read_at,
         user:user_id(user_id, first_name, last_name, email, role)
       ),
-      recent_messages:messages!messages_thread_id_fkey(limit=1, order=created_at.desc)(
+      recent_messages:messages!messages_thread_id_fkey(order=created_at.desc,limit=1)(
         message_id,
         thread_id,
         content,
@@ -164,14 +170,83 @@ export const getThreadsForUser = async (userId) => {
   }
 
   return (threadRows || []).map((row) =>
-    formatThreadRow(row, userId, membershipMap)
+    formatThreadRow(row, userIdNum, membershipMap)
   );
 };
 
+const fetchThreadRecord = async (threadId) => {
+  const { data, error } = await dbClient
+    .from("message_threads")
+    .select(
+      `
+      thread_id,
+      thread_type,
+      title,
+      unique_hash,
+      created_by,
+      created_at,
+      updated_at,
+      participants:message_thread_members(
+        user_id,
+        role,
+        joined_at,
+        last_read_at,
+        user:user_id(user_id, first_name, last_name, email, role)
+      ),
+      recent_messages:messages!messages_thread_id_fkey(order=created_at.desc,limit=1)(
+        message_id,
+        thread_id,
+        content,
+        created_at,
+        sender_id,
+        receiver_id,
+        sender:sender_id(user_id, first_name, last_name, email, role)
+      )
+    `
+    )
+    .eq("thread_id", threadId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+};
+
 const getThreadSnapshotForUser = async (threadId, userId) => {
-  if (!threadId || !userId) return null;
-  const threads = await getThreadsForUser(userId);
-  return threads.find((thread) => thread.id === threadId) || null;
+  const threadIdNum = Number(threadId);
+  const userIdNum = normalizeUserId(userId);
+  if (!threadIdNum || !userIdNum) return null;
+  const threads = await getThreadsForUser(userIdNum);
+  const match = threads.find((thread) => thread.id === threadIdNum);
+  if (match) return match;
+
+  const [threadRow, membershipResult] = await Promise.all([
+    fetchThreadRecord(threadIdNum),
+    dbClient
+      .from("message_thread_members")
+      .select("thread_id, last_read_at")
+      .eq("thread_id", threadIdNum)
+      .eq("user_id", userIdNum)
+      .maybeSingle(),
+  ]);
+
+  if (membershipResult?.error && membershipResult?.error?.code !== "PGRST116") {
+    throw membershipResult.error;
+  }
+
+  const membershipData = membershipResult?.data || null;
+
+  if (!threadRow || !membershipData) {
+    return null;
+  }
+
+  const memberMeta = membershipData;
+
+  return formatThreadRow(threadRow, userIdNum, {
+    [threadIdNum]: {
+      threadId: memberMeta.thread_id,
+      last_read_at: memberMeta.last_read_at,
+    },
+  });
 };
 
 const normalizeMemberConfigs = (entries = []) => {
@@ -247,11 +322,13 @@ export const searchDirectoryUsers = async (searchTerm = "", limit = 25) => {
 
 export const ensureDirectThread = async (currentUserId, targetUserId) => {
   assertMessagingWriteAccess();
-  if (!currentUserId || !targetUserId || currentUserId === targetUserId) {
+  const currentId = normalizeUserId(currentUserId);
+  const targetId = normalizeUserId(targetUserId);
+  if (!currentId || !targetId || currentId === targetId) {
     throw new Error("Direct messages need two distinct users.");
   }
 
-  const hash = buildDirectHash(currentUserId, targetUserId);
+  const hash = buildDirectHash(currentId, targetId);
 
   const { data: existing, error: existingError } = await dbClient
     .from("message_threads")
@@ -267,10 +344,10 @@ export const ensureDirectThread = async (currentUserId, targetUserId) => {
 
   if (threadId) {
     await addMembersToThread(threadId, [
-      { userId: currentUserId },
-      { userId: targetUserId },
+      { userId: currentId },
+      { userId: targetId },
     ]);
-    const snapshot = await getThreadSnapshotForUser(threadId, currentUserId);
+    const snapshot = await getThreadSnapshotForUser(threadId, currentId);
     if (!snapshot) {
       throw new Error("Unable to load the direct conversation.");
     }
@@ -281,7 +358,7 @@ export const ensureDirectThread = async (currentUserId, targetUserId) => {
     .from("message_threads")
     .insert({
       thread_type: "direct",
-      created_by: currentUserId,
+      created_by: currentId,
       unique_hash: hash,
     })
     .select("thread_id")
@@ -290,11 +367,11 @@ export const ensureDirectThread = async (currentUserId, targetUserId) => {
   if (error) throw error;
 
   await addMembersToThread(inserted.thread_id, [
-    { userId: currentUserId },
-    { userId: targetUserId },
+    { userId: currentId },
+    { userId: targetId },
   ]);
 
-  const snapshot = await getThreadSnapshotForUser(inserted.thread_id, currentUserId);
+  const snapshot = await getThreadSnapshotForUser(inserted.thread_id, currentId);
   if (!snapshot) {
     throw new Error("Unable to load the direct conversation.");
   }
@@ -303,12 +380,13 @@ export const ensureDirectThread = async (currentUserId, targetUserId) => {
 
 export const createGroupThread = async ({ title, memberIds = [], createdBy }) => {
   assertMessagingWriteAccess();
-  if (!createdBy) {
+  const creatorId = normalizeUserId(createdBy);
+  if (!creatorId) {
     throw new Error("Creator is required to make a group thread.");
   }
 
   const uniqueMembers = Array.from(
-    new Set([createdBy, ...memberIds].map((id) => Number(id)).filter(Boolean))
+    new Set([creatorId, ...memberIds].map((id) => Number(id)).filter(Boolean))
   );
 
   if (uniqueMembers.length < 2) {
@@ -318,7 +396,7 @@ export const createGroupThread = async ({ title, memberIds = [], createdBy }) =>
   const payload = {
     thread_type: "group",
     title: title?.trim() || null,
-    created_by: createdBy,
+    created_by: creatorId,
   };
 
   const { data: inserted, error } = await dbClient
@@ -331,11 +409,11 @@ export const createGroupThread = async ({ title, memberIds = [], createdBy }) =>
 
   const memberConfigs = uniqueMembers.map((userId) => ({
     userId,
-    role: userId === createdBy ? "leader" : "member",
+    role: userId === creatorId ? "leader" : "member",
   }));
 
   await addMembersToThread(inserted.thread_id, memberConfigs);
-  const snapshot = await getThreadSnapshotForUser(inserted.thread_id, createdBy);
+  const snapshot = await getThreadSnapshotForUser(inserted.thread_id, creatorId);
   if (!snapshot) {
     throw new Error("Unable to load the new group conversation.");
   }
@@ -358,7 +436,9 @@ export const updateGroupMembers = async ({
   removeUserIds = [],
 }) => {
   assertMessagingWriteAccess();
-  if (!threadId || !actorId) {
+  const actorUserId = normalizeUserId(actorId);
+  const threadIdNum = Number(threadId);
+  if (!threadIdNum || !actorUserId) {
     throw new Error("threadId and actorId are required.");
   }
 
@@ -377,8 +457,8 @@ export const updateGroupMembers = async ({
   const { data: actorMembership, error: actorError } = await dbClient
     .from("message_thread_members")
     .select("role")
-    .eq("thread_id", threadId)
-    .eq("user_id", actorId)
+    .eq("thread_id", threadIdNum)
+    .eq("user_id", actorUserId)
     .maybeSingle();
 
   if (actorError) throw actorError;
@@ -386,10 +466,10 @@ export const updateGroupMembers = async ({
     throw new Error("Only group leaders can manage members.");
   }
 
-  const adds = sanitizeIds(addUserIds).filter((id) => id !== actorId);
+  const adds = sanitizeIds(addUserIds).filter((id) => id !== actorUserId);
   if (adds.length) {
     await addMembersToThread(
-      threadId,
+      threadIdNum,
       adds.map((userId) => ({ userId }))
     );
   }
@@ -399,7 +479,7 @@ export const updateGroupMembers = async ({
     const { data: leaderRows, error: leaderError } = await dbClient
       .from("message_thread_members")
       .select("user_id")
-      .eq("thread_id", threadId)
+      .eq("thread_id", threadIdNum)
       .eq("role", "leader");
 
     if (leaderError) throw leaderError;
@@ -413,11 +493,11 @@ export const updateGroupMembers = async ({
     await dbClient
       .from("message_thread_members")
       .delete()
-      .eq("thread_id", threadId)
+      .eq("thread_id", threadIdNum)
       .in("user_id", removals);
   }
 
-  const snapshot = await getThreadSnapshotForUser(threadId, actorId);
+  const snapshot = await getThreadSnapshotForUser(threadIdNum, actorUserId);
   if (!snapshot) {
     throw new Error("Unable to refresh the group conversation.");
   }
@@ -425,15 +505,17 @@ export const updateGroupMembers = async ({
 };
 
 export const getThreadMessages = async (threadId, userId, limit = 50, before) => {
-  if (!threadId || !userId) {
+  const threadIdNum = Number(threadId);
+  const userIdNum = normalizeUserId(userId);
+  if (!threadIdNum || !userIdNum) {
     throw new Error("threadId and userId are required to fetch messages.");
   }
 
   const { data: membership, error: membershipError } = await dbClient
     .from("message_thread_members")
     .select("member_id")
-    .eq("thread_id", threadId)
-    .eq("user_id", userId)
+    .eq("thread_id", threadIdNum)
+    .eq("user_id", userIdNum)
     .maybeSingle();
 
   if (membershipError) throw membershipError;
@@ -454,7 +536,7 @@ export const getThreadMessages = async (threadId, userId, limit = 50, before) =>
       sender:sender_id(user_id, first_name, last_name, email, role)
     `
     )
-    .eq("thread_id", threadId)
+    .eq("thread_id", threadIdNum)
     .order("created_at", { ascending: true })
     .limit(limit);
 
@@ -473,13 +555,15 @@ export const getThreadMessages = async (threadId, userId, limit = 50, before) =>
 
 export const markThreadRead = async ({ threadId, userId }) => {
   assertMessagingWriteAccess();
-  if (!threadId || !userId) return null;
+  const threadIdNum = Number(threadId);
+  const userIdNum = normalizeUserId(userId);
+  if (!threadIdNum || !userIdNum) return null;
 
   const { data, error } = await dbClient
     .from("message_thread_members")
     .update({ last_read_at: new Date().toISOString() })
-    .eq("thread_id", threadId)
-    .eq("user_id", userId)
+    .eq("thread_id", threadIdNum)
+    .eq("user_id", userIdNum)
     .select("thread_id, user_id, last_read_at")
     .single();
 
@@ -498,20 +582,22 @@ export const sendThreadMessage = async ({
   receiverId = null,
 }) => {
   assertMessagingWriteAccess();
-  if (!senderId || !content?.trim()) {
+  const senderUserId = normalizeUserId(senderId);
+  const threadIdNum = threadId ? Number(threadId) : null;
+  if (!senderUserId || !content?.trim()) {
     throw new Error("Message content and sender are required.");
   }
 
-  if (!threadId && !receiverId) {
+  if (!threadIdNum && !receiverId) {
     throw new Error("Messages must belong to a thread or include a receiverId.");
   }
 
-  if (threadId) {
+  if (threadIdNum) {
     const { data: membership, error } = await dbClient
       .from("message_thread_members")
       .select("member_id")
-      .eq("thread_id", threadId)
-      .eq("user_id", senderId)
+      .eq("thread_id", threadIdNum)
+      .eq("user_id", senderUserId)
       .maybeSingle();
 
     if (error) throw error;
@@ -522,9 +608,9 @@ export const sendThreadMessage = async ({
 
   const payload = {
     content: content.trim(),
-    sender_id: senderId,
+    sender_id: senderUserId,
     receiver_id: receiverId,
-    thread_id: threadId || null,
+    thread_id: threadIdNum || null,
   };
 
   const { data, error } = await dbClient
@@ -545,14 +631,14 @@ export const sendThreadMessage = async ({
 
   if (error) throw error;
 
-  if (threadId) {
+  if (threadIdNum) {
     await dbClient
       .from("message_threads")
       .update({ updated_at: data.created_at })
-      .eq("thread_id", threadId);
+      .eq("thread_id", threadIdNum);
   }
 
-  await markThreadRead({ threadId, userId: senderId });
+  await markThreadRead({ threadId: threadIdNum, userId: senderUserId });
 
   return formatMessageRow(data);
 };
