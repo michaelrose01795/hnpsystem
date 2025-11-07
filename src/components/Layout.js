@@ -617,6 +617,7 @@ export default function Layout({ children }) {
       )}
 
       <div
+        data-loader-region="main"
         style={{
           flex: 1,
           maxWidth: mainColumnMaxWidth,

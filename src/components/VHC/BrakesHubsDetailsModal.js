@@ -250,6 +250,17 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     outline: "none",
   };
 
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 12px",
+    borderRadius: "12px",
+    border: `1px solid ${palette.border}`,
+    backgroundColor: palette.surface,
+    color: palette.textPrimary,
+    fontSize: "14px",
+    outline: "none",
+  };
+
   const concernItemStyle = {
     display: "flex",
     alignItems: "center",

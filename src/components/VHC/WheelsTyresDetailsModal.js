@@ -1,8 +1,8 @@
 // file location: src/components/VHC/WheelsTyresDetailsModal.js
 import React, { useMemo, useState } from "react";
-import Image from "next/image";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
 import themeConfig, { createVhcButtonStyle, vhcModalContentStyles } from "@/styles/appTheme";
+import TyreDiagram from "@/components/VHC/TyreDiagram";
 
 const palette = themeConfig.palette;
 
@@ -84,6 +84,14 @@ const concernBadge = (color) => ({
 const statusColors = {
   Amber: { background: "rgba(245,158,11,0.16)", text: palette.warning, border: "rgba(245,158,11,0.32)" },
   Red: { background: "rgba(239,68,68,0.16)", text: palette.danger, border: "rgba(239,68,68,0.32)" },
+};
+
+const getAverageTreadDepth = (tread = {}) => {
+  const readings = ["outer", "middle", "inner"]
+    .map((section) => parseFloat(tread?.[section]))
+    .filter((value) => !Number.isNaN(value));
+  if (readings.length === 0) return null;
+  return readings.reduce((sum, value) => sum + value, 0) / readings.length;
 };
 
 function AutoCompleteInput({ value, onChange, options, placeholder }) {
@@ -203,6 +211,16 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
       0,
     );
   }, [tyres]);
+
+  const tyreDiagramReadings = useMemo(
+    () => ({
+      nsf: getAverageTreadDepth(tyres.NSF?.tread),
+      osf: getAverageTreadDepth(tyres.OSF?.tread),
+      nsr: getAverageTreadDepth(tyres.NSR?.tread),
+      osr: getAverageTreadDepth(tyres.OSR?.tread),
+    }),
+    [tyres],
+  );
 
   const concernStatusTotals = useMemo(() => {
     const totals = Object.keys(statusColors).reduce((acc, key) => ({ ...acc, [key]: 0 }), {});
@@ -437,85 +455,23 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
           <div
             style={{
               flex: "0 0 320px",
-              borderRadius: "22px",
-              border: `1px solid ${palette.border}`,
-              background: "linear-gradient(160deg, #ffffff, #fff7f7)",
-              boxShadow: "0 16px 32px rgba(209,0,0,0.12)",
-              padding: "24px",
               display: "flex",
               flexDirection: "column",
-              gap: "24px",
-              overflowY: "auto",
+              gap: "16px",
             }}
           >
-            <div>
-              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>Wheel Selection</h3>
-              <p style={{ margin: "6px 0 0", fontSize: "13px", color: palette.textMuted }}>
-                Choose a wheel to update tyre details or log concerns.
-              </p>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(120px, 1fr))",
-                gap: "20px",
+            <TyreDiagram
+              tyres={tyreDiagramReadings}
+              activeTyre={activeWheel === "Spare" ? null : activeWheel}
+              onSelect={(key) => {
+                if (!key) return;
+                setActiveWheel(key.toUpperCase());
               }}
-            >
-              {WHEELS.map((wheel) => {
-                const isActive = activeWheel === wheel;
-                const concernCount = tyres[wheel].concerns?.length ?? 0;
-                return (
-                  <button
-                    key={wheel}
-                    type="button"
-                    onClick={() => setActiveWheel(wheel)}
-                    style={{
-                      borderRadius: "18px",
-                      border: `1px solid ${isActive ? palette.accent : palette.border}`,
-                      padding: "16px",
-                      background: isActive ? palette.accentSoft : palette.surface,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: "10px",
-                      cursor: "pointer",
-                      position: "relative",
-                      boxShadow: isActive ? "0 12px 28px rgba(209,0,0,0.18)" : "0 6px 18px rgba(15,23,42,0.08)",
-                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-3px)";
-                      e.currentTarget.style.boxShadow = "0 16px 32px rgba(209,0,0,0.18)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = isActive
-                        ? "0 12px 28px rgba(209,0,0,0.18)"
-                        : "0 6px 18px rgba(15,23,42,0.08)";
-                    }}
-                  >
-                    <span style={{ fontWeight: 700, color: palette.accent, fontSize: "14px" }}>{wheel}</span>
-                    <Image src="/images/Tyres2.png" alt={wheel} width={80} height={80} />
-                    {concernCount > 0 ? (
-                      <span
-                        style={{
-                          position: "absolute",
-                          top: "12px",
-                          right: "12px",
-                          ...concernBadge(statusColors.Amber),
-                          padding: "4px 10px",
-                        }}
-                      >
-                        {concernCount}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
+            />
 
-            <div
+            <button
+              type="button"
+              onClick={() => setActiveWheel("Spare")}
               style={{
                 borderRadius: "18px",
                 border: `1px solid ${activeWheel === "Spare" ? palette.accent : palette.border}`,
@@ -529,25 +485,15 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
                 boxShadow: activeWheel === "Spare" ? "0 12px 28px rgba(209,0,0,0.18)" : "0 6px 18px rgba(15,23,42,0.08)",
                 transition: "transform 0.2s ease, box-shadow 0.2s ease",
               }}
-              onClick={() => setActiveWheel("Spare")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-3px)";
-                e.currentTarget.style.boxShadow = "0 16px 32px rgba(209,0,0,0.18)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow =
-                  activeWheel === "Spare" ? "0 12px 28px rgba(209,0,0,0.18)" : "0 6px 18px rgba(15,23,42,0.08)";
-              }}
             >
               <span style={{ fontWeight: 700, color: palette.accent, fontSize: "14px" }}>Spare / Kit</span>
-              <Image src="/images/Spare.png" alt="Spare Tyre" width={86} height={86} />
+              <span style={{ fontSize: "13px", color: palette.textMuted, textAlign: "center" }}>
+                Tap to record spare or repair kit details.
+              </span>
               {tyres.Spare.concerns?.length ? (
-                <span style={{ ...concernBadge(statusColors.Amber), padding: "4px 10px" }}>
-                  {tyres.Spare.concerns.length}
-                </span>
+                <span style={{ ...concernBadge(statusColors.Amber), padding: "4px 10px" }}>{tyres.Spare.concerns.length}</span>
               ) : null}
-            </div>
+            </button>
           </div>
 
           <div
