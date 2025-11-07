@@ -7,10 +7,12 @@ import { useState, useMemo } from "react";
 import { useUser } from "@/context/UserContext";
 import { sidebarSections } from "@/config/navigation";
 
-export default function Sidebar({ onToggle }) {
+export default function Sidebar({ onToggle, isCondensed = false }) {
   const pathname = usePathname();
   const { user } = useUser();
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const isCustomerOnly =
+    userRoles.length > 0 && userRoles.every((role) => role === "customer");
   const isPartsUser = userRoles.some(
     (role) => role === "parts" || role === "parts manager"
   );
@@ -42,19 +44,98 @@ export default function Sidebar({ onToggle }) {
     setOpenSections((prev) => ({ ...prev, [label]: !prev[label] }));
   };
 
+  if (isCustomerOnly) {
+    return (
+      <aside
+        style={{
+          width: "260px",
+          minWidth: "220px",
+          maxHeight: "calc(100vh - 20px)",
+          position: "sticky",
+          top: "10px",
+          display: "flex",
+          flexDirection: "column",
+          backgroundColor: "#ffffff",
+          borderRadius: "16px",
+          boxShadow: "0 20px 40px rgba(209, 0, 0, 0.12)",
+          border: "1px solid #ffe0e0",
+          overflow: "hidden",
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            background: "linear-gradient(to right, #d10000, #a00000)",
+            padding: "24px",
+            color: "white",
+            position: "relative",
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: "0.85rem",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+            }}
+          >
+            Customer Portal
+          </p>
+          <h2 style={{ margin: "6px 0 0", fontSize: "1.4rem", fontWeight: 700 }}>
+            Welcome
+          </h2>
+        </div>
+        <div style={{ padding: "20px", flex: 1 }}>
+          {[
+            { href: "/customer", label: "Overview" },
+            { href: "/customer/vhc", label: "VHC & Media" },
+            { href: "/customer/vehicles", label: "My Vehicles" },
+            { href: "/customer/parts", label: "Parts & Accessories" },
+            { href: "/customer/messages", label: "Messages" },
+          ].map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link key={item.href} href={item.href} style={{ textDecoration: "none" }}>
+                <div
+                  style={{
+                    marginBottom: "12px",
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    background: isActive
+                      ? "linear-gradient(90deg, #d10000, #a00000)"
+                      : "#fff5f5",
+                    color: isActive ? "#ffffff" : "#a00000",
+                    fontWeight: 600,
+                    boxShadow: isActive
+                      ? "0 12px 20px rgba(161, 0, 0, 0.25)"
+                      : "0 4px 12px rgba(0, 0, 0, 0.05)",
+                  }}
+                >
+                  {item.label}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside
       style={{
-        width: "260px",
-        minWidth: "220px",
-        maxHeight: "calc(100vh - 20px)",
-        position: "sticky",
-        top: "10px",
+        width: isCondensed ? "100%" : "260px",
+        minWidth: isCondensed ? "auto" : "220px",
+        maxHeight: isCondensed ? "none" : "calc(100vh - 20px)",
+        position: isCondensed ? "relative" : "sticky",
+        top: isCondensed ? "auto" : "10px",
         display: "flex",
         flexDirection: "column",
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: "0 20px 40px rgba(209, 0, 0, 0.12)",
+        boxShadow: isCondensed
+          ? "0 12px 30px rgba(209, 0, 0, 0.12)"
+          : "0 20px 40px rgba(209, 0, 0, 0.12)",
         border: "1px solid #ffe0e0",
         overflow: "hidden",
         flexShrink: 0,

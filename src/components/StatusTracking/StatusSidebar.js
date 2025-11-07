@@ -6,12 +6,24 @@ import { SERVICE_STATUS_FLOW } from '../../lib/status/statusFlow';
 
 // This is the main status sidebar that shows on all pages
 // It displays the complete process flow with current status highlighted
-export default function StatusSidebar({ jobId, currentStatus, isOpen, onToggle, onJobSearch, hasUrlJobId }) {
+export default function StatusSidebar({
+  jobId,
+  currentStatus,
+  isOpen,
+  onToggle,
+  onJobSearch,
+  hasUrlJobId,
+  viewportWidth = 1440,
+  isCompact = false,
+}) {
   const [statusHistory, setStatusHistory] = useState([]); // Array of past statuses with timestamps
   const [totalTimeSpent, setTotalTimeSpent] = useState(0); // Total working time in minutes
   const [currentTimer, setCurrentTimer] = useState(0); // Current session time
   const [searchInput, setSearchInput] = useState(''); // Search input state
   const [searchError, setSearchError] = useState(''); // Error message state
+  const safeViewportWidth = typeof viewportWidth === 'number' ? viewportWidth : 1440;
+  const compactMode = isCompact || safeViewportWidth <= 1100;
+  const panelWidth = compactMode ? Math.min(Math.max(safeViewportWidth - 32, 280), 420) : 400;
   
   // Fetch status history when component mounts or jobId changes
   useEffect(() => {
@@ -111,70 +123,119 @@ export default function StatusSidebar({ jobId, currentStatus, isOpen, onToggle, 
     return history.reduce((total, h) => total + (h.duration || 0), 0);
   };
 
+  const toggleButtonStyle = compactMode
+    ? {
+        width: '56px',
+        height: '56px',
+        position: 'fixed',
+        right: '16px',
+        bottom: '16px',
+        backgroundColor: '#d10000',
+        color: 'white',
+        border: 'none',
+        borderRadius: '50%',
+        boxShadow: '0 12px 24px rgba(0,0,0,0.2)',
+        cursor: 'pointer',
+        zIndex: 51,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '20px',
+        fontWeight: 'bold',
+        transition: 'background-color 0.2s ease-in-out, transform 0.3s ease-in-out'
+      }
+    : {
+        width: '40px',
+        height: '60px',
+        position: 'fixed',
+        right: isOpen ? `${panelWidth + 10}px` : '0',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        backgroundColor: '#d10000',
+        color: 'white',
+        border: 'none',
+        borderTopLeftRadius: '8px',
+        borderBottomLeftRadius: '8px',
+        boxShadow: '-4px 4px 12px rgba(0,0,0,0.2)',
+        cursor: 'pointer',
+        zIndex: 51,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '20px',
+        fontWeight: 'bold',
+        transition: 'all 0.3s ease-in-out'
+      };
+
+  const panelStyle = compactMode
+    ? {
+        position: 'fixed',
+        left: '16px',
+        right: '16px',
+        bottom: '88px',
+        height: 'calc(100vh - 170px)',
+        width: 'auto',
+        backgroundColor: '#fff',
+        boxShadow: isOpen
+          ? '0 20px 40px rgba(0,0,0,0.15)'
+          : 'none',
+        borderRadius: '20px',
+        transform: isOpen ? 'translateY(0)' : 'translateY(calc(100% + 32px))',
+        transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+        zIndex: 50,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }
+    : {
+        position: 'fixed',
+        right: '10px',
+        top: '10px',
+        height: 'calc(100vh - 20px)',
+        width: `${panelWidth}px`,
+        backgroundColor: '#fff',
+        boxShadow: isOpen
+          ? '-8px 0 32px rgba(0,0,0,0.15), 0 8px 32px rgba(0,0,0,0.1)'
+          : 'none',
+        borderRadius: '16px',
+        transform: isOpen ? 'translateX(0)' : `translateX(${panelWidth + 20}px)`,
+        transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+        zIndex: 50,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      };
+
+  const handleToggleMouseEnter = (e) => {
+    if (compactMode) return;
+    e.currentTarget.style.backgroundColor = '#a00000';
+    e.currentTarget.style.transform = 'translateY(-50%) translateX(-2px)';
+  };
+
+  const handleToggleMouseLeave = (e) => {
+    if (compactMode) return;
+    e.currentTarget.style.backgroundColor = '#d10000';
+    e.currentTarget.style.transform = 'translateY(-50%)';
+  };
+
   return (
     <>
       {/* Toggle button - always visible */}
       <button
+        aria-label={isOpen ? 'Hide job progress' : 'Show job progress'}
         onClick={(e) => {
-          e.stopPropagation(); // Prevent event bubbling
-          onToggle(); // Call the toggle function
+          e.stopPropagation();
+          onToggle();
         }}
-        style={{ 
-          width: '40px', 
-          height: '60px',
-          position: 'fixed',
-          right: isOpen ? '410px' : '0', // Move with sidebar
-          top: '50%',
-          transform: 'translateY(-50%)',
-          backgroundColor: '#d10000', // Match your red theme
-          color: 'white',
-          border: 'none',
-          borderTopLeftRadius: '8px',
-          borderBottomLeftRadius: '8px',
-          boxShadow: '-4px 4px 12px rgba(0,0,0,0.2)', // Floating shadow
-          cursor: 'pointer',
-          zIndex: 51, // Above sidebar
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '20px',
-          fontWeight: 'bold',
-          transition: 'all 0.3s ease-in-out' // Smooth movement with sidebar
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#a00000';
-          e.currentTarget.style.transform = 'translateY(-50%) translateX(-2px)'; // Slide left on hover
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = '#d10000';
-          e.currentTarget.style.transform = 'translateY(-50%)';
-        }}
+        style={toggleButtonStyle}
+        onMouseEnter={handleToggleMouseEnter}
+        onMouseLeave={handleToggleMouseLeave}
       >
-        {/* Icon changes based on open/closed state */}
-        {isOpen ? '→' : '←'}
+        {compactMode ? (isOpen ? '▼' : '▲') : isOpen ? '→' : '←'}
       </button>
 
       {/* Sidebar panel - FLOATING */}
-      <div
-        style={{
-          position: 'fixed',
-          right: isOpen ? '10px' : '-410px', // Float 10px from edge when open
-          top: '10px', // Float from top
-          height: 'calc(100vh - 20px)', // Leave margin top and bottom
-          width: '400px',
-          backgroundColor: '#fff',
-          boxShadow: isOpen 
-            ? '-8px 0 32px rgba(0,0,0,0.15), 0 8px 32px rgba(0,0,0,0.1)' // Stronger floating shadow
-            : 'none',
-          borderRadius: '16px', // Rounded corners for floating effect
-          transform: isOpen ? 'translateX(0)' : 'translateX(420px)',
-          transition: 'all 0.3s ease-in-out',
-          zIndex: 50,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden' // Keep content inside rounded corners
-        }}
-      >
+      <div style={panelStyle}>
         {/* Header */}
         <div style={{
           background: 'linear-gradient(to right, #d10000, #a00000)', // Red gradient
