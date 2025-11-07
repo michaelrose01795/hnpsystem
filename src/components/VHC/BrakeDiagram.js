@@ -33,7 +33,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
 
   return (
     <div
-      style={{
+      style={{ // change this section to meet the same desing as the BrakeDetailsModal.js
         width: "100%",
         background: "#1e1e1e",
         borderRadius: "24px",

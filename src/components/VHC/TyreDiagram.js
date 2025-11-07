@@ -38,9 +38,9 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
 
   return (
     <div
-      style={{
+      style={{ // change this section to meet the same desing as the WheelTyreDetailsModal.js
         width: "100%",
-        background: "#1e1e1e",
+        background: "#ffffffff",
         borderRadius: "24px",
         padding: "28px 24px 24px",
         display: "flex",

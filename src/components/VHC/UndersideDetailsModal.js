@@ -53,8 +53,14 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
   const baseCardStyle = {
     ...vhcModalContentStyles.baseCard,
     alignItems: "flex-start",
+    height: "100%",
   };
-  const cardGridStyle = vhcModalContentStyles.cardGrid;
+  const cardGridStyle = {
+    ...vhcModalContentStyles.cardGrid,
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gridAutoRows: "minmax(0, 1fr)",
+    alignContent: "stretch",
+  };
 
   const setCardHoverState = (element, hovering) => {
     const source = hovering
@@ -183,10 +189,8 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
           <div
             style={{
               ...cardGridStyle,
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
               flex: 1,
-              overflowY: "auto",
-              paddingRight: "6px",
+              minHeight: 0,
             }}
           >
           {CATEGORY_ORDER.map((category) => {
@@ -226,6 +230,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
             );
           })}
         </div>
+      </div>
       </div>
 
       {activeConcern.open ? (
@@ -395,7 +400,6 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
               )}
             </div>
           </div>
-        </div>
         </div>
       ) : null}
     </VHCModalShell>

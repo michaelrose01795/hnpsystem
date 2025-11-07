@@ -53,8 +53,14 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
   const baseCardStyle = {
     ...vhcModalContentStyles.baseCard,
     alignItems: "flex-start",
+    height: "100%",
   };
-  const cardGridStyle = vhcModalContentStyles.cardGrid;
+  const cardGridStyle = {
+    ...vhcModalContentStyles.cardGrid,
+    gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
+    gridAutoRows: "minmax(0, 1fr)",
+    alignContent: "stretch",
+  };
 
   const setCardHoverState = (element, hovering) => {
     const source = hovering
@@ -183,23 +189,22 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
           <div
             style={{
               ...cardGridStyle,
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
               flex: 1,
-              overflowY: "auto",
-              paddingRight: "6px",
+              minHeight: 0,
             }}
           >
-          {CATEGORY_ORDER.map((category) => {
+          {CATEGORY_ORDER.map((category, idx) => {
             const concerns = data[category]?.concerns ?? [];
             const redCount = concerns.filter((c) => c.status === "Red").length;
             const amberCount = concerns.filter((c) => c.status === "Amber").length;
+            const span = idx < 3 ? 2 : idx < 5 ? 3 : 6;
 
             return (
               <button
                 key={category}
                 type="button"
                 onClick={() => enableConcern(category)}
-                style={baseCardStyle}
+                style={{ ...baseCardStyle, gridColumn: `span ${span}` }}
                 onMouseEnter={(e) => setCardHoverState(e.currentTarget, true)}
                 onMouseLeave={(e) => setCardHoverState(e.currentTarget, false)}
               >

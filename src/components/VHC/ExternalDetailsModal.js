@@ -55,10 +55,13 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
   const baseCardStyle = {
     ...vhcModalContentStyles.baseCard,
     alignItems: "flex-start",
+    height: "100%",
   };
   const cardGridStyle = {
     ...vhcModalContentStyles.cardGrid,
-    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gridAutoRows: "minmax(0, 1fr)",
+    alignContent: "stretch",
   };
 
   const setCardHoverState = (element, hovering) => {
@@ -205,10 +208,8 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
           <div
             style={{
               ...cardGridStyle,
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
               flex: 1,
-              overflowY: "auto",
-              paddingRight: "6px",
+              minHeight: 0,
             }}
           >
           {CATEGORY_ORDER.map((category) => {

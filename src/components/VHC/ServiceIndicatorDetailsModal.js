@@ -161,23 +161,13 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
         <div
           style={{
             flex: 1,
-            display: "flex",
-            flexDirection: "column",
+            display: "grid",
+            gridTemplateRows: "1fr 1fr 1.6fr",
             gap: "20px",
             minHeight: 0,
           }}
         >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-              gap: "20px",
-              flex: 1,
-              overflowY: "auto",
-              paddingRight: "6px",
-            }}
-          >
-          <div style={{ ...cardShellStyle, position: "relative" }}>
+          <div style={{ ...cardShellStyle, display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
                 Service Reminder
@@ -232,128 +222,141 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
               })}
             </div>
           </div>
-        </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            <div style={{ ...cardShellStyle, flex: 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
-                  Oil Level
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveConcernTarget("oil");
-                    setShowConcernModal(true);
-                  }}
-                  style={{ ...createVhcButtonStyle("ghost"), padding: "6px 14px" }}
-                >
-                  + Add Concern
-                </button>
-              </div>
-
-              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                {OIL_OPTIONS.map((option) => {
-                  const isActive = oilStatus === option;
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => setOilStatus(option)}
-                      style={{
-                        padding: "12px 20px",
-                        borderRadius: "999px",
-                        border: `1px solid ${isActive ? palette.accent : palette.border}`,
-                        background: isActive ? palette.accent : palette.surface,
-                        color: isActive ? "#ffffff" : palette.textPrimary,
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        boxShadow: isActive ? "0 8px 20px rgba(209,0,0,0.18)" : "0 4px 12px rgba(15,23,42,0.08)",
-                        transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (isActive) return;
-                        e.currentTarget.style.transform = "translateY(-2px)";
-                        e.currentTarget.style.boxShadow = "0 8px 20px rgba(209,0,0,0.16)";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (isActive) return;
-                        e.currentTarget.style.transform = "translateY(0)";
-                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(15,23,42,0.08)";
-                      }}
-                    >
-                      {option}
-                    </button>
-                  );
-                })}
-              </div>
+          <div style={{ ...cardShellStyle, display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
+                Oil Level
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveConcernTarget("oil");
+                  setShowConcernModal(true);
+                }}
+                style={{ ...createVhcButtonStyle("ghost"), padding: "6px 14px" }}
+              >
+                + Add Concern
+              </button>
             </div>
 
-            <div style={{ ...cardShellStyle, flex: 1.4 }}>
-              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
-                Under Bonnet Items
-              </h3>
-              <p style={{ margin: 0, fontSize: "13px", color: palette.textMuted }}>
-                Record additional issues for each item while keeping the layout consistent with the dashboard cards.
-              </p>
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              {OIL_OPTIONS.map((option) => {
+                const isActive = oilStatus === option;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setOilStatus(option)}
+                    style={{
+                      padding: "12px 20px",
+                      borderRadius: "999px",
+                      border: `1px solid ${isActive ? palette.accent : palette.border}`,
+                      background: isActive ? palette.accent : palette.surface,
+                      color: isActive ? "#ffffff" : palette.textPrimary,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      boxShadow: isActive ? "0 8px 20px rgba(209,0,0,0.18)" : "0 4px 12px rgba(15,23,42,0.08)",
+                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (isActive) return;
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 8px 20px rgba(209,0,0,0.16)";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (isActive) return;
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(15,23,42,0.08)";
+                    }}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px" }}>
-                {UNDER_BONNET_ITEMS.map((item) => {
-                  const count = concerns.filter((concern) => concern.source === item).length;
-                  return (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => {
-                        setActiveConcernTarget(item);
-                        setShowConcernModal(true);
-                      }}
+          <div
+            style={{
+              ...cardShellStyle,
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
+              Under Bonnet Items
+            </h3>
+            <p style={{ margin: 0, fontSize: "13px", color: palette.textMuted }}>
+              Record additional issues for each item while keeping the layout consistent with the dashboard cards.
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                gridAutoRows: "minmax(90px, 1fr)",
+                gap: "16px",
+                alignContent: "stretch",
+                flex: 1,
+              }}
+            >
+              {UNDER_BONNET_ITEMS.map((item) => {
+                const count = concerns.filter((concern) => concern.source === item).length;
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => {
+                      setActiveConcernTarget(item);
+                      setShowConcernModal(true);
+                    }}
                       style={{
-                        padding: "14px",
-                        borderRadius: "16px",
+                        padding: "12px",
+                        borderRadius: "14px",
                         border: `1px solid ${palette.border}`,
                         background: palette.surface,
                         color: palette.textPrimary,
                         fontWeight: 600,
-                        fontSize: "14px",
+                        fontSize: "13px",
                         textAlign: "left",
                         position: "relative",
                         boxShadow: "0 4px 12px rgba(15,23,42,0.08)",
                         cursor: "pointer",
                         transition: "transform 0.2s ease, box-shadow 0.2s ease",
                       }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = "translateY(-3px)";
-                        e.currentTarget.style.boxShadow = "0 12px 24px rgba(209,0,0,0.14)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = "translateY(0)";
-                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(15,23,42,0.08)";
-                      }}
-                    >
-                      {item}
-                      {count > 0 ? (
-                        <span
-                          style={{
-                            position: "absolute",
-                            top: "12px",
-                            right: "12px",
-                            padding: "4px 10px",
-                            borderRadius: "999px",
-                            background: palette.accentSurface,
-                            border: `1px solid ${palette.border}`,
-                            fontSize: "11px",
-                            fontWeight: 600,
-                            color: palette.accent,
-                          }}
-                        >
-                          {count}
-                        </span>
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </div>
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-3px)";
+                      e.currentTarget.style.boxShadow = "0 12px 24px rgba(209,0,0,0.14)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(15,23,42,0.08)";
+                    }}
+                  >
+                    {item}
+                    {count > 0 ? (
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: "12px",
+                          right: "12px",
+                          padding: "4px 10px",
+                          borderRadius: "999px",
+                          background: palette.accentSurface,
+                          border: `1px solid ${palette.border}`,
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: palette.accent,
+                        }}
+                      >
+                        {count}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
