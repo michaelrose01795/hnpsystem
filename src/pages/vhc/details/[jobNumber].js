@@ -20,6 +20,19 @@ const STATUS_COLORS = {
   "Viewed": "#06b6d4", // cyan for viewed status
 };
 
+// ✅ Dropdown options for decline reasons so managers can provide quick context
+const DECLINE_REASON_OPTIONS = [
+  "Select a decline reason", // placeholder option prompting user selection
+  "Customer requested delay", // customer wants to postpone the work
+  "Awaiting budget approval", // waiting for cost approval
+  "Parts unavailable today", // parts not currently in stock
+  "Schedule for next visit", // plan to revisit in future service
+  "Other reason" // catch-all option for bespoke notes
+];
+
+// ✅ Month options for follow-up reminders so advisors can set revisit schedule
+const DECLINE_REMINDER_MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => index + 1); // builds 1-12 month values
+
 // ✅ Generate dummy VHC detail data for testing
 const generateDummyVHCDetail = (jobNumber) => {
   const statuses = ["Outstanding", "Accepted", "In Progress", "Awaiting Authorization", "Authorized", "Ready", "Carry Over", "Complete"];
@@ -111,6 +124,8 @@ export default function VHCDetails() {
   const [activeTab, setActiveTab] = useState("summary"); // active tab state
   const [selectedItems, setSelectedItems] = useState([]); // selected items for authorization
   const [editingLabor, setEditingLabor] = useState({}); // track which labor fields are being edited
+  const [declineReason, setDeclineReason] = useState(DECLINE_REASON_OPTIONS[0]); // default decline reason dropdown selection
+  const [declineReminderMonths, setDeclineReminderMonths] = useState("3"); // default reminder period in months
 
   // ✅ Fetch VHC details from Supabase (or use dummy data)
   useEffect(() => {
@@ -175,20 +190,41 @@ export default function VHCDetails() {
 
   // ✅ Handle checkbox selection
   const handleSelectItem = (itemId) => {
-    setSelectedItems(prev => 
-      prev.includes(itemId) 
-        ? prev.filter(id => id !== itemId) 
+    setSelectedItems(prev =>
+      prev.includes(itemId)
+        ? prev.filter(id => id !== itemId)
         : [...prev, itemId]
     );
+  };
+
+  // ✅ Determine if every item in a section is currently selected for bulk actions
+  const areAllSelected = (items = []) => items.every(item => selectedItems.includes(item.id));
+
+  // ✅ Toggle select all / clear all behaviour for a given list of items
+  const handleToggleSelectAll = (items = []) => {
+    setSelectedItems(prev => {
+      const targetIds = items.map(item => item.id); // capture ids for comparison
+      const allAlreadySelected = targetIds.every(id => prev.includes(id)); // check existing selection
+      if (allAlreadySelected) {
+        return prev.filter(id => !targetIds.includes(id)); // remove section ids when already selected
+      }
+      return Array.from(new Set([...prev, ...targetIds])); // merge unique ids when adding selection
+    });
   };
 
   // ✅ Handle authorize selected items
   const handleAuthorizeSelected = () => {
     setVhcData(prev => ({
       ...prev,
-      vhc_items: prev.vhc_items.map(item => 
-        selectedItems.includes(item.id) 
-          ? { ...item, authorized: true, declined: false }
+      vhc_items: prev.vhc_items.map(item =>
+        selectedItems.includes(item.id)
+          ? {
+              ...item,
+              authorized: true,
+              declined: false,
+              decline_reason: null,
+              decline_reminder_months: null
+            }
           : item
       )
     }));
@@ -197,11 +233,24 @@ export default function VHCDetails() {
 
   // ✅ Handle decline selected items
   const handleDeclineSelected = () => {
+    if (!declineReason || declineReason === DECLINE_REASON_OPTIONS[0]) {
+      alert("Please select a reason for declining before applying the change."); // prompt user to choose a reason
+      return;
+    }
+
+    const reminderValue = parseInt(declineReminderMonths, 10) || null; // parse reminder value from dropdown
+
     setVhcData(prev => ({
       ...prev,
-      vhc_items: prev.vhc_items.map(item => 
-        selectedItems.includes(item.id) 
-          ? { ...item, declined: true, authorized: false }
+      vhc_items: prev.vhc_items.map(item =>
+        selectedItems.includes(item.id)
+          ? {
+              ...item,
+              declined: true,
+              authorized: false,
+              decline_reason: declineReason,
+              decline_reminder_months: reminderValue
+            }
           : item
       )
     }));
@@ -212,23 +261,62 @@ export default function VHCDetails() {
   const handleToggleAuthorize = (itemId) => {
     setVhcData(prev => ({
       ...prev,
-      vhc_items: prev.vhc_items.map(item => 
-        item.id === itemId 
-          ? { ...item, authorized: !item.authorized, declined: false }
-          : item
-      )
+      vhc_items: prev.vhc_items.map(item => {
+        if (item.id !== itemId) {
+          return item; // leave other items unchanged
+        }
+        if (item.authorized) {
+          return { ...item, authorized: false }; // simply un-authorize when currently authorized
+        }
+        return {
+          ...item,
+          authorized: true,
+          declined: false,
+          decline_reason: null,
+          decline_reminder_months: null
+        }; // set authorization and clear any decline metadata
+      })
     }));
   };
 
   const handleToggleDecline = (itemId) => {
-    setVhcData(prev => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map(item => 
-        item.id === itemId 
-          ? { ...item, declined: !item.declined, authorized: false }
-          : item
-      )
-    }));
+    setVhcData(prev => {
+      const targetItem = prev.vhc_items.find(item => item.id === itemId); // grab item to check state
+      if (!targetItem) {
+        return prev; // no change if item not found
+      }
+
+      if (!targetItem.declined && (!declineReason || declineReason === DECLINE_REASON_OPTIONS[0])) {
+        alert("Please select a reason before declining this work item."); // enforce reason selection on single toggle
+        return prev; // exit without modification
+      }
+
+      const reminderValue = parseInt(declineReminderMonths, 10) || null; // convert reminder months for storage
+
+      return {
+        ...prev,
+        vhc_items: prev.vhc_items.map(item => {
+          if (item.id !== itemId) {
+            return item; // leave other items untouched
+          }
+          if (item.declined) {
+            return {
+              ...item,
+              declined: false,
+              decline_reason: null,
+              decline_reminder_months: null
+            }; // clear decline metadata when undoing decline
+          }
+          return {
+            ...item,
+            declined: true,
+            authorized: false,
+            decline_reason: declineReason,
+            decline_reminder_months: reminderValue
+          }; // apply decline metadata when setting decline
+        })
+      };
+    });
   };
 
   // ✅ Handle labor hours change
@@ -311,6 +399,102 @@ export default function VHCDetails() {
     }, 0);
   };
 
+  // ✅ Shared layout for decline reason dropdowns and bulk action buttons
+  const renderBulkActionControls = () => {
+    const declineDisabled = selectedItems.length === 0; // disable when nothing selected
+    const authorizeDisabled = selectedItems.length === 0; // disable when nothing selected
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
+          <label style={{ display: "flex", flexDirection: "column", fontSize: "12px", fontWeight: "600", color: "#374151" }}>
+            Decline reason
+            <select
+              value={declineReason}
+              onChange={(e) => setDeclineReason(e.target.value)}
+              style={{
+                padding: "8px 12px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                minWidth: "220px",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: declineReason === DECLINE_REASON_OPTIONS[0] ? "#9ca3af" : "#1f2937",
+                backgroundColor: "white"
+              }}
+            >
+              {DECLINE_REASON_OPTIONS.map(option => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label style={{ display: "flex", flexDirection: "column", fontSize: "12px", fontWeight: "600", color: "#374151" }}>
+            Reminder period
+            <select
+              value={declineReminderMonths}
+              onChange={(e) => setDeclineReminderMonths(e.target.value)}
+              style={{
+                padding: "8px 12px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                minWidth: "180px",
+                fontSize: "14px",
+                fontWeight: "500",
+                backgroundColor: "white"
+              }}
+            >
+              {DECLINE_REMINDER_MONTH_OPTIONS.map(month => (
+                <option key={month} value={month.toString()}>
+                  {month} {month === 1 ? "month" : "months"}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+          <button
+            onClick={handleDeclineSelected}
+            disabled={declineDisabled}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: declineDisabled ? "#ccc" : "#ef4444",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: declineDisabled ? "not-allowed" : "pointer",
+              fontSize: "14px",
+              fontWeight: "600",
+              minWidth: "160px"
+            }}
+          >
+            Decline Selected
+          </button>
+          <button
+            onClick={handleAuthorizeSelected}
+            disabled={authorizeDisabled}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: authorizeDisabled ? "#ccc" : "#10b981",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: authorizeDisabled ? "not-allowed" : "pointer",
+              fontSize: "14px",
+              fontWeight: "600",
+              minWidth: "160px"
+            }}
+          >
+            Authorize Selected
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   // ✅ Loading state
   if (loading) {
     return (
@@ -371,6 +555,9 @@ export default function VHCDetails() {
   const greyItems = vhcData.vhc_items.filter(item => item.status === "Grey");
   const authorizedItems = vhcData.vhc_items.filter(item => item.authorized);
   const declinedItems = vhcData.vhc_items.filter(item => item.declined);
+
+  const allRedSelected = redItems.length > 0 && areAllSelected(redItems); // check whether every red item is selected
+  const allAmberSelected = amberItems.length > 0 && areAllSelected(amberItems); // check whether every amber item is selected
 
   return (
     <Layout>
@@ -692,10 +879,28 @@ export default function VHCDetails() {
                   padding: "20px",
                   boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
                 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#ef4444" }}>
-                      ⚠️ Red - Immediate Attention Required
-                    </h3>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "12px", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                      <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#ef4444" }}>
+                        ⚠️ Red - Immediate Attention Required
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSelectAll(redItems)}
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid #ef4444",
+                          backgroundColor: allRedSelected ? "#ef4444" : "white",
+                          color: allRedSelected ? "white" : "#ef4444",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          fontWeight: "600"
+                        }}
+                      >
+                        {allRedSelected ? "Clear Selection" : "Select All"}
+                      </button>
+                    </div>
                     <p style={{ fontSize: "20px", fontWeight: "700", color: "#ef4444" }}>
                       Total: £{calculateTotal(redItems).toFixed(2)}
                     </p>
@@ -816,41 +1021,8 @@ export default function VHCDetails() {
                     );
                   })}
 
-                  {/* Action Buttons */}
-                  <div style={{ display: "flex", gap: "12px", marginTop: "16px", justifyContent: "flex-end" }}>
-                    <button
-                      onClick={handleDeclineSelected}
-                      disabled={selectedItems.length === 0}
-                      style={{
-                        padding: "10px 20px",
-                        backgroundColor: selectedItems.length === 0 ? "#ccc" : "#ef4444",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: selectedItems.length === 0 ? "not-allowed" : "pointer",
-                        fontSize: "14px",
-                        fontWeight: "600"
-                      }}
-                    >
-                      Decline Selected
-                    </button>
-                    <button
-                      onClick={handleAuthorizeSelected}
-                      disabled={selectedItems.length === 0}
-                      style={{
-                        padding: "10px 20px",
-                        backgroundColor: selectedItems.length === 0 ? "#ccc" : "#10b981",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: selectedItems.length === 0 ? "not-allowed" : "pointer",
-                        fontSize: "14px",
-                        fontWeight: "600"
-                      }}
-                    >
-                      Authorize Selected
-                    </button>
-                  </div>
+                  {/* Action controls with decline reason + reminder selections */}
+                  {renderBulkActionControls()}
                 </div>
               )}
 
@@ -863,10 +1035,28 @@ export default function VHCDetails() {
                   padding: "20px",
                   boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
                 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#fbbf24" }}>
-                      ⚡ Amber - Not Urgent (Recommended)
-                    </h3>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "12px", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                      <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#fbbf24" }}>
+                        ⚡ Amber - Not Urgent (Recommended)
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSelectAll(amberItems)}
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid #f59e0b",
+                          backgroundColor: allAmberSelected ? "#f59e0b" : "white",
+                          color: allAmberSelected ? "white" : "#f59e0b",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          fontWeight: "600"
+                        }}
+                      >
+                        {allAmberSelected ? "Clear Selection" : "Select All"}
+                      </button>
+                    </div>
                     <p style={{ fontSize: "20px", fontWeight: "700", color: "#fbbf24" }}>
                       Total: £{calculateTotal(amberItems).toFixed(2)}
                     </p>
@@ -987,41 +1177,8 @@ export default function VHCDetails() {
                     );
                   })}
 
-                  {/* Action Buttons */}
-                  <div style={{ display: "flex", gap: "12px", marginTop: "16px", justifyContent: "flex-end" }}>
-                    <button
-                      onClick={handleDeclineSelected}
-                      disabled={selectedItems.length === 0}
-                      style={{
-                        padding: "10px 20px",
-                        backgroundColor: selectedItems.length === 0 ? "#ccc" : "#ef4444",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: selectedItems.length === 0 ? "not-allowed" : "pointer",
-                        fontSize: "14px",
-                        fontWeight: "600"
-                      }}
-                    >
-                      Decline Selected
-                    </button>
-                    <button
-                      onClick={handleAuthorizeSelected}
-                      disabled={selectedItems.length === 0}
-                      style={{
-                        padding: "10px 20px",
-                        backgroundColor: selectedItems.length === 0 ? "#ccc" : "#10b981",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: selectedItems.length === 0 ? "not-allowed" : "pointer",
-                        fontSize: "14px",
-                        fontWeight: "600"
-                      }}
-                    >
-                      Authorize Selected
-                    </button>
-                  </div>
+                  {/* Action controls with decline reason + reminder selections */}
+                  {renderBulkActionControls()}
                 </div>
               )}
 
@@ -1071,6 +1228,12 @@ export default function VHCDetails() {
                           </div>
                           <p style={{ fontSize: "13px", color: "#666" }}>
                             {item.notes}
+                          </p>
+                          <p style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>
+                            Decline reason: {item.decline_reason || "Not provided"}
+                          </p>
+                          <p style={{ fontSize: "12px", color: "#9ca3af" }}>
+                            Reminder set: {item.decline_reminder_months ? `${item.decline_reminder_months} ${item.decline_reminder_months === 1 ? "month" : "months"}` : "None"}
                           </p>
                         </div>
                         <button
