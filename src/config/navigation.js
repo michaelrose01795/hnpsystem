@@ -23,54 +23,274 @@ export const sidebarSections = [
     ],
   },
   {
-    label: "Workshop",
+    label: "Admin Manager",
     category: "departments",
     items: [
       {
-        label: "Create Job Card",
+        label: "➕ Create Job Card",
         href: "/job-cards/create",
-        roles: ["admin", "sales", "workshop", "service", "manager"],
+        roles: ["admin manager"],
       },
       {
-        label: "View Job Cards",
-        href: "/job-cards/view",
-        roles: ["admin", "sales", "workshop", "service", "manager"],
-      },
-      {
-        label: "Next Jobs",
+        label: "🔜 Next Jobs",
         href: "/job-cards/waiting/nextjobs",
-        roles: ["service manager", "workshop manager"],
+        roles: ["admin manager"],
       },
       {
-        label: "VHC Dashboard",
-        href: "/vhc",
-        roles: ["techs", "service", "manager", "workshop manager"],
+        label: "👀 View Job Card",
+        href: "/job-cards/view",
+        roles: ["admin manager"],
       },
       {
-        label: "Smart Repair",
-        href: "/smartrepair",
-        roles: ["workshop"],
+        label: "📅 Appointments",
+        href: "/appointments",
+        roles: ["admin manager"],
+      },
+      {
+        label: "📝 VHC Dashboard",
+        href: "/vhc/dashboard",
+        roles: ["admin manager"],
+      },
+      {
+        label: "👥 HR Dashboard",
+        href: "/hr",
+        roles: ["admin manager"],
+      },
+      {
+        label: "📇 Employee Records",
+        href: "/hr/employees",
+        roles: ["admin manager"],
+      },
+      {
+        label: "🕒 Attendance",
+        href: "/hr/attendance",
+        roles: ["admin manager"],
+      },
+      {
+        label: "💷 Payroll",
+        href: "/hr/payroll",
+        roles: ["admin manager"],
+      },
+      {
+        label: "🏖️ Leave",
+        href: "/hr/leave",
+        roles: ["admin manager"],
+      },
+      {
+        label: "⭐ Performance",
+        href: "/hr/performance",
+        roles: ["admin manager"],
+      },
+      {
+        label: "🎓 Training",
+        href: "/hr/training",
+        roles: ["admin manager"],
+      },
+      {
+        label: "⚠️ Incidents",
+        href: "/hr/disciplinary",
+        roles: ["admin manager"],
+      },
+      {
+        label: "📨 Recruitment",
+        href: "/hr/recruitment",
+        roles: ["admin manager"],
+      },
+      {
+        label: "📈 HR Reports",
+        href: "/hr/reports",
+        roles: ["admin manager"],
+      },
+      {
+        label: "⚙️ HR Settings",
+        href: "/hr/settings",
+        roles: ["admin manager"],
+      },
+      {
+        label: "👥 Team HR",
+        href: "/hr/employees",
+        roles: ["admin manager"],
+      },
+      {
+        label: "🛠️ User Admin",
+        href: "/admin/users",
+        roles: ["admin manager"],
+      },
+      {
+        label: "🛎️ Workshop Check-In",
+        href: "/workshop/check-in",
+        roles: ["admin manager"],
       },
     ],
   },
   {
-    label: "Sales & Service",
+    label: "Service",
     category: "departments",
     items: [
       {
-        label: "Car Buying",
-        href: "/car-buying",
-        roles: ["admin", "sales", "workshop"],
+        label: "➕ Create Job Card",
+        href: "/job-cards/create",
+        roles: ["service"],
       },
       {
-        label: "Appointments",
+        label: "👀 View Job Cards",
+        href: "/job-cards/view",
+        roles: ["service"],
+      },
+      {
+        label: "📅 Appointments",
         href: "/appointments",
-        roles: ["admin", "sales", "service", "manager"],
+        roles: ["service"],
       },
       {
-        label: "Vehicle Processing",
-        href: "/vehicle-processing",
-        roles: ["admin", "workshop"],
+        label: "📝 VHC Dashboard",
+        href: "/vhc/dashboard",
+        roles: ["service"],
+      },
+      {
+        label: "🛎️ Workshop Check-In",
+        href: "/workshop/check-in",
+        roles: ["service"],
+      },
+    ],
+  },
+  {
+    label: "Service Manager",
+    category: "departments",
+    items: [
+      {
+        label: "➕ Create Job Card",
+        href: "/job-cards/create",
+        roles: ["service manager"],
+      },
+      {
+        label: "🔜 Next Jobs",
+        href: "/job-cards/waiting/nextjobs",
+        roles: ["service manager"],
+      },
+      {
+        label: "👀 View Job Cards",
+        href: "/job-cards/view",
+        roles: ["service manager"],
+      },
+      {
+        label: "📅 Appointments",
+        href: "/appointments",
+        roles: ["service manager"],
+      },
+      {
+        label: "📝 VHC Dashboard",
+        href: "/vhc/dashboard",
+        roles: ["service manager"],
+      },
+      {
+        label: "🛎️ Workshop Check-In",
+        href: "/workshop/check-in",
+        roles: ["service manager"],
+      },
+    ],
+  },
+  {
+    label: "Workshop Manager",
+    category: "departments",
+    items: [
+      {
+        label: "➕ Create Job Card",
+        href: "/job-cards/create",
+        roles: ["workshop manager"],
+      },
+      {
+        label: "🔜 Next Jobs",
+        href: "/job-cards/waiting/nextjobs",
+        roles: ["workshop manager"],
+      },
+      {
+        label: "👀 View Job Cards",
+        href: "/job-cards/view",
+        roles: ["workshop manager"],
+      },
+      {
+        label: "📅 Appointments",
+        href: "/appointments",
+        roles: ["workshop manager"],
+      },
+      {
+        label: "📝 VHC Dashboard",
+        href: "/vhc/dashboard",
+        roles: ["workshop manager"],
+      },
+      {
+        label: "🛎️ Workshop Check-In",
+        href: "/workshop/check-in",
+        roles: ["workshop manager"],
+      },
+    ],
+  },
+  {
+    label: "Aftersales Manager",
+    category: "departments",
+    items: [
+      {
+        label: "➕ Create Job Card",
+        href: "/job-cards/create",
+        roles: ["aftersales manager"],
+      },
+      {
+        label: "🔜 Next Jobs",
+        href: "/job-cards/waiting/nextjobs",
+        roles: ["aftersales manager"],
+      },
+      {
+        label: "👀 View Job Cards",
+        href: "/job-cards/view",
+        roles: ["aftersales manager"],
+      },
+      {
+        label: "📅 Appointments",
+        href: "/appointments",
+        roles: ["aftersales manager"],
+      },
+      {
+        label: "📝 VHC Dashboard",
+        href: "/vhc/dashboard",
+        roles: ["aftersales manager"],
+      },
+      {
+        label: "🛎️ Workshop Check-In",
+        href: "/workshop/check-in",
+        roles: ["aftersales manager"],
+      },
+    ],
+  },
+  {
+    label: "Techs",
+    category: "departments",
+    items: [
+      {
+        label: "🧰 My Jobs",
+        href: "/job-cards/myjobs",
+        roles: ["techs"],
+      },
+      {
+        label: "🔧 Start Job",
+        href: "/job-cards/myjobs",
+        roles: ["techs"],
+      },
+    ],
+  },
+  {
+    label: "MOT Tester",
+    category: "departments",
+    items: [
+      {
+        label: "🧰 My Jobs",
+        href: "/job-cards/myjobs",
+        roles: ["mot tester"],
+      },
+      {
+        label: "🔧 Start Job",
+        href: "/job-cards/myjobs",
+        roles: ["mot tester"],
       },
     ],
   },
@@ -79,32 +299,52 @@ export const sidebarSections = [
     category: "departments",
     items: [
       {
-        label: "Parts Workspace",
+        label: "👀 View Job Cards",
+        href: "/job-cards/view",
+        roles: ["parts"],
+      },
+      {
+        label: "🧰 Parts Workspace",
         href: "/parts",
-        roles: ["parts", "parts manager"],
+        roles: ["parts"],
       },
       {
-        label: "Parts Manager Overview",
-        href: "/parts/manager",
-        roles: ["parts manager"],
-      },
-      {
-        label: "VHC Dashboard",
+        label: "📝 VHC Dashboard",
         href: "/vhc/dashboard",
-        roles: ["parts", "parts manager"],
+        roles: ["parts"],
       },
     ],
   },
   {
-    label: "Admin",
+    label: "Parts Manager",
     category: "departments",
     items: [
       {
-        label: "Admin User Management",
-        href: "/admin/users",
-        roles: ["admin manager", "admin", "owner"],
+        label: "👀 View Job Cards",
+        href: "/job-cards/view",
+        roles: ["parts manager"],
       },
-      { label: "Contractors", href: "/contractors", roles: ["admin"] },
+      {
+        label: "🧰 Parts Workspace",
+        href: "/parts",
+        roles: ["parts manager"],
+      },
+      {
+        label: "📈 Parts Manager Overview",
+        href: "/parts/manager",
+        roles: ["parts manager"],
+      },
+    ],
+  },
+  {
+    label: "Valet Service",
+    category: "departments",
+    items: [
+      {
+        label: "🧽 Valet Jobs",
+        href: "/valet",
+        roles: ["valet service"],
+      },
     ],
   },
   {
