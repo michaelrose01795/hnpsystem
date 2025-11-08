@@ -24,9 +24,7 @@ const buildMockVehicleResponse = (registration, meta = {}) => ({
 const isDev = process.env.NODE_ENV !== "production";
 const useMockEnvFlag = process.env.DVLA_USE_MOCK_FALLBACK;
 const shouldUseMockFallback =
-  !process.env.DVLA_API_KEY ||
-  useMockEnvFlag === "true" ||
-  (useMockEnvFlag === undefined && isDev);
+  useMockEnvFlag === "true" || (!process.env.DVLA_API_KEY && isDev);
 
 async function handler(req, res) {
   if (req.method !== "POST") {
@@ -113,14 +111,23 @@ async function handler(req, res) {
       stack: err.stack,
     });
 
-    if (shouldUseMockFallback) {
+    const isNetworkError =
+      err?.message?.toLowerCase().includes("fetch failed") ||
+      err?.code === "ECONNREFUSED" ||
+      err?.code === "ENOTFOUND" ||
+      err?.code === "ETIMEDOUT";
+
+    if (shouldUseMockFallback || isNetworkError) {
+      const mockReason = shouldUseMockFallback ? "config" : "network_error";
       console.warn(
-        "⚠️ Returning mock DVLA data because live lookup failed and DVLA_USE_MOCK_FALLBACK is enabled or API key is missing."
+        "⚠️ Returning mock DVLA data because live lookup failed (reason:",
+        mockReason,
+        ")."
       );
 
       return res.status(200).json(
         buildMockVehicleResponse(registration, {
-          reason: "fetch_failed",
+          reason: mockReason,
           originalMessage: err.message,
         })
       );

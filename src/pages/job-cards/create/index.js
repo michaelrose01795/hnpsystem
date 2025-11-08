@@ -74,103 +74,99 @@ export default function CreateJobCardPage() {
         baseColor = "#f0fdf4"; // green tint for collection
         break;
       default:
-        baseColor = "#f9fafb";
+        baseColor = "#f9fafb"; // default background
     }
-    // if warranty job, add orange tint
-    if (source === "Warranty") {
-      if (baseColor === "#f9fafb") return "#fff7ed";
-      return baseColor;
+    if (source === "Warranty") { // check if job source is warranty
+      if (baseColor === "#f9fafb") return "#fff7ed"; // add orange tint when neutral
+      return baseColor; // keep existing tint otherwise
     }
-    return baseColor;
+    return baseColor; // return computed background
   };
 
   // handle changes to request text and auto-detect job types
   const handleRequestChange = (index, value) => {
-    const updated = [...requests];
-    updated[index].text = value;
-    setRequests(updated);
+    const updated = [...requests]; // copy current requests
+    updated[index].text = value; // update text at index
+    setRequests(updated); // store updated list
     setJobCategories(detectJobTypes(updated.map((r) => r.text))); // re-detect job types
   };
 
   // handle changes to estimated time for a request
   const handleTimeChange = (index, value) => {
-    const updated = [...requests];
-    let num = parseFloat(value);
-    if (isNaN(num) || num < 0) num = 0; // ensure valid number
-    updated[index].time = num;
-    setRequests(updated);
+    const updated = [...requests]; // copy current requests
+    let num = parseFloat(value); // parse numeric value
+    if (Number.isNaN(num) || num < 0) num = 0; // ensure valid number
+    updated[index].time = num; // store sanitized number
+    setRequests(updated); // store updated list
   };
 
   // handle changes to payment type for a request
   const handlePaymentTypeChange = (index, value) => {
-    const updated = [...requests];
-    updated[index].paymentType = value;
+    const updated = [...requests]; // copy current requests
+    updated[index].paymentType = value; // update payment type
     if (value === "Warranty") setJobSource("Warranty"); // auto-set job source if warranty selected
-    setRequests(updated);
+    setRequests(updated); // store updated list
   };
 
   // add a new empty request to the list
   const handleAddRequest = () =>
-    setRequests([...requests, { text: "", time: "", paymentType: "Customer" }]);
+    setRequests([...requests, { text: "", time: "", paymentType: "Customer" }]); // append new empty request
 
   // remove a request from the list by index
   const handleRemoveRequest = (index) => {
-    const updated = requests.filter((_, i) => i !== index);
-    setRequests(updated);
+    const updated = requests.filter((_, i) => i !== index); // remove request at index
+    setRequests(updated); // store updated list
     setJobCategories(detectJobTypes(updated.map((r) => r.text))); // re-detect job types after removal
   };
 
   // ✅ Show notification and auto-hide after 5 seconds
   const showNotification = (section, type, message) => {
-    if (section === "customer") {
-      setCustomerNotification({ type, message });
+    if (section === "customer") { // check if customer section should show notification
+      setCustomerNotification({ type, message }); // set notification
       setTimeout(() => setCustomerNotification(null), 5000); // auto-hide after 5 seconds
-    } else if (section === "vehicle") {
-      setVehicleNotification({ type, message });
+    } else if (section === "vehicle") { // check if vehicle section should show notification
+      setVehicleNotification({ type, message }); // set notification
       setTimeout(() => setVehicleNotification(null), 5000); // auto-hide after 5 seconds
     }
   };
 
   // ✅ Handle customer selection with better database validation
   const handleCustomerSelect = async (customerData) => {
-    console.log("Attempting to save customer:", customerData); // debug log
+    console.log("Attempting to save customer:", customerData); // debug log for incoming data
 
     try {
-      // ✅ Validate customer data before saving
-      if (!customerData.email && !customerData.mobile) {
-        showNotification("customer", "error", "Customer must have at least an email or mobile number.");
-        return;
+      if (!customerData.email && !customerData.mobile) { // ensure customer has contact info
+        showNotification("customer", "error", "Customer must have at least an email or mobile number."); // notify validation failure
+        return; // stop if validation fails
       }
 
-      // ✅ Check if customer already exists in database by email or phone
-      let searchQuery = supabase.from("customers").select("*");
+      let searchQuery = supabase.from("customers").select("*"); // prepare Supabase query
 
-      if (customerData.email && customerData.mobile) {
-        searchQuery = searchQuery.or(`email.eq.${customerData.email},mobile.eq.${customerData.mobile}`);
-      } else if (customerData.email) {
-        searchQuery = searchQuery.eq("email", customerData.email);
-      } else if (customerData.mobile) {
-        searchQuery = searchQuery.eq("mobile", customerData.mobile);
+      if (customerData.email && customerData.mobile) { // if both email and mobile exist
+        searchQuery = searchQuery.or(`email.eq.${customerData.email},mobile.eq.${customerData.mobile}`); // search by email or mobile
+      } else if (customerData.email) { // if only email exists
+        searchQuery = searchQuery.eq("email", customerData.email); // search by email
+      } else if (customerData.mobile) { // if only mobile exists
+        searchQuery = searchQuery.eq("mobile", customerData.mobile); // search by mobile
       }
 
-      const { data: existingCustomers, error: searchError } = await searchQuery;
+      const { data: existingCustomers, error: searchError } = await searchQuery; // execute search query
 
-      if (searchError) {
-        console.error("Error searching for existing customer:", searchError);
-        throw searchError;
+      if (searchError) { // check for query error
+        console.error("Error searching for existing customer:", searchError); // log error
+        throw searchError; // throw to trigger catch block
       }
 
-      console.log("Existing customers found:", existingCustomers); // debug log
+      console.log("Existing customers found:", existingCustomers); // log search results
 
-      let finalCustomer = customerData;
+      let finalCustomer = customerData; // default to provided customer data
 
-      // ✅ If customer doesn't exist, save them to database
-      if (!existingCustomers || existingCustomers.length === 0) {
-        console.log("Customer not found, creating new customer..."); // debug log
+      if (!existingCustomers || existingCustomers.length === 0) { // if no existing customer found
+        console.log("Customer not found, creating new customer..."); // log creation flow
 
-        const customerToInsert = {
-          firstname: customerData.firstName || "", // note: database uses lowercase
-          lastname: customerData.lastName || "", // note: database uses lowercase
+        const customerToInsert = { // prepare payload for new customer
+          firstname: customerData.firstName || "",
+          lastname: customerData.lastName || "",
           email: customerData.email || null,
           mobile: customerData.mobile || null,
           telephone: customerData.telephone || null,
@@ -179,31 +175,29 @@ export default function CreateJobCardPage() {
           created_at: new Date().toISOString(),
         };
 
-        console.log("Inserting customer data:", customerToInsert); // debug log
+        console.log("Inserting customer data:", customerToInsert); // log payload
 
         const { data: newCustomer, error: insertError } = await supabase
-          .from("customers")
-          .insert([customerToInsert])
+          .from("customers") // select customers table
+          .insert([customerToInsert]) // insert new customer
           .select()
-          .single();
+          .single(); // return the inserted record
 
-        if (insertError) {
-          console.error("Error inserting customer:", insertError);
-          throw insertError;
+        if (insertError) { // check for insert error
+          console.error("Error inserting customer:", insertError); // log error
+          throw insertError; // throw to trigger catch block
         }
 
-        finalCustomer = newCustomer;
-        console.log("New customer saved to database:", newCustomer); // debug log
-        showNotification("customer", "success", "✓ New customer saved successfully!");
+        finalCustomer = newCustomer; // use inserted record as final customer
+        console.log("New customer saved to database:", newCustomer); // log success
+        showNotification("customer", "success", "✓ New customer saved successfully!"); // notify success
       } else {
-        // ✅ Customer already exists, use existing customer
-        finalCustomer = existingCustomers[0];
-        console.log("Customer already exists in database:", finalCustomer); // debug log
-        showNotification("customer", "success", "✓ Customer found in database and loaded!");
+        finalCustomer = existingCustomers[0]; // reuse first match if found
+        console.log("Customer already exists in database:", finalCustomer); // log reuse
+        showNotification("customer", "success", "✓ Customer found in database and loaded!"); // notify success
       }
 
-      // ✅ Set customer state with normalized property names
-      setCustomer({
+      setCustomer({ // normalize and store customer in state
         id: finalCustomer.id,
         firstName: finalCustomer.firstname || finalCustomer.firstName,
         lastName: finalCustomer.lastname || finalCustomer.lastName,
@@ -214,21 +208,20 @@ export default function CreateJobCardPage() {
         postcode: finalCustomer.postcode,
       });
 
-      setShowNewCustomer(false);
-      setShowExistingCustomer(false);
+      setShowNewCustomer(false); // close new customer popup
+      setShowExistingCustomer(false); // close existing customer popup
     } catch (err) {
-      console.error("Error saving customer:", err);
-      showNotification("customer", "error", `✗ Error: ${err.message || "Could not save customer"}`);
+      console.error("Error saving customer:", err); // log error
+      showNotification("customer", "error", `✗ Error: ${err.message || "Could not save customer"}`); // notify failure
     }
   };
 
   // ✅ NEW: DVLA API Fetch - Only fetches from DVLA API (no database access)
   const handleFetchVehicleData = async () => {
-    // validate that registration number is entered
-    if (!vehicle.reg.trim()) {
-      setError("Please enter a registration number");
-      showNotification("vehicle", "error", "✗ Please enter a registration number");
-      return;
+    if (!vehicle.reg.trim()) { // validate that registration number is entered
+      setError("Please enter a registration number"); // set validation error
+      showNotification("vehicle", "error", "✗ Please enter a registration number"); // show notification
+      return; // stop execution when missing registration
     }
 
     setIsLoadingVehicle(true); // show loading state
@@ -237,72 +230,72 @@ export default function CreateJobCardPage() {
 
     try {
       const regUpper = vehicle.reg.trim().toUpperCase(); // normalize registration to uppercase
-      console.log("Fetching vehicle data from DVLA API for:", regUpper);
+      console.log("Fetching vehicle data from DVLA API for:", regUpper); // log fetch start
 
-      // ✅ Fetch from DVLA API via our backend endpoint
       const response = await fetch("/api/vehicles/dvla", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ registration: regUpper }),
       });
 
-      console.log("DVLA API response status:", response.status);
+      const responseText = await response.text();
+      console.log("DVLA API raw response:", responseText);
 
-      // if API request fails, throw error
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("DVLA API error:", errorText);
-        throw new Error(`Failed to fetch vehicle details from DVLA: ${errorText}`);
+        let parsed;
+        try {
+          parsed = JSON.parse(responseText);
+        } catch {
+          parsed = null;
+        }
+        const message =
+          parsed?.message || parsed?.error || responseText || `DVLA lookup failed with status ${response.status}`;
+        throw new Error(message);
       }
 
-      const data = await response.json();
-      console.log("DVLA API response data:", data);
+      let data = {};
+      if (responseText) {
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseErr) {
+          console.error("DVLA API response JSON parse error:", parseErr);
+          throw new Error("DVLA API returned malformed data");
+        }
+      }
+      console.log("DVLA API response data:", data); // log response payload
 
-      // if no data returned or empty object, show error
-      if (!data || Object.keys(data).length === 0) {
-        throw new Error("No vehicle data found for that registration from DVLA");
+      if (!data || Object.keys(data).length === 0) { // if no data returned or empty object
+        throw new Error("No vehicle data found for that registration from DVLA"); // throw descriptive error
       }
 
-      // ✅ Extract data from DVLA response and populate vehicle fields
-      const vehicleData = {
-        reg: regUpper,
-        makeModel: data.make && data.model 
-          ? `${data.make} ${data.model}`.trim() 
-          : data.make || "Unknown",
-        colour: data.colour || "Not provided",
-        chassis: data.vin || "Not provided",
-        engine: data.engineNumber || data.engineCapacity || "Not provided",
-        mileage: data.motTests && data.motTests.length > 0 
-          ? data.motTests[0].odometerValue || "" 
-          : vehicle.mileage || "",
+      const normalizedRegistration = (data.registrationNumber || data.registration || regUpper || "").toString().toUpperCase(); // normalize registration from response
+      const detectedMake = data.make || data.vehicleMake || ""; // detect make field from response variants
+      const detectedModel = data.model || data.vehicleModel || ""; // detect model field from response variants
+      const combinedMakeModel = `${detectedMake} ${detectedModel}`.trim(); // combine make and model into single label
+      const fallbackMakeModel = combinedMakeModel.length > 0 ? combinedMakeModel : detectedMake || "Unknown"; // ensure fallback value
+
+      const vehicleData = { // build vehicle object for state update
+        reg: normalizedRegistration,
+        makeModel: fallbackMakeModel,
+        colour: data.colour || data.vehicleColour || data.bodyColour || "Not provided",
+        chassis: data.vin || data.chassisNumber || data.vehicleIdentificationNumber || "Not provided",
+        engine: data.engineNumber || data.engineCapacity || data.engine || "Not provided",
+        mileage: data.mileage || data.currentMileage || (data.motTests && data.motTests[0]?.odometerValue) || vehicle.mileage || "",
       };
 
-      console.log("Setting vehicle data from DVLA:", vehicleData);
-      
-      // ✅ Update vehicle state with DVLA data
-      setVehicle(vehicleData);
-      
-      // ✅ Update MOT date if available from DVLA
-      if (data.motExpiryDate) {
-        setNextMotDate(data.motExpiryDate);
+      console.log("Setting vehicle data from DVLA:", vehicleData); // log normalized vehicle data
+
+      setVehicle(vehicleData); // update vehicle state with DVLA data
+
+      if (data.motExpiryDate || data.nextMotDate) { // check for MOT date fields
+        setNextMotDate((data.motExpiryDate || data.nextMotDate || "").split("T")[0]); // store MOT date stripped of time
       }
 
-      showNotification("vehicle", "success", "✓ Vehicle details fetched from DVLA!");
-
+      showNotification("vehicle", "success", "✓ Vehicle details fetched from DVLA!"); // notify success
     } catch (err) {
-      console.error("Error fetching vehicle data from DVLA:", err);
-      setError(`Error: ${err.message}`);
-      showNotification("vehicle", "error", `✗ ${err.message}`);
-
-      // set vehicle with "Not provided" for all fields except reg
-      setVehicle({
-        reg: vehicle.reg.trim().toUpperCase(),
-        makeModel: "Not provided",
-        colour: "Not provided",
-        chassis: "Not provided",
-        engine: "Not provided",
-        mileage: vehicle.mileage || "",
-      });
+      console.error("Error fetching vehicle data from DVLA:", err); // log error
+      setError(`Error: ${err.message}`); // store error message
+      showNotification("vehicle", "error", `✗ ${err.message}`); // notify failure
     } finally {
       setIsLoadingVehicle(false); // always stop loading state
     }
@@ -311,140 +304,130 @@ export default function CreateJobCardPage() {
   // ✅ Save Job Function - save or update vehicle and link to customer
   const handleSaveJob = async () => {
     try {
-      // ✅ Validate that customer and vehicle are selected
-      if (!customer) {
-        alert("Please select a customer before saving the job.");
-        return;
+      if (!customer) { // ensure customer is selected
+        alert("Please select a customer before saving the job."); // alert user
+        return; // stop if no customer selected
       }
 
-      if (!vehicle.reg) {
-        alert("Please enter a vehicle registration before saving the job.");
-        return;
+      if (!vehicle.reg) { // ensure vehicle registration exists
+        alert("Please enter a vehicle registration before saving the job."); // alert user
+        return; // stop if no registration
       }
 
-      // ✅ Validate that at least one request has text
-      if (!requests.some(req => req.text.trim())) {
-        alert("Please add at least one job request before saving.");
-        return;
+      if (!requests.some((req) => req.text.trim())) { // ensure at least one request has text
+        alert("Please add at least one job request before saving."); // alert user
+        return; // stop if no valid requests
       }
 
-      console.log("Starting save job process...");
+      console.log("Starting save job process..."); // log start of save process
 
-      // ✅ STEP 1: Ensure vehicle is linked to customer
-      console.log("Linking vehicle to customer...");
+      console.log("Linking vehicle to customer..."); // log vehicle linking step
 
-      // check if vehicle exists
       const { data: existingVehicle, error: vehicleCheckError } = await supabase
-        .from("vehicles")
-        .select("*")
+        .from("vehicles") // select vehicles table
+        .select("*") // select all columns
         .or(`registration.eq.${vehicle.reg},reg_number.eq.${vehicle.reg}`)
-        .maybeSingle();
+        .maybeSingle(); // fetch at most one record
 
-      console.log("Existing vehicle check:", existingVehicle, vehicleCheckError);
+      console.log("Existing vehicle check:", existingVehicle, vehicleCheckError); // log query result
 
-      let vehicleId;
+      let vehicleId; // placeholder for vehicle ID
 
-      if (existingVehicle) {
-        // ✅ Vehicle exists - update it with customer link
-        console.log("Vehicle exists, updating with customer link...");
+      if (existingVehicle) { // if vehicle already exists
+        console.log("Vehicle exists, updating with customer link..."); // log update flow
 
         const { error: updateError } = await supabase
-          .from("vehicles")
+          .from("vehicles") // select vehicles table
           .update({
             customer_id: customer.id, // link to customer
-            updated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(), // timestamp update
           })
-          .eq("id", existingVehicle.id);
+          .eq("id", existingVehicle.id); // match by vehicle id
 
-        if (updateError) {
-          console.error("Error updating vehicle:", updateError);
-          throw updateError;
+        if (updateError) { // check for update error
+          console.error("Error updating vehicle:", updateError); // log error
+          throw updateError; // throw to trigger catch block
         }
 
-        vehicleId = existingVehicle.id;
-        console.log("Vehicle updated successfully with customer link, ID:", vehicleId);
+        vehicleId = existingVehicle.id; // store existing vehicle id
+        console.log("Vehicle updated successfully with customer link, ID:", vehicleId); // log success
       } else {
-        // ✅ Vehicle doesn't exist - this shouldn't happen if Fetch was used, but handle it
-        console.log("Vehicle doesn't exist, creating new vehicle with customer link...");
+        console.log("Vehicle doesn't exist, creating new vehicle with customer link..."); // log creation flow
 
-        const vehicleToInsert = {
-          registration: vehicle.reg, // NEW column
-          reg_number: vehicle.reg, // OLD column (keep for compatibility)
-          make_model: vehicle.makeModel, // NEW combined column
-          make: vehicle.makeModel.split(' ')[0] || 'Unknown', // OLD column
-          model: vehicle.makeModel.split(' ').slice(1).join(' ') || '', // OLD column
+        const vehicleToInsert = { // prepare payload for new vehicle
+          registration: vehicle.reg,
+          reg_number: vehicle.reg,
+          make_model: vehicle.makeModel,
+          make: vehicle.makeModel.split(" ")[0] || "Unknown",
+          model: vehicle.makeModel.split(" ").slice(1).join(" ") || "",
           colour: vehicle.colour,
-          chassis: vehicle.chassis, // NEW column
-          vin: vehicle.chassis, // OLD column (keep for compatibility)
-          engine: vehicle.engine, // NEW column
-          engine_number: vehicle.engine, // OLD column (keep for compatibility)
-          mileage: parseInt(vehicle.mileage) || null,
-          customer_id: customer.id, // link to customer
+          chassis: vehicle.chassis,
+          vin: vehicle.chassis,
+          engine: vehicle.engine,
+          engine_number: vehicle.engine,
+          mileage: parseInt(vehicle.mileage, 10) || null,
+          customer_id: customer.id,
           created_at: new Date().toISOString(),
         };
 
-        console.log("Inserting vehicle:", vehicleToInsert);
+        console.log("Inserting vehicle:", vehicleToInsert); // log payload
 
         const { data: newVehicle, error: insertError } = await supabase
-          .from("vehicles")
-          .insert([vehicleToInsert])
+          .from("vehicles") // select vehicles table
+          .insert([vehicleToInsert]) // insert new vehicle
           .select()
-          .single();
+          .single(); // return inserted record
 
-        if (insertError) {
-          console.error("Error inserting vehicle:", insertError);
-          throw insertError;
+        if (insertError) { // check for insert error
+          console.error("Error inserting vehicle:", insertError); // log error
+          throw insertError; // throw to trigger catch block
         }
 
-        vehicleId = newVehicle.id;
-        console.log("Vehicle created successfully with ID:", vehicleId);
+        vehicleId = newVehicle.id; // store new vehicle id
+        console.log("Vehicle created successfully with ID:", vehicleId); // log success
       }
 
-      // ✅ STEP 2: Create job record
-      console.log("Creating job record...");
+      console.log("Creating job record..."); // log job creation step
 
-      const jobData = {
+      const jobData = { // prepare job payload
         customer: `${customer.firstName} ${customer.lastName}`,
-        customer_id: customer.id, // link customer by ID
-        vehicle_reg: vehicle.reg, // snake_case column name
-        vehicle_make_model: vehicle.makeModel, // snake_case column name
-        waiting_status: waitingStatus, // snake_case column name
-        job_source: jobSource, // snake_case column name
-        job_categories: jobCategories, // snake_case column name
-        requests: requests.filter(req => req.text.trim()), // only save requests with text
-        cosmetic_notes: cosmeticNotes || null, // save cosmetic damage notes
-        vhc_required: vhcRequired, // save VHC requirement
-        maintenance_info: { nextMotDate }, // only save MOT date now
+        customer_id: customer.id,
+        vehicle_reg: vehicle.reg,
+        vehicle_make_model: vehicle.makeModel,
+        waiting_status: waitingStatus,
+        job_source: jobSource,
+        job_categories: jobCategories,
+        requests: requests.filter((req) => req.text.trim()),
+        cosmetic_notes: cosmeticNotes || null,
+        vhc_required: vhcRequired,
+        maintenance_info: { nextMotDate },
         created_at: new Date().toISOString(),
-        status: "Open", // default status for new jobs
+        status: "Open",
       };
 
-      console.log("Saving job:", jobData);
+      console.log("Saving job:", jobData); // log job payload
 
-      // ✅ Insert job and get the auto-generated ID back
       const { data: insertedJob, error: jobInsertError } = await supabase
-        .from("jobs")
-        .insert([jobData])
+        .from("jobs") // select jobs table
+        .insert([jobData]) // insert new job
         .select()
-        .single();
+        .single(); // return inserted job
 
-      if (jobInsertError) {
-        console.error("Error inserting job:", jobInsertError);
-        throw jobInsertError;
+      if (jobInsertError) { // check for insert error
+        console.error("Error inserting job:", jobInsertError); // log error
+        throw jobInsertError; // throw to trigger catch block
       }
 
-      console.log("Job saved successfully with ID:", insertedJob.id);
+      console.log("Job saved successfully with ID:", insertedJob.id); // log success
 
       addJob(insertedJob); // update local context with the returned job data
 
-      // ✅ Show success message
-      alert(`Job created successfully! Job Number: ${insertedJob.id}\n\nVehicle ${vehicle.reg} has been saved and linked to ${customer.firstName} ${customer.lastName}`);
+      alert(`Job created successfully! Job Number: ${insertedJob.id}\n\nVehicle ${vehicle.reg} has been saved and linked to ${customer.firstName} ${customer.lastName}`); // show success message
 
-      // ✅ Redirect to appointments page with the actual job number from database
-      router.push(`/appointments?jobNumber=${insertedJob.id}`);
+      router.push(`/appointments?jobNumber=${insertedJob.id}`); // redirect to appointments page with job number
     } catch (err) {
-      console.error("Error saving job:", err);
-      alert(`Error saving job: ${err.message}. Check console for details.`);
+      console.error("Error saving job:", err); // log error
+      alert(`Error saving job: ${err.message}. Check console for details.`); // alert failure
     }
   };
 
@@ -458,7 +441,7 @@ export default function CreateJobCardPage() {
           padding: "16px",
           overflow: "hidden",
           transition: "background 0.3s ease",
-          background: getBackgroundColor(waitingStatus, jobSource), // dynamic background based on status
+          background: getBackgroundColor(waitingStatus, jobSource),
         }}
       >
         {/* ✅ Header Section - Modern Design */}
@@ -472,21 +455,25 @@ export default function CreateJobCardPage() {
           }}
         >
           <div>
-            <h2 style={{ 
-              margin: 0, 
-              fontSize: "14px", 
-              color: "#666",
-              fontWeight: "500",
-              marginBottom: "4px"
-            }}>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "14px",
+                color: "#666",
+                fontWeight: "500",
+                marginBottom: "4px",
+              }}
+            >
               {jobSource} Job Card
             </h2>
-            <h1 style={{ 
-              fontSize: "28px", 
-              fontWeight: "700", 
-              color: "#1a1a1a",
-              margin: 0
-            }}>
+            <h1
+              style={{
+                fontSize: "28px",
+                fontWeight: "700",
+                color: "#1a1a1a",
+                margin: 0,
+              }}
+            >
               Create New Job Card
             </h1>
           </div>
@@ -518,17 +505,17 @@ export default function CreateJobCardPage() {
         </div>
 
         {/* ✅ Scrollable Content Area */}
-        <div style={{
-          flex: 1,
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px"
-        }}>
-
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+          }}
+        >
           {/* ✅ NEW LAYOUT: Top Row - Job Information, Vehicle Details, Customer Details (all 33% width) */}
           <div style={{ display: "flex", gap: "16px" }}>
-            
             {/* Job Information Section - 33% width */}
             <div
               style={{
@@ -540,31 +527,35 @@ export default function CreateJobCardPage() {
                 border: "1px solid #e0e0e0",
               }}
             >
-              <h3 style={{ 
-                fontSize: "16px", 
-                fontWeight: "600", 
-                color: "#1a1a1a",
-                marginTop: 0,
-                marginBottom: "16px"
-              }}>
+              <h3
+                style={{
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  color: "#1a1a1a",
+                  marginTop: 0,
+                  marginBottom: "16px",
+                }}
+              >
                 Job Information
               </h3>
-              
+
               <div style={{ marginBottom: "16px" }}>
-                <label style={{ 
-                  fontSize: "13px", 
-                  fontWeight: "600", 
-                  color: "#666",
-                  display: "block",
-                  marginBottom: "8px"
-                }}>
+                <label
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "#666",
+                    display: "block",
+                    marginBottom: "8px",
+                  }}
+                >
                   Customer Status
                 </label>
                 <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                   {["Waiting", "Loan Car", "Collection", "Neither"].map((status) => (
-                    <label 
-                      key={status} 
-                      style={{ 
+                    <label
+                      key={status}
+                      style={{
                         display: "flex",
                         alignItems: "center",
                         gap: "6px",
@@ -573,7 +564,7 @@ export default function CreateJobCardPage() {
                         borderRadius: "8px",
                         border: waitingStatus === status ? "2px solid #d10000" : "2px solid #e0e0e0",
                         backgroundColor: waitingStatus === status ? "#fff5f5" : "white",
-                        transition: "all 0.2s"
+                        transition: "all 0.2s",
                       }}
                     >
                       <input
@@ -591,20 +582,22 @@ export default function CreateJobCardPage() {
               </div>
 
               <div style={{ marginBottom: "16px" }}>
-                <label style={{ 
-                  fontSize: "13px", 
-                  fontWeight: "600", 
-                  color: "#666",
-                  display: "block",
-                  marginBottom: "8px"
-                }}>
+                <label
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "#666",
+                    display: "block",
+                    marginBottom: "8px",
+                  }}
+                >
                   Job Source
                 </label>
                 <div style={{ display: "flex", gap: "12px" }}>
                   {["Retail", "Warranty"].map((src) => (
-                    <label 
-                      key={src} 
-                      style={{ 
+                    <label
+                      key={src}
+                      style={{
                         display: "flex",
                         alignItems: "center",
                         gap: "6px",
@@ -613,7 +606,7 @@ export default function CreateJobCardPage() {
                         borderRadius: "8px",
                         border: jobSource === src ? "2px solid #d10000" : "2px solid #e0e0e0",
                         backgroundColor: jobSource === src ? "#fff5f5" : "white",
-                        transition: "all 0.2s"
+                        transition: "all 0.2s",
                       }}
                     >
                       <input
@@ -631,13 +624,15 @@ export default function CreateJobCardPage() {
               </div>
 
               <div>
-                <label style={{ 
-                  fontSize: "13px", 
-                  fontWeight: "600", 
-                  color: "#666",
-                  display: "block",
-                  marginBottom: "8px"
-                }}>
+                <label
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "#666",
+                    display: "block",
+                    marginBottom: "8px",
+                  }}
+                >
                   Detected Job Types
                 </label>
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -659,9 +654,16 @@ export default function CreateJobCardPage() {
                 </div>
               </div>
 
-              {/* ✅ MOT Date field added here */}
               <div style={{ marginTop: "16px" }}>
-                <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "6px" }}>
+                <label
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    color: "#666",
+                    display: "block",
+                    marginBottom: "6px",
+                  }}
+                >
                   Next MOT Date
                 </label>
                 <input
@@ -675,10 +677,14 @@ export default function CreateJobCardPage() {
                     borderRadius: "8px",
                     fontSize: "14px",
                     outline: "none",
-                    transition: "border-color 0.2s"
+                    transition: "border-color 0.2s",
                   }}
-                  onFocus={(e) => e.target.style.borderColor = "#d10000"}
-                  onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = "#d10000";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "#e0e0e0";
+                  }}
                 />
               </div>
             </div>
@@ -694,17 +700,18 @@ export default function CreateJobCardPage() {
                 border: "1px solid #e0e0e0",
               }}
             >
-              <h3 style={{ 
-                fontSize: "16px", 
-                fontWeight: "600", 
-                color: "#1a1a1a",
-                marginTop: 0,
-                marginBottom: "16px"
-              }}>
+              <h3
+                style={{
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  color: "#1a1a1a",
+                  marginTop: 0,
+                  marginBottom: "16px",
+                }}
+              >
                 Vehicle Details
               </h3>
 
-              {/* ✅ Vehicle notification banner */}
               {vehicleNotification && (
                 <div
                   style={{
@@ -739,7 +746,15 @@ export default function CreateJobCardPage() {
               )}
 
               <div style={{ marginBottom: "16px" }}>
-                <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "6px" }}>
+                <label
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    color: "#666",
+                    display: "block",
+                    marginBottom: "6px",
+                  }}
+                >
                   Registration Number
                 </label>
                 <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
@@ -756,10 +771,14 @@ export default function CreateJobCardPage() {
                       fontSize: "14px",
                       textTransform: "uppercase",
                       outline: "none",
-                      transition: "border-color 0.2s"
+                      transition: "border-color 0.2s",
                     }}
-                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
-                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = "#d10000";
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = "#e0e0e0";
+                    }}
                   />
                   <button
                     onClick={handleFetchVehicleData}
@@ -804,32 +823,51 @@ export default function CreateJobCardPage() {
               )}
 
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {[
-                  { label: "Colour", value: vehicle.colour },
-                  { label: "Make & Model", value: vehicle.makeModel },
-                  { label: "Chassis Number", value: vehicle.chassis },
-                  { label: "Engine Number", value: vehicle.engine }
-                ].map((field, idx) => (
-                  <div key={idx}>
-                    <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "4px" }}>
-                      {field.label}
-                    </label>
-                    <div
-                      style={{
-                        padding: "10px 12px",
-                        backgroundColor: "#f5f5f5",
-                        borderRadius: "8px",
-                        fontSize: "14px",
-                        color: field.value ? "#1a1a1a" : "#999"
-                      }}
-                    >
-                      {field.value || "Not available"}
+                {["colour", "makeModel", "chassis", "engine"].map((key, idx) => {
+                  const labelMap = {
+                    colour: "Colour",
+                    makeModel: "Make & Model",
+                    chassis: "Chassis Number",
+                    engine: "Engine Number",
+                  };
+                  return (
+                    <div key={`${key}-${idx}`}>
+                      <label
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: "500",
+                          color: "#666",
+                          display: "block",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        {labelMap[key]}
+                      </label>
+                      <div
+                        style={{
+                          padding: "10px 12px",
+                          backgroundColor: "#f5f5f5",
+                          borderRadius: "8px",
+                          fontSize: "14px",
+                          color: vehicle[key] ? "#1a1a1a" : "#999",
+                        }}
+                      >
+                        {vehicle[key] || "Not available"}
+                      </div>
                     </div>
-                  </div>
-                ))}
-                
+                  );
+                })}
+
                 <div>
-                  <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "6px" }}>
+                  <label
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: "500",
+                      color: "#666",
+                      display: "block",
+                      marginBottom: "6px",
+                    }}
+                  >
                     Current Mileage
                   </label>
                   <input
@@ -844,10 +882,14 @@ export default function CreateJobCardPage() {
                       borderRadius: "8px",
                       fontSize: "14px",
                       outline: "none",
-                      transition: "border-color 0.2s"
+                      transition: "border-color 0.2s",
                     }}
-                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
-                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = "#d10000";
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = "#e0e0e0";
+                    }}
                   />
                 </div>
               </div>
@@ -864,17 +906,18 @@ export default function CreateJobCardPage() {
                 border: "1px solid #e0e0e0",
               }}
             >
-              <h3 style={{ 
-                fontSize: "16px", 
-                fontWeight: "600", 
-                color: "#1a1a1a",
-                marginTop: 0,
-                marginBottom: "16px"
-              }}>
+              <h3
+                style={{
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  color: "#1a1a1a",
+                  marginTop: 0,
+                  marginBottom: "16px",
+                }}
+              >
                 Customer Details
               </h3>
 
-              {/* ✅ Customer notification banner */}
               {customerNotification && (
                 <div
                   style={{
@@ -915,10 +958,18 @@ export default function CreateJobCardPage() {
                       { label: "Name", value: `${customer.firstName} ${customer.lastName}` },
                       { label: "Address", value: customer.address },
                       { label: "Email", value: customer.email },
-                      { label: "Phone", value: customer.mobile || customer.telephone }
+                      { label: "Phone", value: customer.mobile || customer.telephone },
                     ].map((field, idx) => (
                       <div key={idx}>
-                        <label style={{ fontSize: "13px", fontWeight: "500", color: "#666", display: "block", marginBottom: "4px" }}>
+                        <label
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            color: "#666",
+                            display: "block",
+                            marginBottom: "4px",
+                          }}
+                        >
                           {field.label}
                         </label>
                         <div
@@ -927,7 +978,7 @@ export default function CreateJobCardPage() {
                             backgroundColor: "#f5f5f5",
                             borderRadius: "8px",
                             fontSize: "14px",
-                            color: "#1a1a1a"
+                            color: "#1a1a1a",
                           }}
                         >
                           {field.value}
@@ -949,8 +1000,12 @@ export default function CreateJobCardPage() {
                       fontWeight: "600",
                       transition: "all 0.2s",
                     }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = "#dc2626"}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = "#ef4444"}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = "#dc2626";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = "#ef4444";
+                    }}
                   >
                     Clear Customer
                   </button>
@@ -970,8 +1025,12 @@ export default function CreateJobCardPage() {
                       fontWeight: "600",
                       transition: "all 0.2s",
                     }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = "#b00000";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = "#d10000";
+                    }}
                   >
                     + New Customer
                   </button>
@@ -988,8 +1047,12 @@ export default function CreateJobCardPage() {
                       fontWeight: "600",
                       transition: "all 0.2s",
                     }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = "#2563eb"}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = "#3b82f6"}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = "#2563eb";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = "#3b82f6";
+                    }}
                   >
                     Search Existing Customer
                   </button>
@@ -999,20 +1062,24 @@ export default function CreateJobCardPage() {
           </div>
 
           {/* ✅ Job Requests Section - Full Width */}
-          <div style={{ 
-            background: "white", 
-            padding: "20px", 
-            borderRadius: "16px", 
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            border: "1px solid #e0e0e0"
-          }}>
-            <h3 style={{ 
-              fontSize: "16px", 
-              fontWeight: "600", 
-              color: "#1a1a1a",
-              marginTop: 0,
-              marginBottom: "16px"
-            }}>
+          <div
+            style={{
+              background: "white",
+              padding: "20px",
+              borderRadius: "16px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              border: "1px solid #e0e0e0",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: "16px",
+                fontWeight: "600",
+                color: "#1a1a1a",
+                marginTop: 0,
+                marginBottom: "16px",
+              }}
+            >
               Job Requests
             </h3>
             {requests.map((req, i) => (
@@ -1026,7 +1093,14 @@ export default function CreateJobCardPage() {
                   backgroundColor: "#fafafa",
                 }}
               >
-                <div style={{ fontSize: "13px", fontWeight: "600", color: "#666", marginBottom: "12px" }}>
+                <div
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "#666",
+                    marginBottom: "12px",
+                  }}
+                >
                   Request {i + 1}
                 </div>
                 <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
@@ -1043,10 +1117,14 @@ export default function CreateJobCardPage() {
                       borderRadius: "8px",
                       fontSize: "14px",
                       outline: "none",
-                      transition: "border-color 0.2s"
+                      transition: "border-color 0.2s",
                     }}
-                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
-                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = "#d10000";
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = "#e0e0e0";
+                    }}
                   />
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <input
@@ -1063,12 +1141,23 @@ export default function CreateJobCardPage() {
                         borderRadius: "8px",
                         fontSize: "14px",
                         outline: "none",
-                        transition: "border-color 0.2s"
+                        transition: "border-color 0.2s",
                       }}
-                      onFocus={(e) => e.target.style.borderColor = "#d10000"}
-                      onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = "#d10000";
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = "#e0e0e0";
+                      }}
                     />
-                    <span style={{ fontSize: "13px", color: "#666", fontWeight: "500", minWidth: "30px" }}>
+                    <span
+                      style={{
+                        fontSize: "13px",
+                        color: "#666",
+                        fontWeight: "500",
+                        minWidth: "30px",
+                      }}
+                    >
                       {req.time !== "" ? `${req.time}h` : ""}
                     </span>
                   </div>
@@ -1083,10 +1172,14 @@ export default function CreateJobCardPage() {
                       cursor: "pointer",
                       outline: "none",
                       transition: "border-color 0.2s",
-                      width: "160px"
+                      width: "160px",
                     }}
-                    onFocus={(e) => e.target.style.borderColor = "#d10000"}
-                    onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = "#d10000";
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = "#e0e0e0";
+                    }}
                   >
                     <option value="Customer">Customer</option>
                     <option value="Warranty">Warranty</option>
@@ -1110,8 +1203,12 @@ export default function CreateJobCardPage() {
                       fontSize: "13px",
                       transition: "all 0.2s",
                     }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = "#dc2626"}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = "#ef4444"}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = "#dc2626";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = "#ef4444";
+                    }}
                   >
                     Remove
                   </button>
@@ -1131,8 +1228,12 @@ export default function CreateJobCardPage() {
                 fontSize: "14px",
                 transition: "all 0.2s",
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
-              onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = "#b00000";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = "#d10000";
+              }}
             >
               + Add Request
             </button>
@@ -1140,15 +1241,25 @@ export default function CreateJobCardPage() {
 
           {/* ✅ Bottom Row: Cosmetic Damage, Add VHC, Full Car Details */}
           <div style={{ display: "flex", gap: "16px" }}>
-            <div style={{ 
-              flex: 1, 
-              background: "white", 
-              padding: "16px", 
-              borderRadius: "16px", 
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              border: "1px solid #e0e0e0"
-            }}>
-              <h4 style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginTop: 0, marginBottom: "12px" }}>
+            <div
+              style={{
+                flex: 1,
+                background: "white",
+                padding: "16px",
+                borderRadius: "16px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                border: "1px solid #e0e0e0",
+              }}
+            >
+              <h4
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#1a1a1a",
+                  marginTop: 0,
+                  marginBottom: "12px",
+                }}
+              >
                 Cosmetic Damage
               </h4>
               <textarea
@@ -1165,10 +1276,14 @@ export default function CreateJobCardPage() {
                   fontFamily: "inherit",
                   fontSize: "13px",
                   outline: "none",
-                  transition: "border-color 0.2s"
+                  transition: "border-color 0.2s",
                 }}
-                onFocus={(e) => e.target.style.borderColor = "#d10000"}
-                onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "#d10000";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "#e0e0e0";
+                }}
               />
             </div>
             <div
@@ -1224,21 +1339,13 @@ export default function CreateJobCardPage() {
           </div>
         </div>
 
-        {/* Customer Popups */}
         {showNewCustomer && (
-          <NewCustomerPopup
-            onClose={() => setShowNewCustomer(false)}
-            onSelect={(c) => handleCustomerSelect(c)}
-          />
+          <NewCustomerPopup onClose={() => setShowNewCustomer(false)} onSelect={(c) => handleCustomerSelect(c)} />
         )}
         {showExistingCustomer && (
-          <ExistingCustomerPopup
-            onClose={() => setShowExistingCustomer(false)}
-            onSelect={(c) => handleCustomerSelect(c)}
-          />
+          <ExistingCustomerPopup onClose={() => setShowExistingCustomer(false)} onSelect={(c) => handleCustomerSelect(c)} />
         )}
 
-        {/* ✅ VHC Popup - Modern Design */}
         {showVhcPopup && (
           <div
             style={{
@@ -1266,7 +1373,14 @@ export default function CreateJobCardPage() {
                 boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
               }}
             >
-              <h3 style={{ margin: "0 0 24px 0", fontSize: "20px", color: "#1a1a1a", fontWeight: "600" }}>
+              <h3
+                style={{
+                  margin: "0 0 24px 0",
+                  fontSize: "20px",
+                  color: "#1a1a1a",
+                  fontWeight: "600",
+                }}
+              >
                 Add VHC to this job?
               </h3>
               <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "20px" }}>
@@ -1280,7 +1394,7 @@ export default function CreateJobCardPage() {
                     borderRadius: "8px",
                     border: vhcRequired === true ? "2px solid #10b981" : "2px solid #e0e0e0",
                     backgroundColor: vhcRequired === true ? "#f0fdf4" : "white",
-                    transition: "all 0.2s"
+                    transition: "all 0.2s",
                   }}
                 >
                   <input
@@ -1303,7 +1417,7 @@ export default function CreateJobCardPage() {
                     borderRadius: "8px",
                     border: vhcRequired === false ? "2px solid #ef4444" : "2px solid #e0e0e0",
                     backgroundColor: vhcRequired === false ? "#fef2f2" : "white",
-                    transition: "all 0.2s"
+                    transition: "all 0.2s",
                   }}
                 >
                   <input
@@ -1331,8 +1445,12 @@ export default function CreateJobCardPage() {
                   fontSize: "15px",
                   transition: "all 0.2s",
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
-                onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = "#b00000";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = "#d10000";
+                }}
               >
                 Confirm
               </button>
