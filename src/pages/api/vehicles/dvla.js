@@ -1,5 +1,33 @@
 // file location: src/pages/api/vehicles/dvla.js
 
+const buildMockVehicleResponse = (registration, meta = {}) => ({
+  registrationNumber: registration.toUpperCase(),
+  make: "FORD",
+  model: "FOCUS ZETEC",
+  colour: "BLUE",
+  vin: "WF0AXXGCDA" + Math.random().toString(36).substring(2, 9).toUpperCase(),
+  engineNumber: "AB" + Math.floor(Math.random() * 100000),
+  motTests: [
+    {
+      odometerValue: "45000",
+      completedDate: "2024-01-15",
+      testResult: "PASSED",
+    },
+  ],
+  yearOfManufacture: 2018,
+  engineCapacity: 1499,
+  fuelType: "PETROL",
+  _isMockData: true,
+  _mockMeta: meta,
+});
+
+const isDev = process.env.NODE_ENV !== "production";
+const useMockEnvFlag = process.env.DVLA_USE_MOCK_FALLBACK;
+const shouldUseMockFallback =
+  !process.env.DVLA_API_KEY ||
+  useMockEnvFlag === "true" ||
+  (useMockEnvFlag === undefined && isDev);
+
 async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -13,26 +41,10 @@ async function handler(req, res) {
 
   if (!process.env.DVLA_API_KEY) {
     console.warn("⚠️ DVLA_API_KEY not found - returning mock data");
-    
-    return res.status(200).json({
-      registrationNumber: registration.toUpperCase(),
-      make: "FORD",
-      model: "FOCUS ZETEC",
-      colour: "BLUE",
-      vin: "WF0AXXGCDA" + Math.random().toString(36).substring(2, 9).toUpperCase(),
-      engineNumber: "AB" + Math.floor(Math.random() * 100000),
-      motTests: [
-        {
-          odometerValue: "45000",
-          completedDate: "2024-01-15",
-          testResult: "PASSED"
-        }
-      ],
-      yearOfManufacture: 2018,
-      engineCapacity: 1499,
-      fuelType: "PETROL",
-      _isMockData: true
-    });
+
+    return res
+      .status(200)
+      .json(buildMockVehicleResponse(registration, { reason: "missing_api_key" }));
   }
 
   try {
@@ -98,13 +110,26 @@ async function handler(req, res) {
     console.error("❌ Server error calling DVLA API:", err);
     console.error("Error details:", {
       message: err.message,
-      stack: err.stack
+      stack: err.stack,
     });
-    
-    return res.status(500).json({ 
+
+    if (shouldUseMockFallback) {
+      console.warn(
+        "⚠️ Returning mock DVLA data because live lookup failed and DVLA_USE_MOCK_FALLBACK is enabled or API key is missing."
+      );
+
+      return res.status(200).json(
+        buildMockVehicleResponse(registration, {
+          reason: "fetch_failed",
+          originalMessage: err.message,
+        })
+      );
+    }
+
+    return res.status(500).json({
       error: "Server error",
       message: err.message || "An unexpected error occurred",
-      suggestion: "Check server console logs for more details"
+      suggestion: "Check server console logs for more details",
     });
   }
 }

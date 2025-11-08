@@ -255,7 +255,7 @@ export default function Appointments() {
     dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
   
   const formatDateNoYear = (dateObj) => 
-    dateObj.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+    dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
   
   const isSaturday = (date) => date.getDay() === 6;
   

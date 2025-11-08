@@ -124,6 +124,7 @@ export default function Layout({ children }) {
   const colors = appShellTheme.light;
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [contentKey, setContentKey] = useState(() => router.asPath || "initial");
 
   useEffect(() => {
     if (isTablet) {
@@ -143,6 +144,10 @@ export default function Layout({ children }) {
     if (typeof window === "undefined" || isTablet) return;
     window.localStorage.setItem("sidebarOpen", isSidebarOpen ? "true" : "false");
   }, [isSidebarOpen, isTablet]);
+
+  useEffect(() => {
+    setContentKey(router.asPath || `${router.pathname}-${Date.now()}`);
+  }, [router.asPath, router.pathname]);
 
   const navigationItems = [];
   const seenNavItems = new Set();
@@ -787,6 +792,7 @@ export default function Layout({ children }) {
           }}
         >
           <div
+            key={contentKey}
             style={{
               height: "100%",
               minHeight: hideSidebar ? "100vh" : `calc(100vh - ${topBarOffset}px)`,

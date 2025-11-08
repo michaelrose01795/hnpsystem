@@ -1,4 +1,6 @@
 // file location: src/pages/_app.js
+import "@/utils/polyfills";
+import "../styles/globals.css";
 import React, { useEffect, useRef, useState } from "react";
 import { SessionProvider } from "next-auth/react";
 import { UserProvider, useUser } from "../context/UserContext";
@@ -7,15 +9,17 @@ import { ClockingProvider } from "../context/ClockingContext"; // ✅ Added
 import { getAllJobs } from "../lib/database/jobs";
 import { useRouter } from "next/router";
 import CustomLoader from "../components/Loading/CustomLoader";
-import "../styles/globals.css";
 
 // Inner wrapper for job fetching
+const SLOW_ROUTE_DELAY_MS = 800;
+const FADE_OUT_DELAY_MS = 200;
+
 function AppWrapper({ Component, pageProps }) {
   const { user } = useUser() || {};
   const { setJobs } = useJobs() || {};
   const router = useRouter();
   const [displayLoader, setDisplayLoader] = useState(false);
-  const showTimeoutRef = useRef(null);
+  const slowRouteTimeoutRef = useRef(null);
   const fadeTimeoutRef = useRef(null);
   const displayLoaderRef = useRef(displayLoader);
 
@@ -33,28 +37,30 @@ function AppWrapper({ Component, pageProps }) {
     displayLoaderRef.current = displayLoader;
   }, [displayLoader]);
 
-  // Display branded loader during Next.js route transitions with a brief fade-out delay.
+  // Display branded loader only when Next.js route transitions are slow enough to be noticeable.
   useEffect(() => {
     const handleRouteStart = (url) => {
       if (url !== router.asPath) {
         clearTimeout(fadeTimeoutRef.current);
-        clearTimeout(showTimeoutRef.current);
-        // Small delay prevents flicker on fast in-app transitions.
-        showTimeoutRef.current = setTimeout(() => {
+        clearTimeout(slowRouteTimeoutRef.current);
+        // Wait before showing loader so fast navigations render instantly.
+        slowRouteTimeoutRef.current = setTimeout(() => {
           setDisplayLoader(true);
-        }, 150);
+        }, SLOW_ROUTE_DELAY_MS);
       }
     };
 
     const finishLoading = () => {
-      clearTimeout(showTimeoutRef.current);
-      showTimeoutRef.current = null;
+      clearTimeout(slowRouteTimeoutRef.current);
+      slowRouteTimeoutRef.current = null;
 
       if (displayLoaderRef.current) {
         clearTimeout(fadeTimeoutRef.current);
         fadeTimeoutRef.current = setTimeout(() => {
           setDisplayLoader(false);
-        }, 200);
+        }, FADE_OUT_DELAY_MS);
+      } else {
+        setDisplayLoader(false);
       }
     };
 
@@ -63,7 +69,7 @@ function AppWrapper({ Component, pageProps }) {
     router.events.on("routeChangeError", finishLoading);
 
     return () => {
-      clearTimeout(showTimeoutRef.current);
+      clearTimeout(slowRouteTimeoutRef.current);
       clearTimeout(fadeTimeoutRef.current);
       router.events.off("routeChangeStart", handleRouteStart);
       router.events.off("routeChangeComplete", finishLoading);
