@@ -5,7 +5,6 @@ import React, { useState, useEffect } from "react"; // Import React and useState
 import Layout from "../../components/Layout"; // Main layout wrapper
 import Popup from "../../components/popups/Popup"; // Reusable popup modal
 import { useRouter } from "next/router"; // For reading query params
-import CustomLoader from "../../components/Loading/CustomLoader";
 import { 
   getAllJobs, 
   createOrUpdateAppointment, 
@@ -336,7 +335,6 @@ export default function Appointments() {
   // ---------------- Render ----------------
   return (
     <Layout>
-      <CustomLoader isVisible={isLoading} />
       <div style={{ height: "100%", display: "flex", flexDirection: "column", padding: "8px 16px" }}>
 
         {/* Top Bar */}

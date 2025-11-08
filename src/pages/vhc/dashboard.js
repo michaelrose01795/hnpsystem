@@ -3,7 +3,6 @@
 
 import React, { useEffect, useState } from "react";
 import Layout from "../../components/Layout";
-import CustomLoader from "../../components/Loading/CustomLoader";
 import { useRouter } from "next/router";
 import { getAllJobs } from "../../lib/database/jobs";
 import { getVHCChecksByJob } from "../../lib/database/vhc";
@@ -491,7 +490,6 @@ export default function VHCDashboard() {
 
   return (
     <Layout>
-      <CustomLoader isVisible={loading} />
       <div style={{ 
         height: "100%", 
         display: "flex", 

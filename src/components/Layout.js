@@ -99,8 +99,6 @@ export default function Layout({ children }) {
     }
   };
 
-  const isUserLoading = user === undefined && !hideSidebar;
-
   const role = userRoles[0] || "guest";
   const roleDisplay = role
     .split(" ")
@@ -438,7 +436,6 @@ export default function Layout({ children }) {
       )}
 
       <div
-        data-loader-region="main"
         style={{
           flex: 1,
           maxWidth: mainColumnMaxWidth,
@@ -550,62 +547,6 @@ export default function Layout({ children }) {
           </>
         )}
 
-        {isUserLoading && (
-          <>
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "rgba(255,255,255,0.35)",
-                backdropFilter: "blur(6px)",
-                WebkitBackdropFilter: "blur(6px)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 5,
-              }}
-            >
-              <div
-                style={{
-                  padding: "32px 40px",
-                  borderRadius: "999px",
-                  background: "rgba(255,255,255,0.9)",
-                  boxShadow: "0 20px 45px rgba(0,0,0,0.15)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  position: "relative",
-                  minWidth: "220px",
-                  minHeight: "120px",
-                  border: "1px solid rgba(255,255,255,0.6)",
-                }}
-              >
-                <img
-                  src="/images/loading_car.png"
-                  alt="Loading indicator"
-                  style={{
-                    width: "140px",
-                    animation: "layoutLoaderSlide 3s ease-in-out infinite",
-                    filter: "drop-shadow(0 10px 25px rgba(0,0,0,0.25))",
-                  }}
-                />
-              </div>
-            </div>
-            <style jsx>{`
-              @keyframes layoutLoaderSlide {
-                0% {
-                  transform: translateX(-20%) translateY(0);
-                }
-                50% {
-                  transform: translateX(20%) translateY(-6px);
-                }
-                100% {
-                  transform: translateX(-20%) translateY(0);
-                }
-              }
-            `}</style>
-          </>
-        )}
         {!hideSidebar && (
           <section
             style={{
