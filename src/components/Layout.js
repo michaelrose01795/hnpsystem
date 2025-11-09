@@ -1,17 +1,17 @@
 // file location: src/components/Layout.js
-import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/router";
-import { useUser } from "../context/UserContext";
-import GlobalSearch from "./GlobalSearch";
-import JobCardModal from "./JobCards/JobCardModal";
-import StatusSidebar from "../components/StatusTracking/StatusSidebar";
+import React, { useEffect, useState } from "react"; // import React hooks
+import Link from "next/link"; // import Next.js link component
+import { useRouter } from "next/router"; // import router for navigation
+import { useUser } from "../context/UserContext"; // import user context
+import GlobalSearch from "./GlobalSearch"; // import global search component
+import JobCardModal from "./JobCards/JobCardModal"; // import job modal
+import StatusSidebar from "../components/StatusTracking/StatusSidebar"; // import status sidebar
 import Sidebar from "./Sidebar";
 import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
 
 export default function Layout({ children }) {
-  const { user, status, setStatus, currentJob } = useUser();
+  const { user, status, setStatus, currentJob } = useUser(); // get user context data
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
 
@@ -147,7 +147,6 @@ export default function Layout({ children }) {
     setContentKey(router.asPath || `${router.pathname}-${Date.now()}`);
   }, [router.asPath, router.pathname]);
 
-  // FIXED: Simplified iOS rendering fix - only triggers visual repaint, doesn't interfere with navigation
   useEffect(() => {
     if (typeof window === "undefined" || !router?.events) return;
 
@@ -158,7 +157,6 @@ export default function Layout({ children }) {
 
     if (!isIOS) return;
 
-    // Only trigger a visual repaint - don't interfere with router navigation
     const triggerRepaint = () => {
       requestAnimationFrame(() => {
         window.dispatchEvent(new Event("resize"));
@@ -178,7 +176,47 @@ export default function Layout({ children }) {
     };
   }, [router]);
 
-  // REMOVED: The problematic iOS navigation override that was breaking sidebar clicks
+  useEffect(() => {
+    if (typeof window === "undefined" || !router?.events) return;
+
+    const userAgent = window.navigator?.userAgent || "";
+    const isIOS =
+      /iPad|iPhone|iPod/.test(userAgent) ||
+      (userAgent.includes("Macintosh") && "ontouchend" in document);
+
+    if (!isIOS) return;
+
+    let pendingUrl = null;
+
+    const handleStart = (url) => {
+      pendingUrl = url;
+    };
+
+    const handleComplete = (url) => {
+      if (!pendingUrl || !url) {
+        pendingUrl = null;
+        return;
+      }
+      if (pendingUrl === url) {
+        pendingUrl = null;
+        window.location.assign(url);
+      }
+    };
+
+    const handleError = () => {
+      pendingUrl = null;
+    };
+
+    router.events.on("routeChangeStart", handleStart);
+    router.events.on("routeChangeComplete", handleComplete);
+    router.events.on("routeChangeError", handleError);
+
+    return () => {
+      router.events.off("routeChangeStart", handleStart);
+      router.events.off("routeChangeComplete", handleComplete);
+      router.events.off("routeChangeError", handleError);
+    };
+  }, [router]);
 
   const navigationItems = [];
   const seenNavItems = new Set();
@@ -580,18 +618,18 @@ export default function Layout({ children }) {
           </>
         )}
 
-        {!hideSidebar && (
+        {!hideSidebar && ( // render the modern compact header when the sidebar is visible
           <section
             style={{
-              background: "rgba(255,255,255,0.92)",
-              borderRadius: "16px",
-              border: "1px solid rgba(209,0,0,0.12)",
-              boxShadow: "0 10px 20px rgba(209,0,0,0.12)",
-              padding: isMobile ? "10px 12px" : "12px 14px",
+              background: "rgba(255,255,255,0.92)", // soften the header background
+              borderRadius: "16px", // tighten radius for slimmer appearance
+              border: "1px solid rgba(209,0,0,0.12)", // introduce subtle red border accent
+              boxShadow: "0 10px 20px rgba(209,0,0,0.12)", // lighten drop shadow for depth without bulk
+              padding: isMobile ? "10px 12px" : "12px 14px", // reduce padding to shrink header height
               display: "flex",
               flexDirection: "column",
               gap: isMobile ? "8px" : "12px",
-              backdropFilter: "blur(10px)",
+              backdropFilter: "blur(10px)", // add subtle glassmorphism effect
             }}
           >
             <div
@@ -600,7 +638,7 @@ export default function Layout({ children }) {
                 flexWrap: "wrap",
                 alignItems: "center",
                 gap: "12px",
-                justifyContent: "space-between",
+                justifyContent: "space-between", // keep header content balanced edge to edge
               }}
             >
               <div
@@ -675,41 +713,43 @@ export default function Layout({ children }) {
                     maxWidth: isMobile ? "100%" : "260px",
                   }}
                 >
-                  <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />
+                  <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />{/* expose global search with brand accent */}
                 </div>
 
-                {userRoles.includes("admin manager") && (
-                  <Link
-                    href="/admin/users"
-                    style={{
-                      padding: "8px 14px",
-                      borderRadius: "14px",
-                      background: "linear-gradient(135deg, #d10000, #a60000)",
-                      color: "#ffffff",
-                      fontWeight: 600,
-                      textDecoration: "none",
-                      boxShadow: "0 12px 20px rgba(209,0,0,0.22)",
-                      whiteSpace: "nowrap",
-                      flexShrink: 0,
-                    }}
-                  >
-                    ➕ Create User
-                  </Link>
-                )}
+                {userRoles.includes("admin manager") &&
+                  ( // quick access for administrators to add new users
+                    <Link
+                      href="/admin/users"
+                      style={{
+                        padding: "8px 14px",
+                        borderRadius: "14px",
+                        background: "linear-gradient(135deg, #d10000, #a60000)",
+                        color: "#ffffff",
+                        fontWeight: 600,
+                        textDecoration: "none",
+                        boxShadow: "0 12px 20px rgba(209,0,0,0.22)",
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                      }}
+                    >
+                      ➕ Create User
+                    </Link>
+                  )}
               </div>
             </div>
 
-            {isTech && (
+            {isTech && ( // show quick status controls for technicians
               <div
                 style={{
                   display: "flex",
                   flexWrap: "wrap",
                   gap: "12px",
                   alignItems: "center",
-                  justifyContent: "flex-start",
+                  justifyContent: "flex-start", // align controls neatly to the left for readability
                 }}
               >
                 {(
+                  // quick status dropdown for workshop techs
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
@@ -732,6 +772,7 @@ export default function Layout({ children }) {
                   </select>
                 )}
                 {(
+                  // shortcut button to open the currently assigned job card
                   <button
                     type="button"
                     disabled={!currentJob?.jobNumber}
