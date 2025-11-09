@@ -618,144 +618,144 @@ export default function Layout({ children }) {
           </>
         )}
 
-        {!hideSidebar && (
+        {!hideSidebar && ( // render the modern compact header when the sidebar is visible
           <section
             style={{
-              background: "linear-gradient(135deg, #ffffff, #fff7f7)",
-              borderRadius: "24px",
-              border: "1px solid #ffe0e0",
-              boxShadow: "0 18px 40px rgba(209,0,0,0.12)",
-              padding: "14px 18px",
+              background: "rgba(255,255,255,0.92)", // soften the header background
+              borderRadius: "20px", // tighten radius for slimmer appearance
+              border: "1px solid rgba(209,0,0,0.12)", // introduce subtle red border accent
+              boxShadow: "0 14px 32px rgba(209,0,0,0.14)", // lighten drop shadow for depth without bulk
+              padding: isMobile ? "12px 14px" : "16px 20px", // reduce padding to shrink header height
               display: "flex",
               flexDirection: "column",
-              gap: "12px",
+              gap: isMobile ? "12px" : "16px",
+              backdropFilter: "blur(10px)", // add subtle glassmorphism effect
             }}
           >
             <div
               style={{
                 display: "flex",
                 flexWrap: "wrap",
-                alignItems: "stretch",
-                gap: "12px",
+                alignItems: "center",
+                gap: "14px",
+                justifyContent: "space-between", // keep header content balanced edge to edge
               }}
             >
               <div
                 style={{
                   display: "flex",
-                  gap: "12px",
-                  flex: 1,
-                  minWidth: isMobile ? "100%" : "320px",
-                  alignItems: "stretch",
+                  flexDirection: "column",
+                  gap: "6px",
+                  minWidth: isMobile ? "100%" : "220px",
+                  flex: "1 1 220px",
                 }}
               >
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "0.6rem",
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    color: colors.mutedText,
+                  }}
+                >
+                  Operations Overview
+                </p>
                 <div
                   style={{
                     display: "flex",
-                    flexDirection: "column",
-                    gap: "4px",
-                    minWidth: isMobile ? "100%" : "190px",
-                    flex: "0 0 auto",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "10px",
                   }}
                 >
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "0.65rem",
-                      letterSpacing: "0.2em",
-                      textTransform: "uppercase",
-                      color: colors.mutedText,
-                    }}
-                  >
-                    Operations Overview
-                  </p>
                   <h1
                     style={{
-                      fontSize: "1.4rem",
+                      fontSize: isMobile ? "1.1rem" : "1.3rem",
                       fontWeight: 700,
                       margin: 0,
                       color: colors.accent,
-                      whiteSpace: "nowrap",
+                      lineHeight: 1.2,
                     }}
                   >
                     Welcome back, {user?.username || "Guest"}
                   </h1>
+                  <span
+                    style={{
+                      padding: "4px 12px",
+                      borderRadius: "999px",
+                      background: "rgba(209,0,0,0.12)",
+                      color: colors.accent,
+                      fontWeight: 600,
+                      fontSize: "0.75rem",
+                    }}
+                  >
+                    Role: {roleDisplay}
+                  </span>
                 </div>
-
               </div>
 
               <div
                 style={{
-                  flex: "0 1 360px",
-                  minWidth: isTablet ? "100%" : "220px",
-                  maxWidth: isTablet ? "100%" : "380px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  flex: "1 1 320px",
+                  minWidth: isTablet ? "100%" : "320px",
+                  justifyContent: isTablet ? "flex-start" : "flex-end",
                 }}
               >
-                <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />
-              </div>
+                <div style={{ flex: "1 1 240px", minWidth: "200px", width: "100%" }}>
+                  <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />{/* expose global search with brand accent */}
+                </div>
 
-              {userRoles.includes("admin manager") && (
-                <Link
-                  href="/admin/users"
-                  style={{
-                    padding: "9px 16px",
-                    borderRadius: "999px",
-                    backgroundColor: colors.accent,
-                    color: "#ffffff",
-                    fontWeight: 600,
-                    textDecoration: "none",
-                    boxShadow: "0 10px 18px rgba(209,0,0,0.22)",
-                    whiteSpace: "nowrap",
-                    flexShrink: 0,
-                  }}
-                >
-                  ➕ Create User
-                </Link>
-              )}
+                {userRoles.includes("admin manager") &&
+                  ( // quick access for administrators to add new users
+                    <Link
+                      href="/admin/users"
+                      style={{
+                        padding: "8px 14px",
+                        borderRadius: "14px",
+                        background: "linear-gradient(135deg, #d10000, #a60000)",
+                        color: "#ffffff",
+                        fontWeight: 600,
+                        textDecoration: "none",
+                        boxShadow: "0 12px 20px rgba(209,0,0,0.22)",
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                      }}
+                    >
+                      ➕ Create User
+                    </Link>
+                  )}
+              </div>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "10px",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <span
+            {isTech && ( // show quick status controls for technicians
+              <div
                 style={{
-                  fontSize: "0.85rem",
-                  color: colors.mutedText,
-                  fontWeight: 600,
-                  letterSpacing: "0.04em",
-                  whiteSpace: "nowrap",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "12px",
+                  alignItems: "center",
+                  justifyContent: "flex-start", // align controls neatly to the left for readability
                 }}
               >
-                Role: {roleDisplay}
-              </span>
-
-              {isTech && (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "12px",
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                  }}
-                >
+                {(
+                  // quick status dropdown for workshop techs
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
                     style={{
-                      padding: "8px 16px",
-                      borderRadius: "999px",
+                      padding: "6px 14px",
+                      borderRadius: "14px",
                       border: `1px solid ${colors.accent}`,
                       backgroundColor: "#ffffff",
                       color: colors.accent,
                       fontWeight: 600,
                       cursor: "pointer",
                       minWidth: isMobile ? "100%" : "170px",
-                      boxShadow: "0 6px 16px rgba(209,0,0,0.15)",
+                      boxShadow: "0 6px 14px rgba(209,0,0,0.12)",
                     }}
                   >
                     <option>Waiting for Job</option>
@@ -763,6 +763,9 @@ export default function Layout({ children }) {
                     <option>Break</option>
                     <option>Completed</option>
                   </select>
+                )}
+                {(
+                  // shortcut button to open the currently assigned job card
                   <button
                     type="button"
                     disabled={!currentJob?.jobNumber}
@@ -770,17 +773,17 @@ export default function Layout({ children }) {
                       currentJob?.jobNumber && router.push(`/job-cards/myjobs/${currentJob.jobNumber}`)
                     }
                     style={{
-                      padding: "8px 16px",
-                      borderRadius: "999px",
+                      padding: "6px 16px",
+                      borderRadius: "14px",
                       border: "none",
                       background: currentJob?.jobNumber
-                        ? "linear-gradient(90deg, #d10000, #a00000)"
+                        ? "linear-gradient(135deg, #d10000, #a00000)"
                         : "#f3f4f6",
                       color: currentJob?.jobNumber ? "#ffffff" : "#9ca3af",
                       fontWeight: 600,
                       cursor: currentJob?.jobNumber ? "pointer" : "not-allowed",
                       boxShadow: currentJob?.jobNumber
-                        ? "0 10px 24px rgba(209,0,0,0.25)"
+                        ? "0 10px 22px rgba(209,0,0,0.22)"
                         : "none",
                       transition: "all 0.2s ease",
                       width: isMobile ? "100%" : "auto",
@@ -788,10 +791,9 @@ export default function Layout({ children }) {
                   >
                     {currentJob?.jobNumber ? `Open Job ${currentJob.jobNumber}` : "No Current Job"}
                   </button>
-                </div>
-              )}
-
-            </div>
+                )}
+              </div>
+            )}
           </section>
         )}
 
