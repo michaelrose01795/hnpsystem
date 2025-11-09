@@ -363,7 +363,8 @@ export default function StatusSidebar({
         {/* Scrollable content area */}
         <div style={{ 
           overflowY: 'auto', 
-          height: 'calc(100% - 180px)', 
+          flex: 1, // Fill remaining vertical space so colored section reaches footer
+          minHeight: 0, // Allow flex child to shrink for proper scrolling
           padding: '20px',
           background: 'linear-gradient(to bottom, #fffafa, #ffecec)',
           borderRadius: '0 0 16px 16px' // Match parent border radius

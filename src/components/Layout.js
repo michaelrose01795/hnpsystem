@@ -594,23 +594,6 @@ export default function Layout({ children }) {
                     overflowY: "auto",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                    <button
-                      type="button"
-                      onClick={closeMobileMenu}
-                      style={{
-                        border: "none",
-                        background: "rgba(0,0,0,0.05)",
-                        color: colors.text,
-                        borderRadius: "12px",
-                        padding: "8px 14px",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                      }}
-                    >
-                      Close ✕
-                    </button>
-                  </div>
                   <Sidebar onToggle={closeMobileMenu} isCondensed />
                 </div>
               </div>

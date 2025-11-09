@@ -95,12 +95,13 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
           <button
             type="button"
             onClick={onToggle}
-            aria-label="Collapse sidebar"
+            aria-label="Close sidebar"
+            className="sidebar-action"
             style={{
               position: "absolute",
               top: "16px",
               right: "16px",
-              width: "36px",
+              padding: "0 16px",
               height: "36px",
               borderRadius: "10px",
               border: "1px solid rgba(255,255,255,0.4)",
@@ -111,7 +112,7 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
               boxShadow: "0 6px 16px rgba(0,0,0,0.15)",
             }}
           >
-            X
+            Close
           </button>
         )}
       </div>
@@ -137,28 +138,29 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
               if (!item.href) return null;
               const isActive = pathname === item.href;
               return (
-                <Link key={item.href} href={item.href}>
-                  <span
-                    style={{
-                      display: "block",
-                      padding: "10px 14px",
-                      marginBottom: "10px",
-                      background: isActive 
-                        ? "linear-gradient(90deg, #d10000, #a00000)" 
-                        : "#ffffff",
-                      color: isActive ? "#ffffff" : "#a00000",
-                      borderRadius: "10px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                      border: isActive ? "none" : "1px solid #ffe0e0",
-                      boxShadow: isActive
-                        ? "0 12px 20px rgba(161, 0, 0, 0.25)"
-                        : "0 4px 12px rgba(0, 0, 0, 0.05)",
-                    }}
-                  >
-                    {item.label}
-                  </span>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="sidebar-action"
+                  style={{
+                    display: "block",
+                    padding: "10px 14px",
+                    marginBottom: "10px",
+                    background: isActive
+                      ? "linear-gradient(90deg, #d10000, #a00000)"
+                      : "#ffffff",
+                    color: isActive ? "#ffffff" : "#a00000",
+                    borderRadius: "10px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    border: isActive ? "none" : "1px solid #ffe0e0",
+                    boxShadow: isActive
+                      ? "0 12px 20px rgba(161, 0, 0, 0.25)"
+                      : "0 4px 12px rgba(0, 0, 0, 0.05)",
+                    textDecoration: "none",
+                  }}
+                >
+                  {item.label}
                 </Link>
               );
             })}
@@ -186,28 +188,29 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
               if (!item.href) return null;
               const isActive = pathname === item.href;
               return (
-                <Link key={item.href} href={item.href}>
-                  <span
-                    style={{
-                      display: "block",
-                      padding: "10px 14px",
-                      marginBottom: "10px",
-                      background: isActive 
-                        ? "linear-gradient(90deg, #d10000, #a00000)" 
-                        : "#ffffff",
-                      color: isActive ? "#ffffff" : "#a00000",
-                      borderRadius: "10px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                      border: isActive ? "none" : "1px solid #ffe0e0",
-                      boxShadow: isActive
-                        ? "0 12px 20px rgba(161, 0, 0, 0.25)"
-                        : "0 4px 12px rgba(0, 0, 0, 0.05)",
-                    }}
-                  >
-                    {item.label}
-                  </span>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="sidebar-action"
+                  style={{
+                    display: "block",
+                    padding: "10px 14px",
+                    marginBottom: "10px",
+                    background: isActive
+                      ? "linear-gradient(90deg, #d10000, #a00000)"
+                      : "#ffffff",
+                    color: isActive ? "#ffffff" : "#a00000",
+                    borderRadius: "10px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    border: isActive ? "none" : "1px solid #ffe0e0",
+                    boxShadow: isActive
+                      ? "0 12px 20px rgba(161, 0, 0, 0.25)"
+                      : "0 4px 12px rgba(0, 0, 0, 0.05)",
+                    textDecoration: "none",
+                  }}
+                >
+                  {item.label}
                 </Link>
               );
             })}
@@ -237,6 +240,7 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
                     key={item.label}
                     type="button"
                     onClick={handleLogout}
+                    className="sidebar-action"
                     style={{
                       padding: "10px 14px",
                       borderRadius: "10px",
@@ -247,6 +251,7 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
                       cursor: "pointer",
                       boxShadow: "0 12px 20px rgba(112, 0, 0, 0.3)",
                       width: "100%",
+                      textDecoration: "none",
                     }}
                   >
                     {item.label}
@@ -257,28 +262,29 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
               if (item.href) {
                 const isActive = pathname === item.href;
                 return (
-                  <Link key={item.href} href={item.href}>
-                    <span
-                      style={{
-                        display: "block",
-                        padding: "10px 14px",
-                        marginBottom: "10px",
-                        background: isActive 
-                          ? "linear-gradient(90deg, #d10000, #a00000)" 
-                          : "#ffffff",
-                        color: isActive ? "#ffffff" : "#a00000",
-                        borderRadius: "10px",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                        border: isActive ? "none" : "1px solid #ffe0e0",
-                        boxShadow: isActive
-                          ? "0 12px 20px rgba(161, 0, 0, 0.25)"
-                          : "0 4px 12px rgba(0, 0, 0, 0.05)",
-                      }}
-                    >
-                      {item.label}
-                    </span>
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="sidebar-action"
+                    style={{
+                      display: "block",
+                      padding: "10px 14px",
+                      marginBottom: "10px",
+                      background: isActive
+                        ? "linear-gradient(90deg, #d10000, #a00000)"
+                        : "#ffffff",
+                      color: isActive ? "#ffffff" : "#a00000",
+                      borderRadius: "10px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      border: isActive ? "none" : "1px solid #ffe0e0",
+                      boxShadow: isActive
+                        ? "0 12px 20px rgba(161, 0, 0, 0.25)"
+                        : "0 4px 12px rgba(0, 0, 0, 0.05)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    {item.label}
                   </Link>
                 );
               }
