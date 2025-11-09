@@ -3,6 +3,7 @@ import React, { useMemo, useState } from "react";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
 import themeConfig, { createVhcButtonStyle, vhcModalContentStyles } from "@/styles/appTheme";
 import TyreDiagram from "@/components/VHC/TyreDiagram";
+import TyresSection from "@/components/VHC/TyresSection"; // Import shared tyre search component
 
 const palette = themeConfig.palette;
 
@@ -178,6 +179,9 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
     size: "",
     load: "",
     speed: "",
+    costCompany: null, // Placeholder cost to company from tyre lookup
+    costCustomer: null, // Placeholder cost to customer from tyre lookup
+    availability: "", // Placeholder availability information from tyre lookup
     tread: { outer: "", middle: "", inner: "" },
     treadLocked: { outer: false, middle: false, inner: false },
     concerns: [],
@@ -234,6 +238,40 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
     return totals;
   }, [tyres]);
 
+  const selectedLookupTyre = useMemo(() => {
+    if (activeWheel === "Spare") {
+      const details = tyres.Spare.details;
+      if (!details.manufacturer && !details.size && !details.load && !details.speed) {
+        return null; // Avoid returning lookup data when spare fields are empty
+      }
+      return {
+        make: details.manufacturer,
+        size: details.size,
+        load: details.load,
+        speed: details.speed,
+        cost_company: details.costCompany ?? null,
+        cost_customer: details.costCustomer ?? null,
+        availability: details.availability || "",
+      }; // Map spare tyre details into lookup format
+    }
+    const tyre = tyres[activeWheel];
+    if (!tyre) {
+      return null; // No lookup data when the tyre is undefined
+    }
+    if (!tyre.manufacturer && !tyre.size && !tyre.load && !tyre.speed) {
+      return null; // Skip lookup preview until the tyre has data
+    }
+    return {
+      make: tyre.manufacturer,
+      size: tyre.size,
+      load: tyre.load,
+      speed: tyre.speed,
+      cost_company: tyre.costCompany ?? null,
+      cost_customer: tyre.costCustomer ?? null,
+      availability: tyre.availability || "",
+    }; // Map main tyre details into lookup format
+  }, [activeWheel, tyres]);
+
   const allWheelsComplete = () => {
     const checkTyre = (tyre) => tyre.manufacturer && tyre.size && tyre.load && tyre.speed;
     const mainComplete = WHEELS.every((wheel) => checkTyre(tyres[wheel]));
@@ -273,6 +311,41 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
         [activeWheel]: {
           ...prev[activeWheel],
           [field]: value,
+        },
+      }));
+    }
+  };
+
+  const handleTyreLookupSelect = (tyre) => {
+    if (!tyre) {
+      return; // No action when no tyre is provided
+    }
+    const nextValues = {
+      manufacturer: tyre.make,
+      size: tyre.size,
+      load: tyre.load,
+      speed: tyre.speed,
+      costCompany: tyre.cost_company ?? tyre.costCompany ?? null,
+      costCustomer: tyre.cost_customer ?? tyre.costCustomer ?? null,
+      availability: tyre.availability ?? "",
+    }; // Normalise placeholder tyre data into modal state
+    if (activeWheel === "Spare") {
+      setTyres((prev) => ({
+        ...prev,
+        Spare: {
+          ...prev.Spare,
+          details: {
+            ...prev.Spare.details,
+            ...nextValues,
+          },
+        },
+      }));
+    } else {
+      setTyres((prev) => ({
+        ...prev,
+        [activeWheel]: {
+          ...prev[activeWheel],
+          ...nextValues,
         },
       }));
     }
@@ -523,6 +596,11 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete })
                 minHeight: 0,
               }}
             >
+              <TyresSection
+                contextLabel={`${activeWheel === "Spare" ? "Spare Tyre Lookup" : `${activeWheel} Tyre Lookup`}`}
+                selectedTyre={selectedLookupTyre}
+                onTyreSelected={handleTyreLookupSelect}
+              />
               {activeWheel !== "Spare" ? (
                 <>
                   <div style={sectionCardStyle}>

@@ -7,6 +7,7 @@ import { useRouter } from "next/router"; // import router hook for navigation
 import { getAllJobs } from "../../lib/database/jobs"; // import Supabase helper to fetch jobs
 import { getVHCChecksByJob } from "../../lib/database/vhc"; // import Supabase helper to fetch technician VHC data
 import { useUser } from "../../context/UserContext"; // import context hook to read current user roles
+import WheelsHubsModal from "../../components/VHC/WheelsHubsModal"; // 🔧 Temporary placeholder connection to tyreAPI.js
 
 // ✅ Status color mapping for the headline badge
 const STATUS_COLORS = {
@@ -597,8 +598,8 @@ const buildBadgeStyle = (status) => {
 // ✅ Resolve concern status color with safe fallback
 const getConcernColor = (status) => CONCERN_STATUS_COLORS[status] || CONCERN_STATUS_COLORS.Grey;
 
-// ✅ Render a VHC job card with summary and technician sections
-const VHCJobCard = ({ job, onClick, partsMode }) => {
+// ✅ VHC Job Card Component
+const VHCJobCard = ({ job, onClick, partsMode, onOrderTyre }) => {
   const lastVisitColor = getLastVisitColor(job.lastVisit); // determine color for last visit pill
   const nextServiceColor = getNextServiceColor(job.nextService); // determine color for next service pill
   const motColor = getMOTColor(job.motExpiry); // determine color for MOT pill
@@ -681,6 +682,14 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
         ) : null}
       </div>
     );
+
+  const showTyreButton = typeof onOrderTyre === "function"; // Determine if the tyre button should render
+
+  const handleOrderClick = (event) => {
+    event.stopPropagation(); // Prevent navigation when clicking the order button
+    if (showTyreButton) {
+      onOrderTyre(); // Trigger the supplied tyre ordering handler
+    }
   };
 
   return (
@@ -982,6 +991,32 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
           ))}
         </div>
       ) : null}
+      {showTyreButton && (
+        <button
+          type="button"
+          onClick={handleOrderClick}
+          style={{
+            alignSelf: "flex-start",
+            padding: "10px 16px",
+            borderRadius: "10px",
+            border: "none",
+            backgroundColor: "#d10000",
+            color: "#fff",
+            fontWeight: 600,
+            cursor: "pointer",
+            boxShadow: "0 8px 18px rgba(209,0,0,0.2)",
+            transition: "transform 0.2s ease",
+          }}
+          onMouseEnter={(event) => {
+            event.currentTarget.style.transform = "translateY(-2px)";
+          }}
+          onMouseLeave={(event) => {
+            event.currentTarget.style.transform = "translateY(0)";
+          }}
+        >
+          Order Tyre
+        </button>
+      )}
     </div>
   );
 };
@@ -1010,7 +1045,9 @@ export default function VHCDashboard() {
   const [currentPage, setCurrentPage] = useState(1); // pagination state
   const itemsPerPage = 10; // page size
   const { user } = useUser(); // current user context
-
+  const [tyreModalOpen, setTyreModalOpen] = useState(false); // Track tyre modal visibility
+  const [tyreModalJob, setTyreModalJob] = useState(null); // Store the job being processed
+  const [recentTyreOrder, setRecentTyreOrder] = useState(null); // 🔧 Temporary placeholder connection to tyreAPI.js
   const userRoles = (user?.roles || []).map((role) => role.toLowerCase()); // normalise role list
   const isPartsRole = userRoles.some((role) => role === "parts" || role === "parts manager"); // detect parts users
   const workshopViewRoles = [
@@ -1024,6 +1061,31 @@ export default function VHCDashboard() {
   ]; // roles allowed to see full workshop data
   const hasWorkshopPrivileges = userRoles.some((role) => workshopViewRoles.includes(role)); // detect workshop access
   const partsOnlyMode = isPartsRole && !hasWorkshopPrivileges; // limit parts team to relevant jobs
+  const allowTyreOrdering = hasWorkshopPrivileges || userRoles.some((role) =>
+    ["sales", "sales manager", "sales director"].includes(role)
+  ); // Allow workshop and sales leaders to order tyres
+
+  const handleOpenTyreModal = (job) => {
+    setTyreModalJob(job); // Store job context before opening modal
+    setTyreModalOpen(true); // Display the tyre order modal
+  };
+
+  const handleCloseTyreModal = () => {
+    setTyreModalOpen(false); // Hide the tyre order modal
+    setTyreModalJob(null); // Clear job context after closing
+  };
+
+  const handleTyreAssigned = (job, tyre) => {
+    if (!tyre) {
+      return; // Guard against missing tyre selection
+    }
+    setRecentTyreOrder({
+      jobNumber: job?.jobNumber || job?.id || "N/A",
+      reg: job?.reg || job?.makeModel || "Unknown",
+      tyre,
+      timestamp: new Date().toISOString(),
+    }); // Store placeholder summary for dashboard feedback
+  };
 
   useEffect(() => {
     const fetchVhcJobs = async () => {
@@ -1250,6 +1312,32 @@ export default function VHCDashboard() {
           />
         </div>
 
+        {recentTyreOrder && (
+          <div
+            style={{
+              marginBottom: "16px",
+              padding: "14px 18px",
+              borderRadius: "12px",
+              backgroundColor: "#fff5f5",
+              border: "1px solid #ffd6d6",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ fontSize: "13px", fontWeight: 700, color: "#b91c1c" }}>Tyre ordered (placeholder)</span>
+              <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                {recentTyreOrder.tyre.make} {recentTyreOrder.tyre.size} {recentTyreOrder.tyre.load}{recentTyreOrder.tyre.speed} • Job {recentTyreOrder.jobNumber} • {recentTyreOrder.reg}
+              </span>
+            </div>
+            <span style={{ fontSize: "11px", color: "#6b7280" }}>
+              {new Date(recentTyreOrder.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          </div>
+        )}
+
         {/* Status Filter Tabs */}
         <div
           style={{
@@ -1395,6 +1483,7 @@ export default function VHCDashboard() {
                     job={job}
                     partsMode={partsOnlyMode}
                     onClick={() => handleJobClick(job.jobNumber)}
+                    onOrderTyre={allowTyreOrdering ? () => handleOpenTyreModal(job) : undefined} // 🔧 Temporary placeholder connection to tyreAPI.js
                   />
                 ))}
               </div>
@@ -1456,6 +1545,12 @@ export default function VHCDashboard() {
           )}
         </div>
       </div>
+      <WheelsHubsModal
+        isOpen={tyreModalOpen}
+        job={tyreModalJob}
+        onClose={handleCloseTyreModal}
+        onTyreAssigned={handleTyreAssigned}
+      />
     </Layout>
   );
 }
