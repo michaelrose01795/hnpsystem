@@ -1,31 +1,3 @@
-// file location: src/pages/api/vehicles/dvla.js
-
-const buildMockVehicleResponse = (registration, meta = {}) => ({
-  registrationNumber: registration.toUpperCase(),
-  make: "FORD",
-  model: "FOCUS ZETEC",
-  colour: "BLUE",
-  vin: "WF0AXXGCDA" + Math.random().toString(36).substring(2, 9).toUpperCase(),
-  engineNumber: "AB" + Math.floor(Math.random() * 100000),
-  motTests: [
-    {
-      odometerValue: "45000",
-      completedDate: "2024-01-15",
-      testResult: "PASSED",
-    },
-  ],
-  yearOfManufacture: 2018,
-  engineCapacity: 1499,
-  fuelType: "PETROL",
-  _isMockData: true,
-  _mockMeta: meta,
-});
-
-const isDev = process.env.NODE_ENV !== "production";
-const useMockEnvFlag = process.env.DVLA_USE_MOCK_FALLBACK;
-const shouldUseMockFallback =
-  useMockEnvFlag === "true" || (!process.env.DVLA_API_KEY && isDev);
-
 async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -38,11 +10,11 @@ async function handler(req, res) {
   }
 
   if (!process.env.DVLA_API_KEY) {
-    console.warn("⚠️ DVLA_API_KEY not found - returning mock data");
-
-    return res
-      .status(200)
-      .json(buildMockVehicleResponse(registration, { reason: "missing_api_key" }));
+    return res.status(500).json({ 
+      error: "API key not configured",
+      message: "DVLA_API_KEY is missing from environment variables",
+      suggestion: "Please add DVLA_API_KEY to your .env.local file"
+    });
   }
 
   try {
@@ -106,33 +78,7 @@ async function handler(req, res) {
     
   } catch (err) {
     console.error("❌ Server error calling DVLA API:", err);
-    console.error("Error details:", {
-      message: err.message,
-      stack: err.stack,
-    });
-
-    const isNetworkError =
-      err?.message?.toLowerCase().includes("fetch failed") ||
-      err?.code === "ECONNREFUSED" ||
-      err?.code === "ENOTFOUND" ||
-      err?.code === "ETIMEDOUT";
-
-    if (shouldUseMockFallback || isNetworkError) {
-      const mockReason = shouldUseMockFallback ? "config" : "network_error";
-      console.warn(
-        "⚠️ Returning mock DVLA data because live lookup failed (reason:",
-        mockReason,
-        ")."
-      );
-
-      return res.status(200).json(
-        buildMockVehicleResponse(registration, {
-          reason: mockReason,
-          originalMessage: err.message,
-        })
-      );
-    }
-
+    
     return res.status(500).json({
       error: "Server error",
       message: err.message || "An unexpected error occurred",

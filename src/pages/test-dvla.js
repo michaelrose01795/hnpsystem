@@ -1,21 +1,17 @@
-// file location: src/pages/test-dvla.js
-
 import { useState } from "react";
 
 export default function TestDVLA() {
   const [registration, setRegistration] = useState("");
-  const [result, setResult] = useState(null);
+  const [vehicleData, setVehicleData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const testAPI = async () => {
+  const fetchData = async () => {
     setLoading(true);
     setError(null);
-    setResult(null);
+    setVehicleData(null);
 
     try {
-      console.log("🧪 Testing API with registration:", registration);
-      
       const response = await fetch("/api/vehicles/dvla", {
         method: "POST",
         headers: {
@@ -24,23 +20,16 @@ export default function TestDVLA() {
         body: JSON.stringify({ registration: registration.toUpperCase() }),
       });
 
-      console.log("📡 Response status:", response.status);
-      console.log("📡 Response headers:", Object.fromEntries(response.headers.entries()));
-
-      const text = await response.text();
-      console.log("📡 Response text:", text);
-
       if (!response.ok) {
+        const text = await response.text();
         setError(`Error ${response.status}: ${text}`);
         return;
       }
 
-      const data = JSON.parse(text);
-      console.log("✅ Parsed data:", data);
-      setResult(data);
+      const data = await response.json();
+      setVehicleData(data);
 
     } catch (err) {
-      console.error("❌ Error:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -49,14 +38,14 @@ export default function TestDVLA() {
 
   return (
     <div style={{ padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
-      <h1>DVLA API Test Page</h1>
+      <h1>Vehicle Data Lookup</h1>
       
       <div style={{ marginTop: "20px" }}>
         <input
           type="text"
           value={registration}
           onChange={(e) => setRegistration(e.target.value)}
-          placeholder="Enter registration (e.g., AB12CDE)"
+          placeholder="Enter UK registration"
           style={{
             padding: "10px",
             fontSize: "16px",
@@ -65,7 +54,7 @@ export default function TestDVLA() {
           }}
         />
         <button
-          onClick={testAPI}
+          onClick={fetchData}
           disabled={loading || !registration}
           style={{
             padding: "10px 20px",
@@ -77,7 +66,7 @@ export default function TestDVLA() {
             cursor: loading ? "not-allowed" : "pointer",
           }}
         >
-          {loading ? "Testing..." : "Test API"}
+          {loading ? "Fetching..." : "Fetch Data"}
         </button>
       </div>
 
@@ -92,40 +81,49 @@ export default function TestDVLA() {
             color: "#c62828",
           }}
         >
-          <h3>Error:</h3>
-          <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-            {error}
-          </pre>
+          <strong>Error:</strong> {error}
         </div>
       )}
 
-      {result && (
-        <div
-          style={{
-            marginTop: "20px",
-            padding: "15px",
-            backgroundColor: "#e8f5e9",
-            border: "1px solid #4caf50",
-            borderRadius: "5px",
-          }}
-        >
-          <h3>Success! Vehicle Data:</h3>
-          <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-            {JSON.stringify(result, null, 2)}
-          </pre>
+      {vehicleData && (
+        <div style={{ marginTop: "30px" }}>
+          <h2>Vehicle Information</h2>
+          
+          <div style={{ marginTop: "20px" }}>
+            <div style={fieldStyle}>
+              <strong>Registration:</strong> {vehicleData.registrationNumber || "Not supplied"}
+            </div>
+            
+            <div style={fieldStyle}>
+              <strong>Make:</strong> {vehicleData.make || "Not supplied"}
+            </div>
+            
+            <div style={fieldStyle}>
+              <strong>Model:</strong> {vehicleData.model || "Not supplied"}
+            </div>
+            
+            <div style={fieldStyle}>
+              <strong>Colour:</strong> {vehicleData.colour || "Not supplied"}
+            </div>
+            
+            <div style={fieldStyle}>
+              <strong>VIN:</strong> {vehicleData.vin || "Not supplied"}
+            </div>
+            
+            <div style={fieldStyle}>
+              <strong>Engine Code:</strong> {vehicleData.engineCode || "Not supplied"}
+            </div>
+          </div>
         </div>
       )}
-
-      <div style={{ marginTop: "40px", padding: "15px", backgroundColor: "#f5f5f5", borderRadius: "5px" }}>
-        <h3>Debug Checklist:</h3>
-        <ol>
-          <li>Check browser console (F12) for logs</li>
-          <li>Check terminal/server console for API logs</li>
-          <li>Verify .env.local has DVLA_API_KEY (or leave blank for mock data)</li>
-          <li>Make sure Next.js dev server is running</li>
-          <li>Try a test registration like "AB12CDE" or any UK registration</li>
-        </ol>
-      </div>
     </div>
   );
 }
+
+const fieldStyle = {
+  padding: "12px",
+  marginBottom: "10px",
+  backgroundColor: "#f5f5f5",
+  borderRadius: "5px",
+  fontSize: "16px",
+};
