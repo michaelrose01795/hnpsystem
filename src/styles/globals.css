@@ -7,12 +7,20 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#__next {
+  height: 100%;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   background: linear-gradient(to bottom, #fffafa, #ffecec);
   color: #222;
-  line-height: 1.5;
+  line-height: 1.35;
+  min-height: 100%;
+  overflow: hidden;
   transition: background-color 0.3s, color 0.3s;
 }
 
@@ -32,9 +40,9 @@ button {
   background: #d10000;
   color: white;
   border: none;
-  border-radius: 6px;
-  padding: 10px 16px;
-  font-size: 0.95rem;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s, box-shadow 0.2s;
@@ -42,7 +50,7 @@ button {
 }
 button:hover {
   background: #a00000;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Inputs, Textareas & Selects */
@@ -53,10 +61,10 @@ input[type="date"],
 textarea,
 select {
   width: 100%;
-  padding: 10px 14px;
+  padding: 8px 12px;
   border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
   font-family: inherit;
   transition: all 0.3s ease;
   outline: none;
@@ -85,11 +93,11 @@ textarea::placeholder {
 
 /* Labels */
 label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 500;
   color: #555;
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 /* ========================================================= */
@@ -98,22 +106,22 @@ label {
 section,
 div.card,
 div.news-card {
-  border-radius: 16px;
+  border-radius: 10px;
   background-color: #fff;
-  padding: 20px;
-  margin-bottom: 24px; /* spacing between cards */
+  padding: 14px;
+  margin-bottom: 14px; /* tighter spacing between cards */
   box-shadow: 
-    0 8px 16px rgba(0, 0, 0, 0.08),
-    0 0 20px rgba(255, 64, 64, 0.05); /* subtle glow */
+    0 4px 10px rgba(0, 0, 0, 0.06),
+    0 0 12px rgba(255, 64, 64, 0.03); /* subtle glow */
   transition: all 0.3s ease, box-shadow 0.4s ease;
 }
 section:hover,
 div.card:hover,
 div.news-card:hover {
-  transform: translateY(-6px); /* floating lift */
+  transform: translateY(-3px); /* floating lift */
   box-shadow: 
-    0 16px 32px rgba(0, 0, 0, 0.12),
-    0 0 30px rgba(255, 64, 64, 0.2); /* stronger glow on hover */
+    0 8px 16px rgba(0, 0, 0, 0.1),
+    0 0 18px rgba(255, 64, 64, 0.12); /* stronger glow on hover */
   border-color: #ffb3b3;
 }
 
@@ -249,7 +257,7 @@ hr {
   border: none;
   height: 1px;
   background: #eee;
-  margin: 16px 0;
+  margin: 10px 0;
 }
 
 .text-gradient {
@@ -269,8 +277,8 @@ hr {
 
 /* Main content wrapper spacing */
 div#main-content {
-  padding: 24px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 20px; /* spacing between sections/cards */
+  gap: 12px; /* spacing between sections/cards */
 }

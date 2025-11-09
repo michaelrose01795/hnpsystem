@@ -447,10 +447,10 @@ export default function Layout({ children }) {
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
   const mainColumnMaxWidth = "100%";
-  const topBarOffset = hideSidebar ? 0 : isTablet ? 110 : 150;
   const layoutStyles = {
     display: "flex",
     flexDirection: isTablet ? "column" : "row",
+    height: "100vh",
     minHeight: "100vh",
     width: "100%",
     fontFamily: 'Inter, "Segoe UI", system-ui, -apple-system, sans-serif',
@@ -461,8 +461,7 @@ export default function Layout({ children }) {
     gap: isTablet ? "12px" : "24px",
     padding: hideSidebar ? "0" : isTablet ? "12px" : "0 16px",
     boxSizing: "border-box",
-    overflowX: "hidden",
-    overflowY: "auto",
+    overflow: "hidden",
   };
   const showDesktopSidebar = !hideSidebar && !isTablet;
   const showMobileSidebar = !hideSidebar && isTablet;
@@ -475,12 +474,15 @@ export default function Layout({ children }) {
             width: isSidebarOpen ? "260px" : "64px",
             padding: "16px 0",
             alignSelf: "stretch",
+            height: "100%",
+            maxHeight: "100%",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             gap: "16px",
             transition: "width 0.25s ease",
             position: "relative",
+            overflowY: "auto",
           }}
         >
           {isSidebarOpen ? (
@@ -799,7 +801,8 @@ export default function Layout({ children }) {
             key={contentKey}
             style={{
               height: "100%",
-              minHeight: hideSidebar ? "100vh" : `calc(100vh - ${topBarOffset}px)`,
+              minHeight: "100%",
+              maxHeight: "100%",
               background: "linear-gradient(to bottom right, #ffffff, #fff9f9, #ffecec)",
               borderRadius: hideSidebar ? "0px" : "28px",
               border: hideSidebar ? "none" : "1px solid #ffe0e0",

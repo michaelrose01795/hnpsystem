@@ -148,7 +148,7 @@ export default function StatusSidebar({
         width: '40px',
         height: '60px',
         position: 'fixed',
-        right: isOpen ? `${panelWidth + 10}px` : '0',
+        right: isOpen ? `${panelWidth}px` : '0',
         top: '50%',
         transform: 'translateY(-50%)',
         backgroundColor: '#d10000',
@@ -189,16 +189,17 @@ export default function StatusSidebar({
       }
     : {
         position: 'fixed',
-        right: '10px',
-        top: '10px',
-        height: 'calc(100vh - 20px)',
+        right: '0',
+        top: '0',
+        bottom: '0',
+        height: '100vh',
         width: `${panelWidth}px`,
         backgroundColor: '#fff',
         boxShadow: isOpen
           ? '-8px 0 32px rgba(0,0,0,0.15), 0 8px 32px rgba(0,0,0,0.1)'
           : 'none',
-        borderRadius: '16px',
-        transform: isOpen ? 'translateX(0)' : `translateX(${panelWidth + 20}px)`,
+        borderRadius: '0px',
+        transform: isOpen ? 'translateX(0)' : `translateX(${panelWidth}px)`,
         transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
         zIndex: 50,
         display: 'flex',
@@ -241,7 +242,7 @@ export default function StatusSidebar({
           background: 'linear-gradient(to right, #d10000, #a00000)', // Red gradient
           color: 'white',
           padding: '20px',
-          borderRadius: '16px 16px 0 0' // Match parent border radius
+          borderRadius: '0' // Match full-height edge-to-edge layout
         }}>
           <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '12px' }}>
             Job Progress Tracker
