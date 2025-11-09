@@ -490,6 +490,7 @@ export default function NextJobsPage() {
         padding: "16px",
         display: "flex",
         flexDirection: "column",
+        height: "100%",
         minHeight: 0,
         boxShadow: dragOverTarget === assignee.name ? "0 4px 12px rgba(209,0,0,0.2)" : "0 2px 4px rgba(0,0,0,0.08)",
         transition: "all 0.2s ease",
@@ -824,7 +825,8 @@ export default function NextJobsPage() {
           
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            gridTemplateRows: "repeat(2, minmax(0, 1fr))",
             gap: "16px",
             width: "100%"
           }}>
@@ -843,7 +845,8 @@ export default function NextJobsPage() {
               </h3>
               <div style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gridAutoRows: "minmax(0, 1fr)",
                 gap: "16px"
               }}>
                 {assignedMotJobs.map(renderAssigneePanel)}
