@@ -588,7 +588,8 @@ export default function VHCDetails() {
               fontWeight: "500",
               display: "flex",
               alignItems: "center",
-              gap: "8px"
+              gap: "8px",
+              color: "#000000"
             }}
           >
             ← Back
