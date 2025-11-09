@@ -622,13 +622,13 @@ export default function Layout({ children }) {
           <section
             style={{
               background: "rgba(255,255,255,0.92)", // soften the header background
-              borderRadius: "20px", // tighten radius for slimmer appearance
+              borderRadius: "16px", // tighten radius for slimmer appearance
               border: "1px solid rgba(209,0,0,0.12)", // introduce subtle red border accent
-              boxShadow: "0 14px 32px rgba(209,0,0,0.14)", // lighten drop shadow for depth without bulk
-              padding: isMobile ? "12px 14px" : "16px 20px", // reduce padding to shrink header height
+              boxShadow: "0 10px 20px rgba(209,0,0,0.12)", // lighten drop shadow for depth without bulk
+              padding: isMobile ? "10px 12px" : "12px 14px", // reduce padding to shrink header height
               display: "flex",
               flexDirection: "column",
-              gap: isMobile ? "12px" : "16px",
+              gap: isMobile ? "8px" : "12px",
               backdropFilter: "blur(10px)", // add subtle glassmorphism effect
             }}
           >
@@ -637,7 +637,7 @@ export default function Layout({ children }) {
                 display: "flex",
                 flexWrap: "wrap",
                 alignItems: "center",
-                gap: "14px",
+                gap: "12px",
                 justifyContent: "space-between", // keep header content balanced edge to edge
               }}
             >
@@ -645,7 +645,7 @@ export default function Layout({ children }) {
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: "6px",
+                  gap: "4px",
                   minWidth: isMobile ? "100%" : "220px",
                   flex: "1 1 220px",
                 }}
@@ -653,8 +653,8 @@ export default function Layout({ children }) {
                 <p
                   style={{
                     margin: 0,
-                    fontSize: "0.6rem",
-                    letterSpacing: "0.18em",
+                    fontSize: "0.55rem",
+                    letterSpacing: "0.15em",
                     textTransform: "uppercase",
                     color: colors.mutedText,
                   }}
@@ -666,28 +666,28 @@ export default function Layout({ children }) {
                     display: "flex",
                     alignItems: "center",
                     flexWrap: "wrap",
-                    gap: "10px",
+                    gap: "8px",
                   }}
                 >
                   <h1
                     style={{
-                      fontSize: isMobile ? "1.1rem" : "1.3rem",
+                      fontSize: isMobile ? "1rem" : "1.15rem",
                       fontWeight: 700,
                       margin: 0,
                       color: colors.accent,
-                      lineHeight: 1.2,
+                      lineHeight: 1.1,
                     }}
                   >
                     Welcome back, {user?.username || "Guest"}
                   </h1>
                   <span
                     style={{
-                      padding: "4px 12px",
+                      padding: "3px 10px",
                       borderRadius: "999px",
                       background: "rgba(209,0,0,0.12)",
                       color: colors.accent,
                       fontWeight: 600,
-                      fontSize: "0.75rem",
+                      fontSize: "0.7rem",
                     }}
                   >
                     Role: {roleDisplay}
@@ -699,13 +699,20 @@ export default function Layout({ children }) {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "12px",
-                  flex: "1 1 320px",
-                  minWidth: isTablet ? "100%" : "320px",
+                  gap: "10px",
+                  flex: "1 1 280px",
+                  minWidth: isTablet ? "100%" : "280px",
                   justifyContent: isTablet ? "flex-start" : "flex-end",
                 }}
               >
-                <div style={{ flex: "1 1 240px", minWidth: "200px", width: "100%" }}>
+                <div
+                  style={{
+                    flex: "1 1 220px",
+                    minWidth: "180px",
+                    width: "100%",
+                    maxWidth: isMobile ? "100%" : "260px",
+                  }}
+                >
                   <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />{/* expose global search with brand accent */}
                 </div>
 
@@ -747,15 +754,15 @@ export default function Layout({ children }) {
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
                     style={{
-                      padding: "6px 14px",
-                      borderRadius: "14px",
+                      padding: "5px 12px",
+                      borderRadius: "12px",
                       border: `1px solid ${colors.accent}`,
                       backgroundColor: "#ffffff",
                       color: colors.accent,
                       fontWeight: 600,
                       cursor: "pointer",
-                      minWidth: isMobile ? "100%" : "170px",
-                      boxShadow: "0 6px 14px rgba(209,0,0,0.12)",
+                      minWidth: isMobile ? "100%" : "150px",
+                      boxShadow: "0 4px 10px rgba(209,0,0,0.12)",
                     }}
                   >
                     <option>Waiting for Job</option>
@@ -773,8 +780,8 @@ export default function Layout({ children }) {
                       currentJob?.jobNumber && router.push(`/job-cards/myjobs/${currentJob.jobNumber}`)
                     }
                     style={{
-                      padding: "6px 16px",
-                      borderRadius: "14px",
+                      padding: "5px 14px",
+                      borderRadius: "12px",
                       border: "none",
                       background: currentJob?.jobNumber
                         ? "linear-gradient(135deg, #d10000, #a00000)"
@@ -783,7 +790,7 @@ export default function Layout({ children }) {
                       fontWeight: 600,
                       cursor: currentJob?.jobNumber ? "pointer" : "not-allowed",
                       boxShadow: currentJob?.jobNumber
-                        ? "0 10px 22px rgba(209,0,0,0.22)"
+                        ? "0 8px 18px rgba(209,0,0,0.18)"
                         : "none",
                       transition: "all 0.2s ease",
                       width: isMobile ? "100%" : "auto",
