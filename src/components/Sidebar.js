@@ -1,14 +1,14 @@
 // file location: src/components/Sidebar.js
-"use client";
 
 import Link from "next/link"; // import Next.js navigation link
-import { usePathname } from "next/navigation"; // import routing helpers
+import { useRouter } from "next/router"; // CHANGED: use next/router instead of next/navigation
 import { useEffect, useMemo, useState } from "react"; // import React hooks
 import { useUser } from "@/context/UserContext"; // import user context for roles and logout
 import { sidebarSections } from "@/config/navigation"; // import sidebar configuration
 
 export default function Sidebar({ onToggle, isCondensed = false }) {
-  const pathname = usePathname(); // get current path
+  const router = useRouter(); // get router instance
+  const pathname = router.pathname; // get current path from router
   const { user, logout } = useUser(); // get user data and logout helper
   const userRoles = user?.roles?.map((role) => role.toLowerCase()) || []; // normalise roles
   const isCustomerOnly =
@@ -66,7 +66,7 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
   const handleLogout = async () => {
     await logout?.(); // call logout if available
     if (typeof window !== "undefined") {
-      window.location.assign("/login");
+      router.push("/login"); // use router.push instead of window.location.assign
     }
   };
 
