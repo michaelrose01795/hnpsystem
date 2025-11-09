@@ -682,6 +682,7 @@ const VHCJobCard = ({ job, onClick, partsMode, onOrderTyre }) => {
         ) : null}
       </div>
     );
+  };
 
   const showTyreButton = typeof onOrderTyre === "function"; // Determine if the tyre button should render
 
