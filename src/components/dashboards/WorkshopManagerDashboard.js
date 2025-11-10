@@ -1,6 +1,6 @@
 // file location: src/components/dashboards/WorkshopManagerDashboard.js
 import React, { useEffect, useMemo, useState } from "react"; // import React and hooks for stateful UI logic
-import Link from "next/link"; // import Next.js Link for client-side navigation
+import Link from "next/link";
 import { getJobsByDate } from "../../lib/database/jobs";
 import { useClockingContext } from "../../context/ClockingContext";
 import dayjs from "dayjs";
@@ -12,12 +12,32 @@ const availableConsumableMonths = Array.from(
   new Set(consumableOrderHistory.map((item) => monthKey(item.lastOrderedDate)))
 ).sort((a, b) => (a > b ? -1 : 1));
 
+const quickActions = [
+  { label: "Create Job Card", href: "/job-cards/create" },
+  { label: "Appointments", href: "/job-cards/appointments" },
+  { label: "Check In", href: "/workshop/check-in" },
+];
+
+const workflowMetrics = [
+  { label: "Jobs On Site", value: "18", helper: "4 awaiting triage", accent: "#d10000" },
+  { label: "Technicians Clocked In", value: "11 / 14", helper: "2 due back 13:00", accent: "#a00000" },
+  { label: "Awaiting Parts", value: "6", helper: "TPS van ETA 12:45", accent: "#ff6b6b" },
+  { label: "QC / Road Test", value: "3", helper: "2 require sign off", accent: "#ef4444" },
+];
+
+const technicianFocus = [
+  { tech: "Jordan P", job: "JC1421 • VHC", next: "Awaiting authorisation", color: "#d10000" },
+  { tech: "Aisha L", job: "JC1430 • Timing belt", next: "Parts eta 30 mins", color: "#a00000" },
+  { tech: "Liam S", job: "JC1427 • MOT & service", next: "Road test 14:15", color: "#ef4444" },
+];
+
+const bayReadiness = [
+  { bay: "EV Bay", status: "Charging fault", action: "Mobile charger connected", tone: "#f97316" },
+  { bay: "Alignment", status: "Ready", action: "Next slot 13:30", tone: "#16a34a" },
+  { bay: "Fast Fit", status: "Full", action: "Clear JC1409 ASAP", tone: "#dc2626" },
+];
+
 export default function WorkshopManagerDashboard() {
-  const quickActions = [
-    { label: "Create Job Card", href: "/job-cards/create" }, // jump to the job card creation flow
-    { label: "Appointments", href: "/job-cards/appointments" }, // open the workshop appointment planner
-    { label: "Check In", href: "/workshop/check-in" }, // launch the technician check-in screen
-  ];
   const [pendingJobs, setPendingJobs] = useState([]);
   const { allUsersClocking, fetchAllUsersClocking, loading } = useClockingContext();
   const today = dayjs().format("YYYY-MM-DD");
@@ -75,60 +95,177 @@ export default function WorkshopManagerDashboard() {
   };
 
   return (
-    <div style={{ padding: "24px" }}> {/* outer wrapper that matches dashboard padding */}
+    <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+      <header
+        style={{
+          borderRadius: "18px",
+          padding: "24px",
+          border: "1px solid #ffd4d4",
+          background: "linear-gradient(120deg, #fff5f5, #ffecec)",
+          boxShadow: "0 24px 45px rgba(209,0,0,0.08)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+        }}
+      >
+        <span style={{ textTransform: "uppercase", letterSpacing: "0.15em", fontSize: "0.78rem", color: "#b10000" }}>
+          Workshop Manager Command Room
+        </span>
+        <h1 style={{ margin: 0, fontSize: "1.8rem", color: "#8c0000" }}>Technical Flow Control</h1>
+        <p style={{ margin: 0, color: "#6b7280" }}>
+          {dayjs().format("dddd, D MMM")} • {pendingJobs.length} pending • {techsClockedIn}/{totalTechs} techs clocked in
+        </p>
+      </header>
+
       <section
         style={{
           display: "flex",
-          flexDirection: "column",
+          flexWrap: "wrap",
           gap: "12px",
-          marginBottom: "24px",
+          background: "#fff",
+          padding: "14px 20px",
+          borderRadius: "16px",
+          border: "1px solid #ffe0e0",
+          boxShadow: "0 18px 40px rgba(209,0,0,0.08)",
         }}
-      > {/* section for the quick access buttons */}
-        <div
+      >
+        {quickActions.map((action) => (
+          <Link
+            key={action.href}
+            href={action.href}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "10px 20px",
+              borderRadius: "999px",
+              border: "1px solid #ffb3b3",
+              backgroundColor: "#ffffff",
+              color: "#b10000",
+              fontWeight: 600,
+              fontSize: "0.9rem",
+              textDecoration: "none",
+              boxShadow: "0 10px 24px rgba(209,0,0,0.12)",
+            }}
+          >
+            {action.label}
+          </Link>
+        ))}
+      </section>
+
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: "16px",
+        }}
+      >
+        {workflowMetrics.map((metric) => (
+          <div
+            key={metric.label}
+            style={{
+              borderRadius: "18px",
+              padding: "18px",
+              background: "#fff",
+              border: `1px solid ${metric.accent}22`,
+              boxShadow: "0 18px 35px rgba(209,0,0,0.08)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+            }}
+          >
+            <span style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.78rem", color: "#6b7280" }}>
+              {metric.label}
+            </span>
+            <strong style={{ fontSize: "1.8rem", color: metric.accent }}>{metric.value}</strong>
+            <span style={{ color: "#4b5563", fontSize: "0.85rem" }}>{metric.helper}</span>
+          </div>
+        ))}
+      </section>
+
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(320px, 1.2fr) minmax(280px, 0.9fr)",
+          gap: "18px",
+        }}
+      >
+        <article
           style={{
+            background: "#fff",
+            borderRadius: "18px",
+            padding: "20px",
+            border: "1px solid #ffd4d4",
+            boxShadow: "0 22px 45px rgba(209,0,0,0.08)",
             display: "flex",
-            flexWrap: "wrap",
+            flexDirection: "column",
+            gap: "14px",
+          }}
+        >
+          <div>
+            <h2 style={{ margin: 0, fontSize: "1.2rem", color: "#b10000" }}>Technician Focus</h2>
+            <p style={{ margin: "4px 0 0", color: "#6b7280" }}>Live callouts from the floor</p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {technicianFocus.map((item) => (
+              <div
+                key={item.tech}
+                style={{
+                  border: `1px solid ${item.color}33`,
+                  borderRadius: "14px",
+                  padding: "14px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  background: "#fff7f7",
+                }}
+              >
+                <strong style={{ color: item.color }}>{item.tech}</strong>
+                <span style={{ fontWeight: 600, color: "#111827" }}>{item.job}</span>
+                <small style={{ color: "#6b7280" }}>{item.next}</small>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article
+          style={{
+            background: "#fff",
+            borderRadius: "18px",
+            padding: "20px",
+            border: "1px solid #ffd4d4",
+            boxShadow: "0 22px 45px rgba(209,0,0,0.08)",
+            display: "flex",
+            flexDirection: "column",
             gap: "12px",
           }}
-        > {/* row layout so buttons stay on a single visual line */}
-          {quickActions.map((action) => (
-            <Link
-              key={action.href}
-              href={action.href}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "10px 18px",
-                borderRadius: "999px",
-                border: "1px solid #ffb3b3",
-                backgroundColor: "#ffffff",
-                color: "#b10000",
-                fontWeight: 600,
-                fontSize: "0.9rem",
-                textDecoration: "none",
-                boxShadow: "0 8px 16px rgba(209,0,0,0.08)",
-                transition: "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
-              }}
-              onMouseEnter={(event) => {
-                event.currentTarget.style.backgroundColor = "#b10000";
-                event.currentTarget.style.color = "#ffffff";
-                event.currentTarget.style.boxShadow = "0 16px 32px rgba(177,0,0,0.18)";
-              }}
-              onMouseLeave={(event) => {
-                event.currentTarget.style.backgroundColor = "#ffffff";
-                event.currentTarget.style.color = "#b10000";
-                event.currentTarget.style.boxShadow = "0 8px 16px rgba(209,0,0,0.08)";
-              }}
-            >
-              {action.label} {/* button text with no emojis per requirements */}
-            </Link>
-          ))}
-        </div>
+        >
+          <div>
+            <h2 style={{ margin: 0, fontSize: "1.1rem", color: "#b10000" }}>Bay Readiness</h2>
+            <p style={{ margin: "4px 0 0", color: "#6b7280" }}>Next actions per specialist bay</p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {bayReadiness.map((bay) => (
+              <div
+                key={bay.bay}
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: "14px",
+                  border: `1px solid ${bay.tone}33`,
+                  background: "#fffafa",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                }}
+              >
+                <strong style={{ color: bay.tone }}>{bay.bay}</strong>
+                <span style={{ color: "#111827", fontWeight: 600 }}>{bay.status}</span>
+                <small style={{ color: "#6b7280" }}>{bay.action}</small>
+              </div>
+            ))}
+          </div>
+        </article>
       </section>
-      <h1 style={{ fontSize: "1.5rem", fontWeight: "700", color: "#FF4040", marginBottom: "16px" }}>
-        Workshop Manager Dashboard
-      </h1>
 
       <section style={{ marginBottom: "32px" }}>
         <h2 style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "12px" }}>Pending Jobs</h2>

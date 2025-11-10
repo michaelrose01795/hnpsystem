@@ -11,12 +11,22 @@ import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
 import { usersByRole } from "@/config/users";
 import HrTabsBar from "./HR/HrTabsBar";
+import WorkshopTabsBar, { workshopTabs, workshopQuickActions } from "./Workshop/WorkshopTabsBar";
 
 export default function Layout({ children }) {
   const { user, status, setStatus, currentJob } = useUser(); // get user context data
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
   const showHrTabs = router.pathname.startsWith("/hr") || router.pathname.startsWith("/admin/users");
+  const workshopAccessRoles = new Set([
+    "workshop manager",
+    "after sales director",
+    "service manager",
+    "parts manager",
+  ]);
+  const workshopNavRoutes = Array.from(
+    new Set([...workshopTabs, ...workshopQuickActions].map((item) => item.href))
+  );
 
   const getViewportWidth = () =>
     typeof window !== "undefined" && window.innerWidth ? window.innerWidth : 1440;
@@ -50,6 +60,11 @@ export default function Layout({ children }) {
   ];
 
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const showWorkshopTabs =
+    userRoles.some((role) => workshopAccessRoles.has(role)) &&
+    workshopNavRoutes.some(
+      (href) => router.pathname === href || router.pathname.startsWith(`${href}/`)
+    );
   const retailManagerDashboardRoles = [
     "service manager",
     "workshop manager",
@@ -732,6 +747,7 @@ export default function Layout({ children }) {
             }}
           >
             {showHrTabs && <HrTabsBar />}
+            {showWorkshopTabs && <WorkshopTabsBar />}
             {children}
           </div>
         </main>

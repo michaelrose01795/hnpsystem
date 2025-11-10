@@ -5,6 +5,8 @@ import { useUser } from "../context/UserContext"; // import user context for aut
 import { useJobs } from "../context/JobsContext"; // import jobs context to share job data
 import Layout from "../components/Layout"; // import shared layout wrapper
 import WorkshopManagerDashboard from "../components/dashboards/WorkshopManagerDashboard"; // import workshop manager dashboard component
+import ServiceManagerDashboard from "../components/dashboards/ServiceManagerDashboard"; // import service manager dashboard
+import AfterSalesManagerDashboard from "../components/dashboards/AfterSalesManagerDashboard"; // import after sales manager dashboard
 import RetailManagersDashboard from "../components/dashboards/RetailManagersDashboard"; // import retail managers dashboard component
 import { roleCategories } from "../config/users"; // import role category definitions
 
@@ -19,12 +21,6 @@ export default function Dashboard() {
   const [showSearch, setShowSearch] = useState(false); // control visibility of search modal
   const [searchTerm, setSearchTerm] = useState(""); // store search term input
   const [searchResults, setSearchResults] = useState([]); // store filtered search results
-
-  const quickActions = [ // define quick action buttons available on the dashboard
-    { label: "Create Job Card", href: "/job-cards/create" }, // link to create job card workflow
-    { label: "Appointments", href: "/job-cards/appointments" }, // link to appointments planner
-    { label: "Check In", href: "/workshop/check-in" }, // link to workshop check in page
-  ];
 
   useEffect(() => {
     if (!user) return; // stop if user data not ready
@@ -69,30 +65,55 @@ export default function Dashboard() {
 
   if (!user) return null; // do not render until user data exists
 
-  const role = user?.roles?.[0] || "Guest"; // capture first role or default to guest
   const normalizedRoles = user?.roles?.map((r) => r.toLowerCase()) || []; // normalize roles for checks
-  const isRetailManager = normalizedRoles.some((roleName) => retailManagerRoles.includes(roleName)); // check retail manager status
-  const isWorkshopManager = normalizedRoles.includes("workshop manager"); // check workshop manager status
+  const hasRole = (rolesToMatch = []) =>
+    normalizedRoles.some((roleName) => rolesToMatch.includes(roleName)); // helper to match roles
+  const specialDashboardRoles = [
+    "workshop manager",
+    "service manager",
+    "after sales manager",
+    "after sales director",
+    "aftersales manager",
+  ];
+  const isWorkshopManager = hasRole(["workshop manager"]); // workshop specific role
+  const isServiceManager = hasRole(["service manager"]); // service manager role
+  const isAfterSalesManager = hasRole([
+    "after sales manager",
+    "after sales director",
+    "aftersales manager",
+  ]); // after sales leadership roles
+  const isRetailManager = normalizedRoles.some(
+    (roleName) => retailManagerRoles.includes(roleName) && !specialDashboardRoles.includes(roleName)
+  ); // show shared retail dashboard only for remaining roles
 
-  if (isRetailManager) { // render retail manager experience
+  if (isWorkshopManager) {
     return (
       <Layout>
-        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}> {/* stack dashboard sections vertically */}
-          <RetailManagersDashboard user={user} /> {/* show retail dashboard */}
-          {isWorkshopManager && ( // include workshop dashboard for dual-role users
-            <section
-              style={{
-                background: "#ffffff",
-                borderRadius: "18px",
-                padding: "16px",
-                border: "1px solid #ffe0e0",
-                boxShadow: "0 24px 45px rgba(209,0,0,0.08)",
-              }}
-            >
-              <WorkshopManagerDashboard /> {/* embed workshop dashboard module */}
-            </section>
-          )}
-        </div>
+        <WorkshopManagerDashboard />
+      </Layout>
+    );
+  }
+
+  if (isServiceManager) {
+    return (
+      <Layout>
+        <ServiceManagerDashboard />
+      </Layout>
+    );
+  }
+
+  if (isAfterSalesManager) {
+    return (
+      <Layout>
+        <AfterSalesManagerDashboard />
+      </Layout>
+    );
+  }
+
+  if (isRetailManager) { // render shared retail manager experience
+    return (
+      <Layout>
+        <RetailManagersDashboard user={user} /> {/* show retail dashboard */}
       </Layout>
     );
   }
@@ -136,53 +157,6 @@ export default function Dashboard() {
           >
             🔍 Search
           </button>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "12px",
-            backgroundColor: "#ffffff",
-            padding: "14px 20px",
-            borderRadius: "12px",
-            boxShadow: "0 10px 25px rgba(209,0,0,0.1)",
-            border: "1px solid #ffe0e0",
-          }}
-        >
-          {quickActions.map((action) => (
-            <button
-              key={action.href}
-              onClick={() => router.push(action.href)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "10px 18px",
-                borderRadius: "999px",
-                border: "1px solid #ffb3b3",
-                backgroundColor: "#ffffff",
-                color: "#b10000",
-                fontWeight: 600,
-                fontSize: "0.9rem",
-                cursor: "pointer",
-                boxShadow: "0 8px 16px rgba(209,0,0,0.08)",
-                transition: "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
-              }}
-              onMouseEnter={(event) => {
-                event.currentTarget.style.backgroundColor = "#b10000";
-                event.currentTarget.style.color = "#ffffff";
-                event.currentTarget.style.boxShadow = "0 16px 32px rgba(177,0,0,0.18)";
-              }}
-              onMouseLeave={(event) => {
-                event.currentTarget.style.backgroundColor = "#ffffff";
-                event.currentTarget.style.color = "#b10000";
-                event.currentTarget.style.boxShadow = "0 8px 16px rgba(209,0,0,0.08)";
-              }}
-            >
-              {action.label}
-            </button>
-          ))}
         </div>
 
         <div
