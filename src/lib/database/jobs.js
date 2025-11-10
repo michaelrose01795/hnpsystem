@@ -1,7 +1,9 @@
 // file location: src/lib/database/jobs.js
-import { supabase } from "../supabaseClient";
+import { getDatabaseClient } from "./client";
 import { ensureUserIdForDisplayName } from "../users/devUsers";
 import dayjs from "dayjs";
+
+const supabase = getDatabaseClient();
 
 const formatBulletText = (text = "") => {
   if (!text || typeof text !== "string") {

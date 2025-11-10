@@ -1,251 +1,114 @@
 // file location: src/lib/database/jobClocking.js
+import { getDatabaseClient } from "./client"; // Import the shared Supabase client accessor to talk to the job_clocking table.
 
-import { supabase } from "../supabaseClient"; // Supabase client
-import { // Auto status helpers
-  autoSetWorkshopStatus,
-  autoSetAdditionalWorkInProgressStatus,
-  autoSetBeingWashedStatus
-} from "../services/jobStatusService"; // Status service
+const db = getDatabaseClient(); // Hold a module-scoped reference to the Supabase client for reuse.
+const TABLE_NAME = "job_clocking"; // Store the exact table name defined in the schema for clarity.
+const CLOCKING_COLUMNS = [ // Enumerate every column we read from the job_clocking table.
+  "id", // Primary key for each clocking entry.
+  "user_id", // Foreign key referencing users.user_id.
+  "job_id", // Foreign key referencing jobs.id.
+  "job_number", // Human-readable job number string captured at clock-in time.
+  "clock_in", // Timestamp when the technician clocked in.
+  "clock_out", // Nullable timestamp when the technician clocked out.
+  "work_type", // Text flag to differentiate initial vs additional work.
+  "created_at", // Timestamp when the clocking row was created.
+  "updated_at", // Timestamp when the row was last updated.
+].join(", "); // Combine the column names for Supabase select statements.
 
-const MAX_INT32 = 2147483647; // Postgres INTEGER max
-const MIN_INT32 = -2147483648; // Postgres INTEGER min
+const mapClockingRow = (row = {}) => ({ // Normalize raw database rows to camelCase keys for the UI layer.
+  id: row.id, // Include the primary key for referencing or deleting.
+  userId: row.user_id, // Surface the user foreign key.
+  jobId: row.job_id, // Surface the job foreign key.
+  jobNumber: row.job_number, // Provide the display-friendly job number.
+  clockIn: row.clock_in, // Expose the clock-in timestamp.
+  clockOut: row.clock_out, // Expose the optional clock-out timestamp.
+  workType: row.work_type, // Provide the work type description.
+  createdAt: row.created_at, // Include auditing metadata.
+  updatedAt: row.updated_at, // Include auditing metadata.
+}); // Close mapper helper.
 
-// Coerce to 32-bit integer and validate bounds
-const toInt = (val, name) => { // Guard function for integer FKs
-  if (val === null || val === undefined) throw new Error(`${name} is required`); // required
-  const n = Number(val); // numeric cast
-  if (!Number.isInteger(n)) throw new Error(`${name} must be an integer`); // integer only
-  if (n > MAX_INT32 || n < MIN_INT32) throw new Error(`${name} is out of range for type integer`); // bounds
-  return n; // ok
-};
+const assertInteger = (value, fieldName) => { // Validate integer identifiers before hitting the database.
+  if (typeof value !== "number" || !Number.isInteger(value)) { // Ensure the value is an integer.
+    throw new Error(`${fieldName} must be an integer.`); // Throw descriptive error when validation fails.
+  } // Close guard.
+}; // End helper.
 
-// Normalise a department/role combination down to a coarse category
-const inferDepartmentCategory = (department = "", role = "") => {
-  const text = `${department} ${role}`.toLowerCase();
-  if (/(valet|valeting|wash)/.test(text)) return "valeting";
-  if (/(tech|technician|workshop|mot)/.test(text)) return "workshop";
-  return null;
-};
+export const clockInToJob = async ({ userId, jobId, jobNumber, workType = "initial" }) => { // Create a new clock-in entry for a technician.
+  assertInteger(userId, "userId"); // Validate the user reference.
+  assertInteger(jobId, "jobId"); // Validate the job reference.
+  if (!jobNumber) { // job_number is defined as NOT NULL so enforce it.
+    throw new Error("clockInToJob requires a jobNumber string."); // Provide actionable error.
+  } // Close guard.
+  const payload = { // Build the insert payload using schema column names.
+    user_id: userId, // Map userId to the column.
+    job_id: jobId, // Map jobId to the column.
+    job_number: jobNumber, // Persist the job number snapshot.
+    work_type: workType || "initial", // Persist the work type, defaulting to initial.
+    clock_in: new Date().toISOString(), // Record the current timestamp for clock_in.
+  }; // Close payload object.
+  const { data, error } = await db // Execute the insert via Supabase.
+    .from(TABLE_NAME) // Target the job_clocking table.
+    .insert([payload]) // Insert the single payload row.
+    .select(CLOCKING_COLUMNS) // Request canonical columns in the return value.
+    .single(); // Expect exactly one inserted row.
+  if (error) { // Handle database insert errors.
+    throw new Error(`Failed to clock in to job ${jobNumber}: ${error.message}`); // Provide descriptive error text.
+  } // Close guard.
+  return mapClockingRow(data); // Return the inserted entry in camelCase form.
+}; // End clockInToJob.
 
-// Format a user's full name for status audit logging
-const formatUserName = (user) => {
-  if (!user) return "Unknown";
-  const parts = [user.first_name, user.last_name].filter(Boolean);
-  return parts.length ? parts.join(" ") : "Unknown";
-};
+export const clockOutFromJob = async (clockingId) => { // Close an active clocking entry by setting clock_out.
+  assertInteger(clockingId, "clockingId"); // Validate the primary key argument.
+  const clockOutTimestamp = new Date().toISOString(); // Capture the clock-out time once for consistency.
+  const { data, error } = await db // Execute the update via Supabase.
+    .from(TABLE_NAME) // Target the job_clocking table.
+    .update({ clock_out: clockOutTimestamp, updated_at: clockOutTimestamp }) // Set both clock_out and updated_at.
+    .eq("id", clockingId) // Restrict the update to the requested entry.
+    .select(CLOCKING_COLUMNS) // Return canonical columns.
+    .single(); // Expect a single updated row.
+  if (error) { // Handle update failures.
+    throw new Error(`Failed to clock out entry ${clockingId}: ${error.message}`); // Provide descriptive diagnostics.
+  } // Close guard.
+  return mapClockingRow(data); // Return the updated entry to the caller.
+}; // End clockOutFromJob.
 
-/* ============================================
-   CLOCK IN TO JOB
-============================================ */
-export const clockInToJob = async (userId, jobId, jobNumber, workType = "initial") => {
-  const userIdInt = toInt(userId, "userId"); // ✅ enforce int32
-  const jobIdInt = toInt(jobId, "jobId"); // ✅ enforce int32
-  const jobNumberText = String(jobNumber || ""); // text
-  const workTypeText = String(workType || "initial"); // text
+export const getUserActiveJobs = async (userId) => { // Fetch all active (clock_out IS NULL) entries for a user.
+  assertInteger(userId, "userId"); // Validate the user identifier.
+  const { data, error } = await db // Execute the select query.
+    .from(TABLE_NAME) // Target the job_clocking table.
+    .select(CLOCKING_COLUMNS) // Request canonical columns.
+    .eq("user_id", userId) // Filter by the specified user.
+    .is("clock_out", null) // Restrict to active clock-ins.
+    .order("clock_in", { ascending: false }); // Order newest first for UI convenience.
+  if (error) { // Handle query failures.
+    throw new Error(`Failed to load active jobs for user ${userId}: ${error.message}`); // Provide descriptive error text.
+  } // Close guard.
+  return (data || []).map(mapClockingRow); // Return mapped rows.
+}; // End getUserActiveJobs.
 
-  console.log(`🔧 Clocking in: User ${userIdInt} → Job ${jobNumberText} (${workTypeText})`); // log
+export const getJobClockingEntries = async (jobId) => { // Fetch every clocking entry associated with a job.
+  assertInteger(jobId, "jobId"); // Validate the job identifier.
+  const { data, error } = await db // Execute the select query.
+    .from(TABLE_NAME) // Target the job_clocking table.
+    .select(CLOCKING_COLUMNS) // Request canonical columns.
+    .eq("job_id", jobId) // Filter by the specified job.
+    .order("clock_in", { ascending: true }); // Order chronologically for reporting.
+  if (error) { // Handle Supabase errors.
+    throw new Error(`Failed to load clocking entries for job ${jobId}: ${error.message}`); // Provide descriptive diagnostics.
+  } // Close guard.
+  return (data || []).map(mapClockingRow); // Return mapped rows.
+}; // End getJobClockingEntries.
 
-  try {
-    // Ensure technician is not already clocked into another active job
-    const { data: activeJobs, error: activeJobsError } = await supabase
-      .from("job_clocking")
-      .select("id, job_id, job_number")
-      .eq("user_id", userIdInt)
-      .is("clock_out", null);
+export const deleteClockingEntry = async (clockingId) => { // Permanently delete a clocking entry (admin only use-case).
+  assertInteger(clockingId, "clockingId"); // Validate the primary key.
+  const { error } = await db // Execute the delete statement.
+    .from(TABLE_NAME) // Target the job_clocking table.
+    .delete() // Perform the deletion.
+    .eq("id", clockingId); // Scope to the requested entry.
+  if (error) { // Handle delete failures.
+    throw new Error(`Failed to delete clocking entry ${clockingId}: ${error.message}`); // Provide descriptive diagnostics.
+  } // Close guard.
+  return { success: true, deletedId: clockingId }; // Return a simple acknowledgement payload.
+}; // End deleteClockingEntry.
 
-    if (activeJobsError && activeJobsError.code !== "PGRST116") throw activeJobsError;
-
-    const conflictingJob = (activeJobs || []).find((entry) => entry.job_id !== jobIdInt);
-    if (conflictingJob) {
-      const jobLabel = conflictingJob.job_number || `ID ${conflictingJob.job_id}`;
-      return {
-        success: false,
-        error: `Already clocked onto Job ${jobLabel}. Please clock out before starting another job.`,
-        data: conflictingJob
-      };
-    }
-
-    const { data: existingClock, error: checkError } = await supabase
-      .from("job_clocking")
-      .select("*")
-      .eq("user_id", userIdInt)
-      .eq("job_id", jobIdInt)
-      .is("clock_out", null)
-      .maybeSingle(); // open row?
-
-    if (checkError && checkError.code !== "PGRST116") throw checkError; // real error
-    if (existingClock) {
-      return { success: false, error: "Already clocked into this job", data: existingClock }; // avoid dup
-    }
-
-    const nowIso = new Date().toISOString(); // timestamp
-    const { data: clockData, error: insertError } = await supabase
-      .from("job_clocking")
-      .insert([{
-        user_id: userIdInt, // int
-        job_id: jobIdInt, // int
-        job_number: jobNumberText, // text
-        clock_in: nowIso, // ts
-        work_type: workTypeText, // text
-        created_at: nowIso // ts
-      }])
-      .select()
-      .single(); // return row
-
-    if (insertError) throw insertError; // stop on error
-
-    // Optional: set job status automatically
-    try {
-      const { data: userData, error: userErr } = await supabase
-        .from("users")
-        .select("first_name, last_name, department, role")
-        .eq("user_id", userIdInt)
-        .maybeSingle();
-
-      if (userErr && userErr.code !== "PGRST116") throw userErr;
-
-      const departmentCategory = inferDepartmentCategory(userData?.department, userData?.role);
-
-      if (departmentCategory === "valeting") {
-        await autoSetBeingWashedStatus(jobIdInt, userIdInt);
-      } else if (workTypeText === "additional") {
-        await autoSetAdditionalWorkInProgressStatus(jobIdInt, userIdInt);
-      } else if (departmentCategory === "workshop" || workTypeText === "initial") {
-        const techName = formatUserName(userData);
-        await autoSetWorkshopStatus(jobIdInt, userIdInt, techName);
-      } else {
-        console.log(
-          "ℹ️ No auto status update for department",
-          userData?.department || userData?.role || "unknown"
-        );
-      }
-    } catch (statusErr) {
-      console.warn("⚠️ Auto-status update failed:", statusErr?.message || statusErr);
-    }
-
-    return { success: true, data: clockData }; // success
-  } catch (error) {
-    console.error("❌ Error clocking in to job:", error); // log
-    return { success: false, error: error.message }; // clean error
-  }
-};
-
-/* ============================================
-   CLOCK OUT FROM JOB
-============================================ */
-export const clockOutFromJob = async (userId, jobId, clockingId = null) => {
-  const userIdInt = toInt(userId, "userId"); // int32
-  const jobIdInt =
-    jobId === null || jobId === undefined ? null : toInt(jobId, "jobId"); // optional
-  const clockingIdInt =
-    clockingId === null || clockingId === undefined ? null : toInt(clockingId, "clockingId"); // optional
-
-  if (clockingIdInt == null && jobIdInt == null) {
-    throw new Error("clockOutFromJob requires a jobId or clockingId");
-  }
-
-  const logContext =
-    clockingIdInt != null
-      ? `clocking record ${clockingIdInt}`
-      : `Job ${jobIdInt}`;
-  console.log(`⏸️ Clocking out: User ${userIdInt} from ${logContext}`); // log
-
-  try {
-    let query = supabase
-      .from("job_clocking")
-      .select("*")
-      .eq("user_id", userIdInt)
-      .is("clock_out", null);
-
-    if (clockingIdInt != null) {
-      query = query.eq("id", clockingIdInt).limit(1);
-    } else {
-      query = query.eq("job_id", jobIdInt).order("clock_in", { ascending: false }).limit(1);
-    }
-
-    const { data: activeClocking, error: findError } = await query.maybeSingle(); // open row
-
-    if (findError && findError.code !== "PGRST116") throw findError; // real error
-    if (!activeClocking) {
-      const msg =
-        clockingIdInt != null
-          ? "No active clock-in found for this entry"
-          : "No active clock-in found for this job";
-      return { success: false, error: msg };
-    }
-
-    const clockOutTime = new Date().toISOString(); // ts
-    const { data: updatedClock, error: updateError } = await supabase
-      .from("job_clocking")
-      .update({ clock_out: clockOutTime, updated_at: clockOutTime })
-      .eq("id", activeClocking.id)
-      .select()
-      .single(); // updated row
-
-    if (updateError) throw updateError; // stop on error
-
-    const start = new Date(activeClocking.clock_in).getTime(); // ms
-    const end = new Date(clockOutTime).getTime(); // ms
-    const hoursWorked = Math.max(0, (end - start) / 3600000); // hours
-
-    return { success: true, data: updatedClock, hoursWorked: hoursWorked.toFixed(2) }; // ok
-  } catch (error) {
-    console.error("❌ Error clocking out from job:", error); // log
-    return { success: false, error: error.message }; // clean error
-  }
-};
-
-/* ============================================
-   GET USER'S ACTIVE JOBS
-============================================ */
-export const getUserActiveJobs = async (userId) => {
-  const userIdInt = toInt(userId, "userId"); // int32
-  console.log(`🔍 Fetching active jobs for user ${userIdInt}`); // log
-
-  try {
-    const { data, error } = await supabase
-      .from("job_clocking")
-      .select(`
-        id,
-        job_id,
-        job_number,
-        clock_in,
-        work_type,
-        job:job_id (
-          id,
-          job_number,
-          vehicle_reg,
-          vehicle_make_model,
-          status
-        )
-      `)
-      .eq("user_id", userIdInt)
-      .is("clock_out", null)
-      .order("clock_in", { ascending: false });
-
-    if (error) throw error; // stop
-
-    const nowMs = Date.now(); // now
-    const formatted = (data || []).map(c => { // map rows
-      const job = c.job || {};
-      const hours = Math.max(0, (nowMs - new Date(c.clock_in).getTime()) / 3600000);
-      return {
-        clockingId: c.id,
-        jobId: c.job_id,
-        jobNumber: c.job_number || job.job_number,
-        clockIn: c.clock_in,
-        workType: c.work_type,
-        hoursWorked: hours.toFixed(2),
-        reg: job.vehicle_reg || "N/A",
-        makeModel: job.vehicle_make_model || "N/A",
-        customer: "N/A",
-        status: job.status || "Unknown"
-      };
-    });
-
-    return { success: true, data: formatted }; // ok
-  } catch (error) {
-    console.error("❌ Error fetching active jobs:", error); // log
-    return { success: false, error: error.message, data: [] }; // clean error
-  }
-};
+// This job clocking data layer now exposes minimal, schema-accurate helpers for clocking technicians in/out and reporting their activity.
