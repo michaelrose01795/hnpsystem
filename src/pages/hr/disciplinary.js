@@ -3,6 +3,8 @@ import React from "react";
 import Layout from "../../components/Layout";
 import { SectionCard, StatusTag } from "../../components/HR/MetricCard";
 
+// TODO: Back these incident lists with real disciplinary case records from the database.
+
 // TODO: Replace placeholder incident data with live case records before shipping.
 const placeholderIncidents = [
   {

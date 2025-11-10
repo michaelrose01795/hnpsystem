@@ -5,6 +5,7 @@ import { useHrMockData } from "../../hooks/useHrData";
 import { SectionCard, StatusTag } from "../../components/HR/MetricCard";
 
 // TODO: Swap placeholder course catalogue for real LMS integration after testing.
+// TODO: Persist assigned courses and renewals in the HR training database tables.
 const placeholderCourses = [
   { id: "COURSE-1", name: "Hybrid Vehicle Safety", mandatory: true, duration: "4 hrs" },
   { id: "COURSE-2", name: "Customer Experience Excellence", mandatory: false, duration: "2 hrs" },

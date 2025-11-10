@@ -4,6 +4,8 @@ import Layout from "../../components/Layout";
 import { useHrMockData } from "../../hooks/useHrData";
 import { SectionCard, StatusTag } from "../../components/HR/MetricCard";
 
+// TODO: Wire leave requests, balances, and upcoming absences to live HR leave data.
+
 export default function HrLeaveManagement() {
   const { data, isLoading, error } = useHrMockData();
 

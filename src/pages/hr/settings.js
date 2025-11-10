@@ -3,6 +3,8 @@ import React from "react";
 import Layout from "../../components/Layout";
 import { SectionCard } from "../../components/HR/MetricCard";
 
+// TODO: Persist policy uploads, shift rules, and access controls to the HR settings tables.
+
 // TODO: Replace placeholder policy uploads and access matrix with real configuration storage.
 export default function HrSettingsPolicies() {
   return (

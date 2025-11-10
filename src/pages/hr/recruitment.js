@@ -3,6 +3,8 @@ import React from "react";
 import Layout from "../../components/Layout";
 import { SectionCard, StatusTag } from "../../components/HR/MetricCard";
 
+// TODO: Link job listings, applicants, and tasks to the recruitment pipeline tables.
+
 // TODO: Replace recruitment placeholders with live pipeline integration before production.
 const placeholderJobListings = [
   {

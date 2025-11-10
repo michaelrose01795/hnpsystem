@@ -5,6 +5,7 @@ import { useHrMockData } from "../../hooks/useHrData";
 import { SectionCard, StatusTag } from "../../components/HR/MetricCard";
 
 // TODO: Replace placeholder performance data with live Supabase-backed scores before release.
+// TODO: Connect review scheduling/actions to the HR reviews tables once available.
 const placeholderReviews = [
   {
     id: "REV-1",

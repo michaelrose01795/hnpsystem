@@ -4,6 +4,8 @@ import Layout from "../../components/Layout";
 import { useHrMockData } from "../../hooks/useHrData";
 import { SectionCard, StatusTag } from "../../components/HR/MetricCard";
 
+// TODO: Pull payroll data, pay rises, and overtime summaries from Supabase tables.
+
 const payriseRequests = [
   {
     id: "PR-1",

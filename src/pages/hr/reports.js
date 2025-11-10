@@ -3,6 +3,8 @@ import React from "react";
 import Layout from "../../components/Layout";
 import { SectionCard, MetricCard } from "../../components/HR/MetricCard";
 
+// TODO: Drive these report exports and metrics from Supabase analytics endpoints.
+
 // TODO: Replace placeholder reporting data with Supabase analytics once available.
 const placeholderReports = [
   {
