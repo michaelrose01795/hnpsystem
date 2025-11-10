@@ -1797,47 +1797,46 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       return null;
     }
 
-<<<<<<< ours
-    const { data: writeUp, error } = await supabase
-      .from("job_writeups")
-      .select("*")
-      .eq("job_id", job.id)
-      .maybeSingle();
-=======
-    const [writeUpResponse, rectificationRows, authorizedItems] = await Promise.all([
+    const [
+      writeUpResponse,
+      taskRowsResponse,
+      authorizationRowsResponse,
+      rectificationRows,
+    ] = await Promise.all([
       supabase
         .from("job_writeups")
         .select("*")
         .eq("job_id", job.id)
         .maybeSingle(),
+      supabase
+        .from("job_writeup_tasks")
+        .select("task_id, source, source_key, label, status")
+        .eq("job_id", job.id)
+        .order("task_id", { ascending: true }),
+      supabase
+        .from("vhc_authorizations")
+        .select("id, authorized_items, authorized_at")
+        .eq("job_id", job.id)
+        .order("authorized_at", { ascending: false }),
       getRectificationItemsByJob(job.id),
-      getAuthorizedAdditionalWorkByJob(job.id),
     ]);
 
     const { data: writeUp, error } = writeUpResponse;
->>>>>>> theirs
+    const { data: taskRows, error: taskError } = taskRowsResponse;
+    const { data: authorizationRows, error: authorizationError } = authorizationRowsResponse;
 
     if (error && error.code !== "PGRST116") {
       console.error("❌ Error fetching write-up:", error);
       return null;
     }
 
-<<<<<<< ours
-    const { data: taskRows, error: taskError } = await supabase
-      .from("job_writeup_tasks")
-      .select("task_id, source, source_key, label, status")
-      .eq("job_id", job.id)
-      .order("task_id", { ascending: true });
-
     if (taskError) {
       console.error("⚠️ Error fetching write-up tasks:", taskError);
     }
 
-    const { data: authorizationRows } = await supabase
-      .from("vhc_authorizations")
-      .select("id, authorized_items, authorized_at")
-      .eq("job_id", job.id)
-      .order("authorized_at", { ascending: false });
+    if (authorizationError) {
+      console.error("⚠️ Error fetching VHC authorizations:", authorizationError);
+    }
 
     const requestItems = normaliseRequestsForWriteUp(job.requests);
     const authorisedItems = deriveAuthorisedWorkItems(authorizationRows || []);
@@ -1849,20 +1848,12 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
 
     const completionStatus = determineCompletionStatus(tasks, writeUp?.completion_status);
     const latestAuthorizationId = authorisedItems.length > 0 ? authorisedItems[0].authorizationId : null;
+    const rectificationItems = mergeRectificationSources(
+      rectificationRows,
+      extractAuthorizedItems(authorizationRows || [])
+    );
 
-    return {
-      fault: ensureBulletFormat(writeUp?.work_performed || job.description || ""),
-      caused: ensureBulletFormat(writeUp?.recommendations || ""),
-      rectification: ensureBulletFormat(
-        writeUp?.ratification || writeUp?.rectification_notes || ""
-      ),
-      warrantyClaim: writeUp?.warranty_claim || "",
-      tsrNumber: writeUp?.tsr_number || "",
-      pwaNumber: writeUp?.pwa_number || "",
-      technicalBulletins: ensureBulletFormat(writeUp?.technical_bulletins || ""),
-      technicalSignature: writeUp?.technical_signature || "",
-      qualityControl: writeUp?.quality_control || "",
-      additionalParts: ensureBulletFormat(writeUp?.parts_used || ""),
+    const basePayload = {
       qty: writeUp?.qty || Array(10).fill(false),
       booked: writeUp?.booked || Array(10).fill(false),
       completionStatus,
@@ -1872,17 +1863,16 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       tasks,
       requests: requestItems,
       authorisedItems,
+      rectificationItems,
+      jobRequests: job.requests || [],
       vhcAuthorizationId: latestAuthorizationId,
-=======
-    const rectificationItems = mergeRectificationSources(
-      rectificationRows,
-      authorizedItems
-    );
+    };
 
     if (!writeUp) {
       console.log("ℹ️ No write-up data for job:", jobNumber);
       return {
-        fault: "",
+        ...basePayload,
+        fault: ensureBulletFormat(job.description || ""),
         caused: "",
         rectification: buildRectificationSummary(rectificationItems),
         warrantyClaim: "",
@@ -1892,35 +1882,25 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
         technicalSignature: "",
         qualityControl: "",
         additionalParts: "",
-        qty: Array(10).fill(false),
-        booked: Array(10).fill(false),
-        rectificationItems,
-        jobDescription: job.description || "",
-        jobRequests: job.requests || [],
       };
     }
 
     console.log("✅ Write-up found:", writeUp);
 
-    // Map all database fields to form fields
     return {
-      fault: formatBulletText(writeUp.work_performed || ""),
-      caused: formatBulletText(writeUp.recommendations || ""),
-      rectification: formatBulletText(writeUp.ratification || "") ||
+      ...basePayload,
+      fault: ensureBulletFormat(writeUp.work_performed || job.description || ""),
+      caused: ensureBulletFormat(writeUp.recommendations || ""),
+      rectification:
+        ensureBulletFormat(writeUp.ratification || writeUp.rectification_notes || "") ||
         buildRectificationSummary(rectificationItems),
       warrantyClaim: writeUp.warranty_claim || "",
       tsrNumber: writeUp.tsr_number || "",
       pwaNumber: writeUp.pwa_number || "",
-      technicalBulletins: writeUp.technical_bulletins || "",
+      technicalBulletins: ensureBulletFormat(writeUp.technical_bulletins || ""),
       technicalSignature: writeUp.technical_signature || "",
       qualityControl: writeUp.quality_control || "",
-      additionalParts: writeUp.parts_used || "",
-      qty: writeUp.qty || Array(10).fill(false),
-      booked: writeUp.booked || Array(10).fill(false),
-      rectificationItems,
-      jobDescription: job.description || "",
-      jobRequests: job.requests || [],
->>>>>>> theirs
+      additionalParts: ensureBulletFormat(writeUp.parts_used || ""),
     };
   } catch (error) {
     console.error("❌ getWriteUpByJobNumber error:", error);
@@ -1953,7 +1933,10 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       .eq("job_id", job.id)
       .maybeSingle();
 
-<<<<<<< ours
+    const rectificationItems = Array.isArray(writeUpData?.rectificationItems)
+      ? writeUpData.rectificationItems
+      : [];
+
     const rawTasks = Array.isArray(writeUpData?.tasks) ? writeUpData.tasks : [];
     const filteredTasks = rawTasks
       .map((task) => ({
@@ -1973,6 +1956,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
     const formattedFault = ensureBulletFormat(writeUpData?.fault || "");
     const formattedCaused = ensureBulletFormat(writeUpData?.caused || "");
     const formattedRectification = ensureBulletFormat(writeUpData?.rectification || "");
+    const rectificationSummary = formattedRectification || buildRectificationSummary(rectificationItems);
     const formattedAdditionalParts = ensureBulletFormat(writeUpData?.additionalParts || "");
     const formattedBulletins = ensureBulletFormat(writeUpData?.technicalBulletins || "");
     const formattedJobDescription = ensureBulletFormat(
@@ -2063,59 +2047,28 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
         console.error("❌ Error deleting stale write-up tasks:", deleteTasksError);
         return { success: false, error: deleteTasksError.message };
       }
-=======
-    const faultText = formatBulletText(writeUpData.fault || "");
-    const causedText = formatBulletText(writeUpData.caused || "");
-    const rectificationItems = writeUpData.rectificationItems || [];
-    const rectificationSummary =
-      formatBulletText(writeUpData.rectification || "") ||
-      buildRectificationSummary(rectificationItems);
-    const additionalPartsText = formatBulletText(writeUpData.additionalParts || "");
-
-    // Sync job description so job card reflects technician notes
-    const { error: jobUpdateError } = await supabase
-      .from("jobs")
-      .update({ description: faultText })
-      .eq("id", job.id);
-
-    if (jobUpdateError) {
-      console.error("⚠️ Failed to sync job description with write-up:", jobUpdateError);
->>>>>>> theirs
     }
 
     // Map ALL form fields to database fields
     const writeUpToSave = {
       job_id: job.id,
-<<<<<<< ours
       work_performed: formattedFault || null,
       parts_used: formattedAdditionalParts || null,
       recommendations: formattedCaused || null,
-      ratification: formattedRectification || null,
+      ratification: rectificationSummary || null,
       warranty_claim: writeUpData?.warrantyClaim || null,
       tsr_number: writeUpData?.tsrNumber || null,
       pwa_number: writeUpData?.pwaNumber || null,
       technical_bulletins: formattedBulletins || null,
       technical_signature: writeUpData?.technicalSignature || null,
       quality_control: writeUpData?.qualityControl || null,
-=======
-      work_performed: faultText || null,
-      parts_used: additionalPartsText || null,
-      recommendations: causedText || null,
-      ratification: rectificationSummary || null,
-      warranty_claim: writeUpData.warrantyClaim || null,
-      tsr_number: writeUpData.tsrNumber || null,
-      pwa_number: writeUpData.pwaNumber || null,
-      technical_bulletins: writeUpData.technicalBulletins || null,
-      technical_signature: writeUpData.technicalSignature || null,
-      quality_control: writeUpData.qualityControl || null,
->>>>>>> theirs
       qty: writeUpData.qty || Array(10).fill(false),
       booked: writeUpData.booked || Array(10).fill(false),
       labour_time: null, // Calculate if needed
       technician_id: job.assigned_to || null, // Get from job
       updated_at: new Date().toISOString(),
       completion_status: completionStatus,
-      rectification_notes: formattedRectification || null,
+      rectification_notes: rectificationSummary || null,
       job_description_snapshot: formattedJobDescription || null,
       vhc_authorization_reference: writeUpData?.vhcAuthorizationId || null,
       task_checklist: filteredTasks.map((task) => ({
@@ -2126,9 +2079,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       })),
     };
 
-    let persistenceResult = null;
-
-    let writeUpRecord;
+    let writeUpRecord = null;
 
     if (existing) {
       console.log("🔄 Updating existing write-up");
@@ -2138,17 +2089,13 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
         .eq("writeup_id", existing.writeup_id)
         .select()
         .single();
-<<<<<<< ours
 
       if (updateWriteUpError) {
         console.error("❌ Error updating write-up:", updateWriteUpError);
         return { success: false, error: updateWriteUpError.message };
       }
 
-      persistenceResult = updatedWriteUp;
-=======
-      writeUpRecord = result.data;
->>>>>>> theirs
+      writeUpRecord = updatedWriteUp;
     } else {
       console.log("➕ Creating new write-up");
       writeUpToSave.created_at = new Date().toISOString();
@@ -2157,18 +2104,13 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
         .insert([writeUpToSave])
         .select()
         .single();
-<<<<<<< ours
-=======
-      writeUpRecord = result.data;
-    }
->>>>>>> theirs
 
       if (insertWriteUpError) {
         console.error("❌ Error inserting write-up:", insertWriteUpError);
         return { success: false, error: insertWriteUpError.message };
       }
 
-      persistenceResult = insertedWriteUp;
+      writeUpRecord = insertedWriteUp;
     }
 
     if (writeUpRecord?.writeup_id) {
@@ -2185,7 +2127,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
     }
 
     console.log("✅ Write-up saved successfully");
-    return { success: true, data: persistenceResult, completionStatus };
+    return { success: true, data: writeUpRecord, completionStatus };
   } catch (error) {
     console.error("❌ saveWriteUpToDatabase error:", error);
     return { success: false, error: error.message };
