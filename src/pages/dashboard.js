@@ -5,6 +5,12 @@ import { useUser } from "../context/UserContext";
 import { useJobs } from "../context/JobsContext";
 import Layout from "../components/Layout";
 import WorkshopManagerDashboard from "../components/dashboards/WorkshopManagerDashboard";
+import RetailManagersDashboard from "../components/dashboards/RetailManagersDashboard";
+import { roleCategories } from "../config/users";
+
+const retailManagerRoles = (roleCategories?.Retail || [])
+  .filter((roleName) => /manager|director/i.test(roleName))
+  .map((roleName) => roleName.toLowerCase());
 
 export default function Dashboard() {
   const { user } = useUser();
@@ -14,9 +20,15 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
 
-  // Redirect roles to their specific dashboards
+  // Redirect roles to their specific dashboards when they do not use the new retail dashboard
   useEffect(() => {
     if (!user) return;
+
+    const normalizedRoles = user.roles?.map((role) => role.toLowerCase()) || [];
+    const shouldStayOnRetailDashboard = normalizedRoles.some((roleName) =>
+      retailManagerRoles.includes(roleName)
+    );
+    if (shouldStayOnRetailDashboard) return;
 
     const role = user.roles?.[0]?.toUpperCase();
 
@@ -27,9 +39,6 @@ export default function Dashboard() {
       case "TECHS":
       case "WORKSHOP":
         router.replace("/dashboard/techs");
-        break;
-      case "WORKSHOP MANAGER":
-        router.replace("/dashboard/workshop-manager");
         break;
       case "PARTS":
         router.replace("/dashboard/parts");
@@ -57,12 +66,29 @@ export default function Dashboard() {
   if (!user) return null;
 
   const role = user?.roles?.[0] || "Guest";
+  const normalizedRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const isRetailManager = normalizedRoles.some((roleName) => retailManagerRoles.includes(roleName));
+  const isWorkshopManager = normalizedRoles.includes("workshop manager");
 
-  // Render Workshop Manager dashboard directly
-  if (role === "Workshop Manager") {
+  if (isRetailManager) {
     return (
       <Layout>
-        <WorkshopManagerDashboard />
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          <RetailManagersDashboard user={user} />
+          {isWorkshopManager && (
+            <section
+              style={{
+                background: "#ffffff",
+                borderRadius: "18px",
+                padding: "16px",
+                border: "1px solid #ffe0e0",
+                boxShadow: "0 24px 45px rgba(209,0,0,0.08)",
+              }}
+            >
+              <WorkshopManagerDashboard />
+            </section>
+          )}
+        </div>
       </Layout>
     );
   }

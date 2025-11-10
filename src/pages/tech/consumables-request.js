@@ -169,25 +169,6 @@ function TechConsumableRequestPage() {
                 purchasing and replenishment.
               </p>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <p style={{ margin: 0, fontSize: "0.8rem", color: "#888" }}>
-                Need help?
-              </p>
-              <Link
-                href="/workshop/consumables-tracker"
-                style={{
-                  display: "inline-block",
-                  padding: "8px 14px",
-                  borderRadius: "10px",
-                  background: "linear-gradient(135deg, #d10000, #940000)",
-                  color: "#ffffff",
-                  fontWeight: 600,
-                  textDecoration: "none",
-                }}
-              >
-                View Tracker
-              </Link>
-            </div>
           </div>
 
           <form onSubmit={handleSubmit} style={{ marginTop: "20px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", alignItems: "end" }}>

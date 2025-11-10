@@ -50,6 +50,15 @@ export default function Layout({ children }) {
   ];
 
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const retailManagerDashboardRoles = [
+    "service manager",
+    "workshop manager",
+    "after sales director",
+    "parts manager",
+  ];
+  const hasRetailDashboardAccess = userRoles.some((role) =>
+    retailManagerDashboardRoles.includes(role)
+  );
   const techsList = usersByRole?.["Techs"] || [];
   const motTestersList = usersByRole?.["MOT Tester"] || [];
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
@@ -114,7 +123,6 @@ export default function Layout({ children }) {
     .join(" ");
 
   const viewRoles = ["manager", "service", "sales"];
-  const appointmentRoles = ["admin", "sales", "service", "manager"];
   const vhcRoles = [
     "admin",
     "service",
@@ -260,18 +268,6 @@ export default function Layout({ children }) {
   }
 
   if (
-    userRoles.includes("service") ||
-    userRoles.includes("admin") ||
-    userRoles.some((r) => r.includes("manager"))
-  ) {
-    addNavItem("➕ Create Job Card", "/job-cards/create", {
-      keywords: ["create job", "new job", "job card"],
-      description: "Create a new job card",
-      section: "Workshop",
-    });
-  }
-
-  if (
     ["service manager", "workshop manager"].some((roleName) =>
       userRoles.includes(roleName)
     )
@@ -314,13 +310,6 @@ export default function Layout({ children }) {
     });
   }
 
-  if (appointmentRoles.some((r) => userRoles.includes(r))) {
-    addNavItem("📅 Appointments", "/appointments", {
-      keywords: ["appointments", "schedule", "bookings"],
-      section: "Sales & Service",
-    });
-  }
-
   if (vhcRoles.some((r) => userRoles.includes(r))) {
     addNavItem("📝 VHC Dashboard", "/vhc/dashboard", {
       keywords: ["vhc", "vehicle health check", "dashboard"],
@@ -359,11 +348,6 @@ export default function Layout({ children }) {
       section: "Workshop",
     });
   }
-
-  addNavItem("🛎️ Workshop Check-In", "/workshop/check-in", {
-    keywords: ["check in", "arrival", "workshop"],
-    section: "Workshop",
-  });
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 

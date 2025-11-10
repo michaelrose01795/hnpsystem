@@ -26,7 +26,7 @@ export default function WorkshopManagerDashboard() {
       setPendingJobs(jobsToday.filter((j) => j.job.status === "Booked"));
     };
     fetchJobs();
-    fetchAllUsersClocking();
+    fetchAllUsersClocking?.();
   }, [fetchAllUsersClocking, today]);
 
   const consumablesForMonth = useMemo(
@@ -37,10 +37,11 @@ export default function WorkshopManagerDashboard() {
     [selectedMonth]
   );
 
-  if (loading) return <p>Loading dashboard...</p>;
+  if (loading && !Array.isArray(allUsersClocking)) return <p>Loading dashboard...</p>;
 
-  const techsClockedIn = allUsersClocking.filter((u) => u.roles?.includes("Techs") && u.clockedIn).length;
-  const totalTechs = allUsersClocking.filter((u) => u.roles?.includes("Techs")).length;
+  const clockingList = Array.isArray(allUsersClocking) ? allUsersClocking : [];
+  const techsClockedIn = clockingList.filter((u) => u.roles?.includes("Techs") && u.clockedIn).length;
+  const totalTechs = clockingList.filter((u) => u.roles?.includes("Techs")).length;
   const monthOptions = availableConsumableMonths.length ? availableConsumableMonths : [selectedMonth];
 
   const modalOverlayStyle = {

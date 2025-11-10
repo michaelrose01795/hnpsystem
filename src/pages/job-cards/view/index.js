@@ -2,6 +2,7 @@
 "use client"; // enables client-side rendering for Next.js
 
 import React, { useState, useEffect } from "react"; // import React and hooks
+import Link from "next/link";
 import Layout from "../../../components/Layout"; // import layout wrapper
 import { useRouter } from "next/router"; // for navigation
 import { getAllJobs, updateJobStatus } from "../../../lib/database/jobs"; // import database functions
@@ -28,6 +29,11 @@ export default function ViewJobCards() {
   const [loading, setLoading] = useState(true); // loading state
   const router = useRouter(); // router for navigation
   const today = getTodayDate(); // get today's date
+  const quickActions = [
+    { label: "Create Job Card", href: "/job-cards/create" },
+    { label: "Appointments", href: "/appointments" },
+    { label: "Check In", href: "/workshop/check-in" },
+  ];
 
   /* ----------------------------
      Fetch jobs from Supabase
@@ -426,46 +432,102 @@ export default function ViewJobCards() {
           </button>
         </div>
 
-        {/* ✅ Tabs Navigation - Modern Design */}
-        <div style={{
-          display: "flex",
-          gap: "8px",
-          marginBottom: "16px",
-          borderBottom: "2px solid #e0e0e0",
-          flexShrink: 0
-        }}>
-          <button
-            onClick={() => setActiveTab("today")}
+        {/* ✅ Tabs Navigation + Quick Actions */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "12px",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderBottom: "2px solid #e0e0e0",
+            paddingBottom: "8px",
+            marginBottom: "16px",
+          }}
+        >
+          <div
             style={{
-              padding: "12px 24px",
-              backgroundColor: activeTab === "today" ? "#d10000" : "transparent",
-              color: activeTab === "today" ? "white" : "#666",
-              border: "none",
-              borderBottom: activeTab === "today" ? "3px solid #d10000" : "3px solid transparent",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: activeTab === "today" ? "600" : "500",
-              transition: "all 0.2s"
+              display: "flex",
+              gap: "8px",
+              flexWrap: "wrap",
+              flex: "1 1 auto",
+              minWidth: "240px",
             }}
           >
-            Today's Workload
-          </button>
-          <button
-            onClick={() => setActiveTab("carryOver")}
+            <button
+              onClick={() => setActiveTab("today")}
+              style={{
+                padding: "12px 24px",
+                backgroundColor: activeTab === "today" ? "#d10000" : "transparent",
+                color: activeTab === "today" ? "white" : "#666",
+                border: "none",
+                borderBottom: activeTab === "today" ? "3px solid #d10000" : "3px solid transparent",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: activeTab === "today" ? "600" : "500",
+                transition: "all 0.2s",
+              }}
+            >
+              Today's Workload
+            </button>
+            <button
+              onClick={() => setActiveTab("carryOver")}
+              style={{
+                padding: "12px 24px",
+                backgroundColor: activeTab === "carryOver" ? "#d10000" : "transparent",
+                color: activeTab === "carryOver" ? "white" : "#666",
+                border: "none",
+                borderBottom: activeTab === "carryOver" ? "3px solid #d10000" : "3px solid transparent",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: activeTab === "carryOver" ? "600" : "500",
+                transition: "all 0.2s",
+              }}
+            >
+              Carry Over
+            </button>
+          </div>
+          <div
             style={{
-              padding: "12px 24px",
-              backgroundColor: activeTab === "carryOver" ? "#d10000" : "transparent",
-              color: activeTab === "carryOver" ? "white" : "#666",
-              border: "none",
-              borderBottom: activeTab === "carryOver" ? "3px solid #d10000" : "3px solid transparent",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: activeTab === "carryOver" ? "600" : "500",
-              transition: "all 0.2s"
+              display: "flex",
+              gap: "10px",
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
+              flex: "0 0 auto",
             }}
           >
-            Carry Over
-          </button>
+            {quickActions.map((action) => (
+              <Link
+                key={action.href}
+                href={action.href}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "10px 18px",
+                  backgroundColor: "#ffffff",
+                  color: "#d10000",
+                  border: "1px solid #ffd4d4",
+                  borderRadius: "999px",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                  textDecoration: "none",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+                  transition: "background-color 0.2s, color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#d10000";
+                  e.currentTarget.style.color = "#ffffff";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#ffffff";
+                  e.currentTarget.style.color = "#d10000";
+                }}
+              >
+                {action.label}
+              </Link>
+            ))}
+          </div>
         </div>
 
         {/* ✅ Job Sections Grid - Scrollable */}
