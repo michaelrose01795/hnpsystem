@@ -283,7 +283,7 @@ export default function Layout({ children }) {
   }
 
   if (
-    ["service manager", "workshop manager"].some((roleName) =>
+    ["service manager", "workshop manager", "admin manager"].some((roleName) =>
       userRoles.includes(roleName)
     )
   ) {

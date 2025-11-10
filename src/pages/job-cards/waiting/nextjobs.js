@@ -58,14 +58,18 @@ export default function NextJobsPage() {
     ...(usersByRole["Admin Manager"] || []),
   ];
   const allowedRoles = new Set([
-    "Workshop Manager",
-    "Service Manager",
-    "After Sales Director",
-    "After Sales Manager",
-    "Admin Manager",
+    "WORKSHOP MANAGER",
+    "SERVICE MANAGER",
+    "AFTER SALES DIRECTOR",
+    "AFTER SALES MANAGER",
+    "ADMIN MANAGER",
   ]);
+  const normalizedRoles = (user?.roles || []).map((role) =>
+    typeof role === "string" ? role.toUpperCase() : ""
+  );
   const hasAccess =
-    allowedUsers.includes(username) || (user?.role && allowedRoles.has(user.role));
+    allowedUsers.includes(username) ||
+    normalizedRoles.some((role) => allowedRoles.has(role));
 
   // ✅ Fetch jobs from Supabase on component mount
   useEffect(() => {
