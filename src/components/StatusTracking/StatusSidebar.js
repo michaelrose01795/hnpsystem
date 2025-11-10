@@ -240,34 +240,53 @@ export default function StatusSidebar({
   const currentStatusForDisplay = mockCurrentStatus || currentStatus;
 
   const timelineStatuses = useMemo(() => {
-    const sourceHistory =
-      statusHistory.length > 0
-        ? statusHistory
-        : MOCK_STATUS_TEMPLATE.map((entry, index) => {
-            const now = Date.now();
-            const timestamp = new Date(now - (entry.hoursAgo || 0) * 60 * 60 * 1000 - index * 180000);
-            return {
-              status: entry.status,
-              label: SERVICE_STATUS_FLOW[entry.status?.toUpperCase()]?.label,
-              timestamp: timestamp.toISOString(),
-              department: SERVICE_STATUS_FLOW[entry.status?.toUpperCase()]?.department,
-            };
-          });
+    const toTimelineEntry = (entry, index = 0) => {
+      const statusId = entry.status;
+      const config = SERVICE_STATUS_FLOW[statusId?.toUpperCase()] || {};
+      const fallbackLabel = statusId ? statusId.replace(/_/g, ' ') : 'Status';
+      const timestamp = entry.timestamp
+        ? new Date(entry.timestamp)
+        : new Date(Date.now() - index * 180000);
 
-    return sourceHistory
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-      .map((history) => {
-        const config = SERVICE_STATUS_FLOW[history.status?.toUpperCase()] || {};
-        const fallbackLabel = history.status
-          ? history.status.replace(/_/g, ' ')
-          : 'Status';
-        return {
-          status: history.status,
-          label: history.label || config.label || fallbackLabel,
-          department: history.department || config.department,
-          timestamp: history.timestamp,
-        };
-      });
+      return {
+        status: statusId,
+        label: entry.label || config.label || fallbackLabel,
+        department: entry.department || config.department,
+        timestamp: timestamp.toISOString(),
+      };
+    };
+
+    const normalizedHistory = (statusHistory || []).map((entry, index) =>
+      toTimelineEntry(entry, index)
+    );
+
+    const seenStatuses = new Set(
+      normalizedHistory.map((entry) => entry.status?.toLowerCase())
+    );
+
+    // TODO: remove mock timeline data when live history is reliable everywhere
+    const mockEntries = MOCK_STATUS_TEMPLATE.map((template, index) => {
+      const hoursAgoMs = (template.hoursAgo || 0) * 60 * 60 * 1000;
+      const timestamp = new Date(Date.now() - hoursAgoMs - index * 120000);
+      return toTimelineEntry(
+        {
+          status: template.status,
+          timestamp: timestamp.toISOString(),
+        },
+        index
+      );
+    });
+
+    mockEntries.forEach((entry) => {
+      const key = entry.status?.toLowerCase();
+      if (!key || seenStatuses.has(key)) return;
+      normalizedHistory.push(entry);
+      seenStatuses.add(key);
+    });
+
+    return normalizedHistory.sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    );
   }, [statusHistory]);
 
   // Format seconds to HH:MM:SS

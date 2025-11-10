@@ -177,6 +177,7 @@ const syncWriteUpRectificationItems = async ({
     }));
 
   const { data: existingRows, error: existingError } = await supabase
+    // ⚠️ Verify: table or column not found in Supabase schema
     .from("writeup_rectification_items")
     .select("id")
     .eq("writeup_id", writeupId);
@@ -187,6 +188,7 @@ const syncWriteUpRectificationItems = async ({
 
   if (filteredItems.length > 0) {
     const { error: upsertError } = await supabase
+      // ⚠️ Verify: table or column not found in Supabase schema
       .from("writeup_rectification_items")
       .upsert(filteredItems, { onConflict: "id" });
 
@@ -205,6 +207,7 @@ const syncWriteUpRectificationItems = async ({
 
   if (staleIds.length > 0) {
     const { error: deleteError } = await supabase
+      // ⚠️ Verify: table or column not found in Supabase schema
       .from("writeup_rectification_items")
       .delete()
       .in("id", staleIds);
@@ -402,6 +405,7 @@ export const getDashboardData = async () => {
 export const getRectificationItemsByJob = async (jobId) => {
   try {
     const { data, error } = await supabase
+      // ⚠️ Verify: table or column not found in Supabase schema
       .from("writeup_rectification_items")
       .select("id, job_id, job_number, writeup_id, description, status, is_additional_work, vhc_item_id, authorization_id, authorized_amount")
       .eq("job_id", jobId)
@@ -1813,6 +1817,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
         .eq("job_id", job.id)
         .maybeSingle(),
       supabase
+        // ⚠️ Verify: table or column not found in Supabase schema
         .from("job_writeup_tasks")
         .select("task_id, source, source_key, label, status")
         .eq("job_id", job.id)
@@ -1975,6 +1980,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
     }
 
     const { data: existingTasks, error: existingTasksError } = await supabase
+      // ⚠️ Verify: table or column not found in Supabase schema
       .from("job_writeup_tasks")
       .select("task_id, source, source_key")
       .eq("job_id", job.id);
@@ -2013,6 +2019,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
 
     if (tasksToInsert.length > 0) {
       const { error: insertTasksError } = await supabase
+        // ⚠️ Verify: table or column not found in Supabase schema
         .from("job_writeup_tasks")
         .insert(tasksToInsert);
 
@@ -2024,6 +2031,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
 
     for (const task of tasksToUpdate) {
       const { error: updateTaskError } = await supabase
+        // ⚠️ Verify: table or column not found in Supabase schema
         .from("job_writeup_tasks")
         .update({ label: task.payload.label, status: task.payload.status })
         .eq("task_id", task.taskId);
@@ -2040,6 +2048,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
 
     if (tasksToRemove.length > 0) {
       const { error: deleteTasksError } = await supabase
+        // ⚠️ Verify: table or column not found in Supabase schema
         .from("job_writeup_tasks")
         .delete()
         .in(

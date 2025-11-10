@@ -22,6 +22,7 @@ export const ClockingProvider = ({ children }) => {
     try {
       const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
       const { data, error } = await supabase
+        // ⚠️ Verify: table or column not found in Supabase schema
         .from("clocking")
         .select("*")
         .eq("user_id", user.id)
@@ -63,6 +64,7 @@ export const ClockingProvider = ({ children }) => {
     setLoading(true);
     try {
       const today = new Date().toISOString().split("T")[0];
+      // ⚠️ Verify: table or column not found in Supabase schema
       const { error } = await supabase.from("clocking").insert([
         { user_id: user.id, date: today, clock_in: new Date().toISOString() },
       ]);
@@ -83,6 +85,7 @@ export const ClockingProvider = ({ children }) => {
     try {
       const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
+        // ⚠️ Verify: table or column not found in Supabase schema
         .from("clocking")
         .select("*")
         .eq("user_id", user.id)
@@ -100,6 +103,7 @@ export const ClockingProvider = ({ children }) => {
       }
 
       await supabase
+        // ⚠️ Verify: table or column not found in Supabase schema
         .from("clocking")
         .update({ clock_out: new Date().toISOString() })
         .eq("id", data.id);

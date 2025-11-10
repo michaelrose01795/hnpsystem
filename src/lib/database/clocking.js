@@ -50,6 +50,7 @@ export const clockIn = async (userId) => {
         notes: null,
         created_at: clockInTime
       }])
+      // ⚠️ Verify: table or column not found in Supabase schema
       .select(`
         *,
         user:user_id(
@@ -128,6 +129,7 @@ export const clockOut = async (userId, breakMinutes = 0, notes = null) => {
         updated_at: clockOutTime
       })
       .eq("id", record.id)
+      // ⚠️ Verify: table or column not found in Supabase schema
       .select(`
         *,
         user:user_id(
@@ -160,6 +162,7 @@ export const getClockingStatus = async (userId) => {
   try {
     const { data, error } = await supabase
       .from("time_records")
+      // ⚠️ Verify: table or column not found in Supabase schema
       .select(`
         *,
         user:user_id(
@@ -210,6 +213,7 @@ export const getTodayClockingRecords = async (department = null) => {
     
     let query = supabase
       .from("time_records")
+      // ⚠️ Verify: table or column not found in Supabase schema
       .select(`
         *,
         user:user_id(
@@ -226,6 +230,7 @@ export const getTodayClockingRecords = async (department = null) => {
 
     // ✅ Filter by department if provided
     if (department) {
+      // ⚠️ Verify: table or column not found in Supabase schema
       query = query.eq("user.department", department);
     }
 
@@ -269,6 +274,7 @@ export const getAllClockingRecords = async (limit = 100, offset = 0, filters = {
   try {
     let query = supabase
       .from("time_records")
+      // ⚠️ Verify: table or column not found in Supabase schema
       .select(`
         *,
         user:user_id(
@@ -287,6 +293,7 @@ export const getAllClockingRecords = async (limit = 100, offset = 0, filters = {
       query = query.eq("user_id", filters.userId);
     }
     if (filters.department) {
+      // ⚠️ Verify: table or column not found in Supabase schema
       query = query.eq("user.department", filters.department);
     }
     if (filters.startDate) {
@@ -320,6 +327,7 @@ export const getUserTimesheet = async (userId, startDate, endDate) => {
   try {
     const { data, error } = await supabase
       .from("time_records")
+      // ⚠️ Verify: table or column not found in Supabase schema
       .select(`
         *,
         user:user_id(
@@ -410,6 +418,7 @@ export const updateTimeRecord = async (recordId, updates) => {
       .from("time_records")
       .update(updates)
       .eq("id", recordId)
+      // ⚠️ Verify: table or column not found in Supabase schema
       .select(`
         *,
         user:user_id(
@@ -466,6 +475,7 @@ export const getWeeklySummary = async (userId, startOfWeek) => {
     
     const { data, error } = await supabase
       .from("time_records")
+      // ⚠️ Verify: table or column not found in Supabase schema
       .select(`
         *,
         user:user_id(
@@ -533,6 +543,7 @@ export const getDepartmentSummary = async (department, date = null) => {
     
     const { data, error } = await supabase
       .from("time_records")
+      // ⚠️ Verify: table or column not found in Supabase schema
       .select(`
         *,
         user:user_id!inner(
@@ -543,6 +554,7 @@ export const getDepartmentSummary = async (department, date = null) => {
           role
         )
       `)
+      // ⚠️ Verify: table or column not found in Supabase schema
       .eq("user.department", department)
       .eq("date", targetDate)
       .order("user.last_name", { ascending: true });

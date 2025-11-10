@@ -22,6 +22,7 @@ export default function ClockingTech() {
       const today = new Date().toISOString().split("T")[0];
 
       const { data, error } = await supabase
+        // ⚠️ Verify: table or column not found in Supabase schema
         .from("clocking")
         .select("*")
         .eq("mechanic", mechanic)
@@ -62,6 +63,7 @@ export default function ClockingTech() {
   const clockIn = async () => {
     setLoading(true);
     try {
+      // ⚠️ Verify: table or column not found in Supabase schema
       const { error } = await supabase.from("clocking").insert([
         {
           mechanic,
@@ -84,6 +86,7 @@ export default function ClockingTech() {
       if (!latest) return;
 
       const { error } = await supabase
+        // ⚠️ Verify: table or column not found in Supabase schema
         .from("clocking")
         .update({ out: new Date().toISOString() })
         .eq("id", latest.id);

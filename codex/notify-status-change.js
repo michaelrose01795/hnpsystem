@@ -20,6 +20,7 @@ serve(async (req) => {
   if (newJob.status === "Ready for Workshop") {
     await supabase
       .from("notifications")
+      // ⚠️ Verify: table or column not found in Supabase schema
       .insert({
         message: `🚗 Job #${newJob.job_number} is ready for workshop.`,
         target_role: "Techs",
@@ -30,6 +31,7 @@ serve(async (req) => {
   if (newJob.status === "Waiting for Parts") {
     await supabase
       .from("notifications")
+      // ⚠️ Verify: table or column not found in Supabase schema
       .insert({
         message: `🧩 Job #${newJob.job_number} is waiting for parts approval.`,
         target_role: "Parts",

@@ -40,6 +40,7 @@ handler.post(async (req, res) => {
 
     // 2️⃣ Upload file to Supabase Storage
     const { error: uploadError } = await supabase.storage
+      // ⚠️ Verify: table or column not found in Supabase schema
       .from("job-files") // ⚠️ Make sure this storage bucket exists in Supabase
       .upload(filePath, fs.createReadStream(file.path), {
         contentType: file.mimetype,
@@ -56,6 +57,7 @@ handler.post(async (req, res) => {
 
     // 3️⃣ Get public URL
     const { data: publicUrlData } = supabase.storage
+      // ⚠️ Verify: table or column not found in Supabase schema
       .from("job-files")
       .getPublicUrl(filePath);
 

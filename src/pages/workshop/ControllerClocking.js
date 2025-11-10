@@ -16,6 +16,7 @@ export default function ControllerClocking() {
     try {
       const { data, error } = await supabase
         .from("users")
+        // ⚠️ Verify: table or column not found in Supabase schema
         .select("username")
         .eq("role", "Technician");
       if (error) throw error;
@@ -29,6 +30,7 @@ export default function ControllerClocking() {
   const fetchClocking = async () => {
     try {
       const { data, error } = await supabase
+        // ⚠️ Verify: table or column not found in Supabase schema
         .from("clocking")
         .select("mechanic, in_time, out_time");
       if (error) throw error;
@@ -67,6 +69,7 @@ export default function ControllerClocking() {
   const clockIn = async (tech) => {
     setLoading(true);
     try {
+      // ⚠️ Verify: table or column not found in Supabase schema
       await supabase.from("clocking").insert([
         {
           mechanic: tech,
@@ -87,6 +90,7 @@ export default function ControllerClocking() {
     setLoading(true);
     try {
       const { data: lastEntry, error } = await supabase
+        // ⚠️ Verify: table or column not found in Supabase schema
         .from("clocking")
         .select("id")
         .eq("mechanic", tech)
@@ -97,6 +101,7 @@ export default function ControllerClocking() {
       if (error) throw error;
 
       await supabase
+        // ⚠️ Verify: table or column not found in Supabase schema
         .from("clocking")
         .update({ out_time: new Date().toISOString() })
         .eq("id", lastEntry.id);

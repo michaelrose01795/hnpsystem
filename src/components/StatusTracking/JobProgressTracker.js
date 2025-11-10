@@ -10,13 +10,16 @@ const COLORS = {
   panelBg: "#fff",
   textDark: "#1f2933",
   textMuted: "#6b7280",
+  connector: "#c00000",
 };
 
 const formatTimestamp = (timestamp) => {
-  if (!timestamp) return "--:--";
+  if (!timestamp) return "-- -- --";
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) return timestamp;
-  return date.toLocaleTimeString("en-GB", {
+  return date.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -74,19 +77,6 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
           minHeight: 0,
         }}
       >
-        {/* Central spine for the vertical process flow */}
-        <div
-          style={{
-            position: "absolute",
-            left: "34px",
-            top: "16px",
-            bottom: "16px",
-            width: "2px",
-            background: "linear-gradient(180deg, #fbe1e1, #f9b0b0)",
-            pointerEvents: "none",
-          }}
-        />
-
         {/* Each status entry renders a node + detail card */}
         {orderedStatuses.map((item, index) => {
           const lowerStatus =
@@ -101,55 +91,57 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
             : isComplete
             ? COLORS.complete
             : COLORS.base;
-          const connectorColor = isComplete ? COLORS.complete : COLORS.base;
+          const connectorColor = COLORS.connector;
+          const performer =
+            item?.user ||
+            item?.userName ||
+            item?.performedBy ||
+            item?.userId ||
+            "System";
+          const secondaryLine = item?.description || item?.notes || item?.department;
 
           return (
             <div
               key={`${item?.status || item?.label || "status"}-${index}`}
               style={{
-                display: "grid",
-                gridTemplateColumns: "68px 1fr",
-                alignItems: "start",
-                gap: "16px",
-                padding: "12px 0",
+                position: "relative",
+                paddingLeft: "48px",
+                marginBottom: "12px",
               }}
             >
-              {/* Connector column: circle node + connecting line */}
-              <div
+              {/* Dot + connector */}
+              <span
                 style={{
-                  position: "relative",
-                  display: "flex",
-                  alignItems: "center",
-                  flexDirection: "column",
-                  minHeight: "100%",
+                  position: "absolute",
+                  left: "18px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: "14px",
+                  height: "14px",
+                  borderRadius: "50%",
+                  backgroundColor: nodeColor,
+                  border: "2px solid #fff",
+                  boxShadow: isCurrent
+                    ? "0 0 14px rgba(192,0,0,0.35)"
+                    : "0 0 8px rgba(192,0,0,0.15)",
+                  zIndex: 2,
                 }}
-              >
+              />
+              {index < orderedStatuses.length - 1 && (
                 <span
                   style={{
-                    width: "18px",
-                    height: "18px",
-                    borderRadius: "50%",
-                    backgroundColor: nodeColor,
-                    boxShadow: isCurrent
-                      ? "0 0 14px rgba(192,0,0,0.4)"
-                      : "0 0 8px rgba(224,224,224,0.8)",
-                    border: isCurrent ? "2px solid #fff" : "2px solid #fef2f2",
-                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                    position: "absolute",
+                    left: "24px",
+                    top: "50%",
+                    width: "2px",
+                    height: "calc(100% + 16px)",
+                    backgroundColor: connectorColor,
+                    zIndex: 1,
                   }}
                 />
-                {index < orderedStatuses.length - 1 && (
-                  <span
-                    style={{
-                      flex: 1,
-                      width: "2px",
-                      backgroundColor: connectorColor,
-                      marginTop: "4px",
-                    }}
-                  />
-                )}
-              </div>
+              )}
 
-              {/* Status detail card with label + timestamp */}
+              {/* Status detail card */}
               <div
                 style={{
                   width: "100%",
@@ -161,13 +153,13 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                   boxShadow: isCurrent
                     ? "0 8px 20px rgba(192,0,0,0.15)"
                     : "0 4px 12px rgba(15,23,42,0.08)",
-                  padding: "12px 16px",
+                  padding: "16px 18px",
                   display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: "12px",
+                  flexDirection: "column",
+                  gap: "6px",
                   fontFamily: "'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif",
                   transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                  minHeight: "96px",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-2px)";
@@ -185,10 +177,10 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                 <div style={{ textAlign: "left", minWidth: 0 }}>
                   <div
                     style={{
-                      fontSize: "15px",
-                      fontWeight: 600,
-                      color: isCurrent ? COLORS.current : COLORS.textDark,
-                      textTransform: "none",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      color: COLORS.textDark,
+                      lineHeight: 1.25,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -196,30 +188,35 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                   >
                     {displayLabel}
                   </div>
-                  {item?.department && (
+                  <div
+                    style={{
+                      marginTop: "4px",
+                      fontSize: "13px",
+                      color: COLORS.textMuted,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "12px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span style={{ fontWeight: 600 }}>{performer}</span>
+                    <span>{formatTimestamp(item?.timestamp)}</span>
+                  </div>
+                  {secondaryLine && (
                     <div
                       style={{
-                        fontSize: "12px",
+                        marginTop: "6px",
+                        fontSize: "13px",
                         color: COLORS.textMuted,
-                        marginTop: "4px",
+                        lineHeight: 1.4,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {item.department}
+                      {secondaryLine}
                     </div>
                   )}
-                </div>
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: COLORS.textMuted,
-                    fontWeight: 500,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {formatTimestamp(item?.timestamp)}
                 </div>
               </div>
             </div>

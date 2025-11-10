@@ -17,6 +17,7 @@ export const useClocking = () => {
     try {
       const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
       const { data, error } = await supabase
+        // ⚠️ Verify: table or column not found in Supabase schema
         .from("clocking") // your DB table
         .select("*")
         .eq("user_id", userId)
@@ -57,6 +58,7 @@ export const useClocking = () => {
     setLoading(true);
     try {
       const today = new Date().toISOString().split("T")[0];
+      // ⚠️ Verify: table or column not found in Supabase schema
       const { error } = await supabase.from("clocking").insert([
         { user_id: userId, date: today, clock_in: new Date().toISOString() },
       ]);
@@ -77,6 +79,7 @@ export const useClocking = () => {
       const today = new Date().toISOString().split("T")[0];
       // find latest clock-in without clock-out
       const { data, error } = await supabase
+        // ⚠️ Verify: table or column not found in Supabase schema
         .from("clocking")
         .select("*")
         .eq("user_id", userId)
@@ -89,6 +92,7 @@ export const useClocking = () => {
       if (error) throw error;
 
       await supabase
+        // ⚠️ Verify: table or column not found in Supabase schema
         .from("clocking")
         .update({ clock_out: new Date().toISOString() })
         .eq("id", data.id);
