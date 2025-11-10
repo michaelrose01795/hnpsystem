@@ -152,3 +152,53 @@ export function useHrAttendanceData() {
 
   return state;
 }
+
+/**
+ * Hook for the HR dashboard overview.
+ */
+export function useHrDashboardData() {
+  const [state, setState] = useState({
+    data: null,
+    isLoading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const load = async () => {
+      try {
+        const response = await fetch("/api/hr/dashboard", {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch HR dashboard (${response.status})`);
+        }
+
+        const payload = await response.json();
+        if (!payload?.success) {
+          throw new Error(payload?.message || "HR dashboard payload malformed");
+        }
+
+        setState({
+          data: payload.data,
+          isLoading: false,
+          error: null,
+        });
+      } catch (error) {
+        if (error.name === "AbortError") return;
+        setState({
+          data: null,
+          isLoading: false,
+          error,
+        });
+      }
+    };
+
+    load();
+    return () => controller.abort();
+  }, []);
+
+  return state;
+}

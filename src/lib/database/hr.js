@@ -209,9 +209,9 @@ export async function getHrAttendanceSnapshot() {
 /* ============================================
    HR DASHBOARD HELPERS
 ============================================ */
-async function countTableRows(table, filters = (query) => query) {
+async function countTableRows(table, column = "*", filters = (query) => query) {
   const { error, count } = await filters(
-    supabase.from(table).select("id", { count: "exact", head: true })
+    supabase.from(table).select(column, { count: "exact", head: true })
   );
 
   if (error) {
@@ -223,10 +223,10 @@ async function countTableRows(table, filters = (query) => query) {
 }
 
 async function getTotalEmployeesSnapshot() {
-  const totalEmployees = await countTableRows("users");
+  const totalEmployees = await countTableRows("users", "user_id");
 
   const today = dayjs().format("YYYY-MM-DD");
-  const onLeave = await countTableRows("hr_absences", (query) =>
+  const onLeave = await countTableRows("hr_absences", "*", (query) =>
     query
       .lte("start_date", today)
       .gte("end_date", today)
@@ -472,9 +472,62 @@ export async function getDepartmentPerformance() {
 }
 
 export async function getHrDashboardSnapshot() {
-  const [{ totalEmployees, activeEmployees, inactiveEmployees }, attendanceRate, performanceScore, trainingCompliance, upcomingAbsences, activeWarnings, departmentPerformance, trainingRenewals] =
-    await Promise.all([
-      getTotalEmployeesSnapshot(),
-      getAttendanceRate(await getTotalEmployeesSnapshot().then((snapshot) => snapshot.totalEmployees).catch(() => 0)),
-    ]);
+  const { totalEmployees, activeEmployees, inactiveEmployees } = await getTotalEmployeesSnapshot();
+
+  const [
+    attendanceRate,
+    performanceScore,
+    trainingCompliance,
+    upcomingAbsences,
+    activeWarnings,
+    departmentPerformance,
+    trainingRenewals,
+  ] = await Promise.all([
+    getAttendanceRate(totalEmployees),
+    getPerformanceScore(),
+    getTrainingCompliance(),
+    getUpcomingAbsences(),
+    getActiveWarnings(),
+    getDepartmentPerformance(),
+    getTrainingRenewals(),
+  ]);
+
+  const hrDashboardMetrics = [
+    {
+      id: "totalEmployees",
+      label: "Total Employees",
+      icon: "👥",
+      active: activeEmployees,
+      inactive: inactiveEmployees,
+    },
+    {
+      id: "attendanceRate",
+      label: "Attendance Rate",
+      icon: "🕒",
+      value: `${attendanceRate}%`,
+      trend: null,
+    },
+    {
+      id: "performanceScore",
+      label: "Performance Score",
+      icon: "📈",
+      value: `${performanceScore} / 5`,
+      trend: null,
+    },
+    {
+      id: "trainingCompliance",
+      label: "Training Compliance",
+      icon: "🎓",
+      value: `${trainingCompliance}%`,
+      trend: null,
+    },
+  ];
+
+  return {
+    hrDashboardMetrics,
+    upcomingAbsences,
+    activeWarnings,
+    departmentPerformance,
+    trainingRenewals,
+  };
 }
