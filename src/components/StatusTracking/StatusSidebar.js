@@ -1,9 +1,9 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/StatusTracking/StatusSidebar.js
 
-import { useState, useEffect } from 'react';
-import StatusTimeline from '@/components/StatusTracking/StatusTimeline';
+import { useState, useEffect, useMemo } from 'react';
 import { SERVICE_STATUS_FLOW } from '@/lib/status/statusFlow';
+import JobProgressTracker from '@/components/StatusTracking/JobProgressTracker';
 
 const MOCK_STATUS_TEMPLATE = [
   {
@@ -197,6 +197,24 @@ export default function StatusSidebar({
 
   const currentStatusForDisplay = mockCurrentStatus || currentStatus;
 
+  const timelineStatuses = useMemo(() => {
+    if (!Array.isArray(statusHistory) || statusHistory.length === 0) return [];
+    return [...statusHistory]
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      .map((history) => {
+        const config = SERVICE_STATUS_FLOW[history.status?.toUpperCase()] || {};
+        const fallbackLabel = history.status
+          ? history.status.replace(/_/g, ' ')
+          : 'Status';
+        return {
+          status: history.status,
+          label: config.label || fallbackLabel,
+          department: config.department,
+          timestamp: history.timestamp,
+        };
+      });
+  }, [statusHistory]);
+
   // Format seconds to HH:MM:SS
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -204,12 +222,6 @@ export default function StatusSidebar({
     const secs = seconds % 60;
     
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Calculate time spent in each status
-  const getTimeInStatus = (statusId) => {
-    const history = statusHistory.filter(h => h.status === statusId);
-    return history.reduce((total, h) => total + (h.duration || 0), 0);
   };
 
   const toggleButtonStyle = compactMode
@@ -529,147 +541,23 @@ export default function StatusSidebar({
                 )}
               </div>
 
-              <div style={{
-                marginBottom: '20px',
-                padding: '16px',
-                background: '#fff',
-                borderRadius: '16px',
-                border: '1px solid #ffe0e0',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-              }}>
-                <h3 style={{ fontWeight: 'bold', color: '#555', marginBottom: '12px', fontSize: '16px' }}>
-                  Timeline Overview
-                </h3>
-                <StatusTimeline
-                  currentStatus={currentStatusForDisplay}
-                  statusHistory={statusHistory}
-                  getTimeInStatus={getTimeInStatus}
-                />
-              </div>
-
-              {/* Centered tree-style history */}
-              <div>
-                <h3 style={{ fontWeight: 'bold', color: '#555', marginBottom: '12px', fontSize: '16px' }}>
-                  Status Timeline
-                </h3>
-                {statusHistory.length === 0 ? (
-                  <div style={{ 
-                    textAlign: 'center', 
-                    padding: '20px', 
-                    color: '#999',
-                    fontSize: '14px'
-                  }}>
-                    No status history yet
-                  </div>
-                ) : (
-                  <div style={{
-                    position: 'relative',
-                    padding: '10px 0 10px',
-                    margin: '0 auto',
-                    maxWidth: '420px'
-                  }}>
-                    <div style={{
-                      position: 'absolute',
-                      left: '50%',
-                      top: '30px',
-                      bottom: '30px',
-                      width: '2px',
-                      background: 'linear-gradient(180deg, #ffe0e0, #f8b4b4)'
-                    }} />
-                    {[...statusHistory]
-                      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-                      .map((history, index, array) => {
-                        const statusConfig = SERVICE_STATUS_FLOW[history.status.toUpperCase()] || {};
-                        const timestamp = new Date(history.timestamp).toLocaleString('en-GB', {
-                          day: '2-digit',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        });
-                        const isLast = index === array.length - 1;
-                        return (
-                          <div
-                            key={`${history.status}-${history.timestamp}-${index}`}
-                            style={{
-                              position: 'relative',
-                              padding: '12px 0 32px',
-                              textAlign: 'center'
-                            }}
-                          >
-                            <div style={{
-                              position: 'absolute',
-                              left: '50%',
-                              top: 0,
-                              transform: 'translate(-50%, -50%)',
-                              width: '18px',
-                              height: '18px',
-                              borderRadius: '50%',
-                              backgroundColor: statusConfig.color || '#d10000',
-                              boxShadow: `0 0 12px ${(statusConfig.color || '#d10000')}22`
-                            }} />
-                            {!isLast && (
-                              <div style={{
-                                position: 'absolute',
-                                left: '50%',
-                                bottom: 0,
-                                transform: 'translateX(-50%)',
-                                width: '2px',
-                                height: '24px',
-                                backgroundColor: '#ffd5d5'
-                              }} />
-                            )}
-                            <div style={{
-                              margin: '0 auto',
-                              maxWidth: '320px',
-                              padding: '18px 16px 10px',
-                              borderRadius: '14px',
-                              backgroundColor: '#fff6f6',
-                              border: '1px solid #ffe0e0',
-                              fontFamily: `'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif`,
-                              boxShadow: '0 6px 18px rgba(0,0,0,0.06)'
-                            }}>
-                              <div style={{
-                                fontWeight: 600,
-                                fontSize: '15px',
-                                color: '#b00000',
-                                letterSpacing: '0.01em'
-                              }}>
-                                {statusConfig.label || history.status.replace(/_/g, ' ')}
-                              </div>
-                              <div style={{
-                                fontSize: '13px',
-                                color: '#666',
-                                marginTop: '6px'
-                              }}>
-                                {timestamp}
-                              </div>
-                              {history.duration && (
-                                <div style={{
-                                  fontSize: '12px',
-                                  color: '#a00000',
-                                  marginTop: '6px',
-                                  fontWeight: 600
-                                }}>
-                                  Duration: {Math.floor(history.duration / 60)}m {history.duration % 60}s
-                                </div>
-                              )}
-                              {history.description && (
-                                <div style={{
-                                  marginTop: '10px',
-                                  fontSize: '13px',
-                                  color: '#444',
-                                  lineHeight: 1.5
-                                }}>
-                                  {history.description}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                )}
-              </div>
+              {timelineStatuses.length > 0 ? (
+                <div style={{ marginBottom: '20px' }}>
+                  <JobProgressTracker
+                    statuses={timelineStatuses}
+                    currentStatus={currentStatusForDisplay}
+                  />
+                </div>
+              ) : (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '20px', 
+                  color: '#999',
+                  fontSize: '14px'
+                }}>
+                  No status history yet
+                </div>
+              )}
             </>
           )}
         </div>
