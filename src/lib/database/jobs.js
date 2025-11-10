@@ -1855,6 +1855,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       authorisedItems,
     });
 
+    // ⚠️ Verify: table or column not found in Supabase schema
     const completionStatus = determineCompletionStatus(tasks, writeUp?.completion_status);
     const latestAuthorizationId = authorisedItems.length > 0 ? authorisedItems[0].authorizationId : null;
     const rectificationItems = mergeRectificationSources(
@@ -1867,6 +1868,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       booked: writeUp?.booked || Array(10).fill(false),
       completionStatus,
       jobDescription: ensureBulletFormat(
+        // ⚠️ Verify: table or column not found in Supabase schema
         job.description || writeUp?.job_description_snapshot || ""
       ),
       tasks,
@@ -1901,6 +1903,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       fault: ensureBulletFormat(writeUp.work_performed || job.description || ""),
       caused: ensureBulletFormat(writeUp.recommendations || ""),
       rectification:
+        // ⚠️ Verify: table or column not found in Supabase schema
         ensureBulletFormat(writeUp.ratification || writeUp.rectification_notes || "") ||
         buildRectificationSummary(rectificationItems),
       warrantyClaim: writeUp.warranty_claim || "",
@@ -1957,6 +1960,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       }))
       .filter((task) => Boolean(task.label));
 
+    // ⚠️ Verify: table or column not found in Supabase schema
     const completionStatus = determineCompletionStatus(
       filteredTasks,
       writeUpData?.completionStatus
@@ -2080,10 +2084,15 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       labour_time: null, // Calculate if needed
       technician_id: job.assigned_to || null, // Get from job
       updated_at: new Date().toISOString(),
+      // ⚠️ Verify: table or column not found in Supabase schema
       completion_status: completionStatus,
+      // ⚠️ Verify: table or column not found in Supabase schema
       rectification_notes: rectificationSummary || null,
+      // ⚠️ Verify: table or column not found in Supabase schema
       job_description_snapshot: formattedJobDescription || null,
+      // ⚠️ Verify: table or column not found in Supabase schema
       vhc_authorization_reference: writeUpData?.vhcAuthorizationId || null,
+      // ⚠️ Verify: table or column not found in Supabase schema
       task_checklist: filteredTasks.map((task) => ({
         source: task.source,
         sourceKey: task.sourceKey,
