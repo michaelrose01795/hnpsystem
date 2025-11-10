@@ -49,10 +49,6 @@ const nextConfig = {
     NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID,
   },
 
-  // ✅ Skip lint errors during production build (GitHub Pages)
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
 };
 
 export default nextConfig;

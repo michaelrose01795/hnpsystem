@@ -4,6 +4,7 @@ import { supabase } from "../supabaseClient";
 
 const DEFAULT_ATTENDANCE_LIMIT = 50;
 
+// Format employee data consistently across all HR functions
 function formatEmployee(user) {
   if (!user) return { id: null, name: "Unknown" };
   const id = user.user_id ?? user.id ?? null;
@@ -13,6 +14,7 @@ function formatEmployee(user) {
   return { id, name };
 }
 
+// Retrieve attendance logs for a specified date range with employee details
 export async function getAttendanceLogs({ startDate, endDate, limit = DEFAULT_ATTENDANCE_LIMIT } = {}) {
   const effectiveEnd = endDate || dayjs().format("YYYY-MM-DD");
   const effectiveStart =
@@ -73,6 +75,7 @@ export async function getAttendanceLogs({ startDate, endDate, limit = DEFAULT_AT
   });
 }
 
+// Get all absence records with optional filtering
 export async function getAbsenceRecords({ limit = 50 } = {}) {
   const { data, error } = await supabase
     .from("hr_absences")
@@ -115,6 +118,7 @@ export async function getAbsenceRecords({ limit = 50 } = {}) {
   });
 }
 
+// Retrieve the current active overtime period
 export async function getCurrentOvertimePeriod() {
   const { data, error } = await supabase
     .from("overtime_periods")
@@ -131,6 +135,7 @@ export async function getCurrentOvertimePeriod() {
   return data || null;
 }
 
+// Get overtime summaries for all employees in the current period
 export async function getOvertimeSummaries() {
   const period = await getCurrentOvertimePeriod();
   if (!period) return [];
@@ -192,6 +197,7 @@ export async function getOvertimeSummaries() {
   }));
 }
 
+// Combined snapshot of attendance, overtime, and absence data
 export async function getHrAttendanceSnapshot() {
   const [attendanceLogs, overtimeSummaries, absenceRecords] = await Promise.all([
     getAttendanceLogs(),
@@ -209,6 +215,8 @@ export async function getHrAttendanceSnapshot() {
 /* ============================================
    HR DASHBOARD HELPERS
 ============================================ */
+
+// Helper to count rows in any table with optional filters
 async function countTableRows(table, column = "*", filters = (query) => query) {
   const { error, count } = await filters(
     supabase.from(table).select(column, { count: "exact", head: true })
@@ -222,6 +230,7 @@ async function countTableRows(table, column = "*", filters = (query) => query) {
   return count || 0;
 }
 
+// Get total employees with active/inactive breakdown
 async function getTotalEmployeesSnapshot() {
   const totalEmployees = await countTableRows("users", "user_id");
 
@@ -239,6 +248,7 @@ async function getTotalEmployeesSnapshot() {
   return { totalEmployees, activeEmployees: active, inactiveEmployees: inactive };
 }
 
+// Calculate today's attendance rate as a percentage
 async function getAttendanceRate(totalEmployees) {
   if (!totalEmployees) return 0;
 
@@ -259,6 +269,7 @@ async function getAttendanceRate(totalEmployees) {
   return Math.round((count / totalEmployees) * 100);
 }
 
+// Calculate average performance score from recent reviews
 async function getPerformanceScore() {
   const { data, error } = await supabase
     .from("hr_performance_reviews")
@@ -292,6 +303,7 @@ async function getPerformanceScore() {
   return Number((totalScore / scoredCount).toFixed(1));
 }
 
+// Calculate percentage of training assignments completed
 async function getTrainingCompliance() {
   const { data, error } = await supabase
     .from("hr_training_assignments")
@@ -308,6 +320,7 @@ async function getTrainingCompliance() {
   return Math.round((completed / data.length) * 100);
 }
 
+// Get upcoming absences within specified number of days
 export async function getUpcomingAbsences(daysAhead = 14) {
   const today = dayjs().format("YYYY-MM-DD");
   const future = dayjs().add(daysAhead, "day").format("YYYY-MM-DD");
@@ -351,6 +364,7 @@ export async function getUpcomingAbsences(daysAhead = 14) {
   }));
 }
 
+// Get active disciplinary warnings and cases
 export async function getActiveWarnings(limit = 5) {
   const { data, error } = await supabase
     .from("hr_disciplinary_cases")
@@ -391,6 +405,7 @@ export async function getActiveWarnings(limit = 5) {
   }));
 }
 
+// Get training renewals due soon
 export async function getTrainingRenewals(limit = 5) {
   const today = dayjs().format("YYYY-MM-DD");
   const horizon = dayjs().add(90, "day").format("YYYY-MM-DD");
@@ -439,6 +454,7 @@ export async function getTrainingRenewals(limit = 5) {
   });
 }
 
+// Get performance metrics by department
 export async function getDepartmentPerformance() {
   const { data, error } = await supabase
     .from("hr_employee_profiles")
@@ -471,6 +487,7 @@ export async function getDepartmentPerformance() {
   });
 }
 
+// Get complete dashboard snapshot with all metrics and alerts
 export async function getHrDashboardSnapshot() {
   const { totalEmployees, activeEmployees, inactiveEmployees } = await getTotalEmployeesSnapshot();
 
@@ -535,11 +552,14 @@ export async function getHrDashboardSnapshot() {
 /* ============================================
    EMPLOYEE DIRECTORY
 ============================================ */
+
+// Calculate probation end date from start date
 function deriveProbationEnd(startDate) {
   if (!startDate) return null;
   return dayjs(startDate).add(6, "month").format("YYYY-MM-DD");
 }
 
+// Build a map of users currently on approved leave
 async function getActiveAbsenceMap() {
   const today = dayjs().format("YYYY-MM-DD");
 
@@ -564,6 +584,7 @@ async function getActiveAbsenceMap() {
   return map;
 }
 
+// Normalize document arrays from various formats into consistent structure
 const normalizeDocuments = (documents) => {
   if (!documents) return [];
   let parsed = documents;
@@ -584,6 +605,7 @@ const normalizeDocuments = (documents) => {
   }));
 };
 
+// Format emergency contact data into consistent display format
 const formatEmergencyContact = (value) => {
   if (!value) return { contact: "Not provided", address: "Not provided" };
   if (typeof value === "string") {
@@ -603,6 +625,7 @@ const formatEmergencyContact = (value) => {
   return { contact: "Not provided", address: "Not provided" };
 };
 
+// Get complete employee directory with profile details
 export async function getEmployeeDirectory() {
   const [profilesResult, activeAbsenceMap] = await Promise.all([
     supabase
@@ -672,12 +695,12 @@ export async function getEmployeeDirectory() {
   });
 }
 
-// Helper that loads user names for any referenced IDs so we can resolve approvers and employees.
+// Helper that loads user names for any referenced IDs so we can resolve approvers and employees
 async function fetchUsersByIds(ids = []) {
-  const uniqueIds = Array.from(new Set((ids || []).filter(Boolean))); // ensure IDs are unique and truthy
+  const uniqueIds = Array.from(new Set((ids || []).filter(Boolean)));
 
   if (!uniqueIds.length) {
-    return new Map(); // return empty map when we have nothing to resolve
+    return new Map();
   }
 
   const { data, error } = await supabase
@@ -686,52 +709,52 @@ async function fetchUsersByIds(ids = []) {
     .in("user_id", uniqueIds);
 
   if (error) {
-    console.error("❌ fetchUsersByIds error", error); // log the Supabase error for debugging
-    throw error; // propagate so API handlers can surface a 500
+    console.error("❌ fetchUsersByIds error", error);
+    throw error;
   }
 
-  const map = new Map(); // map user_id -> friendly display name
+  const map = new Map();
   (data || []).forEach((user) => {
-    map.set(user.user_id, formatEmployee(user).name); // use existing formatter for consistent naming
+    map.set(user.user_id, formatEmployee(user).name);
   });
 
   return map;
 }
 
-// Translate the raw approval status into a friendly state for UI widgets.
+// Translate the raw approval status into a friendly state for UI widgets
 function mapLeaveStatus(status, startDate, endDate) {
-  const normalized = (status || "").toLowerCase(); // normalize for comparisons
-  if (normalized === "pending") return "Pending"; // still awaiting approval
-  if (normalized === "rejected") return "Rejected"; // explicitly declined
+  const normalized = (status || "").toLowerCase();
+  if (normalized === "pending") return "Pending";
+  if (normalized === "rejected") return "Rejected";
 
   if (normalized === "approved") {
-    const today = dayjs(); // capture today for comparisons
-    if (startDate && dayjs(startDate).isAfter(today, "day")) return "Scheduled"; // future-approved leave
-    if (endDate && dayjs(endDate).isBefore(today, "day")) return "Completed"; // already finished
-    return "Approved"; // otherwise active/ongoing
+    const today = dayjs();
+    if (startDate && dayjs(startDate).isAfter(today, "day")) return "Scheduled";
+    if (endDate && dayjs(endDate).isBefore(today, "day")) return "Completed";
+    return "Approved";
   }
 
-  return status || "Pending"; // default fallback mirrors legacy behaviour
+  return status || "Pending";
 }
 
-// Inclusive day count helper so we can total the amount of leave taken.
+// Inclusive day count helper so we can total the amount of leave taken
 function calculateAbsenceDays(startDate, endDate) {
-  if (!startDate || !endDate) return 0; // guard against incomplete ranges
-  const start = dayjs(startDate); // parse start date
-  const end = dayjs(endDate); // parse end date
-  if (!start.isValid() || !end.isValid()) return 0; // ignore malformed dates
-  return Math.max(end.diff(start, "day") + 1, 0); // inclusive difference, clamped to zero
+  if (!startDate || !endDate) return 0;
+  const start = dayjs(startDate);
+  const end = dayjs(endDate);
+  if (!start.isValid() || !end.isValid()) return 0;
+  return Math.max(end.diff(start, "day") + 1, 0);
 }
 
-// Rough entitlement estimator so part-time staff get a reduced allowance by default.
+// Rough entitlement estimator so part-time staff get a reduced allowance by default
 function estimateAnnualEntitlement(employmentType) {
-  const normalized = (employmentType || "").toLowerCase(); // case-insensitive comparison
-  if (normalized.includes("part")) return 15; // part-time contract default
-  if (normalized.includes("contract")) return 10; // contractors typically have smaller banks
-  return 25; // full-time default allowance
+  const normalized = (employmentType || "").toLowerCase();
+  if (normalized.includes("part")) return 15;
+  if (normalized.includes("contract")) return 10;
+  return 25;
 }
 
-// Pull structured leave requests from hr_absences with approver details resolved.
+// Pull structured leave requests from hr_absences with approver details resolved
 export async function getLeaveRequests({ limit = 50 } = {}) {
   const { data, error } = await supabase
     .from("hr_absences")
@@ -756,32 +779,32 @@ export async function getLeaveRequests({ limit = 50 } = {}) {
     .limit(limit);
 
   if (error) {
-    console.error("❌ getLeaveRequests error", error); // log Supabase failure for debugging
-    throw error; // bubble to caller so API can return 500
+    console.error("❌ getLeaveRequests error", error);
+    throw error;
   }
 
-  const approverIds = (data || []).map((row) => row.approved_by).filter(Boolean); // collect approver references
-  const approverMap = await fetchUsersByIds(approverIds); // resolve approver names
+  const approverIds = (data || []).map((row) => row.approved_by).filter(Boolean);
+  const approverMap = await fetchUsersByIds(approverIds);
 
   return (data || []).map((row) => {
-    const employee = formatEmployee(row.user); // consistent employee naming
-    const approver = approverMap.get(row.approved_by) || "Awaiting approval"; // fallback when unresolved
+    const employee = formatEmployee(row.user);
+    const approver = approverMap.get(row.approved_by) || "Awaiting approval";
 
     return {
-      id: `LR-${row.absence_id}`, // stable identifier for UI lists
-      employeeId: `EMP-${row.user_id}`, // align with employee directory formatting
-      employee: employee.name, // readable employee name
-      type: row.type, // leave type
-      startDate: row.start_date, // request start
-      endDate: row.end_date, // request end
-      status: mapLeaveStatus(row.approval_status, row.start_date, row.end_date), // friendly status label
-      submittedOn: row.created_at, // request creation timestamp
-      approver, // resolved approver display name
+      id: `LR-${row.absence_id}`,
+      employeeId: `EMP-${row.user_id}`,
+      employee: employee.name,
+      type: row.type,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      status: mapLeaveStatus(row.approval_status, row.start_date, row.end_date),
+      submittedOn: row.created_at,
+      approver,
     };
   });
 }
 
-// Aggregate leave balances by employee using approved hr_absences rows.
+// Aggregate leave balances by employee using approved hr_absences rows
 export async function getLeaveBalances() {
   const [{ data: profiles, error: profileError }, { data: absences, error: absencesError }] = await Promise.all([
     supabase
@@ -804,42 +827,42 @@ export async function getLeaveBalances() {
   ]);
 
   if (profileError) {
-    console.error("❌ getLeaveBalances profiles error", profileError); // bubble profile fetch issues
+    console.error("❌ getLeaveBalances profiles error", profileError);
     throw profileError;
   }
 
   if (absencesError) {
-    console.error("❌ getLeaveBalances absences error", absencesError); // bubble absence fetch issues
+    console.error("❌ getLeaveBalances absences error", absencesError);
     throw absencesError;
   }
 
-  const approvedTotals = new Map(); // track total approved days per employee
+  const approvedTotals = new Map();
   (absences || []).forEach((absence) => {
-    if ((absence.approval_status || "").toLowerCase() !== "approved") return; // only count approved leave
-    const days = calculateAbsenceDays(absence.start_date, absence.end_date); // inclusive days off
-    if (!days) return; // skip zero length
-    const current = approvedTotals.get(absence.user_id) || 0; // current running total
-    approvedTotals.set(absence.user_id, current + days); // accumulate
+    if ((absence.approval_status || "").toLowerCase() !== "approved") return;
+    const days = calculateAbsenceDays(absence.start_date, absence.end_date);
+    if (!days) return;
+    const current = approvedTotals.get(absence.user_id) || 0;
+    approvedTotals.set(absence.user_id, current + days);
   });
 
   return (profiles || []).map((profile) => {
-    const userId = profile.user_id; // supabase user key
-    const entitlement = estimateAnnualEntitlement(profile.employment_type); // derive baseline allowance
-    const taken = approvedTotals.get(userId) || 0; // total approved time
-    const remaining = Math.max(entitlement - taken, 0); // guard against negatives
+    const userId = profile.user_id;
+    const entitlement = estimateAnnualEntitlement(profile.employment_type);
+    const taken = approvedTotals.get(userId) || 0;
+    const remaining = Math.max(entitlement - taken, 0);
 
     return {
-      employeeId: `EMP-${userId}`, // align with other HR UI keys
-      employee: formatEmployee(profile.user).name, // user-friendly name
-      department: profile.department || "Unassigned", // default when missing
-      entitlement, // annual allowance estimate
-      taken, // days already used
-      remaining, // days remaining
+      employeeId: `EMP-${userId}`,
+      employee: formatEmployee(profile.user).name,
+      department: profile.department || "Unassigned",
+      entitlement,
+      taken,
+      remaining,
     };
   });
 }
 
-// Pull historical payroll adjustments to display pay rate changes and bonuses.
+// Pull historical payroll adjustments to display pay rate changes and bonuses
 export async function getPayRateHistory({ limit = 50 } = {}) {
   const { data, error } = await supabase
     .from("hr_payroll_adjustments")
@@ -848,11 +871,11 @@ export async function getPayRateHistory({ limit = 50 } = {}) {
     .limit(limit);
 
   if (error) {
-    console.error("❌ getPayRateHistory error", error); // record failure for diagnostics
+    console.error("❌ getPayRateHistory error", error);
     throw error;
   }
 
-  const payrollIds = Array.from(new Set((data || []).map((row) => row.payroll_id).filter(Boolean))); // unique payroll runs
+  const payrollIds = Array.from(new Set((data || []).map((row) => row.payroll_id).filter(Boolean)));
   let payrollRuns = [];
 
   if (payrollIds.length) {
@@ -862,64 +885,64 @@ export async function getPayRateHistory({ limit = 50 } = {}) {
       .in("payroll_id", payrollIds);
 
     if (payrollError) {
-      console.error("❌ getPayRateHistory payroll error", payrollError); // log related failure
+      console.error("❌ getPayRateHistory payroll error", payrollError);
       throw payrollError;
     }
 
-    payrollRuns = payrollData || []; // hold onto run metadata for later mapping
+    payrollRuns = payrollData || [];
   }
 
-  const payrollMap = new Map(); // map payroll_id -> payroll run details
+  const payrollMap = new Map();
   payrollRuns.forEach((run) => {
-    payrollMap.set(run.payroll_id, run); // store for quick lookup
+    payrollMap.set(run.payroll_id, run);
   });
 
-  const approverIds = payrollRuns.map((run) => run.processed_by).filter(Boolean); // gather processed_by references
-  const employeeIds = (data || []).map((row) => row.user_id).filter(Boolean); // gather employee IDs involved
-  const nameMap = await fetchUsersByIds([...approverIds, ...employeeIds]); // resolve all required names in one call
+  const approverIds = payrollRuns.map((run) => run.processed_by).filter(Boolean);
+  const employeeIds = (data || []).map((row) => row.user_id).filter(Boolean);
+  const nameMap = await fetchUsersByIds([...approverIds, ...employeeIds]);
 
   return (data || []).map((row) => {
-    const payroll = payrollMap.get(row.payroll_id); // associated payroll run
-    const approverName = payroll?.processed_by ? nameMap.get(payroll.processed_by) : null; // who processed the payroll
-    const employeeName = nameMap.get(row.user_id) || `Employee ${row.user_id}`; // fallback when no profile exists
-    const effectiveDate = payroll?.period_start || row.created_at; // use payroll period when available
+    const payroll = payrollMap.get(row.payroll_id);
+    const approverName = payroll?.processed_by ? nameMap.get(payroll.processed_by) : null;
+    const employeeName = nameMap.get(row.user_id) || `Employee ${row.user_id}`;
+    const effectiveDate = payroll?.period_start || row.created_at;
 
     return {
-      id: `PAY-${row.adjustment_id}`, // unique identifier for UI keys
-      employeeId: `EMP-${row.user_id}`, // match directory format
-      employee: employeeName, // resolved employee name
-      effectiveDate, // when the change took effect
-      rate: Number(row.amount || 0), // numeric representation of adjustment value
-      type: row.type || "Adjustment", // categorize change type
-      approvedBy: approverName || "Payroll Team", // default label when unresolved
+      id: `PAY-${row.adjustment_id}`,
+      employeeId: `EMP-${row.user_id}`,
+      employee: employeeName,
+      effectiveDate,
+      rate: Number(row.amount || 0),
+      type: row.type || "Adjustment",
+      approvedBy: approverName || "Payroll Team",
     };
   });
 }
 
-// Aggregate frequently used HR datasets so UI hooks can hydrate multiple widgets in one request.
+// Aggregate frequently used HR datasets so UI hooks can hydrate multiple widgets in one request
 export async function getHrOperationsSnapshot() {
   const [attendanceSnapshot, dashboardSnapshot, employeeDirectory, leaveRequests, leaveBalances, payRateHistory] =
     await Promise.all([
-      getHrAttendanceSnapshot(), // attendance, overtime, absence summaries
-      getHrDashboardSnapshot(), // top-level dashboard metrics and alerts
-      getEmployeeDirectory(), // staff roster details
-      getLeaveRequests(), // individual leave requests for approval lists
-      getLeaveBalances(), // entitlement vs usage totals
-      getPayRateHistory(), // payroll adjustment history
+      getHrAttendanceSnapshot(),
+      getHrDashboardSnapshot(),
+      getEmployeeDirectory(),
+      getLeaveRequests(),
+      getLeaveBalances(),
+      getPayRateHistory(),
     ]);
 
   return {
-    hrDashboardMetrics: dashboardSnapshot.hrDashboardMetrics, // summary metrics for dashboard cards
-    upcomingAbsences: dashboardSnapshot.upcomingAbsences, // near-term leave events
-    activeWarnings: dashboardSnapshot.activeWarnings, // outstanding disciplinary cases
-    departmentPerformance: dashboardSnapshot.departmentPerformance, // productivity breakdown
-    trainingRenewals: dashboardSnapshot.trainingRenewals, // soon-to-expire training assignments
-    employeeDirectory, // directory for selection lists
-    attendanceLogs: attendanceSnapshot.attendanceLogs, // clocking entries
-    absenceRecords: attendanceSnapshot.absenceRecords, // historical absences list
-    overtimeSummaries: attendanceSnapshot.overtimeSummaries, // overtime totals by employee
-    payRateHistory, // payroll change history
-    leaveRequests, // pending and historical leave requests
-    leaveBalances, // entitlement usage per employee
+    hrDashboardMetrics: dashboardSnapshot.hrDashboardMetrics,
+    upcomingAbsences: dashboardSnapshot.upcomingAbsences,
+    activeWarnings: dashboardSnapshot.activeWarnings,
+    departmentPerformance: dashboardSnapshot.departmentPerformance,
+    trainingRenewals: dashboardSnapshot.trainingRenewals,
+    employeeDirectory,
+    attendanceLogs: attendanceSnapshot.attendanceLogs,
+    absenceRecords: attendanceSnapshot.absenceRecords,
+    overtimeSummaries: attendanceSnapshot.overtimeSummaries,
+    payRateHistory,
+    leaveRequests,
+    leaveBalances,
   };
 }
