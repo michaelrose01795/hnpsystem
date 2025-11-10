@@ -62,11 +62,18 @@ export default function MyJobsPage() {
   const techsList = usersByRole["Techs"] || [];
   const motTestersList = usersByRole["MOT Tester"] || [];
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
-  const hasRoleAccess = (() => {
-    if (!user?.role) return false;
-    const normalized = String(user.role).toLowerCase();
+
+  // Some contexts store a single `role`, others expose an array of `roles`
+  const userRoles = Array.isArray(user?.roles)
+    ? user.roles
+    : user?.role
+      ? [user.role]
+      : [];
+
+  const hasRoleAccess = userRoles.some((roleName) => {
+    const normalized = String(roleName).toLowerCase();
     return normalized.includes("tech") || normalized.includes("mot");
-  })();
+  });
   const hasTechnicianAccess =
     (username && allowedTechNames.has(username)) || hasRoleAccess;
 

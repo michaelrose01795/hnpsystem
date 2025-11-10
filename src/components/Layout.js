@@ -9,6 +9,7 @@ import StatusSidebar from "../components/StatusTracking/StatusSidebar"; // impor
 import Sidebar from "./Sidebar";
 import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
+import { usersByRole } from "@/config/users";
 import HrTabsBar from "./HR/HrTabsBar";
 
 export default function Layout({ children }) {
@@ -49,7 +50,12 @@ export default function Layout({ children }) {
   ];
 
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
-  const isTech = userRoles.includes("techs");
+  const techsList = usersByRole?.["Techs"] || [];
+  const motTestersList = usersByRole?.["MOT Tester"] || [];
+  const allowedTechNames = new Set([...techsList, ...motTestersList]);
+  const normalizedUsername = typeof user?.username === "string" ? user.username.trim() : "";
+  const hasTechRole = userRoles.some((role) => role.includes("tech") || role.includes("mot"));
+  const isTech = (normalizedUsername && allowedTechNames.has(normalizedUsername)) || hasTechRole;
   const canViewStatusSidebar = userRoles.some((role) =>
     statusSidebarRoles.includes(role)
   );
@@ -426,7 +432,6 @@ export default function Layout({ children }) {
             gap: "16px",
             transition: "width 0.25s ease",
             position: "relative",
-            overflowY: "auto",
           }}
         >
           {isSidebarOpen ? (
@@ -728,6 +733,24 @@ export default function Layout({ children }) {
                     {currentJob?.jobNumber ? `Open Job ${currentJob.jobNumber}` : "No Current Job"}
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  style={{
+                    padding: "5px 14px",
+                    borderRadius: "12px",
+                    border: "1px solid #d10000",
+                    background: "#ffffff",
+                    color: "#d10000",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    boxShadow: "0 6px 14px rgba(209,0,0,0.12)",
+                    transition: "all 0.2s ease",
+                    width: isMobile ? "100%" : "auto",
+                  }}
+                >
+                  Start Job
+                </button>
               </div>
             )}
           </section>
@@ -774,7 +797,7 @@ export default function Layout({ children }) {
         />
       )}
 
-      {userRoles.includes("techs") && (
+      {isTech && (
         <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       )}
     </div>
