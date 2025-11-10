@@ -213,11 +213,12 @@ export default function VHCDetails() {
   };
 
   // ✅ Handle authorize selected items
-  const handleAuthorizeSelected = () => {
+  const handleAuthorizeSelected = (targetIds = selectedItems) => {
+    if (!targetIds.length) return;
     setVhcData(prev => ({
       ...prev,
       vhc_items: prev.vhc_items.map(item =>
-        selectedItems.includes(item.id)
+        targetIds.includes(item.id)
           ? {
               ...item,
               authorized: true,
@@ -228,11 +229,12 @@ export default function VHCDetails() {
           : item
       )
     }));
-    setSelectedItems([]); // clear selection
+    setSelectedItems(prev => prev.filter(id => !targetIds.includes(id))); // clear only ids we handled
   };
 
   // ✅ Handle decline selected items
-  const handleDeclineSelected = () => {
+  const handleDeclineSelected = (targetIds = selectedItems) => {
+    if (!targetIds.length) return;
     if (!declineReason || declineReason === DECLINE_REASON_OPTIONS[0]) {
       alert("Please select a reason for declining before applying the change."); // prompt user to choose a reason
       return;
@@ -243,7 +245,7 @@ export default function VHCDetails() {
     setVhcData(prev => ({
       ...prev,
       vhc_items: prev.vhc_items.map(item =>
-        selectedItems.includes(item.id)
+        targetIds.includes(item.id)
           ? {
               ...item,
               declined: true,
@@ -254,7 +256,7 @@ export default function VHCDetails() {
           : item
       )
     }));
-    setSelectedItems([]); // clear selection
+    setSelectedItems(prev => prev.filter(id => !targetIds.includes(id))); // clear only ids we handled
   };
 
   // ✅ Handle toggle authorize/decline for individual item
@@ -393,16 +395,26 @@ export default function VHCDetails() {
   };
 
   // ✅ Calculate totals
-  const calculateTotal = (items) => {
-    return items.reduce((sum, item) => {
-      return sum + parseFloat(item.total_price || 0);
-    }, 0);
-  };
+  const calculateTotal = (items) =>
+    items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+
+  const calculateSelectedTotal = (items) =>
+    items.reduce(
+      (sum, item) =>
+        selectedItems.includes(item.id)
+          ? sum + parseFloat(item.total_price || 0)
+          : sum,
+      0
+    );
 
   // ✅ Shared layout for decline reason dropdowns and bulk action buttons
-  const renderBulkActionControls = () => {
-    const declineDisabled = selectedItems.length === 0; // disable when nothing selected
-    const authorizeDisabled = selectedItems.length === 0; // disable when nothing selected
+  const renderBulkActionControls = (items = []) => {
+    const sectionSelectedIds = selectedItems.filter((id) =>
+      items.some((item) => item.id === id)
+    );
+    const hasSelection = sectionSelectedIds.length > 0;
+    const declineDisabled = !hasSelection; // disable when nothing selected in this section
+    const authorizeDisabled = !hasSelection;
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
@@ -457,7 +469,7 @@ export default function VHCDetails() {
 
         <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", flexWrap: "wrap" }}>
           <button
-            onClick={handleDeclineSelected}
+            onClick={() => handleDeclineSelected(sectionSelectedIds)}
             disabled={declineDisabled}
             style={{
               padding: "10px 20px",
@@ -474,7 +486,7 @@ export default function VHCDetails() {
             Decline Selected
           </button>
           <button
-            onClick={handleAuthorizeSelected}
+            onClick={() => handleAuthorizeSelected(sectionSelectedIds)}
             disabled={authorizeDisabled}
             style={{
               padding: "10px 20px",
@@ -674,34 +686,6 @@ export default function VHCDetails() {
               <p style={{ fontSize: "14px", color: "#666", marginBottom: "8px" }}>
                 <strong>MOT Expiry:</strong> {vhcData.mot_expiry}
               </p>
-              <div style={{ marginTop: "16px", display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                {[
-                  { letter: "S", initials: vhcData.service_advisor },
-                  { letter: "T", initials: vhcData.technician },
-                  { letter: "P", initials: vhcData.parts_person },
-                  { letter: "L", initials: vhcData.location_person },
-                  { letter: "A", initials: vhcData.admin_person }
-                ].map((person, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      width: "35px",
-                      height: "35px",
-                      borderRadius: "50%",
-                      backgroundColor: person.initials ? "#d10000" : "transparent",
-                      border: person.initials ? "none" : "2px solid #d10000",
-                      color: person.initials ? "white" : "#d10000",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "11px",
-                      fontWeight: "600"
-                    }}
-                  >
-                    {person.initials || person.letter}
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </div>
@@ -883,28 +867,17 @@ export default function VHCDetails() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "12px", flexWrap: "wrap" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
                       <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#ef4444" }}>
-                        ⚠️ Red - Immediate Attention Required
+                        Red - Immediate Attention Required
                       </h3>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleSelectAll(redItems)}
-                        style={{
-                          padding: "6px 12px",
-                          borderRadius: "6px",
-                          border: "1px solid #ef4444",
-                          backgroundColor: allRedSelected ? "#ef4444" : "white",
-                          color: allRedSelected ? "white" : "#ef4444",
-                          cursor: "pointer",
-                          fontSize: "12px",
-                          fontWeight: "600"
-                        }}
-                      >
-                        {allRedSelected ? "Clear Selection" : "Select All"}
-                      </button>
                     </div>
-                    <p style={{ fontSize: "20px", fontWeight: "700", color: "#ef4444" }}>
-                      Total: £{calculateTotal(redItems).toFixed(2)}
-                    </p>
+                    <div style={{ textAlign: "right" }}>
+                      <p style={{ fontSize: "20px", fontWeight: "700", color: "#ef4444" }}>
+                        Section Total: £{calculateTotal(redItems).toFixed(2)}
+                      </p>
+                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#991b1b" }}>
+                        Selected Total: £{calculateSelectedTotal(redItems).toFixed(2)}
+                      </p>
+                    </div>
                   </div>
                   
                   {/* Table Header */}
@@ -924,7 +897,15 @@ export default function VHCDetails() {
                     <div style={{ textAlign: "center" }}>Labor</div>
                     <div style={{ textAlign: "center" }}>Price</div>
                     <div style={{ textAlign: "center" }}>Status</div>
-                    <div></div>
+                    <div style={{ display: "flex", justifyContent: "center" }}>
+                      <input
+                        type="checkbox"
+                        checked={allRedSelected}
+                        onChange={() => handleToggleSelectAll(redItems)}
+                        title="Select all red items"
+                        style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                      />
+                    </div>
                   </div>
 
                   {/* Red Items */}
@@ -1023,7 +1004,7 @@ export default function VHCDetails() {
                   })}
 
                   {/* Action controls with decline reason + reminder selections */}
-                  {renderBulkActionControls()}
+                  {renderBulkActionControls(redItems)}
                 </div>
               )}
 
@@ -1039,28 +1020,17 @@ export default function VHCDetails() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "12px", flexWrap: "wrap" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
                       <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#fbbf24" }}>
-                        ⚡ Amber - Not Urgent (Recommended)
+                        Amber - Not Urgent
                       </h3>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleSelectAll(amberItems)}
-                        style={{
-                          padding: "6px 12px",
-                          borderRadius: "6px",
-                          border: "1px solid #f59e0b",
-                          backgroundColor: allAmberSelected ? "#f59e0b" : "white",
-                          color: allAmberSelected ? "white" : "#f59e0b",
-                          cursor: "pointer",
-                          fontSize: "12px",
-                          fontWeight: "600"
-                        }}
-                      >
-                        {allAmberSelected ? "Clear Selection" : "Select All"}
-                      </button>
                     </div>
-                    <p style={{ fontSize: "20px", fontWeight: "700", color: "#fbbf24" }}>
-                      Total: £{calculateTotal(amberItems).toFixed(2)}
-                    </p>
+                    <div style={{ textAlign: "right" }}>
+                      <p style={{ fontSize: "20px", fontWeight: "700", color: "#fbbf24" }}>
+                        Section Total: £{calculateTotal(amberItems).toFixed(2)}
+                      </p>
+                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#92400e" }}>
+                        Selected Total: £{calculateSelectedTotal(amberItems).toFixed(2)}
+                      </p>
+                    </div>
                   </div>
                   
                   {/* Table Header */}
@@ -1080,7 +1050,15 @@ export default function VHCDetails() {
                     <div style={{ textAlign: "center" }}>Labor</div>
                     <div style={{ textAlign: "center" }}>Price</div>
                     <div style={{ textAlign: "center" }}>Status</div>
-                    <div></div>
+                    <div style={{ display: "flex", justifyContent: "center" }}>
+                      <input
+                        type="checkbox"
+                        checked={allAmberSelected}
+                        onChange={() => handleToggleSelectAll(amberItems)}
+                        title="Select all amber items"
+                        style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                      />
+                    </div>
                   </div>
 
                   {/* Amber Items */}
@@ -1179,7 +1157,7 @@ export default function VHCDetails() {
                   })}
 
                   {/* Action controls with decline reason + reminder selections */}
-                  {renderBulkActionControls()}
+                  {renderBulkActionControls(amberItems)}
                 </div>
               )}
 

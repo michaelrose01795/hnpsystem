@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js"; // Import Supabase factory
 import { supabase as browserSupabase } from "../../../lib/supabaseClient"; // Import shared Supabase client for fallback use
 import { SERVICE_STATUS_FLOW } from "../../../lib/status/statusFlow"; // Import status flow definition for metadata enrichment
 
+// TODO: Replace these inline Supabase queries with src/lib/database/jobs helpers (getDashboardData/getCurrentStatus) for consistency.
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL; // Read Supabase project URL from environment
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Read optional service role key for server-side elevated access
 const dbClient = serviceRoleKey

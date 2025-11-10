@@ -15,6 +15,8 @@ import {
   leaveBalances as mockLeaveBalances,
 } from "../lib/hr/mockData"; // local fallback dataset for offline/dev scenarios
 
+// TODO: Replace mock aggregations with Supabase-backed helpers from src/lib/database/hr.js (getHrDashboardSnapshot et al).
+
 /**
  * Supabase-backed loader for the HR workspace. Aggregates leave, training, payroll, and attendance data.
  * Falls back to static mock data if the API fails so the UI remains interactive during development.

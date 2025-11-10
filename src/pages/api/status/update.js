@@ -6,6 +6,8 @@ import {
   isValidTransition,
 } from "../../../lib/status/statusFlow"; // Import status flow helpers for validation and metadata
 
+// TODO: Delegate reads/writes to src/lib/database/jobs helpers so status updates share the same data layer as the rest of the app.
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL; // Read Supabase project URL from environment variables
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Read optional service role key for privileged access
 const dbClient = serviceRoleKey

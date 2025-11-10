@@ -41,9 +41,17 @@ export default function Layout({ children }) {
   const isMobile = viewportWidth <= 640;
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
-  const urlJobId = router.query.id || router.query.jobId || null;
+  const urlJobId =
+    router.query.id ||
+    router.query.jobId ||
+    router.query.jobNumber ||
+    router.query.jobnumber ||
+    router.query.job ||
+    null;
   const [searchedJobId, setSearchedJobId] = useState(null);
-  const activeJobId = urlJobId || searchedJobId;
+  const [isAutoJobCleared, setIsAutoJobCleared] = useState(false);
+  const hasActiveAutoJob = !!(urlJobId && !isAutoJobCleared);
+  const activeJobId = searchedJobId || (hasActiveAutoJob ? urlJobId : null);
   const [currentJobStatus, setCurrentJobStatus] = useState("booked");
 
   const statusSidebarRoles = [
@@ -118,8 +126,23 @@ export default function Layout({ children }) {
   }, [activeJobId]);
 
   useEffect(() => {
-    if (urlJobId) setSearchedJobId(null);
+    if (urlJobId) {
+      setSearchedJobId(null);
+      setIsAutoJobCleared(false);
+    }
   }, [urlJobId]);
+
+  const handleJobSearch = (jobId) => {
+    setSearchedJobId(jobId);
+    setIsAutoJobCleared(false);
+  };
+
+  const handleJobClear = () => {
+    setSearchedJobId(null);
+    if (urlJobId) {
+      setIsAutoJobCleared(true);
+    }
+  };
 
   const fetchCurrentJobStatus = async (id) => {
     try {
@@ -759,8 +782,9 @@ export default function Layout({ children }) {
           currentStatus={currentJobStatus}
           isOpen={isStatusSidebarOpen}
           onToggle={() => setIsStatusSidebarOpen(!isStatusSidebarOpen)}
-          onJobSearch={setSearchedJobId}
-          hasUrlJobId={!!urlJobId}
+          onJobSearch={handleJobSearch}
+          onJobClear={handleJobClear}
+          hasUrlJobId={hasActiveAutoJob}
           viewportWidth={viewportWidth}
           isCompact={isTablet}
         />

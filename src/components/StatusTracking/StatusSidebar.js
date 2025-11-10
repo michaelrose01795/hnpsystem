@@ -4,6 +4,45 @@ import { useState, useEffect } from 'react';
 import StatusTimeline from './StatusTimeline';
 import { SERVICE_STATUS_FLOW } from '../../lib/status/statusFlow';
 
+const MOCK_STATUS_TEMPLATE = [
+  {
+    status: 'booked',
+    hoursAgo: 48,
+    durationMinutes: 30,
+    description: 'Online booking confirmed'
+  },
+  {
+    status: 'customer_arrived',
+    hoursAgo: 30,
+    durationMinutes: 15,
+    description: 'Vehicle checked in at reception'
+  },
+  {
+    status: 'job_accepted',
+    hoursAgo: 29,
+    durationMinutes: 20,
+    description: 'Service team validated work required'
+  },
+  {
+    status: 'assigned_to_tech',
+    hoursAgo: 6,
+    durationMinutes: 10,
+    description: 'Workshop allocated technician'
+  },
+  {
+    status: 'in_progress',
+    hoursAgo: 3,
+    durationMinutes: 90,
+    description: 'Technician actively working on vehicle'
+  },
+  {
+    status: 'waiting_for_parts',
+    hoursAgo: 1.5,
+    durationMinutes: 40,
+    description: 'Paused awaiting parts delivery'
+  }
+];
+
 // This is the main status sidebar that shows on all pages
 // It displays the complete process flow with current status highlighted
 export default function StatusSidebar({
@@ -12,6 +51,7 @@ export default function StatusSidebar({
   isOpen,
   onToggle,
   onJobSearch,
+  onJobClear,
   hasUrlJobId,
   viewportWidth = 1440,
   isCompact = false,
@@ -21,6 +61,7 @@ export default function StatusSidebar({
   const [currentTimer, setCurrentTimer] = useState(0); // Current session time
   const [searchInput, setSearchInput] = useState(''); // Search input state
   const [searchError, setSearchError] = useState(''); // Error message state
+  const [mockCurrentStatus, setMockCurrentStatus] = useState(null);
   const safeViewportWidth = typeof viewportWidth === 'number' ? viewportWidth : 1440;
   const compactMode = isCompact || safeViewportWidth <= 1100;
   const panelWidth = compactMode ? Math.min(Math.max(safeViewportWidth - 32, 280), 420) : 400;
@@ -32,47 +73,83 @@ export default function StatusSidebar({
       setStatusHistory([]);
       setTotalTimeSpent(0);
       setCurrentTimer(0);
+      setMockCurrentStatus(null);
       return;
     }
     
-    fetchStatusHistory();
+    const loadHistory = async () => {
+      const fetched = await fetchStatusHistory(jobId);
+      if (!fetched) {
+        applyMockStatusData(jobId);
+      } else {
+        setMockCurrentStatus(null);
+      }
+    };
+
+    loadHistory();
   }, [jobId]);
 
   // Fetch the complete status history for this job
-  const fetchStatusHistory = async () => {
+  const fetchStatusHistory = async (targetJobId) => {
     try {
-      const response = await fetch(`/api/status/getHistory?jobId=${jobId}`);
+      const response = await fetch(`/api/status/getHistory?jobId=${targetJobId}`);
       const data = await response.json();
       
       if (data.success) {
-        setStatusHistory(data.history); // Array of {status, timestamp, userId, duration}
-        setTotalTimeSpent(data.totalTime); // Total working time
-        setSearchError(''); // Clear any errors
-      } else {
-        setSearchError(data.error || 'Job not found');
+        if (Array.isArray(data.history) && data.history.length > 0) {
+          setStatusHistory(data.history); // Array of {status, timestamp, userId, duration}
+          setTotalTimeSpent(data.totalTime); // Total working time
+          setSearchError(''); // Clear any errors
+          return true;
+        }
+        return false;
       }
+      setSearchError(data.error || 'Job not found');
     } catch (error) {
       console.error('Error fetching status history:', error);
       setSearchError('Failed to load job data');
     }
+    return false;
+  };
+
+  const applyMockStatusData = (jobNumber) => {
+    if (!jobNumber) return;
+    const now = Date.now();
+    const history = MOCK_STATUS_TEMPLATE.map((entry, index) => {
+      const timestamp = new Date(now - (entry.hoursAgo * 60 + index * 7) * 60 * 1000);
+      return {
+        status: entry.status,
+        timestamp: timestamp.toISOString(),
+        duration: entry.durationMinutes * 60,
+        userId: 'demo.user',
+        description: `${entry.description} for job ${jobNumber}`
+      };
+    });
+    const totalSeconds = history.reduce((sum, h) => sum + (h.duration || 0), 0);
+    setStatusHistory(history);
+    setTotalTimeSpent(Math.max(1, Math.round(totalSeconds / 60)));
+    setMockCurrentStatus(history[history.length - 1]?.status || null);
+    setSearchError('');
   };
 
   // Handle job search
   const handleSearch = async (e) => {
     e.preventDefault();
     
-    if (!searchInput.trim()) {
+    const trimmed = searchInput.trim();
+
+    if (!trimmed) {
       setSearchError('Please enter a job number');
       return;
     }
 
     // Check if job exists first
     try {
-      const response = await fetch(`/api/status/getCurrentStatus?jobId=${searchInput}`);
+      const response = await fetch(`/api/status/getCurrentStatus?jobId=${trimmed}`);
       const data = await response.json();
       
       if (data.success) {
-        onJobSearch(searchInput); // Update parent with searched job ID
+        onJobSearch?.(trimmed); // Update parent with searched job ID
         setSearchInput(''); // Clear search input
         setSearchError(''); // Clear errors
       } else {
@@ -85,16 +162,25 @@ export default function StatusSidebar({
 
   // Clear current job
   const handleClearJob = () => {
-    onJobSearch(null);
+    if (onJobClear) {
+      onJobClear();
+    } else {
+      onJobSearch?.(null);
+    }
     setSearchInput('');
     setSearchError('');
+    setMockCurrentStatus(null);
+    setStatusHistory([]);
+    setTotalTimeSpent(0);
+    setCurrentTimer(0);
   };
 
   // Live timer update when job is in progress (not paused)
   useEffect(() => {
     if (!jobId) return; // Don't run timer if no job selected
     
-    const currentStatusObj = SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()];
+    const statusId = (mockCurrentStatus || currentStatus)?.toUpperCase();
+    const currentStatusObj = SERVICE_STATUS_FLOW[statusId];
     
     // Only run timer if status doesn't pause time
     if (currentStatusObj && !currentStatusObj.pausesTime) {
@@ -106,7 +192,9 @@ export default function StatusSidebar({
     } else {
       setCurrentTimer(0); // Reset timer when paused
     }
-  }, [currentStatus, jobId]);
+  }, [currentStatus, mockCurrentStatus, jobId]);
+
+  const currentStatusForDisplay = mockCurrentStatus || currentStatus;
 
   // Format seconds to HH:MM:SS
   const formatTime = (seconds) => {
@@ -232,7 +320,7 @@ export default function StatusSidebar({
         onMouseEnter={handleToggleMouseEnter}
         onMouseLeave={handleToggleMouseLeave}
       >
-        {compactMode ? (isOpen ? '▼' : '▲') : isOpen ? '→' : '←'}
+        {compactMode ? (isOpen ? 'Close' : 'Open') : isOpen ? 'Hide' : 'Show'}
       </button>
 
       {/* Sidebar panel - FLOATING */}
@@ -294,7 +382,7 @@ export default function StatusSidebar({
                     e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)';
                   }}
                 >
-                  🔍 Search
+                  Search
                 </button>
               </div>
               {searchError && (
@@ -318,31 +406,29 @@ export default function StatusSidebar({
             <div style={{ fontSize: '14px', opacity: 0.95 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontWeight: '600' }}>Job ID: {jobId}</span>
-                {!hasUrlJobId && (
-                  <button
-                    onClick={handleClearJob}
-                    style={{
-                      marginLeft: '8px',
-                      padding: '4px 10px',
-                      backgroundColor: 'rgba(255,255,255,0.2)',
-                      color: 'white',
-                      border: '1px solid rgba(255,255,255,0.3)',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
-                    }}
-                  >
-                    ✕ Clear
-                  </button>
-                )}
+                <button
+                  onClick={handleClearJob}
+                  style={{
+                    marginLeft: '8px',
+                    padding: '4px 10px',
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    color: 'white',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+                  }}
+                >
+                  Clear Job
+                </button>
               </div>
               <div style={{ marginTop: '10px', fontWeight: '600', fontSize: '16px' }}>
                 ⏱️ Total Time: {formatTime(totalTimeSpent * 60)}
@@ -407,7 +493,7 @@ export default function StatusSidebar({
                 transition: 'all 0.3s ease'
               }}>
                 <h3 style={{ fontWeight: 'bold', color: '#d10000', marginBottom: '10px', fontSize: '16px' }}>
-                  📍 Current Status
+                  Current Status
                 </h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div
@@ -415,19 +501,19 @@ export default function StatusSidebar({
                       width: '16px',
                       height: '16px',
                       borderRadius: '50%',
-                      backgroundColor: SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()]?.color || '#999',
-                      animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                      boxShadow: `0 0 12px ${SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()]?.color || '#999'}`
-                    }}
-                  />
-                  <span style={{ fontWeight: '600', fontSize: '18px', color: '#222' }}>
-                    {SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()]?.label || 'Unknown'}
+                    backgroundColor: SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()]?.color || '#999',
+                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    boxShadow: `0 0 12px ${SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()]?.color || '#999'}`
+                  }}
+                />
+                <span style={{ fontWeight: '600', fontSize: '18px', color: '#222' }}>
+                    {SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()]?.label || 'Unknown'}
                   </span>
                 </div>
                 <div style={{ marginTop: '8px', fontSize: '14px', color: '#555' }}>
-                  🏢 Department: {SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()]?.department}
+                  🏢 Department: {SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()]?.department}
                 </div>
-                {SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()]?.requiresAction && (
+                {SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()]?.requiresAction && (
                   <div style={{
                     marginTop: '12px',
                     padding: '10px',
@@ -437,9 +523,27 @@ export default function StatusSidebar({
                     borderRadius: '6px'
                   }}>
                     <strong>⚠️ Action Required:</strong>{' '}
-                    {SERVICE_STATUS_FLOW[currentStatus?.toUpperCase()].requiresAction}
+                    {SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()].requiresAction}
                   </div>
                 )}
+              </div>
+
+              <div style={{
+                marginBottom: '20px',
+                padding: '16px',
+                background: '#fff',
+                borderRadius: '16px',
+                border: '1px solid #ffe0e0',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+              }}>
+                <h3 style={{ fontWeight: 'bold', color: '#555', marginBottom: '12px', fontSize: '16px' }}>
+                  Timeline Overview
+                </h3>
+                <StatusTimeline
+                  currentStatus={currentStatusForDisplay}
+                  statusHistory={statusHistory}
+                  getTimeInStatus={getTimeInStatus}
+                />
               </div>
 
               {/* Completed Activity Timeline - REVERSE ORDER (newest first) */}
