@@ -11,6 +11,7 @@ const USER_COLUMNS = [ // Enumerate every column required by the schema for cons
   "password_hash", // Securely stored password hash for authentication.
   "role", // Application role such as Admin, Tech, etc.
   "phone", // Optional contact number for staff.
+  "department", // Department the user belongs to for organizational filtering.
   "created_at", // Timestamp for auditing when the user was created.
   "updated_at", // Timestamp for auditing when the user was last modified.
 ].join(", "); // Combine the column list into a comma-separated string for Supabase select calls.
@@ -19,9 +20,11 @@ const mapUserRow = (row = {}) => ({ // Normalize returned rows into a predictabl
   id: row.user_id, // Expose the numeric primary key as a friendly id field.
   firstName: row.first_name, // Surface the first name using camelCase for JS consumers.
   lastName: row.last_name, // Surface the last name using camelCase for JS consumers.
+  name: `${row.first_name || ""} ${row.last_name || ""}`.trim(), // Combine first and last name into full name for display.
   email: row.email, // Pass through the stored email.
   role: row.role, // Pass through the stored application role.
   phone: row.phone, // Pass through optional phone value.
+  department: row.department, // Pass through the department value.
   passwordHash: row.password_hash, // Provide access to the hashed password when needed server-side.
   createdAt: row.created_at, // Include creation timestamp for audit displays.
   updatedAt: row.updated_at, // Include update timestamp for audit displays.
@@ -35,6 +38,28 @@ const ensureUserPayload = (payload = {}) => { // Validate that required fields e
   } // Close validation guard.
 }; // Finish helper definition.
 
+const DEFAULT_TECH_ROLES = ["Techs", "Technician", "Technician Lead", "Lead Technician"]; // Default role names that qualify as technicians.
+const DEFAULT_TEST_ROLES = ["MOT Tester", "Tester"]; // Default role names that qualify as MOT testers.
+
+const fetchUsersByRoles = async (roles) => { // Shared helper to fetch users restricted to a set of roles.
+  if (!roles || roles.length === 0) { // Guard against empty role lists.
+    return []; // No roles means no users to return.
+  } // Close guard.
+  const { data, error } = await db // Execute the select query.
+    .from(USERS_TABLE) // Target the users table.
+    .select(USER_COLUMNS) // Fetch canonical columns.
+    .in("role", roles) // Filter by the provided role names.
+    .order("first_name", { ascending: true }); // Order alphabetically by first name.
+  if (error) { // Handle query failures.
+    throw new Error(`Failed to fetch users by role: ${error.message}`); // Provide descriptive diagnostics.
+  } // Close guard.
+  return (data || []).map(mapUserRow); // Map rows into camelCase format.
+}; // End helper.
+
+export const getTechnicianUsers = () => fetchUsersByRoles(DEFAULT_TECH_ROLES); // Convenience export to fetch technician roles.
+
+export const getMotTesterUsers = () => fetchUsersByRoles(DEFAULT_TEST_ROLES); // Convenience export to fetch MOT tester roles.
+
 export const getAllUsers = async () => { // Retrieve every user row ordered by primary key.
   const { data, error } = await db // Execute the query using the shared client.
     .from(USERS_TABLE) // Target the users table defined above.
@@ -45,6 +70,26 @@ export const getAllUsers = async () => { // Retrieve every user row ordered by p
   } // Close error guard.
   return (data || []).map(mapUserRow); // Map each raw row into the normalized JS-friendly shape.
 }; // End getAllUsers.
+
+export const getUsersGroupedByRole = async () => { // Fetch all users and bucket them by role name.
+  const { data, error } = await db // Execute the select statement.
+    .from(USERS_TABLE) // Target the users table.
+    .select(USER_COLUMNS) // Fetch canonical columns.
+    .order("role", { ascending: true }) // Order by role for consistent grouping.
+    .order("first_name", { ascending: true }); // Order within each role alphabetically.
+  if (error) { // Handle query issues.
+    throw new Error(`Failed to fetch users grouped by role: ${error.message}`); // Provide descriptive diagnostics.
+  } // Close guard.
+  return (data || []).reduce((acc, row) => { // Build a dictionary keyed by role.
+    const shaped = mapUserRow(row); // Normalize row once.
+    const key = shaped.role || "Unassigned"; // Default bucket when role is absent.
+    if (!acc[key]) { // Initialize bucket if needed.
+      acc[key] = []; // Create new array for this role.
+    } // Close guard.
+    acc[key].push(shaped); // Push the shaped user into the role bucket.
+    return acc; // Continue accumulating.
+  }, {}); // Start from an empty object accumulator.
+}; // End getUsersGroupedByRole.
 
 export const getUserById = async (userId) => { // Retrieve a single user by numeric identifier.
   if (typeof userId !== "number") { // Validate the input because the column is integer-based.

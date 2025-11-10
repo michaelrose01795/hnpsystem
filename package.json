@@ -22,7 +22,7 @@
     "react-big-calendar": "^1.19.4",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "18.3.1",
-    "react-pdf": "^7.7.3",
+    "react-pdf": "^10.2.0",
     "react-select": "^5.10.2",
     "tailwindcss": "^4.1.17"
   },
