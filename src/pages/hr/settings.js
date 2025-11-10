@@ -9,7 +9,6 @@ export default function HrSettingsPolicies() {
     <Layout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header>
-          <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#111827" }}>Settings & Policies</h1>
           <p style={{ color: "#6B7280", marginTop: "6px" }}>
             Upload policy documents, configure shift patterns, and manage role-based access for HR tools.
           </p>

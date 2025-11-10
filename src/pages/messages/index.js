@@ -620,8 +620,7 @@ function MessagesPage() {
       >
         <div style={{ ...cardStyle, flexDirection: "row", alignItems: "center" }}>
           <div style={{ flex: 1 }}>
-            <h2 style={{ margin: 0, color: palette.accent }}>Internal Messages</h2>
-            <p style={{ margin: "6px 0 0", color: palette.textMuted }}>
+            <p style={{ margin: 0, color: palette.textMuted }}>
               Chat with any colleague, launch focused group threads, and keep every job
               discussion inside H&P.
             </p>

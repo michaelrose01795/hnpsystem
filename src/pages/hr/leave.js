@@ -16,7 +16,6 @@ export default function HrLeaveManagement() {
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#111827" }}>Leave Management</h1>
             <p style={{ color: "#6B7280", marginTop: "6px" }}>
               Approve leave requests, calculate balances, and track special leave programmes.
             </p>

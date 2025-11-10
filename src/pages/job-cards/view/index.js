@@ -402,10 +402,7 @@ export default function ViewJobCards() {
           flexShrink: 0
         }}>
           <div>
-            <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#1a1a1a", margin: 0 }}>
-              View Job Cards
-            </h1>
-            <p style={{ fontSize: "14px", color: "#666", margin: "4px 0 0 0" }}>
+            <p style={{ fontSize: "14px", color: "#666", margin: 0 }}>
               Total Jobs: {jobs.length} | Today: {filterJobs("Booked").length} Booked
             </p>
           </div>

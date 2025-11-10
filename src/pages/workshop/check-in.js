@@ -201,14 +201,6 @@ export default function CheckInPage() {
           flexShrink: 0
         }}>
           <div>
-            <h1 style={{
-              fontSize: "32px",
-              fontWeight: "700",
-              color: "#1a1a1a",
-              margin: "0 0 8px 0"
-            }}>
-              Customer Check-In
-            </h1>
             <p style={{ fontSize: "16px", color: "#666", margin: 0 }}>
               {new Date().toLocaleDateString('en-GB', { 
                 weekday: 'long', 

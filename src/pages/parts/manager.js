@@ -150,10 +150,6 @@ function PartsManagerDashboard() {
   return (
     <Layout>
       <div style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto" }}>
-        <h1 style={{ color: "#ff4040", fontSize: "2rem", marginBottom: "24px" }}>
-          Parts Manager Dashboard
-        </h1>
-
         <div
           style={{
             display: "grid",

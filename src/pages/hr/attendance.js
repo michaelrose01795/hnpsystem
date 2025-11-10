@@ -15,9 +15,6 @@ export default function HrAttendance() {
     <Layout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#111827" }}>
-            Clocking & Attendance
-          </h1>
           <p style={{ color: "#6B7280" }}>
             Monitor time logs, absences, late arrivals, and overtime activity across the team.
           </p>

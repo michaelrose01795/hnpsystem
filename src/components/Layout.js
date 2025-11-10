@@ -9,11 +9,13 @@ import StatusSidebar from "../components/StatusTracking/StatusSidebar"; // impor
 import Sidebar from "./Sidebar";
 import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
+import HrTabsBar from "./HR/HrTabsBar";
 
 export default function Layout({ children }) {
   const { user, status, setStatus, currentJob } = useUser(); // get user context data
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
+  const showHrTabs = router.pathname.startsWith("/hr") || router.pathname.startsWith("/admin/users");
 
   const getViewportWidth = () =>
     typeof window !== "undefined" && window.innerWidth ? window.innerWidth : 1440;
@@ -356,56 +358,6 @@ export default function Layout({ children }) {
       description: "Headcount, attendance, and compliance overview",
       section: "HR",
     });
-    addNavItem("📇 Employee Records", "/hr/employees", {
-      keywords: ["hr employees", "directory", "profiles"],
-      description: "Manage employee profiles, documents, and permissions",
-      section: "HR",
-    });
-    addNavItem("🕒 Attendance", "/hr/attendance", {
-      keywords: ["attendance", "clocking", "overtime"],
-      description: "Clocking logs, absences, and overtime summaries",
-      section: "HR",
-    });
-    addNavItem("💷 Payroll", "/hr/payroll", {
-      keywords: ["payroll", "pay rates", "compensation"],
-      description: "Pay rates, approvals, and overtime exports",
-      section: "HR",
-    });
-    addNavItem("🏖️ Leave", "/hr/leave", {
-      keywords: ["leave", "holiday", "absence"],
-      description: "Leave requests, balances, and calendar sync",
-      section: "HR",
-    });
-    addNavItem("⭐ Performance", "/hr/performance", {
-      keywords: ["performance", "reviews", "appraisals"],
-      description: "Manage reviews and development plans",
-      section: "HR",
-    });
-    addNavItem("🎓 Training", "/hr/training", {
-      keywords: ["training", "qualifications"],
-      description: "Track training completions and renewals",
-      section: "HR",
-    });
-    addNavItem("⚠️ Incidents", "/hr/disciplinary", {
-      keywords: ["disciplinary", "incidents"],
-      description: "Log warnings and incident reports",
-      section: "HR",
-    });
-    addNavItem("📨 Recruitment", "/hr/recruitment", {
-      keywords: ["recruitment", "applicants", "jobs"],
-      description: "Manage hiring pipelines and onboarding",
-      section: "HR",
-    });
-    addNavItem("📈 HR Reports", "/hr/reports", {
-      keywords: ["reports", "exports", "analytics"],
-      description: "Generate HR analytics and exports",
-      section: "HR",
-    });
-    addNavItem("⚙️ HR Settings", "/hr/settings", {
-      keywords: ["settings", "policies", "access"],
-      description: "Configure policies, schedules, and access",
-      section: "HR",
-    });
   } else if (userRoles.some((role) => role.includes("manager"))) {
     addNavItem("👥 Team HR", "/hr/employees", {
       keywords: ["team hr", "people", "hr"],
@@ -416,14 +368,6 @@ export default function Layout({ children }) {
       keywords: ["leave", "holiday"],
       description: "Review departmental leave requests",
       section: "HR",
-    });
-  }
-
-  if (userRoles.includes("admin manager")) {
-    addNavItem("🛠️ User Admin", "/admin/users", {
-      keywords: ["admin users", "create user", "user management"],
-      description: "Create and manage platform accounts",
-      section: "Admin",
     });
   }
 
@@ -811,6 +755,7 @@ export default function Layout({ children }) {
               overflow: "auto",
             }}
           >
+            {showHrTabs && <HrTabsBar />}
             {children}
           </div>
         </main>

@@ -5,6 +5,8 @@ import { useHrMockData } from "../../../hooks/useHrData";
 import { SectionCard, StatusTag } from "../../../components/HR/MetricCard";
 import EmployeeProfilePanel from "../../../components/HR/EmployeeProfilePanel";
 
+// TODO: Connect employee directory, filters, and profile panel to live HR tables.
+
 const defaultFilters = { department: "all", status: "all", employmentType: "all" };
 
 export default function EmployeeManagement() {
@@ -49,7 +51,6 @@ export default function EmployeeManagement() {
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#111827" }}>Employee Management</h1>
             <p style={{ color: "#6B7280", marginTop: "6px" }}>
               Maintain staff records, employment details, documents, and system access.
             </p>

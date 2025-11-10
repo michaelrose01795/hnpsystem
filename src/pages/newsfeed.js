@@ -49,15 +49,8 @@ export default function NewsFeed() {
     <Layout>
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-10">
-          <h1
-            className="text-3xl font-bold tracking-tight"
-            style={{ color: "#d10000" }}
-          >
-            Company News Feed
-          </h1>
-
-          {userIsManager && (
+        {userIsManager && (
+          <div className="flex justify-end items-center mb-10">
             <button
               onClick={() => alert("Manager post creation coming soon")}
               className="px-5 py-2 font-semibold text-white rounded-xl shadow-sm hover:shadow-lg transition-all hover:-translate-y-0.5"
@@ -65,8 +58,8 @@ export default function NewsFeed() {
             >
               + Add Update
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Description */}
         <p className="text-gray-600 mb-10 text-lg">

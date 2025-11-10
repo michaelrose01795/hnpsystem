@@ -437,22 +437,6 @@ export default function ValetDashboard() {
           gap: "16px",
         }}
       >
-        <header style={{ marginBottom: "8px" }}>
-          <h1
-            style={{
-              fontSize: "32px",
-              fontWeight: "700",
-              color: "#1a1a1a",
-              margin: 0,
-            }}
-          >
-            Valet Jobs Dashboard
-          </h1>
-          <p style={{ fontSize: "16px", color: "#666", marginTop: "4px" }}>
-            Track wash status and handover preparation for active jobs.
-          </p>
-        </header>
-
         <div
           style={{
             display: "flex",

@@ -5,18 +5,7 @@ import Layout from "../../components/Layout";
 import { useHrMockData } from "../../hooks/useHrData";
 import { MetricCard, SectionCard, StatusTag } from "../../components/HR/MetricCard";
 
-const quickLinks = [
-  { href: "/hr/employees", label: "Employee Directory" },
-  { href: "/hr/attendance", label: "Attendance & Clocking" },
-  { href: "/hr/payroll", label: "Payroll & Pay Rates" },
-  { href: "/hr/leave", label: "Leave Management" },
-  { href: "/hr/performance", label: "Performance Reviews" },
-  { href: "/hr/training", label: "Training & Qualifications" },
-  { href: "/hr/disciplinary", label: "Disciplinary Cases" },
-  { href: "/hr/recruitment", label: "Recruitment" },
-  { href: "/hr/reports", label: "Reports & Exports" },
-  { href: "/hr/settings", label: "Settings & Policies" },
-];
+// TODO: Replace useHrMockData with real HR dashboard aggregation from the database.
 
 export default function HrDashboard() {
   const { data, isLoading, error } = useHrMockData();
@@ -61,52 +50,6 @@ export default function HrDashboard() {
           padding: "8px 8px 32px",
         }}
       >
-        <header
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-            background: "linear-gradient(135deg, #0F172A, #1F2937)",
-            borderRadius: "20px",
-            padding: "28px",
-            color: "white",
-            boxShadow: "0 12px 36px rgba(15, 23, 42, 0.25)",
-          }}
-        >
-          <div style={{ fontSize: "0.9rem", opacity: 0.75, fontWeight: 600 }}>
-            HR Manager Console
-          </div>
-          <div style={{ fontSize: "1.9rem", fontWeight: 700 }}>
-            People & Culture Overview
-          </div>
-          <div style={{ fontSize: "0.95rem", opacity: 0.8, maxWidth: "780px" }}>
-            Monitor headcount, attendance, performance, and compliance from a single
-            dashboard. Use the quick links below to drill into each module.
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "10px" }}>
-            {quickLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.12)",
-                  color: "white",
-                  padding: "10px 16px",
-                  borderRadius: "999px",
-                  fontWeight: 600,
-                  fontSize: "0.85rem",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  textDecoration: "none",
-                }}
-              >
-                {link.label} →
-              </Link>
-            ))}
-          </div>
-        </header>
-
         {isLoading && (
           <SectionCard title="Loading dashboard…" subtitle="Fetching HR overview data.">
             <span style={{ color: "#6B7280" }}>

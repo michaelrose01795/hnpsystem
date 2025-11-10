@@ -60,11 +60,19 @@ export default function MyJobsPage() {
 
   const username = user?.username;
   const techsList = usersByRole["Techs"] || [];
-  const isTech = techsList.includes(username);
+  const motTestersList = usersByRole["MOT Tester"] || [];
+  const allowedTechNames = new Set([...techsList, ...motTestersList]);
+  const hasRoleAccess = (() => {
+    if (!user?.role) return false;
+    const normalized = String(user.role).toLowerCase();
+    return normalized.includes("tech") || normalized.includes("mot");
+  })();
+  const hasTechnicianAccess =
+    (username && allowedTechNames.has(username)) || hasRoleAccess;
 
   // ✅ Fetch jobs from database
   useEffect(() => {
-    if (!isTech || !username) return;
+    if (!hasTechnicianAccess || !username) return;
 
     const fetchJobs = async () => {
       setLoading(true);
@@ -111,7 +119,7 @@ export default function MyJobsPage() {
     };
 
     fetchJobs();
-  }, [username, isTech]);
+  }, [username, hasTechnicianAccess]);
 
   // ✅ Apply filters when filter or search changes
   useEffect(() => {
@@ -154,7 +162,7 @@ export default function MyJobsPage() {
   };
 
   // ✅ Access check
-  if (!isTech) {
+  if (!hasTechnicianAccess) {
     return (
       <Layout>
         <div style={{ 
@@ -171,7 +179,7 @@ export default function MyJobsPage() {
             Access Denied
           </h2>
           <p style={{ color: "#666", fontSize: "16px" }}>
-            This page is only accessible to Technicians.
+            This page is only accessible to Technicians and MOT Testers.
           </p>
         </div>
       </Layout>

@@ -119,7 +119,6 @@ export default function Dashboard() {
             minHeight: "70vh",
           }}
         >
-          <h2 style={{ marginBottom: "15px", color: "#FF4040" }}>Dashboard Overview</h2>
           <p>Welcome {user?.username || "Guest"}! Here’s your current jobs overview.</p>
 
           {/* Jobs Table */}

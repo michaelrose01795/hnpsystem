@@ -7,6 +7,20 @@ import { useMemo } from "react";
 import { useUser } from "@/context/UserContext";
 import { sidebarSections } from "@/config/navigation";
 
+const hiddenHrRoutes = new Set([
+  "/hr/employees",
+  "/hr/attendance",
+  "/hr/payroll",
+  "/hr/leave",
+  "/hr/performance",
+  "/hr/training",
+  "/hr/disciplinary",
+  "/hr/recruitment",
+  "/hr/reports",
+  "/hr/settings",
+  "/admin/users",
+]);
+
 export default function Sidebar({ onToggle, isCondensed = false }) {
   const pathname = usePathname();
   const { user, logout } = useUser();
@@ -33,7 +47,9 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
     sections
       .map((section) => ({
         ...section,
-        items: (section.items || []).filter(hasAccess),
+        items: (section.items || []).filter(
+          (item) => hasAccess(item) && (!item.href || !hiddenHrRoutes.has(item.href))
+        ),
       }))
       .filter((section) => section.items.length > 0);
 

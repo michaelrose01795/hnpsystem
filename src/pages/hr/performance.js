@@ -46,7 +46,6 @@ export default function HrPerformanceAppraisals() {
     <Layout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header>
-          <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#111827" }}>Performance & Appraisals</h1>
           <p style={{ color: "#6B7280", marginTop: "6px" }}>
             Track reviews, ratings, development plans, and upcoming appraisals.
           </p>

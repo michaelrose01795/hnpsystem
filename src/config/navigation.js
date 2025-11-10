@@ -57,41 +57,6 @@ export const sidebarSections = [
         roles: ["admin manager"],
       },
       {
-        label: "📇 Employee Records",
-        href: "/hr/employees",
-        roles: ["admin manager"],
-      },
-      {
-        label: "🕒 Attendance",
-        href: "/hr/attendance",
-        roles: ["admin manager"],
-      },
-      {
-        label: "💷 Payroll",
-        href: "/hr/payroll",
-        roles: ["admin manager"],
-      },
-      {
-        label: "🏖️ Leave",
-        href: "/hr/leave",
-        roles: ["admin manager"],
-      },
-      {
-        label: "⭐ Performance",
-        href: "/hr/performance",
-        roles: ["admin manager"],
-      },
-      {
-        label: "🎓 Training",
-        href: "/hr/training",
-        roles: ["admin manager"],
-      },
-      {
-        label: "⚠️ Incidents",
-        href: "/hr/disciplinary",
-        roles: ["admin manager"],
-      },
-      {
         label: "📨 Recruitment",
         href: "/hr/recruitment",
         roles: ["admin manager"],

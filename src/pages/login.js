@@ -92,12 +92,23 @@ export default function LoginPage() {
     let mounted = true;
     const loadUsers = async () => {
       setLoadingDevUsers(true);
-      const grouped = await getUsersGroupedByRole();
-      if (mounted && Object.keys(grouped).length > 0) {
-        setDevUsersByRole(grouped);
-      }
-      if (mounted) {
-        setLoadingDevUsers(false);
+      try {
+        const grouped = await getUsersGroupedByRole();
+        if (!mounted) return;
+        if (grouped && Object.keys(grouped).length > 0) {
+          setDevUsersByRole({ ...usersByRole, ...grouped });
+        } else {
+          setDevUsersByRole(usersByRole);
+        }
+      } catch (error) {
+        console.error("❌ Failed to load developer users:", error);
+        if (mounted) {
+          setDevUsersByRole(usersByRole);
+        }
+      } finally {
+        if (mounted) {
+          setLoadingDevUsers(false);
+        }
       }
     };
     loadUsers();

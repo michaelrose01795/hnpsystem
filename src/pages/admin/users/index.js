@@ -93,7 +93,6 @@ export default function AdminUserManagement() {
     <Layout>
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
         <header>
-          <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#111827" }}>Admin User Management</h1>
           <p style={{ color: "#6B7280", marginTop: "6px" }}>
             Provision platform accounts and review department ownership. These records are driven by the shared confirmation roster for consistent testing.
           </p>

@@ -466,16 +466,6 @@ export default function CreateJobCardPage() {
             >
               {jobSource} Job Card
             </h2>
-            <h1
-              style={{
-                fontSize: "28px",
-                fontWeight: "700",
-                color: "#1a1a1a",
-                margin: 0,
-              }}
-            >
-              Create New Job Card
-            </h1>
           </div>
           <button
             onClick={handleSaveJob}

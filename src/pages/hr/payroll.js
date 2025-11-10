@@ -36,7 +36,6 @@ export default function HrPayroll() {
     <Layout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#111827" }}>Payroll & Pay Rates</h1>
           <p style={{ color: "#6B7280" }}>
             Track compensation, pay rise approvals, overtime payments, and exports.
           </p>

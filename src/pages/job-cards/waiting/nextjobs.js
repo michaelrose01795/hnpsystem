@@ -53,8 +53,19 @@ export default function NextJobsPage() {
   const allowedUsers = [
     ...(usersByRole["Workshop Manager"] || []),
     ...(usersByRole["Service Manager"] || []),
+    ...(usersByRole["After Sales Director"] || []),
+    ...(usersByRole["After Sales Manager"] || []),
+    ...(usersByRole["Admin Manager"] || []),
   ];
-  const hasAccess = allowedUsers.includes(username);
+  const allowedRoles = new Set([
+    "Workshop Manager",
+    "Service Manager",
+    "After Sales Director",
+    "After Sales Manager",
+    "Admin Manager",
+  ]);
+  const hasAccess =
+    allowedUsers.includes(username) || (user?.role && allowedRoles.has(user.role));
 
   // ✅ Fetch jobs from Supabase on component mount
   useEffect(() => {
@@ -680,30 +691,6 @@ export default function NextJobsPage() {
         overflowY: "auto" 
       }}>
         
-        {/* ✅ Header Section */}
-        <div style={{
-          display: "flex",
-          gap: "12px",
-          alignItems: "center",
-          marginBottom: "12px",
-          padding: "12px",
-          backgroundColor: "#fff",
-          borderRadius: "8px",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-          flexShrink: 0
-        }}>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ 
-              color: "#d10000", 
-              fontSize: "28px", 
-              fontWeight: "700",
-              margin: 0
-            }}>
-              Next Jobs
-            </h1>
-          </div>
-        </div>
-
         {/* ✅ Outstanding Jobs Section with Drop Zone */}
         <div 
           style={{
