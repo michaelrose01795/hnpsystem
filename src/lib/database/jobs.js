@@ -3,6 +3,216 @@ import { supabase } from "../supabaseClient";
 import { ensureUserIdForDisplayName } from "../users/devUsers";
 import dayjs from "dayjs";
 
+const formatBulletText = (text = "") => {
+  if (!text || typeof text !== "string") {
+    return "";
+  }
+
+  const paragraphs = text
+    .split(/\r?\n+/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  if (paragraphs.length === 0) {
+    return "";
+  }
+
+  return paragraphs
+    .map((line) => (line.startsWith("-") ? line : `- ${line}`))
+    .join("\n");
+};
+
+const normaliseRectificationStatus = (status) => {
+  if (status === true) {
+    return "complete";
+  }
+
+  if (!status || typeof status !== "string") {
+    return "waiting";
+  }
+
+  const trimmed = status.trim().toLowerCase();
+
+  if (["complete", "completed", "done", "finished"].includes(trimmed)) {
+    return "complete";
+  }
+
+  return "waiting";
+};
+
+const mapRectificationRow = (row) => ({
+  recordId: row.id,
+  description: row.description || "",
+  status: normaliseRectificationStatus(row.status),
+  isAdditionalWork: row.is_additional_work !== false,
+  vhcItemId: row.vhc_item_id ?? null,
+  authorizationId: row.authorization_id ?? null,
+  authorizedAmount:
+    row.authorized_amount !== null && row.authorized_amount !== undefined
+      ? Number(row.authorized_amount)
+      : null,
+  source: "database",
+});
+
+const extractAuthorizedItems = (authRows = []) => {
+  const items = [];
+
+  authRows.forEach((authorization) => {
+    const rawItems = Array.isArray(authorization.authorized_items)
+      ? authorization.authorized_items
+      : [];
+
+    rawItems.forEach((item, index) => {
+      const description =
+        (typeof item === "string" && item) ||
+        item?.description ||
+        item?.title ||
+        item?.name ||
+        item?.issue ||
+        item?.concern ||
+        "";
+
+      if (!description) {
+        return;
+      }
+
+      items.push({
+        recordId: null,
+        description,
+        status: normaliseRectificationStatus(item?.status),
+        isAdditionalWork: true,
+        vhcItemId: item?.vhc_item_id ?? item?.vhcItemId ?? item?.id ?? index ?? null,
+        authorizationId: authorization.id,
+        authorizedAmount:
+          item?.amount !== null && item?.amount !== undefined
+            ? Number(item.amount)
+            : null,
+        source: "vhc",
+      });
+    });
+  });
+
+  return items;
+};
+
+const mergeRectificationSources = (stored = [], authorized = []) => {
+  const merged = [...stored];
+  const vhcIndex = new Map();
+
+  merged.forEach((item, idx) => {
+    if (item.vhcItemId !== null && item.vhcItemId !== undefined) {
+      vhcIndex.set(String(item.vhcItemId), idx);
+    }
+  });
+
+  authorized.forEach((authorizedItem) => {
+    const key =
+      authorizedItem.vhcItemId !== null && authorizedItem.vhcItemId !== undefined
+        ? String(authorizedItem.vhcItemId)
+        : null;
+
+    if (key && vhcIndex.has(key)) {
+      const existingIndex = vhcIndex.get(key);
+      const existingItem = merged[existingIndex];
+
+      merged[existingIndex] = {
+        ...existingItem,
+        description: existingItem.description || authorizedItem.description,
+        status: existingItem.status || authorizedItem.status,
+        isAdditionalWork: true,
+        authorizationId: authorizedItem.authorizationId ?? existingItem.authorizationId ?? null,
+        authorizedAmount:
+          authorizedItem.authorizedAmount ?? existingItem.authorizedAmount ?? null,
+        source: existingItem.source || authorizedItem.source,
+      };
+    } else {
+      merged.push(authorizedItem);
+    }
+  });
+
+  return merged;
+};
+
+const buildRectificationSummary = (items = []) => {
+  if (!items || items.length === 0) {
+    return "";
+  }
+
+  const lines = items.map((item, index) => {
+    const statusLabel = item.status === "complete" ? "Complete" : "Waiting Additional Work";
+    return `${index + 1}. ${item.description} (${statusLabel})`;
+  });
+
+  return formatBulletText(lines.join("\n"));
+};
+
+const syncWriteUpRectificationItems = async ({
+  jobId,
+  jobNumber,
+  writeupId,
+  items,
+}) => {
+  const filteredItems = (items || [])
+    .filter((item) => item && item.description && item.description.trim().length > 0)
+    .map((item) => ({
+      id: item.recordId ?? undefined,
+      job_id: jobId,
+      job_number: jobNumber,
+      writeup_id: writeupId,
+      description: item.description.trim(),
+      status: item.status === "complete" ? "complete" : "waiting",
+      is_additional_work: item.isAdditionalWork !== false,
+      vhc_item_id: item.vhcItemId ?? null,
+      authorization_id: item.authorizationId ?? null,
+      authorized_amount:
+        item.authorizedAmount !== null && item.authorizedAmount !== undefined
+          ? Number(item.authorizedAmount)
+          : null,
+      updated_at: new Date().toISOString(),
+      ...(item.recordId ? {} : { created_at: new Date().toISOString() }),
+    }));
+
+  const { data: existingRows, error: existingError } = await supabase
+    .from("writeup_rectification_items")
+    .select("id")
+    .eq("writeup_id", writeupId);
+
+  if (existingError && existingError.code !== "PGRST116") {
+    throw existingError;
+  }
+
+  if (filteredItems.length > 0) {
+    const { error: upsertError } = await supabase
+      .from("writeup_rectification_items")
+      .upsert(filteredItems, { onConflict: "id" });
+
+    if (upsertError) {
+      throw upsertError;
+    }
+  }
+
+  const keepIds = filteredItems
+    .map((item) => item.id)
+    .filter((id) => id !== null && id !== undefined);
+
+  const staleIds = (existingRows || [])
+    .map((row) => row.id)
+    .filter((id) => !keepIds.includes(id));
+
+  if (staleIds.length > 0) {
+    const { error: deleteError } = await supabase
+      .from("writeup_rectification_items")
+      .delete()
+      .in("id", staleIds);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+  }
+
+  return { success: true };
+};
+
 /* ============================================
    FETCH ALL JOBS
    Gets all jobs along with linked vehicles, customers,
@@ -179,6 +389,60 @@ export const getDashboardData = async () => {
   }));
 
   return { allJobs, appointments };
+};
+
+/* ============================================
+   GET WRITE-UP RECTIFICATION ITEMS FOR JOB
+   Returns saved rectification checklist entries
+============================================ */
+export const getRectificationItemsByJob = async (jobId) => {
+  try {
+    const { data, error } = await supabase
+      .from("writeup_rectification_items")
+      .select("id, job_id, job_number, writeup_id, description, status, is_additional_work, vhc_item_id, authorization_id, authorized_amount")
+      .eq("job_id", jobId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        return [];
+      }
+
+      throw error;
+    }
+
+    return (data || []).map((row) => mapRectificationRow(row));
+  } catch (error) {
+    console.error("❌ getRectificationItemsByJob error:", error);
+    return [];
+  }
+};
+
+/* ============================================
+   GET AUTHORIZED ADDITIONAL WORK FOR JOB
+   Pulls authorized VHC items to seed rectification
+============================================ */
+export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
+  try {
+    const { data, error } = await supabase
+      .from("vhc_authorizations")
+      .select("id, job_id, authorized_at, authorized_items")
+      .eq("job_id", jobId)
+      .order("authorized_at", { ascending: false });
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        return [];
+      }
+
+      throw error;
+    }
+
+    return extractAuthorizedItems(data || []);
+  } catch (error) {
+    console.error("❌ getAuthorizedAdditionalWorkByJob error:", error);
+    return [];
+  }
 };
 
 /* ============================================
@@ -1345,7 +1609,7 @@ export const updateJobPosition = async (jobId, newPosition) => {
 ============================================ */
 export const getWriteUpByJobNumber = async (jobNumber) => {
   console.log("🔍 getWriteUpByJobNumber:", jobNumber);
-  
+
   try {
     const { data: job, error: jobError } = await supabase
       .from("jobs")
@@ -1358,29 +1622,57 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       return null;
     }
 
-    const { data: writeUp, error } = await supabase
-      .from("job_writeups")
-      .select("*") // Get all fields
-      .eq("job_id", job.id)
-      .maybeSingle();
+    const [writeUpResponse, rectificationRows, authorizedItems] = await Promise.all([
+      supabase
+        .from("job_writeups")
+        .select("*")
+        .eq("job_id", job.id)
+        .maybeSingle(),
+      getRectificationItemsByJob(job.id),
+      getAuthorizedAdditionalWorkByJob(job.id),
+    ]);
+
+    const { data: writeUp, error } = writeUpResponse;
 
     if (error && error.code !== "PGRST116") {
       console.error("❌ Error fetching write-up:", error);
       return null;
     }
 
+    const rectificationItems = mergeRectificationSources(
+      rectificationRows,
+      authorizedItems
+    );
+
     if (!writeUp) {
       console.log("ℹ️ No write-up data for job:", jobNumber);
-      return null;
+      return {
+        fault: "",
+        caused: "",
+        rectification: buildRectificationSummary(rectificationItems),
+        warrantyClaim: "",
+        tsrNumber: "",
+        pwaNumber: "",
+        technicalBulletins: "",
+        technicalSignature: "",
+        qualityControl: "",
+        additionalParts: "",
+        qty: Array(10).fill(false),
+        booked: Array(10).fill(false),
+        rectificationItems,
+        jobDescription: job.description || "",
+        jobRequests: job.requests || [],
+      };
     }
 
     console.log("✅ Write-up found:", writeUp);
-    
+
     // Map all database fields to form fields
     return {
-      fault: writeUp.work_performed || "",
-      caused: writeUp.recommendations || "",
-      ratification: writeUp.ratification || "",
+      fault: formatBulletText(writeUp.work_performed || ""),
+      caused: formatBulletText(writeUp.recommendations || ""),
+      rectification: formatBulletText(writeUp.ratification || "") ||
+        buildRectificationSummary(rectificationItems),
       warrantyClaim: writeUp.warranty_claim || "",
       tsrNumber: writeUp.tsr_number || "",
       pwaNumber: writeUp.pwa_number || "",
@@ -1390,6 +1682,9 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       additionalParts: writeUp.parts_used || "",
       qty: writeUp.qty || Array(10).fill(false),
       booked: writeUp.booked || Array(10).fill(false),
+      rectificationItems,
+      jobDescription: job.description || "",
+      jobRequests: job.requests || [],
     };
   } catch (error) {
     console.error("❌ getWriteUpByJobNumber error:", error);
@@ -1403,7 +1698,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
 ============================================ */
 export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
   console.log("💾 saveWriteUpToDatabase:", jobNumber);
-  
+
   try {
     const { data: job, error: jobError } = await supabase
       .from("jobs")
@@ -1422,13 +1717,31 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       .eq("job_id", job.id)
       .maybeSingle();
 
+    const faultText = formatBulletText(writeUpData.fault || "");
+    const causedText = formatBulletText(writeUpData.caused || "");
+    const rectificationItems = writeUpData.rectificationItems || [];
+    const rectificationSummary =
+      formatBulletText(writeUpData.rectification || "") ||
+      buildRectificationSummary(rectificationItems);
+    const additionalPartsText = formatBulletText(writeUpData.additionalParts || "");
+
+    // Sync job description so job card reflects technician notes
+    const { error: jobUpdateError } = await supabase
+      .from("jobs")
+      .update({ description: faultText })
+      .eq("id", job.id);
+
+    if (jobUpdateError) {
+      console.error("⚠️ Failed to sync job description with write-up:", jobUpdateError);
+    }
+
     // Map ALL form fields to database fields
     const writeUpToSave = {
       job_id: job.id,
-      work_performed: writeUpData.fault || null,
-      parts_used: writeUpData.additionalParts || null,
-      recommendations: writeUpData.caused || null,
-      ratification: writeUpData.ratification || null,
+      work_performed: faultText || null,
+      parts_used: additionalPartsText || null,
+      recommendations: causedText || null,
+      ratification: rectificationSummary || null,
       warranty_claim: writeUpData.warrantyClaim || null,
       tsr_number: writeUpData.tsrNumber || null,
       pwa_number: writeUpData.pwaNumber || null,
@@ -1444,6 +1757,8 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
 
     let result;
 
+    let writeUpRecord;
+
     if (existing) {
       console.log("🔄 Updating existing write-up");
       result = await supabase
@@ -1452,6 +1767,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
         .eq("writeup_id", existing.writeup_id)
         .select()
         .single();
+      writeUpRecord = result.data;
     } else {
       console.log("➕ Creating new write-up");
       writeUpToSave.created_at = new Date().toISOString();
@@ -1460,11 +1776,25 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
         .insert([writeUpToSave])
         .select()
         .single();
+      writeUpRecord = result.data;
     }
 
     if (result.error) {
       console.error("❌ Error saving write-up:", result.error);
       return { success: false, error: result.error.message };
+    }
+
+    if (writeUpRecord?.writeup_id) {
+      try {
+        await syncWriteUpRectificationItems({
+          jobId: job.id,
+          jobNumber,
+          writeupId: writeUpRecord.writeup_id,
+          items: rectificationItems,
+        });
+      } catch (syncError) {
+        console.error("⚠️ Failed to sync rectification items:", syncError);
+      }
     }
 
     console.log("✅ Write-up saved successfully");
