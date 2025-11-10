@@ -41,6 +41,48 @@ const MOCK_STATUS_TEMPLATE = [
     hoursAgo: 1.5,
     durationMinutes: 40,
     description: 'Paused awaiting parts delivery'
+  },
+  {
+    status: 'parts_arrived',
+    hoursAgo: 1.1,
+    durationMinutes: 12,
+    description: 'Parts team confirmed availability'
+  },
+  {
+    status: 'vhc_in_progress',
+    hoursAgo: 0.9,
+    durationMinutes: 35,
+    description: 'Technician capturing VHC items'
+  },
+  {
+    status: 'vhc_sent_to_service',
+    hoursAgo: 0.7,
+    durationMinutes: 18,
+    description: 'Service advisors reviewing upsell'
+  },
+  {
+    status: 'vhc_priced',
+    hoursAgo: 0.6,
+    durationMinutes: 14,
+    description: 'Estimator priced VHC remedials'
+  },
+  {
+    status: 'vhc_sent_to_customer',
+    hoursAgo: 0.45,
+    durationMinutes: 6,
+    description: 'Customer notified via SMS and email'
+  },
+  {
+    status: 'vhc_approved',
+    hoursAgo: 0.35,
+    durationMinutes: 10,
+    description: 'Customer approved recommended work'
+  },
+  {
+    status: 'work_complete',
+    hoursAgo: 0.15,
+    durationMinutes: 25,
+    description: 'Technician finished additional repairs'
   }
 ];
 
@@ -198,8 +240,21 @@ export default function StatusSidebar({
   const currentStatusForDisplay = mockCurrentStatus || currentStatus;
 
   const timelineStatuses = useMemo(() => {
-    if (!Array.isArray(statusHistory) || statusHistory.length === 0) return [];
-    return [...statusHistory]
+    const sourceHistory =
+      statusHistory.length > 0
+        ? statusHistory
+        : MOCK_STATUS_TEMPLATE.map((entry, index) => {
+            const now = Date.now();
+            const timestamp = new Date(now - (entry.hoursAgo || 0) * 60 * 60 * 1000 - index * 180000);
+            return {
+              status: entry.status,
+              label: SERVICE_STATUS_FLOW[entry.status?.toUpperCase()]?.label,
+              timestamp: timestamp.toISOString(),
+              department: SERVICE_STATUS_FLOW[entry.status?.toUpperCase()]?.department,
+            };
+          });
+
+    return sourceHistory
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
       .map((history) => {
         const config = SERVICE_STATUS_FLOW[history.status?.toUpperCase()] || {};
@@ -208,8 +263,8 @@ export default function StatusSidebar({
           : 'Status';
         return {
           status: history.status,
-          label: config.label || fallbackLabel,
-          department: config.department,
+          label: history.label || config.label || fallbackLabel,
+          department: history.department || config.department,
           timestamp: history.timestamp,
         };
       });

@@ -1,3 +1,4 @@
+// ✅ Connected to Supabase (server-side)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/messages.js
 import { createClient } from "@supabase/supabase-js";

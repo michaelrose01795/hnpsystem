@@ -1,3 +1,4 @@
+// ✅ Connected to Supabase (frontend)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/vhc/details/[jobNumber].js
 "use client"; // enables client-side rendering for Next.js

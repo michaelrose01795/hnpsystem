@@ -1,3 +1,4 @@
+// ✅ Connected to Supabase (frontend)
 // file location: src/lib/supabaseClient.js
 import { createClient } from '@supabase/supabase-js';
 

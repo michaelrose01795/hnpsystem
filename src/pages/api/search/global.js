@@ -1,3 +1,4 @@
+// ✅ Connected to Supabase (frontend)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/api/search/global.js
 import { supabase } from "@/lib/supabaseClient";

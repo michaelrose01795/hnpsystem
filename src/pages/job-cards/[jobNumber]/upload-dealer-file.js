@@ -1,3 +1,4 @@
+// ✅ Connected to Supabase (frontend)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: /pages/api/job-cards/[jobNumber]/upload-dealer-file.js
 import nextConnect from "next-connect";

@@ -1,3 +1,4 @@
+// ✅ Connected to Supabase (server-side)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/jobs.js
 import { getDatabaseClient } from "@/lib/database/client";

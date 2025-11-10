@@ -1,3 +1,4 @@
+// ✅ Connected to Supabase (server-side)
 // file location: src/lib/database/client.js
 import { createClient } from "@supabase/supabase-js"; // Import factory helper to instantiate Supabase clients.
 

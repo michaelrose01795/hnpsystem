@@ -1,3 +1,4 @@
+// ✅ Connected to Supabase (server-side)
 // file location: codex/notify-status-change.js
 import { serve } from "https://deno.land/std/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js";

@@ -1,3 +1,4 @@
+// ✅ Connected to Supabase (frontend)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/context/ClockingContext.js
 import React, { createContext, useContext, useState, useEffect } from "react";

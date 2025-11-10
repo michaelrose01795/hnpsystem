@@ -1,3 +1,4 @@
+// ✅ Connected to Supabase (server-side)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/users.js
 import { getDatabaseClient } from "@/lib/database/client"; // Import the shared Supabase client accessor so every query reuses the same connection.

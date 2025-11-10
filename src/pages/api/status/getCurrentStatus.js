@@ -1,3 +1,4 @@
+// ✅ Connected to Supabase (server-side)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/api/status/getCurrentStatus.js
 import { createClient } from "@supabase/supabase-js"; // Import Supabase factory for service role usage

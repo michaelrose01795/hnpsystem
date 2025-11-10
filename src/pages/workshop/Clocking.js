@@ -1,3 +1,4 @@
+// ✅ Connected to Supabase (frontend)
 // ✅ Imports converted to use absolute alias "@/"
 // ✅ File location: src/pages/workshop/Clocking.js
 "use client";

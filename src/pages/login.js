@@ -1,3 +1,4 @@
+// ✅ Connected to Supabase (frontend)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: /src/pages/login.js
 import React, { useState, useEffect } from "react";
