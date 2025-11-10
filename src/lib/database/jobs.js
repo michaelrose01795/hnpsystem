@@ -569,6 +569,181 @@ const normalizeBooleanField = (value) => {
   return Boolean(value);
 };
 
+// ✅ Ensure note fields always render with bullet (-) prefixes per requirements
+const ensureBulletFormat = (value = "") => {
+  if (!value) return "";
+  return value
+    .split(/\r?\n/)
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return "";
+      const cleaned = trimmed.replace(/^-+\s*/, "");
+      return `- ${cleaned}`;
+    })
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n");
+};
+
+// ✅ Convert stored requests (array/object/string) into numbered checklist items
+const normaliseRequestsForWriteUp = (requests) => {
+  if (!requests) return [];
+
+  let requestArray = [];
+
+  if (Array.isArray(requests)) {
+    requestArray = requests;
+  } else if (typeof requests === "string") {
+    try {
+      const parsed = JSON.parse(requests);
+      if (Array.isArray(parsed)) {
+        requestArray = parsed;
+      } else if (requests.includes("\n")) {
+        requestArray = requests.split(/\r?\n/);
+      } else if (requests.trim()) {
+        requestArray = [requests];
+      }
+    } catch (error) {
+      const segments = requests.split(/\r?\n/).map((segment) => segment.trim()).filter(Boolean);
+      requestArray = segments;
+    }
+  }
+
+  return requestArray
+    .map((entry, index) => {
+      const rawText =
+        typeof entry === "string"
+          ? entry
+          : typeof entry === "object" && entry !== null
+            ? entry.text ?? entry.note ?? entry.description ?? ""
+            : "";
+      const cleaned = (rawText || "").toString().trim();
+      if (!cleaned) return null;
+      return {
+        source: "request",
+        sourceKey: `req-${index + 1}`,
+        label: `Request ${index + 1}: ${cleaned}`,
+        raw: cleaned,
+      };
+    })
+    .filter(Boolean);
+};
+
+// ✅ Extract authorised VHC items for checklist integration
+const deriveAuthorisedWorkItems = (authorizationRows = []) => {
+  if (!Array.isArray(authorizationRows) || authorizationRows.length === 0) {
+    return [];
+  }
+
+  const latestAuthorization = authorizationRows[0];
+  const rawItems = Array.isArray(latestAuthorization?.authorized_items)
+    ? latestAuthorization.authorized_items
+    : [];
+
+  return rawItems
+    .map((item, index) => {
+      if (!item || typeof item !== "object") return null;
+
+      const descriptorParts = [
+        item.category,
+        item.item ?? item.description ?? item.text ?? item.note ?? "",
+      ].filter((segment) => Boolean(segment && `${segment}`.trim()));
+
+      const amountCandidate =
+        item.total_price ?? item.amount ?? item.authorized ?? item.price ?? item.cost ?? null;
+
+      if (amountCandidate !== null && amountCandidate !== undefined) {
+        const numericAmount = Number.parseFloat(amountCandidate);
+        if (Number.isFinite(numericAmount)) {
+          descriptorParts.push(`£${numericAmount.toFixed(2)}`);
+        } else if (typeof amountCandidate === "string" && amountCandidate.trim()) {
+          descriptorParts.push(amountCandidate.trim());
+        }
+      }
+
+      const descriptor = descriptorParts.join(" • ");
+      if (!descriptor) return null;
+
+      return {
+        source: "vhc",
+        sourceKey: `vhc-${latestAuthorization.id}-${item.id ?? index + 1}`,
+        label: `Authorized Work: ${descriptor}`,
+        raw: descriptor,
+        authorizationId: latestAuthorization.id,
+      };
+    })
+    .filter(Boolean);
+};
+
+// ✅ Normalise stored task status values
+const sanitiseTaskStatus = (status) => (status === "complete" ? "complete" : "additional_work");
+
+// ✅ Merge stored tasks with live request/VHC sources
+const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedItems = [] }) => {
+  const registry = new Map();
+
+  (storedTasks || []).forEach((task) => {
+    if (!task) return;
+    const key = `${task.source}:${task.source_key}`;
+    registry.set(key, {
+      taskId: task.task_id,
+      source: task.source,
+      sourceKey: task.source_key,
+      label: task.label,
+      status: sanitiseTaskStatus(task.status),
+    });
+  });
+
+  const merged = [];
+
+  requestItems.forEach((item) => {
+    const key = `${item.source}:${item.sourceKey}`;
+    const existing = registry.get(key);
+    if (existing) {
+      merged.push({ ...existing, label: item.label });
+      registry.delete(key);
+    } else {
+      merged.push({
+        taskId: null,
+        source: item.source,
+        sourceKey: item.sourceKey,
+        label: item.label,
+        status: "additional_work",
+      });
+    }
+  });
+
+  authorisedItems.forEach((item) => {
+    const key = `${item.source}:${item.sourceKey}`;
+    const existing = registry.get(key);
+    if (existing) {
+      merged.push({ ...existing, label: item.label });
+      registry.delete(key);
+    } else {
+      merged.push({
+        taskId: null,
+        source: item.source,
+        sourceKey: item.sourceKey,
+        label: item.label,
+        status: "additional_work",
+      });
+    }
+  });
+
+  registry.forEach((task) => {
+    merged.push(task);
+  });
+
+  return merged;
+};
+
+// ✅ Decide write-up completion state from checklist
+const determineCompletionStatus = (tasks, fallbackStatus = "additional_work") => {
+  if (!Array.isArray(tasks) || tasks.length === 0) {
+    return fallbackStatus || "additional_work";
+  }
+  return tasks.every((task) => task.status === "complete") ? "complete" : "additional_work";
+};
+
 /* ============================================
    HELPER: FORMAT JOB DATA
    Converts database format to application format
@@ -1341,15 +1516,15 @@ export const updateJobPosition = async (jobId, newPosition) => {
 
 /* ============================================
    GET WRITE-UP BY JOB NUMBER (ENHANCED VERSION)
-   ✅ WITH ALL FIELDS
+   ✅ WITH ALL FIELDS & CHECKLIST TASKS
 ============================================ */
 export const getWriteUpByJobNumber = async (jobNumber) => {
   console.log("🔍 getWriteUpByJobNumber:", jobNumber);
-  
+
   try {
     const { data: job, error: jobError } = await supabase
       .from("jobs")
-      .select("id")
+      .select("id, description, requests")
       .eq("job_number", jobNumber)
       .single();
 
@@ -1360,7 +1535,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
 
     const { data: writeUp, error } = await supabase
       .from("job_writeups")
-      .select("*") // Get all fields
+      .select("*")
       .eq("job_id", job.id)
       .maybeSingle();
 
@@ -1369,27 +1544,56 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       return null;
     }
 
-    if (!writeUp) {
-      console.log("ℹ️ No write-up data for job:", jobNumber);
-      return null;
+    const { data: taskRows, error: taskError } = await supabase
+      .from("job_writeup_tasks")
+      .select("task_id, source, source_key, label, status")
+      .eq("job_id", job.id)
+      .order("task_id", { ascending: true });
+
+    if (taskError) {
+      console.error("⚠️ Error fetching write-up tasks:", taskError);
     }
 
-    console.log("✅ Write-up found:", writeUp);
-    
-    // Map all database fields to form fields
+    const { data: authorizationRows } = await supabase
+      .from("vhc_authorizations")
+      .select("id, authorized_items, authorized_at")
+      .eq("job_id", job.id)
+      .order("authorized_at", { ascending: false });
+
+    const requestItems = normaliseRequestsForWriteUp(job.requests);
+    const authorisedItems = deriveAuthorisedWorkItems(authorizationRows || []);
+    const tasks = buildWriteUpTaskList({
+      storedTasks: taskRows || [],
+      requestItems,
+      authorisedItems,
+    });
+
+    const completionStatus = determineCompletionStatus(tasks, writeUp?.completion_status);
+    const latestAuthorizationId = authorisedItems.length > 0 ? authorisedItems[0].authorizationId : null;
+
     return {
-      fault: writeUp.work_performed || "",
-      caused: writeUp.recommendations || "",
-      ratification: writeUp.ratification || "",
-      warrantyClaim: writeUp.warranty_claim || "",
-      tsrNumber: writeUp.tsr_number || "",
-      pwaNumber: writeUp.pwa_number || "",
-      technicalBulletins: writeUp.technical_bulletins || "",
-      technicalSignature: writeUp.technical_signature || "",
-      qualityControl: writeUp.quality_control || "",
-      additionalParts: writeUp.parts_used || "",
-      qty: writeUp.qty || Array(10).fill(false),
-      booked: writeUp.booked || Array(10).fill(false),
+      fault: ensureBulletFormat(writeUp?.work_performed || job.description || ""),
+      caused: ensureBulletFormat(writeUp?.recommendations || ""),
+      rectification: ensureBulletFormat(
+        writeUp?.ratification || writeUp?.rectification_notes || ""
+      ),
+      warrantyClaim: writeUp?.warranty_claim || "",
+      tsrNumber: writeUp?.tsr_number || "",
+      pwaNumber: writeUp?.pwa_number || "",
+      technicalBulletins: ensureBulletFormat(writeUp?.technical_bulletins || ""),
+      technicalSignature: writeUp?.technical_signature || "",
+      qualityControl: writeUp?.quality_control || "",
+      additionalParts: ensureBulletFormat(writeUp?.parts_used || ""),
+      qty: writeUp?.qty || Array(10).fill(false),
+      booked: writeUp?.booked || Array(10).fill(false),
+      completionStatus,
+      jobDescription: ensureBulletFormat(
+        job.description || writeUp?.job_description_snapshot || ""
+      ),
+      tasks,
+      requests: requestItems,
+      authorisedItems,
+      vhcAuthorizationId: latestAuthorizationId,
     };
   } catch (error) {
     console.error("❌ getWriteUpByJobNumber error:", error);
@@ -1403,11 +1607,11 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
 ============================================ */
 export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
   console.log("💾 saveWriteUpToDatabase:", jobNumber);
-  
+
   try {
     const { data: job, error: jobError } = await supabase
       .from("jobs")
-      .select("id, assigned_to")
+      .select("id, assigned_to, description")
       .eq("job_number", jobNumber)
       .single();
 
@@ -1422,53 +1626,183 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       .eq("job_id", job.id)
       .maybeSingle();
 
+    const rawTasks = Array.isArray(writeUpData?.tasks) ? writeUpData.tasks : [];
+    const filteredTasks = rawTasks
+      .map((task) => ({
+        taskId: task?.taskId || null,
+        source: task?.source || "request",
+        sourceKey: task?.sourceKey || `${task?.source || "request"}-${task?.label || "task"}`,
+        label: (task?.label || "").toString().trim(),
+        status: sanitiseTaskStatus(task?.status),
+      }))
+      .filter((task) => Boolean(task.label));
+
+    const completionStatus = determineCompletionStatus(
+      filteredTasks,
+      writeUpData?.completionStatus
+    );
+
+    const formattedFault = ensureBulletFormat(writeUpData?.fault || "");
+    const formattedCaused = ensureBulletFormat(writeUpData?.caused || "");
+    const formattedRectification = ensureBulletFormat(writeUpData?.rectification || "");
+    const formattedAdditionalParts = ensureBulletFormat(writeUpData?.additionalParts || "");
+    const formattedBulletins = ensureBulletFormat(writeUpData?.technicalBulletins || "");
+    const formattedJobDescription = ensureBulletFormat(
+      writeUpData?.jobDescription || writeUpData?.fault || ""
+    );
+
+    if (formattedJobDescription && formattedJobDescription !== (job.description || "")) {
+      const jobUpdateResult = await updateJob(job.id, { description: formattedJobDescription });
+      if (!jobUpdateResult.success) {
+        console.error("⚠️ Failed to synchronise job description:", jobUpdateResult.error);
+      }
+    }
+
+    const { data: existingTasks, error: existingTasksError } = await supabase
+      .from("job_writeup_tasks")
+      .select("task_id, source, source_key")
+      .eq("job_id", job.id);
+
+    if (existingTasksError) {
+      console.error("❌ Error loading existing write-up tasks:", existingTasksError);
+      return { success: false, error: existingTasksError.message };
+    }
+
+    const existingTaskMap = new Map(
+      (existingTasks || []).map((task) => [`${task.source}:${task.source_key}`, task])
+    );
+
+    const seenTaskKeys = new Set();
+    const tasksToInsert = [];
+    const tasksToUpdate = [];
+
+    filteredTasks.forEach((task) => {
+      const taskKey = `${task.source}:${task.sourceKey}`;
+      seenTaskKeys.add(taskKey);
+      const payload = {
+        job_id: job.id,
+        source: task.source,
+        source_key: task.sourceKey,
+        label: task.label,
+        status: task.status,
+      };
+
+      const existingTask = existingTaskMap.get(taskKey);
+      if (existingTask) {
+        tasksToUpdate.push({ taskId: existingTask.task_id, payload });
+      } else {
+        tasksToInsert.push(payload);
+      }
+    });
+
+    if (tasksToInsert.length > 0) {
+      const { error: insertTasksError } = await supabase
+        .from("job_writeup_tasks")
+        .insert(tasksToInsert);
+
+      if (insertTasksError) {
+        console.error("❌ Error inserting write-up tasks:", insertTasksError);
+        return { success: false, error: insertTasksError.message };
+      }
+    }
+
+    for (const task of tasksToUpdate) {
+      const { error: updateTaskError } = await supabase
+        .from("job_writeup_tasks")
+        .update({ label: task.payload.label, status: task.payload.status })
+        .eq("task_id", task.taskId);
+
+      if (updateTaskError) {
+        console.error("❌ Error updating write-up task:", updateTaskError);
+        return { success: false, error: updateTaskError.message };
+      }
+    }
+
+    const tasksToRemove = (existingTasks || []).filter(
+      (task) => !seenTaskKeys.has(`${task.source}:${task.source_key}`)
+    );
+
+    if (tasksToRemove.length > 0) {
+      const { error: deleteTasksError } = await supabase
+        .from("job_writeup_tasks")
+        .delete()
+        .in(
+          "task_id",
+          tasksToRemove.map((task) => task.task_id)
+        );
+
+      if (deleteTasksError) {
+        console.error("❌ Error deleting stale write-up tasks:", deleteTasksError);
+        return { success: false, error: deleteTasksError.message };
+      }
+    }
+
     // Map ALL form fields to database fields
     const writeUpToSave = {
       job_id: job.id,
-      work_performed: writeUpData.fault || null,
-      parts_used: writeUpData.additionalParts || null,
-      recommendations: writeUpData.caused || null,
-      ratification: writeUpData.ratification || null,
-      warranty_claim: writeUpData.warrantyClaim || null,
-      tsr_number: writeUpData.tsrNumber || null,
-      pwa_number: writeUpData.pwaNumber || null,
-      technical_bulletins: writeUpData.technicalBulletins || null,
-      technical_signature: writeUpData.technicalSignature || null,
-      quality_control: writeUpData.qualityControl || null,
+      work_performed: formattedFault || null,
+      parts_used: formattedAdditionalParts || null,
+      recommendations: formattedCaused || null,
+      ratification: formattedRectification || null,
+      warranty_claim: writeUpData?.warrantyClaim || null,
+      tsr_number: writeUpData?.tsrNumber || null,
+      pwa_number: writeUpData?.pwaNumber || null,
+      technical_bulletins: formattedBulletins || null,
+      technical_signature: writeUpData?.technicalSignature || null,
+      quality_control: writeUpData?.qualityControl || null,
       qty: writeUpData.qty || Array(10).fill(false),
       booked: writeUpData.booked || Array(10).fill(false),
       labour_time: null, // Calculate if needed
       technician_id: job.assigned_to || null, // Get from job
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      completion_status: completionStatus,
+      rectification_notes: formattedRectification || null,
+      job_description_snapshot: formattedJobDescription || null,
+      vhc_authorization_reference: writeUpData?.vhcAuthorizationId || null,
+      task_checklist: filteredTasks.map((task) => ({
+        source: task.source,
+        sourceKey: task.sourceKey,
+        label: task.label,
+        status: task.status,
+      })),
     };
 
-    let result;
+    let persistenceResult = null;
 
     if (existing) {
       console.log("🔄 Updating existing write-up");
-      result = await supabase
+      const { data: updatedWriteUp, error: updateWriteUpError } = await supabase
         .from("job_writeups")
         .update(writeUpToSave)
         .eq("writeup_id", existing.writeup_id)
         .select()
         .single();
+
+      if (updateWriteUpError) {
+        console.error("❌ Error updating write-up:", updateWriteUpError);
+        return { success: false, error: updateWriteUpError.message };
+      }
+
+      persistenceResult = updatedWriteUp;
     } else {
       console.log("➕ Creating new write-up");
       writeUpToSave.created_at = new Date().toISOString();
-      result = await supabase
+      const { data: insertedWriteUp, error: insertWriteUpError } = await supabase
         .from("job_writeups")
         .insert([writeUpToSave])
         .select()
         .single();
-    }
 
-    if (result.error) {
-      console.error("❌ Error saving write-up:", result.error);
-      return { success: false, error: result.error.message };
+      if (insertWriteUpError) {
+        console.error("❌ Error inserting write-up:", insertWriteUpError);
+        return { success: false, error: insertWriteUpError.message };
+      }
+
+      persistenceResult = insertedWriteUp;
     }
 
     console.log("✅ Write-up saved successfully");
-    return { success: true, data: result.data };
+    return { success: true, data: persistenceResult, completionStatus };
   } catch (error) {
     console.error("❌ saveWriteUpToDatabase error:", error);
     return { success: false, error: error.message };

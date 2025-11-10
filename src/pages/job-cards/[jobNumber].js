@@ -55,6 +55,21 @@ const deriveVhcSeverity = (check = {}) => {
   return null;
 };
 
+// ✅ Ensure shared note formatting matches write-up bullet styling
+const formatNoteValue = (value = "") => {
+  if (!value) return "";
+  return value
+    .split(/\r?\n/)
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return "";
+      const cleaned = trimmed.replace(/^-+\s*/, "");
+      return `- ${cleaned}`;
+    })
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n");
+};
+
 export default function JobCardDetailPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
@@ -69,6 +84,8 @@ export default function JobCardDetailPage() {
   const [newNote, setNewNote] = useState("");
   const [customerJobHistory, setCustomerJobHistory] = useState([]);
   const [selectedHistoryJob, setSelectedHistoryJob] = useState(null);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [descriptionDraft, setDescriptionDraft] = useState("");
 
   // ✅ Permission Check
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
@@ -100,6 +117,8 @@ export default function JobCardDetailPage() {
 
         console.log("✅ Job data loaded:", data);
         setJobData(data.jobCard);
+        setIsEditingDescription(false);
+        setDescriptionDraft(formatNoteValue(data.jobCard?.description || ""));
 
         // ✅ Fetch notes
         if (data.jobCard?.id) {
@@ -211,6 +230,44 @@ export default function JobCardDetailPage() {
     } catch (toggleError) {
       console.error("Error updating VHC requirement:", toggleError);
       alert("Failed to update VHC requirement");
+    }
+  };
+
+  const handleStartDescriptionEdit = () => {
+    setDescriptionDraft(formatNoteValue(jobData?.description || ""));
+    setIsEditingDescription(true);
+  };
+
+  const handleDescriptionChange = (event) => {
+    setDescriptionDraft(formatNoteValue(event.target.value));
+  };
+
+  const handleDescriptionCancel = () => {
+    setDescriptionDraft(formatNoteValue(jobData?.description || ""));
+    setIsEditingDescription(false);
+  };
+
+  const handleDescriptionSave = async () => {
+    if (!canEdit || !jobData?.id) return;
+
+    const payload = formatNoteValue(descriptionDraft);
+
+    try {
+      const result = await updateJob(jobData.id, {
+        description: payload
+      });
+
+      if (result.success && result.data) {
+        setJobData(result.data);
+        setDescriptionDraft(formatNoteValue(result.data.description || ""));
+        setIsEditingDescription(false);
+        alert("✅ Job description updated successfully");
+      } else {
+        alert(result?.error?.message || "Failed to update job description");
+      }
+    } catch (descriptionError) {
+      console.error("Error updating description:", descriptionError);
+      alert("Failed to update job description");
     }
   };
 
@@ -429,6 +486,112 @@ export default function JobCardDetailPage() {
             )}
           </div>
         </div>
+
+        {jobData && (
+          <div style={{
+            marginBottom: "16px",
+            padding: "20px",
+            backgroundColor: "white",
+            borderRadius: "12px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            border: "1px solid #e0e0e0",
+            flexShrink: 0
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
+                Job Description
+              </h2>
+              {canEdit && (
+                isEditingDescription ? (
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={handleDescriptionSave}
+                      style={{
+                        padding: "8px 16px",
+                        backgroundColor: "#10b981",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        fontWeight: "600",
+                        fontSize: "14px"
+                      }}
+                    >
+                      💾 Save
+                    </button>
+                    <button
+                      onClick={handleDescriptionCancel}
+                      style={{
+                        padding: "8px 16px",
+                        backgroundColor: "#6c757d",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        fontWeight: "600",
+                        fontSize: "14px"
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleStartDescriptionEdit}
+                    style={{
+                      padding: "8px 16px",
+                      backgroundColor: "#3b82f6",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      fontWeight: "600",
+                      fontSize: "14px"
+                    }}
+                  >
+                    ✏️ Edit Description
+                  </button>
+                )
+              )}
+            </div>
+            {isEditingDescription ? (
+              <textarea
+                value={descriptionDraft}
+                onChange={handleDescriptionChange}
+                style={{
+                  width: "100%",
+                  minHeight: "140px",
+                  padding: "12px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontFamily: "inherit",
+                  outline: "none"
+                }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = "#d10000")}
+                onBlur={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
+              />
+            ) : (
+              <div>
+                {jobData.description ? (
+                  <ul style={{ margin: 0, paddingLeft: "18px", color: "#444", fontSize: "14px" }}>
+                    {jobData.description
+                      .split(/\r?\n/)
+                      .map((line) => line.trim())
+                      .filter((line) => line)
+                      .map((line, index) => (
+                        <li key={`${line}-${index}`}>{line.replace(/^-+\s*/, "")}</li>
+                      ))}
+                  </ul>
+                ) : (
+                  <p style={{ color: "#999", fontStyle: "italic", margin: 0 }}>
+                    No description recorded yet.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ✅ Vehicle & Customer Info Bar */}
         <div style={{
