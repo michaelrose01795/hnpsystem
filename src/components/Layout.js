@@ -184,48 +184,6 @@ export default function Layout({ children }) {
     };
   }, [router]);
 
-  useEffect(() => {
-    if (typeof window === "undefined" || !router?.events) return;
-
-    const userAgent = window.navigator?.userAgent || "";
-    const isIOS =
-      /iPad|iPhone|iPod/.test(userAgent) ||
-      (userAgent.includes("Macintosh") && "ontouchend" in document);
-
-    if (!isIOS) return;
-
-    let pendingUrl = null;
-
-    const handleStart = (url) => {
-      pendingUrl = url;
-    };
-
-    const handleComplete = (url) => {
-      if (!pendingUrl || !url) {
-        pendingUrl = null;
-        return;
-      }
-      if (pendingUrl === url) {
-        pendingUrl = null;
-        window.location.assign(url);
-      }
-    };
-
-    const handleError = () => {
-      pendingUrl = null;
-    };
-
-    router.events.on("routeChangeStart", handleStart);
-    router.events.on("routeChangeComplete", handleComplete);
-    router.events.on("routeChangeError", handleError);
-
-    return () => {
-      router.events.off("routeChangeStart", handleStart);
-      router.events.off("routeChangeComplete", handleComplete);
-      router.events.off("routeChangeError", handleError);
-    };
-  }, [router]);
-
   const navigationItems = [];
   const seenNavItems = new Set();
   const roleMatches = (requiredRoles = []) => {

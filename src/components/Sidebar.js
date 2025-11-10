@@ -112,7 +112,6 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
             type="button"
             onClick={onToggle}
             aria-label="Close sidebar"
-            className="sidebar-action"
             style={{
               position: "absolute",
               top: "16px",
@@ -157,7 +156,6 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="sidebar-action"
                   style={{
                     display: "block",
                     padding: "10px 14px",
@@ -207,7 +205,6 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="sidebar-action"
                   style={{
                     display: "block",
                     padding: "10px 14px",
@@ -256,7 +253,6 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
                     key={item.label}
                     type="button"
                     onClick={handleLogout}
-                    className="sidebar-action"
                     style={{
                       padding: "10px 14px",
                       borderRadius: "10px",
@@ -281,7 +277,6 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="sidebar-action"
                     style={{
                       display: "block",
                       padding: "10px 14px",
