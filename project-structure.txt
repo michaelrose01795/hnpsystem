@@ -1,17 +1,41 @@
 .
+├── .env
+├── .env.local
+├── .gitignore
+├── .husky
+│   └── _
+│       ├── .gitignore
+│       ├── applypatch-msg
+│       ├── commit-msg
+│       ├── h
+│       ├── husky.sh
+│       ├── post-applypatch
+│       ├── post-checkout
+│       ├── post-commit
+│       ├── post-merge
+│       ├── post-rewrite
+│       ├── pre-applypatch
+│       ├── pre-auto-gc
+│       ├── pre-commit
+│       ├── pre-merge-commit
+│       ├── pre-push
+│       ├── pre-rebase
+│       └── prepare-commit-msg
 ├── README.md
-├── Supabase
-│   └── migrations
-│       ├── 001_enable_rls.sql
-│       ├── 002_create_rls_policies.sql
-│       ├── 003_secure_core_tables.sql
-│       └── 004_fix_core_tables_policies.sql
+├── codex
+│   ├── deploy.yml
+│   ├── jobFlowAutomation.js
+│   ├── notify-status-change.js
+│   ├── pre-commit
+│   └── setup.sh
 ├── docs
+│   ├── db-linking-plan.md
 │   ├── developer-guide.md
 │   ├── paste
 │   └── project-overview.md
 ├── eslint.config.mjs
 ├── hnpsystem.tar.gz
+├── middleware.js
 ├── next-env.d.ts
 ├── next.config.mjs
 ├── package-lock.json
@@ -26,56 +50,300 @@
 │   ├── images
 │   │   ├── Brakes3.png
 │   │   ├── Spare.png
-│   │   └── Tyres2.png
+│   │   ├── Tyres2.png
+│   │   ├── full.png
+│   │   └── hp-logo.png
 │   ├── next.svg
 │   ├── vercel.svg
 │   └── window.svg
 ├── src
 │   ├── api
 │   │   ├── clocking
+│   │   │   ├── clockIn.js
+│   │   │   ├── clockOut.js
+│   │   │   └── getClocking.js
 │   │   ├── customers
+│   │   │   ├── [customerId].js
+│   │   │   └── by-vehicle.js
 │   │   ├── jobcards
+│   │   │   ├── [jobNumber].js
+│   │   │   └── index.js
 │   │   └── vehicles
+│   │       ├── [reg].js
+│   │       ├── lookup.js
+│   │       ├── maintenance-history.js
+│   │       └── manufacturing.js
 │   ├── components
+│   │   ├── Admin
+│   │   │   └── AdminUserForm.js
 │   │   ├── Clocking
+│   │   │   ├── ClockInButton.js
+│   │   │   ├── ClockingCard.js
+│   │   │   ├── ClockingList.js
+│   │   │   └── ClockingStats.js
+│   │   ├── CustomerViewPreview.js
+│   │   ├── GlobalSearch.js
+│   │   ├── HR
+│   │   │   ├── EmployeeProfilePanel.js
+│   │   │   ├── HrTabsBar.js
+│   │   │   ├── MetricCard.js
+│   │   │   └── OvertimeEntriesEditor.js
 │   │   ├── JobCards
+│   │   │   ├── JobCardModal.js
+│   │   │   └── JobCardModal.module.css
 │   │   ├── Layout.js
 │   │   ├── LoginDropdown.js
 │   │   ├── ProtectedRoute.js
 │   │   ├── Section.js
 │   │   ├── Sidebar.js
+│   │   ├── StatusTracking
+│   │   │   ├── StatusSidebar.js
+│   │   │   └── StatusTimeline.js
 │   │   ├── VHC
+│   │   │   ├── BrakeDiagram.js
+│   │   │   ├── BrakesHubsDetailsModal.js
+│   │   │   ├── ExternalDetailsModal.js
+│   │   │   ├── InternalElectricsDetailsModal.js
+│   │   │   ├── ServiceIndicatorDetailsModal.js
+│   │   │   ├── TyreDiagram.js
+│   │   │   ├── TyresSection.js
+│   │   │   ├── UndersideDetailsModal.js
+│   │   │   ├── VHCModalShell.js
+│   │   │   ├── WheelsHubsModal.js
+│   │   │   └── WheelsTyresDetailsModal.js
+│   │   ├── Workshop
+│   │   │   └── JobClockingCard.js
 │   │   ├── dashboards
+│   │   │   ├── DashboardClocking.js
+│   │   │   ├── TechDashboard.js
+│   │   │   └── WorkshopManagerDashboard.js
 │   │   └── popups
+│   │       ├── CheckSheetPopup.js
+│   │       ├── ExistingCustomerPopup.js
+│   │       ├── NewCustomerPopup.js
+│   │       └── Popup.js
 │   ├── config
+│   │   ├── confirmation
+│   │   │   └── user.js
 │   │   ├── navLinks.js
+│   │   ├── navigation.js
 │   │   └── users.js
 │   ├── context
 │   │   ├── ClockingContext.js
 │   │   ├── JobsContext.js
 │   │   └── UserContext.js
+│   ├── customers
+│   │   ├── components
+│   │   │   ├── AppointmentTimeline.js
+│   │   │   ├── CustomerHero.js
+│   │   │   ├── CustomerLayout.js
+│   │   │   ├── CustomerSidebar.js
+│   │   │   ├── MessagingHub.js
+│   │   │   ├── PartsAccessCard.js
+│   │   │   ├── VHCSummaryList.js
+│   │   │   └── VehicleGarageCard.js
+│   │   ├── data
+│   │   │   └── placeholders.js
+│   │   └── pages
+│   │       ├── DashboardPage.js
+│   │       ├── MessagesPage.js
+│   │       ├── PartsPage.js
+│   │       ├── VehiclesPage.js
+│   │       └── VhcPage.js
+│   ├── general
+│   │   ├── hooks
+│   │   └── utils
 │   ├── hooks
-│   │   └── useClocking.js
+│   │   ├── useClocking.js
+│   │   └── useHrData.js
 │   ├── lib
+│   │   ├── auth
+│   │   │   ├── roleGuard.js
+│   │   │   └── roles.js
 │   │   ├── database
-│   │   └── supabaseClient.js
+│   │   │   ├── adminUsers.js
+│   │   │   ├── clocking.js
+│   │   │   ├── customers.js
+│   │   │   ├── hr.js
+│   │   │   ├── jobClocking.js
+│   │   │   ├── jobs.js
+│   │   │   ├── messages.js
+│   │   │   ├── notes.js
+│   │   │   ├── parts.js
+│   │   │   ├── schemaReference.js
+│   │   │   ├── users.js
+│   │   │   ├── vehicles.js
+│   │   │   └── vhc.js
+│   │   ├── hr
+│   │   │   ├── mockData.js
+│   │   │   └── reminderTasks.js
+│   │   ├── migrations
+│   │   │   ├── 001_enable_rls.sql
+│   │   │   ├── 002_create_rls_policies.sql
+│   │   │   ├── 003_secure_core_tables.sql
+│   │   │   ├── 004_fix_core_tables_policies.sql
+│   │   │   ├── 005_create_parts_system.sql
+│   │   │   ├── 006_internal_messaging.sql
+│   │   │   ├── 007_job_writeup_tasks.sql
+│   │   │   ├── add_writeup_rectification_items.sql
+│   │   │   └── phase1_automation.sql
+│   │   ├── services
+│   │   │   ├── jobStatusService.js
+│   │   │   └── vhcStatusService.js
+│   │   ├── status
+│   │   │   └── statusFlow.js
+│   │   ├── supabaseClient.js
+│   │   ├── tyre
+│   │   │   └── tyreAPI.js
+│   │   └── users
+│   │       └── devUsers.js
 │   ├── pages
 │   │   ├── _app.js
+│   │   ├── _document.js
+│   │   ├── admin
+│   │   │   ├── profiles
+│   │   │   │   └── [user].js
+│   │   │   └── users
+│   │   │       └── index.js
 │   │   ├── api
+│   │   │   ├── admin
+│   │   │   │   └── users.js
+│   │   │   ├── auth
+│   │   │   │   └── [...nextauth].js
+│   │   │   ├── hr
+│   │   │   │   ├── attendance.js
+│   │   │   │   ├── dashboard.js
+│   │   │   │   ├── employees.js
+│   │   │   │   └── mock-data.js
+│   │   │   ├── jobcards
+│   │   │   │   ├── [jobNumber]
+│   │   │   │   │   ├── parse-checksheet.js
+│   │   │   │   │   └── upload-dealer-file.js
+│   │   │   │   └── create.js
+│   │   │   ├── messages
+│   │   │   │   ├── threads
+│   │   │   │   │   ├── [threadId]
+│   │   │   │   │   │   ├── members.js
+│   │   │   │   │   │   └── messages.js
+│   │   │   │   │   └── index.js
+│   │   │   │   └── users.js
+│   │   │   ├── parts
+│   │   │   │   ├── deliveries
+│   │   │   │   │   ├── [deliveryId]
+│   │   │   │   │   │   └── items.js
+│   │   │   │   │   ├── [deliveryId].js
+│   │   │   │   │   ├── index.js
+│   │   │   │   │   └── items
+│   │   │   │   │       └── [itemId].js
+│   │   │   │   ├── inventory
+│   │   │   │   │   ├── [partId].js
+│   │   │   │   │   └── index.js
+│   │   │   │   ├── jobs
+│   │   │   │   │   ├── [jobPartId].js
+│   │   │   │   │   └── index.js
+│   │   │   │   └── summary.js
+│   │   │   ├── search
+│   │   │   │   └── global.js
+│   │   │   ├── status
+│   │   │   │   ├── getCurrentStatus.js
+│   │   │   │   ├── getHistory.js
+│   │   │   │   └── update.js
+│   │   │   └── vehicles
+│   │   │       └── dvla.js
 │   │   ├── appointments
+│   │   │   └── index.js
 │   │   ├── clocking
+│   │   │   ├── admin.js
+│   │   │   └── index.js
+│   │   ├── customer
+│   │   │   ├── index.js
+│   │   │   ├── messages.js
+│   │   │   ├── parts.js
+│   │   │   ├── vehicles.js
+│   │   │   └── vhc.js
 │   │   ├── dashboard
+│   │   │   ├── manager.js
+│   │   │   ├── parts.js
+│   │   │   ├── service.js
+│   │   │   └── techs.js
 │   │   ├── dashboard.js
+│   │   ├── hr
+│   │   │   ├── attendance.js
+│   │   │   ├── disciplinary.js
+│   │   │   ├── employees
+│   │   │   │   └── index.js
+│   │   │   ├── index.js
+│   │   │   ├── leave.js
+│   │   │   ├── payroll.js
+│   │   │   ├── performance.js
+│   │   │   ├── recruitment.js
+│   │   │   ├── reports.js
+│   │   │   ├── settings.js
+│   │   │   └── training.js
 │   │   ├── index.js
 │   │   ├── job-cards
+│   │   │   ├── [jobNumber]
+│   │   │   │   ├── add-checksheet.js
+│   │   │   │   ├── car-details.js
+│   │   │   │   ├── check-box.js
+│   │   │   │   ├── dealer-car-details.js
+│   │   │   │   ├── upload-checksheet.js
+│   │   │   │   ├── upload-dealer-file.js
+│   │   │   │   ├── vhc.js
+│   │   │   │   └── write-up.js
+│   │   │   ├── [jobNumber].js
+│   │   │   ├── appointments.js
+│   │   │   ├── create
+│   │   │   │   └── index.js
+│   │   │   ├── myjobs
+│   │   │   │   ├── [jobNumber].js
+│   │   │   │   └── index.js
+│   │   │   ├── view
+│   │   │   │   └── index.js
+│   │   │   └── waiting
+│   │   │       └── nextjobs.js
 │   │   ├── login.js
+│   │   ├── messages
+│   │   │   └── index.js
 │   │   ├── newsfeed.js
+│   │   ├── parts
+│   │   │   ├── index.js
+│   │   │   └── manager.js
+│   │   ├── profile
+│   │   │   └── index.js
+│   │   ├── tech
+│   │   │   └── dashboard.js
+│   │   ├── test-dvla.js
+│   │   ├── tracking
+│   │   │   └── index.js
 │   │   ├── unauthorized.js
+│   │   ├── valet
+│   │   │   └── index.js
 │   │   ├── vhc
+│   │   │   ├── dashboard.js
+│   │   │   ├── details
+│   │   │   │   └── [jobNumber].js
+│   │   │   └── index.js
 │   │   ├── workshop
+│   │   │   ├── Clocking.js
+│   │   │   ├── ClockingTech.js
+│   │   │   ├── ControllerClocking.js
+│   │   │   └── check-in.js
 │   │   └── workshop.js
-│   └── styles
-│       └── globals.css
+│   ├── retail
+│   │   ├── job-cards
+│   │   ├── mot
+│   │   ├── valet
+│   │   └── vhc
+│   ├── styles
+│   │   ├── appTheme.js
+│   │   └── globals.css
+│   └── utils
+│       ├── nameUtils.js
+│       └── polyfills.js
+├── test-direct-dvla.js
+├── tmp
+│   └── car_metrics.txt
 └── tsconfig.json
 
-33 directories, 46 files
+95 directories, 252 files

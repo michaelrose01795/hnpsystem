@@ -189,6 +189,11 @@ export const sidebarSections = [
         href: "/workshop/check-in",
         roles: ["workshop manager"],
       },
+      {
+        label: "🧾 Consumables Tracker", // Workshop consumable planning workspace
+        href: "/workshop/consumables-tracker",
+        roles: ["workshop manager"],
+      },
     ],
   },
   {
@@ -234,6 +239,11 @@ export const sidebarSections = [
       {
         label: "🧰 My Jobs",
         href: "/job-cards/myjobs",
+        roles: ["techs"],
+      },
+      {
+        label: "📝 Request Consumables", // Technician consumable request portal
+        href: "/tech/consumables-request",
         roles: ["techs"],
       },
     ],

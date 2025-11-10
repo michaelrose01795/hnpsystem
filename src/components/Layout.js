@@ -252,6 +252,11 @@ export default function Layout({ children }) {
       keywords: ["start job", "tech"],
       section: "Workshop",
     });
+    addNavItem("📝 Request Consumables", "/tech/consumables-request", {
+      keywords: ["consumables", "request", "supplies"],
+      description: "Submit consumable restock requests to management",
+      section: "Workshop",
+    }); // expose consumable request tool to technicians via quick search
   }
 
   if (
@@ -275,6 +280,14 @@ export default function Layout({ children }) {
       keywords: ["next jobs", "waiting list", "queue"],
       section: "Workshop",
     });
+  }
+
+  if (userRoles.includes("workshop manager")) {
+    addNavItem("🧾 Consumables Tracker", "/workshop/consumables-tracker", {
+      keywords: ["consumables", "tracker", "budget"],
+      description: "Monitor consumable spend, reminders, and supplier details",
+      section: "Workshop",
+    }); // surface consumable tracker shortcut for workshop managers
   }
 
   if (viewRoles.some((r) => userRoles.includes(r))) {
