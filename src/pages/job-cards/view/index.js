@@ -29,11 +29,6 @@ export default function ViewJobCards() {
   const [loading, setLoading] = useState(true); // loading state
   const router = useRouter(); // router for navigation
   const today = getTodayDate(); // get today's date
-  const quickActions = [
-    { label: "Create Job Card", href: "/job-cards/create" },
-    { label: "Appointments", href: "/appointments" },
-    { label: "Check In", href: "/workshop/check-in" },
-  ];
 
   /* ----------------------------
      Fetch jobs from Supabase
@@ -432,13 +427,13 @@ export default function ViewJobCards() {
           </button>
         </div>
 
-        {/* ✅ Tabs Navigation + Quick Actions */}
+        {/* ✅ Tabs Navigation */}
         <div
           style={{
             display: "flex",
             flexWrap: "wrap",
             gap: "12px",
-            justifyContent: "space-between",
+            justifyContent: "flex-start",
             alignItems: "center",
             borderBottom: "2px solid #e0e0e0",
             paddingBottom: "8px",
@@ -486,47 +481,6 @@ export default function ViewJobCards() {
             >
               Carry Over
             </button>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              flexWrap: "wrap",
-              justifyContent: "flex-end",
-              flex: "0 0 auto",
-            }}
-          >
-            {quickActions.map((action) => (
-              <Link
-                key={action.href}
-                href={action.href}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "10px 18px",
-                  backgroundColor: "#ffffff",
-                  color: "#d10000",
-                  border: "1px solid #ffd4d4",
-                  borderRadius: "999px",
-                  fontWeight: 600,
-                  fontSize: "14px",
-                  textDecoration: "none",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-                  transition: "background-color 0.2s, color 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#d10000";
-                  e.currentTarget.style.color = "#ffffff";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#ffffff";
-                  e.currentTarget.style.color = "#d10000";
-                }}
-              >
-                {action.label}
-              </Link>
-            ))}
           </div>
         </div>
 

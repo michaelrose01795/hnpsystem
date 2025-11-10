@@ -1,5 +1,6 @@
 // file location: src/components/dashboards/WorkshopManagerDashboard.js
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react"; // import React and hooks for stateful UI logic
+import Link from "next/link"; // import Next.js Link for client-side navigation
 import { getJobsByDate } from "../../lib/database/jobs";
 import { useClockingContext } from "../../context/ClockingContext";
 import dayjs from "dayjs";
@@ -12,6 +13,11 @@ const availableConsumableMonths = Array.from(
 ).sort((a, b) => (a > b ? -1 : 1));
 
 export default function WorkshopManagerDashboard() {
+  const quickActions = [
+    { label: "Create Job Card", href: "/job-cards/create" }, // jump to the job card creation flow
+    { label: "Appointments", href: "/job-cards/appointments" }, // open the workshop appointment planner
+    { label: "Check In", href: "/workshop/check-in" }, // launch the technician check-in screen
+  ];
   const [pendingJobs, setPendingJobs] = useState([]);
   const { allUsersClocking, fetchAllUsersClocking, loading } = useClockingContext();
   const today = dayjs().format("YYYY-MM-DD");
@@ -69,7 +75,57 @@ export default function WorkshopManagerDashboard() {
   };
 
   return (
-    <div style={{ padding: "24px" }}>
+    <div style={{ padding: "24px" }}> {/* outer wrapper that matches dashboard padding */}
+      <section
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+          marginBottom: "24px",
+        }}
+      > {/* section for the quick access buttons */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "12px",
+          }}
+        > {/* row layout so buttons stay on a single visual line */}
+          {quickActions.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "10px 18px",
+                borderRadius: "999px",
+                border: "1px solid #ffb3b3",
+                backgroundColor: "#ffffff",
+                color: "#b10000",
+                fontWeight: 600,
+                fontSize: "0.9rem",
+                textDecoration: "none",
+                boxShadow: "0 8px 16px rgba(209,0,0,0.08)",
+                transition: "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+              }}
+              onMouseEnter={(event) => {
+                event.currentTarget.style.backgroundColor = "#b10000";
+                event.currentTarget.style.color = "#ffffff";
+                event.currentTarget.style.boxShadow = "0 16px 32px rgba(177,0,0,0.18)";
+              }}
+              onMouseLeave={(event) => {
+                event.currentTarget.style.backgroundColor = "#ffffff";
+                event.currentTarget.style.color = "#b10000";
+                event.currentTarget.style.boxShadow = "0 8px 16px rgba(209,0,0,0.08)";
+              }}
+            >
+              {action.label} {/* button text with no emojis per requirements */}
+            </Link>
+          ))}
+        </div>
+      </section>
       <h1 style={{ fontSize: "1.5rem", fontWeight: "700", color: "#FF4040", marginBottom: "16px" }}>
         Workshop Manager Dashboard
       </h1>

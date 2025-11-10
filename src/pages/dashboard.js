@@ -1,38 +1,43 @@
 // file location: src/pages/dashboard.js
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/router";
-import { useUser } from "../context/UserContext";
-import { useJobs } from "../context/JobsContext";
-import Layout from "../components/Layout";
-import WorkshopManagerDashboard from "../components/dashboards/WorkshopManagerDashboard";
-import RetailManagersDashboard from "../components/dashboards/RetailManagersDashboard";
-import { roleCategories } from "../config/users";
+import React, { useEffect, useState } from "react"; // import React and hooks for state handling
+import { useRouter } from "next/router"; // import router for navigation
+import { useUser } from "../context/UserContext"; // import user context for authentication data
+import { useJobs } from "../context/JobsContext"; // import jobs context to share job data
+import Layout from "../components/Layout"; // import shared layout wrapper
+import WorkshopManagerDashboard from "../components/dashboards/WorkshopManagerDashboard"; // import workshop manager dashboard component
+import RetailManagersDashboard from "../components/dashboards/RetailManagersDashboard"; // import retail managers dashboard component
+import { roleCategories } from "../config/users"; // import role category definitions
 
-const retailManagerRoles = (roleCategories?.Retail || [])
-  .filter((roleName) => /manager|director/i.test(roleName))
-  .map((roleName) => roleName.toLowerCase());
+const retailManagerRoles = (roleCategories?.Retail || []) // build a list of retail manager roles
+  .filter((roleName) => /manager|director/i.test(roleName)) // keep only manager or director titles
+  .map((roleName) => roleName.toLowerCase()); // normalize to lowercase for comparison
 
 export default function Dashboard() {
-  const { user } = useUser();
-  const { jobs, setJobs } = useJobs();
-  const router = useRouter();
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
+  const { user } = useUser(); // get current user information
+  const { jobs, setJobs } = useJobs(); // access shared jobs state
+  const router = useRouter(); // initialize router for redirects
+  const [showSearch, setShowSearch] = useState(false); // control visibility of search modal
+  const [searchTerm, setSearchTerm] = useState(""); // store search term input
+  const [searchResults, setSearchResults] = useState([]); // store filtered search results
 
-  // Redirect roles to their specific dashboards when they do not use the new retail dashboard
+  const quickActions = [ // define quick action buttons available on the dashboard
+    { label: "Create Job Card", href: "/job-cards/create" }, // link to create job card workflow
+    { label: "Appointments", href: "/job-cards/appointments" }, // link to appointments planner
+    { label: "Check In", href: "/workshop/check-in" }, // link to workshop check in page
+  ];
+
   useEffect(() => {
-    if (!user) return;
+    if (!user) return; // stop if user data not ready
 
-    const normalizedRoles = user.roles?.map((role) => role.toLowerCase()) || [];
-    const shouldStayOnRetailDashboard = normalizedRoles.some((roleName) =>
+    const normalizedRoles = user.roles?.map((role) => role.toLowerCase()) || []; // normalize user roles for comparisons
+    const shouldStayOnRetailDashboard = normalizedRoles.some((roleName) => // determine if user should stay on retail dashboard
       retailManagerRoles.includes(roleName)
     );
-    if (shouldStayOnRetailDashboard) return;
+    if (shouldStayOnRetailDashboard) return; // keep retail managers on this page
 
-    const role = user.roles?.[0]?.toUpperCase();
+    const role = user.roles?.[0]?.toUpperCase(); // get primary role in uppercase
 
-    switch (role) {
+    switch (role) { // redirect non-retail roles to their dedicated dashboards
       case "SERVICE":
         router.replace("/dashboard/service");
         break;
@@ -49,33 +54,32 @@ export default function Dashboard() {
       default:
         break;
     }
-  }, [user, router]);
+  }, [user, router]); // re-run redirects when user or router changes
 
-  // Fetch all jobs on load
   useEffect(() => {
     const fetchJobs = async () => {
-      if (user) {
-        const { getAllJobs } = await import("../lib/database/jobs");
-        const allJobs = await getAllJobs();
-        setJobs(allJobs);
+      if (user) { // only fetch when user is available
+        const { getAllJobs } = await import("../lib/database/jobs"); // lazy load jobs helper
+        const allJobs = await getAllJobs(); // fetch all jobs from database
+        setJobs(allJobs); // store fetched jobs in context
       }
     };
-    fetchJobs();
-  }, [user, setJobs]);
+    fetchJobs(); // execute fetch on mount
+  }, [user, setJobs]); // re-run when user or setter changes
 
-  if (!user) return null;
+  if (!user) return null; // do not render until user data exists
 
-  const role = user?.roles?.[0] || "Guest";
-  const normalizedRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
-  const isRetailManager = normalizedRoles.some((roleName) => retailManagerRoles.includes(roleName));
-  const isWorkshopManager = normalizedRoles.includes("workshop manager");
+  const role = user?.roles?.[0] || "Guest"; // capture first role or default to guest
+  const normalizedRoles = user?.roles?.map((r) => r.toLowerCase()) || []; // normalize roles for checks
+  const isRetailManager = normalizedRoles.some((roleName) => retailManagerRoles.includes(roleName)); // check retail manager status
+  const isWorkshopManager = normalizedRoles.includes("workshop manager"); // check workshop manager status
 
-  if (isRetailManager) {
+  if (isRetailManager) { // render retail manager experience
     return (
       <Layout>
-        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-          <RetailManagersDashboard user={user} />
-          {isWorkshopManager && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}> {/* stack dashboard sections vertically */}
+          <RetailManagersDashboard user={user} /> {/* show retail dashboard */}
+          {isWorkshopManager && ( // include workshop dashboard for dual-role users
             <section
               style={{
                 background: "#ffffff",
@@ -85,7 +89,7 @@ export default function Dashboard() {
                 boxShadow: "0 24px 45px rgba(209,0,0,0.08)",
               }}
             >
-              <WorkshopManagerDashboard />
+              <WorkshopManagerDashboard /> {/* embed workshop dashboard module */}
             </section>
           )}
         </div>
@@ -93,21 +97,19 @@ export default function Dashboard() {
     );
   }
 
-  // 🔹 Handle search
   const handleSearch = () => {
-    const results = jobs.filter(
+    const results = jobs.filter( // filter jobs by search term
       (job) =>
         job.jobNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         job.reg?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         job.customer?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    setSearchResults(results);
+    setSearchResults(results); // update results state
   };
 
   return (
     <Layout>
-      <div style={{ padding: "0", display: "flex", flexDirection: "column", gap: "20px" }}>
-        {/* Top Bar */}
+      <div style={{ padding: "0", display: "flex", flexDirection: "column", gap: "20px" }}> {/* outer container for dashboard */}
         <div
           style={{
             display: "flex",
@@ -136,7 +138,53 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Dashboard Content */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "12px",
+            backgroundColor: "#ffffff",
+            padding: "14px 20px",
+            borderRadius: "12px",
+            boxShadow: "0 10px 25px rgba(209,0,0,0.1)",
+            border: "1px solid #ffe0e0",
+          }}
+        >
+          {quickActions.map((action) => (
+            <button
+              key={action.href}
+              onClick={() => router.push(action.href)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "10px 18px",
+                borderRadius: "999px",
+                border: "1px solid #ffb3b3",
+                backgroundColor: "#ffffff",
+                color: "#b10000",
+                fontWeight: 600,
+                fontSize: "0.9rem",
+                cursor: "pointer",
+                boxShadow: "0 8px 16px rgba(209,0,0,0.08)",
+                transition: "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+              }}
+              onMouseEnter={(event) => {
+                event.currentTarget.style.backgroundColor = "#b10000";
+                event.currentTarget.style.color = "#ffffff";
+                event.currentTarget.style.boxShadow = "0 16px 32px rgba(177,0,0,0.18)";
+              }}
+              onMouseLeave={(event) => {
+                event.currentTarget.style.backgroundColor = "#ffffff";
+                event.currentTarget.style.color = "#b10000";
+                event.currentTarget.style.boxShadow = "0 8px 16px rgba(209,0,0,0.08)";
+              }}
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+
         <div
           style={{
             backgroundColor: "#FFF8F8",
@@ -147,7 +195,6 @@ export default function Dashboard() {
         >
           <p>Welcome {user?.username || "Guest"}! Here’s your current jobs overview.</p>
 
-          {/* Jobs Table */}
           <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "20px" }}>
             <thead>
               <tr style={{ backgroundColor: "#FFCCCC" }}>
@@ -175,7 +222,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Search Modal */}
       {showSearch && (
         <div
           style={{
@@ -198,64 +244,73 @@ export default function Dashboard() {
               borderRadius: "10px",
               width: "400px",
               maxWidth: "90%",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+              boxShadow: "0 20px 45px rgba(0,0,0,0.2)",
             }}
           >
-            <h2 style={{ marginBottom: "15px", color: "#FF4040" }}>Search Jobs</h2>
+            <h2 style={{ marginBottom: "16px", color: "#FF4040" }}>Search Jobs</h2>
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by job number, reg, or customer..."
+              placeholder="Search by job number, reg, or customer"
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "6px",
+                border: "1px solid #ddd",
+                marginBottom: "12px",
+              }}
+            />
+            <button
+              onClick={handleSearch}
               style={{
                 width: "100%",
                 padding: "10px",
+                backgroundColor: "#FF4040",
+                color: "white",
+                border: "none",
                 borderRadius: "6px",
-                border: "1px solid #ddd",
-                marginBottom: "20px",
+                marginBottom: "12px",
+                cursor: "pointer",
+                fontWeight: 600,
               }}
-            />
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-              <button
-                onClick={() => setShowSearch(false)}
-                style={{
-                  padding: "8px 14px",
-                  backgroundColor: "#ccc",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                }}
-              >
-                Close
-              </button>
-              <button
-                onClick={handleSearch}
-                style={{
-                  padding: "8px 14px",
-                  backgroundColor: "#FF4040",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                }}
-              >
-                Search
-              </button>
-            </div>
+            >
+              Search
+            </button>
+            <button
+              onClick={() => setShowSearch(false)}
+              style={{
+                width: "100%",
+                padding: "10px",
+                backgroundColor: "#f3f4f6",
+                color: "#333",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              Close
+            </button>
 
-            {/* Search Results */}
-            {searchResults.length > 0 && (
-              <div style={{ marginTop: "20px" }}>
-                <h3>Results:</h3>
-                <ul>
+            <div style={{ marginTop: "20px", maxHeight: "200px", overflowY: "auto" }}>
+              {searchResults.length === 0 ? (
+                <p style={{ color: "#666" }}>No results found.</p>
+              ) : (
+                <ul style={{ listStyle: "none", padding: 0 }}>
                   {searchResults.map((job) => (
-                    <li key={job.id}>
-                      {job.jobNumber} - {job.customer} - {job.make} {job.model} ({job.reg})
+                    <li
+                      key={job.id}
+                      style={{
+                        padding: "10px",
+                        borderBottom: "1px solid #eee",
+                      }}
+                    >
+                      <strong>{job.jobNumber}</strong> - {job.customer} ({job.reg})
                     </li>
                   ))}
                 </ul>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}
