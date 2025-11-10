@@ -47,6 +47,7 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
         height: "100%",
         display: "flex",
         flexDirection: "column",
+        minHeight: 0,
       }}
     >
       {/* Section label keeps consistent naming requested by spec */}
@@ -68,19 +69,20 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
           position: "relative",
           flex: 1,
           overflowY: "auto",
-          padding: "0 12px",
+          overflowX: "hidden",
+          padding: "0 8px 12px 8px",
+          minHeight: 0,
         }}
       >
         {/* Central spine for the vertical process flow */}
         <div
           style={{
             position: "absolute",
-            left: "50%",
-            top: "12px",
-            bottom: "12px",
+            left: "34px",
+            top: "16px",
+            bottom: "16px",
             width: "2px",
             background: "linear-gradient(180deg, #fbe1e1, #f9b0b0)",
-            transform: "translateX(-50%)",
             pointerEvents: "none",
           }}
         />
@@ -105,8 +107,9 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
             <div
               key={`${item?.status || item?.label || "status"}-${index}`}
               style={{
-                display: "flex",
-                alignItems: "flex-start",
+                display: "grid",
+                gridTemplateColumns: "68px 1fr",
+                alignItems: "start",
                 gap: "16px",
                 padding: "12px 0",
               }}
@@ -118,8 +121,7 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                   display: "flex",
                   alignItems: "center",
                   flexDirection: "column",
-                  minWidth: "24px",
-                  marginLeft: "calc(50% - 12px)",
+                  minHeight: "100%",
                 }}
               >
                 <span
@@ -142,7 +144,6 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                       width: "2px",
                       backgroundColor: connectorColor,
                       marginTop: "4px",
-                      marginBottom: "-4px",
                     }}
                   />
                 )}
@@ -151,8 +152,7 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
               {/* Status detail card with label + timestamp */}
               <div
                 style={{
-                  flex: 1,
-                  marginLeft: "8px",
+                  width: "100%",
                   backgroundColor: "#fff",
                   borderRadius: "12px",
                   border: isCurrent
@@ -182,13 +182,16 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                     : "0 4px 12px rgba(15,23,42,0.08)";
                 }}
               >
-                <div style={{ textAlign: "left" }}>
+                <div style={{ textAlign: "left", minWidth: 0 }}>
                   <div
                     style={{
                       fontSize: "15px",
                       fontWeight: 600,
                       color: isCurrent ? COLORS.current : COLORS.textDark,
                       textTransform: "none",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {displayLabel}
@@ -199,6 +202,9 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                         fontSize: "12px",
                         color: COLORS.textMuted,
                         marginTop: "4px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
                       }}
                     >
                       {item.department}
