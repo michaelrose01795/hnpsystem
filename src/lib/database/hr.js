@@ -282,7 +282,7 @@ async function getPerformanceScore() {
           totalScore += overall;
           scoredCount += 1;
         }
-      } catch {
+      } catch (error) {
         // ignore malformed score payloads
       }
     }
@@ -530,4 +530,144 @@ export async function getHrDashboardSnapshot() {
     departmentPerformance,
     trainingRenewals,
   };
+}
+
+/* ============================================
+   EMPLOYEE DIRECTORY
+============================================ */
+function deriveProbationEnd(startDate) {
+  if (!startDate) return null;
+  return dayjs(startDate).add(6, "month").format("YYYY-MM-DD");
+}
+
+async function getActiveAbsenceMap() {
+  const today = dayjs().format("YYYY-MM-DD");
+
+  const { data, error } = await supabase
+    .from("hr_absences")
+    .select("user_id")
+    .eq("approval_status", "Approved")
+    .lte("start_date", today)
+    .gte("end_date", today);
+
+  if (error) {
+    console.error("❌ getActiveAbsenceMap error", error);
+    throw error;
+  }
+
+  const map = new Map();
+  (data || []).forEach((row) => {
+    if (row.user_id) {
+      map.set(row.user_id, "On leave");
+    }
+  });
+  return map;
+}
+
+const normalizeDocuments = (documents) => {
+  if (!documents) return [];
+  let parsed = documents;
+  if (typeof documents === "string") {
+    try {
+      parsed = JSON.parse(documents);
+    } catch (error) {
+      parsed = [];
+    }
+  }
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed.map((doc, index) => ({
+    id: doc.id || `DOC-${index + 1}`,
+    name: doc.name || doc.title || "Document",
+    type: doc.type || doc.category || "general",
+    uploadedOn: doc.uploadedOn || doc.uploaded_at || doc.date || doc.created_at || null,
+  }));
+};
+
+const formatEmergencyContact = (value) => {
+  if (!value) return { contact: "Not provided", address: "Not provided" };
+  if (typeof value === "string") {
+    return { contact: value, address: "Not provided" };
+  }
+
+  if (typeof value === "object") {
+    const contactName = value.name || "Contact";
+    const phone = value.phone ? ` (${value.phone})` : "";
+    const relationship = value.relationship ? ` - ${value.relationship}` : "";
+    return {
+      contact: `${contactName}${phone}${relationship}`.trim(),
+      address: value.address || "Not provided",
+    };
+  }
+
+  return { contact: "Not provided", address: "Not provided" };
+};
+
+export async function getEmployeeDirectory() {
+  const [profilesResult, activeAbsenceMap] = await Promise.all([
+    supabase
+      .from("hr_employee_profiles")
+      .select(
+        `
+          profile_id,
+          user_id,
+          department,
+          job_title,
+          employment_type,
+          start_date,
+          manager_id,
+          photo_url,
+          emergency_contact,
+          documents,
+          created_at,
+          user:user_id(
+            user_id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            role,
+            created_at
+          )
+        `
+      )
+      .order("created_at", { ascending: true }),
+    getActiveAbsenceMap(),
+  ]);
+
+  const { data, error } = profilesResult;
+
+  if (error) {
+    console.error("❌ getEmployeeDirectory error", error);
+    throw error;
+  }
+
+  return (data || []).map((profile) => {
+    const user = profile.user || {};
+    const userId = user.user_id || profile.user_id;
+    const status = activeAbsenceMap.get(userId) || "Active";
+    const name = `${user.first_name || ""} ${user.last_name || ""}`.trim() || user.email || `User ${userId}`;
+    const emergencyDetails = formatEmergencyContact(profile.emergency_contact);
+
+    return {
+      id: `EMP-${userId}`,
+      userId,
+      name,
+      jobTitle: profile.job_title || user.role || "Employee",
+      department: profile.department || "Unassigned",
+      role: user.role || profile.job_title || "Employee",
+      employmentType: profile.employment_type || "Full-time",
+      status,
+      startDate: profile.start_date,
+      probationEnd: deriveProbationEnd(profile.start_date),
+      contractedHours: 40,
+      hourlyRate: 0,
+      keycloakId: user.email ? `kc-${user.email.split("@")[0]}` : `kc-${userId}`,
+      email: user.email,
+      phone: user.phone || "N/A",
+      emergencyContact: emergencyDetails.contact,
+      address: emergencyDetails.address,
+      documents: normalizeDocuments(profile.documents),
+    };
+  });
 }

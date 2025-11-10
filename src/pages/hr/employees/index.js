@@ -1,7 +1,7 @@
 // file location: src/pages/hr/employees/index.js
 import React, { useEffect, useMemo, useState } from "react";
 import Layout from "../../../components/Layout";
-import { useHrMockData } from "../../../hooks/useHrData";
+import { useHrEmployeesData } from "../../../hooks/useHrData";
 import { SectionCard, StatusTag } from "../../../components/HR/MetricCard";
 import EmployeeProfilePanel from "../../../components/HR/EmployeeProfilePanel";
 
@@ -10,8 +10,8 @@ import EmployeeProfilePanel from "../../../components/HR/EmployeeProfilePanel";
 const defaultFilters = { department: "all", status: "all", employmentType: "all" };
 
 export default function EmployeeManagement() {
-  const { data, isLoading, error } = useHrMockData();
-  const employees = data?.employeeDirectory ?? [];
+  const { data, isLoading, error } = useHrEmployeesData();
+  const employees = data ?? [];
 
   const [filters, setFilters] = useState(defaultFilters);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
