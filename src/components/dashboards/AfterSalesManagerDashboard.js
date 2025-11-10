@@ -1,5 +1,6 @@
 // file location: src/components/dashboards/AfterSalesManagerDashboard.js
 import React from "react";
+import Link from "next/link";
 import dayjs from "dayjs";
 
 const revenueStreams = [
@@ -48,6 +49,12 @@ const regionalSnapshot = [
 const formatCurrency = (value) =>
   new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(value);
 
+const quickActions = [
+  { label: "Create Job Card", href: "/job-cards/create" },
+  { label: "Appointments", href: "/job-cards/appointments" },
+  { label: "Check In", href: "/workshop/check-in" },
+];
+
 export default function AfterSalesManagerDashboard() {
   const today = dayjs().format("dddd, D MMM");
   const totals = revenueStreams.reduce(
@@ -80,6 +87,42 @@ export default function AfterSalesManagerDashboard() {
         <h1 style={{ margin: 0, fontSize: "1.9rem", color: "#7a3e00" }}>Revenue & Loyalty Pulse</h1>
         <p style={{ margin: 0, color: "#8b5a2b" }}>{today} • {formatCurrency(totals.actual)} / {formatCurrency(totals.target)} • {progress}% to plan</p>
       </header>
+
+      <section
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "12px",
+          background: "#fff",
+          padding: "14px 20px",
+          borderRadius: "16px",
+          border: "1px solid #ffd7a8",
+          boxShadow: "0 18px 40px rgba(191,96,0,0.12)",
+        }}
+      >
+        {quickActions.map((action) => (
+          <Link
+            key={action.href}
+            href={action.href}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "10px 20px",
+              borderRadius: "999px",
+              border: "1px solid #ffddb9",
+              backgroundColor: "#fff",
+              color: "#a45200",
+              fontWeight: 600,
+              fontSize: "0.9rem",
+              textDecoration: "none",
+              boxShadow: "0 12px 28px rgba(191,96,0,0.15)",
+            }}
+          >
+            {action.label}
+          </Link>
+        ))}
+      </section>
 
       <section
         style={{

@@ -1,5 +1,6 @@
 // file location: src/components/dashboards/ServiceManagerDashboard.js
 import React, { useMemo } from "react";
+import Link from "next/link";
 import dayjs from "dayjs";
 
 const advisorPipelines = [
@@ -49,6 +50,12 @@ const afternoonPlan = [
   { slot: "16:00", action: "Prep tomorrow's first-wave appointments", owner: "Josh" },
 ];
 
+const quickActions = [
+  { label: "Create Job Card", href: "/job-cards/create" },
+  { label: "Appointments", href: "/job-cards/appointments" },
+  { label: "Check In", href: "/workshop/check-in" },
+];
+
 export default function ServiceManagerDashboard() {
   const todayLabel = dayjs().format("dddd, D MMM");
   const advisorTotals = useMemo(() => {
@@ -84,6 +91,42 @@ export default function ServiceManagerDashboard() {
         <h1 style={{ margin: 0, color: "#0f3057", fontSize: "1.9rem" }}>Customer Flow Control</h1>
         <p style={{ margin: 0, color: "#4b5563" }}>{todayLabel} • 32 appointments • 6 waiters in lounge</p>
       </header>
+
+      <section
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "12px",
+          background: "#ffffff",
+          padding: "14px 20px",
+          borderRadius: "16px",
+          border: "1px solid #cfe6ff",
+          boxShadow: "0 18px 40px rgba(15,48,87,0.08)",
+        }}
+      >
+        {quickActions.map((action) => (
+          <Link
+            key={action.href}
+            href={action.href}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "10px 20px",
+              borderRadius: "999px",
+              border: "1px solid #bfe0ff",
+              backgroundColor: "#ffffff",
+              color: "#00558c",
+              fontWeight: 600,
+              fontSize: "0.9rem",
+              textDecoration: "none",
+              boxShadow: "0 12px 26px rgba(15,48,87,0.12)",
+            }}
+          >
+            {action.label}
+          </Link>
+        ))}
+      </section>
 
       <section
         style={{
