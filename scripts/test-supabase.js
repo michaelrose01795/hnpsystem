@@ -20,8 +20,6 @@ if (!supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 (async () => {
-  console.log("🔄 Testing Supabase connection...");
-
   const { data, error } = await supabase
     .from("jobs")
     .select("completion_status, rectification_notes, job_description_snapshot, vhc_authorization_reference, task_checklist")
@@ -30,7 +28,6 @@ const supabase = createClient(supabaseUrl, supabaseKey);
   if (error) {
     console.error("❌ Query failed:", error.message);
   } else {
-    console.log("✅ Connection successful. Sample data:");
-    console.log(data);
+    console.info("✅ Connection successful.");
   }
 })();
