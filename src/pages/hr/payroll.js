@@ -1,8 +1,8 @@
 // file location: src/pages/hr/payroll.js
-import React from "react";
-import Layout from "../../components/Layout";
-import { useHrMockData } from "../../hooks/useHrData";
-import { SectionCard, StatusTag } from "../../components/HR/MetricCard";
+import React from "react"; // React runtime for the payroll workspace
+import Layout from "../../components/Layout"; // shared layout wrapper
+import { useHrOperationsData } from "../../hooks/useHrData"; // Supabase-backed HR aggregation hook
+import { SectionCard, StatusTag } from "../../components/HR/MetricCard"; // HR specific UI components
 
 // TODO: Pull payroll data, pay rises, and overtime summaries from Supabase tables.
 
@@ -28,11 +28,11 @@ const payriseRequests = [
 ];
 
 export default function HrPayroll() {
-  const { data, isLoading, error } = useHrMockData();
+  const { data, isLoading, error } = useHrOperationsData(); // hydrate payroll workspace with consolidated data
 
-  const employeeDirectory = data?.employeeDirectory ?? [];
-  const overtimeSummaries = data?.overtimeSummaries ?? [];
-  const payRateHistory = data?.payRateHistory ?? [];
+  const employeeDirectory = data?.employeeDirectory ?? []; // directory for compensation overview
+  const overtimeSummaries = data?.overtimeSummaries ?? []; // overtime totals per employee
+  const payRateHistory = data?.payRateHistory ?? []; // payroll adjustment log
 
   return (
     <Layout>
@@ -162,7 +162,7 @@ export default function HrPayroll() {
                   <tbody>
                     {payRateHistory.map((entry) => (
                       <tr key={entry.id} style={{ borderTop: "1px solid #E5E7EB" }}>
-                        <td style={{ padding: "12px 0", fontWeight: 600 }}>{entry.employeeId}</td>
+                        <td style={{ padding: "12px 0", fontWeight: 600 }}>{entry.employee}</td>
                         <td>{new Date(entry.effectiveDate).toLocaleDateString()}</td>
                         <td>£{Number(entry.rate).toFixed(2)}</td>
                         <td>{entry.type}</td>
@@ -198,16 +198,18 @@ export default function HrPayroll() {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontWeight: 600, color: "#111827" }}>{summary.employee}</span>
                         <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#0EA5E9" }}>
-                          £{(summary.overtimeHours * summary.overtimeRate + summary.bonus).toFixed(2)}
+                          {summary.status}
                         </span>
                       </div>
-                      <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>
-                        {summary.overtimeHours} hrs @ £{summary.overtimeRate.toFixed(2)} + £{summary.bonus.toFixed(0)} bonus
-                      </span>
                       <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>
                         Period {new Date(summary.periodStart).toLocaleDateString()} -{" "}
                         {new Date(summary.periodEnd).toLocaleDateString()}
                       </span>
+                      <div style={{ display: "flex", gap: "14px", fontSize: "0.85rem", color: "#374151" }}>
+                        <span>{summary.overtimeHours} hrs</span>
+                        <span>Rate £{Number(summary.overtimeRate).toFixed(2)}</span>
+                        <span>Bonus £{Number(summary.bonus).toFixed(2)}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -221,10 +223,10 @@ export default function HrPayroll() {
 }
 
 const buttonStylePrimary = {
-  padding: "8px 14px",
+  padding: "10px 18px",
   borderRadius: "10px",
   border: "none",
-  background: "#22C55E",
+  background: "#F97316",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",
@@ -233,9 +235,9 @@ const buttonStylePrimary = {
 const buttonStyleSecondary = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px solid #D1FAE5",
+  border: "1px solid #FED7AA",
   background: "white",
-  color: "#047857",
+  color: "#EA580C",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -243,9 +245,9 @@ const buttonStyleSecondary = {
 const buttonStyleGhost = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px dashed #D1D5DB",
+  border: "1px solid transparent",
   background: "transparent",
-  color: "#6B7280",
+  color: "#EA580C",
   fontWeight: 600,
   cursor: "pointer",
 };
