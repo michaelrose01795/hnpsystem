@@ -1,12 +1,13 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/job-cards/appointments.js
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Layout from "../../components/Layout";
+import Layout from "@/components/Layout";
 import { 
   createOrUpdateAppointment, 
   getJobByNumberOrReg 
-} from "../../lib/database/jobs";
+} from "@/lib/database/jobs";
 import { useRouter } from "next/router";
 
 export default function AppointmentsPage() {

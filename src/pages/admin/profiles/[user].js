@@ -1,7 +1,8 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/admin/profiles/[user].js
 import React from "react";
 import { useRouter } from "next/router";
-import { ProfilePage } from "../../profile";
+import { ProfilePage } from "@/pages/profile";
 
 export default function AdminProfilePreview() {
   const router = useRouter();

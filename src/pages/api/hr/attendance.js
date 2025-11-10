@@ -1,5 +1,6 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/api/hr/attendance.js
-import { getHrAttendanceSnapshot } from "../../../lib/database/hr";
+import { getHrAttendanceSnapshot } from "@/lib/database/hr";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {

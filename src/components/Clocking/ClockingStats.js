@@ -1,6 +1,7 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/Clocking/ClockingStats.js
 import React from "react";
-import { useUser } from "../../context/UserContext";
+import { useUser } from "@/context/UserContext";
 
 export default function ClockingStats() {
   const { user, status } = useUser();

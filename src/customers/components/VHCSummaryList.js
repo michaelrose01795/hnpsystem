@@ -1,6 +1,7 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/customers/components/VHCSummaryList.js
 import React from "react";
-import { customerVehicles } from "../data/placeholders";
+import { customerVehicles } from "@/customers/data/placeholders";
 
 const vehicleLookup = Object.fromEntries(
   customerVehicles.map((vehicle) => [vehicle.id, vehicle])

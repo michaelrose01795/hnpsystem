@@ -1,17 +1,18 @@
+// ✅ Imports converted to use absolute alias "@/"
 // ✅ Database linked through /src/lib/database
 // file location: src/pages/job-cards/[jobNumber]/write-up.js
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import Layout from "../../../components/Layout";
+import Layout from "@/components/Layout";
 import {
   getWriteUpByJobNumber,
   saveWriteUpToDatabase,
   getJobByNumber
-} from "../../../lib/database/jobs";
-import { useUser } from "../../../context/UserContext";
-import { usersByRole } from "../../../config/users";
+} from "@/lib/database/jobs";
+import { useUser } from "@/context/UserContext";
+import { usersByRole } from "@/config/users";
 
 // ✅ Helper ensures every paragraph is prefixed with a bullet dash
 const formatNoteValue = (value = "") => {

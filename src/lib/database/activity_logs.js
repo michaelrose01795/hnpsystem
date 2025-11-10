@@ -1,5 +1,6 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/activity_logs.js
-import { getDatabaseClient } from "./client"; // Import the shared Supabase client accessor for database operations.
+import { getDatabaseClient } from "@/lib/database/client"; // Import the shared Supabase client accessor for database operations.
 
 const db = getDatabaseClient(); // Hold a module-level reference to the Supabase client.
 const TABLE_NAME = "activity_logs"; // Name of the table defined in codex/database-schema.json.

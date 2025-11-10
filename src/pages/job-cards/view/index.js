@@ -1,11 +1,12 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/job-cards/view/index.js
 "use client"; // enables client-side rendering for Next.js
 
 import React, { useState, useEffect } from "react"; // import React and hooks
 import Link from "next/link";
-import Layout from "../../../components/Layout"; // import layout wrapper
+import Layout from "@/components/Layout"; // import layout wrapper
 import { useRouter } from "next/router"; // for navigation
-import { getAllJobs, updateJobStatus } from "../../../lib/database/jobs"; // import database functions
+import { getAllJobs, updateJobStatus } from "@/lib/database/jobs"; // import database functions
 
 /* ================================
    Utility function: today's date

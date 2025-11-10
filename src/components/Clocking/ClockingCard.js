@@ -1,6 +1,7 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/Clocking/ClockingCard.js
 import React from "react";
-import { useClocking } from "../../hooks/useClocking";
+import { useClocking } from "@/hooks/useClocking";
 
 export default function ClockingCard() {
   const { clockedIn, hoursWorked, loading, clockIn, clockOut } = useClocking();

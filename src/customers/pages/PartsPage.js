@@ -1,9 +1,10 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/customers/pages/PartsPage.js
 import React from "react";
-import CustomerLayout from "../components/CustomerLayout";
-import PartsAccessCard from "../components/PartsAccessCard";
-import VehicleGarageCard from "../components/VehicleGarageCard";
-import { availableParts, customerVehicles } from "../data/placeholders";
+import CustomerLayout from "@/customers/components/CustomerLayout";
+import PartsAccessCard from "@/customers/components/PartsAccessCard";
+import VehicleGarageCard from "@/customers/components/VehicleGarageCard";
+import { availableParts, customerVehicles } from "@/customers/data/placeholders";
 
 export default function CustomerPartsPage() {
   return (

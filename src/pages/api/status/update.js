@@ -1,10 +1,11 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/api/status/update.js
 import { createClient } from "@supabase/supabase-js"; // Import Supabase factory to optionally use service role credentials
-import { supabase as browserSupabase } from "../../../lib/supabaseClient"; // Import shared Supabase client for fallback usage
+import { supabase as browserSupabase } from "@/lib/supabaseClient"; // Import shared Supabase client for fallback usage
 import {
   SERVICE_STATUS_FLOW,
   isValidTransition,
-} from "../../../lib/status/statusFlow"; // Import status flow helpers for validation and metadata
+} from "@/lib/status/statusFlow"; // Import status flow helpers for validation and metadata
 
 // TODO: Delegate reads/writes to src/lib/database/jobs helpers so status updates share the same data layer as the rest of the app.
 

@@ -1,7 +1,8 @@
+// ✅ Imports converted to use absolute alias "@/"
 import React from "react";
 import Link from "next/link";
-import { useUser } from "../../context/UserContext";
-import { useClockingContext } from "../../context/ClockingContext";
+import { useUser } from "@/context/UserContext";
+import { useClockingContext } from "@/context/ClockingContext";
 
 export default function ClockInButton() {
   const { user, setStatus } = useUser();

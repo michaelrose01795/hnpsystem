@@ -1,3 +1,4 @@
+// ✅ Imports converted to use absolute alias "@/"
 "use client";
 
 import React, {
@@ -7,7 +8,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import Layout from "../../components/Layout";
+import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { appShellTheme } from "@/styles/appTheme";
 

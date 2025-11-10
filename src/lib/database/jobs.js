@@ -1,6 +1,7 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/jobs.js
-import { getDatabaseClient } from "./client";
-import { ensureUserIdForDisplayName } from "../users/devUsers";
+import { getDatabaseClient } from "@/lib/database/client";
+import { ensureUserIdForDisplayName } from "@/lib/users/devUsers";
 import dayjs from "dayjs";
 
 const supabase = getDatabaseClient();

@@ -1,14 +1,15 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/job-cards/[jobNumber].js
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import Layout from "../../components/Layout";
-import { useUser } from "../../context/UserContext";
-import { usersByRole } from "../../config/users";
-import { getJobByNumber, updateJob } from "../../lib/database/jobs";
-import { getNotesByJob, createJobNote, deleteJobNote } from "../../lib/database/notes";
-import { getCustomerJobs } from "../../lib/database/customers";
+import Layout from "@/components/Layout";
+import { useUser } from "@/context/UserContext";
+import { usersByRole } from "@/config/users";
+import { getJobByNumber, updateJob } from "@/lib/database/jobs";
+import { getNotesByJob, createJobNote, deleteJobNote } from "@/lib/database/notes";
+import { getCustomerJobs } from "@/lib/database/customers";
 
 const normalizeRequests = (rawRequests) => {
   if (Array.isArray(rawRequests)) {

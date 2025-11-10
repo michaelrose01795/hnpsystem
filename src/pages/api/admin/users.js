@@ -1,10 +1,11 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/api/admin/users.js
-import { withRoleGuard } from "../../../lib/auth/roleGuard";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import {
   listAdminUsers,
   createAdminUser,
   deleteAdminUser,
-} from "../../../lib/database/adminUsers";
+} from "@/lib/database/adminUsers";
 
 const allowedRoles = ["admin manager", "admin", "owner"];
 

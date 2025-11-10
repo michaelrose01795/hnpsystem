@@ -1,5 +1,6 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/parts.js
-import { getDatabaseClient } from "./client"; // Import the shared Supabase client accessor for all parts-related queries.
+import { getDatabaseClient } from "@/lib/database/client"; // Import the shared Supabase client accessor for all parts-related queries.
 
 const db = getDatabaseClient(); // Cache the Supabase client for repeated operations.
 const PARTS_TABLE = "parts_catalog"; // Primary catalog table that stores each part definition.

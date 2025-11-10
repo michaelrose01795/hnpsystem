@@ -1,6 +1,7 @@
+// ✅ Imports converted to use absolute alias "@/"
 // ✅ File location: src/components/popups/ExistingCustomerPopup.js
 import React, { useState, useEffect } from "react";
-import { searchCustomers } from "../../lib/database/customers"; // ✅ use shared function
+import { searchCustomers } from "@/lib/database/customers"; // ✅ use shared function
 
 // ExistingCustomerPopup component
 export default function ExistingCustomerPopup({ onClose, onSelect }) {

@@ -1,5 +1,6 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/vhc.js
-import { getDatabaseClient } from "./client"; // Import the shared Supabase client accessor to query VHC-related tables.
+import { getDatabaseClient } from "@/lib/database/client"; // Import the shared Supabase client accessor to query VHC-related tables.
 
 const db = getDatabaseClient(); // Cache the Supabase client so every function can reuse it.
 const CHECKS_TABLE = "vhc_checks"; // Table storing individual VHC findings.

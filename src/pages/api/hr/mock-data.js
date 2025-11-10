@@ -1,8 +1,9 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/api/hr/mock-data.js
 
-import { getHrOperationsSnapshot } from "../../../lib/database/hr"; // fetch combined HR datasets from Supabase
-import { withRoleGuard } from "../../../lib/auth/roleGuard"; // enforce RBAC on the endpoint
-import { HR_CORE_ROLES, MANAGER_SCOPED_ROLES } from "../../../lib/auth/roles"; // role constants reused across APIs
+import { getHrOperationsSnapshot } from "@/lib/database/hr"; // fetch combined HR datasets from Supabase
+import { withRoleGuard } from "@/lib/auth/roleGuard"; // enforce RBAC on the endpoint
+import { HR_CORE_ROLES, MANAGER_SCOPED_ROLES } from "@/lib/auth/roles"; // role constants reused across APIs
 
 const ALLOWED_ROLES = Array.from(new Set([...HR_CORE_ROLES, ...MANAGER_SCOPED_ROLES].map((role) => role.toLowerCase()))); // flatten and normalise all permitted roles
 

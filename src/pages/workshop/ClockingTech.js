@@ -1,10 +1,11 @@
+// ✅ Imports converted to use absolute alias "@/"
 // ✅ File location: src/pages/workshop/ClockingTech.js
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Layout from "../../components/Layout";
-import { useUser } from "../../context/UserContext";
-import { supabase } from "../../lib/supabaseClient";
+import Layout from "@/components/Layout";
+import { useUser } from "@/context/UserContext";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function ClockingTech() {
   const { user } = useUser();

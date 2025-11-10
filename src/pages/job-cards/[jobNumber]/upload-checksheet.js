@@ -1,9 +1,10 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/job-cards/[jobNumber]/upload-checksheet.js
 "use client";
 
 import React, { useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "../../../components/Layout";
+import Layout from "@/components/Layout";
 
 export default function UploadChecksheet() {
   const router = useRouter();

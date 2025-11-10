@@ -1,9 +1,10 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/customers/pages/MessagesPage.js
 import React from "react";
-import CustomerLayout from "../components/CustomerLayout";
-import MessagingHub from "../components/MessagingHub";
-import AppointmentTimeline from "../components/AppointmentTimeline";
-import { messageContacts, appointmentTimeline } from "../data/placeholders";
+import CustomerLayout from "@/customers/components/CustomerLayout";
+import MessagingHub from "@/customers/components/MessagingHub";
+import AppointmentTimeline from "@/customers/components/AppointmentTimeline";
+import { messageContacts, appointmentTimeline } from "@/customers/data/placeholders";
 
 export default function CustomerMessagesPage() {
   return (

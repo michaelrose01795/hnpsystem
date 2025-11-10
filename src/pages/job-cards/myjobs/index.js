@@ -1,15 +1,16 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/job-cards/myjobs/index.js
 "use client";
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "../../../components/Layout";
-import { useUser } from "../../../context/UserContext";
-import { usersByRole } from "../../../config/users";
-import { getAllJobs } from "../../../lib/database/jobs";
-import { getClockingStatus } from "../../../lib/database/clocking";
-import JobCardModal from "../../../components/JobCards/JobCardModal"; // Import Start Job modal
-import { normalizeDisplayName } from "../../../utils/nameUtils";
+import Layout from "@/components/Layout";
+import { useUser } from "@/context/UserContext";
+import { usersByRole } from "@/config/users";
+import { getAllJobs } from "@/lib/database/jobs";
+import { getClockingStatus } from "@/lib/database/clocking";
+import JobCardModal from "@/components/JobCards/JobCardModal"; // Import Start Job modal
+import { normalizeDisplayName } from "@/utils/nameUtils";
 
 const STATUS_BADGE_STYLES = {
   "In Progress": { background: "#dbeafe", color: "#1e40af" },

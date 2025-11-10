@@ -1,12 +1,13 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/vhc/dashboard.js
 "use client";
 
 import React, { useEffect, useState } from "react"; // import React hooks for stateful UI
-import Layout from "../../components/Layout"; // import shared layout component
+import Layout from "@/components/Layout"; // import shared layout component
 import { useRouter } from "next/router"; // import router hook for navigation
-import { getAllJobs } from "../../lib/database/jobs"; // import Supabase helper to fetch jobs
-import { getVhcChecksByJob } from "../../lib/database/vhc"; // import Supabase helper to fetch technician VHC data (note: lowercase 'hc')
-import { useUser } from "../../context/UserContext"; // import context hook to read current user roles
+import { getAllJobs } from "@/lib/database/jobs"; // import Supabase helper to fetch jobs
+import { getVhcChecksByJob } from "@/lib/database/vhc"; // import Supabase helper to fetch technician VHC data (note: lowercase 'hc')
+import { useUser } from "@/context/UserContext"; // import context hook to read current user roles
 
 // ✅ Status color mapping for the headline badge
 const STATUS_COLORS = {

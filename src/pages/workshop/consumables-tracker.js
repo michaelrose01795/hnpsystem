@@ -1,12 +1,13 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/workshop/consumables-tracker.js
 
 "use client"; // Enable client-side interactivity for this page
 
 import React, { useMemo, useState } from "react"; // Import React hooks for state and memoization
-import Layout from "../../components/Layout"; // Import shared layout wrapper
-import { useUser } from "../../context/UserContext"; // Import user context for role-based access
+import Layout from "@/components/Layout"; // Import shared layout wrapper
+import { useUser } from "@/context/UserContext"; // Import user context for role-based access
 import Link from "next/link"; // Import Link for navigation shortcuts
-import { consumableOrderHistory } from "../../lib/data/consumablesSample"; // Shared seed data for consumables
+import { consumableOrderHistory } from "@/lib/data/consumablesSample"; // Shared seed data for consumables
 
 const containerStyle = {
   padding: "24px", // Provide roomy spacing around the page

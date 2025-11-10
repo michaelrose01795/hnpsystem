@@ -1,9 +1,10 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/customers/pages/VhcPage.js
 import React from "react";
-import CustomerLayout from "../components/CustomerLayout";
-import VHCSummaryList from "../components/VHCSummaryList";
-import MessagingHub from "../components/MessagingHub";
-import { vhcSummaries, messageContacts } from "../data/placeholders";
+import CustomerLayout from "@/customers/components/CustomerLayout";
+import VHCSummaryList from "@/customers/components/VHCSummaryList";
+import MessagingHub from "@/customers/components/MessagingHub";
+import { vhcSummaries, messageContacts } from "@/customers/data/placeholders";
 
 export default function CustomerVhcPage() {
   return (

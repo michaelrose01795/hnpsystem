@@ -1,7 +1,8 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/api/status/getHistory.js
 import { createClient } from "@supabase/supabase-js"; // Import Supabase factory for privileged server access
-import { supabase as browserSupabase } from "../../../lib/supabaseClient"; // Import shared Supabase client as fallback
-import { SERVICE_STATUS_FLOW } from "../../../lib/status/statusFlow"; // Import status metadata map for enrichment
+import { supabase as browserSupabase } from "@/lib/supabaseClient"; // Import shared Supabase client as fallback
+import { SERVICE_STATUS_FLOW } from "@/lib/status/statusFlow"; // Import status metadata map for enrichment
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL; // Read Supabase project URL from environment
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Read optional service role key for elevated permissions

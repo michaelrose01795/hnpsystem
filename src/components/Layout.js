@@ -1,17 +1,18 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/Layout.js
 import React, { useEffect, useState } from "react"; // import React hooks
 import Link from "next/link"; // import Next.js link component
 import { useRouter } from "next/router"; // import router for navigation
-import { useUser } from "../context/UserContext"; // import user context
-import GlobalSearch from "./GlobalSearch"; // import global search component
-import JobCardModal from "./JobCards/JobCardModal"; // import job modal
-import StatusSidebar from "../components/StatusTracking/StatusSidebar"; // import status sidebar
-import Sidebar from "./Sidebar";
+import { useUser } from "@/context/UserContext"; // import user context
+import GlobalSearch from "@/components/GlobalSearch"; // import global search component
+import JobCardModal from "@/components/JobCards/JobCardModal"; // import job modal
+import StatusSidebar from "@/components/StatusTracking/StatusSidebar"; // import status sidebar
+import Sidebar from "@/components/Sidebar";
 import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
 import { usersByRole } from "@/config/users";
-import HrTabsBar from "./HR/HrTabsBar";
-import WorkshopTabsBar, { workshopTabs, workshopQuickActions } from "./Workshop/WorkshopTabsBar";
+import HrTabsBar from "@/components/HR/HrTabsBar";
+import WorkshopTabsBar, { workshopTabs, workshopQuickActions } from "@/components/Workshop/WorkshopTabsBar";
 
 export default function Layout({ children }) {
   const { user, status, setStatus, currentJob } = useUser(); // get user context data

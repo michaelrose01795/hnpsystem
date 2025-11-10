@@ -1,9 +1,10 @@
+// ✅ Imports converted to use absolute alias "@/"
 // src/config/users.js
 import {
   confirmationUsers,
   confirmationUserAliases,
   getConfirmationUser,
-} from "./confirmation/user";
+} from "@/config/confirmation/user";
 
 export const usersByRole = {
   Admin: ["Alisha", "Zedenca"],

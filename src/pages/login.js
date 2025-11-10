@@ -1,15 +1,16 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: /src/pages/login.js
 import React, { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
-import { useUser } from "../context/UserContext";
+import { useUser } from "@/context/UserContext";
 import { useRouter } from "next/router";
-import Layout from "../components/Layout";
-import Section from "../components/Section";
-import LoginDropdown from "../components/LoginDropdown";
-import CustomerViewPreview from "../components/CustomerViewPreview";
-import { supabase } from "../lib/supabaseClient"; // Database connection
-import { usersByRole, roleCategories } from "../config/users"; // Dev users config
-import { getUsersGroupedByRole } from "../lib/database/users";
+import Layout from "@/components/Layout";
+import Section from "@/components/Section";
+import LoginDropdown from "@/components/LoginDropdown";
+import CustomerViewPreview from "@/components/CustomerViewPreview";
+import { supabase } from "@/lib/supabaseClient"; // Database connection
+import { usersByRole, roleCategories } from "@/config/users"; // Dev users config
+import { getUsersGroupedByRole } from "@/lib/database/users";
 
 export default function LoginPage() {
   const CUSTOMER_PORTAL_URL =

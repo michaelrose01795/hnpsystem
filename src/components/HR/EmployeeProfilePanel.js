@@ -1,6 +1,7 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/HR/EmployeeProfilePanel.js
 import React from "react";
-import { SectionCard, StatusTag } from "./MetricCard";
+import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
 
 export default function EmployeeProfilePanel({ employee }) {
   if (!employee) {

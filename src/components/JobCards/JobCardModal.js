@@ -1,15 +1,16 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/JobCards/JobCardModal.js
 
 import React, { useState, useRef, useEffect } from "react"; // React hooks for state/effects/refs
 import { useRouter } from "next/router"; // Next.js router for navigation
-import { useUser } from "../../context/UserContext"; // Custom user context (dev auth user)
+import { useUser } from "@/context/UserContext"; // Custom user context (dev auth user)
 import { // Job clocking functions to start/stop time on jobs
   clockInToJob,
   clockOutFromJob,
   getUserActiveJobs
-} from "../../lib/database/jobClocking"; // DB: job clocking
-import { getAllJobs } from "../../lib/database/jobs"; // DB: fetch list of jobs
-import { ensureDevDbUserAndGetId } from "../../lib/users/devUsers";
+} from "@/lib/database/jobClocking"; // DB: job clocking
+import { getAllJobs } from "@/lib/database/jobs"; // DB: fetch list of jobs
+import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
 
 /* -------------------------- UI COMPONENT -------------------------- */
 

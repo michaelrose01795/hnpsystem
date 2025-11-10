@@ -1,9 +1,10 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/customers/components/CustomerLayout.js
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
-import CustomerSidebar from "./CustomerSidebar";
+import CustomerSidebar from "@/customers/components/CustomerSidebar";
 
 const CUSTOMER_ROLE_ALLOWLIST = ["CUSTOMER"];
 

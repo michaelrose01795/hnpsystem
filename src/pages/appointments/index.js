@@ -1,16 +1,17 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/appointments/index.js
 "use client";
 
 import React, { useState, useEffect } from "react"; // Import React and useState/useEffect hooks
-import Layout from "../../components/Layout"; // Main layout wrapper
-import Popup from "../../components/popups/Popup"; // Reusable popup modal
+import Layout from "@/components/Layout"; // Main layout wrapper
+import Popup from "@/components/popups/Popup"; // Reusable popup modal
 import { useRouter } from "next/router"; // For reading query params
 import { 
   getAllJobs, 
   createOrUpdateAppointment, 
   getJobByNumberOrReg,
   getJobsByDate // ✅ NEW: Get appointments by date
-} from "../../lib/database/jobs"; // DB functions
+} from "@/lib/database/jobs"; // DB functions
 
 const techsDefault = 6; // Default number of technicians available per day
 

@@ -1,15 +1,16 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/Workshop/JobClockingCard.js
 
 import React, { useState, useEffect } from "react"; // React hooks for state and effects
-import { useUser } from "../../context/UserContext"; // Get logged-in user
+import { useUser } from "@/context/UserContext"; // Get logged-in user
 import { 
   clockInToJob, 
   clockOutFromJob, 
   getUserActiveJobs,
   getTechnicianDailySummary,
   switchJob
-} from "../../lib/database/jobClocking"; // Import clocking functions
-import { getAllJobs } from "../../lib/database/jobs"; // Import jobs function
+} from "@/lib/database/jobClocking"; // Import clocking functions
+import { getAllJobs } from "@/lib/database/jobs"; // Import jobs function
 
 export default function JobClockingCard() {
   const { user, setStatus, refreshCurrentJob, setCurrentJob, dbUserId } = useUser(); // Get logged-in user and helpers

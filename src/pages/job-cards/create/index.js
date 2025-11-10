@@ -1,11 +1,12 @@
+// ✅ Imports converted to use absolute alias "@/"
 // ✅ Database linked through /src/lib/database
 // file location: src/pages/job-cards/create/index.js
 "use client"; // enables client-side rendering for Next.js
 
 import React, { useState } from "react"; // import React and hooks
 import { useRouter } from "next/router"; // for navigation
-import Layout from "../../../components/Layout"; // import layout wrapper
-import { useJobs } from "../../../context/JobsContext"; // import jobs context
+import Layout from "@/components/Layout"; // import layout wrapper
+import { useJobs } from "@/context/JobsContext"; // import jobs context
 import {
   addCustomerToDatabase,
   checkCustomerExists,
@@ -13,8 +14,8 @@ import {
 } from "@/lib/database/customers";
 import { createOrUpdateVehicle } from "@/lib/database/vehicles";
 import { addJobToDatabase } from "@/lib/database/jobs";
-import NewCustomerPopup from "../../../components/popups/NewCustomerPopup"; // import new customer popup
-import ExistingCustomerPopup from "../../../components/popups/ExistingCustomerPopup"; // import existing customer popup
+import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import new customer popup
+import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
 
 // function to automatically detect job types based on request descriptions
 const detectJobTypes = (requests) => {

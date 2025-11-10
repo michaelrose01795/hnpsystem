@@ -1,3 +1,4 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/hooks/useHrData.js
 import { useEffect, useState } from "react"; // React primitives for managing stateful hooks
 import {
@@ -13,7 +14,7 @@ import {
   payRateHistory as mockPayRateHistory,
   leaveRequests as mockLeaveRequests,
   leaveBalances as mockLeaveBalances,
-} from "../lib/hr/mockData"; // local fallback dataset for offline/dev scenarios
+} from "@/lib/hr/mockData"; // local fallback dataset for offline/dev scenarios
 
 // TODO: Replace mock aggregations with Supabase-backed helpers from src/lib/database/hr.js (getHrDashboardSnapshot et al).
 

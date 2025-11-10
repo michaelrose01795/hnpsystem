@@ -1,8 +1,9 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/StatusTracking/StatusSidebar.js
 
 import { useState, useEffect } from 'react';
-import StatusTimeline from './StatusTimeline';
-import { SERVICE_STATUS_FLOW } from '../../lib/status/statusFlow';
+import StatusTimeline from '@/components/StatusTracking/StatusTimeline';
+import { SERVICE_STATUS_FLOW } from '@/lib/status/statusFlow';
 
 const MOCK_STATUS_TEMPLATE = [
   {
@@ -320,7 +321,7 @@ export default function StatusSidebar({
         onMouseEnter={handleToggleMouseEnter}
         onMouseLeave={handleToggleMouseLeave}
       >
-        {compactMode ? (isOpen ? 'Close' : 'Open') : isOpen ? 'Hide' : 'Show'}
+        {compactMode ? (isOpen ? '▼' : '▲') : isOpen ? '‹' : '›'}
       </button>
 
       {/* Sidebar panel - FLOATING */}
@@ -546,76 +547,128 @@ export default function StatusSidebar({
                 />
               </div>
 
-              {/* Completed Activity Timeline - REVERSE ORDER (newest first) */}
+              {/* Centered tree-style history */}
               <div>
                 <h3 style={{ fontWeight: 'bold', color: '#555', marginBottom: '12px', fontSize: '16px' }}>
-                  📋 Status History
+                  Status Timeline
                 </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {/* REVERSED: Show newest at top, oldest at bottom */}
-                  {[...statusHistory].reverse().map((history, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        padding: '14px',
-                        backgroundColor: '#fff',
-                        borderRadius: '12px',
-                        borderLeft: `4px solid ${SERVICE_STATUS_FLOW[history.status.toUpperCase()]?.color}`,
-                        boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.05)';
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: '600', fontSize: '14px', color: '#222' }}>
-                            {SERVICE_STATUS_FLOW[history.status.toUpperCase()]?.label}
+                {statusHistory.length === 0 ? (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '20px', 
+                    color: '#999',
+                    fontSize: '14px'
+                  }}>
+                    No status history yet
+                  </div>
+                ) : (
+                  <div style={{
+                    position: 'relative',
+                    padding: '10px 0 10px',
+                    margin: '0 auto',
+                    maxWidth: '420px'
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      left: '50%',
+                      top: '30px',
+                      bottom: '30px',
+                      width: '2px',
+                      background: 'linear-gradient(180deg, #ffe0e0, #f8b4b4)'
+                    }} />
+                    {[...statusHistory]
+                      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+                      .map((history, index, array) => {
+                        const statusConfig = SERVICE_STATUS_FLOW[history.status.toUpperCase()] || {};
+                        const timestamp = new Date(history.timestamp).toLocaleString('en-GB', {
+                          day: '2-digit',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        });
+                        const isLast = index === array.length - 1;
+                        return (
+                          <div
+                            key={`${history.status}-${history.timestamp}-${index}`}
+                            style={{
+                              position: 'relative',
+                              padding: '12px 0 32px',
+                              textAlign: 'center'
+                            }}
+                          >
+                            <div style={{
+                              position: 'absolute',
+                              left: '50%',
+                              top: 0,
+                              transform: 'translate(-50%, -50%)',
+                              width: '18px',
+                              height: '18px',
+                              borderRadius: '50%',
+                              backgroundColor: statusConfig.color || '#d10000',
+                              boxShadow: `0 0 12px ${(statusConfig.color || '#d10000')}22`
+                            }} />
+                            {!isLast && (
+                              <div style={{
+                                position: 'absolute',
+                                left: '50%',
+                                bottom: 0,
+                                transform: 'translateX(-50%)',
+                                width: '2px',
+                                height: '24px',
+                                backgroundColor: '#ffd5d5'
+                              }} />
+                            )}
+                            <div style={{
+                              margin: '0 auto',
+                              maxWidth: '320px',
+                              padding: '18px 16px 10px',
+                              borderRadius: '14px',
+                              backgroundColor: '#fff6f6',
+                              border: '1px solid #ffe0e0',
+                              fontFamily: `'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif`,
+                              boxShadow: '0 6px 18px rgba(0,0,0,0.06)'
+                            }}>
+                              <div style={{
+                                fontWeight: 600,
+                                fontSize: '15px',
+                                color: '#b00000',
+                                letterSpacing: '0.01em'
+                              }}>
+                                {statusConfig.label || history.status.replace(/_/g, ' ')}
+                              </div>
+                              <div style={{
+                                fontSize: '13px',
+                                color: '#666',
+                                marginTop: '6px'
+                              }}>
+                                {timestamp}
+                              </div>
+                              {history.duration && (
+                                <div style={{
+                                  fontSize: '12px',
+                                  color: '#a00000',
+                                  marginTop: '6px',
+                                  fontWeight: 600
+                                }}>
+                                  Duration: {Math.floor(history.duration / 60)}m {history.duration % 60}s
+                                </div>
+                              )}
+                              {history.description && (
+                                <div style={{
+                                  marginTop: '10px',
+                                  fontSize: '13px',
+                                  color: '#444',
+                                  lineHeight: 1.5
+                                }}>
+                                  {history.description}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
-                            🕐 {new Date(history.timestamp).toLocaleString('en-GB', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </div>
-                        </div>
-                        {history.duration && (
-                          <div style={{ 
-                            fontSize: '13px', 
-                            fontWeight: '600', 
-                            color: '#d10000',
-                            backgroundColor: '#fff0f0',
-                            padding: '4px 10px',
-                            borderRadius: '6px'
-                          }}>
-                            ⏱️ {Math.floor(history.duration / 60)}m {history.duration % 60}s
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Show message if no history */}
-                  {statusHistory.length === 0 && (
-                    <div style={{ 
-                      textAlign: 'center', 
-                      padding: '20px', 
-                      color: '#999',
-                      fontSize: '14px'
-                    }}>
-                      No status history yet
-                    </div>
-                  )}
-                </div>
+                        );
+                      })}
+                  </div>
+                )}
               </div>
             </>
           )}

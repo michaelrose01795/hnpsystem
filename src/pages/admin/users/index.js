@@ -1,13 +1,14 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/admin/users/index.js
 import React, { useEffect, useMemo, useState } from "react";
-import Layout from "../../../components/Layout";
-import AdminUserForm from "../../../components/Admin/AdminUserForm";
+import Layout from "@/components/Layout";
+import AdminUserForm from "@/components/Admin/AdminUserForm";
 import {
   confirmationUsers,
   usersByDepartment,
   usersByRoleDetailed,
-} from "../../../config/users";
-import { SectionCard, StatusTag } from "../../../components/HR/MetricCard";
+} from "@/config/users";
+import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
 
 export default function AdminUserManagement() {
   const [activeUser, setActiveUser] = useState(null);

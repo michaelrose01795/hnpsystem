@@ -1,6 +1,7 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/popups/NewCustomerPopup.js
 import React, { useState } from "react"; // import React hooks
-import { addCustomerToDatabase } from "../../lib/database/customers"; // import database function
+import { addCustomerToDatabase } from "@/lib/database/customers"; // import database function
 
 export default function NewCustomerPopup({ onClose, onSelect }) {
   // State for all form fields

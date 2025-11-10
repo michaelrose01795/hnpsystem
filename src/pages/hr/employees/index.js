@@ -1,9 +1,10 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/employees/index.js
 import React, { useEffect, useMemo, useState } from "react";
-import Layout from "../../../components/Layout";
-import { useHrEmployeesData } from "../../../hooks/useHrData";
-import { SectionCard, StatusTag } from "../../../components/HR/MetricCard";
-import EmployeeProfilePanel from "../../../components/HR/EmployeeProfilePanel";
+import Layout from "@/components/Layout";
+import { useHrEmployeesData } from "@/hooks/useHrData";
+import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
+import EmployeeProfilePanel from "@/components/HR/EmployeeProfilePanel";
 
 // TODO: Connect employee directory, filters, and profile panel to live HR tables.
 

@@ -1,12 +1,13 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/workshop/check-in.js
 
 "use client"; // Enable client-side rendering for Next.js
 
 import React, { useState, useEffect } from "react"; // React hooks
-import Layout from "../../components/Layout"; // Main layout wrapper
-import { useUser } from "../../context/UserContext"; // Get logged-in user
-import { getAllJobs } from "../../lib/database/jobs"; // Get all jobs
-import { autoSetCheckedInStatus } from "../../lib/services/jobStatusService"; // Auto check-in function
+import Layout from "@/components/Layout"; // Main layout wrapper
+import { useUser } from "@/context/UserContext"; // Get logged-in user
+import { getAllJobs } from "@/lib/database/jobs"; // Get all jobs
+import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService"; // Auto check-in function
 
 export default function CheckInPage() {
   const { user } = useUser(); // Get logged-in user

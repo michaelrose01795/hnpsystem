@@ -1,11 +1,12 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/vhc/index.js
 "use client";
 
 import React from "react";
-import Layout from "../../components/Layout";
-import { useUser } from "../../context/UserContext";
-import { usersByRole } from "../../config/users";
-import DashboardPage from "./dashboard";
+import Layout from "@/components/Layout";
+import { useUser } from "@/context/UserContext";
+import { usersByRole } from "@/config/users";
+import DashboardPage from "@/pages/vhc/dashboard";
 
 export default function VHCIndex() {
   const { user } = useUser();

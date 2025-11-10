@@ -1,8 +1,9 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/performance.js
 import React from "react"; // React runtime for the page component
-import Layout from "../../components/Layout"; // shared layout shell with navigation
-import { useHrOperationsData } from "../../hooks/useHrData"; // aggregated HR hook backed by Supabase
-import { SectionCard, StatusTag } from "../../components/HR/MetricCard"; // shared HR UI components
+import Layout from "@/components/Layout"; // shared layout shell with navigation
+import { useHrOperationsData } from "@/hooks/useHrData"; // aggregated HR hook backed by Supabase
+import { SectionCard, StatusTag } from "@/components/HR/MetricCard"; // shared HR UI components
 
 // TODO: Replace placeholder performance data with live Supabase-backed scores before release.
 // TODO: Connect review scheduling/actions to the HR reviews tables once available.

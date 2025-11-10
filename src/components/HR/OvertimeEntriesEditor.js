@@ -1,6 +1,7 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/HR/OvertimeEntriesEditor.js
 import React, { useMemo, useState } from "react";
-import { SectionCard, StatusTag } from "./MetricCard";
+import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
 
 /**
  * Placeholder overtime entry editor that stores entries locally for UX validation.

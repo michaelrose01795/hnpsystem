@@ -1,15 +1,16 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/job-cards/myjobs/[jobNumber].js
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "../../../components/Layout";
-import { useUser } from "../../../context/UserContext";
-import { usersByRole } from "../../../config/users";
-import { getJobByNumber, updateJobStatus } from "../../../lib/database/jobs";
-import { getVHCChecksByJob } from "../../../lib/database/vhc";
-import { getClockingStatus } from "../../../lib/database/clocking";
-import { clockOutFromJob, getUserActiveJobs } from "../../../lib/database/jobClocking";
+import Layout from "@/components/Layout";
+import { useUser } from "@/context/UserContext";
+import { usersByRole } from "@/config/users";
+import { getJobByNumber, updateJobStatus } from "@/lib/database/jobs";
+import { getVHCChecksByJob } from "@/lib/database/vhc";
+import { getClockingStatus } from "@/lib/database/clocking";
+import { clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
 
 // ✅ Status color mapping for consistency
 const STATUS_COLORS = {

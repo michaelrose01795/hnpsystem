@@ -1,8 +1,9 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/attendance.js
 import React from "react";
-import Layout from "../../components/Layout";
-import { useHrAttendanceData } from "../../hooks/useHrData";
-import { SectionCard, StatusTag } from "../../components/HR/MetricCard";
+import Layout from "@/components/Layout";
+import { useHrAttendanceData } from "@/hooks/useHrData";
+import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
 
 // TODO: Replace mock attendance/overtime data with real clocking + absence feeds.
 

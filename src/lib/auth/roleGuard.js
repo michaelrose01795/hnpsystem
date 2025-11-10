@@ -1,8 +1,9 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/auth/roleGuard.js
 
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../pages/api/auth/[...nextauth]";
-import { HR_CORE_ROLES, normalizeRoles } from "./roles";
+import { authOptions } from "@/pages/api/auth/[...nextauth]";
+import { HR_CORE_ROLES, normalizeRoles } from "@/lib/auth/roles";
 
 /**
  * Wrap API route handlers with a role guard to enforce Keycloak-based RBAC.

@@ -1,13 +1,14 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/services/vhcStatusService.js
 
-import { supabase } from "../supabaseClient"; // Supabase client for database operations
+import { supabase } from "@/lib/supabaseClient"; // Supabase client for database operations
 import { 
   autoSetVHCCompleteStatus,
   autoSetVHCSentStatus,
   autoSetAdditionalWorkRequiredStatus,
   autoSetWarrantyQualityControlStatus,
   autoSetWarrantyReadyToClaimStatus
-} from "./jobStatusService"; // Import auto-status functions
+} from "@/lib/services/jobStatusService"; // Import auto-status functions
 
 /* ============================================
    CHECK AND UPDATE VHC STATUS

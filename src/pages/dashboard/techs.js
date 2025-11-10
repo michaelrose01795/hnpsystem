@@ -1,5 +1,6 @@
+// ✅ Imports converted to use absolute alias "@/"
 import React, { useMemo } from "react";
-import Layout from "../../components/Layout";
+import Layout from "@/components/Layout";
 import dayjs from "dayjs";
 
 const mockCurrentJob = {

@@ -1,14 +1,15 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/dashboard.js
 import React, { useEffect, useState } from "react"; // import React and hooks for state handling
 import { useRouter } from "next/router"; // import router for navigation
-import { useUser } from "../context/UserContext"; // import user context for authentication data
-import { useJobs } from "../context/JobsContext"; // import jobs context to share job data
-import Layout from "../components/Layout"; // import shared layout wrapper
-import WorkshopManagerDashboard from "../components/dashboards/WorkshopManagerDashboard"; // import workshop manager dashboard component
-import ServiceManagerDashboard from "../components/dashboards/ServiceManagerDashboard"; // import service manager dashboard
-import AfterSalesManagerDashboard from "../components/dashboards/AfterSalesManagerDashboard"; // import after sales manager dashboard
-import RetailManagersDashboard from "../components/dashboards/RetailManagersDashboard"; // import retail managers dashboard component
-import { roleCategories } from "../config/users"; // import role category definitions
+import { useUser } from "@/context/UserContext"; // import user context for authentication data
+import { useJobs } from "@/context/JobsContext"; // import jobs context to share job data
+import Layout from "@/components/Layout"; // import shared layout wrapper
+import WorkshopManagerDashboard from "@/components/dashboards/WorkshopManagerDashboard"; // import workshop manager dashboard component
+import ServiceManagerDashboard from "@/components/dashboards/ServiceManagerDashboard"; // import service manager dashboard
+import AfterSalesManagerDashboard from "@/components/dashboards/AfterSalesManagerDashboard"; // import after sales manager dashboard
+import RetailManagersDashboard from "@/components/dashboards/RetailManagersDashboard"; // import retail managers dashboard component
+import { roleCategories } from "@/config/users"; // import role category definitions
 
 const retailManagerRoles = (roleCategories?.Retail || []) // build a list of retail manager roles
   .filter((roleName) => /manager|director/i.test(roleName)) // keep only manager or director titles
@@ -55,7 +56,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchJobs = async () => {
       if (user) { // only fetch when user is available
-        const { getAllJobs } = await import("../lib/database/jobs"); // lazy load jobs helper
+        const { getAllJobs } = await import("@/lib/database/jobs"); // lazy load jobs helper
         const allJobs = await getAllJobs(); // fetch all jobs from database
         setJobs(allJobs); // store fetched jobs in context
       }

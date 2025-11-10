@@ -1,6 +1,7 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/hr.js
 import dayjs from "dayjs";
-import { supabase } from "../supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 const DEFAULT_ATTENDANCE_LIMIT = 50;
 

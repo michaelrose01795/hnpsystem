@@ -1,11 +1,12 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/job-cards/[jobNumber]/check-box.js
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
-import Layout from "../../../components/Layout";
+import Layout from "@/components/Layout";
 import SignatureCanvas from "react-signature-canvas";
-import { getJobByNumberOrReg, updateJobVhcCheck } from "../../../lib/database/jobs";
+import { getJobByNumberOrReg, updateJobVhcCheck } from "@/lib/database/jobs";
 
 export default function CheckBoxPage() {
   const router = useRouter();

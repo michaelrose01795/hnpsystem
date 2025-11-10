@@ -1,9 +1,10 @@
+// ✅ Imports converted to use absolute alias "@/"
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import Layout from "../../components/Layout";
-import { useUser } from "../../context/UserContext";
-import { getAllJobs, updateJob } from "../../lib/database/jobs";
+import Layout from "@/components/Layout";
+import { useUser } from "@/context/UserContext";
+import { getAllJobs, updateJob } from "@/lib/database/jobs";
 
 const WASH_KEYWORDS = ["wash", "valet", "clean"];
 

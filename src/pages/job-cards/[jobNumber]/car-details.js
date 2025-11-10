@@ -1,10 +1,11 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/job-cards/[jobNumber]/car-details.js
 "use client";
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "../../../components/Layout";
-import { getJobByNumberOrReg } from "../../../lib/database/jobs";
+import Layout from "@/components/Layout";
+import { getJobByNumberOrReg } from "@/lib/database/jobs";
 
 export default function CarDetailsPage() {
   const router = useRouter();

@@ -1,7 +1,8 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/hooks/useClocking.js
 import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabaseClient"; // make sure you have Supabase client setup
-import { useClockingContext } from "../context/ClockingContext";
+import { supabase } from "@/lib/supabaseClient"; // make sure you have Supabase client setup
+import { useClockingContext } from "@/context/ClockingContext";
 
 export const useClocking = () => {
   const { userId } = useClockingContext(); // assumes you store logged-in user ID in context

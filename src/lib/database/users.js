@@ -1,5 +1,6 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/users.js
-import { getDatabaseClient } from "./client"; // Import the shared Supabase client accessor so every query reuses the same connection.
+import { getDatabaseClient } from "@/lib/database/client"; // Import the shared Supabase client accessor so every query reuses the same connection.
 
 const db = getDatabaseClient(); // Instantiate a reusable client reference for this module.
 const USERS_TABLE = "users"; // Declare the exact table name to avoid hard-coded strings throughout the file.

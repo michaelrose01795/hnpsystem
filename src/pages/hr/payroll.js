@@ -1,8 +1,9 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/payroll.js
 import React from "react"; // React runtime for the payroll workspace
-import Layout from "../../components/Layout"; // shared layout wrapper
-import { useHrOperationsData } from "../../hooks/useHrData"; // Supabase-backed HR aggregation hook
-import { SectionCard, StatusTag } from "../../components/HR/MetricCard"; // HR specific UI components
+import Layout from "@/components/Layout"; // shared layout wrapper
+import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook
+import { SectionCard, StatusTag } from "@/components/HR/MetricCard"; // HR specific UI components
 
 // TODO: Pull payroll data, pay rises, and overtime summaries from Supabase tables.
 

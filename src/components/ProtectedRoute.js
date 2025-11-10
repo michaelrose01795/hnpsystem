@@ -1,8 +1,9 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: /src/components/ProtectedRoute.js
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
-import { useUser } from "../context/UserContext";
+import { useUser } from "@/context/UserContext";
 
 export default function ProtectedRoute({ children, allowedRoles }) {
   const router = useRouter();

@@ -1,10 +1,11 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/dashboards/WorkshopManagerDashboard.js
 import React, { useEffect, useMemo, useState } from "react"; // import React and hooks for stateful UI logic
 import Link from "next/link";
-import { getJobsByDate } from "../../lib/database/jobs";
-import { useClockingContext } from "../../context/ClockingContext";
+import { getJobsByDate } from "@/lib/database/jobs";
+import { useClockingContext } from "@/context/ClockingContext";
 import dayjs from "dayjs";
-import { consumableOrderHistory } from "../../lib/data/consumablesSample";
+import { consumableOrderHistory } from "@/lib/data/consumablesSample";
 
 const monthKey = (dateString) => dayjs(dateString).format("YYYY-MM");
 const monthLabel = (key) => dayjs(`${key}-01`).format("MMMM YYYY");

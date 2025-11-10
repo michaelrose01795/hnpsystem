@@ -1,3 +1,4 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/context/JobsContext.js
 "use client";
 
@@ -7,7 +8,7 @@ import {
   addJobToDatabase,
   updateJobStatus,
   getJobByNumberOrReg,
-} from "../lib/database/jobs"; // database helper functions
+} from "@/lib/database/jobs"; // database helper functions
 
 // Create the Jobs context
 const JobsContext = createContext();

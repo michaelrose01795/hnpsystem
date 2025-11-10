@@ -1,5 +1,6 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/customers.js
-import { supabase } from "../supabaseClient"; // import Supabase client
+import { supabase } from "@/lib/supabaseClient"; // import Supabase client
 
 /* ============================================
    GET CUSTOMER BY ID

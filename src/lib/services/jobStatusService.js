@@ -1,7 +1,8 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/services/jobStatusService.js
 
-import { supabase } from "../supabaseClient"; // Supabase client for database operations
-import { updateJob } from "../database/jobs"; // Function to update job in database
+import { supabase } from "@/lib/supabaseClient"; // Supabase client for database operations
+import { updateJob } from "@/lib/database/jobs"; // Function to update job in database
 
 /* ============================================
    STATUS FLOW DEFINITION

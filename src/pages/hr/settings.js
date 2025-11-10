@@ -1,7 +1,8 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/settings.js
 import React from "react";
-import Layout from "../../components/Layout";
-import { SectionCard } from "../../components/HR/MetricCard";
+import Layout from "@/components/Layout";
+import { SectionCard } from "@/components/HR/MetricCard";
 
 // TODO: Persist policy uploads, shift rules, and access controls to the HR settings tables.
 

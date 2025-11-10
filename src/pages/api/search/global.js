@@ -1,5 +1,6 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/api/search/global.js
-import { supabase } from "../../../lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 const INACTIVE_STATUSES = ["complete", "collected", "cancelled", "invoiced"];
 

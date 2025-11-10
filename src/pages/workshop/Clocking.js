@@ -1,10 +1,11 @@
+// ✅ Imports converted to use absolute alias "@/"
 // ✅ File location: src/pages/workshop/Clocking.js
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Layout from "../../components/Layout";
-import { supabase } from "../../lib/supabaseClient";
-import { getAllJobs } from "../../lib/database/jobs";
+import Layout from "@/components/Layout";
+import { supabase } from "@/lib/supabaseClient";
+import { getAllJobs } from "@/lib/database/jobs";
 
 export default function Clocking() {
   const [techs, setTechs] = useState([]);

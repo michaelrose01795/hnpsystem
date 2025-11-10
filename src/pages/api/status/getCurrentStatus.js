@@ -1,7 +1,8 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/api/status/getCurrentStatus.js
 import { createClient } from "@supabase/supabase-js"; // Import Supabase factory for service role usage
-import { supabase as browserSupabase } from "../../../lib/supabaseClient"; // Import shared Supabase client for fallback use
-import { SERVICE_STATUS_FLOW } from "../../../lib/status/statusFlow"; // Import status flow definition for metadata enrichment
+import { supabase as browserSupabase } from "@/lib/supabaseClient"; // Import shared Supabase client for fallback use
+import { SERVICE_STATUS_FLOW } from "@/lib/status/statusFlow"; // Import status flow definition for metadata enrichment
 
 // TODO: Replace these inline Supabase queries with src/lib/database/jobs helpers (getDashboardData/getCurrentStatus) for consistency.
 

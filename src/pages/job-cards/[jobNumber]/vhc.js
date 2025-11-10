@@ -1,9 +1,10 @@
+// ✅ Imports converted to use absolute alias "@/"
 // ✅ File location: src/pages/job-cards/[jobNumber]/vhc.js
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
-import Layout from "../../../components/Layout";
+import Layout from "@/components/Layout";
 import themeConfig, {
   vhcLayoutStyles,
   createVhcButtonStyle,

@@ -1,19 +1,20 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/customers/pages/DashboardPage.js
 import React from "react";
-import CustomerLayout from "../components/CustomerLayout";
-import CustomerHero from "../components/CustomerHero";
-import VehicleGarageCard from "../components/VehicleGarageCard";
-import VHCSummaryList from "../components/VHCSummaryList";
-import PartsAccessCard from "../components/PartsAccessCard";
-import MessagingHub from "../components/MessagingHub";
-import AppointmentTimeline from "../components/AppointmentTimeline";
+import CustomerLayout from "@/customers/components/CustomerLayout";
+import CustomerHero from "@/customers/components/CustomerHero";
+import VehicleGarageCard from "@/customers/components/VehicleGarageCard";
+import VHCSummaryList from "@/customers/components/VHCSummaryList";
+import PartsAccessCard from "@/customers/components/PartsAccessCard";
+import MessagingHub from "@/customers/components/MessagingHub";
+import AppointmentTimeline from "@/customers/components/AppointmentTimeline";
 import {
   customerVehicles,
   vhcSummaries,
   availableParts,
   messageContacts,
   appointmentTimeline,
-} from "../data/placeholders";
+} from "@/customers/data/placeholders";
 
 export default function CustomerDashboardPage() {
   return (

@@ -1,8 +1,9 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/newsfeed.js
 "use client";
 
 import React, { useState } from "react"; // Import React and useState hook
-import Layout from "../components/Layout"; // Import layout wrapper
+import Layout from "@/components/Layout"; // Import layout wrapper
 
 export default function NewsFeed() {
   // Predefined updates — will later be fetched from database

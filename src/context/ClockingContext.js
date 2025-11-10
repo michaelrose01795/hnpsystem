@@ -1,7 +1,8 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/context/ClockingContext.js
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useUser } from "./UserContext";
-import { supabase } from "../lib/supabaseClient"; // Supabase client
+import { useUser } from "@/context/UserContext";
+import { supabase } from "@/lib/supabaseClient"; // Supabase client
 
 // Create context
 const ClockingContext = createContext();

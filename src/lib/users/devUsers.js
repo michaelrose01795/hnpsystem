@@ -1,7 +1,8 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/users/devUsers.js
 
-import { supabase } from "../supabaseClient";
-import { usersByRole } from "../../config/users";
+import { supabase } from "@/lib/supabaseClient";
+import { usersByRole } from "@/config/users";
 
 // Create a slug from display name for deterministic fake emails
 const slugify = (txt) =>

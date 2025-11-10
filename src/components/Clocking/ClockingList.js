@@ -1,6 +1,7 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/Clocking/ClockingList.js
 import React, { useEffect } from "react";
-import { useClockingContext } from "../../context/ClockingContext";
+import { useClockingContext } from "@/context/ClockingContext";
 
 export default function ClockingList() {
   const { allUsersClocking = [], fetchAllUsersClocking, loading } = useClockingContext(); // default to empty array

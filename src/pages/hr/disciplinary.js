@@ -1,7 +1,8 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/disciplinary.js
 import React from "react";
-import Layout from "../../components/Layout";
-import { SectionCard, StatusTag } from "../../components/HR/MetricCard";
+import Layout from "@/components/Layout";
+import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
 
 // TODO: Back these incident lists with real disciplinary case records from the database.
 

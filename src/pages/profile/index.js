@@ -1,12 +1,13 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/profile/index.js
 import React, { useMemo } from "react"; // React for UI and memoization
 import { useRouter } from "next/router"; // Next.js router for query params
-import Layout from "../../components/Layout"; // shared layout wrapper
-import { useUser } from "../../context/UserContext"; // Keycloak user context
-import { useHrOperationsData } from "../../hooks/useHrData"; // Supabase-backed HR aggregation hook
-import { SectionCard, StatusTag, MetricCard } from "../../components/HR/MetricCard"; // HR UI components
-import OvertimeEntriesEditor from "../../components/HR/OvertimeEntriesEditor"; // overtime editor widget
-import { confirmationUsers, getConfirmationUser } from "../../config/users"; // static user config
+import Layout from "@/components/Layout"; // shared layout wrapper
+import { useUser } from "@/context/UserContext"; // Keycloak user context
+import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook
+import { SectionCard, StatusTag, MetricCard } from "@/components/HR/MetricCard"; // HR UI components
+import OvertimeEntriesEditor from "@/components/HR/OvertimeEntriesEditor"; // overtime editor widget
+import { confirmationUsers, getConfirmationUser } from "@/config/users"; // static user config
 
 function formatDate(value) {
   if (!value) return "—"; // guard empty values

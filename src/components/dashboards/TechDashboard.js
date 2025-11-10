@@ -1,7 +1,8 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/dashboards/TechDashboard.js
 import React from "react";
-import NewsFeed from "../../pages/newsfeed";
-import { useJobs } from "../../context/JobsContext";
+import NewsFeed from "@/pages/newsfeed";
+import { useJobs } from "@/context/JobsContext";
 
 export default function TechDashboard() {
   const { jobs } = useJobs();

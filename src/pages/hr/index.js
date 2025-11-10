@@ -1,9 +1,10 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/index.js
 import React, { useMemo } from "react";
 import Link from "next/link";
-import Layout from "../../components/Layout";
-import { useHrDashboardData } from "../../hooks/useHrData";
-import { MetricCard, SectionCard, StatusTag } from "../../components/HR/MetricCard";
+import Layout from "@/components/Layout";
+import { useHrDashboardData } from "@/hooks/useHrData";
+import { MetricCard, SectionCard, StatusTag } from "@/components/HR/MetricCard";
 
 // TODO: Replace useHrMockData with real HR dashboard aggregation from the database.
 

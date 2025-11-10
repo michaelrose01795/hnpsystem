@@ -1,10 +1,11 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/tech/consumables-request.js
 
 "use client"; // Enable client-side interactivity for the form experience
 
 import React, { useMemo, useState } from "react"; // Import React hooks for stateful UI
-import Layout from "../../components/Layout"; // Import global layout wrapper
-import { useUser } from "../../context/UserContext"; // Import user context for role-based permissions
+import Layout from "@/components/Layout"; // Import global layout wrapper
+import { useUser } from "@/context/UserContext"; // Import user context for role-based permissions
 import Link from "next/link"; // Import Next.js Link for navigation buttons
 
 const pageWrapperStyle = {

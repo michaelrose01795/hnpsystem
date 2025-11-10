@@ -1,10 +1,11 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/vhc/details/[jobNumber].js
 "use client"; // enables client-side rendering for Next.js
 
 import React, { useEffect, useState } from "react"; // import React and hooks
 import { useRouter } from "next/router"; // for getting URL params and navigation
-import { supabase } from "../../../lib/supabaseClient"; // import Supabase client
-import Layout from "../../../components/Layout"; // import layout wrapper
+import { supabase } from "@/lib/supabaseClient"; // import Supabase client
+import Layout from "@/components/Layout"; // import layout wrapper
 
 // ✅ Status color mapping (same as dashboard)
 const STATUS_COLORS = {

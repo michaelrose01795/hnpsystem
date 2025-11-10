@@ -1,19 +1,20 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/job-cards/waiting/nextjobs.js
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react"; // Core React hooks
-import Layout from "../../../components/Layout"; // Main layout wrapper
-import { useUser } from "../../../context/UserContext"; // Logged-in user context
-import { usersByRole } from "../../../config/users"; // Role config
+import Layout from "@/components/Layout"; // Main layout wrapper
+import { useUser } from "@/context/UserContext"; // Logged-in user context
+import { usersByRole } from "@/config/users"; // Role config
 import { useRouter } from "next/router"; // Next.js router for navigation
 import { 
   getAllJobs, 
   assignTechnicianToJob, 
   unassignTechnicianFromJob, 
   updateJobPosition 
-} from "../../../lib/database/jobs"; // ✅ Fetch and update jobs from Supabase
-import { getTechnicianUsers, getMotTesterUsers } from "../../../lib/database/users";
-import { normalizeDisplayName } from "../../../utils/nameUtils";
+} from "@/lib/database/jobs"; // ✅ Fetch and update jobs from Supabase
+import { getTechnicianUsers, getMotTesterUsers } from "@/lib/database/users";
+import { normalizeDisplayName } from "@/utils/nameUtils";
 
 // Build tech list dynamically from usersByRole
 const staticTechsList = (usersByRole["Techs"] || []).map((name, index) => ({

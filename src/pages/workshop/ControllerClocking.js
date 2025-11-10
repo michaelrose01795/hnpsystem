@@ -1,8 +1,9 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/workshop/ControllerClocking.js
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function ControllerClocking() {
   const [techs, setTechs] = useState([]);

@@ -1,8 +1,9 @@
+// ✅ Imports converted to use absolute alias "@/"
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { ensureDevDbUserAndGetId } from "../lib/users/devUsers";
-import { getUserActiveJobs } from "../lib/database/jobClocking";
-import { getUserById } from "../lib/database/users";
+import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
+import { getUserActiveJobs } from "@/lib/database/jobClocking";
+import { getUserById } from "@/lib/database/users";
 
 const UserContext = createContext();
 

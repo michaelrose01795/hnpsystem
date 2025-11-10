@@ -1,6 +1,7 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/DashboardClocking.js
 import React, { useEffect, useState } from "react";
-import { useClockingContext } from "../context/ClockingContext";
+import { useClockingContext } from "@/components/context/ClockingContext";
 
 export default function DashboardClocking() {
   const { allUsersClocking, fetchAllUsersClocking, loading } = useClockingContext();

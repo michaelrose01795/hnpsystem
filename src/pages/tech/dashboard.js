@@ -1,13 +1,14 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/tech/dashboard.js
 "use client";
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "../../components/Layout";
-import { useUser } from "../../context/UserContext";
-import { usersByRole } from "../../config/users";
-import { getAllJobs } from "../../lib/database/jobs";
-import { getClockingStatus, clockIn, clockOut } from "../../lib/database/clocking";
+import Layout from "@/components/Layout";
+import { useUser } from "@/context/UserContext";
+import { usersByRole } from "@/config/users";
+import { getAllJobs } from "@/lib/database/jobs";
+import { getClockingStatus, clockIn, clockOut } from "@/lib/database/clocking";
 
 export default function TechsDashboard() {
   const router = useRouter();

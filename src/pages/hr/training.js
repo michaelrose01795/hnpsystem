@@ -1,8 +1,9 @@
+// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/training.js
 import React from "react"; // React runtime for page rendering
-import Layout from "../../components/Layout"; // shared site layout
-import { useHrOperationsData } from "../../hooks/useHrData"; // Supabase-backed HR aggregation hook
-import { SectionCard, StatusTag } from "../../components/HR/MetricCard"; // shared HR UI widgets
+import Layout from "@/components/Layout"; // shared site layout
+import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook
+import { SectionCard, StatusTag } from "@/components/HR/MetricCard"; // shared HR UI widgets
 
 // TODO: Swap placeholder course catalogue for real LMS integration after testing.
 // TODO: Persist assigned courses and renewals in the HR training database tables.
