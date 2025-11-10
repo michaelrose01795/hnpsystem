@@ -236,11 +236,6 @@ export const sidebarSections = [
         href: "/job-cards/myjobs",
         roles: ["techs"],
       },
-      {
-        label: "🔧 Start Job",
-        href: "/job-cards/myjobs",
-        roles: ["techs"],
-      },
     ],
   },
   {
@@ -249,11 +244,6 @@ export const sidebarSections = [
     items: [
       {
         label: "🧰 My Jobs",
-        href: "/job-cards/myjobs",
-        roles: ["mot tester"],
-      },
-      {
-        label: "🔧 Start Job",
         href: "/job-cards/myjobs",
         roles: ["mot tester"],
       },

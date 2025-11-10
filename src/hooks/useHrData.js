@@ -102,3 +102,53 @@ function getLocalMockData() {
     leaveBalances: mockLeaveBalances,
   };
 }
+
+/**
+ * Real attendance data hook backed by Supabase via /api/hr/attendance.
+ */
+export function useHrAttendanceData() {
+  const [state, setState] = useState({
+    data: null,
+    isLoading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const load = async () => {
+      try {
+        const response = await fetch("/api/hr/attendance", {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch attendance (${response.status})`);
+        }
+
+        const payload = await response.json();
+        if (!payload?.success) {
+          throw new Error(payload?.message || "Attendance payload malformed");
+        }
+
+        setState({
+          data: payload.data,
+          isLoading: false,
+          error: null,
+        });
+      } catch (error) {
+        if (error.name === "AbortError") return;
+        setState({
+          data: null,
+          isLoading: false,
+          error,
+        });
+      }
+    };
+
+    load();
+    return () => controller.abort();
+  }, []);
+
+  return state;
+}

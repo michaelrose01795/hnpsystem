@@ -1,13 +1,13 @@
 // file location: src/pages/hr/attendance.js
 import React from "react";
 import Layout from "../../components/Layout";
-import { useHrMockData } from "../../hooks/useHrData";
+import { useHrAttendanceData } from "../../hooks/useHrData";
 import { SectionCard, StatusTag } from "../../components/HR/MetricCard";
 
 // TODO: Replace mock attendance/overtime data with real clocking + absence feeds.
 
 export default function HrAttendance() {
-  const { data, isLoading, error } = useHrMockData();
+  const { data, isLoading, error } = useHrAttendanceData();
 
   const attendanceLogs = data?.attendanceLogs ?? [];
   const overtimeSummaries = data?.overtimeSummaries ?? [];

@@ -404,13 +404,16 @@ export default function TechJobDetailPage() {
 
   return (
     <Layout>
-      <div style={{ 
-        height: "100%", 
-        display: "flex", 
-        flexDirection: "column", 
-        padding: "8px 16px",
-        overflow: "hidden" 
-      }}>
+      <div
+        style={{
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          padding: "8px 16px",
+          overflowY: "auto",
+          gap: "12px",
+        }}
+      >
         
         {/* ✅ Header Section */}
         <div style={{
@@ -613,18 +616,20 @@ export default function TechJobDetailPage() {
         </div>
 
         {/* ✅ Main Content Area with Scrolling */}
-        <div style={{ 
-          flex: 1,
-          borderRadius: "8px",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-          border: "1px solid #ffe5e5",
-          background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)",
-          padding: "24px",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          minHeight: 0
-        }}>
+        <div
+          style={{
+            flex: 1,
+            borderRadius: "8px",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+            border: "1px solid #ffe5e5",
+            background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)",
+            padding: "24px",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+          }}
+        >
           
           <div style={{ flex: 1, overflowY: "auto", paddingRight: "8px", minHeight: 0 }}>
           
