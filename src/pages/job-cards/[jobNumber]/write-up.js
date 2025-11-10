@@ -1,3 +1,4 @@
+// ✅ Database linked through /src/lib/database
 // file location: src/pages/job-cards/[jobNumber]/write-up.js
 "use client";
 

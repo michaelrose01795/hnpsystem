@@ -1,3 +1,4 @@
+// ✅ Database linked through /src/lib/database
 // file location: src/pages/job-cards/create/index.js
 "use client"; // enables client-side rendering for Next.js
 
@@ -5,7 +6,13 @@ import React, { useState } from "react"; // import React and hooks
 import { useRouter } from "next/router"; // for navigation
 import Layout from "../../../components/Layout"; // import layout wrapper
 import { useJobs } from "../../../context/JobsContext"; // import jobs context
-import { supabase } from "../../../lib/supabaseClient"; // import Supabase client
+import {
+  addCustomerToDatabase,
+  checkCustomerExists,
+  getCustomerById,
+} from "@/lib/database/customers";
+import { createOrUpdateVehicle } from "@/lib/database/vehicles";
+import { addJobToDatabase } from "@/lib/database/jobs";
 import NewCustomerPopup from "../../../components/popups/NewCustomerPopup"; // import new customer popup
 import ExistingCustomerPopup from "../../../components/popups/ExistingCustomerPopup"; // import existing customer popup
 
@@ -26,7 +33,7 @@ const detectJobTypes = (requests) => {
 
 export default function CreateJobCardPage() {
   const router = useRouter(); // Next.js router for navigation
-  const { addJob } = useJobs(); // context function to add jobs to global state
+  const { fetchJobs } = useJobs(); // refresh job cache after saves
 
   // state for vehicle information
   const [vehicle, setVehicle] = useState({
@@ -130,89 +137,65 @@ export default function CreateJobCardPage() {
     }
   };
 
-  // ✅ Handle customer selection with better database validation
+  // ✅ Handle customer selection with shared database helpers
   const handleCustomerSelect = async (customerData) => {
     console.log("Attempting to save customer:", customerData); // debug log for incoming data
 
     try {
-      if (!customerData.email && !customerData.mobile) { // ensure customer has contact info
-        showNotification("customer", "error", "Customer must have at least an email or mobile number."); // notify validation failure
-        return; // stop if validation fails
+      if (!customerData.email && !customerData.mobile) {
+        showNotification("customer", "error", "Customer must have at least an email or mobile number.");
+        return;
       }
 
-      let searchQuery = supabase.from("customers").select("*"); // prepare Supabase query
+      const normalizedPayload = {
+        firstname: customerData.firstName || customerData.firstname || "",
+        lastname: customerData.lastName || customerData.lastname || "",
+        email: customerData.email || null,
+        mobile: customerData.mobile || null,
+        telephone: customerData.telephone || null,
+        address: customerData.address || null,
+        postcode: customerData.postcode || null,
+        contact_preference: customerData.contactPreference || customerData.contact_preference || "email",
+      };
 
-      if (customerData.email && customerData.mobile) { // if both email and mobile exist
-        searchQuery = searchQuery.or(`email.eq.${customerData.email},mobile.eq.${customerData.mobile}`); // search by email or mobile
-      } else if (customerData.email) { // if only email exists
-        searchQuery = searchQuery.eq("email", customerData.email); // search by email
-      } else if (customerData.mobile) { // if only mobile exists
-        searchQuery = searchQuery.eq("mobile", customerData.mobile); // search by mobile
-      }
+      let finalCustomer = null;
 
-      const { data: existingCustomers, error: searchError } = await searchQuery; // execute search query
+      const { exists, customer: existingCustomer } = await checkCustomerExists(
+        normalizedPayload.email,
+        normalizedPayload.mobile
+      );
 
-      if (searchError) { // check for query error
-        console.error("Error searching for existing customer:", searchError); // log error
-        throw searchError; // throw to trigger catch block
-      }
-
-      console.log("Existing customers found:", existingCustomers); // log search results
-
-      let finalCustomer = customerData; // default to provided customer data
-
-      if (!existingCustomers || existingCustomers.length === 0) { // if no existing customer found
-        console.log("Customer not found, creating new customer..."); // log creation flow
-
-        const customerToInsert = { // prepare payload for new customer
-          firstname: customerData.firstName || "",
-          lastname: customerData.lastName || "",
-          email: customerData.email || null,
-          mobile: customerData.mobile || null,
-          telephone: customerData.telephone || null,
-          address: customerData.address || null,
-          postcode: customerData.postcode || null,
-          created_at: new Date().toISOString(),
-        };
-
-        console.log("Inserting customer data:", customerToInsert); // log payload
-
-        const { data: newCustomer, error: insertError } = await supabase
-          .from("customers") // select customers table
-          .insert([customerToInsert]) // insert new customer
-          .select()
-          .single(); // return the inserted record
-
-        if (insertError) { // check for insert error
-          console.error("Error inserting customer:", insertError); // log error
-          throw insertError; // throw to trigger catch block
-        }
-
-        finalCustomer = newCustomer; // use inserted record as final customer
-        console.log("New customer saved to database:", newCustomer); // log success
-        showNotification("customer", "success", "✓ New customer saved successfully!"); // notify success
+      if (exists && existingCustomer?.id) {
+        console.log("Customer already exists in database:", existingCustomer);
+        const hydratedCustomer = await getCustomerById(existingCustomer.id);
+        finalCustomer = hydratedCustomer || existingCustomer;
+        showNotification("customer", "success", "✓ Customer found in database and loaded!");
       } else {
-        finalCustomer = existingCustomers[0]; // reuse first match if found
-        console.log("Customer already exists in database:", finalCustomer); // log reuse
-        showNotification("customer", "success", "✓ Customer found in database and loaded!"); // notify success
+        console.log("Customer not found, creating new customer...");
+        finalCustomer = await addCustomerToDatabase(normalizedPayload);
+        showNotification("customer", "success", "✓ New customer saved successfully!");
       }
 
-      setCustomer({ // normalize and store customer in state
+      if (!finalCustomer) {
+        throw new Error("Customer record missing after save");
+      }
+
+      setCustomer({
         id: finalCustomer.id,
-        firstName: finalCustomer.firstname || finalCustomer.firstName,
-        lastName: finalCustomer.lastname || finalCustomer.lastName,
-        email: finalCustomer.email,
-        mobile: finalCustomer.mobile,
-        telephone: finalCustomer.telephone,
-        address: finalCustomer.address,
-        postcode: finalCustomer.postcode,
+        firstName: finalCustomer.firstname || finalCustomer.firstName || "",
+        lastName: finalCustomer.lastname || finalCustomer.lastName || "",
+        email: finalCustomer.email || "",
+        mobile: finalCustomer.mobile || "",
+        telephone: finalCustomer.telephone || "",
+        address: finalCustomer.address || "",
+        postcode: finalCustomer.postcode || "",
       });
 
-      setShowNewCustomer(false); // close new customer popup
-      setShowExistingCustomer(false); // close existing customer popup
+      setShowNewCustomer(false);
+      setShowExistingCustomer(false);
     } catch (err) {
-      console.error("Error saving customer:", err); // log error
-      showNotification("customer", "error", `✗ Error: ${err.message || "Could not save customer"}`); // notify failure
+      console.error("❌ Error saving customer:", err);
+      showNotification("customer", "error", `✗ Error: ${err.message || "Could not save customer"}`);
     }
   };
 
@@ -301,133 +284,111 @@ export default function CreateJobCardPage() {
     }
   };
 
-  // ✅ Save Job Function - save or update vehicle and link to customer
+  // ✅ Save Job Function - persist vehicle + job via shared helpers
   const handleSaveJob = async () => {
     try {
-      if (!customer) { // ensure customer is selected
-        alert("Please select a customer before saving the job."); // alert user
-        return; // stop if no customer selected
+      if (!customer) {
+        alert("Please select a customer before saving the job.");
+        return;
       }
 
-      if (!vehicle.reg) { // ensure vehicle registration exists
-        alert("Please enter a vehicle registration before saving the job."); // alert user
-        return; // stop if no registration
+      if (!vehicle.reg) {
+        alert("Please enter a vehicle registration before saving the job.");
+        return;
       }
 
-      if (!requests.some((req) => req.text.trim())) { // ensure at least one request has text
-        alert("Please add at least one job request before saving."); // alert user
-        return; // stop if no valid requests
+      const sanitizedRequests = requests
+        .map((req) => ({
+          ...req,
+          text: (req.text || "").trim(),
+        }))
+        .filter((req) => req.text.length > 0);
+
+      if (sanitizedRequests.length === 0) {
+        alert("Please add at least one job request before saving.");
+        return;
       }
 
-      console.log("Starting save job process..."); // log start of save process
+      console.log("Starting save job process...");
 
-      console.log("Linking vehicle to customer..."); // log vehicle linking step
+      const regUpper = vehicle.reg.trim().toUpperCase();
+      const makeModelParts = (vehicle.makeModel || "").trim().split(/\s+/);
+      const primaryMake = makeModelParts[0] || "Unknown";
+      const modelName = makeModelParts.slice(1).join(" ");
 
-      const { data: existingVehicle, error: vehicleCheckError } = await supabase
-        .from("vehicles") // select vehicles table
-        .select("*") // select all columns
-        .or(`registration.eq.${vehicle.reg},reg_number.eq.${vehicle.reg}`)
-        .maybeSingle(); // fetch at most one record
-
-      console.log("Existing vehicle check:", existingVehicle, vehicleCheckError); // log query result
-
-      let vehicleId; // placeholder for vehicle ID
-
-      if (existingVehicle) { // if vehicle already exists
-        console.log("Vehicle exists, updating with customer link..."); // log update flow
-
-        const { error: updateError } = await supabase
-          .from("vehicles") // select vehicles table
-          .update({
-            customer_id: customer.id, // link to customer
-            updated_at: new Date().toISOString(), // timestamp update
-          })
-          .eq("id", existingVehicle.id); // match by vehicle id
-
-        if (updateError) { // check for update error
-          console.error("Error updating vehicle:", updateError); // log error
-          throw updateError; // throw to trigger catch block
-        }
-
-        vehicleId = existingVehicle.id; // store existing vehicle id
-        console.log("Vehicle updated successfully with customer link, ID:", vehicleId); // log success
-      } else {
-        console.log("Vehicle doesn't exist, creating new vehicle with customer link..."); // log creation flow
-
-        const vehicleToInsert = { // prepare payload for new vehicle
-          registration: vehicle.reg,
-          reg_number: vehicle.reg,
-          make_model: vehicle.makeModel,
-          make: vehicle.makeModel.split(" ")[0] || "Unknown",
-          model: vehicle.makeModel.split(" ").slice(1).join(" ") || "",
-          colour: vehicle.colour,
-          chassis: vehicle.chassis,
-          vin: vehicle.chassis,
-          engine: vehicle.engine,
-          engine_number: vehicle.engine,
-          mileage: parseInt(vehicle.mileage, 10) || null,
-          customer_id: customer.id,
-          created_at: new Date().toISOString(),
-        };
-
-        console.log("Inserting vehicle:", vehicleToInsert); // log payload
-
-        const { data: newVehicle, error: insertError } = await supabase
-          .from("vehicles") // select vehicles table
-          .insert([vehicleToInsert]) // insert new vehicle
-          .select()
-          .single(); // return inserted record
-
-        if (insertError) { // check for insert error
-          console.error("Error inserting vehicle:", insertError); // log error
-          throw insertError; // throw to trigger catch block
-        }
-
-        vehicleId = newVehicle.id; // store new vehicle id
-        console.log("Vehicle created successfully with ID:", vehicleId); // log success
-      }
-
-      console.log("Creating job record..."); // log job creation step
-
-      const jobData = { // prepare job payload
-        customer: `${customer.firstName} ${customer.lastName}`,
+      const vehiclePayload = {
+        registration: regUpper,
+        reg_number: regUpper,
+        make_model: vehicle.makeModel || "",
+        make: primaryMake,
+        model: modelName,
+        colour: vehicle.colour || null,
+        chassis: vehicle.chassis || null,
+        vin: vehicle.chassis || null,
+        engine: vehicle.engine || null,
+        engine_number: vehicle.engine || null,
+        mileage: vehicle.mileage ? parseInt(vehicle.mileage, 10) || null : null,
         customer_id: customer.id,
-        vehicle_reg: vehicle.reg,
-        vehicle_make_model: vehicle.makeModel,
-        waiting_status: waitingStatus,
-        job_source: jobSource,
-        job_categories: jobCategories,
-        requests: requests.filter((req) => req.text.trim()),
-        cosmetic_notes: cosmeticNotes || null,
-        vhc_required: vhcRequired,
-        maintenance_info: { nextMotDate },
-        created_at: new Date().toISOString(),
-        status: "Open",
       };
 
-      console.log("Saving job:", jobData); // log job payload
+      const vehicleResult = await createOrUpdateVehicle(vehiclePayload);
 
-      const { data: insertedJob, error: jobInsertError } = await supabase
-        .from("jobs") // select jobs table
-        .insert([jobData]) // insert new job
-        .select()
-        .single(); // return inserted job
-
-      if (jobInsertError) { // check for insert error
-        console.error("Error inserting job:", jobInsertError); // log error
-        throw jobInsertError; // throw to trigger catch block
+      if (!vehicleResult.success || !vehicleResult.data) {
+        throw new Error(vehicleResult.error?.message || "Failed to save vehicle");
       }
 
-      console.log("Job saved successfully with ID:", insertedJob.id); // log success
+      const vehicleRecord = vehicleResult.data;
+      const vehicleId = vehicleRecord.vehicle_id || vehicleRecord.id;
 
-      addJob(insertedJob); // update local context with the returned job data
+      if (!vehicleId) {
+        throw new Error("Vehicle ID not returned after save");
+      }
 
-      alert(`Job created successfully! Job Number: ${insertedJob.id}\n\nVehicle ${vehicle.reg} has been saved and linked to ${customer.firstName} ${customer.lastName}`); // show success message
+      console.log("Vehicle saved/updated with ID:", vehicleId);
 
-      router.push(`/appointments?jobNumber=${insertedJob.id}`); // redirect to appointments page with job number
+      const jobDescription = sanitizedRequests.map((req) => req.text).join("\n");
+
+      const jobPayload = {
+        regNumber: regUpper,
+        jobNumber: null,
+        description: jobDescription || `Job card for ${regUpper}`,
+        type: jobSource === "Warranty" ? "Warranty" : "Service",
+        assignedTo: null,
+        customerId: customer.id,
+        vehicleId,
+        waitingStatus,
+        jobSource,
+        jobCategories,
+        requests: sanitizedRequests,
+        cosmeticNotes: cosmeticNotes || null,
+        vhcRequired: vhcRequired,
+        maintenanceInfo: { nextMotDate: nextMotDate || null },
+      };
+
+      console.log("Saving job via shared helper:", jobPayload);
+
+      const jobResult = await addJobToDatabase(jobPayload);
+
+      if (!jobResult.success || !jobResult.data) {
+        throw new Error(jobResult.error?.message || "Failed to create job card");
+      }
+
+      const insertedJob = jobResult.data;
+      console.log("Job saved successfully with ID:", insertedJob.id);
+
+      if (typeof fetchJobs === "function") {
+        fetchJobs().catch((err) => console.error("❌ Error refreshing jobs:", err));
+      }
+
+      const finalJobNumber = insertedJob.jobNumber || insertedJob.id;
+      alert(
+        `Job created successfully! Job Number: ${finalJobNumber}\n\nVehicle ${regUpper} has been saved and linked to ${customer.firstName} ${customer.lastName}`
+      );
+
+      router.push(`/appointments?jobNumber=${finalJobNumber}`);
     } catch (err) {
-      console.error("Error saving job:", err); // log error
-      alert(`Error saving job: ${err.message}. Check console for details.`); // alert failure
+      console.error("❌ Error saving job:", err);
+      alert(`Error saving job: ${err.message}. Check console for details.`);
     }
   };
 

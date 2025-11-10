@@ -6,6 +6,7 @@ import React, { useMemo, useState } from "react"; // Import React hooks for stat
 import Layout from "../../components/Layout"; // Import shared layout wrapper
 import { useUser } from "../../context/UserContext"; // Import user context for role-based access
 import Link from "next/link"; // Import Link for navigation shortcuts
+import { consumableOrderHistory } from "../../lib/data/consumablesSample"; // Shared seed data for consumables
 
 const containerStyle = {
   padding: "24px", // Provide roomy spacing around the page
@@ -131,47 +132,9 @@ function ConsumablesTrackerPage() {
     notes: "", // Track additional notes
   });
 
-  const [consumables, setConsumables] = useState([
-    {
-      id: "W-001", // Unique identifier for table keying
-      partNumber: "WIP-001", // Supplier part number
-      name: "Nitrile Workshop Gloves", // Item description
-      category: "Safety", // Category for grouping
-      lastOrderedDate: "2024-03-04", // Date item was last purchased
-      reorderFrequencyDays: 30, // Days between orders
-      nextReorderDate: "2024-04-03", // Scheduled reorder date
-      quantityPerOrder: 200, // Typical quantity ordered
-      unitCost: 0.45, // Cost per unit during last purchase
-      supplier: "SafetyFirst UK", // Supplier reference
-      notes: "Blue medium size gloves for technicians", // Operational notes
-    },
-    {
-      id: "W-002", // Unique identifier
-      partNumber: "CLEAN-009", // Supplier part number reference
-      name: "Workshop Paper Rolls", // Item description
-      category: "Cleaning", // Category label
-      lastOrderedDate: "2024-02-20", // Last order date
-      reorderFrequencyDays: 21, // Days between orders
-      nextReorderDate: "2024-03-12", // Scheduled reorder date
-      quantityPerOrder: 30, // Quantity typically ordered
-      unitCost: 2.3, // Unit price at last purchase
-      supplier: "CleanSupplies Ltd", // Supplier reference
-      notes: "Two-ply heavy duty rolls", // Operational notes
-    },
-    {
-      id: "W-003", // Identifier
-      partNumber: "CHEM-502", // Part number reference
-      name: "Brake Cleaner Aerosol", // Item description
-      category: "Chemicals", // Category label
-      lastOrderedDate: "2024-03-01", // Last order date
-      reorderFrequencyDays: 28, // Reorder cadence
-      nextReorderDate: "2024-03-29", // Next reorder date
-      quantityPerOrder: 48, // Quantity per order
-      unitCost: 4.25, // Unit price last order
-      supplier: "AutoChem Distributors", // Supplier reference
-      notes: "Fast evaporating cleaner", // Operational notes
-    },
-  ]); // Seed data to illustrate tracker behaviour
+  const [consumables, setConsumables] = useState(() =>
+    consumableOrderHistory.map((item) => ({ ...item }))
+  ); // Seed data to illustrate tracker behaviour
 
   const handleBudgetChange = (event) => {
     setMonthlyBudget(Number(event.target.value) || 0); // Update monthly budget when input changes
