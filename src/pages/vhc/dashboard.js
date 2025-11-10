@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react"; // import React hooks for st
 import Layout from "../../components/Layout"; // import shared layout component
 import { useRouter } from "next/router"; // import router hook for navigation
 import { getAllJobs } from "../../lib/database/jobs"; // import Supabase helper to fetch jobs
-import { getVHCChecksByJob } from "../../lib/database/vhc"; // import Supabase helper to fetch technician VHC data
+import { getVhcChecksByJob } from "../../lib/database/vhc"; // import Supabase helper to fetch technician VHC data (note: lowercase 'hc')
 import { useUser } from "../../context/UserContext"; // import context hook to read current user roles
 
 // ✅ Status color mapping for the headline badge
@@ -1048,7 +1048,7 @@ export default function VHCDashboard() {
 
         const jobsWithVhc = await Promise.all(
           vhcEligibleJobs.map(async (job) => {
-            const checks = await getVHCChecksByJob(job.id); // fetch technician VHC records
+            const checks = await getVhcChecksByJob(job.id); // fetch technician VHC records (note: lowercase 'hc')
 
             const allocationCount = Array.isArray(job.partsAllocations)
               ? job.partsAllocations.length

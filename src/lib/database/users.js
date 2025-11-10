@@ -11,7 +11,6 @@ const USER_COLUMNS = [ // Enumerate every column required by the schema for cons
   "password_hash", // Securely stored password hash for authentication.
   "role", // Application role such as Admin, Tech, etc.
   "phone", // Optional contact number for staff.
-  "department", // Department the user belongs to for organizational filtering.
   "created_at", // Timestamp for auditing when the user was created.
   "updated_at", // Timestamp for auditing when the user was last modified.
 ].join(", "); // Combine the column list into a comma-separated string for Supabase select calls.
@@ -24,7 +23,6 @@ const mapUserRow = (row = {}) => ({ // Normalize returned rows into a predictabl
   email: row.email, // Pass through the stored email.
   role: row.role, // Pass through the stored application role.
   phone: row.phone, // Pass through optional phone value.
-  department: row.department, // Pass through the department value.
   passwordHash: row.password_hash, // Provide access to the hashed password when needed server-side.
   createdAt: row.created_at, // Include creation timestamp for audit displays.
   updatedAt: row.updated_at, // Include update timestamp for audit displays.
