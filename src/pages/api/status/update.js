@@ -1,107 +1,194 @@
 // file location: src/pages/api/status/update.js
+import { createClient } from "@supabase/supabase-js"; // Import Supabase factory to optionally use service role credentials
+import { supabase as browserSupabase } from "../../../lib/supabaseClient"; // Import shared Supabase client for fallback usage
+import {
+  SERVICE_STATUS_FLOW,
+  isValidTransition,
+} from "../../../lib/status/statusFlow"; // Import status flow helpers for validation and metadata
 
-// API endpoint to update job status
-// This handles status transitions, validates them, and records history
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL; // Read Supabase project URL from environment variables
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Read optional service role key for privileged access
+const dbClient = serviceRoleKey
+  ? createClient(supabaseUrl, serviceRoleKey)
+  : browserSupabase; // Prefer service role when available to bypass RLS in server routes
+
+const normalizeJobIdentifier = (raw) => {
+  const trimmed = typeof raw === "string" ? raw.trim() : raw; // Normalise incoming identifier values
+  if (trimmed === null || typeof trimmed === "undefined" || trimmed === "") {
+    return { type: "invalid", value: null }; // Reject missing identifiers early
   }
 
-  const { jobId, newStatus, userId, notes } = req.body;
+  const numericValue = Number(trimmed); // Attempt numeric conversion for job ID
+  if (Number.isInteger(numericValue) && !Number.isNaN(numericValue)) {
+    return { type: "id", value: numericValue }; // Treat numeric values as primary keys
+  }
 
-  // Validation
-  if (!jobId || !newStatus || !userId) {
-    return res.status(400).json({ 
-      error: 'Missing required fields: jobId, newStatus, userId' 
-    });
+  return { type: "job_number", value: String(trimmed) }; // Otherwise treat as external job number string
+};
+
+const normalizeStatusId = (status) => {
+  if (!status) return null; // Handle falsy inputs gracefully
+  return String(status)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_"); // Convert status text into snake_case identifier used in config
+};
+
+const buildStatusMetadata = (normalizedId) => {
+  if (!normalizedId) return null; // Guard clause when status cannot be resolved
+  return SERVICE_STATUS_FLOW[normalizedId.toUpperCase()] || null; // Lookup metadata using uppercase key variant
+};
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" }); // Enforce POST-only semantics
+  }
+
+  const { jobId: rawJobId, newStatus, userId, notes } = req.body || {}; // Extract payload fields from request body
+
+  if (!rawJobId || !newStatus || !userId) {
+    return res.status(400).json({
+      error: "Missing required fields: jobId, newStatus, userId",
+    }); // Validate presence of critical fields
+  }
+
+  const jobIdentifier = normalizeJobIdentifier(rawJobId); // Determine lookup strategy for the job record
+  if (jobIdentifier.type === "invalid") {
+    return res.status(400).json({ error: "Invalid job identifier" }); // Reject invalid identifiers
+  }
+
+  const normalizedTargetStatus = normalizeStatusId(newStatus); // Normalise the target status for validation and metadata
+  if (!normalizedTargetStatus) {
+    return res.status(400).json({ error: "Unable to interpret newStatus" }); // Reject empty or malformed statuses
   }
 
   try {
-    // TODO: Replace with your actual database connection
-    // const db = await connectToDatabase();
+    const jobQuery = dbClient
+      .from("jobs")
+      .select(
+        `id, job_number, status, status_updated_at, status_updated_by, created_at, updated_at`
+      ); // Prepare query selecting metadata required for auditing
 
-    // Get current status from database
-    // const currentJob = await db.query('SELECT status FROM jobs WHERE id = ?', [jobId]);
-    const currentJob = { status: 'in_progress' }; // Mock data
-    
-    // Import validation function - ✅ FIXED PATH
-    const { isValidTransition, SERVICE_STATUS_FLOW } = require('../../../lib/status/statusFlow');
-    
-    // Validate the status transition
-    if (!isValidTransition(currentJob.status, newStatus)) {
-      return res.status(400).json({
-        error: 'Invalid status transition',
-        from: currentJob.status,
-        to: newStatus,
-        allowedNext: SERVICE_STATUS_FLOW[currentJob.status.toUpperCase()]?.next
-      });
-    }
-
-    const timestamp = new Date().toISOString();
-    
-    // Calculate duration of previous status
-    // const lastStatusChange = await db.query(
-    //   'SELECT timestamp FROM status_history WHERE job_id = ? ORDER BY timestamp DESC LIMIT 1',
-    //   [jobId]
-    // );
-    
-    // const duration = lastStatusChange 
-    //   ? Math.floor((new Date(timestamp) - new Date(lastStatusChange.timestamp)) / 1000)
-    //   : 0;
-
-    const duration = 120; // Mock: 2 minutes
-
-    // Update job status in main jobs table
-    // await db.query(
-    //   'UPDATE jobs SET status = ?, updated_at = ?, updated_by = ? WHERE id = ?',
-    //   [newStatus, timestamp, userId, jobId]
-    // );
-
-    // Insert into status history table
-    // await db.query(
-    //   'INSERT INTO status_history (job_id, status, user_id, timestamp, duration, notes) VALUES (?, ?, ?, ?, ?, ?)',
-    //   [jobId, newStatus, userId, timestamp, duration, notes]
-    // );
-
-    const newStatusObj = SERVICE_STATUS_FLOW[newStatus.toUpperCase()];
-
-    // Send notifications if required
-    if (newStatusObj.notifyDepartment) {
-      // await sendDepartmentNotification(newStatusObj.notifyDepartment, jobId, newStatus);
-      console.log(`Notification sent to ${newStatusObj.notifyDepartment}`);
-    }
-
-    if (newStatusObj.notifyDepartments) {
-      for (const dept of newStatusObj.notifyDepartments) {
-        // await sendDepartmentNotification(dept, jobId, newStatus);
-        console.log(`Notification sent to ${dept}`);
-      }
-    }
-
-    if (newStatusObj.notifyCustomer) {
-      // await sendCustomerNotification(jobId, newStatus);
-      console.log('Customer notification sent');
-    }
-
-    // Pause or resume timer based on status
-    if (newStatusObj.pausesTime) {
-      // await pauseJobTimer(jobId);
-      console.log('Timer paused');
+    if (jobIdentifier.type === "id") {
+      jobQuery.eq("id", jobIdentifier.value); // Filter by numeric job ID when supplied
     } else {
-      // await resumeJobTimer(jobId);
-      console.log('Timer resumed');
+      jobQuery.eq("job_number", jobIdentifier.value); // Otherwise match on job number string
+    }
+
+    jobQuery.limit(1); // Restrict to single result for safety
+
+    const { data: jobRow, error: jobError } = await jobQuery.maybeSingle(); // Execute job lookup with tolerant response for empty set
+
+    if (jobError && jobError.code !== "PGRST116") {
+      throw jobError; // Bubble up unexpected database errors
+    }
+
+    if (!jobRow) {
+      return res.status(404).json({ error: "Job not found" }); // Notify caller when job cannot be located
+    }
+
+    const normalizedCurrentStatus = normalizeStatusId(jobRow.status); // Normalise existing status for comparison
+
+    if (
+      normalizedCurrentStatus &&
+      normalizedTargetStatus &&
+      SERVICE_STATUS_FLOW[normalizedCurrentStatus.toUpperCase()] &&
+      !isValidTransition(normalizedCurrentStatus, normalizedTargetStatus)
+    ) {
+      const allowedNext =
+        SERVICE_STATUS_FLOW[normalizedCurrentStatus.toUpperCase()]?.next || []; // Resolve allowed transitions for messaging
+      return res.status(400).json({
+        error: "Invalid status transition",
+        from: normalizedCurrentStatus,
+        to: normalizedTargetStatus,
+        allowedNext,
+      }); // Halt when transition violates configured flow
+    }
+
+    const timestamp = new Date().toISOString(); // Generate consistent timestamp for update + history insertion
+
+    const { data: updatedJob, error: updateError } = await dbClient
+      .from("jobs")
+      .update({
+        status: newStatus,
+        status_updated_at: timestamp,
+        status_updated_by: String(userId),
+        updated_at: timestamp,
+      })
+      .eq("id", jobRow.id)
+      .select(
+        `id, job_number, status, status_updated_at, status_updated_by, created_at, updated_at`
+      )
+      .single(); // Persist status change and retrieve updated row for response
+
+    if (updateError) {
+      throw updateError; // Surface update failures to caller
+    }
+
+    const { data: historyEntry, error: historyError } = await dbClient
+      .from("job_status_history")
+      .insert([
+        {
+          job_id: jobRow.id,
+          from_status: jobRow.status || null,
+          to_status: newStatus,
+          changed_by: String(userId),
+          reason: notes || null,
+          changed_at: timestamp,
+        },
+      ])
+      .select("id, job_id, from_status, to_status, changed_by, reason, changed_at")
+      .single(); // Record the status transition in the audit history table
+
+    if (historyError) {
+      throw historyError; // Surface insert failures to caller
+    }
+
+    const statusMetadata = buildStatusMetadata(normalizedTargetStatus); // Retrieve metadata for the new status
+
+    if (statusMetadata?.notifyDepartment) {
+      console.log(
+        `Notification queued for department: ${statusMetadata.notifyDepartment}`
+      ); // Placeholder hook for department notifications
+    }
+
+    if (Array.isArray(statusMetadata?.notifyDepartments)) {
+      statusMetadata.notifyDepartments.forEach((dept) =>
+        console.log(`Notification queued for department: ${dept}`)
+      ); // Placeholder multi-department notification hook
+    }
+
+    if (statusMetadata?.notifyCustomer) {
+      console.log("Customer notification queued for status update"); // Placeholder hook for customer messaging
+    }
+
+    if (statusMetadata?.pausesTime) {
+      console.log("Job timer paused due to status change"); // Placeholder integration for pausing timers
+    } else {
+      console.log("Job timer continues to run for this status"); // Placeholder integration for resuming timers
     }
 
     return res.status(200).json({
       success: true,
-      message: 'Status updated successfully',
-      newStatus,
+      message: "Status updated successfully",
+      jobId: updatedJob.id,
+      jobNumber: updatedJob.job_number,
+      status: normalizedTargetStatus,
+      rawStatus: updatedJob.status,
+      statusLabel: statusMetadata?.label || updatedJob.status,
       timestamp,
-      pausesTime: newStatusObj.pausesTime
-    });
-
+      historyEntry,
+      metadata: {
+        department: statusMetadata?.department || null,
+        color: statusMetadata?.color || null,
+        pausesTime: Boolean(statusMetadata?.pausesTime),
+        notifyDepartment: statusMetadata?.notifyDepartment || null,
+        notifyDepartments: statusMetadata?.notifyDepartments || [],
+        notifyCustomer: Boolean(statusMetadata?.notifyCustomer),
+      },
+    }); // Return enriched payload to inform calling UI of the successful transition
   } catch (error) {
-    console.error('Error updating status:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("Error updating status:", error); // Log server-side error for observability
+    return res.status(500).json({ error: "Internal server error" }); // Mask internal error details from client
   }
 }
