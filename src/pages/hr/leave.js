@@ -1,17 +1,16 @@
 // file location: src/pages/hr/leave.js
-import React from "react";
-import Layout from "../../components/Layout";
-import { useHrMockData } from "../../hooks/useHrData";
-import { SectionCard, StatusTag } from "../../components/HR/MetricCard";
+import React from "react"; // React runtime for page rendering
+import Layout from "../../components/Layout"; // global layout container
+import { useHrOperationsData } from "../../hooks/useHrData"; // Supabase-backed HR aggregation hook
+import { SectionCard, StatusTag } from "../../components/HR/MetricCard"; // shared HR component library
 
 // TODO: Wire leave requests, balances, and upcoming absences to live HR leave data.
-
 export default function HrLeaveManagement() {
-  const { data, isLoading, error } = useHrMockData();
+  const { data, isLoading, error } = useHrOperationsData(); // load leave datasets for the workspace
 
-  const leaveRequests = data?.leaveRequests ?? [];
-  const leaveBalances = data?.leaveBalances ?? [];
-  const upcomingAbsences = data?.upcomingAbsences ?? [];
+  const leaveRequests = data?.leaveRequests ?? []; // aggregated leave request records
+  const leaveBalances = data?.leaveBalances ?? []; // entitlement vs taken days per employee
+  const upcomingAbsences = data?.upcomingAbsences ?? []; // upcoming approved leave events
 
   return (
     <Layout>
@@ -202,9 +201,9 @@ const buttonStyleSecondary = {
 const buttonStyleGhost = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px dashed #E5E7EB",
+  border: "1px solid transparent",
   background: "transparent",
-  color: "#6B7280",
+  color: "#EA580C",
   fontWeight: 600,
   cursor: "pointer",
 };

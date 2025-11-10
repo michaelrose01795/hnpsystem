@@ -1,8 +1,8 @@
 // file location: src/pages/hr/performance.js
-import React from "react";
-import Layout from "../../components/Layout";
-import { useHrMockData } from "../../hooks/useHrData";
-import { SectionCard, StatusTag } from "../../components/HR/MetricCard";
+import React from "react"; // React runtime for the page component
+import Layout from "../../components/Layout"; // shared layout shell with navigation
+import { useHrOperationsData } from "../../hooks/useHrData"; // aggregated HR hook backed by Supabase
+import { SectionCard, StatusTag } from "../../components/HR/MetricCard"; // shared HR UI components
 
 // TODO: Replace placeholder performance data with live Supabase-backed scores before release.
 // TODO: Connect review scheduling/actions to the HR reviews tables once available.
@@ -40,8 +40,8 @@ const placeholderReviews = [
 ];
 
 export default function HrPerformanceAppraisals() {
-  const { data, isLoading, error } = useHrMockData();
-  const employeeDirectory = data?.employeeDirectory ?? [];
+  const { data, isLoading, error } = useHrOperationsData(); // hydrate the workspace with real HR data
+  const employeeDirectory = data?.employeeDirectory ?? []; // fallback to empty array when no staff records
 
   return (
     <Layout>
@@ -163,7 +163,8 @@ export default function HrPerformanceAppraisals() {
               subtitle="Kick off a new review cycle or log a mid-year check-in."
             >
               <p style={{ color: "#4B5563", marginBottom: "14px" }}>
-                Select an employee to start drafting their performance review. You can attach supporting documents and invite co-reviewers.
+                Select an employee to start drafting their performance review. You can attach supporting documents and invite
+                co-reviewers.
               </p>
               <form style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
                 <label style={labelStyle}>
@@ -200,7 +201,7 @@ export default function HrPerformanceAppraisals() {
                     Save Draft
                   </button>
                   <button type="button" style={buttonStyleGhost}>
-                    Upload supporting file
+                    Share with reviewer
                   </button>
                 </div>
               </form>
@@ -213,10 +214,10 @@ export default function HrPerformanceAppraisals() {
 }
 
 const buttonStylePrimary = {
-  padding: "8px 14px",
+  padding: "10px 18px",
   borderRadius: "10px",
   border: "none",
-  background: "#6366F1",
+  background: "#F97316",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",
@@ -225,9 +226,9 @@ const buttonStylePrimary = {
 const buttonStyleSecondary = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px solid #C7D2FE",
+  border: "1px solid #FED7AA",
   background: "white",
-  color: "#4F46E5",
+  color: "#EA580C",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -235,9 +236,9 @@ const buttonStyleSecondary = {
 const buttonStyleGhost = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px dashed #D1D5DB",
+  border: "1px solid transparent",
   background: "transparent",
-  color: "#6B7280",
+  color: "#EA580C",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -246,16 +247,17 @@ const labelStyle = {
   display: "flex",
   flexDirection: "column",
   gap: "6px",
-  fontSize: "0.85rem",
   color: "#374151",
+  fontSize: "0.85rem",
   fontWeight: 600,
 };
 
 const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
   borderRadius: "10px",
   border: "1px solid #E5E7EB",
-  padding: "10px 12px",
-  fontWeight: 500,
+  background: "white",
   color: "#111827",
-  background: "#FFFFFF",
+  fontSize: "0.9rem",
 };

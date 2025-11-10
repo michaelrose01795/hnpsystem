@@ -1,8 +1,8 @@
 // file location: src/pages/hr/training.js
-import React from "react";
-import Layout from "../../components/Layout";
-import { useHrMockData } from "../../hooks/useHrData";
-import { SectionCard, StatusTag } from "../../components/HR/MetricCard";
+import React from "react"; // React runtime for page rendering
+import Layout from "../../components/Layout"; // shared site layout
+import { useHrOperationsData } from "../../hooks/useHrData"; // Supabase-backed HR aggregation hook
+import { SectionCard, StatusTag } from "../../components/HR/MetricCard"; // shared HR UI widgets
 
 // TODO: Swap placeholder course catalogue for real LMS integration after testing.
 // TODO: Persist assigned courses and renewals in the HR training database tables.
@@ -13,10 +13,10 @@ const placeholderCourses = [
 ];
 
 export default function HrTrainingQualifications() {
-  const { data, isLoading, error } = useHrMockData();
+  const { data, isLoading, error } = useHrOperationsData(); // load renewals, directory, and balances
 
-  const trainingRenewals = data?.trainingRenewals ?? [];
-  const employeeDirectory = data?.employeeDirectory ?? [];
+  const trainingRenewals = data?.trainingRenewals ?? []; // Supabase-backed renewals list
+  const employeeDirectory = data?.employeeDirectory ?? []; // employees for assignment form
 
   return (
     <Layout>
@@ -170,7 +170,8 @@ export default function HrTrainingQualifications() {
                 <ComplianceCard title="Valet" percent={64} status="Behind" />
               </div>
               <p style={{ color: "#6B7280", marginTop: "16px" }}>
-                These percentages use placeholder data for UI verification. Replace with real metrics once Supabase views are ready.
+                These percentages use placeholder data for UI verification. Replace with real metrics once Supabase views are
+                ready.
               </p>
             </SectionCard>
           </>
@@ -181,7 +182,7 @@ export default function HrTrainingQualifications() {
 }
 
 function ComplianceCard({ title, percent, status }) {
-  const tone = percent >= 85 ? "success" : percent >= 70 ? "warning" : "danger";
+  const tone = percent >= 85 ? "success" : percent >= 70 ? "warning" : "danger"; // simple tone mapping
 
   return (
     <div
@@ -204,10 +205,10 @@ function ComplianceCard({ title, percent, status }) {
 }
 
 const buttonStylePrimary = {
-  padding: "8px 14px",
+  padding: "10px 18px",
   borderRadius: "10px",
   border: "none",
-  background: "#0EA5E9",
+  background: "#F97316",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",
@@ -216,9 +217,9 @@ const buttonStylePrimary = {
 const buttonStyleSecondary = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px solid #BAE6FD",
+  border: "1px solid #FED7AA",
   background: "white",
-  color: "#0284C7",
+  color: "#EA580C",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -226,9 +227,9 @@ const buttonStyleSecondary = {
 const buttonStyleGhost = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px dashed #D1D5DB",
+  border: "1px solid transparent",
   background: "transparent",
-  color: "#6B7280",
+  color: "#EA580C",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -237,16 +238,17 @@ const labelStyle = {
   display: "flex",
   flexDirection: "column",
   gap: "6px",
-  fontSize: "0.85rem",
   color: "#374151",
+  fontSize: "0.85rem",
   fontWeight: 600,
 };
 
 const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
   borderRadius: "10px",
   border: "1px solid #E5E7EB",
-  padding: "10px 12px",
-  fontWeight: 500,
+  background: "white",
   color: "#111827",
-  background: "#FFFFFF",
+  fontSize: "0.9rem",
 };
