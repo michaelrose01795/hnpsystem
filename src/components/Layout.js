@@ -761,15 +761,13 @@ export default function Layout({ children }) {
             flex: 1,
             minHeight: 0,
             height: "100%",
-            overflow: "hidden",
+            overflow: "auto",
           }}
         >
           <div
             key={contentKey}
             style={{
-              height: "100%",
               minHeight: "100%",
-              maxHeight: "100%",
               background: "linear-gradient(to bottom right, #ffffff, #fff9f9, #ffecec)",
               borderRadius: hideSidebar ? "0px" : "28px",
               border: hideSidebar ? "none" : "1px solid #ffe0e0",
