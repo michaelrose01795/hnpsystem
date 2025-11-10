@@ -133,9 +133,21 @@ export default function TechJobDetailPage() {
     }
   };
 
-  const username = user?.username;
+  const username = user?.username?.trim();
   const techsList = usersByRole["Techs"] || [];
-  const isTech = techsList.includes(username);
+  const motTestersList = usersByRole["MOT Tester"] || [];
+  const allowedTechNames = new Set([...techsList, ...motTestersList]);
+  const userRoles = Array.isArray(user?.roles)
+    ? user.roles
+    : user?.role
+      ? [user.role]
+      : [];
+  const hasRoleAccess = userRoles.some((roleName) => {
+    const normalized = String(roleName).toLowerCase();
+    return normalized.includes("tech") || normalized.includes("mot");
+  });
+  const isTech =
+    (username && allowedTechNames.has(username)) || hasRoleAccess;
 
   // ✅ Fetch job data on component mount
   useEffect(() => {
