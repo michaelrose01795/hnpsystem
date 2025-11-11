@@ -8,6 +8,7 @@ import GlobalSearch from "@/components/GlobalSearch"; // import global search co
 import JobCardModal from "@/components/JobCards/JobCardModal"; // import job modal
 import StatusSidebar from "@/components/StatusTracking/StatusSidebar"; // import status sidebar
 import Sidebar from "@/components/Sidebar";
+import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
 import { useRoster } from "@/context/RosterContext";
@@ -645,6 +646,14 @@ export default function Layout({ children }) {
                   }}
                 >
                   <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />{/* expose global search with brand accent */}
+                </div>
+
+                <div
+                  style={{
+                    flexShrink: 0,
+                  }}
+                >
+                  <NextActionPrompt />
                 </div>
 
                 {userRoles.includes("admin manager") &&

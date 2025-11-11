@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
+import { useNextAction } from "@/context/NextActionContext";
 import { useRoster } from "@/context/RosterContext";
 import { getJobByNumber, updateJobStatus } from "@/lib/database/jobs";
 import { getVHCChecksByJob } from "@/lib/database/vhc";
@@ -55,6 +56,7 @@ export default function TechJobDetailPage() {
   const { jobNumber } = router.query;
   const { user, dbUserId, setStatus, refreshCurrentJob, setCurrentJob } = useUser();
   const { usersByRole, isLoading: rosterLoading } = useRoster();
+  const { triggerNextAction } = useNextAction();
 
   // ✅ State management
   const [jobData, setJobData] = useState(null);
@@ -206,6 +208,14 @@ export default function TechJobDetailPage() {
     fetchData();
   }, [jobNumber, username, router]);
 
+  const resolveNextActionType = (status) => {
+    if (!status) return null;
+    const normalized = String(status).toLowerCase();
+    if (normalized.includes('vhc')) return 'vhc_complete';
+    if (normalized.includes('complete') || normalized.includes('being washed')) return 'job_complete';
+    return null;
+  };
+
   // ✅ Handle status update
   const handleUpdateStatus = async (newStatus) => {
     const jobCardId = jobData?.jobCard?.id;
@@ -228,6 +238,23 @@ export default function TechJobDetailPage() {
           },
         };
       });
+
+      const actionType = resolveNextActionType(newStatus);
+      if (actionType) {
+        const vehicleId = jobData?.vehicle?.vehicleId || jobData?.jobCard?.vehicleId || null;
+        const vehicleReg =
+          jobData?.vehicle?.reg ||
+          jobData?.jobCard?.vehicleReg ||
+          jobData?.jobCard?.vehicle?.reg ||
+          "";
+        triggerNextAction(actionType, {
+          jobId: jobCardId,
+          jobNumber: jobData?.jobCard?.jobNumber || jobCardNumber,
+          vehicleId,
+          vehicleReg,
+          triggeredBy: user?.id || null,
+        });
+      }
     } else {
       alert("❌ Failed to update status");
     }

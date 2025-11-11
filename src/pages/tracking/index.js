@@ -1,7 +1,7 @@
 // file location: src/pages/tracking/index.js
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 
 const CAR_LOCATIONS = [
@@ -483,8 +483,55 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
 
 export default function TrackingDashboard() {
   const [entries, setEntries] = useState(initialTrackingEntries);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const [searchModal, setSearchModal] = useState({ open: false, type: null });
   const [entryModal, setEntryModal] = useState({ open: false, type: null, entry: null });
+
+  const loadEntries = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/tracking/snapshot");
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => ({ message: "Failed to load tracking data" }));
+        throw new Error(errorPayload?.message || "Failed to load tracking data");
+      }
+      const payload = await response.json();
+      const data = Array.isArray(payload.data) ? payload.data : [];
+      const normalised = data.length > 0
+        ? data.map((entry, index) => ({
+            id: entry.jobId || entry.jobNumber || entry.vehicleReg || `snapshot-${index}`,
+            jobNumber: entry.jobNumber || "Unknown",
+            reg: entry.vehicleReg || entry.reg || "",
+            customer: entry.customer || "Customer Pending",
+            serviceType: entry.serviceType || "Service",
+            status: entry.status || "In Progress",
+            vehicleLocation: entry.vehicleLocation || "Awaiting Allocation",
+            keyLocation: entry.keyLocation || "Key safe pending",
+            keyTip: entry.keyNotes || entry.notes || "",
+            notes: entry.notes || entry.keyNotes || "",
+            updatedAt: entry.updatedAt || new Date().toISOString(),
+            parkedBy: entry.parkedBy || "System",
+            parkedAt:
+              entry.parkedAt ||
+              new Date(entry.updatedAt || Date.now()).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+          }))
+        : initialTrackingEntries;
+      setEntries(normalised);
+      setLastUpdated(new Date().toISOString());
+    } catch (fetchError) {
+      console.error("Failed to fetch tracking snapshot", fetchError);
+      setError(fetchError.message || "Unable to load tracking data");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadEntries();
+  }, [loadEntries]);
 
   const recentEntries = useMemo(() => entries.slice(0, 3), [entries]);
 
@@ -503,24 +550,38 @@ export default function TrackingDashboard() {
     });
   };
 
-  const handleSave = (form) => {
-    const now = new Date().toISOString();
-    setEntries((prev) => {
-      const next = form.id
-        ? prev.map((item) => (item.id === form.id ? { ...item, ...form, updatedAt: now } : item))
-        : [
-            {
-              ...form,
-              id: `track-${Date.now()}`,
-              parkedBy: "Auto Prompt",
-              parkedAt: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
-              updatedAt: now,
-            },
-            ...prev,
-          ];
-      return next.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-    });
-    closeEntryModal();
+  const handleSave = async (form) => {
+    try {
+      setError(null);
+      const payload = {
+        actionType: "job_complete",
+        jobId: form.jobId || null,
+        jobNumber: form.jobNumber ? form.jobNumber.trim().toUpperCase() : "",
+        vehicleId: form.vehicleId || null,
+        vehicleReg: form.reg ? form.reg.trim().toUpperCase() : "",
+        keyLocation: form.keyLocation,
+        vehicleLocation: form.vehicleLocation,
+        notes: form.notes,
+        performedBy: null,
+      };
+
+      const response = await fetch("/api/tracking/next-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => ({ message: "Failed to save entry" }));
+        throw new Error(errorPayload?.message || "Failed to save entry");
+      }
+
+      await loadEntries();
+      closeEntryModal();
+    } catch (saveError) {
+      console.error("Failed to log tracking entry", saveError);
+      setError(saveError.message || "Unable to save tracking entry");
+    }
   };
 
   return (
@@ -533,6 +594,61 @@ export default function TrackingDashboard() {
           gap: "24px",
         }}
       >
+        <div
+          style={{
+            gridColumn: "1 / -1",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "14px 18px",
+            borderRadius: "18px",
+            border: "1px solid rgba(239,68,68,0.18)",
+            background: "linear-gradient(120deg, rgba(255,228,230,0.65), rgba(255,241,242,0.9))",
+            boxShadow: "0 18px 28px rgba(239,68,68,0.08)",
+            gap: "12px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <span style={{ fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "#b91c1c" }}>Tracking Sync</span>
+            <strong style={{ color: "#7f1d1d" }}>Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "Syncing..."}</strong>
+          </div>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            {loading && (<span style={{ color: "#b91c1c", fontWeight: 600 }}>Refreshing…</span>)}
+            <button
+              type="button"
+              onClick={loadEntries}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "12px",
+                border: "none",
+                background: "linear-gradient(135deg, #ef4444, #b91c1c)",
+                color: "#fff",
+                fontWeight: 700,
+                cursor: "pointer",
+                boxShadow: "0 12px 24px rgba(239,68,68,0.25)",
+              }}
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
+        {error && (
+          <div
+            style={{
+              gridColumn: "1 / -1",
+              padding: "12px 16px",
+              borderRadius: "16px",
+              border: "1px solid rgba(239,68,68,0.25)",
+              background: "rgba(254,226,226,0.8)",
+              color: "#991b1b",
+              fontWeight: 600,
+            }}
+          >
+            {error}
+          </div>
+        )}
+
         <section
           style={{
             padding: "24px",

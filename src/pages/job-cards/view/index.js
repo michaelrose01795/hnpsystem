@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from "react"; // import React and hooks
 import Link from "next/link";
 import Layout from "@/components/Layout"; // import layout wrapper
+import { useNextAction } from "@/context/NextActionContext"; // import next action context
 import { useRouter } from "next/router"; // for navigation
 import { getAllJobs, updateJobStatus } from "@/lib/database/jobs"; // import database functions
 
@@ -29,6 +30,7 @@ export default function ViewJobCards() {
   const [activeTab, setActiveTab] = useState("today"); // track active tab
   const [loading, setLoading] = useState(true); // loading state
   const router = useRouter(); // router for navigation
+  const { triggerNextAction } = useNextAction(); // next action dispatcher
   const today = getTodayDate(); // get today's date
 
   /* ----------------------------
@@ -56,12 +58,34 @@ export default function ViewJobCards() {
   /* ----------------------------
      Update job status in Supabase
   ---------------------------- */
+  const resolveNextActionType = (status) => {
+    if (!status) return null;
+    const normalized = String(status).toLowerCase();
+    if (normalized.includes('vhc')) return 'vhc_complete';
+    if (normalized.includes('complete') || normalized.includes('being washed')) return 'job_complete';
+    return null;
+  };
+
   const handleStatusChange = async (jobId, newStatus) => {
     const result = await updateJobStatus(jobId, newStatus); // update status in database
     if (result.success) {
       fetchJobs(); // refresh jobs list after update
       if (popupJob && popupJob.id === jobId) {
         setPopupJob({ ...popupJob, status: newStatus }); // update popup if open
+      }
+
+      const actionType = resolveNextActionType(newStatus);
+      if (actionType) {
+        const updatedJob = jobs.find((job) => job.id === jobId) || popupJob;
+        if (updatedJob) {
+          triggerNextAction(actionType, {
+            jobId,
+            jobNumber: updatedJob.jobNumber || updatedJob.job_number || "",
+            vehicleId: updatedJob.vehicleId || updatedJob.vehicle_id || null,
+            vehicleReg: updatedJob.reg || updatedJob.vehicleReg || updatedJob.vehicle_reg || "",
+            triggeredBy: null,
+          });
+        }
       }
     } else {
       alert("Error updating status"); // show error message

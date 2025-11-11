@@ -6,11 +6,13 @@
 import React, { useState, useEffect } from "react"; // React hooks
 import Layout from "@/components/Layout"; // Main layout wrapper
 import { useUser } from "@/context/UserContext"; // Get logged-in user
+import { useNextAction } from "@/context/NextActionContext"; // Next action dispatcher
 import { getAllJobs } from "@/lib/database/jobs"; // Get all jobs
 import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService"; // Auto check-in function
 
 export default function CheckInPage() {
   const { user } = useUser(); // Get logged-in user
+  const { triggerNextAction } = useNextAction(); // Hook to queue next action prompts
   const [jobs, setJobs] = useState([]); // All jobs for today
   const [loading, setLoading] = useState(true); // Loading state
   const [searchTerm, setSearchTerm] = useState(""); // Search filter
@@ -100,6 +102,14 @@ export default function CheckInPage() {
           `Time: ${new Date().toLocaleTimeString()}`
         );
         
+        triggerNextAction('job_checked_in', {
+          jobId: job.id || null,
+          jobNumber: job.jobNumber || '',
+          vehicleId: job.vehicleId || job.vehicle_id || null,
+          vehicleReg: job.reg || job.vehicleReg || job.vehicle_reg || '',
+          triggeredBy: user?.id || null,
+        });
+
         // Refresh jobs list
         await fetchJobs();
       } else {
