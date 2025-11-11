@@ -19,6 +19,7 @@ export default function StatusSidebar({
   hasUrlJobId,
   viewportWidth = 1440,
   isCompact = false,
+  timelineContent = null,
 }) {
   const [statusHistory, setStatusHistory] = useState([]); // Array of past statuses with timestamps
   const [totalTimeSpent, setTotalTimeSpent] = useState(0); // Total working time in minutes
@@ -490,23 +491,28 @@ export default function StatusSidebar({
                 )}
               </div>
 
-              {timelineStatuses.length > 0 ? (
-                <div style={{ marginBottom: '20px' }}>
+              <div style={{ marginBottom: '20px' }}>
+                {timelineStatuses.length > 0 ? (
                   <JobProgressTracker
                     statuses={timelineStatuses}
                     currentStatus={currentStatusForDisplay}
                   />
-                </div>
-              ) : (
-                <div style={{ 
-                  textAlign: 'center', 
-                  padding: '20px', 
-                  color: '#999',
-                  fontSize: '14px'
-                }}>
-                  No status history yet
-                </div>
-              )}
+                ) : (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '20px', 
+                    color: '#999',
+                    fontSize: '14px'
+                  }}>
+                    No status history yet
+                  </div>
+                )}
+                {timelineContent && (
+                  <div style={{ marginTop: '16px' }}>
+                    {timelineContent}
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>

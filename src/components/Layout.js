@@ -1,5 +1,6 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/Layout.js
+// Edit: Connected JobTimeline to existing right-hand status sidebar (no styling changes made)
+// ✅ Imports converted to use absolute alias "@/"
 import React, { useEffect, useState } from "react"; // import React hooks
 import Link from "next/link"; // import Next.js link component
 import { useRouter } from "next/router"; // import router for navigation
@@ -7,15 +8,19 @@ import { useUser } from "@/context/UserContext"; // import user context
 import GlobalSearch from "@/components/GlobalSearch"; // import global search component
 import JobCardModal from "@/components/JobCards/JobCardModal"; // import job modal
 import StatusSidebar from "@/components/StatusTracking/StatusSidebar"; // import status sidebar
+import JobTimeline from "@/components/Timeline/JobTimeline";
 import Sidebar from "@/components/Sidebar";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
 import { useRoster } from "@/context/RosterContext";
 import HrTabsBar from "@/components/HR/HrTabsBar";
-import WorkshopTabsBar, { workshopTabs, workshopQuickActions } from "@/components/Workshop/WorkshopTabsBar";
+import WorkshopTabsBar, {
+  workshopTabs,
+  workshopQuickActions,
+} from "@/components/Workshop/WorkshopTabsBar";
 
-export default function Layout({ children }) {
+export default function Layout({ children, jobNumber }) {
   const { user, status, setStatus, currentJob } = useUser(); // get user context data
   const { usersByRole } = useRoster();
   const router = useRouter();
@@ -55,6 +60,7 @@ export default function Layout({ children }) {
   const [isAutoJobCleared, setIsAutoJobCleared] = useState(false);
   const hasActiveAutoJob = !!(urlJobId && !isAutoJobCleared);
   const activeJobId = searchedJobId || (hasActiveAutoJob ? urlJobId : null);
+  const timelineJobNumber = jobNumber || activeJobId || currentJob?.jobNumber || null;
   const [currentJobStatus, setCurrentJobStatus] = useState("booked");
 
   const statusSidebarRoles = [
@@ -800,6 +806,11 @@ export default function Layout({ children }) {
           hasUrlJobId={hasActiveAutoJob}
           viewportWidth={viewportWidth}
           isCompact={isTablet}
+          timelineContent={
+            timelineJobNumber ? (
+              <JobTimeline jobNumber={String(timelineJobNumber)} />
+            ) : null
+          }
         />
       )}
 
