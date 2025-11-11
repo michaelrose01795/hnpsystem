@@ -16,10 +16,29 @@ import {
 import { getTechnicianUsers, getMotTesterUsers } from "@/lib/database/users";
 import { normalizeDisplayName } from "@/utils/nameUtils";
 
-const isAllowedTechRole = (role) => {
+// Layout constants ensure consistent panel sizing and scroll thresholds
+const VISIBLE_JOBS_PER_PANEL = 5;
+const JOB_CARD_HEIGHT = 68; // px height per job card (including padding)
+const JOB_CARD_VERTICAL_GAP = 8; // px gap between cards
+const JOB_LIST_MAX_HEIGHT =
+  VISIBLE_JOBS_PER_PANEL * JOB_CARD_HEIGHT +
+  (VISIBLE_JOBS_PER_PANEL - 1) * JOB_CARD_VERTICAL_GAP;
+const PANEL_EXTRA_SPACE = 110; // header, counters, padding
+const PANEL_HEIGHT = JOB_LIST_MAX_HEIGHT + PANEL_EXTRA_SPACE;
+const JOB_LIST_MAX_HEIGHT_PX = `${JOB_LIST_MAX_HEIGHT}px`;
+const PANEL_HEIGHT_PX = `${PANEL_HEIGHT}px`;
+
+// Strict role checks
+const isTechRole = (role) => {
   if (!role) return false;
   const normalized = String(role).toLowerCase();
-  return normalized.includes("tech") || normalized.includes("mot");
+  return normalized.includes("tech");
+};
+
+const isMotRole = (role) => {
+  if (!role) return false;
+  const normalized = String(role).toLowerCase();
+  return normalized.includes("mot");
 };
 
 export default function NextJobsPage() {
@@ -115,33 +134,49 @@ export default function NextJobsPage() {
     }
   };
 
-  const displayTechsList = useMemo(() => {
+  const staffDirectory = useMemo(() => {
     const map = new Map();
 
-    const sourceList =
-      dbTechnicians.length > 0 ? dbTechnicians : fallbackTechs;
-
-    sourceList.forEach((tech, index) => {
+    const mergePerson = (person, roleTag, index, prefix) => {
+      if (!person) return;
       const label =
-        tech.name ||
-        tech.displayName ||
-        tech.fullName ||
-        tech.email ||
-        "";
+        person.name ||
+        person.displayName ||
+        person.fullName ||
+        person.email ||
+        (typeof person === "string" ? person : "");
       const normalized = normalizeDisplayName(label);
       if (!normalized) return;
 
-      const entry = {
-        id: tech.id ?? tech.user_id ?? `tech-${index}`,
-        name: label || `Technician ${index + 1}`,
-        email: tech.email || "",
-        role: tech.role || "",
+      const fallbackName =
+        label ||
+        `${roleTag === "tech" ? "Technician" : "MOT"} ${index + 1}`;
+      const fallbackId =
+        person.id ??
+        person.user_id ??
+        person.email ??
+        `${prefix}-${index}`;
+
+      const existing = map.get(normalized) || {
+        id: fallbackId || normalized,
+        name: fallbackName,
+        email: person.email || "",
+        roles: new Set(),
       };
 
-      if (!map.has(normalized)) {
-        map.set(normalized, entry);
-      }
-    });
+      if (!existing.name && fallbackName) existing.name = fallbackName;
+      if (!existing.email && person.email) existing.email = person.email;
+      if (!existing.id && fallbackId) existing.id = fallbackId;
+
+      existing.roles.add(roleTag);
+      map.set(normalized, existing);
+    };
+
+    const techSource = dbTechnicians.length > 0 ? dbTechnicians : fallbackTechs;
+    techSource.forEach((person, index) => mergePerson(person, "tech", index, "tech"));
+
+    const motSource = dbMotTesters.length > 0 ? dbMotTesters : fallbackMot;
+    motSource.forEach((person, index) => mergePerson(person, "mot", index, "mot"));
 
     jobs.forEach((job) => {
       const rawName =
@@ -150,55 +185,58 @@ export default function NextJobsPage() {
         (typeof job.assignedTo === "string" ? job.assignedTo : "");
 
       const normalized = normalizeDisplayName(rawName);
-      if (!normalized || map.has(normalized)) return;
+      if (!normalized) return;
 
       const roleHint =
         job.assignedTech?.role ||
         job.technicianRole ||
         job.technician?.role ||
         "";
-      if (roleHint && !isAllowedTechRole(roleHint)) return;
 
-      map.set(normalized, {
-        id: job.assignedTech?.id || `db-tech-${normalized}`,
-        name: rawName?.trim() || "Unnamed Tech",
+      let inferredRole = null;
+      if (isMotRole(roleHint)) inferredRole = "mot";
+      else if (isTechRole(roleHint)) inferredRole = "tech";
+
+      if (!inferredRole) return;
+
+      const existing = map.get(normalized) || {
+        id: job.assignedTech?.id || `db-${inferredRole}-${normalized}`,
+        name: rawName?.trim() || "Unnamed Staff",
         email: job.assignedTech?.email || "",
-        role: roleHint || "",
-      });
+        roles: new Set(),
+      };
+
+      if (!existing.name && rawName) existing.name = rawName.trim();
+      if (!existing.email && job.assignedTech?.email) existing.email = job.assignedTech.email;
+      existing.roles.add(inferredRole);
+      map.set(normalized, existing);
     });
 
-    return Array.from(map.values());
-  }, [jobs, dbTechnicians]);
+    return Array.from(map.entries()).map(([normalized, entry]) => ({
+      ...entry,
+      normalizedName: normalized,
+      roles: Array.from(entry.roles),
+    }));
+  }, [jobs, dbTechnicians, dbMotTesters, fallbackTechs, fallbackMot]);
 
-  const motDisplayList = useMemo(() => {
-    if (dbMotTesters.length > 0) return dbMotTesters;
-    return fallbackMot;
-  }, [dbMotTesters, fallbackMot]);
+  const techPanelList = useMemo(
+    () => staffDirectory.filter((person) => person.roles.includes("tech")),
+    [staffDirectory]
+  );
 
-  const assignableStaffList = useMemo(() => {
-    const map = new Map();
-    const addEntry = (tech) => {
-      const label =
-        tech.name ||
-        tech.displayName ||
-        tech.fullName ||
-        tech.email ||
-        "";
-      const normalized = normalizeDisplayName(label);
-      if (!normalized) return;
-      if (!map.has(normalized)) {
-        map.set(normalized, {
-          id: tech.id ?? tech.user_id ?? normalized,
-          name: label || "Unnamed Tech",
-        });
-      }
-    };
+  const motPanelList = useMemo(
+    () => staffDirectory.filter((person) => person.roles.includes("mot")),
+    [staffDirectory]
+  );
 
-    displayTechsList.forEach(addEntry);
-    motDisplayList.forEach(addEntry);
-
-    return Array.from(map.values());
-  }, [displayTechsList, motDisplayList]);
+  const assignableStaffList = useMemo(
+    () =>
+      staffDirectory.map((staff) => ({
+        id: staff.id || staff.normalizedName,
+        name: staff.name,
+      })),
+    [staffDirectory]
+  );
 
   // ✅ Filter ALL outstanding/not started jobs (unassigned AND not completed)
   // These are jobs that are not finished - they show in the top section
@@ -255,20 +293,22 @@ export default function NextJobsPage() {
 
   const assignedJobs = useMemo(
     () =>
-      displayTechsList.map((tech) => ({
+      techPanelList.map((tech, index) => ({
         ...tech,
+        panelKey: `${tech.id || tech.normalizedName || "tech"}-tech-${index}`,
         jobs: getJobsForAssignee(tech.name),
       })),
-    [jobs, displayTechsList]
+    [jobs, techPanelList]
   );
 
   const assignedMotJobs = useMemo(
     () =>
-      motDisplayList.map((tester) => ({
+      motPanelList.map((tester, index) => ({
         ...tester,
+        panelKey: `${tester.id || tester.normalizedName || "mot"}-mot-${index}`,
         jobs: getJobsForAssignee(tester.name),
       })),
-    [jobs, motDisplayList]
+    [jobs, motPanelList]
   );
 
   const handleOpenJobDetails = (job) => {
@@ -506,21 +546,25 @@ export default function NextJobsPage() {
     setDragOverJob(null); // Clear job hover
   };
 
-  const renderAssigneePanel = (assignee) => (
-    <div
-      key={assignee.id}
-      style={{
-        background: "white",
-        border: dragOverTarget === assignee.name ? "3px solid #d10000" : "1px solid #ffe5e5",
-        borderRadius: "8px",
-        padding: "16px",
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        minHeight: 0,
-        boxShadow: dragOverTarget === assignee.name ? "0 4px 12px rgba(209,0,0,0.2)" : "0 2px 4px rgba(0,0,0,0.08)",
-        transition: "all 0.2s ease",
-        backgroundColor: dragOverTarget === assignee.name ? "#fff5f5" : "white"
+  const renderAssigneePanel = (assignee) => {
+    const panelKey = assignee.panelKey || assignee.id || assignee.name;
+    const shouldScroll = assignee.jobs.length > VISIBLE_JOBS_PER_PANEL;
+    return (
+      <div
+        key={panelKey}
+        style={{
+          background: "white",
+          border: dragOverTarget === assignee.name ? "3px solid #d10000" : "1px solid #ffe5e5",
+          borderRadius: "8px",
+          padding: "16px",
+          display: "flex",
+          flexDirection: "column",
+          height: PANEL_HEIGHT_PX,
+          minHeight: PANEL_HEIGHT_PX,
+          maxHeight: PANEL_HEIGHT_PX,
+          boxShadow: dragOverTarget === assignee.name ? "0 4px 12px rgba(209,0,0,0.2)" : "0 2px 4px rgba(0,0,0,0.08)",
+          transition: "all 0.2s ease",
+          backgroundColor: dragOverTarget === assignee.name ? "#fff5f5" : "white"
       }}
       onDragOver={handleDragOver}
       onDragEnter={(e) => handleDragEnterSection(assignee.name, e)}
@@ -541,9 +585,10 @@ export default function NextJobsPage() {
       </p>
       <div style={{
         flex: 1,
-        overflowY: "auto",
-        minHeight: 0,
-        paddingRight: "4px"
+        minHeight: JOB_LIST_MAX_HEIGHT_PX,
+        maxHeight: JOB_LIST_MAX_HEIGHT_PX,
+        overflowY: shouldScroll ? "auto" : "hidden",
+        paddingRight: shouldScroll ? "8px" : "4px"
       }}>
         {assignee.jobs.length === 0 ? (
           <p style={{
@@ -647,8 +692,9 @@ export default function NextJobsPage() {
             }} />
           )}
       </div>
-    </div>
-  );
+      </div>
+    );
+  };
 
   // ✅ Access check
   if (rosterLoading) {
@@ -838,14 +884,14 @@ export default function NextJobsPage() {
           <div style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-            gridTemplateRows: "repeat(2, minmax(0, 1fr))",
+            gridAutoRows: PANEL_HEIGHT_PX,
             gap: "16px",
             width: "100%"
           }}>
-            {assignedJobs.map(renderAssigneePanel)}
+            {assignedJobs.slice(0, 6).map(renderAssigneePanel)}
           </div>
 
-          {motDisplayList.length > 0 && (
+          {motPanelList.length > 0 && (
             <div>
               <h3 style={{
                 margin: "0 0 12px 0",
@@ -858,10 +904,10 @@ export default function NextJobsPage() {
               <div style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                gridAutoRows: "minmax(0, 1fr)",
+                gridAutoRows: PANEL_HEIGHT_PX,
                 gap: "16px"
               }}>
-                {assignedMotJobs.map(renderAssigneePanel)}
+                {assignedMotJobs.slice(0, 2).map(renderAssigneePanel)}
               </div>
             </div>
           )}
