@@ -5,8 +5,6 @@ import Layout from "@/components/Layout";
 import { useHrAttendanceData } from "@/hooks/useHrData";
 import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
 
-// TODO: Replace mock attendance/overtime data with real clocking + absence feeds.
-
 export default function HrAttendance() {
   const { data, isLoading, error } = useHrAttendanceData();
 
@@ -25,7 +23,7 @@ export default function HrAttendance() {
 
         {isLoading && (
           <SectionCard title="Loading attendance" subtitle="Fetching clocking data.">
-            <span style={{ color: "#6B7280" }}>Pulling mock attendance data from the placeholder endpoint.</span>
+            <span style={{ color: "#6B7280" }}>Pulling attendance data from Supabase.</span>
           </SectionCard>
         )}
 

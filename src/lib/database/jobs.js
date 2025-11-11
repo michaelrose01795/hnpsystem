@@ -1,6 +1,7 @@
 // ✅ Connected to Supabase (server-side)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/jobs.js
+import { notifyJobStatusChange } from "@/codex/notify-status-change";
 import { getDatabaseClient } from "@/lib/database/client";
 import { ensureUserIdForDisplayName } from "@/lib/users/devUsers";
 import dayjs from "dayjs";
@@ -1375,6 +1376,29 @@ export const updateJob = async (jobId, updates) => {
     if (Object.prototype.hasOwnProperty.call(updates, "vhc_required")) {
       payload.vhc_required = normalizeBooleanField(updates.vhc_required);
     }
+
+    const hasStatusUpdate = Object.prototype.hasOwnProperty.call(
+      updates,
+      "status"
+    );
+    let statusSnapshot = null;
+
+    if (hasStatusUpdate) {
+      const { data: currentStatusRow, error: statusFetchError } = await supabase
+        .from("jobs")
+        .select("job_number, status")
+        .eq("id", jobId)
+        .single();
+
+      if (statusFetchError) {
+        console.error(
+          "❌ Unable to read current status before job update:",
+          statusFetchError
+        );
+      } else {
+        statusSnapshot = currentStatusRow;
+      }
+    }
     
     const { data, error } = await supabase
       .from("jobs")
@@ -1389,6 +1413,30 @@ export const updateJob = async (jobId, updates) => {
     }
 
     console.log("✅ Job updated successfully:", data);
+
+    if (hasStatusUpdate && statusSnapshot && data) {
+      const jobNumberForNotification =
+        statusSnapshot.job_number ??
+        data.job_number ??
+        data.jobNumber ??
+        null;
+
+      if (jobNumberForNotification) {
+        try {
+          await notifyJobStatusChange({
+            jobNumber: jobNumberForNotification,
+            previousStatus: statusSnapshot.status,
+            newStatus: updates.status,
+          });
+        } catch (notifyError) {
+          console.error(
+            "❌ Failed to dispatch job status notification:",
+            notifyError
+          );
+        }
+      }
+    }
+
     return { success: true, data: formatJobData(data) };
   } catch (error) {
     console.error("❌ Exception updating job:", error);

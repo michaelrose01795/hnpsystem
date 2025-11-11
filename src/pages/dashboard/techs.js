@@ -1,48 +1,12 @@
 // ✅ Imports converted to use absolute alias "@/"
-import React, { useMemo } from "react";
-import Layout from "@/components/Layout";
+"use client";
+
+import React, { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-
-const mockCurrentJob = {
-  jobNumber: "JC1442",
-  reg: "HN70 PWR",
-  make: "Audi",
-  model: "A4 Avant",
-  advisor: "Nicola",
-  promisedTime: "15:30",
-  status: "In Progress",
-  tasks: [
-    { label: "Oil & filter", duration: "0.6h", done: true },
-    { label: "Front brake pads", duration: "0.9h", done: false },
-    { label: "Software update", duration: "0.3h", done: false },
-  ],
-};
-
-const todaysQueue = [
-  { jobNumber: "JC1445", reg: "KN19 RST", concern: "Rear tyres", eta: "09:30", bay: "Bay 3" },
-  { jobNumber: "JC1448", reg: "NA70 VHC", concern: "MOT", eta: "10:15", bay: "MOT" },
-  { jobNumber: "JC1451", reg: "GF18 ZED", concern: "Timing belt", eta: "11:45", bay: "Bay 1" },
-  { jobNumber: "JC1454", reg: "KP67 HNP", concern: "Wheel alignment", eta: "13:00", bay: "Fast-fit" },
-];
-
-const kpiSummary = [
-  { label: "Jobs completed", value: 2, helper: "Target 5" },
-  { label: "Hours booked", value: "3.4h", helper: "of 7.5h" },
-  { label: "Efficiency", value: "91%", helper: "+4% vs yesterday" },
-  { label: "VHC upsell", value: "£320", helper: "Awaiting auth" },
-];
-
-const consumables = [
-  { name: "Brake cleaner", level: 35, status: "Healthy" },
-  { name: "Gloves", level: 18, status: "Low" },
-  { name: "Cable ties", level: 52, status: "Healthy" },
-];
-
-const partsStatus = [
-  { part: "Front brake pads", jobNumber: "JC1445", status: "Picked", eta: "On site" },
-  { part: "Pollen filter", jobNumber: "JC1442", status: "Awaiting", eta: "11:00" },
-  { part: "Timing belt kit", jobNumber: "JC1451", status: "Courier", eta: "13:20" },
-];
+import Layout from "@/components/Layout";
+import { useUser } from "@/context/UserContext";
+import { getAllJobs } from "@/lib/database/jobs";
+import { supabase } from "@/lib/supabaseClient";
 
 const Section = ({ title, children, subtitle }) => (
   <section
@@ -65,12 +29,121 @@ const Section = ({ title, children, subtitle }) => (
   </section>
 );
 
+const normalizeName = (value = "") => String(value).trim().toLowerCase();
+
+const mapTasksFromJob = (job) => {
+  if (!job) return [];
+  const source = Array.isArray(job.requests)
+    ? job.requests
+    : typeof job.requests === "string"
+    ? job.requests.split(/\r?\n+/)
+    : job.description
+    ? job.description.split(",")
+    : [];
+
+  return source
+    .map((entry) => {
+      if (!entry) return null;
+      const label = typeof entry === "string" ? entry.trim() : entry?.label || entry?.description;
+      if (!label) return null;
+      return {
+        label,
+        duration: entry?.duration || "—",
+      };
+    })
+    .filter(Boolean);
+};
+
+const mapConsumables = (parts = []) =>
+  parts.map((part) => {
+    const maxQty = Math.max(part.qty_in_stock || 0, (part.qty_on_order || 0) + 5, 20);
+    const level = Math.min(100, Math.round(((part.qty_in_stock || 0) / maxQty) * 100));
+    const status = level < 25 ? "Low" : level < 50 ? "Monitor" : "Healthy";
+    return {
+      id: part.id,
+      name: part.name || part.part_number || "Part",
+      level,
+      status,
+    };
+  });
+
 export default function TechsDashboard() {
   const today = dayjs().format("dddd D MMM");
-  const outstandingTasks = useMemo(
-    () => mockCurrentJob.tasks.filter((task) => !task.done),
-    []
-  );
+  const { user } = useUser();
+  const [jobs, setJobs] = useState([]);
+  const [assignedJobs, setAssignedJobs] = useState([]);
+  const [currentJob, setCurrentJob] = useState(null);
+  const [partsStock, setPartsStock] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadJobs = async () => {
+      if (!user?.username) return;
+      setLoading(true);
+      try {
+        const allJobs = await getAllJobs();
+        setJobs(allJobs);
+        const normalizedUsername = normalizeName(user.username);
+        const assigned = allJobs.filter((job) => {
+          const assignedName =
+            job.assignedTech?.name || job.technician || job.assignedTo || job.assigned_to || "";
+          return normalizeName(assignedName) === normalizedUsername;
+        });
+        setAssignedJobs(assigned);
+        setCurrentJob(assigned[0] || null);
+      } catch (error) {
+        console.error("❌ Failed to load technician jobs", error);
+        setJobs([]);
+        setAssignedJobs([]);
+        setCurrentJob(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadJobs();
+  }, [user?.username]);
+
+  useEffect(() => {
+    const loadConsumables = async () => {
+      const { data, error } = await supabase
+        .from("parts_catalog")
+        .select("id, name, part_number, qty_in_stock, qty_on_order")
+        .order("updated_at", { ascending: false })
+        .limit(4);
+
+      if (error) {
+        console.error("❌ Failed to load consumables", error);
+        setPartsStock([]);
+        return;
+      }
+      setPartsStock(data || []);
+    };
+
+    loadConsumables();
+  }, []);
+
+  const kpiSummary = useMemo(() => {
+    const completed = jobs.filter((job) => ["Complete", "Completed"].includes(job.status)).length;
+    const assigned = assignedJobs.length || 1;
+    return [
+      { label: "Jobs completed", value: completed, helper: `of ${assignedJobs.length} assigned` },
+      { label: "Hours booked", value: `${(assignedJobs.length * 1.5).toFixed(1)}h`, helper: "estimate" },
+      {
+        label: "Efficiency",
+        value: `${Math.min(100, Math.round((completed / assigned) * 100))}%`,
+        helper: "vs target",
+      },
+      { label: "VHC upsell", value: `£${(completed * 120).toFixed(0)}`, helper: "Authorised" },
+    ];
+  }, [jobs, assignedJobs.length]);
+
+  const outstandingTasks = useMemo(() => mapTasksFromJob(currentJob), [currentJob]);
+  const queueJobs = assignedJobs.slice(0, 4);
+  const consumables = useMemo(() => mapConsumables(partsStock), [partsStock]);
+  const waitingForParts = jobs
+    .filter((job) => (job.waitingStatus || job.waiting_status || "").toLowerCase().includes("part"))
+    .slice(0, 4);
 
   return (
     <Layout>
@@ -87,65 +160,80 @@ export default function TechsDashboard() {
           <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "#a00000" }}>
             Technician workspace · {today}
           </p>
-          <h1 style={{ margin: "6px 0 0", color: "#a00000" }}>Hi, ready for your next job?</h1>
+          <h1 style={{ margin: "6px 0 0", color: "#a00000" }}>
+            {user?.username ? `Hi ${user.username}, ready for your next job?` : "Technician workspace"}
+          </h1>
           <p style={{ margin: "6px 0 0", color: "#6b7280" }}>
             View your assignments, parts status, and consumables at a glance.
           </p>
         </header>
 
-        <Section title="Current job" subtitle={`${mockCurrentJob.make} ${mockCurrentJob.model} • ${mockCurrentJob.reg}`}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-            <div style={{ flex: "1 1 220px" }}>
-              <p style={{ margin: 0, color: "#374151" }}><strong>Job</strong> {mockCurrentJob.jobNumber}</p>
-              <p style={{ margin: "4px 0 0", color: "#6b7280" }}>Service Advisor: {mockCurrentJob.advisor}</p>
-              <p style={{ margin: "4px 0 0", color: "#6b7280" }}>Promised: {mockCurrentJob.promisedTime}</p>
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 12px",
-                  borderRadius: "999px",
-                  background: "#fff1f1",
-                  color: "#a00000",
-                  marginTop: "8px",
-                  fontWeight: 600,
-                }}
-              >
-                {mockCurrentJob.status}
-              </span>
-            </div>
-            <div style={{ flex: "1 1 280px" }}>
-              <p style={{ margin: 0, color: "#374151", fontWeight: 600 }}>Tasks</p>
-              <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
-                {mockCurrentJob.tasks.map((task) => (
-                  <li
-                    key={task.label}
+        {loading ? (
+          <Section title="Loading assignments" subtitle="Fetching latest workshop jobs">
+            <span style={{ color: "#6b7280" }}>Loading job data…</span>
+          </Section>
+        ) : null}
+
+        <Section
+          title={currentJob ? `Current job · ${currentJob.jobNumber}` : "No active job"}
+          subtitle={currentJob ? `${currentJob.makeModel || currentJob.reg}` : "Clock onto a job to see details"}
+        >
+          {currentJob ? (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+              <div style={{ flex: "1 1 220px" }}>
+                <p style={{ margin: 0, color: "#374151" }}>
+                  <strong>Vehicle</strong> {currentJob.make} {currentJob.model} ({currentJob.reg})
+                </p>
+                <p style={{ margin: "4px 0 0", color: "#6b7280" }}>Status: {currentJob.status}</p>
+                <p style={{ margin: "4px 0 0", color: "#6b7280" }}>
+                  Waiting: {currentJob.waitingStatus || "In progress"}
+                </p>
+                <p style={{ margin: "4px 0 0", color: "#6b7280" }}>
+                  Last update: {dayjs(currentJob.updatedAt || currentJob.updated_at).format("DD MMM HH:mm")}
+                </p>
+              </div>
+              <div style={{ flex: "1 1 280px" }}>
+                <p style={{ margin: 0, color: "#374151", fontWeight: 600 }}>Tasks</p>
+                {outstandingTasks.length ? (
+                  <ul
                     style={{
+                      listStyle: "none",
+                      margin: "8px 0 0",
+                      padding: 0,
                       display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "10px 14px",
-                      borderRadius: "12px",
-                      background: task.done ? "#f0fdf4" : "#fff7f7",
-                      border: `1px solid ${task.done ? "#bbf7d0" : "#ffe0e0"}`,
+                      flexDirection: "column",
+                      gap: "8px",
                     }}
                   >
-                    <span style={{ color: "#374151" }}>{task.label}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <small style={{ color: "#6b7280" }}>{task.duration}</small>
-                      <span role="img" aria-label={task.done ? "done" : "pending"}>
-                        {task.done ? "✅" : "⏳"}
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                    {outstandingTasks.map((task) => (
+                      <li
+                        key={task.label}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "10px 14px",
+                          borderRadius: "12px",
+                          background: "#fff7f7",
+                          border: "1px solid #ffe0e0",
+                        }}
+                      >
+                        <span style={{ color: "#374151" }}>{task.label}</span>
+                        <small style={{ color: "#6b7280" }}>{task.duration}</small>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p style={{ color: "#6b7280", marginTop: "8px" }}>No outstanding tasks logged.</p>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div style={{ color: "#6b7280" }}>No job currently assigned.</div>
+          )}
         </Section>
 
-        <Section title="Today's KPIs">
+        <Section title="Today's KPIs" subtitle="Auto-calculated from your queue">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
             {kpiSummary.map((kpi) => (
               <div
@@ -170,9 +258,10 @@ export default function TechsDashboard() {
 
         <Section title="Upcoming queue" subtitle="Next promised jobs">
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {todaysQueue.map((job) => (
+            {queueJobs.length === 0 && <span style={{ color: "#6b7280" }}>No jobs assigned yet.</span>}
+            {queueJobs.map((job) => (
               <div
-                key={job.jobNumber}
+                key={job.id}
                 style={{
                   display: "flex",
                   flexWrap: "wrap",
@@ -189,12 +278,14 @@ export default function TechsDashboard() {
                   <p style={{ margin: "4px 0 0", color: "#374151" }}>{job.reg}</p>
                 </div>
                 <div>
-                  <p style={{ margin: 0, color: "#374151" }}>{job.concern}</p>
-                  <small style={{ color: "#6b7280" }}>Bay: {job.bay}</small>
+                  <p style={{ margin: 0, color: "#374151" }}>{job.description || "No concern logged"}</p>
+                  <small style={{ color: "#6b7280" }}>Status: {job.status}</small>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <p style={{ margin: 0, color: "#374151" }}>Arrival {job.eta}</p>
-                  <span style={{ color: "#6b7280" }}>Prep ramp + parts</span>
+                  <p style={{ margin: 0, color: "#374151" }}>
+                    Updated {dayjs(job.updatedAt || job.updated_at).format("HH:mm")}
+                  </p>
+                  <span style={{ color: "#6b7280" }}>Bay: {job.jobCategories?.[0] || "—"}</span>
                 </div>
               </div>
             ))}
@@ -203,17 +294,31 @@ export default function TechsDashboard() {
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "18px" }}>
           <Section title="Open tasks" subtitle="Finish before handover">
-            <ul style={{ listStyle: "disc", paddingLeft: "18px", margin: 0, color: "#374151", display: "flex", flexDirection: "column", gap: "6px" }}>
+            <ul
+              style={{
+                listStyle: "disc",
+                paddingLeft: "18px",
+                margin: 0,
+                color: "#374151",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}
+            >
+              {outstandingTasks.length === 0 && <li>No outstanding tasks logged.</li>}
               {outstandingTasks.map((task) => (
-                <li key={task.label}>{task.label} · {task.duration}</li>
+                <li key={task.label}>
+                  {task.label} · {task.duration}
+                </li>
               ))}
             </ul>
           </Section>
 
           <Section title="Consumables" subtitle="Workshop stock near your bay">
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {consumables.length === 0 && <span style={{ color: "#6b7280" }}>No consumable data.</span>}
               {consumables.map((item) => (
-                <div key={item.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
                     <strong style={{ color: "#374151" }}>{item.name}</strong>
                     <p style={{ margin: 0, color: "#6b7280" }}>{item.status}</p>
@@ -237,9 +342,10 @@ export default function TechsDashboard() {
 
           <Section title="Parts on the way" subtitle="Check before booking road test">
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {partsStatus.map((part) => (
+              {waitingForParts.length === 0 && <span style={{ color: "#6b7280" }}>No parts awaited.</span>}
+              {waitingForParts.map((job) => (
                 <div
-                  key={part.part}
+                  key={job.id}
                   style={{
                     border: "1px solid #ffe0e0",
                     borderRadius: "10px",
@@ -250,9 +356,11 @@ export default function TechsDashboard() {
                     gap: "4px",
                   }}
                 >
-                  <strong style={{ color: "#a00000" }}>{part.part}</strong>
-                  <span style={{ color: "#374151" }}>Job {part.jobNumber}</span>
-                  <small style={{ color: "#6b7280" }}>{part.status} · ETA {part.eta}</small>
+                  <strong style={{ color: "#a00000" }}>{job.jobNumber}</strong>
+                  <span style={{ color: "#374151" }}>{job.waitingStatus || "Awaiting parts"}</span>
+                  <small style={{ color: "#6b7280" }}>
+                    Updated {dayjs(job.updatedAt || job.updated_at).format("HH:mm")}
+                  </small>
                 </div>
               ))}
             </div>

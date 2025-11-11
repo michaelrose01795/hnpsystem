@@ -1,13 +1,12 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/customers/components/VHCSummaryList.js
 import React from "react";
-import { customerVehicles } from "@/customers/data/placeholders";
 
-const vehicleLookup = Object.fromEntries(
-  customerVehicles.map((vehicle) => [vehicle.id, vehicle])
-);
-
-export default function VHCSummaryList({ summaries = [] }) {
+export default function VHCSummaryList({ summaries = [], vehicles = [] }) {
+  const vehicleLookup = React.useMemo(
+    () => Object.fromEntries(vehicles.map((vehicle) => [vehicle.id || vehicle.reg, vehicle])),
+    [vehicles]
+  );
   return (
     <section className="rounded-3xl border border-[#ffe0e0] bg-white p-5 shadow-[0_12px_34px_rgba(209,0,0,0.08)]">
       <header className="flex items-center justify-between">

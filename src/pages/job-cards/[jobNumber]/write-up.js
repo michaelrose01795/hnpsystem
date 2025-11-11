@@ -12,7 +12,7 @@ import {
   getJobByNumber
 } from "@/lib/database/jobs";
 import { useUser } from "@/context/UserContext";
-import { usersByRole } from "@/config/users";
+import { useRoster } from "@/context/RosterContext";
 
 // ✅ Helper ensures every paragraph is prefixed with a bullet dash
 const formatNoteValue = (value = "") => {
@@ -80,6 +80,7 @@ export default function WriteUpPage() {
   const router = useRouter(); // initialise router for navigation actions
   const { jobNumber } = router.query; // read job number from URL parameters
   const { user } = useUser(); // get the logged in user for permissions
+  const { usersByRole, isLoading: rosterLoading } = useRoster();
 
   const [jobData, setJobData] = useState(null);
   const [requestsSummary, setRequestsSummary] = useState([]);
@@ -106,8 +107,18 @@ export default function WriteUpPage() {
   });
 
   const username = user?.username;
-  const techsList = usersByRole["Techs"] || [];
+  const techsList = usersByRole?.["Techs"] || [];
+  // ⚠️ Mock data found — replacing with Supabase query
+  // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
   const isTech = techsList.includes(username);
+
+  if (rosterLoading) {
+    return (
+      <Layout>
+        <div style={{ padding: "24px", color: "#6B7280" }}>Loading roster…</div>
+      </Layout>
+    );
+  }
 
   // ✅ Fetch job + write-up data whenever the job number changes
   useEffect(() => {

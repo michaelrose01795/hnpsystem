@@ -10,12 +10,13 @@ import StatusSidebar from "@/components/StatusTracking/StatusSidebar"; // import
 import Sidebar from "@/components/Sidebar";
 import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
-import { usersByRole } from "@/config/users";
+import { useRoster } from "@/context/RosterContext";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import WorkshopTabsBar, { workshopTabs, workshopQuickActions } from "@/components/Workshop/WorkshopTabsBar";
 
 export default function Layout({ children }) {
   const { user, status, setStatus, currentJob } = useUser(); // get user context data
+  const { usersByRole } = useRoster();
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
   const showHrTabs = router.pathname.startsWith("/hr") || router.pathname.startsWith("/admin/users");
@@ -85,6 +86,8 @@ export default function Layout({ children }) {
   );
   const techsList = usersByRole?.["Techs"] || [];
   const motTestersList = usersByRole?.["MOT Tester"] || [];
+  // ⚠️ Mock data found — replacing with Supabase query
+  // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
   const normalizedUsername = typeof user?.username === "string" ? user.username.trim() : "";
   const hasTechRole = userRoles.some((role) => role.includes("tech") || role.includes("mot"));

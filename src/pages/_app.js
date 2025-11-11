@@ -7,6 +7,7 @@ import { SessionProvider } from "next-auth/react";
 import { UserProvider, useUser } from "@/context/UserContext";
 import { JobsProvider, useJobs } from "@/context/JobsContext";
 import { ClockingProvider } from "@/context/ClockingContext"; // ✅ Added
+import { RosterProvider } from "@/context/RosterContext";
 import { getAllJobs } from "@/lib/database/jobs";
 
 function AppWrapper({ Component, pageProps }) {
@@ -33,7 +34,9 @@ export default function MyApp({ Component, pageProps }) {
       <UserProvider>
         <JobsProvider>
           <ClockingProvider> {/* ✅ Wrapped here */}
-            <AppWrapper Component={Component} pageProps={pageProps} />
+            <RosterProvider>
+              <AppWrapper Component={Component} pageProps={pageProps} />
+            </RosterProvider>
           </ClockingProvider>
         </JobsProvider>
       </UserProvider>

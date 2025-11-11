@@ -5,7 +5,7 @@
 import React, { useState, useMemo, useEffect } from "react"; // Core React hooks
 import Layout from "@/components/Layout"; // Main layout wrapper
 import { useUser } from "@/context/UserContext"; // Logged-in user context
-import { usersByRole } from "@/config/users"; // Role config
+import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router"; // Next.js router for navigation
 import { 
   getAllJobs, 
@@ -16,17 +16,6 @@ import {
 import { getTechnicianUsers, getMotTesterUsers } from "@/lib/database/users";
 import { normalizeDisplayName } from "@/utils/nameUtils";
 
-// Build tech list dynamically from usersByRole
-const staticTechsList = (usersByRole["Techs"] || []).map((name, index) => ({
-  id: index + 1,
-  name,
-}));
-
-const motTestersList = (usersByRole["MOT Tester"] || []).map((name, index) => ({
-  id: `mot-${index + 1}`,
-  name,
-}));
-
 const isAllowedTechRole = (role) => {
   if (!role) return false;
   const normalized = String(role).toLowerCase();
@@ -36,6 +25,7 @@ const isAllowedTechRole = (role) => {
 export default function NextJobsPage() {
   // ✅ Hooks
   const { user } = useUser(); // Current logged-in user
+  const { usersByRole, isLoading: rosterLoading } = useRoster();
   const router = useRouter(); // Next.js router for navigation
   const [jobs, setJobs] = useState([]); // Jobs from database
   const [dbTechnicians, setDbTechnicians] = useState([]);
@@ -52,11 +42,11 @@ export default function NextJobsPage() {
   // ✅ Manager access check
   const username = user?.username;
   const allowedUsers = [
-    ...(usersByRole["Workshop Manager"] || []),
-    ...(usersByRole["Service Manager"] || []),
-    ...(usersByRole["After Sales Director"] || []),
-    ...(usersByRole["After Sales Manager"] || []),
-    ...(usersByRole["Admin Manager"] || []),
+    ...(usersByRole?.["Workshop Manager"] || []),
+    ...(usersByRole?.["Service Manager"] || []),
+    ...(usersByRole?.["After Sales Director"] || []),
+    ...(usersByRole?.["After Sales Manager"] || []),
+    ...(usersByRole?.["Admin Manager"] || []),
   ];
   const allowedRoles = new Set([
     "WORKSHOP MANAGER",
@@ -68,9 +58,29 @@ export default function NextJobsPage() {
   const normalizedRoles = (user?.roles || []).map((role) =>
     typeof role === "string" ? role.toUpperCase() : ""
   );
+  // ⚠️ Mock data found — replacing with Supabase query
+  // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
   const hasAccess =
     allowedUsers.includes(username) ||
     normalizedRoles.some((role) => allowedRoles.has(role));
+
+  const fallbackTechs = useMemo(
+    () =>
+      (usersByRole?.["Techs"] || []).map((name, index) => ({
+        id: `tech-${index + 1}`,
+        name,
+      })),
+    [usersByRole]
+  );
+
+  const fallbackMot = useMemo(
+    () =>
+      (usersByRole?.["MOT Tester"] || []).map((name, index) => ({
+        id: `mot-${index + 1}`,
+        name,
+      })),
+    [usersByRole]
+  );
 
   // ✅ Fetch jobs from Supabase on component mount
   useEffect(() => {
@@ -109,7 +119,7 @@ export default function NextJobsPage() {
     const map = new Map();
 
     const sourceList =
-      dbTechnicians.length > 0 ? dbTechnicians : staticTechsList;
+      dbTechnicians.length > 0 ? dbTechnicians : fallbackTechs;
 
     sourceList.forEach((tech, index) => {
       const label =
@@ -162,8 +172,8 @@ export default function NextJobsPage() {
 
   const motDisplayList = useMemo(() => {
     if (dbMotTesters.length > 0) return dbMotTesters;
-    return motTestersList;
-  }, [dbMotTesters]);
+    return fallbackMot;
+  }, [dbMotTesters, fallbackMot]);
 
   const assignableStaffList = useMemo(() => {
     const map = new Map();
@@ -641,6 +651,16 @@ export default function NextJobsPage() {
   );
 
   // ✅ Access check
+  if (rosterLoading) {
+    return (
+      <Layout>
+        <div style={{ padding: "40px", textAlign: "center", color: "#6B7280" }}>
+          Loading roster…
+        </div>
+      </Layout>
+    );
+  }
+
   if (!hasAccess) {
     return (
       <Layout>

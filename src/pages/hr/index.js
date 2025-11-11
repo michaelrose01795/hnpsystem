@@ -6,8 +6,6 @@ import Layout from "@/components/Layout";
 import { useHrDashboardData } from "@/hooks/useHrData";
 import { MetricCard, SectionCard, StatusTag } from "@/components/HR/MetricCard";
 
-// TODO: Replace useHrMockData with real HR dashboard aggregation from the database.
-
 export default function HrDashboard() {
   const { data, isLoading, error } = useHrDashboardData();
 

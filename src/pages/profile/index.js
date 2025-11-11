@@ -7,7 +7,6 @@ import { useUser } from "@/context/UserContext"; // Keycloak user context
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook
 import { SectionCard, StatusTag, MetricCard } from "@/components/HR/MetricCard"; // HR UI components
 import OvertimeEntriesEditor from "@/components/HR/OvertimeEntriesEditor"; // overtime editor widget
-import { confirmationUsers, getConfirmationUser } from "@/config/users"; // static user config
 
 function formatDate(value) {
   if (!value) return "—"; // guard empty values
@@ -56,27 +55,16 @@ export function ProfilePage({
     ); // locate HR profile by keycloak/email/name
   }, [activeUserName, employeeDirectory]);
 
-  const fallbackProfile = useMemo(() => {
-    if (hrProfile || !activeUserName) return null; // only build fallback when HR data missing
-    return buildPlaceholderProfile(activeUserName); // create placeholder profile view
-  }, [activeUserName, hrProfile]);
-
-  const profile = hrProfile || fallbackProfile; // prefer live profile when available
+  // ⚠️ Mock data found — replacing with Supabase query
+  // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
+  const profile = hrProfile;
 
   const aggregatedStats = useMemo(() => {
     if (!profile) return null; // bail if profile missing
 
-    const attendanceSource = hrProfile
-      ? attendanceLogs.filter((entry) => entry.employeeId === profile.id)
-      : fallbackProfile?.attendanceRecords || []; // filter attendance for user
-
-    const overtimeSource = hrProfile
-      ? overtimeSummaries.find((entry) => entry.employee === profile.name) ?? null
-      : fallbackProfile?.overtimeSummary ?? null; // pick overtime summary
-
-    const leaveSource = hrProfile
-      ? leaveBalances.find((entry) => entry.employee === profile.name) ?? null
-      : fallbackProfile?.leaveSummary ?? null; // pick leave stats
+    const attendanceSource = attendanceLogs.filter((entry) => entry.employeeId === profile.id);
+    const overtimeSource = overtimeSummaries.find((entry) => entry.employee === profile.name) ?? null;
+    const leaveSource = leaveBalances.find((entry) => entry.employee === profile.name) ?? null;
 
     const totalHours = attendanceSource.reduce(
       (sum, entry) => sum + Number(entry.totalHours ?? 0),
@@ -155,7 +143,7 @@ export function ProfilePage({
       {isLoading && (
         <SectionCard title="Loading profile" subtitle="Fetching HR records for this account.">
           <span style={{ color: "#6B7280" }}>
-            Retrieving placeholder data from the mock HR service…
+            Retrieving the latest profile data from Supabase…
           </span>
         </SectionCard>
       )}
@@ -344,44 +332,6 @@ export function ProfilePage({
 export default function ProfilePageWrapper(props) {
   return <ProfilePage {...props} />; // default export wrapper for Next.js routing
 }
-
-function buildPlaceholderProfile(username) {
-  const confirmationUser = getConfirmationUser(username); // check if we have a confirmation stub
-  const defaultProfile = {
-    id: `EMP-${username}`,
-    name: username,
-    jobTitle: "Technician",
-    department: "Workshop",
-    employmentType: "Full-time",
-    hourlyRate: 22.5,
-    emergencyContact: "Not provided",
-    address: "No address on file",
-    documents: [],
-  }; // fallback stub
-
-  if (!confirmationUser) {
-    return {
-      ...defaultProfile,
-      attendanceRecords: [],
-      overtimeSummary: null,
-      leaveSummary: null,
-    }; // generic placeholder when user not configured
-  }
-
-  return {
-    ...defaultProfile,
-    name: confirmationUser.name,
-    jobTitle: confirmationUser.role,
-    department: confirmationUser.department ?? defaultProfile.department,
-    hourlyRate: confirmationUser.hourlyRate ?? defaultProfile.hourlyRate,
-    attendanceRecords: confirmationUser.attendanceRecords ?? [],
-    overtimeSummary: confirmationUser.overtimeSummary ?? null,
-    leaveSummary: confirmationUser.leaveSummary ?? null,
-  }; // confirmation stub enriched with known data
-}
-
-export { confirmationUsers };
-
 const buttonStyleSecondary = {
   padding: "8px 14px",
   borderRadius: "10px",

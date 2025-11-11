@@ -6,7 +6,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
-import { usersByRole } from "@/config/users";
+import { useRoster } from "@/context/RosterContext";
 import { getAllJobs } from "@/lib/database/jobs";
 import { getClockingStatus } from "@/lib/database/clocking";
 import JobCardModal from "@/components/JobCards/JobCardModal"; // Import Start Job modal
@@ -47,6 +47,7 @@ const formatCreatedAt = (value) => {
 export default function MyJobsPage() {
   const router = useRouter();
   const { user } = useUser();
+  const { usersByRole, isLoading: rosterLoading } = useRoster();
   
   const [jobs, setJobs] = useState([]);
   const [myJobs, setMyJobs] = useState([]);
@@ -60,8 +61,10 @@ export default function MyJobsPage() {
   const [prefilledJobNumber, setPrefilledJobNumber] = useState(""); // Prefill job number in modal
 
   const username = user?.username;
-  const techsList = usersByRole["Techs"] || [];
-  const motTestersList = usersByRole["MOT Tester"] || [];
+  const techsList = usersByRole?.["Techs"] || [];
+  const motTestersList = usersByRole?.["MOT Tester"] || [];
+  // ⚠️ Mock data found — replacing with Supabase query
+  // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
 
   // Some contexts store a single `role`, others expose an array of `roles`
@@ -77,6 +80,16 @@ export default function MyJobsPage() {
   });
   const hasTechnicianAccess =
     (username && allowedTechNames.has(username)) || hasRoleAccess;
+
+  if (rosterLoading) {
+    return (
+      <Layout>
+        <div style={{ padding: "40px", textAlign: "center", color: "#6B7280" }}>
+          Loading roster…
+        </div>
+      </Layout>
+    );
+  }
 
   // ✅ Fetch jobs from database
   useEffect(() => {

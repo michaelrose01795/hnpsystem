@@ -4,87 +4,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { SERVICE_STATUS_FLOW } from '@/lib/status/statusFlow';
 import JobProgressTracker from '@/components/StatusTracking/JobProgressTracker';
-
-const MOCK_STATUS_TEMPLATE = [
-  {
-    status: 'booked',
-    hoursAgo: 48,
-    durationMinutes: 30,
-    description: 'Online booking confirmed'
-  },
-  {
-    status: 'customer_arrived',
-    hoursAgo: 30,
-    durationMinutes: 15,
-    description: 'Vehicle checked in at reception'
-  },
-  {
-    status: 'job_accepted',
-    hoursAgo: 29,
-    durationMinutes: 20,
-    description: 'Service team validated work required'
-  },
-  {
-    status: 'assigned_to_tech',
-    hoursAgo: 6,
-    durationMinutes: 10,
-    description: 'Workshop allocated technician'
-  },
-  {
-    status: 'in_progress',
-    hoursAgo: 3,
-    durationMinutes: 90,
-    description: 'Technician actively working on vehicle'
-  },
-  {
-    status: 'waiting_for_parts',
-    hoursAgo: 1.5,
-    durationMinutes: 40,
-    description: 'Paused awaiting parts delivery'
-  },
-  {
-    status: 'parts_arrived',
-    hoursAgo: 1.1,
-    durationMinutes: 12,
-    description: 'Parts team confirmed availability'
-  },
-  {
-    status: 'vhc_in_progress',
-    hoursAgo: 0.9,
-    durationMinutes: 35,
-    description: 'Technician capturing VHC items'
-  },
-  {
-    status: 'vhc_sent_to_service',
-    hoursAgo: 0.7,
-    durationMinutes: 18,
-    description: 'Service advisors reviewing upsell'
-  },
-  {
-    status: 'vhc_priced',
-    hoursAgo: 0.6,
-    durationMinutes: 14,
-    description: 'Estimator priced VHC remedials'
-  },
-  {
-    status: 'vhc_sent_to_customer',
-    hoursAgo: 0.45,
-    durationMinutes: 6,
-    description: 'Customer notified via SMS and email'
-  },
-  {
-    status: 'vhc_approved',
-    hoursAgo: 0.35,
-    durationMinutes: 10,
-    description: 'Customer approved recommended work'
-  },
-  {
-    status: 'work_complete',
-    hoursAgo: 0.15,
-    durationMinutes: 25,
-    description: 'Technician finished additional repairs'
-  }
-];
+// ⚠️ Mock data found — replacing with Supabase query
+// ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 
 // This is the main status sidebar that shows on all pages
 // It displays the complete process flow with current status highlighted
@@ -104,7 +25,6 @@ export default function StatusSidebar({
   const [currentTimer, setCurrentTimer] = useState(0); // Current session time
   const [searchInput, setSearchInput] = useState(''); // Search input state
   const [searchError, setSearchError] = useState(''); // Error message state
-  const [mockCurrentStatus, setMockCurrentStatus] = useState(null);
   const safeViewportWidth = typeof viewportWidth === 'number' ? viewportWidth : 1440;
   const compactMode = isCompact || safeViewportWidth <= 1100;
   const panelWidth = compactMode ? Math.min(Math.max(safeViewportWidth - 32, 280), 420) : 400;
@@ -116,16 +36,15 @@ export default function StatusSidebar({
       setStatusHistory([]);
       setTotalTimeSpent(0);
       setCurrentTimer(0);
-      setMockCurrentStatus(null);
       return;
     }
     
     const loadHistory = async () => {
       const fetched = await fetchStatusHistory(jobId);
       if (!fetched) {
-        applyMockStatusData(jobId);
-      } else {
-        setMockCurrentStatus(null);
+        setStatusHistory([]);
+        setTotalTimeSpent(0);
+        setSearchError('No status history available yet');
       }
     };
 
@@ -153,26 +72,6 @@ export default function StatusSidebar({
       setSearchError('Failed to load job data');
     }
     return false;
-  };
-
-  const applyMockStatusData = (jobNumber) => {
-    if (!jobNumber) return;
-    const now = Date.now();
-    const history = MOCK_STATUS_TEMPLATE.map((entry, index) => {
-      const timestamp = new Date(now - (entry.hoursAgo * 60 + index * 7) * 60 * 1000);
-      return {
-        status: entry.status,
-        timestamp: timestamp.toISOString(),
-        duration: entry.durationMinutes * 60,
-        userId: 'demo.user',
-        description: `${entry.description} for job ${jobNumber}`
-      };
-    });
-    const totalSeconds = history.reduce((sum, h) => sum + (h.duration || 0), 0);
-    setStatusHistory(history);
-    setTotalTimeSpent(Math.max(1, Math.round(totalSeconds / 60)));
-    setMockCurrentStatus(history[history.length - 1]?.status || null);
-    setSearchError('');
   };
 
   // Handle job search
@@ -222,7 +121,7 @@ export default function StatusSidebar({
   useEffect(() => {
     if (!jobId) return; // Don't run timer if no job selected
     
-    const statusId = (mockCurrentStatus || currentStatus)?.toUpperCase();
+    const statusId = currentStatus?.toUpperCase();
     const currentStatusObj = SERVICE_STATUS_FLOW[statusId];
     
     // Only run timer if status doesn't pause time
@@ -235,9 +134,9 @@ export default function StatusSidebar({
     } else {
       setCurrentTimer(0); // Reset timer when paused
     }
-  }, [currentStatus, mockCurrentStatus, jobId]);
+  }, [currentStatus, jobId]);
 
-  const currentStatusForDisplay = mockCurrentStatus || currentStatus;
+  const currentStatusForDisplay = currentStatus;
 
   const timelineStatuses = useMemo(() => {
     const toTimelineEntry = (entry, index = 0) => {
@@ -259,30 +158,6 @@ export default function StatusSidebar({
     const normalizedHistory = (statusHistory || []).map((entry, index) =>
       toTimelineEntry(entry, index)
     );
-
-    const seenStatuses = new Set(
-      normalizedHistory.map((entry) => entry.status?.toLowerCase())
-    );
-
-    // TODO: remove mock timeline data when live history is reliable everywhere
-    const mockEntries = MOCK_STATUS_TEMPLATE.map((template, index) => {
-      const hoursAgoMs = (template.hoursAgo || 0) * 60 * 60 * 1000;
-      const timestamp = new Date(Date.now() - hoursAgoMs - index * 120000);
-      return toTimelineEntry(
-        {
-          status: template.status,
-          timestamp: timestamp.toISOString(),
-        },
-        index
-      );
-    });
-
-    mockEntries.forEach((entry) => {
-      const key = entry.status?.toLowerCase();
-      if (!key || seenStatuses.has(key)) return;
-      normalizedHistory.push(entry);
-      seenStatuses.add(key);
-    });
 
     return normalizedHistory.sort(
       (a, b) => new Date(a.timestamp) - new Date(b.timestamp)

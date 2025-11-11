@@ -4,45 +4,13 @@ import React from "react"; // React runtime for the page component
 import Layout from "@/components/Layout"; // shared layout shell with navigation
 import { useHrOperationsData } from "@/hooks/useHrData"; // aggregated HR hook backed by Supabase
 import { SectionCard, StatusTag } from "@/components/HR/MetricCard"; // shared HR UI components
-
-// TODO: Replace placeholder performance data with live Supabase-backed scores before release.
-// TODO: Connect review scheduling/actions to the HR reviews tables once available.
-const placeholderReviews = [
-  {
-    id: "REV-1",
-    employee: "Sarah Thompson",
-    period: "Q1 2024",
-    overall: "Exceeds Expectations",
-    ratings: {
-      attendance: 5,
-      productivity: 5,
-      quality: 4,
-      teamwork: 5,
-    },
-    reviewer: "Lewis Carter",
-    nextReview: "2024-06-30",
-    developmentFocus: "Mentor new workshop technicians.",
-  },
-  {
-    id: "REV-2",
-    employee: "Michael Green",
-    period: "Q1 2024",
-    overall: "Meets Expectations",
-    ratings: {
-      attendance: 4,
-      productivity: 4,
-      quality: 3,
-      teamwork: 4,
-    },
-    reviewer: "Sarah Thompson",
-    nextReview: "2024-06-12",
-    developmentFocus: "Upskill on EV diagnostics.",
-  },
-];
+// ⚠️ Mock data found — replacing with Supabase query
+// ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 
 export default function HrPerformanceAppraisals() {
   const { data, isLoading, error } = useHrOperationsData(); // hydrate the workspace with real HR data
   const employeeDirectory = data?.employeeDirectory ?? []; // fallback to empty array when no staff records
+  const performanceReviews = data?.performanceReviews ?? [];
 
   return (
     <Layout>
@@ -56,7 +24,7 @@ export default function HrPerformanceAppraisals() {
         {isLoading && (
           <SectionCard title="Loading performance data" subtitle="Fetching placeholder employee list.">
             <span style={{ color: "#6B7280" }}>
-              Gathering mock performance records to render the workspace.
+              Gathering live performance records from Supabase.
             </span>
           </SectionCard>
         )}
@@ -84,7 +52,7 @@ export default function HrPerformanceAppraisals() {
                     </tr>
                   </thead>
                   <tbody>
-                    {placeholderReviews.map((review) => (
+                    {performanceReviews.map((review) => (
                       <tr key={review.id} style={{ borderTop: "1px solid #E5E7EB" }}>
                         <td style={{ padding: "12px 0", fontWeight: 600 }}>{review.employee}</td>
                         <td>{review.period}</td>
@@ -106,7 +74,7 @@ export default function HrPerformanceAppraisals() {
                 }
               >
                 <ul style={{ margin: 0, paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {placeholderReviews.map((review) => (
+                  {performanceReviews.map((review) => (
                     <li key={review.id} style={{ color: "#374151" }}>
                       <strong>{review.employee}:</strong> {review.developmentFocus}
                     </li>
@@ -138,13 +106,13 @@ export default function HrPerformanceAppraisals() {
                     </tr>
                   </thead>
                   <tbody>
-                    {placeholderReviews.map((review) => (
+                    {performanceReviews.map((review) => (
                       <tr key={review.id} style={{ borderTop: "1px solid #E5E7EB" }}>
                         <td style={{ padding: "12px 0", fontWeight: 600 }}>{review.employee}</td>
                         <td>
                           <StatusTag
-                            label={review.overall}
-                            tone={review.overall.includes("Exceeds") ? "success" : "default"}
+                            label={`${review.overall ?? 0}/5`}
+                            tone={(review.overall ?? 0) >= 4 ? "success" : "default"}
                           />
                         </td>
                         <td>{review.ratings.attendance}/5</td>
@@ -174,7 +142,6 @@ export default function HrPerformanceAppraisals() {
                     <option value="" disabled>
                       Choose employee
                     </option>
-                    {/* TODO: Replace employee list with dynamic data source before production. */}
                     {employeeDirectory.map((employee) => (
                       <option key={employee.id} value={employee.id}>
                         {employee.name}

@@ -4,14 +4,14 @@
 import React, { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useUser } from "@/context/UserContext";
+import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import Section from "@/components/Section";
 import LoginDropdown from "@/components/LoginDropdown";
 import CustomerViewPreview from "@/components/CustomerViewPreview";
 import { supabase } from "@/lib/supabaseClient"; // Database connection
-import { usersByRole, roleCategories } from "@/config/users"; // Dev users config
-import { getUsersGroupedByRole } from "@/lib/database/users";
+import { roleCategories } from "@/config/users"; // Dev users config
 
 export default function LoginPage() {
   const CUSTOMER_PORTAL_URL =
@@ -21,6 +21,7 @@ export default function LoginPage() {
   const devLogin = userContext?.devLogin;
   const user = userContext?.user;
   const setUser = userContext?.setUser;
+  const { usersByRole, isLoading: rosterLoading, refreshRoster } = useRoster();
 
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -29,7 +30,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [devUsersByRole, setDevUsersByRole] = useState(usersByRole);
   const [loadingDevUsers, setLoadingDevUsers] = useState(true);
 
   // Developer login handler
@@ -91,33 +91,12 @@ export default function LoginPage() {
   }, [user, router]);
 
   useEffect(() => {
-    let mounted = true;
-    const loadUsers = async () => {
-      setLoadingDevUsers(true);
-      try {
-        const grouped = await getUsersGroupedByRole();
-        if (!mounted) return;
-        if (grouped && Object.keys(grouped).length > 0) {
-          setDevUsersByRole({ ...usersByRole, ...grouped });
-        } else {
-          setDevUsersByRole(usersByRole);
-        }
-      } catch (error) {
-        console.error("❌ Failed to load developer users:", error);
-        if (mounted) {
-          setDevUsersByRole(usersByRole);
-        }
-      } finally {
-        if (mounted) {
-          setLoadingDevUsers(false);
-        }
-      }
-    };
-    loadUsers();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    // ⚠️ Mock data found — replacing with Supabase query
+    // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
+    if (!rosterLoading) {
+      setLoadingDevUsers(false);
+    }
+  }, [rosterLoading]);
 
   return (
     <Layout>
@@ -183,13 +162,11 @@ export default function LoginPage() {
                 setSelectedDepartment={setSelectedDepartment}
                 selectedUser={selectedUser}
                 setSelectedUser={setSelectedUser}
-                usersByRole={devUsersByRole}
+                usersByRole={usersByRole}
                 roleCategories={roleCategories}
               />
-              {loadingDevUsers && (
-                <p className="text-xs text-gray-500">
-                  Loading database users for dev login...
-                </p>
+              {(loadingDevUsers || rosterLoading) && (
+                <p className="text-xs text-gray-500">Loading database users for dev login...</p>
               )}
               {selectedCategory === "Customers" && (
                 <CustomerViewPreview

@@ -6,13 +6,14 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
-import { usersByRole } from "@/config/users";
+import { useRoster } from "@/context/RosterContext";
 import { getAllJobs } from "@/lib/database/jobs";
 import { getClockingStatus, clockIn, clockOut } from "@/lib/database/clocking";
 
 export default function TechsDashboard() {
   const router = useRouter();
   const { user } = useUser();
+  const { usersByRole, isLoading: rosterLoading } = useRoster();
   const [jobs, setJobs] = useState([]);
   const [myJobs, setMyJobs] = useState([]);
   const [nextJob, setNextJob] = useState(null);
@@ -21,8 +22,14 @@ export default function TechsDashboard() {
   const [loading, setLoading] = useState(true);
 
   const username = user?.username;
-  const techsList = usersByRole["Techs"] || [];
-  const isTech = techsList.includes(username);
+  const techsList = usersByRole?.["Techs"] || [];
+  const motList = usersByRole?.["MOT Tester"] || [];
+  // ⚠️ Mock data found — replacing with Supabase query
+  // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
+  const allowedNames = new Set([...techsList, ...motList]);
+  const hasTechRole =
+    user?.roles?.some((role) => role?.toLowerCase().includes("tech")) || false;
+  const isTech = allowedNames.has(username) || hasTechRole;
 
   // ✅ Fetch jobs and clocking status
   useEffect(() => {
@@ -111,6 +118,16 @@ export default function TechsDashboard() {
   };
 
   // ✅ Access check
+  if (rosterLoading) {
+    return (
+      <Layout>
+        <div style={{ padding: "40px", textAlign: "center", color: "#6B7280" }}>
+          Loading roster…
+        </div>
+      </Layout>
+    );
+  }
+
   if (!isTech) {
     return (
       <Layout>

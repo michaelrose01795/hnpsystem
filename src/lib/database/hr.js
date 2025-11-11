@@ -921,17 +921,84 @@ export async function getPayRateHistory({ limit = 50 } = {}) {
   });
 }
 
+const parseScoreCard = (score) => {
+  if (!score) {
+    return { overall: 0, attendance: 0, productivity: 0, quality: 0, teamwork: 0 };
+  }
+
+  try {
+    const parsed = typeof score === "string" ? JSON.parse(score) : score;
+    return {
+      overall: Number(parsed?.overall ?? parsed?.score ?? 0),
+      attendance: Number(parsed?.attendance ?? 0),
+      productivity: Number(parsed?.productivity ?? 0),
+      quality: Number(parsed?.quality ?? 0),
+      teamwork: Number(parsed?.teamwork ?? 0),
+    };
+  } catch {
+    return { overall: 0, attendance: 0, productivity: 0, quality: 0, teamwork: 0 };
+  }
+};
+
+export async function getPerformanceReviews(limit = 8) {
+  const { data, error } = await supabase
+    .from("hr_performance_reviews")
+    .select(
+      `
+        review_id,
+        user_id,
+        reviewer_id,
+        scheduled_at,
+        status,
+        score,
+        notes,
+        user:user_id(first_name, last_name),
+        reviewer:reviewer_id(first_name, last_name)
+      `
+    )
+    .order("scheduled_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("❌ getPerformanceReviews error", error);
+    throw error;
+  }
+
+  return (data || []).map((row) => {
+    const ratings = parseScoreCard(row.score);
+    return {
+      id: `REV-${row.review_id}`,
+      employee: formatEmployee(row.user).name,
+      reviewer: formatEmployee(row.reviewer).name,
+      period: `Review ${dayjs(row.scheduled_at).format("MMM YYYY")}`,
+      nextReview: row.scheduled_at,
+      overall: ratings.overall,
+      ratings,
+      status: row.status || "scheduled",
+      developmentFocus: row.notes || "Follow up actions pending.",
+    };
+  });
+}
+
 // Aggregate frequently used HR datasets so UI hooks can hydrate multiple widgets in one request
 export async function getHrOperationsSnapshot() {
-  const [attendanceSnapshot, dashboardSnapshot, employeeDirectory, leaveRequests, leaveBalances, payRateHistory] =
-    await Promise.all([
-      getHrAttendanceSnapshot(),
-      getHrDashboardSnapshot(),
-      getEmployeeDirectory(),
-      getLeaveRequests(),
-      getLeaveBalances(),
-      getPayRateHistory(),
-    ]);
+  const [
+    attendanceSnapshot,
+    dashboardSnapshot,
+    employeeDirectory,
+    leaveRequests,
+    leaveBalances,
+    payRateHistory,
+    performanceReviews,
+  ] = await Promise.all([
+    getHrAttendanceSnapshot(),
+    getHrDashboardSnapshot(),
+    getEmployeeDirectory(),
+    getLeaveRequests(),
+    getLeaveBalances(),
+    getPayRateHistory(),
+    getPerformanceReviews(),
+  ]);
 
   return {
     hrDashboardMetrics: dashboardSnapshot.hrDashboardMetrics,
@@ -946,5 +1013,6 @@ export async function getHrOperationsSnapshot() {
     payRateHistory,
     leaveRequests,
     leaveBalances,
+    performanceReviews,
   };
 }

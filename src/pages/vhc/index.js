@@ -5,19 +5,35 @@
 import React from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
-import { usersByRole } from "@/config/users";
+import { useRoster } from "@/context/RosterContext";
 import DashboardPage from "@/pages/vhc/dashboard";
 
 export default function VHCIndex() {
   const { user } = useUser();
+  const { usersByRole, isLoading } = useRoster();
+  // ⚠️ Mock data found — replacing with Supabase query
+  // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
   const username = user?.username;
-  const allowedUsers = [
-    ...(usersByRole["Service"] || []),
-    ...(usersByRole["Service Manager"] || []),
-    ...(usersByRole["Workshop Manager"] || []),
-    ...(usersByRole["Admin"] || []),
-  ];
+  const allowedUsers = React.useMemo(() => {
+    if (!usersByRole) return [];
+    return [
+      ...(usersByRole["Service"] || []),
+      ...(usersByRole["Service Manager"] || []),
+      ...(usersByRole["Workshop Manager"] || []),
+      ...(usersByRole["Admin"] || []),
+    ];
+  }, [usersByRole]);
   const hasAccess = allowedUsers.includes(username);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div style={{ padding: "20px", color: "#6B7280" }}>
+          Loading permissions…
+        </div>
+      </Layout>
+    );
+  }
 
   if (!hasAccess) {
     return (

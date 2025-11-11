@@ -3,7 +3,6 @@
 // file location: src/lib/users/devUsers.js
 
 import { supabase } from "@/lib/supabaseClient";
-import { usersByRole } from "@/config/users";
 
 // Create a slug from display name for deterministic fake emails
 const slugify = (txt) =>
@@ -12,8 +11,57 @@ const slugify = (txt) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)+/g, "");
 
-// Infer a role for a display name using the roster config
-const inferRoleFromRoster = (displayName) => {
+const ROSTER_CACHE_TTL = 5 * 60 * 1000;
+let rosterCache = null;
+let rosterCacheFetchedAt = 0;
+
+const normalizeName = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+const buildRosterMap = (rows = []) =>
+  rows.reduce((acc, row) => {
+    const role = row.role || "Technician";
+    if (!acc[role]) acc[role] = [];
+    const display =
+      `${row.first_name || ""} ${row.last_name || ""}`.trim() ||
+      row.email ||
+      `User ${row.user_id}`;
+    acc[role].push(display);
+    return acc;
+  }, {});
+
+const fetchRoster = async () => {
+  const { data, error } = await supabase
+    .from("users")
+    .select("user_id, first_name, last_name, email, role");
+
+  if (error) throw error;
+  return buildRosterMap(data || []);
+};
+
+const getRoster = async () => {
+  const now = Date.now();
+  if (rosterCache && now - rosterCacheFetchedAt < ROSTER_CACHE_TTL) {
+    return rosterCache;
+  }
+
+  try {
+    const roster = await fetchRoster();
+    rosterCache = roster;
+    rosterCacheFetchedAt = now;
+    return roster;
+  } catch (error) {
+    console.warn("⚠️ Failed to refresh roster from Supabase:", error?.message || error);
+    return rosterCache || {};
+  }
+};
+
+// ⚠️ Mock data found — replacing with Supabase query
+// ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
+const inferRoleFromRoster = async (displayName) => {
   const norm = String(displayName || "")
     .toLowerCase()
     .replace(/\s+/g, " ")
@@ -21,12 +69,11 @@ const inferRoleFromRoster = (displayName) => {
 
   if (!norm) return "Technician";
 
-  for (const [role, names] of Object.entries(usersByRole)) {
+  const roster = await getRoster();
+
+  for (const [role, names] of Object.entries(roster)) {
     for (const entry of names) {
-      const rosterName = String(entry || "")
-        .toLowerCase()
-        .replace(/\s+/g, " ")
-        .trim();
+      const rosterName = normalizeName(entry);
 
       if (rosterName === norm) return role;
 
@@ -84,7 +131,7 @@ const findUserByName = async (displayName) => {
 // Ensure a users row exists for the supplied display name and return user_id
 export const ensureUserIdForDisplayName = async (displayName) => {
   const trimmedName = String(displayName || "").trim();
-  const role = inferRoleFromRoster(trimmedName);
+  const role = await inferRoleFromRoster(trimmedName);
 
   if (!trimmedName) return null;
 

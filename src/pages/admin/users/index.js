@@ -3,14 +3,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import AdminUserForm from "@/components/Admin/AdminUserForm";
-import {
-  confirmationUsers,
-  usersByDepartment,
-  usersByRoleDetailed,
-} from "@/config/users";
 import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
+import { useRoster } from "@/context/RosterContext";
 
 export default function AdminUserManagement() {
+  const { usersByRole, usersByRoleDetailed, allUsers, isLoading: rosterLoading } = useRoster();
   const [activeUser, setActiveUser] = useState(null);
   const [dbUsers, setDbUsers] = useState([]);
   const [dbLoading, setDbLoading] = useState(true);
@@ -19,25 +16,46 @@ export default function AdminUserManagement() {
   const [previewMember, setPreviewMember] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
+  const [directory, setDirectory] = useState([]);
+  const [directoryLoading, setDirectoryLoading] = useState(true);
+  const [directoryError, setDirectoryError] = useState(null);
+  // ⚠️ Mock data found — replacing with Supabase query
+  // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
+
   const departmentList = useMemo(() => {
-    return Object.entries(usersByDepartment)
+    const grouped = directory.reduce((acc, employee) => {
+        const dept = employee.department || "Unassigned";
+        if (!acc[dept]) acc[dept] = [];
+        acc[dept].push(employee.name || employee.email || employee.id);
+        return acc;
+      }, {});
+
+    return Object.entries(grouped)
       .map(([department, names]) => ({
         department,
         names: names.sort((a, b) => a.localeCompare(b)),
       }))
       .sort((a, b) => a.department.localeCompare(b.department));
-  }, []);
+  }, [directory]);
 
   const roleList = useMemo(() => {
-    return Object.entries(usersByRoleDetailed)
+    return Object.entries(usersByRoleDetailed || {})
       .map(([role, entries]) => ({
         role,
-        members: entries.sort((a, b) => a.displayName.localeCompare(b.displayName)),
+        members: (entries || [])
+          .map((member) => ({
+            ...member,
+            displayName: member.name || member.email || `User ${member.id}`,
+            departments: member.departments || [],
+          }))
+          .sort((a, b) =>
+            (a.displayName || "").localeCompare(b.displayName || "")
+          ),
       }))
       .sort((a, b) => a.role.localeCompare(b.role));
-  }, []);
+  }, [usersByRoleDetailed]);
 
-  const userCount = Object.keys(confirmationUsers).length;
+  const userCount = allUsers.length;
 
   const fetchDbUsers = async () => {
     setDbLoading(true);
@@ -58,6 +76,31 @@ export default function AdminUserManagement() {
 
   useEffect(() => {
     fetchDbUsers();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const loadDirectory = async () => {
+      setDirectoryLoading(true);
+      setDirectoryError(null);
+      try {
+        const response = await fetch("/api/hr/employees", { signal: controller.signal });
+        const payload = await response.json();
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.message || "Failed to load employee directory");
+        }
+        setDirectory(payload.data || []);
+      } catch (err) {
+        if (err.name === "AbortError") return;
+        setDirectoryError(err.message || "Unable to load employee directory");
+        setDirectory([]);
+      } finally {
+        setDirectoryLoading(false);
+      }
+    };
+
+    loadDirectory();
+    return () => controller.abort();
   }, []);
 
   const handleUserCreated = (user) => {
@@ -95,7 +138,7 @@ export default function AdminUserManagement() {
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
         <header>
           <p style={{ color: "#6B7280", marginTop: "6px" }}>
-            Provision platform accounts and review department ownership. These records are driven by the shared confirmation roster for consistent testing.
+            Provision platform accounts and review department ownership. These records are driven by the shared Supabase roster for consistent testing.
           </p>
         </header>
 
@@ -173,78 +216,88 @@ export default function AdminUserManagement() {
 
         <SectionCard
           title="User Directory Snapshot"
-          subtitle="Canonical roster pulled from confirmation/user.js"
+          subtitle="Live roster pulled from Supabase users & HR employee profiles"
           action={<StatusTag label={`${userCount} people`} tone="default" />}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
-            {departmentList.map(({ department, names }) => (
-              <div key={department} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#111827" }}>{department}</h3>
-                <ul style={{ margin: 0, paddingLeft: "18px", color: "#4B5563" }}>
-                  {names.map((name) => (
-                    <li key={`${department}-${name}`}>{name}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+          {directoryError && (
+            <div style={{ color: "#B91C1C", marginBottom: "12px", fontWeight: 600 }}>
+              {directoryError}
+            </div>
+          )}
+          {directoryLoading ? (
+            <div style={{ color: "#6B7280" }}>Loading employee directory…</div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
+              {departmentList.map(({ department, names }) => (
+                <div key={department} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#111827" }}>{department}</h3>
+                  <ul style={{ margin: 0, paddingLeft: "18px", color: "#4B5563" }}>
+                    {names.map((name) => (
+                      <li key={`${department}-${name}`}>{name}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              {departmentList.length === 0 && (
+                <div style={{ color: "#6B7280" }}>No departments available.</div>
+              )}
+            </div>
+          )}
         </SectionCard>
 
         <SectionCard
           title="Roles & Members"
           subtitle="Cross-reference roles with associated team members"
         >
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
-                  <th style={{ textAlign: "left", paddingBottom: "10px" }}>Role</th>
-                  <th>Members</th>
-                  <th>Departments</th>
-                </tr>
-              </thead>
+          {rosterLoading ? (
+            <div style={{ color: "#6B7280" }}>Loading roster…</div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                    <th style={{ textAlign: "left", paddingBottom: "10px" }}>Role</th>
+                    <th>Members</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {roleList.map(({ role, members }) => (
                     <tr key={role} style={{ borderTop: "1px solid #E5E7EB" }}>
                       <td style={{ padding: "12px 0", fontWeight: 600 }}>{role}</td>
                       <td>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                          {(members || []).map((member) => (
-                            <button
-                              key={`${role}-${member.displayName}`}
-                              type="button"
-                          onClick={() => handleProfileView(member)}
-                              style={{
-                                padding: "6px 10px",
-                                borderRadius: "999px",
-                                border: "1px solid #E5E7EB",
-                                background:
-                                  activeUser === member.displayName ? "#111827" : "white",
-                                color:
-                                  activeUser === member.displayName ? "white" : "#1F2937",
-                                fontSize: "0.85rem",
-                                fontWeight: 600,
-                                cursor: "pointer",
-                                transition: "all 0.15s ease",
-                              }}
-                            >
-                              {member.displayName}
-                            </button>
-                          ))}
-                        </div>
+                        {members.length > 0 ? (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                            {members.map((member) => (
+                              <button
+                                key={`${role}-${member.id || member.displayName}`}
+                                type="button"
+                                onClick={() => handleProfileView(member)}
+                                style={{
+                                  padding: "6px 10px",
+                                  borderRadius: "999px",
+                                  border: "1px solid #E5E7EB",
+                                  background: activeUser === member.displayName ? "#111827" : "white",
+                                  color: activeUser === member.displayName ? "white" : "#1F2937",
+                                  fontSize: "0.85rem",
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                  transition: "all 0.15s ease",
+                                }}
+                              >
+                                {member.displayName}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <span style={{ color: "#9CA3AF" }}>No members assigned</span>
+                        )}
                       </td>
-                      <td>
-                        {Array.from(
-                          new Set(
-                            members.flatMap((member) => member.departments || [])
-                          )
-                        ).join(", ")}
-                      </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </SectionCard>
 
         {showModal && previewMember && (

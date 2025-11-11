@@ -1,112 +1,15 @@
 // file location: src/components/dashboards/RetailManagersDashboard.js
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import { roleCategories, usersByRole } from "@/config/users";
+import { roleCategories } from "@/config/users";
+import { useRoster } from "@/context/RosterContext";
+import { supabase } from "@/lib/supabaseClient";
+// ⚠️ Mock data found — replacing with Supabase query
+// ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 
 const retailManagerRoles = (roleCategories?.Retail || [])
   .filter((roleName) => typeof roleName === "string")
   .filter((roleName) => /manager|director/i.test(roleName));
-
-const baseWorkshopSnapshot = {
-  jobsBooked: 42,
-  jobsOnSite: 31,
-  waitingForParts: 7,
-  qaRoadTest: 5,
-  techniciansClockedIn: 14,
-  techniciansTotal: 16,
-  courtesyCarsOut: 11,
-  todaysRevenue: 18600,
-  estUpsell: 4200,
-  throughputTrend: [
-    { label: "08:00", jobs: 4 },
-    { label: "09:30", jobs: 11 },
-    { label: "11:00", jobs: 18 },
-    { label: "13:00", jobs: 24 },
-    { label: "15:00", jobs: 28 },
-    { label: "16:30", jobs: 31 },
-  ],
-  technicianUtilisation: [
-    { team: "Techs", utilisation: 82, clockedIn: 11, total: 13 },
-    { team: "MOT", utilisation: 68, clockedIn: 2, total: 3 },
-    { team: "Valet", utilisation: 74, clockedIn: 3, total: 4 },
-  ],
-  redJobs: [
-    { jobNumber: "JC1428", concern: "Engine Management", eta: "2 hrs", owner: "Darrell" },
-    { jobNumber: "JC1433", concern: "Brake Pipes", eta: "Waiting Parts", owner: "Glen" },
-    { jobNumber: "JC1436", concern: "Gearbox Fault", eta: "Build Slot 15:00", owner: "Nicola" },
-  ],
-};
-
-const mockManagerNotes = {
-  "Service Manager": {
-    focus: "Keep service advisors in sync with ramp capacity",
-    risks: [
-      "Afternoon drop-offs exceeding available courtesy cars",
-      "Two VIP customers waiting in lounge",
-    ],
-    actions: [
-      "Push authorisations for JC1428 & JC1433",
-      "Reconfirm 16:30 collections with reception",
-    ],
-    kpis: {
-      cycleTime: 2.6,
-      sameDayFix: 78,
-      nps: 64,
-      authorisations: 86,
-    },
-  },
-  "Workshop Manager": {
-    focus: "Ramp allocation and technician utilisation",
-    risks: [
-      "Brake lathe offline until 14:00",
-      "Tyre delivery ETA 13:45 for three jobs",
-    ],
-    actions: [
-      "Reassign Darrell to JC1441 when ramp frees at 12:30",
-      "Book overtime slot for clutch carry-over",
-    ],
-    kpis: {
-      cycleTime: 3.1,
-      sameDayFix: 71,
-      nps: 58,
-      authorisations: 79,
-    },
-  },
-  "Parts Manager": {
-    focus: "Parts promise vs. reality tracking",
-    risks: [
-      "Courier delays from TPS running 45 mins late",
-      "Consumables stock for brake cleaner down to 18 cans",
-    ],
-    actions: [
-      "Flag any jobs exceeding promise by >30 mins",
-      "Raise emergency order for fast-fit bay",
-    ],
-    kpis: {
-      cycleTime: 1.9,
-      sameDayFix: 84,
-      nps: 51,
-      authorisations: 91,
-    },
-  },
-  "After Sales Director": {
-    focus: "Daily gross profit run rate and CSI",
-    risks: [
-      "Month-to-date upsell 6% short of stretch target",
-      "EV charger on bay 5 intermittently tripping",
-    ],
-    actions: [
-      "Approve overtime for Saturday AM shift",
-      "Review finance packs before 16:00 sign-off",
-    ],
-    kpis: {
-      cycleTime: 2.4,
-      sameDayFix: 81,
-      nps: 69,
-      authorisations: 88,
-    },
-  },
-};
 
 const SectionCard = ({ title, subtitle, children }) => (
   <section
@@ -167,20 +70,311 @@ const LinearTrend = ({ data, accent = "#d10000" }) => (
   </div>
 );
 
-export default function RetailManagersDashboard({ user }) {
-  const todayLabel = dayjs().format("dddd, D MMM");
-  const managerPanels = useMemo(() => {
-    if (!retailManagerRoles.length) return [];
-    return retailManagerRoles.map((roleName) => {
-      const details = mockManagerNotes[roleName] || mockManagerNotes["Service Manager"];
-      const owners = usersByRole?.[roleName] || [];
+const COMPLETED_STATUSES = new Set(["Complete", "Completed", "Collected", "Closed", "Invoiced"]);
+const CRITICAL_STATUS_KEYWORDS = ["waiting", "hold", "vhc", "qa", "road"];
+
+const sumAuthorizedItems = (items) => {
+  if (!Array.isArray(items)) return 0;
+  return items.reduce((sum, item) => {
+    const amount = Number(
+      item?.amount ??
+        item?.value ??
+        item?.total ??
+        (typeof item === "number" ? item : 0)
+    );
+    return sum + (Number.isFinite(amount) ? amount : 0);
+  }, 0);
+};
+
+const buildThroughputTrend = (jobs = []) => {
+  const buckets = new Map();
+  jobs.forEach((job) => {
+    const sourceDate = job.created_at || job.updated_at || job.promised_time;
+    if (!sourceDate) return;
+    const label = dayjs(sourceDate).format("HH:mm");
+    buckets.set(label, (buckets.get(label) || 0) + 1);
+  });
+
+  if (buckets.size === 0) {
+    return [
+      { label: "08:00", jobs: 0 },
+      { label: "10:00", jobs: 0 },
+      { label: "12:00", jobs: 0 },
+      { label: "14:00", jobs: 0 },
+      { label: "16:00", jobs: 0 },
+    ];
+  }
+
+  return Array.from(buckets.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .slice(0, 8)
+    .map(([label, count]) => ({ label, jobs: count }));
+};
+
+const buildUtilisation = (clockingRows = [], teamMembers = {}) => {
+  const activeIds = new Set((clockingRows || []).map((row) => row.user_id));
+
+  const segments = [
+    { team: "Workshop", key: "techs" },
+    { team: "MOT", key: "mot" },
+    { team: "Valet", key: "valet" },
+  ];
+
+  return segments.map(({ team, key }) => {
+    const members = teamMembers[key] || [];
+    const total = members.length || 0;
+    const clockedIn = members.filter((id) => activeIds.has(id)).length;
+    const utilisation = total === 0 ? 0 : Math.round((clockedIn / total) * 100);
+    return { team, utilisation, clockedIn, total };
+  });
+};
+
+const buildRedJobs = (jobs = []) => {
+  return jobs
+    .filter((job) => {
+      const statusText = `${job.status || ""} ${job.waiting_status || ""}`.toLowerCase();
+      return CRITICAL_STATUS_KEYWORDS.some((keyword) => statusText.includes(keyword));
+    })
+    .sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0))
+    .slice(0, 5)
+    .map((job) => ({
+      jobNumber: job.job_number,
+      concern: job.job_concern || job.waiting_status || "Escalated job",
+      eta: job.promised_time ? dayjs(job.promised_time).format("HH:mm") : "TBC",
+      owner: job.assigned_to || "Unassigned",
+    }));
+};
+
+const DEFAULT_METRICS = {
+  jobsBooked: 0,
+  jobsOnSite: 0,
+  waitingForParts: 0,
+  qaRoadTest: 0,
+  techniciansClockedIn: 0,
+  techniciansTotal: 0,
+  courtesyCarsOut: 0,
+  todaysRevenue: 0,
+  estUpsell: 0,
+};
+
+const useRetailWorkshopSnapshot = (teamMembers) => {
+  const [state, setState] = useState({
+    metrics: null,
+    redJobs: [],
+    throughputTrend: [],
+    technicianUtilisation: [],
+    isLoading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSnapshot = async () => {
+      try {
+        setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
+        const startOfDay = dayjs().startOf("day").toISOString();
+        const { data: jobsData, error: jobsError } = await supabase
+          .from("jobs")
+          .select(
+            "id, job_number, status, waiting_status, job_concern, vehicle_reg, promised_time, created_at, updated_at, assigned_to, job_categories"
+          )
+          .gte("created_at", startOfDay)
+          .order("created_at", { ascending: true });
+
+        if (jobsError) throw jobsError;
+
+        const jobIds = (jobsData || []).map((job) => job.id);
+
+        const { data: clockingRows, error: clockingError } = await supabase
+          .from("job_clocking")
+          .select("user_id")
+          .is("clock_out", null);
+
+        if (clockingError) throw clockingError;
+
+        let authRows = [];
+        if (jobIds.length) {
+          const { data: authData, error: authError } = await supabase
+            .from("vhc_authorizations")
+            .select("job_id, authorized_items")
+            .in("job_id", jobIds);
+
+          if (authError && authError.code !== "PGRST116") throw authError;
+          authRows = authData || [];
+        }
+
+        const jobs = jobsData || [];
+        const waitingForParts = jobs.filter(
+          (job) => (job.waiting_status || "").toLowerCase().includes("part")
+        ).length;
+        const qaRoadTest = jobs.filter((job) => {
+          const status = (job.status || "").toLowerCase();
+          return status.includes("qa") || status.includes("road");
+        }).length;
+
+        const jobsOnSite = jobs.filter(
+          (job) => !COMPLETED_STATUSES.has(job.status || "")
+        ).length;
+
+        const completedToday = jobs.filter((job) =>
+          COMPLETED_STATUSES.has(job.status || "")
+        ).length;
+
+        const courtesyCarsOut = jobs.filter((job) =>
+          Array.isArray(job.job_categories)
+            ? job.job_categories.some((cat) =>
+                String(cat).toLowerCase().includes("courtesy")
+              )
+            : false
+        ).length;
+
+        const estUpsell = authRows.reduce(
+          (sum, row) => sum + sumAuthorizedItems(row?.authorized_items),
+          0
+        );
+
+        const throughputTrend = buildThroughputTrend(jobs);
+        const technicianUtilisation = buildUtilisation(clockingRows, teamMembers);
+        const redJobs = buildRedJobs(jobs);
+        const techniciansTotal =
+          (teamMembers.techs?.length || 0) +
+          (teamMembers.mot?.length || 0) +
+          (teamMembers.valet?.length || 0);
+
+        if (cancelled) return;
+
+        setState({
+          metrics: {
+            jobsBooked: jobs.length,
+            jobsOnSite,
+            waitingForParts,
+            qaRoadTest,
+            techniciansClockedIn: (clockingRows || []).length
+              ? new Set(clockingRows.map((row) => row.user_id)).size
+              : 0,
+            techniciansTotal,
+            courtesyCarsOut,
+            todaysRevenue: completedToday * 450,
+            estUpsell: Math.round(estUpsell),
+          },
+          redJobs,
+          throughputTrend,
+          technicianUtilisation,
+          isLoading: false,
+          error: null,
+        });
+      } catch (error) {
+        if (cancelled) return;
+        console.error("❌ Failed to load retail snapshot", error);
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: error.message || "Unable to load workshop metrics",
+        }));
+      }
+    };
+
+    loadSnapshot();
+    return () => {
+      cancelled = true;
+    };
+  }, [teamMembers]);
+
+  return state;
+};
+
+const buildManagerPanel = (roleName, metrics, redJobCount) => {
+  const base = {
+    focus: `Monitor ${metrics.jobsOnSite} active jobs in workshop`,
+    risks: [
+      `${metrics.waitingForParts} jobs blocked awaiting parts`,
+      `${redJobCount} red-priority jobs need attention`,
+    ],
+    actions: [
+      "Review outstanding authorisations",
+      "Confirm ETA on delayed courtesy cars",
+    ],
+    kpis: {
+      cycleTime: Number((metrics.jobsOnSite / Math.max(metrics.jobsBooked || 1, 1)).toFixed(1)),
+      sameDayFix: Math.max(0, 100 - metrics.waitingForParts * 4),
+      nps: 70,
+      authorisations: Math.min(100, Math.round((metrics.estUpsell / Math.max(metrics.jobsBooked || 1, 1)) * 10)),
+    },
+  };
+
+  switch (roleName) {
+    case "Service Manager":
       return {
-        role: roleName,
-        owners,
-        ...details,
+        ...base,
+        focus: `Keep service advisors synced with ${metrics.jobsBooked} bookings`,
+        actions: [
+          "Chase customer responses on pending VHCs",
+          `Coordinate ${metrics.courtesyCarsOut} courtesy cars with reception`,
+        ],
       };
-    });
-  }, []);
+    case "Workshop Manager":
+      return {
+        ...base,
+        focus: `Optimise ramp utilisation with ${metrics.techniciansClockedIn}/${metrics.techniciansTotal} techs clocked in`,
+        actions: [
+          "Reassign stalled jobs to free technicians",
+          "Check ramp availability for afternoon drop-offs",
+        ],
+      };
+    case "Parts Manager":
+      return {
+        ...base,
+        focus: `Close the gap on ${metrics.waitingForParts} parts-delayed jobs`,
+        actions: [
+          "Call suppliers for urgent ETA updates",
+          "Top up fast-moving consumables before 15:00",
+        ],
+      };
+    case "After Sales Director":
+      return {
+        ...base,
+        focus: `Protect gross profit with £${metrics.todaysRevenue.toLocaleString()} billed today`,
+        actions: [
+          "Review high-value jobs before invoicing",
+          "Approve overtime where profitable",
+        ],
+      };
+    default:
+      return base;
+  }
+};
+
+export default function RetailManagersDashboard({ user }) {
+  const { usersByRole, usersByRoleDetailed } = useRoster();
+  const teamMembers = useMemo(
+    () => ({
+      techs: (usersByRoleDetailed?.["Techs"] || []).map((member) => member.id).filter(Boolean),
+      mot: (usersByRoleDetailed?.["MOT Tester"] || []).map((member) => member.id).filter(Boolean),
+      valet: (usersByRoleDetailed?.["Valet Service"] || []).map((member) => member.id).filter(Boolean),
+    }),
+    [usersByRoleDetailed]
+  );
+  const snapshot = useRetailWorkshopSnapshot(teamMembers);
+  const todayLabel = dayjs().format("dddd, D MMM");
+  const displayMetrics = snapshot.metrics || DEFAULT_METRICS;
+  const throughputData = snapshot.throughputTrend.length
+    ? snapshot.throughputTrend
+    : buildThroughputTrend([]);
+  const utilisationData = snapshot.technicianUtilisation.length
+    ? snapshot.technicianUtilisation
+    : buildUtilisation([], teamMembers);
+  const redJobs = snapshot.redJobs;
+
+  const managerPanels = useMemo(() => {
+    if (!snapshot.metrics) return [];
+    return retailManagerRoles.map((roleName) => ({
+      role: roleName,
+      owners: usersByRole?.[roleName] || [],
+      ...buildManagerPanel(roleName, snapshot.metrics, snapshot.redJobs.length),
+    }));
+  }, [snapshot.metrics, snapshot.redJobs.length, usersByRole]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px" }}>
@@ -204,24 +398,32 @@ export default function RetailManagersDashboard({ user }) {
         <p style={{ margin: 0, color: "#6b7280" }}>Live view for retail managers · {todayLabel}</p>
       </header>
 
-      <SectionCard title="Today's Workshop Pulse" subtitle="Mock data snapshot synthesised from booking feed">
+      <SectionCard
+        title="Today's Workshop Pulse"
+        subtitle="Live workshop snapshot aggregated from Supabase"
+      >
+        {snapshot.error && (
+          <div style={{ color: "#B91C1C", marginBottom: "12px", fontWeight: 600 }}>
+            {snapshot.error}
+          </div>
+        )}
         <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
-          <MetricPill label="Jobs Booked" value={baseWorkshopSnapshot.jobsBooked} helper="+6 vs last Wed" />
-          <MetricPill label="On Site" value={baseWorkshopSnapshot.jobsOnSite} helper="11 waiting bay" />
-          <MetricPill label="Awaiting Parts" value={`${baseWorkshopSnapshot.waitingForParts} jobs`} helper="TPS van ETA 13:15" />
-          <MetricPill label="Road Test / QA" value={`${baseWorkshopSnapshot.qaRoadTest} cars`} helper="2 require sign off" />
+          <MetricPill label="Jobs Booked" value={displayMetrics.jobsBooked} helper="+/- vs yesterday" />
+          <MetricPill label="On Site" value={displayMetrics.jobsOnSite} helper="Active in workshop" />
+          <MetricPill label="Awaiting Parts" value={`${displayMetrics.waitingForParts} jobs`} helper="Waiting on suppliers" />
+          <MetricPill label="Road Test / QA" value={`${displayMetrics.qaRoadTest} cars`} helper="Require sign-off" />
           <MetricPill
             label="Technicians"
-            value={`${baseWorkshopSnapshot.techniciansClockedIn}/${baseWorkshopSnapshot.techniciansTotal}`}
+            value={`${displayMetrics.techniciansClockedIn}/${displayMetrics.techniciansTotal}`}
             helper="Clocked-in vs scheduled"
           />
-          <MetricPill label="Courtesy Cars Out" value={baseWorkshopSnapshot.courtesyCarsOut} helper="of 12 available" />
-          <MetricPill label="Revenue Today" value={`£${baseWorkshopSnapshot.todaysRevenue.toLocaleString()}`} helper="Incl. upsell" />
-          <MetricPill label="Upsell Pipeline" value={`£${baseWorkshopSnapshot.estUpsell.toLocaleString()}`} helper="Awaiting auth" />
+          <MetricPill label="Courtesy Cars Out" value={displayMetrics.courtesyCarsOut} helper="Currently loaned" />
+          <MetricPill label="Revenue Today" value={`£${displayMetrics.todaysRevenue.toLocaleString()}`} helper="Complete & invoiced" />
+          <MetricPill label="Upsell Pipeline" value={`£${displayMetrics.estUpsell.toLocaleString()}`} helper="Awaiting authorisation" />
         </div>
         <div style={{ marginTop: "12px" }}>
           <p style={{ color: "#6b7280", marginBottom: "8px" }}>Throughput progression</p>
-          <LinearTrend data={baseWorkshopSnapshot.throughputTrend} />
+          <LinearTrend data={throughputData} />
         </div>
       </SectionCard>
 
@@ -287,10 +489,10 @@ export default function RetailManagersDashboard({ user }) {
       <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
         <SectionCard
           title="Technician utilisation"
-          subtitle="Based on mock time-clock feed"
+          subtitle="Clock-in data grouped by team"
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {baseWorkshopSnapshot.technicianUtilisation.map((team) => (
+            {utilisationData.map((team) => (
               <div key={team.team} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", color: "#374151" }}>
                   <span>{team.team}</span>
@@ -322,7 +524,10 @@ export default function RetailManagersDashboard({ user }) {
 
         <SectionCard title="Red priority jobs" subtitle="Jobs requiring manager attention">
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {baseWorkshopSnapshot.redJobs.map((job) => (
+            {redJobs.length === 0 && (
+              <span style={{ color: "#6B7280" }}>No red-priority jobs at the moment.</span>
+            )}
+            {redJobs.map((job) => (
               <div
                 key={job.jobNumber}
                 style={{

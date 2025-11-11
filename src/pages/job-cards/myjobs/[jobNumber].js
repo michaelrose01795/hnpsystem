@@ -6,7 +6,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
-import { usersByRole } from "@/config/users";
+import { useRoster } from "@/context/RosterContext";
 import { getJobByNumber, updateJobStatus } from "@/lib/database/jobs";
 import { getVHCChecksByJob } from "@/lib/database/vhc";
 import { getClockingStatus } from "@/lib/database/clocking";
@@ -54,6 +54,7 @@ export default function TechJobDetailPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
   const { user, dbUserId, setStatus, refreshCurrentJob, setCurrentJob } = useUser();
+  const { usersByRole, isLoading: rosterLoading } = useRoster();
 
   // ✅ State management
   const [jobData, setJobData] = useState(null);
@@ -135,8 +136,10 @@ export default function TechJobDetailPage() {
   };
 
   const username = user?.username?.trim();
-  const techsList = usersByRole["Techs"] || [];
-  const motTestersList = usersByRole["MOT Tester"] || [];
+  const techsList = usersByRole?.["Techs"] || [];
+  const motTestersList = usersByRole?.["MOT Tester"] || [];
+  // ⚠️ Mock data found — replacing with Supabase query
+  // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
   const userRoles = Array.isArray(user?.roles)
     ? user.roles
@@ -149,6 +152,14 @@ export default function TechJobDetailPage() {
   });
   const isTech =
     (username && allowedTechNames.has(username)) || hasRoleAccess;
+
+  if (rosterLoading) {
+    return (
+      <Layout>
+        <div style={{ padding: "24px", color: "#6B7280" }}>Loading roster…</div>
+      </Layout>
+    );
+  }
 
   // ✅ Fetch job data on component mount
   useEffect(() => {

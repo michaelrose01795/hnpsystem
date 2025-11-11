@@ -6,7 +6,6 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
-import { usersByRole } from "@/config/users";
 import { getJobByNumber, updateJob } from "@/lib/database/jobs";
 import { getNotesByJob, createJobNote, deleteJobNote } from "@/lib/database/notes";
 import { getCustomerJobs } from "@/lib/database/customers";
