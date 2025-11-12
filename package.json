@@ -9,7 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.81.0",
+    "@supabase/supabase-js": "^2.81.1",
     "autoprefixer": "^10.4.21",
     "chart.js": "^4.5.1",
     "class-variance-authority": "^0.7.1",
