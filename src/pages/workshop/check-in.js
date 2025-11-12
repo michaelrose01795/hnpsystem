@@ -18,6 +18,7 @@ export default function CheckInPage() {
   const [searchTerm, setSearchTerm] = useState(""); // Search filter
   const [checkingIn, setCheckingIn] = useState(null); // Job currently being checked in
   const [showCheckedIn, setShowCheckedIn] = useState(false); // Toggle to show already checked in jobs
+  const [displayDate, setDisplayDate] = useState("Loading date..."); // Friendly header date label
 
   // ✅ Get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
@@ -33,6 +34,16 @@ export default function CheckInPage() {
   // ✅ Fetch jobs on component mount
   useEffect(() => {
     fetchJobs();
+  }, []);
+
+  useEffect(() => {
+    const formatter = new Intl.DateTimeFormat("en-GB", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    setDisplayDate(formatter.format(new Date()));
   }, []);
 
   // ✅ Fetch all jobs and filter for today's appointments
@@ -213,12 +224,7 @@ export default function CheckInPage() {
         }}>
           <div>
             <p style={{ fontSize: "16px", color: "#666", margin: 0 }}>
-              {new Date().toLocaleDateString('en-GB', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
+              {displayDate}
             </p>
           </div>
 

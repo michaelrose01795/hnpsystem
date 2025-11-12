@@ -20,6 +20,7 @@ export default function TechsDashboard() {
   const [currentJob, setCurrentJob] = useState(null);
   const [clockingStatus, setClockingStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [displayDate, setDisplayDate] = useState("Loading date...");
 
   const username = user?.username;
   const techsList = usersByRole?.["Techs"] || [];
@@ -117,6 +118,16 @@ export default function TechsDashboard() {
     router.push(`/job-cards/myjobs/${job.jobNumber}`);
   };
 
+  useEffect(() => {
+    const formatter = new Intl.DateTimeFormat("en-GB", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    setDisplayDate(formatter.format(new Date()));
+  }, []);
+
   // ✅ Access check
   if (rosterLoading) {
     return (
@@ -198,12 +209,7 @@ export default function TechsDashboard() {
               Welcome back, {username}
             </h1>
             <p style={{ color: "#666", fontSize: "14px", margin: 0 }}>
-              {new Date().toLocaleDateString("en-GB", { 
-                weekday: "long", 
-                year: "numeric", 
-                month: "long", 
-                day: "numeric" 
-              })}
+              {displayDate}
             </p>
           </div>
 
