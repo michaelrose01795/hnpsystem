@@ -84,7 +84,7 @@ export function ProfilePage({
       attendanceRecords: attendanceSource,
       overtimeSummary: overtimeSource,
     }; // data feeding metric tiles and tables
-  }, [attendanceLogs, leaveBalances, overtimeSummaries, profile, hrProfile, fallbackProfile]);
+  }, [attendanceLogs, leaveBalances, overtimeSummaries, profile]);
 
   const initialOvertimeEntries = useMemo(() => {
     if (!aggregatedStats?.overtimeSummary) return []; // default empty array

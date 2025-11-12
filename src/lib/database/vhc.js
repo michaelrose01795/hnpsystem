@@ -280,3 +280,23 @@ export const getVhcSendHistory = async (jobId) => { // Fetch all send-history en
 }; // End getVhcSendHistory.
 
 // This VHC data layer now exposes schema-faithful helpers for reading and mutating checks, workflow status, and send history records.
+export const createVHCCheck = async (payload) => {
+  try {
+    const data = await createVhcCheck(payload); // Reuse the camelCase helper for insertion
+    return { success: true, data }; // Provide a success wrapper for API usage
+  } catch (error) {
+    console.error("createVHCCheck error", error);
+    return { success: false, error: error instanceof Error ? error.message : error };
+  }
+};
+
+export const getVHCChecksByJob = async (jobId) => {
+  try {
+    const data = await getVhcChecksByJob(jobId); // Load raw check rows for the requested job
+    return data; // Return the array directly for existing callers
+  } catch (error) {
+    console.error("getVHCChecksByJob error", error);
+    throw error; // Preserve existing error behaviour so callers can handle failures
+  }
+};
+

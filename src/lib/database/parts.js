@@ -1,54 +1,28 @@
-// ✅ Connected to Supabase (server-side)
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/parts.js
-import { getDatabaseClient } from "@/lib/database/client"; // Import the shared Supabase client accessor for all parts-related queries.
+import { getDatabaseClient } from "@/lib/database/client"; // Shared Supabase service client accessor
+import { getJobByNumberOrReg } from "@/lib/database/jobs"; // Job helper to reuse existing job/vehicle lookups
 
-const db = getDatabaseClient(); // Cache the Supabase client for repeated operations.
-const PARTS_TABLE = "parts_catalog"; // Primary catalog table that stores each part definition.
-const DELIVERIES_TABLE = "parts_deliveries"; // Table that tracks supplier deliveries.
-const DELIVERY_ITEMS_TABLE = "parts_delivery_items"; // Table linking deliveries to specific parts.
-const STOCK_MOVEMENTS_TABLE = "parts_stock_movements"; // Table capturing every inventory adjustment.
+const db = getDatabaseClient(); // Instantiate a single Supabase client for all parts operations
 
-const PART_COLUMNS = [ // Canonical column list for the parts catalog.
-  "id", // Primary key (UUID).
-  "part_number", // Unique part number string.
-  "name", // Descriptive part name.
-  "description", // Optional description text.
-  "category", // Optional category label.
-  "supplier", // Preferred supplier.
-  "oem_reference", // Optional OEM reference string.
-  "barcode", // Optional barcode.
-  "unit_cost", // Numeric cost price.
-  "unit_price", // Numeric sell price.
-  "qty_in_stock", // Quantity currently available.
-  "qty_reserved", // Quantity on hold for jobs.
-  "qty_on_order", // Quantity on order from suppliers.
-  "reorder_level", // Threshold for reordering.
-  "storage_location", // Physical bin location.
-  "service_default_zone", // Preferred workshop zone.
-  "sales_default_zone", // Preferred sales zone.
-  "stairs_default_zone", // Preferred upstairs zone.
-  "notes", // Internal notes.
-  "is_active", // Whether the part is available.
-  "created_by", // UUID of the creator.
-  "updated_by", // UUID of the last editor.
-  "created_at", // Creation timestamp.
-  "updated_at", // Update timestamp.
-].join(", "); // Convert array into Supabase select string.
+const PARTS_TABLE = "parts_catalog"; // Canonical table for part definitions
+const JOB_PART_ITEMS_TABLE = "parts_job_items"; // Table that links jobs to allocated parts
+const DELIVERIES_TABLE = "parts_deliveries"; // Supplier deliveries master table
+const DELIVERY_ITEMS_TABLE = "parts_delivery_items"; // Individual delivery line items
+const STOCK_MOVEMENTS_TABLE = "parts_stock_movements"; // Audit table for stock adjustments
 
-const DELIVERY_COLUMNS = [ // Canonical column list for parts_deliveries.
-  "id", // Primary key (UUID).
-  "supplier", // Supplier name.
-  "order_reference", // Supplier order reference.
-  "status", // Workflow status (ordering, received, etc.).
-  "expected_date", // Estimated delivery date.
-  "received_date", // Actual receipt date.
-  "notes", // Freeform notes.
-  "created_by", // UUID of creator.
-  "updated_by", // UUID of last editor.
-  "created_at", // Creation timestamp.
-  "updated_at", // Update timestamp.
-].join(", "); // Join for select statements.
+const DELIVERY_COLUMNS = [
+  "id",
+  "supplier",
+  "order_reference",
+  "status",
+  "expected_date",
+  "received_date",
+  "notes",
+  "created_by",
+  "updated_by",
+  "created_at",
+  "updated_at",
+].join(", "); // Columns returned for deliveries
 
 const DELIVERY_ITEM_COLUMNS = [ // Canonical column list for parts_delivery_items.
   "id", // Primary key (UUID).
@@ -81,86 +55,6 @@ const STOCK_MOVEMENT_COLUMNS = [ // Canonical column list for parts_stock_moveme
   "performed_by", // UUID of the staff member performing the move.
   "created_at", // Timestamp when the movement was recorded.
 ].join(", "); // Join for select statements.
-
-
-const JOB_ITEMS_TABLE = "parts_job_items"; // Table linking jobs to the parts allocated against them.
-const JOB_ITEM_COLUMNS = [ // Canonical column list for parts_job_items.
-  "id", // Primary key (UUID).
-  "job_id", // Foreign key referencing jobs.id.
-  "part_id", // Foreign key referencing parts_catalog.id.
-  "quantity_requested", // Quantity requested by workshop.
-  "quantity_allocated", // Quantity allocated from stock.
-  "quantity_fitted", // Quantity fitted to the vehicle.
-  "status", // Workflow status for the part allocation.
-  "created_at", // Timestamp when the record was created.
-  "updated_at", // Timestamp when the record was updated.
-  "request_notes", // Optional notes captured at request time.
-  "pre_pick_location", // Optional pre-pick bin location.
-  "storage_location", // Storage bin for the part.
-  "unit_cost", // Unit cost captured for the allocation.
-  "unit_price", // Unit price captured for the allocation.
-  "origin", // Origin of the request (vhc, direct, etc.).
-  "allocated_by", // User id who allocated the part.
-  "picked_by", // User id who picked the part.
-  "fitted_by", // User id who fitted the part.
-].join(", "); // Join for select statements.
-
-const JOB_ITEM_STATUS_SET = new Set([ // Enumerate allowed status transitions for validation.
-  "pending",
-  "awaiting_stock",
-  "allocated",
-  "picked",
-  "fitted",
-  "cancelled",
-]); // Close set definition.
-
-const mapJobItemRow = (row = {}) => ({ // Normalise parts_job_items rows into camelCase.
-  id: row.id, // Primary key UUID.
-  jobId: row.job_id, // Associated job id.
-  partId: row.part_id, // Associated part UUID.
-  quantityRequested: row.quantity_requested, // Requested quantity.
-  quantityAllocated: row.quantity_allocated, // Allocated quantity.
-  quantityFitted: row.quantity_fitted, // Fitted quantity.
-  status: row.status, // Current workflow status.
-  requestNotes: row.request_notes, // Optional notes field.
-  prePickLocation: row.pre_pick_location, // Pre-pick location reference.
-  storageLocation: row.storage_location, // Storage bin reference.
-  unitCost: row.unit_cost, // Unit cost captured.
-  unitPrice: row.unit_price, // Unit price captured.
-  origin: row.origin, // Origin of the allocation.
-  allocatedBy: row.allocated_by, // User id for allocation action.
-  pickedBy: row.picked_by, // User id for picking action.
-  fittedBy: row.fitted_by, // User id for fitting action.
-  createdAt: row.created_at, // Creation timestamp.
-  updatedAt: row.updated_at, // Update timestamp.
-  part: row.part
-    ? { // Map joined part information when requested.
-        id: row.part.id, // Part UUID.
-        partNumber: row.part.part_number, // Part number string.
-        name: row.part.name, // Part name string.
-      }
-    : null, // Null when no join requested.
-}); // Close mapper helper.
-
-const assertJobItemStatus = (status) => { // Validate job item status values.
-  if (!status) { // Reject falsy inputs.
-    throw new Error('status is required'); // Provide validation feedback.
-  } // Close null guard.
-  const normalised = status.toLowerCase(); // Normalise case for comparison.
-  if (!JOB_ITEM_STATUS_SET.has(normalised)) { // Ensure the status is permitted.
-    throw new Error(`Invalid job item status: ${status}`); // Provide descriptive error.
-  } // Close validation guard.
-  return normalised; // Return the normalised status value.
-}; // End assertJobItemStatus helper.
-
-
-const toInteger = (value, fallback = 0) => { // Safely convert numeric inputs to integers.
-  if (value === null || value === undefined || value === "") { // Treat empty inputs as fallback.
-    return fallback; // Return fallback when empty.
-  } // Close guard.
-  const parsed = Number.parseInt(value, 10); // Attempt integer coercion.
-  return Number.isNaN(parsed) ? fallback : parsed; // Return fallback on NaN.
-}; // End toInteger helper.
 
 const mapPartRow = (row = {}) => ({ // Normalize part rows into camelCase.
   id: row.id, // Part UUID.
@@ -265,56 +159,90 @@ export const listPartsCatalog = async ({ search, includeInactive = false, limit 
   }; // Close return object.
 }; // End listPartsCatalog.
 
-export const getPartById = async (partId) => { // Retrieve a single part by UUID primary key.
-  if (!partId) { // Validate input presence.
-    throw new Error("getPartById requires a partId."); // Provide descriptive validation error.
-  } // Close guard.
-  const { data, error } = await db // Execute select query.
-    .from(PARTS_TABLE) // Target catalog table.
-    .select(PART_COLUMNS) // Fetch canonical columns.
-    .eq("id", partId) // Filter by UUID.
-    .maybeSingle(); // Expect zero or one row.
-  if (error) { // Handle query errors.
-    throw new Error(`Failed to fetch part ${partId}: ${error.message}`); // Provide diagnostics.
-  } // Close guard.
-  return data ? mapPartRow(data) : null; // Return mapped row or null.
-}; // End getPartById.
+export const getPartById = async (partId) => {
+  if (!partId) {
+    return { success: false, error: new Error("Part ID is required") };
+  }
 
-export const createPart = async (payload) => { // Insert a new part definition.
-  const required = ["part_number", "name"]; // part_number and name are NOT NULL in schema.
-  const missing = required.filter((field) => !payload?.[field]); // Determine missing required fields.
-  if (missing.length) { // If any required fields missing, throw.
-    throw new Error(`Missing required part fields: ${missing.join(", ")}`); // Provide detail for debugging.
-  } // Close guard.
-  const { data, error } = await db // Execute insert.
-    .from(PARTS_TABLE) // Target catalog table.
-    .insert([payload]) // Insert provided payload.
-    .select(PART_COLUMNS) // Return canonical columns.
-    .single(); // Expect a single row back.
-  if (error) { // Handle insert failure.
-    throw new Error(`Failed to create part: ${error.message}`); // Provide diagnostics.
-  } // Close guard.
-  return mapPartRow(data); // Return inserted row.
-}; // End createPart.
+  try {
+    const { data, error } = await db
+      .from(PARTS_TABLE)
+      .select("*")
+      .eq("id", partId)
+      .maybeSingle();
 
-export const updatePart = async (partId, updates = {}) => { // Modify an existing part.
-  if (!partId) { // Validate input.
-    throw new Error("updatePart requires a partId."); // Provide validation error.
-  } // Close guard.
-  if (Object.keys(updates).length === 0) { // Prevent empty updates.
-    throw new Error("updatePart requires at least one field to update."); // Provide feedback.
-  } // Close guard.
-  const { data, error } = await db // Execute update.
-    .from(PARTS_TABLE) // Target catalog table.
-    .update(updates) // Apply provided changes.
-    .eq("id", partId) // Restrict to specific part.
-    .select(PART_COLUMNS) // Return canonical columns.
-    .single(); // Expect one row.
-  if (error) { // Handle update errors.
-    throw new Error(`Failed to update part ${partId}: ${error.message}`); // Provide diagnostics.
-  } // Close guard.
-  return mapPartRow(data); // Return updated row.
-}; // End updatePart.
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      return { success: false, error: new Error("Part not found") };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("getPartById error", error);
+    return { success: false, error };
+  }
+};
+
+export const createPart = async (payload = {}, { userId } = {}) => {
+  try {
+    const insertPayload = {
+      ...payload,
+      created_by: userId || null,
+      updated_by: userId || null,
+    };
+
+    const { data, error } = await db
+      .from(PARTS_TABLE)
+      .insert([insertPayload])
+      .select("*")
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("createPart error", error);
+    return { success: false, error };
+  }
+};
+
+export const updatePart = async (partId, updates = {}, { userId } = {}) => {
+  if (!partId) {
+    return { success: false, error: new Error("Part ID is required") };
+  }
+
+  if (Object.keys(updates || {}).length === 0) {
+    return { success: false, error: new Error("No updates provided") };
+  }
+
+  try {
+    const updatePayload = {
+      ...updates,
+      updated_by: userId || null,
+    };
+
+    const { data, error } = await db
+      .from(PARTS_TABLE)
+      .update(updatePayload)
+      .eq("id", partId)
+      .select("*")
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("updatePart error", error);
+    return { success: false, error };
+  }
+};
 
 export const deletePart = async (partId) => { // Remove a part from the catalog.
   if (!partId) { // Validate input.
@@ -390,149 +318,263 @@ export const listDeliveryItems = async (deliveryId) => { // Fetch all items for 
   return (data || []).map(mapDeliveryItemRow); // Return mapped rows.
 }; // End listDeliveryItems.
 
+export const recordStockMovement = async (payload = {}) => {
+  if (!payload.part_id) {
+    return { success: false, error: new Error("part_id is required for stock movement") };
+  }
 
-export const listJobItems = async (jobId) => { // Fetch all parts assigned to a specific job.
-  if (!jobId) { // Validate job identifier.
-    throw new Error('listJobItems requires a jobId.'); // Provide validation feedback.
-  } // Close guard.
-  const { data, error } = await db // Execute select query.
-    .from(JOB_ITEMS_TABLE) // Target parts_job_items table.
-    .select(`${JOB_ITEM_COLUMNS}, part:part_id(id, part_number, name)`) // Fetch canonical columns plus part metadata.
-    .eq('job_id', jobId) // Filter by job.
-    .order('created_at', { ascending: true }); // Order chronologically for UI consistency.
-  if (error) { // Handle database errors.
-    throw new Error(`Failed to list job items for job ${jobId}: ${error.message}`); // Provide diagnostics.
-  } // Close guard.
-  return (data || []).map(mapJobItemRow); // Map rows into camelCase objects.
-}; // End listJobItems.
+  if (payload.quantity === undefined || payload.quantity === null) {
+    return { success: false, error: new Error("quantity is required for stock movement") };
+  }
 
-export const createJobItem = async (payload = {}) => { // Insert a new parts_job_items row.
-  const jobId = payload.job_id ?? payload.jobId; // Accept both camelCase and snake_case inputs.
-  const partId = payload.part_id ?? payload.partId; // Accept both casing variants for part reference.
-  if (!jobId) { // Ensure job id is present.
-    throw new Error('createJobItem requires job_id.'); // Provide validation feedback.
-  } // Close guard.
-  if (!partId) { // Ensure part id is present.
-    throw new Error('createJobItem requires part_id.'); // Provide validation feedback.
-  } // Close guard.
-  const status = assertJobItemStatus(payload.status || 'pending'); // Normalise and validate status.
-  const row = { // Build insert payload in snake_case.
-    job_id: jobId, // Persist job id reference.
-    part_id: partId, // Persist part reference.
-    quantity_requested: toInteger(payload.quantity_requested ?? payload.quantityRequested ?? 0, 0), // Normalise requested quantity.
-    quantity_allocated: toInteger(payload.quantity_allocated ?? payload.quantityAllocated ?? 0, 0), // Normalise allocated quantity.
-    quantity_fitted: toInteger(payload.quantity_fitted ?? payload.quantityFitted ?? 0, 0), // Normalise fitted quantity.
-    status, // Persist validated status.
-    request_notes: payload.request_notes ?? payload.requestNotes ?? null, // Optional notes.
-    pre_pick_location: payload.pre_pick_location ?? payload.prePickLocation ?? null, // Optional pre-pick location.
-    storage_location: payload.storage_location ?? payload.storageLocation ?? null, // Optional storage bin.
-    unit_cost: payload.unit_cost ?? payload.unitCost ?? null, // Optional unit cost.
-    unit_price: payload.unit_price ?? payload.unitPrice ?? null, // Optional unit price.
-    origin: payload.origin ?? null, // Optional origin.
-    allocated_by: payload.allocated_by ?? payload.allocatedBy ?? null, // Optional allocated-by reference.
-    picked_by: payload.picked_by ?? payload.pickedBy ?? null, // Optional picked-by reference.
-    fitted_by: payload.fitted_by ?? payload.fittedBy ?? null, // Optional fitted-by reference.
-  }; // Close insert payload.
-  const { data, error } = await db // Execute insert.
-    .from(JOB_ITEMS_TABLE) // Target parts_job_items table.
-    .insert([row]) // Insert the row.
-    .select(`${JOB_ITEM_COLUMNS}, part:part_id(id, part_number, name)`) // Return canonical columns plus joined part info.
-    .single(); // Expect exactly one inserted row.
-  if (error) { // Handle Supabase errors.
-    throw new Error(`Failed to create job item: ${error.message}`); // Provide diagnostics.
-  } // Close guard.
-  return mapJobItemRow(data); // Return mapped row.
-}; // End createJobItem.
+  try {
+    const { data, error } = await db
+      .from(STOCK_MOVEMENTS_TABLE)
+      .insert([payload])
+      .select("*")
+      .single();
 
-export const updateJobItem = async (id, updates = {}) => { // Patch an existing parts_job_items row.
-  if (!id) { // Validate identifier presence.
-    throw new Error('updateJobItem requires an id.'); // Provide validation feedback.
-  } // Close guard.
-  const row = {}; // Prepare payload container.
-  if (Object.prototype.hasOwnProperty.call(updates, 'quantity_requested') || Object.prototype.hasOwnProperty.call(updates, 'quantityRequested')) { // Detect requested quantity updates.
-    row.quantity_requested = toInteger(updates.quantity_requested ?? updates.quantityRequested, 0); // Normalise to integer.
-  } // Close requested branch.
-  if (Object.prototype.hasOwnProperty.call(updates, 'quantity_allocated') || Object.prototype.hasOwnProperty.call(updates, 'quantityAllocated')) { // Detect allocated quantity updates.
-    row.quantity_allocated = toInteger(updates.quantity_allocated ?? updates.quantityAllocated, 0); // Normalise to integer.
-  } // Close allocated branch.
-  if (Object.prototype.hasOwnProperty.call(updates, 'quantity_fitted') || Object.prototype.hasOwnProperty.call(updates, 'quantityFitted')) { // Detect fitted quantity updates.
-    row.quantity_fitted = toInteger(updates.quantity_fitted ?? updates.quantityFitted, 0); // Normalise to integer.
-  } // Close fitted branch.
-  if (Object.prototype.hasOwnProperty.call(updates, 'status')) { // Detect status updates.
-    row.status = assertJobItemStatus(updates.status); // Validate and normalise status.
-  } // Close status branch.
-  if (Object.prototype.hasOwnProperty.call(updates, 'request_notes') || Object.prototype.hasOwnProperty.call(updates, 'requestNotes')) { // Detect notes update.
-    row.request_notes = updates.request_notes ?? updates.requestNotes ?? null; // Allow null.
-  } // Close notes branch.
-  if (Object.prototype.hasOwnProperty.call(updates, 'pre_pick_location') || Object.prototype.hasOwnProperty.call(updates, 'prePickLocation')) { // Detect pre-pick location update.
-    row.pre_pick_location = updates.pre_pick_location ?? updates.prePickLocation ?? null; // Allow null.
-  } // Close pre-pick branch.
-  if (Object.prototype.hasOwnProperty.call(updates, 'storage_location') || Object.prototype.hasOwnProperty.call(updates, 'storageLocation')) { // Detect storage location update.
-    row.storage_location = updates.storage_location ?? updates.storageLocation ?? null; // Allow null.
-  } // Close storage branch.
-  if (Object.prototype.hasOwnProperty.call(updates, 'unit_cost') || Object.prototype.hasOwnProperty.call(updates, 'unitCost')) { // Detect unit cost update.
-    row.unit_cost = updates.unit_cost ?? updates.unitCost ?? null; // Allow null.
-  } // Close unit cost branch.
-  if (Object.prototype.hasOwnProperty.call(updates, 'unit_price') || Object.prototype.hasOwnProperty.call(updates, 'unitPrice')) { // Detect unit price update.
-    row.unit_price = updates.unit_price ?? updates.unitPrice ?? null; // Allow null.
-  } // Close unit price branch.
-  if (Object.prototype.hasOwnProperty.call(updates, 'origin')) { // Detect origin update.
-    row.origin = updates.origin ?? null; // Allow null.
-  } // Close origin branch.
-  if (Object.prototype.hasOwnProperty.call(updates, 'allocated_by') || Object.prototype.hasOwnProperty.call(updates, 'allocatedBy')) { // Detect allocated-by update.
-    row.allocated_by = updates.allocated_by ?? updates.allocatedBy ?? null; // Allow null.
-  } // Close allocated-by branch.
-  if (Object.prototype.hasOwnProperty.call(updates, 'picked_by') || Object.prototype.hasOwnProperty.call(updates, 'pickedBy')) { // Detect picked-by update.
-    row.picked_by = updates.picked_by ?? updates.pickedBy ?? null; // Allow null.
-  } // Close picked-by branch.
-  if (Object.prototype.hasOwnProperty.call(updates, 'fitted_by') || Object.prototype.hasOwnProperty.call(updates, 'fittedBy')) { // Detect fitted-by update.
-    row.fitted_by = updates.fitted_by ?? updates.fittedBy ?? null; // Allow null.
-  } // Close fitted-by branch.
-  if (Object.keys(row).length === 0) { // Ensure at least one field supplied.
-    throw new Error('No valid fields provided to update job item.'); // Provide validation feedback.
-  } // Close guard.
-  row.updated_at = new Date().toISOString(); // Stamp update time for audit trail.
-  const { data, error } = await db // Execute update.
-    .from(JOB_ITEMS_TABLE) // Target parts_job_items table.
-    .update(row) // Apply patch payload.
-    .eq('id', id) // Filter by primary key.
-    .select(`${JOB_ITEM_COLUMNS}, part:part_id(id, part_number, name)`) // Return canonical columns plus part metadata.
-    .maybeSingle(); // Expect zero or one row.
-  if (error) { // Handle Supabase errors.
-    throw new Error(`Failed to update job item ${id}: ${error.message}`); // Provide diagnostics.
-  } // Close guard.
-  return data ? mapJobItemRow(data) : null; // Return mapped row or null if not found.
-}; // End updateJobItem.
+    if (error) {
+      throw error;
+    }
 
-export const deleteJobItem = async (id) => { // Remove a parts_job_items row by id.
-  if (!id) { // Validate identifier presence.
-    throw new Error('deleteJobItem requires an id.'); // Provide validation feedback.
-  } // Close guard.
-  const { error } = await db // Execute delete.
-    .from(JOB_ITEMS_TABLE) // Target parts_job_items table.
-    .delete() // Perform deletion.
-    .eq('id', id); // Filter by primary key.
-  if (error) { // Handle Supabase errors.
-    throw new Error(`Failed to delete job item ${id}: ${error.message}`); // Provide diagnostics.
-  } // Close guard.
-  return true; // Indicate successful deletion.
-}; // End deleteJobItem.
+    return { success: true, data };
+  } catch (error) {
+    console.error("recordStockMovement error", error);
+    return { success: false, error };
+  }
+};
 
-export const recordStockMovement = async (payload) => { // Insert a stock movement entry for auditing inventory adjustments.
-  const required = ["part_id", "movement_type", "quantity"]; // Required columns according to schema.
-  const missing = required.filter((field) => !payload?.[field] && payload?.[field] !== 0); // Determine missing values while allowing zero quantities if needed.
-  if (missing.length) { // Throw when required fields absent.
-    throw new Error(`Missing required stock movement fields: ${missing.join(", ")}`); // Provide descriptive feedback.
-  } // Close guard.
-  const { data, error } = await db // Execute insert.
-    .from(STOCK_MOVEMENTS_TABLE) // Target stock movements table.
-    .insert([payload]) // Insert payload row.
-    .select(STOCK_MOVEMENT_COLUMNS) // Return canonical columns.
-    .single(); // Expect one row.
-  if (error) { // Handle errors.
-    throw new Error(`Failed to record stock movement: ${error.message}`); // Provide diagnostics.
-  } // Close guard.
-  return mapStockMovementRow(data); // Return inserted row.
-}; // End recordStockMovement.
+export const fetchJobWithParts = async (searchTerm) => {
+  if (!searchTerm) {
+    return {
+      success: false,
+      error: new Error("Search term is required"),
+    };
+  }
 
-// This parts data layer now provides schema-accurate helpers for catalog management, delivery tracking, and stock movement auditing.
+  try {
+    const job = await getJobByNumberOrReg(searchTerm);
+
+    if (!job) {
+      return {
+        success: false,
+        error: new Error("Job card not found for provided search term"),
+      };
+    }
+
+    const partsList = Array.isArray(job.parts_job_items)
+      ? job.parts_job_items
+      : job.parts || [];
+
+    return {
+      success: true,
+      data: {
+        job,
+        parts: partsList,
+      },
+    };
+  } catch (error) {
+    console.error("fetchJobWithParts error", error);
+    return { success: false, error };
+  }
+};
+
+export const createJobPart = async (jobId, payload = {}, { userId } = {}) => {
+  if (!jobId) {
+    return { success: false, error: new Error("Job ID is required") };
+  }
+
+  if (!payload?.part_id) {
+    return { success: false, error: new Error("part_id is required") };
+  }
+
+  try {
+    const insertPayload = {
+      ...payload,
+      job_id: jobId,
+      created_by: userId || null,
+      updated_by: userId || null,
+    };
+
+    const { data, error } = await db
+      .from(JOB_PART_ITEMS_TABLE)
+      .insert([insertPayload])
+      .select(JOB_PART_ITEM_COLUMNS)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("createJobPart error", error);
+    return { success: false, error };
+  }
+};
+
+export const getJobPartById = async (jobPartId) => {
+  if (!jobPartId) {
+    return { success: false, error: new Error("Job part ID is required") };
+  }
+
+  try {
+    const { data, error } = await db
+      .from(JOB_PART_ITEMS_TABLE)
+      .select(JOB_PART_ITEM_COLUMNS)
+      .eq("id", jobPartId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      return { success: false, error: new Error("Job part not found") };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("getJobPartById error", error);
+    return { success: false, error };
+  }
+};
+
+export const updateJobPart = async (jobPartId, updates = {}, { userId } = {}) => {
+  if (!jobPartId) {
+    return { success: false, error: new Error("Job part ID is required") };
+  }
+
+  try {
+    const updatePayload = {
+      ...updates,
+      updated_by: userId || null,
+    };
+
+    const { data, error } = await db
+      .from(JOB_PART_ITEMS_TABLE)
+      .update(updatePayload)
+      .eq("id", jobPartId)
+      .select(JOB_PART_ITEM_COLUMNS)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("updateJobPart error", error);
+    return { success: false, error };
+  }
+};
+
+export const deleteJobPart = async (jobPartId) => {
+  if (!jobPartId) {
+    return { success: false, error: new Error("Job part ID is required") };
+  }
+
+  try {
+    const { error } = await db
+      .from(JOB_PART_ITEMS_TABLE)
+      .delete()
+      .eq("id", jobPartId);
+
+    if (error) {
+      throw error;
+    }
+
+    return { success: true, deletedId: jobPartId };
+  } catch (error) {
+    console.error("deleteJobPart error", error);
+    return { success: false, error };
+  }
+};
+
+export const getPartsManagerSummary = async () => {
+  try {
+    const { data, error } = await db
+      .from(PARTS_TABLE)
+      .select("qty_in_stock, qty_reserved, qty_on_order");
+
+    if (error) {
+      throw error;
+    }
+
+    const rows = data || [];
+    const totals = rows.reduce(
+      (acc, row) => ({
+        totalInStock: acc.totalInStock + clampQuantity(row.qty_in_stock || 0),
+        totalReserved: acc.totalReserved + clampQuantity(row.qty_reserved || 0),
+        totalOnOrder: acc.totalOnOrder + clampQuantity(row.qty_on_order || 0),
+      }),
+      { totalInStock: 0, totalReserved: 0, totalOnOrder: 0 }
+    );
+
+    return {
+      success: true,
+      data: {
+        partsCount: rows.length,
+        totalInStock: totals.totalInStock,
+        totalReserved: totals.totalReserved,
+        totalOnOrder: totals.totalOnOrder,
+      },
+    };
+  } catch (error) {
+    console.error("getPartsManagerSummary error", error);
+    return { success: false, error };
+  }
+};
+
+
+// Legacy helper aliases preserved for backwards compatibility with existing imports
+export const listPartsCatalog = async (options = {}) => {
+  const result = await getPartsInventory({
+    searchTerm: options.search || "",
+    includeInactive: options.includeInactive ?? false,
+    limit: options.limit ?? 50,
+    offset: options.offset ?? 0,
+  });
+
+  if (!result.success) {
+    throw result.error;
+  }
+
+  return result.data;
+};
+
+export const createPartDelivery = async (payload, context) => {
+  const result = await createDelivery(payload, context);
+  if (!result.success) {
+    throw result.error;
+  }
+  return result.data;
+};
+
+export const addDeliveryItem = async (payload) => {
+  const deliveryId = payload?.delivery_id;
+  if (!deliveryId) {
+    throw new Error("delivery_id is required");
+  }
+  const result = await createDeliveryItem(deliveryId, payload, {});
+  if (!result.success) {
+    throw result.error;
+  }
+  return result.data;
+};
+
+export const listDeliveryItems = async (deliveryId) => {
+  if (!deliveryId) {
+    throw new Error("deliveryId is required");
+  }
+  const { data, error } = await db
+    .from(DELIVERY_ITEMS_TABLE)
+    .select(DELIVERY_ITEM_COLUMNS)
+    .eq("delivery_id", deliveryId)
+    .order("created_at", { ascending: true });
+  if (error) {
+    throw error;
+  }
+  return data || [];
+};

@@ -165,7 +165,7 @@ export default async function handler(req, res) {
           });
           updates.quantity_allocated = Math.max(
             0,
-            (updates.quantity_allocated ?? existing.quantity_allocated || 0) -
+            ((updates.quantity_allocated ?? existing.quantity_allocated) || 0) -
               outstanding
           );
         }

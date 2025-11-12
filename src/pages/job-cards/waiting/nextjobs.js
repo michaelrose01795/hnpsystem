@@ -1133,7 +1133,7 @@ export default function NextJobsPage() {
                   const value = e.target.value;
                   const selectedTech = assignableStaffList.find(
                     (t) =>
-                      String(t.id ?? t.name) === value || t.name === value
+                      String((t.id ?? t.name)) === value || t.name === value
                   );
                   if (selectedTech) assignTechToJob(selectedTech); // Assign selected tech
                 }}
