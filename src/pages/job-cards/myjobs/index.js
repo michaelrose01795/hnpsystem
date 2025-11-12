@@ -81,17 +81,7 @@ export default function MyJobsPage() {
   const hasTechnicianAccess =
     (username && allowedTechNames.has(username)) || hasRoleAccess;
 
-  if (rosterLoading) {
-    return (
-      <Layout>
-        <div style={{ padding: "40px", textAlign: "center", color: "#6B7280" }}>
-          Loading roster…
-        </div>
-      </Layout>
-    );
-  }
-
-  // ✅ Fetch jobs from database
+  // Fetch jobs from database
   useEffect(() => {
     if (!hasTechnicianAccess || !username) return;
 
@@ -102,7 +92,7 @@ export default function MyJobsPage() {
         const normalizedUsername = normalizeDisplayName(username);
         // Fetch all jobs
         const fetchedJobs = await getAllJobs();
-        console.log("📦 Fetched jobs:", fetchedJobs); // Debug log
+        console.log("[MyJobs] fetched jobs:", fetchedJobs); // Debug log
         setJobs(fetchedJobs);
 
         // Filter jobs assigned to this technician
@@ -131,9 +121,8 @@ export default function MyJobsPage() {
         // Get clocking status
         const { data: clockData } = await getClockingStatus(username);
         setClockingStatus(clockData);
-
       } catch (error) {
-        console.error("❌ Error fetching jobs:", error);
+        console.error("[MyJobs] error fetching jobs:", error);
       } finally {
         setLoading(false);
       }
@@ -142,21 +131,21 @@ export default function MyJobsPage() {
     fetchJobs();
   }, [username, hasTechnicianAccess]);
 
-  // ✅ Apply filters when filter or search changes
+  // Apply filters when filter or search changes
   useEffect(() => {
     let filtered = [...myJobs];
 
     // Apply status filter
     if (filter === "in-progress") {
-      filtered = filtered.filter(job => 
+      filtered = filtered.filter(job =>
         job.status === "In Progress" || job.status === "Started"
       );
     } else if (filter === "pending") {
-      filtered = filtered.filter(job => 
+      filtered = filtered.filter(job =>
         job.status === "Pending" || job.status === "Waiting" || job.status === "Open"
       );
     } else if (filter === "complete") {
-      filtered = filtered.filter(job => 
+      filtered = filtered.filter(job =>
         job.status === "Complete" || job.status === "Completed"
       );
     }
@@ -174,6 +163,16 @@ export default function MyJobsPage() {
 
     setFilteredJobs(filtered);
   }, [filter, searchTerm, myJobs]);
+
+  if (rosterLoading) {
+    return (
+      <Layout>
+        <div style={{ padding: "40px", textAlign: "center", color: "#6B7280" }}>
+          Loading roster…
+        </div>
+      </Layout>
+    );
+  }
 
   // ✅ Handle job click - open Start Job modal with job number prefilled
   const handleJobClick = (job) => {
