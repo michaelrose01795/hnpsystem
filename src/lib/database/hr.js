@@ -3,8 +3,138 @@
 // file location: src/lib/database/hr.js
 import dayjs from "dayjs";
 import { supabase } from "@/lib/supabaseClient";
+import { getDatabaseClient } from "@/lib/database/client"; // Use the service client for privileged HR operations.
 
 const DEFAULT_ATTENDANCE_LIMIT = 50;
+
+const adminDb = getDatabaseClient(); // Service-role client for managing secure HR tables.
+const TRAINING_TABLE = "hr_training_courses"; // Table storing HR training course definitions.
+const TRAINING_COLUMNS = [ // Canonical column set for training courses.
+  "course_id", // Primary key for each course.
+  "title", // Course title text.
+  "description", // Optional course description.
+  "category", // Optional category label.
+  "renewal_interval_months", // Renewal frequency in months.
+  "created_at", // Timestamp when the course row was created.
+  "updated_at", // Timestamp when the course row was last updated.
+].join(", "); // Join column names for Supabase selects.
+
+const mapTrainingCourse = (row = {}) => ({ // Convert snake_case course rows into camelCase objects.
+  courseId: row.course_id, // Primary key as camelCase.
+  title: row.title, // Course title text.
+  description: row.description, // Optional descriptive text.
+  category: row.category, // Optional category label.
+  renewalIntervalMonths: row.renewal_interval_months, // Numeric renewal interval.
+  createdAt: row.created_at, // Creation timestamp.
+  updatedAt: row.updated_at, // Update timestamp.
+}); // Close mapper helper.
+
+const parseInterval = (value) => { // Normalise renewal interval inputs.
+  if (value === null || value === undefined || value === "") { // Accept null-like values.
+    return null; // Represent missing interval as null.
+  } // Close null guard.
+  const numeric = Number.parseInt(value, 10); // Attempt integer coercion.
+  return Number.isNaN(numeric) ? null : numeric; // Return null on failure else parsed integer.
+}; // End parseInterval helper.
+
+
+export async function listTrainingCourses() { // Fetch all training courses sorted by creation date.
+  const { data, error } = await adminDb // Query using the service client.
+    .from(TRAINING_TABLE) // Target the hr_training_courses table.
+    .select(TRAINING_COLUMNS) // Request canonical columns.
+    .order('created_at', { ascending: true }); // Sort oldest to newest for stable lists.
+  if (error) { // Handle Supabase errors.
+    throw new Error(`Failed to list training courses: ${error.message}`); // Surface descriptive error text.
+  } // Close error guard.
+  return (data || []).map(mapTrainingCourse); // Map rows into camelCase objects.
+} // End listTrainingCourses.
+
+export async function getTrainingCourse(courseId) { // Fetch a single training course by id.
+  if (!courseId) { // Validate identifier presence.
+    throw new Error('getTrainingCourse requires a courseId.'); // Provide descriptive validation feedback.
+  } // Close validation guard.
+  const { data, error } = await adminDb // Execute select query.
+    .from(TRAINING_TABLE) // Target hr_training_courses.
+    .select(TRAINING_COLUMNS) // Request canonical columns.
+    .eq('course_id', courseId) // Filter by primary key.
+    .maybeSingle(); // Expect zero or one row.
+  if (error) { // Handle query errors.
+    throw new Error(`Failed to fetch training course ${courseId}: ${error.message}`); // Provide diagnostics.
+  } // Close error guard.
+  return data ? mapTrainingCourse(data) : null; // Return mapped row or null.
+} // End getTrainingCourse.
+
+export async function createTrainingCourse(payload = {}) { // Insert a new training course definition.
+  const title = typeof payload.title === 'string' ? payload.title.trim() : ''; // Normalise the incoming title.
+  if (!title) { // Ensure required title present.
+    throw new Error('createTrainingCourse requires a title.'); // Provide validation feedback.
+  } // Close validation guard.
+  const row = { // Build snake_case insert payload.
+    title, // Persist the trimmed title.
+    description: payload.description ?? null, // Optional description.
+    category: payload.category ?? null, // Optional category label.
+    renewal_interval_months: parseInterval(payload.renewal_interval_months ?? payload.renewalIntervalMonths), // Parsed renewal interval.
+  }; // Close row object.
+  const { data, error } = await adminDb // Execute insert.
+    .from(TRAINING_TABLE) // Target hr_training_courses.
+    .insert([row]) // Insert the payload as a single row.
+    .select(TRAINING_COLUMNS) // Return canonical columns.
+    .single(); // Expect exactly one inserted row.
+  if (error) { // Handle insert errors.
+    throw new Error(`Failed to create training course: ${error.message}`); // Provide diagnostics.
+  } // Close error guard.
+  return mapTrainingCourse(data); // Return mapped inserted row.
+} // End createTrainingCourse.
+
+export async function updateTrainingCourse(courseId, updates = {}) { // Patch an existing training course.
+  if (!courseId) { // Validate identifier presence.
+    throw new Error('updateTrainingCourse requires a courseId.'); // Provide validation feedback.
+  } // Close validation guard.
+  const row = {}; // Prepare mutable payload container.
+  if (Object.prototype.hasOwnProperty.call(updates, 'title')) { // Detect title update.
+    const title = typeof updates.title === 'string' ? updates.title.trim() : ''; // Normalise new title.
+    if (!title) { // Enforce non-empty title if provided.
+      throw new Error('Training course title cannot be empty.'); // Provide validation feedback.
+    } // Close validation guard.
+    row.title = title; // Apply trimmed title.
+  } // Close title branch.
+  if (Object.prototype.hasOwnProperty.call(updates, 'description')) { // Detect description update.
+    row.description = updates.description ?? null; // Allow null descriptions.
+  } // Close description branch.
+  if (Object.prototype.hasOwnProperty.call(updates, 'category')) { // Detect category update.
+    row.category = updates.category ?? null; // Allow null categories.
+  } // Close category branch.
+  if (Object.prototype.hasOwnProperty.call(updates, 'renewal_interval_months') || Object.prototype.hasOwnProperty.call(updates, 'renewalIntervalMonths')) { // Detect renewal interval update in either naming convention.
+    row.renewal_interval_months = parseInterval(updates.renewal_interval_months ?? updates.renewalIntervalMonths); // Apply parsed interval.
+  } // Close interval branch.
+  if (Object.keys(row).length === 0) { // Ensure there is something to update.
+    throw new Error('No valid training course fields provided for update.'); // Provide validation feedback.
+  } // Close empty guard.
+  const { data, error } = await adminDb // Execute update.
+    .from(TRAINING_TABLE) // Target hr_training_courses.
+    .update(row) // Apply partial updates.
+    .eq('course_id', courseId) // Filter by primary key.
+    .select(TRAINING_COLUMNS) // Return canonical columns.
+    .maybeSingle(); // Expect zero or one row (course may not exist).
+  if (error) { // Handle Supabase errors.
+    throw new Error(`Failed to update training course ${courseId}: ${error.message}`); // Provide diagnostics.
+  } // Close error guard.
+  return data ? mapTrainingCourse(data) : null; // Return mapped row or null if not found.
+} // End updateTrainingCourse.
+
+export async function deleteTrainingCourse(courseId) { // Remove a training course by id.
+  if (!courseId) { // Validate identifier presence.
+    throw new Error('deleteTrainingCourse requires a courseId.'); // Provide validation feedback.
+  } // Close validation guard.
+  const { error } = await adminDb // Execute delete.
+    .from(TRAINING_TABLE) // Target hr_training_courses.
+    .delete() // Perform deletion.
+    .eq('course_id', courseId); // Filter by primary key.
+  if (error) { // Handle Supabase errors.
+    throw new Error(`Failed to delete training course ${courseId}: ${error.message}`); // Provide diagnostics.
+  } // Close error guard.
+  return true; // Indicate successful deletion.
+} // End deleteTrainingCourse.
 
 // Format employee data consistently across all HR functions
 function formatEmployee(user) {

@@ -8,6 +8,26 @@ const CHECKS_TABLE = "vhc_checks"; // Table storing individual VHC findings.
 const WORKFLOW_TABLE = "vhc_workflow_status"; // Table summarizing per-job VHC workflow metrics.
 const SEND_HISTORY_TABLE = "vhc_send_history"; // Table logging each time VHC results are sent to customers.
 
+
+const DECLINATIONS_TABLE = "vhc_declinations"; // Table capturing declinations recorded against VHC recommendations.
+const DECLINATION_COLUMNS = [ // Canonical column list for vhc_declinations.
+  "id", // Primary key for the declination row.
+  "job_id", // Foreign key referencing jobs.id.
+  "declined_by", // Staff member or identifier that captured the declination.
+  "customer_notes", // Optional notes supplied by the customer.
+  "declined_at", // Timestamp when the declination was recorded.
+  "created_at", // Timestamp when the record was inserted.
+].join(", "); // Join for Supabase selects.
+
+const mapDeclinationRow = (row = {}) => ({ // Normalise declination rows into camelCase objects.
+  id: row.id, // Primary key value.
+  jobId: row.job_id, // Job reference.
+  declinedBy: row.declined_by, // Staff identifier.
+  customerNotes: row.customer_notes, // Customer-facing notes.
+  declinedAt: row.declined_at, // Timestamp when the declination was recorded.
+  createdAt: row.created_at, // Creation timestamp.
+}); // Close mapper helper.
+
 const CHECK_COLUMNS = [ // Canonical column list for vhc_checks.
   "vhc_id", // Primary key for each check item.
   "job_id", // Foreign key referencing jobs.id.
@@ -216,6 +236,33 @@ export const logVhcSendEvent = async ({ jobId, sentBy, sendMethod = "email", cus
   } // Close guard.
   return mapSendHistoryRow(data); // Return inserted row.
 }; // End logVhcSendEvent.
+
+
+export const createDeclination = async ({ job_id, jobId, declined_by, declinedBy, customer_notes, customerNotes }) => { // Insert a declination entry for a VHC job.
+  const resolvedJobId = typeof job_id === 'number' ? job_id : jobId; // Prefer numeric snake_case value when provided.
+  const resolvedDeclinedBy = declined_by ?? declinedBy; // Allow both casing variations for declined_by.
+  const resolvedNotes = customer_notes ?? customerNotes ?? null; // Optional notes.
+  if (typeof resolvedJobId !== 'number') { // Validate job id type.
+    throw new Error('createDeclination requires a numeric job_id.'); // Provide validation feedback.
+  } // Close guard.
+  if (!resolvedDeclinedBy || typeof resolvedDeclinedBy !== 'string') { // Validate actor string.
+    throw new Error('createDeclination requires declined_by.'); // Provide validation feedback.
+  } // Close guard.
+  const payload = { // Build snake_case insert payload.
+    job_id: resolvedJobId, // Persist job reference.
+    declined_by: resolvedDeclinedBy, // Persist actor identifier.
+    customer_notes: resolvedNotes, // Persist optional notes.
+  }; // Close payload.
+  const { data, error } = await db // Execute insert.
+    .from(DECLINATIONS_TABLE) // Target declinations table.
+    .insert([payload]) // Insert payload row.
+    .select(DECLINATION_COLUMNS) // Return canonical columns.
+    .single(); // Expect one inserted row.
+  if (error) { // Handle Supabase errors.
+    throw new Error(`Failed to record VHC declination: ${error.message}`); // Provide diagnostics.
+  } // Close guard.
+  return mapDeclinationRow(data); // Return mapped row.
+}; // End createDeclination.
 
 export const getVhcSendHistory = async (jobId) => { // Fetch all send-history entries for a job.
   if (typeof jobId !== "number") { // Validate identifier.

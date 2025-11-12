@@ -1,7 +1,8 @@
 // file location: src/components/dashboards/AfterSalesManagerDashboard.js
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import dayjs from "dayjs";
+import { supabase } from "@/lib/supabaseClient";
 
 const revenueStreams = [
   { label: "Service Retail", actual: 28600, target: 26000 },
@@ -55,8 +56,139 @@ const quickActions = [
   { label: "Check In", href: "/workshop/check-in" },
 ];
 
+
+const KPI_INITIAL_STATE = { todaysJobs: 0, openJobs: 0, partsPending: 0, vhcSentToday: 0 }; // Default KPI values before Supabase responds.
+const JOB_STATUS_EXCLUSIONS = ["finished", "Finished", "complete", "Complete"]; // TODO: Confirm which job statuses mean fully completed.
+
+const formatCount = (value) => (typeof value === "number" ? value.toLocaleString("en-GB") : value); // Helper to format integer KPIs.
+
+
 export default function AfterSalesManagerDashboard() {
-  const today = dayjs().format("dddd, D MMM");
+  const [kpis, setKpis] = useState(KPI_INITIAL_STATE); // Track live KPI counts.
+  const [kpiLoading, setKpiLoading] = useState(true); // Track loading state for KPI fetch.
+  const [kpiError, setKpiError] = useState(null); // Track any Supabase error messages.
+
+  useEffect(() => {
+    let isMounted = true; // Prevent state updates if the component unmounts.
+
+    const fetchKpis = async () => {
+      setKpiLoading(true); // Begin loading state.
+      setKpiError(null); // Reset previous errors.
+
+      const startOfDay = dayjs().startOf("day").toISOString(); // ISO timestamp for day start.
+      const startOfTomorrow = dayjs().add(1, "day").startOf("day").toISOString(); // ISO timestamp for next day start.
+
+      try {
+        const jobsTodayPromise = supabase // Count jobs created today.
+          .from("jobs")
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", startOfDay)
+          .lt("created_at", startOfTomorrow);
+
+        const openJobsQuery = supabase // Count open jobs by excluding completed statuses.
+          .from("jobs")
+          .select("id", { count: "exact", head: true });
+        JOB_STATUS_EXCLUSIONS.forEach((status) => {
+          openJobsQuery.not("status", "eq", status); // Exclude each finished status variant.
+        });
+
+        const partsPendingPromise = supabase // Count pending parts allocations.
+          .from("parts_job_items")
+          .select("id", { count: "exact", head: true })
+          .in("status", ["pending", "awaiting_stock"]);
+
+        const vhcSentPromise = supabase // Count VHC sends triggered today.
+          .from("vhc_send_history")
+          .select("id", { count: "exact", head: true })
+          .gte("sent_at", startOfDay)
+          .lt("sent_at", startOfTomorrow);
+
+        const [jobsTodayResult, openJobsResult, partsPendingResult, vhcSentResult] = await Promise.all([
+          jobsTodayPromise,
+          openJobsQuery,
+          partsPendingPromise,
+          vhcSentPromise,
+        ]); // Await all queries in parallel.
+
+        const error =
+          jobsTodayResult.error ||
+          openJobsResult.error ||
+          partsPendingResult.error ||
+          vhcSentResult.error; // Collapse Supabase errors into a single reference.
+
+        if (error) {
+          throw new Error(error.message || "Failed to load KPIs"); // Surface first error encountered.
+        }
+
+        if (isMounted) {
+          setKpis({
+            todaysJobs: jobsTodayResult.count ?? 0,
+            openJobs: openJobsResult.count ?? 0,
+            partsPending: partsPendingResult.count ?? 0,
+            vhcSentToday: vhcSentResult.count ?? 0,
+          }); // Persist fetched counts.
+        }
+      } catch (fetchError) {
+        if (isMounted) {
+          setKpiError(fetchError?.message || "Failed to load KPIs"); // Persist readable error.
+        }
+      } finally {
+        if (isMounted) {
+          setKpiLoading(false); // Clear loading state regardless of outcome.
+        }
+      }
+    };
+
+    fetchKpis(); // Trigger initial load on mount.
+
+    return () => {
+      isMounted = false; // Prevent updates once unmounted.
+    };
+  }, []);
+
+  const metricCards = useMemo(() => {
+    const descriptors = [
+      {
+        key: "todaysJobs",
+        label: "Today’s Jobs",
+        helper: "Jobs created today",
+        accent: "#b45309",
+      },
+      {
+        key: "openJobs",
+        label: "Open Jobs",
+        helper: "Active jobs excluding completed statuses",
+        accent: "#d97706",
+      },
+      {
+        key: "partsPending",
+        label: "Parts Pending",
+        helper: "Requests awaiting allocation",
+        accent: "#dc2626",
+      },
+      {
+        key: "vhcSentToday",
+        label: "VHC Sent Today",
+        helper: "Customer VHC reports sent",
+        accent: "#16a34a",
+      },
+    ];
+
+    return descriptors.map((descriptor) => {
+      if (kpiLoading) {
+        return { ...descriptor, value: "Loading…", helper: "Fetching live data" };
+      }
+      if (kpiError) {
+        return { ...descriptor, value: "--", helper: kpiError };
+      }
+      return {
+        ...descriptor,
+        value: formatCount(kpis[descriptor.key] ?? 0),
+      };
+    });
+  }, [kpis, kpiLoading, kpiError]);
+
+  const today = dayjs().format("dddd, D MMM"); // Format headline date string.
   const totals = revenueStreams.reduce(
     (acc, stream) => {
       acc.actual += stream.actual;
@@ -131,12 +263,7 @@ export default function AfterSalesManagerDashboard() {
           gap: "18px",
         }}
       >
-        {[
-          { label: "Today’s GP", value: formatCurrency(18400), helper: "+£1,140 vs plan", accent: "#b45309" },
-          { label: "MTD Gross", value: formatCurrency(286400), helper: "62% of month elapsed", accent: "#d97706" },
-          { label: "CSI", value: "89", helper: "Top 5% in region", accent: "#16a34a" },
-          { label: "Warranty Claims", value: "12", helper: "£3.8k exposure", accent: "#dc2626" },
-        ].map((metric) => (
+        {metricCards.map((metric) => (
           <div
             key={metric.label}
             style={{

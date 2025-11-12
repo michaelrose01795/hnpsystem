@@ -82,6 +82,86 @@ const STOCK_MOVEMENT_COLUMNS = [ // Canonical column list for parts_stock_moveme
   "created_at", // Timestamp when the movement was recorded.
 ].join(", "); // Join for select statements.
 
+
+const JOB_ITEMS_TABLE = "parts_job_items"; // Table linking jobs to the parts allocated against them.
+const JOB_ITEM_COLUMNS = [ // Canonical column list for parts_job_items.
+  "id", // Primary key (UUID).
+  "job_id", // Foreign key referencing jobs.id.
+  "part_id", // Foreign key referencing parts_catalog.id.
+  "quantity_requested", // Quantity requested by workshop.
+  "quantity_allocated", // Quantity allocated from stock.
+  "quantity_fitted", // Quantity fitted to the vehicle.
+  "status", // Workflow status for the part allocation.
+  "created_at", // Timestamp when the record was created.
+  "updated_at", // Timestamp when the record was updated.
+  "request_notes", // Optional notes captured at request time.
+  "pre_pick_location", // Optional pre-pick bin location.
+  "storage_location", // Storage bin for the part.
+  "unit_cost", // Unit cost captured for the allocation.
+  "unit_price", // Unit price captured for the allocation.
+  "origin", // Origin of the request (vhc, direct, etc.).
+  "allocated_by", // User id who allocated the part.
+  "picked_by", // User id who picked the part.
+  "fitted_by", // User id who fitted the part.
+].join(", "); // Join for select statements.
+
+const JOB_ITEM_STATUS_SET = new Set([ // Enumerate allowed status transitions for validation.
+  "pending",
+  "awaiting_stock",
+  "allocated",
+  "picked",
+  "fitted",
+  "cancelled",
+]); // Close set definition.
+
+const mapJobItemRow = (row = {}) => ({ // Normalise parts_job_items rows into camelCase.
+  id: row.id, // Primary key UUID.
+  jobId: row.job_id, // Associated job id.
+  partId: row.part_id, // Associated part UUID.
+  quantityRequested: row.quantity_requested, // Requested quantity.
+  quantityAllocated: row.quantity_allocated, // Allocated quantity.
+  quantityFitted: row.quantity_fitted, // Fitted quantity.
+  status: row.status, // Current workflow status.
+  requestNotes: row.request_notes, // Optional notes field.
+  prePickLocation: row.pre_pick_location, // Pre-pick location reference.
+  storageLocation: row.storage_location, // Storage bin reference.
+  unitCost: row.unit_cost, // Unit cost captured.
+  unitPrice: row.unit_price, // Unit price captured.
+  origin: row.origin, // Origin of the allocation.
+  allocatedBy: row.allocated_by, // User id for allocation action.
+  pickedBy: row.picked_by, // User id for picking action.
+  fittedBy: row.fitted_by, // User id for fitting action.
+  createdAt: row.created_at, // Creation timestamp.
+  updatedAt: row.updated_at, // Update timestamp.
+  part: row.part
+    ? { // Map joined part information when requested.
+        id: row.part.id, // Part UUID.
+        partNumber: row.part.part_number, // Part number string.
+        name: row.part.name, // Part name string.
+      }
+    : null, // Null when no join requested.
+}); // Close mapper helper.
+
+const assertJobItemStatus = (status) => { // Validate job item status values.
+  if (!status) { // Reject falsy inputs.
+    throw new Error('status is required'); // Provide validation feedback.
+  } // Close null guard.
+  const normalised = status.toLowerCase(); // Normalise case for comparison.
+  if (!JOB_ITEM_STATUS_SET.has(normalised)) { // Ensure the status is permitted.
+    throw new Error(`Invalid job item status: ${status}`); // Provide descriptive error.
+  } // Close validation guard.
+  return normalised; // Return the normalised status value.
+}; // End assertJobItemStatus helper.
+
+
+const toInteger = (value, fallback = 0) => { // Safely convert numeric inputs to integers.
+  if (value === null || value === undefined || value === "") { // Treat empty inputs as fallback.
+    return fallback; // Return fallback when empty.
+  } // Close guard.
+  const parsed = Number.parseInt(value, 10); // Attempt integer coercion.
+  return Number.isNaN(parsed) ? fallback : parsed; // Return fallback on NaN.
+}; // End toInteger helper.
+
 const mapPartRow = (row = {}) => ({ // Normalize part rows into camelCase.
   id: row.id, // Part UUID.
   partNumber: row.part_number, // Part number string.
@@ -309,6 +389,134 @@ export const listDeliveryItems = async (deliveryId) => { // Fetch all items for 
   } // Close guard.
   return (data || []).map(mapDeliveryItemRow); // Return mapped rows.
 }; // End listDeliveryItems.
+
+
+export const listJobItems = async (jobId) => { // Fetch all parts assigned to a specific job.
+  if (!jobId) { // Validate job identifier.
+    throw new Error('listJobItems requires a jobId.'); // Provide validation feedback.
+  } // Close guard.
+  const { data, error } = await db // Execute select query.
+    .from(JOB_ITEMS_TABLE) // Target parts_job_items table.
+    .select(`${JOB_ITEM_COLUMNS}, part:part_id(id, part_number, name)`) // Fetch canonical columns plus part metadata.
+    .eq('job_id', jobId) // Filter by job.
+    .order('created_at', { ascending: true }); // Order chronologically for UI consistency.
+  if (error) { // Handle database errors.
+    throw new Error(`Failed to list job items for job ${jobId}: ${error.message}`); // Provide diagnostics.
+  } // Close guard.
+  return (data || []).map(mapJobItemRow); // Map rows into camelCase objects.
+}; // End listJobItems.
+
+export const createJobItem = async (payload = {}) => { // Insert a new parts_job_items row.
+  const jobId = payload.job_id ?? payload.jobId; // Accept both camelCase and snake_case inputs.
+  const partId = payload.part_id ?? payload.partId; // Accept both casing variants for part reference.
+  if (!jobId) { // Ensure job id is present.
+    throw new Error('createJobItem requires job_id.'); // Provide validation feedback.
+  } // Close guard.
+  if (!partId) { // Ensure part id is present.
+    throw new Error('createJobItem requires part_id.'); // Provide validation feedback.
+  } // Close guard.
+  const status = assertJobItemStatus(payload.status || 'pending'); // Normalise and validate status.
+  const row = { // Build insert payload in snake_case.
+    job_id: jobId, // Persist job id reference.
+    part_id: partId, // Persist part reference.
+    quantity_requested: toInteger(payload.quantity_requested ?? payload.quantityRequested ?? 0, 0), // Normalise requested quantity.
+    quantity_allocated: toInteger(payload.quantity_allocated ?? payload.quantityAllocated ?? 0, 0), // Normalise allocated quantity.
+    quantity_fitted: toInteger(payload.quantity_fitted ?? payload.quantityFitted ?? 0, 0), // Normalise fitted quantity.
+    status, // Persist validated status.
+    request_notes: payload.request_notes ?? payload.requestNotes ?? null, // Optional notes.
+    pre_pick_location: payload.pre_pick_location ?? payload.prePickLocation ?? null, // Optional pre-pick location.
+    storage_location: payload.storage_location ?? payload.storageLocation ?? null, // Optional storage bin.
+    unit_cost: payload.unit_cost ?? payload.unitCost ?? null, // Optional unit cost.
+    unit_price: payload.unit_price ?? payload.unitPrice ?? null, // Optional unit price.
+    origin: payload.origin ?? null, // Optional origin.
+    allocated_by: payload.allocated_by ?? payload.allocatedBy ?? null, // Optional allocated-by reference.
+    picked_by: payload.picked_by ?? payload.pickedBy ?? null, // Optional picked-by reference.
+    fitted_by: payload.fitted_by ?? payload.fittedBy ?? null, // Optional fitted-by reference.
+  }; // Close insert payload.
+  const { data, error } = await db // Execute insert.
+    .from(JOB_ITEMS_TABLE) // Target parts_job_items table.
+    .insert([row]) // Insert the row.
+    .select(`${JOB_ITEM_COLUMNS}, part:part_id(id, part_number, name)`) // Return canonical columns plus joined part info.
+    .single(); // Expect exactly one inserted row.
+  if (error) { // Handle Supabase errors.
+    throw new Error(`Failed to create job item: ${error.message}`); // Provide diagnostics.
+  } // Close guard.
+  return mapJobItemRow(data); // Return mapped row.
+}; // End createJobItem.
+
+export const updateJobItem = async (id, updates = {}) => { // Patch an existing parts_job_items row.
+  if (!id) { // Validate identifier presence.
+    throw new Error('updateJobItem requires an id.'); // Provide validation feedback.
+  } // Close guard.
+  const row = {}; // Prepare payload container.
+  if (Object.prototype.hasOwnProperty.call(updates, 'quantity_requested') || Object.prototype.hasOwnProperty.call(updates, 'quantityRequested')) { // Detect requested quantity updates.
+    row.quantity_requested = toInteger(updates.quantity_requested ?? updates.quantityRequested, 0); // Normalise to integer.
+  } // Close requested branch.
+  if (Object.prototype.hasOwnProperty.call(updates, 'quantity_allocated') || Object.prototype.hasOwnProperty.call(updates, 'quantityAllocated')) { // Detect allocated quantity updates.
+    row.quantity_allocated = toInteger(updates.quantity_allocated ?? updates.quantityAllocated, 0); // Normalise to integer.
+  } // Close allocated branch.
+  if (Object.prototype.hasOwnProperty.call(updates, 'quantity_fitted') || Object.prototype.hasOwnProperty.call(updates, 'quantityFitted')) { // Detect fitted quantity updates.
+    row.quantity_fitted = toInteger(updates.quantity_fitted ?? updates.quantityFitted, 0); // Normalise to integer.
+  } // Close fitted branch.
+  if (Object.prototype.hasOwnProperty.call(updates, 'status')) { // Detect status updates.
+    row.status = assertJobItemStatus(updates.status); // Validate and normalise status.
+  } // Close status branch.
+  if (Object.prototype.hasOwnProperty.call(updates, 'request_notes') || Object.prototype.hasOwnProperty.call(updates, 'requestNotes')) { // Detect notes update.
+    row.request_notes = updates.request_notes ?? updates.requestNotes ?? null; // Allow null.
+  } // Close notes branch.
+  if (Object.prototype.hasOwnProperty.call(updates, 'pre_pick_location') || Object.prototype.hasOwnProperty.call(updates, 'prePickLocation')) { // Detect pre-pick location update.
+    row.pre_pick_location = updates.pre_pick_location ?? updates.prePickLocation ?? null; // Allow null.
+  } // Close pre-pick branch.
+  if (Object.prototype.hasOwnProperty.call(updates, 'storage_location') || Object.prototype.hasOwnProperty.call(updates, 'storageLocation')) { // Detect storage location update.
+    row.storage_location = updates.storage_location ?? updates.storageLocation ?? null; // Allow null.
+  } // Close storage branch.
+  if (Object.prototype.hasOwnProperty.call(updates, 'unit_cost') || Object.prototype.hasOwnProperty.call(updates, 'unitCost')) { // Detect unit cost update.
+    row.unit_cost = updates.unit_cost ?? updates.unitCost ?? null; // Allow null.
+  } // Close unit cost branch.
+  if (Object.prototype.hasOwnProperty.call(updates, 'unit_price') || Object.prototype.hasOwnProperty.call(updates, 'unitPrice')) { // Detect unit price update.
+    row.unit_price = updates.unit_price ?? updates.unitPrice ?? null; // Allow null.
+  } // Close unit price branch.
+  if (Object.prototype.hasOwnProperty.call(updates, 'origin')) { // Detect origin update.
+    row.origin = updates.origin ?? null; // Allow null.
+  } // Close origin branch.
+  if (Object.prototype.hasOwnProperty.call(updates, 'allocated_by') || Object.prototype.hasOwnProperty.call(updates, 'allocatedBy')) { // Detect allocated-by update.
+    row.allocated_by = updates.allocated_by ?? updates.allocatedBy ?? null; // Allow null.
+  } // Close allocated-by branch.
+  if (Object.prototype.hasOwnProperty.call(updates, 'picked_by') || Object.prototype.hasOwnProperty.call(updates, 'pickedBy')) { // Detect picked-by update.
+    row.picked_by = updates.picked_by ?? updates.pickedBy ?? null; // Allow null.
+  } // Close picked-by branch.
+  if (Object.prototype.hasOwnProperty.call(updates, 'fitted_by') || Object.prototype.hasOwnProperty.call(updates, 'fittedBy')) { // Detect fitted-by update.
+    row.fitted_by = updates.fitted_by ?? updates.fittedBy ?? null; // Allow null.
+  } // Close fitted-by branch.
+  if (Object.keys(row).length === 0) { // Ensure at least one field supplied.
+    throw new Error('No valid fields provided to update job item.'); // Provide validation feedback.
+  } // Close guard.
+  row.updated_at = new Date().toISOString(); // Stamp update time for audit trail.
+  const { data, error } = await db // Execute update.
+    .from(JOB_ITEMS_TABLE) // Target parts_job_items table.
+    .update(row) // Apply patch payload.
+    .eq('id', id) // Filter by primary key.
+    .select(`${JOB_ITEM_COLUMNS}, part:part_id(id, part_number, name)`) // Return canonical columns plus part metadata.
+    .maybeSingle(); // Expect zero or one row.
+  if (error) { // Handle Supabase errors.
+    throw new Error(`Failed to update job item ${id}: ${error.message}`); // Provide diagnostics.
+  } // Close guard.
+  return data ? mapJobItemRow(data) : null; // Return mapped row or null if not found.
+}; // End updateJobItem.
+
+export const deleteJobItem = async (id) => { // Remove a parts_job_items row by id.
+  if (!id) { // Validate identifier presence.
+    throw new Error('deleteJobItem requires an id.'); // Provide validation feedback.
+  } // Close guard.
+  const { error } = await db // Execute delete.
+    .from(JOB_ITEMS_TABLE) // Target parts_job_items table.
+    .delete() // Perform deletion.
+    .eq('id', id); // Filter by primary key.
+  if (error) { // Handle Supabase errors.
+    throw new Error(`Failed to delete job item ${id}: ${error.message}`); // Provide diagnostics.
+  } // Close guard.
+  return true; // Indicate successful deletion.
+}; // End deleteJobItem.
 
 export const recordStockMovement = async (payload) => { // Insert a stock movement entry for auditing inventory adjustments.
   const required = ["part_id", "movement_type", "quantity"]; // Required columns according to schema.

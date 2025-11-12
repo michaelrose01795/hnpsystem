@@ -16,17 +16,17 @@ const CLOCKING_COLUMNS = [
   "updated_at",
 ].join(", ");
 
-const JOB_COLUMNS = `
+export const JOB_COLUMNS = `
   id,
   job_number,
   status,
   vehicle_reg,
   vehicle_make_model,
+  customer_firstname:customer_id(firstname),
+  customer_lastname:customer_id(lastname),
   customer:customer_id(
     firstname,
-    lastname,
-    first_name,
-    last_name
+    lastname
   ),
   vehicle:vehicle_id(
     registration,
@@ -96,8 +96,14 @@ const calculateHoursWorked = (clockIn, clockOut) => {
 };
 
 const formatCustomerName = (customer = {}) => {
-  const first = customer.firstname ?? customer.first_name ?? "";
-  const last = customer.lastname ?? customer.last_name ?? "";
+  const first =
+    customer.customer_firstname ??
+    customer.firstname ??
+    (typeof customer.first_name === "string" ? customer.first_name : "");
+  const last =
+    customer.customer_lastname ??
+    customer.lastname ??
+    (typeof customer.last_name === "string" ? customer.last_name : "");
   return `${first} ${last}`.trim();
 };
 
@@ -111,8 +117,15 @@ const deriveJobMeta = (job = {}) => {
     job.vehicle_make_model ||
     job.vehicle?.make_model ||
     [job.vehicle?.make, job.vehicle?.model].filter(Boolean).join(" ").trim();
+  const aliasCustomer =
+    job.customer_firstname || job.customer_lastname
+      ? {
+          customer_firstname: job.customer_firstname,
+          customer_lastname: job.customer_lastname,
+        }
+      : null;
   const customerName =
-    formatCustomerName(job.customer) ||
+    formatCustomerName(aliasCustomer || job.customer) ||
     formatCustomerName(job.vehicle?.customer) ||
     "";
 
