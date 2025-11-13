@@ -1,55 +1,27 @@
-// file location: /workspaces/hnpsystem/next.config.mjs
-
-// Detect if we're in production (GitHub Pages) or development
-const isProd = process.env.NODE_ENV === "production";
+// file location: next.config.mjs
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // React strict mode for better error detection
   reactStrictMode: true,
-
-  // Disable Turbopack in development to fix Supabase HMR errors
-  experimental: {
-    turbo: false
+  
+  // Image optimization
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
   },
-
-  // Conditional config: export only for production (GitHub Pages)
-  ...(isProd
-    ? {
-        output: "export",
-        basePath: "/hnpsystem",
-        assetPrefix: "/hnpsystem/",
-        images: {
-          unoptimized: true,
-          remotePatterns: [
-            {
-              protocol: "https",
-              hostname: "**",
-            },
-          ],
-        },
-      }
-    : {
-        basePath: "",
-        assetPrefix: "",
-        images: {
-          remotePatterns: [
-            {
-              protocol: "https",
-              hostname: "**",
-            },
-          ],
-        },
-      }),
-
-  // Environment variables for Keycloak (client-side)
+  
+  // Environment variables for client-side
   env: {
     NEXT_PUBLIC_KEYCLOAK_URL: process.env.NEXT_PUBLIC_KEYCLOAK_URL,
     NEXT_PUBLIC_KEYCLOAK_REALM: process.env.NEXT_PUBLIC_KEYCLOAK_REALM,
     NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID,
-    NEXT_PUBLIC_BASE_PATH: isProd ? "/hnpsystem" : "",
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "",
   },
-};
+}
 
-export default nextConfig;
+export default nextConfig
