@@ -24,4 +24,4 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+export default nextConfig // Export the Next.js configuration
