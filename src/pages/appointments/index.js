@@ -279,7 +279,7 @@ export default function Appointments() { // Main appointments calendar component
             })()} // Close IIFE render
           </div> // Close summary card
         </div> // Close secondary controls row
-        <div style={{ flex: "0 0 auto", maxHeight: "calc(14 * 42px + 60px)", overflowY: "auto", marginBottom: "12px", borderRadius: "10px", boxShadow: "0 2px 6px rgba(0,0,0,0.1)", backgroundColor: "#fff" }}> // Calendar table container for direct landing experience
+        <div style={{ flex: "0 0 auto", maxHeight: "calc(8 * 42px + 60px)", overflowY: "auto", marginBottom: "12px", borderRadius: "10px", boxShadow: "0 2px 6px rgba(0,0,0,0.1)", backgroundColor: "#fff" }}> // Calendar table container limited to roughly 8 visible rows
           <table style={{ width: "100%", borderCollapse: "collapse" }}> // Calendar table
             <thead style={{ position: "sticky", top: 0, zIndex: 2 }}> // Sticky header for readability
               <tr style={{ backgroundColor: "#f6f6f6", borderBottom: "2px solid #FF4040" }}> // Header row styling
