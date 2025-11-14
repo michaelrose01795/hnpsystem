@@ -21,14 +21,14 @@ const hiddenHrRoutes = new Set([
   "/admin/users",
 ]);
 
-export default function Sidebar({ onToggle, isCondensed = false }) {
+export default function Sidebar({ onToggle, isCondensed = false, extraSections = [] }) {
   const pathname = usePathname();
   const { user, logout } = useUser();
   const userRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
 
   const groupedSections = useMemo(() => {
     const groups = { general: [], departments: [], account: [] };
-    sidebarSections.forEach((section) => {
+    [...sidebarSections, ...extraSections].forEach((section) => {
       const category = section.category || "departments";
       if (!groups[category]) {
         groups[category] = [];
@@ -36,7 +36,7 @@ export default function Sidebar({ onToggle, isCondensed = false }) {
       groups[category].push(section);
     });
     return groups;
-  }, []);
+  }, [extraSections]);
 
   const hasAccess = (item) => {
     if (!item.roles || item.roles.length === 0) return true;

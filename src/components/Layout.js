@@ -15,10 +15,69 @@ import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
 import { useRoster } from "@/context/RosterContext";
 import HrTabsBar from "@/components/HR/HrTabsBar";
-import WorkshopTabsBar, {
-  workshopTabs,
-  workshopQuickActions,
-} from "@/components/Workshop/WorkshopTabsBar";
+import { workshopTabs, workshopQuickActions } from "@/components/Workshop/WorkshopTabsBar";
+
+const WORKSHOP_ACCESS_ROLES = [
+  "workshop manager",
+  "after sales director",
+  "service manager",
+  "parts manager",
+];
+
+const WORKSHOP_ACCESS_ROLES_SET = new Set(WORKSHOP_ACCESS_ROLES);
+
+const WORKSHOP_SHORTCUT_LINKS = [
+  {
+    label: "🔜 Next Jobs",
+    href: "/job-cards/waiting/nextjobs",
+    roles: WORKSHOP_ACCESS_ROLES,
+    keywords: ["next jobs", "waiting", "queue"],
+    description: "View the live queue of waiting jobs",
+  },
+  {
+    label: "📝 VHC Dashboard",
+    href: "/vhc/dashboard",
+    roles: WORKSHOP_ACCESS_ROLES,
+    keywords: ["vhc", "dashboard"],
+    description: "Monitor VHC pipeline and completions",
+  },
+  {
+    label: "🧾 Consumables",
+    href: "/workshop/consumables-tracker",
+    roles: WORKSHOP_ACCESS_ROLES,
+    keywords: ["consumables", "tracker"],
+    description: "Track consumable usage and budgets",
+  },
+  {
+    label: "⏱️ Clocking",
+    href: "/workshop/Clocking",
+    roles: WORKSHOP_ACCESS_ROLES,
+    keywords: ["clocking", "time"],
+    description: "Workshop clocking overview",
+  },
+  {
+    label: "🧰 Clocking Tech",
+    href: "/workshop/ClockingTech",
+    roles: WORKSHOP_ACCESS_ROLES,
+    keywords: ["clocking", "tech"],
+    description: "Technician clocking view",
+  },
+  {
+    label: "🕹️ Controller Clocking",
+    href: "/workshop/ControllerClocking",
+    roles: WORKSHOP_ACCESS_ROLES,
+    keywords: ["controller", "clocking"],
+    description: "Controller-specific clocking tools",
+  },
+];
+
+const WORKSHOP_SHORTCUT_SECTIONS = [
+  {
+    label: "Workshop Shortcuts",
+    category: "departments",
+    items: WORKSHOP_SHORTCUT_LINKS,
+  },
+];
 
 export default function Layout({ children, jobNumber }) {
   const { user, status, setStatus, currentJob } = useUser(); // get user context data
@@ -26,12 +85,7 @@ export default function Layout({ children, jobNumber }) {
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
   const showHrTabs = router.pathname.startsWith("/hr") || router.pathname.startsWith("/admin/users");
-  const workshopAccessRoles = new Set([
-    "workshop manager",
-    "after sales director",
-    "service manager",
-    "parts manager",
-  ]);
+  const workshopAccessRoles = WORKSHOP_ACCESS_ROLES_SET;
   const workshopNavRoutes = Array.from(
     new Set([...workshopTabs, ...workshopQuickActions].map((item) => item.href))
   );
@@ -77,7 +131,7 @@ export default function Layout({ children, jobNumber }) {
   ];
 
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
-  const showWorkshopTabs =
+  const showServiceButtons =
     userRoles.some((role) => workshopAccessRoles.has(role)) &&
     workshopNavRoutes.some(
       (href) => router.pathname === href || router.pathname.startsWith(`${href}/`)
@@ -241,6 +295,9 @@ export default function Layout({ children, jobNumber }) {
     };
   }, [router]);
 
+  const serviceSidebarSections = WORKSHOP_SHORTCUT_SECTIONS;
+  const combinedSidebarSections = [...sidebarSections, ...serviceSidebarSections];
+  const serviceHeaderButtons = workshopQuickActions;
   const navigationItems = [];
   const seenNavItems = new Set();
   const roleMatches = (requiredRoles = []) => {
@@ -281,7 +338,7 @@ export default function Layout({ children, jobNumber }) {
     });
   };
 
-  sidebarSections.forEach((section) => {
+  combinedSidebarSections.forEach((section) => {
     (section.items || []).forEach((item) => {
       addNavItem(item.label, item.href, {
         keywords: item.keywords || [],
@@ -439,7 +496,7 @@ export default function Layout({ children, jobNumber }) {
           }}
         >
           {isSidebarOpen ? (
-            <Sidebar onToggle={toggleSidebar} />
+            <Sidebar onToggle={toggleSidebar} extraSections={serviceSidebarSections} />
           ) : (
             <button
               onClick={toggleSidebar}
@@ -549,7 +606,11 @@ export default function Layout({ children, jobNumber }) {
                     overflowY: "auto",
                   }}
                 >
-                  <Sidebar onToggle={closeMobileMenu} isCondensed />
+                  <Sidebar
+                    onToggle={closeMobileMenu}
+                    isCondensed
+                    extraSections={serviceSidebarSections}
+                  />
                 </div>
               </div>
             )}
@@ -789,7 +850,100 @@ export default function Layout({ children, jobNumber }) {
             }}
           >
             {showHrTabs && <HrTabsBar />}
-            {showWorkshopTabs && <WorkshopTabsBar />}
+            {showServiceButtons && (
+              <section
+                style={{
+                  background: "#ffffff",
+                  borderRadius: "18px",
+                  padding: isMobile ? "14px" : "18px",
+                  border: "1px solid #ffe0e0",
+                  boxShadow: "0 16px 30px rgba(209, 0, 0, 0.08)",
+                  marginBottom: isMobile ? "16px" : "22px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "14px",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
+                      minWidth: "200px",
+                      flex: "1 1 220px",
+                    }}
+                  >
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "0.65rem",
+                        letterSpacing: "0.12em",
+                        textTransform: "uppercase",
+                        color: colors.mutedText,
+                      }}
+                    >
+                      Service Buttons
+                    </p>
+                    <strong
+                      style={{
+                        fontSize: isMobile ? "1rem" : "1.1rem",
+                        color: colors.accent,
+                      }}
+                    >
+                      Quick tools for the service team
+                    </strong>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "10px",
+                      justifyContent: "flex-end",
+                      flex: "2 1 280px",
+                    }}
+                  >
+                    {serviceHeaderButtons.map((action) => {
+                      const active =
+                        router.pathname === action.href ||
+                        router.pathname.startsWith(`${action.href}/`);
+                      return (
+                        <Link
+                          key={action.href}
+                          href={action.href}
+                          style={{
+                            minWidth: "150px",
+                            textAlign: "center",
+                            padding: "10px 18px",
+                            borderRadius: "999px",
+                            border: active ? "1px solid #b10000" : "1px solid #ffe0e0",
+                            backgroundColor: active ? "#b10000" : "#fff5f5",
+                            color: active ? "#ffffff" : "#720000",
+                            fontWeight: 600,
+                            fontSize: "0.9rem",
+                            textDecoration: "none",
+                            boxShadow: active
+                              ? "0 16px 32px rgba(177, 0, 0, 0.22)"
+                              : "0 10px 20px rgba(209, 0, 0, 0.12)",
+                            transition:
+                              "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {action.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+            )}
             {children}
           </div>
         </main>
