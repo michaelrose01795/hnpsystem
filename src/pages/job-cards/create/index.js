@@ -3,7 +3,7 @@
 // file location: src/pages/job-cards/create/index.js
 "use client"; // enables client-side rendering for Next.js
 
-import React, { useState } from "react"; // import React and hooks
+import React, { useEffect, useState } from "react"; // import React hooks including useEffect for syncing customer forms
 import { useRouter } from "next/router"; // for navigation
 import Layout from "@/components/Layout"; // import layout wrapper
 import { useJobs } from "@/context/JobsContext"; // import jobs context
@@ -11,8 +11,9 @@ import {
   addCustomerToDatabase,
   checkCustomerExists,
   getCustomerById,
+  updateCustomer,
 } from "@/lib/database/customers";
-import { createOrUpdateVehicle } from "@/lib/database/vehicles";
+import { createOrUpdateVehicle, getVehicleByReg } from "@/lib/database/vehicles";
 import { addJobToDatabase } from "@/lib/database/jobs";
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import new customer popup
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
@@ -32,6 +33,33 @@ const detectJobTypes = (requests) => {
   return Array.from(detected); // convert set back to array
 };
 
+const initialCustomerFormState = {
+  id: null, // stores currently selected customer's UUID
+  firstName: "", // stores customer first name for form binding
+  lastName: "", // stores customer last name for form binding
+  email: "", // stores customer email address
+  mobile: "", // stores customer mobile number
+  telephone: "", // stores customer telephone number
+  address: "", // stores customer street address
+  postcode: "", // stores customer postcode
+  contactPreference: "email", // stores customer preferred contact option
+};
+
+const normalizeCustomerRecord = (record = {}) => ({
+  id: record?.id || record?.customer_id || null, // prefer Supabase UUID and fall back to nested keys
+  firstName: record?.firstname || record?.firstName || initialCustomerFormState.firstName, // normalize first name casing
+  lastName: record?.lastname || record?.lastName || initialCustomerFormState.lastName, // normalize last name casing
+  email: record?.email || initialCustomerFormState.email, // normalize email field
+  mobile: record?.mobile || initialCustomerFormState.mobile, // normalize mobile field
+  telephone: record?.telephone || initialCustomerFormState.telephone, // normalize telephone field
+  address: record?.address || initialCustomerFormState.address, // normalize address field
+  postcode: record?.postcode || initialCustomerFormState.postcode, // normalize postcode field
+  contactPreference:
+    record?.contact_preference ||
+    record?.contactPreference ||
+    initialCustomerFormState.contactPreference, // normalize contact preference field
+});
+
 export default function CreateJobCardPage() {
   const router = useRouter(); // Next.js router for navigation
   const { fetchJobs } = useJobs(); // refresh job cache after saves
@@ -47,6 +75,9 @@ export default function CreateJobCardPage() {
   });
 
   const [customer, setCustomer] = useState(null); // selected customer object
+  const [customerForm, setCustomerForm] = useState(() => ({ ...initialCustomerFormState })); // editable copy of customer fields
+  const [isCustomerEditing, setIsCustomerEditing] = useState(false); // controls whether inputs are editable
+  const [isSavingCustomer, setIsSavingCustomer] = useState(false); // tracks when customer updates are being persisted
   const [isLoadingVehicle, setIsLoadingVehicle] = useState(false); // loading state for DVLA API call
   const [error, setError] = useState(""); // error message for vehicle fetch
 
@@ -66,7 +97,17 @@ export default function CreateJobCardPage() {
   const [showVhcPopup, setShowVhcPopup] = useState(false); // toggle VHC popup
 
   // state for maintenance information (simplified - only MOT date now)
-  const [nextMotDate, setNextMotDate] = useState("");
+  const [nextMotDate, setNextMotDate] = useState(""); // store upcoming MOT date for maintenance info
+
+  useEffect(() => { // sync editable form with whichever customer is selected
+    if (customer) { // when a customer exists use their values
+      setCustomerForm(normalizeCustomerRecord(customer)); // copy normalized customer data into the form controls
+    } else { // when customer cleared
+      setCustomerForm({ ...initialCustomerFormState }); // reset the form fields to defaults
+    }
+    setIsCustomerEditing(false); // always exit edit mode on change
+    setIsSavingCustomer(false); // clear any pending loading state
+  }, [customer]); // rerun whenever the selected customer reference changes
 
   // function to determine background color based on waiting status and job source
   const getBackgroundColor = (status, source) => {
@@ -138,60 +179,132 @@ export default function CreateJobCardPage() {
     }
   };
 
+  // update the editable customer form when any field changes
+  const handleCustomerFieldChange = (field, value) => {
+    setCustomerForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // enable editing mode and refresh the editable copy
+  const handleStartCustomerEdit = () => {
+    if (!customer) {
+      showNotification("customer", "error", "✗ Select a customer first.");
+      return;
+    }
+    setCustomerForm(normalizeCustomerRecord(customer));
+    setIsCustomerEditing(true);
+  };
+
+  // revert form values and exit edit mode
+  const handleCancelCustomerEdit = () => {
+    if (customer) {
+      setCustomerForm(normalizeCustomerRecord(customer));
+    } else {
+      setCustomerForm({ ...initialCustomerFormState });
+    }
+    setIsCustomerEditing(false);
+  };
+
+  // persist customer edits to Supabase and refresh the UI copy
+  const handleSaveCustomerEdits = async () => {
+    if (!customer?.id) {
+      showNotification("customer", "error", "✗ Please select a customer before editing.");
+      return;
+    }
+
+    try {
+      setIsSavingCustomer(true);
+
+      const toNullable = (value) => {
+        const trimmed = (value || "").trim();
+        return trimmed.length ? trimmed : null;
+      };
+
+      const updatePayload = {
+        firstname: (customerForm.firstName || "").trim(),
+        lastname: (customerForm.lastName || "").trim(),
+        email: toNullable(customerForm.email),
+        mobile: toNullable(customerForm.mobile),
+        telephone: toNullable(customerForm.telephone),
+        address: toNullable(customerForm.address),
+        postcode: toNullable(customerForm.postcode),
+        contact_preference: toNullable(customerForm.contactPreference) || "email",
+      };
+
+      const result = await updateCustomer(customer.id, updatePayload);
+
+      if (!result?.success || !result?.data) {
+        throw new Error(result?.error?.message || "Failed to update customer.");
+      }
+
+      const normalized = normalizeCustomerRecord(result.data);
+      setCustomer(normalized);
+      showNotification("customer", "success", "✓ Customer details updated!");
+    } catch (err) {
+      console.error("❌ Error updating customer:", err);
+      showNotification("customer", "error", `✗ ${err.message || "Failed to update customer"}`);
+    } finally {
+      setIsSavingCustomer(false);
+    }
+  };
+
   // ✅ Handle customer selection with shared database helpers
   const handleCustomerSelect = async (customerData) => {
     console.log("Attempting to save customer:", customerData); // debug log for incoming data
 
     try {
-      if (!customerData.email && !customerData.mobile) {
-        showNotification("customer", "error", "Customer must have at least an email or mobile number.");
-        return;
-      }
+      const providedId = customerData?.id || customerData?.customer_id || null; // detect if record already exists
+      let resolvedCustomer = null; // store whichever record gets hydrated
 
-      const normalizedPayload = {
-        firstname: customerData.firstName || customerData.firstname || "",
-        lastname: customerData.lastName || customerData.lastname || "",
-        email: customerData.email || null,
-        mobile: customerData.mobile || null,
-        telephone: customerData.telephone || null,
-        address: customerData.address || null,
-        postcode: customerData.postcode || null,
-        contact_preference: customerData.contactPreference || customerData.contact_preference || "email",
-      };
-
-      let finalCustomer = null;
-
-      const { exists, customer: existingCustomer } = await checkCustomerExists(
-        normalizedPayload.email,
-        normalizedPayload.mobile
-      );
-
-      if (exists && existingCustomer?.id) {
-        console.log("Customer already exists in database:", existingCustomer);
-        const hydratedCustomer = await getCustomerById(existingCustomer.id);
-        finalCustomer = hydratedCustomer || existingCustomer;
+      if (providedId) { // when popup sent an ID we just hydrate the row
+        console.log("Existing customer selected by ID:", providedId);
+        const hydratedCustomer = await getCustomerById(providedId);
+        const recordToUse = hydratedCustomer || customerData;
+        resolvedCustomer = normalizeCustomerRecord(recordToUse);
+        if (!resolvedCustomer?.id) {
+          throw new Error("Customer record missing ID after lookup");
+        }
         showNotification("customer", "success", "✓ Customer found in database and loaded!");
       } else {
-        console.log("Customer not found, creating new customer...");
-        finalCustomer = await addCustomerToDatabase(normalizedPayload);
-        showNotification("customer", "success", "✓ New customer saved successfully!");
+        if (!customerData.email && !customerData.mobile) {
+          showNotification("customer", "error", "Customer must have at least an email or mobile number.");
+          return;
+        }
+
+        const normalizedPayload = {
+          firstname: customerData.firstName || customerData.firstname || "",
+          lastname: customerData.lastName || customerData.lastname || "",
+          email: customerData.email || null,
+          mobile: customerData.mobile || null,
+          telephone: customerData.telephone || null,
+          address: customerData.address || null,
+          postcode: customerData.postcode || null,
+          contact_preference: customerData.contactPreference || customerData.contact_preference || "email",
+        };
+
+        const { exists, customer: existingCustomer } = await checkCustomerExists(
+          normalizedPayload.email,
+          normalizedPayload.mobile
+        );
+
+        if (exists && existingCustomer?.id) {
+          console.log("Customer already exists in database:", existingCustomer);
+          const hydratedCustomer = await getCustomerById(existingCustomer.id);
+          const recordToUse = hydratedCustomer || existingCustomer;
+          resolvedCustomer = normalizeCustomerRecord(recordToUse);
+          showNotification("customer", "success", "✓ Customer found in database and loaded!");
+        } else {
+          console.log("Customer not found, creating new customer...");
+          const insertedCustomer = await addCustomerToDatabase(normalizedPayload);
+          resolvedCustomer = normalizeCustomerRecord(insertedCustomer);
+          showNotification("customer", "success", "✓ New customer saved successfully!");
+        }
       }
 
-      if (!finalCustomer) {
+      if (!resolvedCustomer?.id) {
         throw new Error("Customer record missing after save");
       }
 
-      setCustomer({
-        id: finalCustomer.id,
-        firstName: finalCustomer.firstname || finalCustomer.firstName || "",
-        lastName: finalCustomer.lastname || finalCustomer.lastName || "",
-        email: finalCustomer.email || "",
-        mobile: finalCustomer.mobile || "",
-        telephone: finalCustomer.telephone || "",
-        address: finalCustomer.address || "",
-        postcode: finalCustomer.postcode || "",
-      });
-
+      setCustomer(resolvedCustomer);
       setShowNewCustomer(false);
       setShowExistingCustomer(false);
     } catch (err) {
@@ -200,7 +313,7 @@ export default function CreateJobCardPage() {
     }
   };
 
-  // ✅ NEW: DVLA API Fetch - Only fetches from DVLA API (no database access)
+  // ✅ Vehicle lookup - prefer existing Supabase vehicle rows before DVLA fallback
   const handleFetchVehicleData = async () => {
     if (!vehicle.reg.trim()) { // validate that registration number is entered
       setError("Please enter a registration number"); // set validation error
@@ -214,6 +327,45 @@ export default function CreateJobCardPage() {
 
     try {
       const regUpper = vehicle.reg.trim().toUpperCase(); // normalize registration to uppercase
+
+      const storedVehicle = await getVehicleByReg(regUpper); // attempt pulling existing vehicle from Supabase first
+
+      if (storedVehicle) { // if the vehicle already lives in our database
+        console.log("Vehicle found in Supabase, hydrating from DB:", storedVehicle.vehicle_id);
+        const normalizedReg = (storedVehicle.registration || storedVehicle.reg_number || regUpper || "").toString().toUpperCase(); // normalize stored registration
+        const storedMakeModel =
+          (storedVehicle.make_model || `${storedVehicle.make || ""} ${storedVehicle.model || ""}`)
+            .trim(); // combine make and model if needed
+
+        setVehicle((prev) => ({
+          reg: normalizedReg,
+          makeModel: storedMakeModel || prev.makeModel || "",
+          colour: storedVehicle.colour || prev.colour || "",
+          chassis: storedVehicle.chassis || storedVehicle.vin || prev.chassis || "",
+          engine: storedVehicle.engine || storedVehicle.engine_number || prev.engine || "",
+          mileage: storedVehicle.mileage ? String(storedVehicle.mileage) : prev.mileage || "",
+        }));
+
+        if (storedVehicle.mot_due) {
+          const motSource = new Date(storedVehicle.mot_due);
+          if (!Number.isNaN(motSource.getTime())) {
+            const motDate = motSource.toISOString().split("T")[0]; // normalize date to YYYY-MM-DD
+            setNextMotDate(motDate);
+          }
+        }
+
+        if (storedVehicle.customer) {
+          const normalizedCustomer = normalizeCustomerRecord(storedVehicle.customer);
+          if (!customer || customer.id !== normalizedCustomer.id) {
+            setCustomer(normalizedCustomer);
+            showNotification("customer", "success", "✓ Customer linked from existing vehicle!");
+          }
+        }
+
+        showNotification("vehicle", "success", "✓ Vehicle details loaded from database!");
+        return; // stop here because DB already satisfied the lookup
+      }
+
       console.log("Fetching vehicle data from DVLA API for:", regUpper); // log fetch start
 
       const response = await fetch("/api/vehicles/dvla", {
@@ -290,6 +442,11 @@ export default function CreateJobCardPage() {
     try {
       if (!customer) {
         alert("Please select a customer before saving the job.");
+        return;
+      }
+
+      if (isCustomerEditing) { // prevent saving while customer edits are unsaved
+        alert("Please save customer edits before creating the job card.");
         return;
       }
 
@@ -904,42 +1061,170 @@ export default function CreateJobCardPage() {
               )}
 
               {customer ? (
-                <div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "16px" }}>
-                    {[
-                      { label: "Name", value: `${customer.firstName} ${customer.lastName}` },
-                      { label: "Address", value: customer.address },
-                      { label: "Email", value: customer.email },
-                      { label: "Phone", value: customer.mobile || customer.telephone },
-                    ].map((field, idx) => (
-                      <div key={idx}>
-                        <label
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {[
+                    { label: "First Name", field: "firstName", type: "text", placeholder: "Enter first name" }, // first name input
+                    { label: "Last Name", field: "lastName", type: "text", placeholder: "Enter last name" }, // last name input
+                    { label: "Email", field: "email", type: "email", placeholder: "Enter email address" }, // email input
+                    { label: "Mobile", field: "mobile", type: "tel", placeholder: "Enter mobile number" }, // mobile input
+                    { label: "Telephone", field: "telephone", type: "tel", placeholder: "Enter telephone number" }, // telephone input
+                    { label: "Address", field: "address", type: "textarea", placeholder: "Enter customer address" }, // address textarea
+                    { label: "Postcode", field: "postcode", type: "text", placeholder: "Enter postcode" }, // postcode input
+                    { label: "Contact Preference", field: "contactPreference", type: "text", placeholder: "Enter contact preference" }, // contact preference input
+                  ].map((input) => (
+                    <div key={input.field}>
+                      <label
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: "500",
+                          color: "#666",
+                          display: "block",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        {input.label}
+                      </label>
+                      {input.type === "textarea" ? (
+                        <textarea
+                          value={customerForm[input.field] || ""}
+                          onChange={(e) => handleCustomerFieldChange(input.field, e.target.value)}
+                          disabled={!isCustomerEditing || isSavingCustomer}
+                          placeholder={input.placeholder}
+                          rows={3}
                           style={{
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            color: "#666",
-                            display: "block",
-                            marginBottom: "4px",
-                          }}
-                        >
-                          {field.label}
-                        </label>
-                        <div
-                          style={{
+                            width: "100%",
                             padding: "10px 12px",
-                            backgroundColor: "#f5f5f5",
+                            border: "1px solid #e0e0e0",
                             borderRadius: "8px",
                             fontSize: "14px",
-                            color: "#1a1a1a",
+                            outline: "none",
+                            transition: "border-color 0.2s",
+                            backgroundColor: isCustomerEditing && !isSavingCustomer ? "white" : "#f5f5f5",
+                            resize: "vertical",
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = "#d10000";
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = "#e0e0e0";
+                          }}
+                        />
+                      ) : (
+                        <input
+                          type={input.type}
+                          value={customerForm[input.field] || ""}
+                          onChange={(e) => handleCustomerFieldChange(input.field, e.target.value)}
+                          disabled={!isCustomerEditing || isSavingCustomer}
+                          placeholder={input.placeholder}
+                          style={{
+                            width: "100%",
+                            padding: "10px 12px",
+                            border: "1px solid #e0e0e0",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            outline: "none",
+                            transition: "border-color 0.2s",
+                            backgroundColor: isCustomerEditing && !isSavingCustomer ? "white" : "#f5f5f5",
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = "#d10000";
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = "#e0e0e0";
+                          }}
+                        />
+                      )}
+                    </div>
+                  ))}
+
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    {isCustomerEditing ? (
+                      <>
+                        <button
+                          onClick={handleSaveCustomerEdits}
+                          disabled={isSavingCustomer}
+                          style={{
+                            flex: 1,
+                            padding: "12px",
+                            fontSize: "14px",
+                            backgroundColor: "#10b981",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "8px",
+                            cursor: isSavingCustomer ? "not-allowed" : "pointer",
+                            fontWeight: "600",
+                            transition: "all 0.2s",
+                            opacity: isSavingCustomer ? 0.7 : 1,
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSavingCustomer) {
+                              e.target.style.backgroundColor = "#059669";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = "#10b981";
                           }}
                         >
-                          {field.value}
-                        </div>
-                      </div>
-                    ))}
+                          {isSavingCustomer ? "Saving..." : "Save Changes"}
+                        </button>
+                        <button
+                          onClick={handleCancelCustomerEdit}
+                          disabled={isSavingCustomer}
+                          style={{
+                            flex: 1,
+                            padding: "12px",
+                            fontSize: "14px",
+                            backgroundColor: "#6b7280",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "8px",
+                            cursor: isSavingCustomer ? "not-allowed" : "pointer",
+                            fontWeight: "600",
+                            transition: "all 0.2s",
+                            opacity: isSavingCustomer ? 0.7 : 1,
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSavingCustomer) {
+                              e.target.style.backgroundColor = "#4b5563";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = "#6b7280";
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={handleStartCustomerEdit}
+                        style={{
+                          width: "100%",
+                          padding: "12px",
+                          fontSize: "14px",
+                          backgroundColor: "#3b82f6",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "8px",
+                          cursor: "pointer",
+                          fontWeight: "600",
+                          transition: "all 0.2s",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = "#2563eb";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = "#3b82f6";
+                        }}
+                      >
+                        Edit Customer
+                      </button>
+                    )}
                   </div>
+
                   <button
                     onClick={() => setCustomer(null)}
+                    disabled={isSavingCustomer}
                     style={{
                       width: "100%",
                       padding: "12px",
@@ -948,12 +1233,15 @@ export default function CreateJobCardPage() {
                       color: "white",
                       border: "none",
                       borderRadius: "8px",
-                      cursor: "pointer",
+                      cursor: isSavingCustomer ? "not-allowed" : "pointer",
                       fontWeight: "600",
                       transition: "all 0.2s",
+                      opacity: isSavingCustomer ? 0.7 : 1,
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = "#dc2626";
+                      if (!isSavingCustomer) {
+                        e.target.style.backgroundColor = "#dc2626";
+                      }
                     }}
                     onMouseLeave={(e) => {
                       e.target.style.backgroundColor = "#ef4444";

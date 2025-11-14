@@ -1,4 +1,4 @@
--- file location: src/lib/database/schema/schemaReference.js
+-- file location: src/lib/database/schema/schemaReference.sql
 -- This file mirrors the database schema shared during the HR module scaffolding discussion.
 -- Each entry represents a single column definition with its table, data type, nullability, and default.
 

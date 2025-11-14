@@ -9,7 +9,6 @@ import WorkshopManagerDashboard from "@/components/dashboards/WorkshopManagerDas
 import ServiceManagerDashboard from "@/components/dashboards/ServiceManagerDashboard"; // import service manager dashboard
 import AfterSalesManagerDashboard from "@/components/dashboards/AfterSalesManagerDashboard"; // import after sales manager dashboard
 import RetailManagersDashboard from "@/components/dashboards/RetailManagersDashboard"; // import retail managers dashboard component
-import PartsOpsDashboard from "@/components/dashboards/PartsOpsDashboard";
 import { roleCategories } from "@/config/users"; // import role category definitions
 
 const retailManagerRoles = (roleCategories?.Retail || []) // build a list of retail manager roles
@@ -23,36 +22,43 @@ export default function Dashboard() {
   const [showSearch, setShowSearch] = useState(false); // control visibility of search modal
   const [searchTerm, setSearchTerm] = useState(""); // store search term input
   const [searchResults, setSearchResults] = useState([]); // store filtered search results
+  const [isRedirecting, setIsRedirecting] = useState(false); // avoid rendering content while routing users
 
   useEffect(() => {
     if (!user) return; // stop if user data not ready
 
     const normalizedRoles = user.roles?.map((role) => role.toLowerCase()) || [];
-    const isPartsRole = normalizedRoles.some((role) => role === "parts" || role === "parts manager");
-    if (isPartsRole) return; // parts roles now use this dashboard
+    const hasRole = (...rolesToMatch) =>
+      normalizedRoles.some((roleName) => rolesToMatch.includes(roleName));
+    const redirectTo = (path) => {
+      setIsRedirecting(true);
+      router.replace(path);
+    };
 
-    const shouldStayOnRetailDashboard = normalizedRoles.some((roleName) =>
-      retailManagerRoles.includes(roleName)
-    );
-    if (shouldStayOnRetailDashboard) return; // keep retail managers on this page
-
-    const role = user.roles?.[0]?.toUpperCase(); // get primary role in uppercase
-
-    switch (role) { // redirect non-retail roles to their dedicated dashboards
-      case "SERVICE":
-        router.replace("/dashboard/service");
-        break;
-      case "TECHS":
-      case "WORKSHOP":
-        router.replace("/dashboard/techs");
-        break;
-      case "MANAGER":
-        router.replace("/dashboard/manager");
-        break;
-      default:
-        break;
+    if (hasRole("parts manager")) {
+      redirectTo("/parts/manager");
+      return;
     }
-  }, [user, router]); // re-run redirects when user or router changes
+
+    if (hasRole("parts")) {
+      redirectTo("/dashboard/parts");
+      return;
+    }
+
+    if (hasRole("techs", "technician", "workshop")) {
+      redirectTo("/dashboard/techs");
+      return;
+    }
+
+    if (hasRole("manager")) {
+      redirectTo("/dashboard/manager");
+      return;
+    }
+
+    if (isRedirecting) {
+      setIsRedirecting(false);
+    }
+  }, [user, router, isRedirecting]); // re-run redirects when user or router changes
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -65,12 +71,12 @@ export default function Dashboard() {
     fetchJobs(); // execute fetch on mount
   }, [user, setJobs]); // re-run when user or setter changes
 
-  if (!user) return null; // do not render until user data exists
+  if (!user || isRedirecting) return null; // do not render until user data exists or when redirecting
 
   const normalizedRoles = user?.roles?.map((r) => r.toLowerCase()) || []; // normalize roles for checks
   const hasRole = (rolesToMatch = []) =>
     normalizedRoles.some((roleName) => rolesToMatch.includes(roleName)); // helper to match roles
-  const isPartsRole = hasRole(["parts", "parts manager"]);
+  const isServiceDepartment = hasRole(["service", "service department", "service dept"]);
   const specialDashboardRoles = [
     "workshop manager",
     "service manager",
@@ -92,14 +98,7 @@ export default function Dashboard() {
       roleName !== "parts manager" &&
       roleName !== "parts"
   ); // show shared retail dashboard only for remaining roles
-
-  if (isPartsRole) {
-    return (
-      <Layout>
-        <PartsOpsDashboard />
-      </Layout>
-    );
-  }
+  const shouldShowRetailDashboard = isRetailManager || isServiceDepartment;
 
   if (isWorkshopManager) {
     return (
@@ -125,7 +124,7 @@ export default function Dashboard() {
     );
   }
 
-  if (isRetailManager) { // render shared retail manager experience
+  if (shouldShowRetailDashboard) { // render shared retail/service experience
     return (
       <Layout>
         <RetailManagersDashboard user={user} /> {/* show retail dashboard */}
