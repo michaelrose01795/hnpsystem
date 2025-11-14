@@ -171,7 +171,7 @@ export const databaseColumns = [
   { table_name: "parts_inventory", column_name: "updated_at", data_type: "timestamp with time zone", is_nullable: "YES", column_default: "now()" },
   { table_name: "parts_requests", column_name: "request_id", data_type: "integer", is_nullable: "NO", column_default: "nextval('parts_requests_request_id_seq'::regclass)" },
   { table_name: "parts_requests", column_name: "job_id", data_type: "integer", is_nullable: "YES", column_default: null },
-  { table_name: "parts_requests", column_name: "part_id", data_type: "integer", is_nullable: "YES", column_default: null },
+  { table_name: "parts_requests", column_name: "part_id", data_type: "uuid", is_nullable: "YES", column_default: null },
   { table_name: "parts_requests", column_name: "requested_by", data_type: "integer", is_nullable: "YES", column_default: null },
   { table_name: "parts_requests", column_name: "approved_by", data_type: "integer", is_nullable: "YES", column_default: null },
   { table_name: "parts_requests", column_name: "quantity", data_type: "integer", is_nullable: "YES", column_default: "1" },

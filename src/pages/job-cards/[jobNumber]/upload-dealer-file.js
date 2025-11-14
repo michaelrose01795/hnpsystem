@@ -1,95 +1,209 @@
-// ✅ Connected to Supabase (frontend)
-// ✅ Imports converted to use absolute alias "@/"
-// file location: /pages/api/job-cards/[jobNumber]/upload-dealer-file.js
-import nextConnect from "next-connect";
-import multer from "multer";
-import fs from "fs";
-import path from "path";
-import { supabase } from "@/lib/supabaseClient";
+// file location: src/pages/job-cards/[jobNumber]/upload-dealer-file.js
+import { useState, useMemo } from "react"; // React hooks for managing component state and derived labels
+import Head from "next/head"; // Next.js Head for SEO titles
+import { useRouter } from "next/router"; // Router hook to read the dynamic job number segment
+import Layout from "@/components/Layout"; // Shared layout with navigation and styling
+import { useUser } from "@/context/UserContext"; // Access logged-in user details for attribution
 
-// Temporary file upload destination
-const upload = multer({ dest: "/tmp/uploads" });
-const handler = nextConnect();
+export default function UploadDealerFilePage() {
+  const router = useRouter(); // Access router query parameters
+  const { jobNumber } = router.query; // Extract the dynamic job number from the URL
+  const { user } = useUser() || {}; // Retrieve the authenticated user from context if available
 
-handler.use(upload.single("file"));
+  const [selectedFile, setSelectedFile] = useState(null); // Track the file chosen by the technician or manager
+  const [statusMessage, setStatusMessage] = useState(""); // Friendly status banner displayed above the form
+  const [errorMessage, setErrorMessage] = useState(""); // Error message shown when uploads fail
+  const [isUploading, setIsUploading] = useState(false); // Flag to show loading indicator while uploading
 
-handler.post(async (req, res) => {
-  const { jobNumber } = req.query;
-  const file = req.file;
+  const pageTitle = useMemo(() => {
+    if (jobNumber) {
+      return `Upload Dealer File | Job ${jobNumber}`; // Customise title for the active job
+    }
+    return "Upload Dealer File"; // Fallback title while router query is loading
+  }, [jobNumber]);
 
-  if (!file) {
-    return res.status(400).json({ error: "No file uploaded" });
-  }
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0] || null; // Grab the first file from the file input
+    setSelectedFile(file); // Persist the selected file so we can upload it later
+    setErrorMessage(""); // Clear previous errors when a new file is selected
+    if (file) {
+      setStatusMessage(`Ready to upload ${file.name}`); // Provide feedback that the file is ready
+    } else {
+      setStatusMessage(""); // Reset status if no file is selected
+    }
+  };
 
-  try {
-    // 1️⃣ Get the job record
-    const { data: jobData, error: jobError } = await supabase
-      .from("jobs")
-      .select("id")
-      .eq("job_number", jobNumber)
-      .single();
+  const handleSubmit = async (event) => {
+    event.preventDefault(); // Prevent the browser from performing a page refresh
 
-    if (jobError || !jobData) {
-      return res.status(404).json({ error: "Job not found" });
+    if (!jobNumber) {
+      setErrorMessage("Job number is missing from the URL."); // Ensure we have the job identifier
+      return;
     }
 
-    const jobId = jobData.id;
-    const fileExt = path.extname(file.originalname);
-    const fileName = `${jobNumber}_${Date.now()}${fileExt}`;
-    const filePath = `dealer-files/${fileName}`;
-
-    // 2️⃣ Upload file to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      // ⚠️ Verify: table or column not found in Supabase schema
-      .from("job-files") // ⚠️ Make sure this storage bucket exists in Supabase
-      .upload(filePath, fs.createReadStream(file.path), {
-        contentType: file.mimetype,
-        duplex: "half",
-      });
-
-    // Delete temp file
-    fs.unlinkSync(file.path);
-
-    if (uploadError) {
-      console.error("Supabase upload error:", uploadError);
-      return res.status(500).json({ error: "File upload failed" });
+    if (!selectedFile) {
+      setErrorMessage("Please choose a file before uploading."); // Enforce a file selection
+      return;
     }
 
-    // 3️⃣ Get public URL
-    const { data: publicUrlData } = supabase.storage
-      // ⚠️ Verify: table or column not found in Supabase schema
-      .from("job-files")
-      .getPublicUrl(filePath);
+    try {
+      setIsUploading(true); // Trigger loading state to disable the form
+      setErrorMessage(""); // Clear previous errors before starting the upload
+      setStatusMessage("Uploading file to dealer records..."); // Provide optimistic feedback to the user
 
-    // 4️⃣ Insert file record into job_files table
-    const { error: dbError } = await supabase.from("job_files").insert([
-      {
-        job_id: jobId,
-        file_name: file.originalname,
-        file_url: publicUrlData.publicUrl,
-        uploaded_at: new Date(),
-      },
-    ]);
+      const formData = new FormData(); // Create a multipart payload to send the file to the API route
+      formData.append("file", selectedFile); // Attach the chosen file with the expected field name
+      if (user?.id) {
+        formData.append("userId", String(user.id)); // Include the user id for audit logging when available
+      }
 
-    if (dbError) {
-      console.error("Database insert error:", dbError);
-      return res.status(500).json({ error: "Failed to record file in database" });
+      const response = await fetch(
+        `/api/jobcards/${jobNumber}/upload-dealer-file`, // Call the API route implemented in Node runtime
+        {
+          method: "POST", // Use POST for file uploads
+          body: formData, // Pass the multipart form payload directly
+        }
+      );
+
+      const payload = await response.json(); // Parse the JSON response from the server
+
+      if (!response.ok) {
+        throw new Error(payload?.error || payload?.message || "Upload failed"); // Surface server-side errors to the user
+      }
+
+      setStatusMessage(
+        `✅ File uploaded successfully: ${payload?.file?.originalName || selectedFile.name}` // Show success message with file name
+      );
+      setSelectedFile(null); // Reset the file input after a successful upload
+      if (event.target.reset) {
+        event.target.reset(); // Clear the form fields for a fresh upload
+      }
+    } catch (error) {
+      console.error("Upload error", error); // Log the issue for developers
+      setErrorMessage(error.message || "Failed to upload file. Please try again."); // Provide actionable error feedback
+      setStatusMessage(""); // Clear any stale success message
+    } finally {
+      setIsUploading(false); // Always release the loading state at the end of the process
     }
+  };
 
-    res.status(200).json({
-      message: "File uploaded successfully",
-      url: publicUrlData.publicUrl,
-    });
-  } catch (err) {
-    console.error("Upload handler error:", err);
-    res.status(500).json({ error: "Server error during upload" });
-  }
-});
+  return (
+    <Layout>
+      <Head>
+        <title>{pageTitle}</title> {/* Set dynamic page title for better context */}
+      </Head>
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+      <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
+        <div className="bg-white rounded-2xl shadow-xl border border-red-100 p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Upload Dealer Documentation {/* Primary heading for the upload workflow */}
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">
+                Attach signed dealer forms, invoices, or supporting documents directly to the job card.
+              </p>
+            </div>
+            <span className="inline-flex items-center px-4 py-2 rounded-full bg-red-50 text-red-600 text-sm font-semibold">
+              Job #{jobNumber || "Loading..."} {/* Show the current job number for clarity */}
+            </span>
+          </div>
 
-export default handler;
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="border-2 border-dashed border-red-200 rounded-xl p-6 text-center transition hover:border-red-400">
+              <input
+                id="dealer-file"
+                name="dealer-file"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <label
+                htmlFor="dealer-file"
+                className="cursor-pointer block"
+              >
+                <div className="flex flex-col items-center space-y-3 text-gray-600">
+                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-red-50 text-red-500">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="1.5"
+                      stroke="currentColor"
+                      className="w-10 h-10"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 16.5v-9m0 0-3 3m3-3 3 3M4.5 19.5h15"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-800">Click to browse or drag and drop</p>
+                    <p className="text-sm text-gray-500">
+                      Accepted formats: PDF, JPG, PNG, DOC, DOCX (max 10MB)
+                    </p>
+                  </div>
+                </div>
+              </label>
+
+              {selectedFile && (
+                <div className="mt-4 text-sm text-gray-600">
+                  Selected file: <span className="font-medium text-gray-900">{selectedFile.name}</span>
+                </div>
+              )}
+            </div>
+
+            {statusMessage && (
+              <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-green-700">
+                {statusMessage}
+              </div>
+            )}
+
+            {errorMessage && (
+              <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-red-600">
+                {errorMessage}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                type="button"
+                className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
+                onClick={() => {
+                  setSelectedFile(null); // Reset the chosen file
+                  setStatusMessage(""); // Clear status banners
+                  setErrorMessage(""); // Clear error state
+                  const input = document.getElementById("dealer-file");
+                  if (input) {
+                    input.value = ""; // Reset the file input element manually
+                  }
+                }}
+              >
+                Clear
+              </button>
+              <button
+                type="submit"
+                disabled={isUploading}
+                className="px-6 py-2 rounded-lg bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isUploading ? "Uploading..." : "Upload File"}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <section className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-3">
+          <h2 className="text-lg font-semibold text-gray-900">Why upload dealer files?</h2>
+          <ul className="list-disc list-inside text-gray-600 space-y-2">
+            <li>Attach signed paperwork for Mitsubishi, Suzuki, and SsangYong jobs.</li>
+            <li>Share documentation instantly with the Parts, Accounts, and Management teams.</li>
+            <li>Keep the digital job card complete for audits and customer follow-up.</li>
+          </ul>
+        </section>
+      </div>
+    </Layout>
+  );
+}

@@ -3,6 +3,8 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
+import { initialTrackingEntries } from "@/lib/tracking/mockEntries";
+import { buildApiUrl } from "@/utils/apiClient";
 
 const CAR_LOCATIONS = [
   { id: "front-a", label: "Front Row – Bay A" },
@@ -29,68 +31,8 @@ const STATUS_COLORS = {
   "In Transit": "#6366f1",
 };
 
-const initialTrackingEntries = [
-  {
-    id: "track-1001",
-    jobNumber: "HNP-4821",
-    reg: "GY21 HNP",
-    customer: "Emma Lane",
-    serviceType: "Major Service",
-    status: "Waiting For Collection",
-    parkedBy: "Tom Jackson",
-    parkedAt: "09:45",
-    updatedAt: "2024-05-06T09:45:00.000Z",
-    vehicleLocation: "Front Row – Bay A",
-    keyLocation: "Key Safe A – Hooks 1-10",
-    keyTip: "Green tag #4",
-    notes: "Customer collecting at 16:00",
-  },
-  {
-    id: "track-1002",
-    jobNumber: "HNP-4610",
-    reg: "AB70 RFT",
-    customer: "Caleb Howard",
-    serviceType: "Warranty Repair",
-    status: "Awaiting Authorization",
-    parkedBy: "Maya Patel",
-    parkedAt: "10:12",
-    updatedAt: "2024-05-06T10:12:00.000Z",
-    vehicleLocation: "Overflow – West Fence",
-    keyLocation: "Key Safe B – Hooks 11-20",
-    keyTip: "Yellow tag #12",
-    notes: "Awaiting callback from customer",
-  },
-  {
-    id: "track-1003",
-    jobNumber: "HNP-4598",
-    reg: "PX22 VHC",
-    customer: "Gemma Price",
-    serviceType: "Valet",
-    status: "Valet Hold",
-    parkedBy: "Valet Team",
-    parkedAt: "11:05",
-    updatedAt: "2024-05-06T11:05:00.000Z",
-    vehicleLocation: "Valet Lane",
-    keyLocation: "Valet Pouch Rack",
-    keyTip: "Pouch slot 3",
-    notes: "Interior detail in progress",
-  },
-  {
-    id: "track-1004",
-    jobNumber: "HNP-4580",
-    reg: "HJ19 FBC",
-    customer: "Zac Morgan",
-    serviceType: "MOT & Service",
-    status: "Ready For Collection",
-    parkedBy: "Service Team",
-    parkedAt: "08:55",
-    updatedAt: "2024-05-06T08:55:00.000Z",
-    vehicleLocation: "Handover Suite",
-    keyLocation: "Service Desk Drawer",
-    keyTip: "Drawer slot 2",
-    notes: "Customer waiting with adviser",
-  },
-];
+const SNAPSHOT_ENDPOINT = "/api/tracking/snapshot";
+const NEXT_ACTION_ENDPOINT = "/api/tracking/next-action";
 
 const emptyForm = {
   id: null,
@@ -493,12 +435,14 @@ export default function TrackingDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/tracking/snapshot");
+      const response = await fetch(buildApiUrl(SNAPSHOT_ENDPOINT), {
+        headers: { Accept: "application/json" },
+      });
       if (!response.ok) {
         const errorPayload = await response.json().catch(() => ({ message: "Failed to load tracking data" }));
         throw new Error(errorPayload?.message || "Failed to load tracking data");
       }
-      const payload = await response.json();
+      const payload = await response.json().catch(() => ({ data: [] }));
       const data = Array.isArray(payload.data) ? payload.data : [];
       const normalised = data.length > 0
         ? data.map((entry, index) => ({
@@ -523,7 +467,12 @@ export default function TrackingDashboard() {
       setLastUpdated(new Date().toISOString());
     } catch (fetchError) {
       console.error("Failed to fetch tracking snapshot", fetchError);
-      setError(fetchError.message || "Unable to load tracking data");
+      setEntries((current) => (Array.isArray(current) && current.length > 0 ? current : initialTrackingEntries));
+      const networkMessage =
+        fetchError?.message && fetchError.message.toLowerCase().includes("fetch failed")
+          ? "Unable to reach the tracking API. Ensure the Next.js server (or external API base) is running."
+          : null;
+      setError(networkMessage || fetchError?.message || "Unable to load tracking data");
     } finally {
       setLoading(false);
     }
@@ -565,7 +514,7 @@ export default function TrackingDashboard() {
         performedBy: null,
       };
 
-      const response = await fetch("/api/tracking/next-action", {
+      const response = await fetch(buildApiUrl(NEXT_ACTION_ENDPOINT), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

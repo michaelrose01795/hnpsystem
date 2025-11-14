@@ -407,3 +407,14 @@ export const checkCustomerExists = async (email = null, mobile = null) => {
     return { exists: false, customer: null, error: { message: err.message } };
   }
 };
+export const createCustomer = async (customerData) => {
+  try {
+    const data = await addCustomerToDatabase(customerData); // Reuse existing insert helper
+    return { success: true, data }; // Provide status wrapper expected by API routes
+  } catch (error) {
+    console.error("createCustomer error", error);
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, error: message };
+  }
+};
+
