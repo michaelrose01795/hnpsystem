@@ -61,6 +61,23 @@ const WORKSHOP_SHORTCUT_SECTIONS = [
   },
 ];
 
+const SERVICE_ACTION_ROLES = new Set([
+  "service",
+  "service department",
+  "service dept",
+  "service manager",
+  "workshop manager",
+  "after sales manager",
+  "after sales director",
+  "aftersales manager",
+]);
+
+const SERVICE_ACTION_LINKS = [
+  { label: "Create Job Card", href: "/job-cards/create" },
+  { label: "Appointments", href: "/job-cards/appointments" },
+  { label: "Check In", href: "/workshop/check-in" },
+];
+
 export default function Layout({ children, jobNumber }) {
   const { user, status, setStatus, currentJob } = useUser(); // get user context data
   const { usersByRole } = useRoster();
@@ -120,6 +137,7 @@ export default function Layout({ children, jobNumber }) {
   const dashboardShortcuts = departmentDashboardShortcuts.filter((shortcut) =>
     matchesDepartment(shortcut.roles || [])
   );
+  const canUseServiceActions = userRoles.some((role) => SERVICE_ACTION_ROLES.has(role));
   const showServiceButtons =
     userRoles.some((role) => workshopAccessRoles.has(role)) &&
     workshopNavRoutes.some(
@@ -682,6 +700,50 @@ export default function Layout({ children, jobNumber }) {
                   </span>
                 </div>
               </div>
+
+              {canUseServiceActions && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "8px",
+                    justifyContent: isTablet ? "flex-start" : "center",
+                    alignItems: "center",
+                    flex: "1 1 260px",
+                    minWidth: isMobile ? "100%" : "260px",
+                  }}
+                >
+                  {SERVICE_ACTION_LINKS.map((action) => {
+                    const active =
+                      router.pathname === action.href ||
+                      router.pathname.startsWith(`${action.href}/`);
+                    return (
+                      <Link
+                        key={action.href}
+                        href={action.href}
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: "999px",
+                          border: active ? "1px solid #b10000" : "1px solid #ffe0e0",
+                          backgroundColor: active ? "#b10000" : "#fff5f5",
+                          color: active ? "#ffffff" : "#720000",
+                          fontWeight: 600,
+                          fontSize: "0.85rem",
+                          textDecoration: "none",
+                          boxShadow: active
+                            ? "0 12px 24px rgba(177, 0, 0, 0.2)"
+                            : "0 6px 16px rgba(209, 0, 0, 0.1)",
+                          transition:
+                            "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {action.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
 
               <div
                 style={{

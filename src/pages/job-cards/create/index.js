@@ -1632,6 +1632,76 @@ export default function CreateJobCardPage() {
             <div
               style={{
                 flex: 1,
+                background: "white",
+                padding: "16px",
+                borderRadius: "16px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                border: "1px solid #e0e0e0",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              <h4
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#1a1a1a",
+                  marginTop: 0,
+                  marginBottom: "4px",
+                }}
+              >
+                VHC Required?
+              </h4>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "13px",
+                  color: "#6b7280",
+                  lineHeight: 1.4,
+                }}
+              >
+                Toggle this on to schedule a Vehicle Health Check so the job routes to the VHC dashboard for technicians.
+              </p>
+              <div style={{ display: "flex", gap: "8px" }}>
+                {[true, false].map((choice) => (
+                  <button
+                    key={`vhc-${choice ? "yes" : "no"}`}
+                    type="button"
+                    onClick={() => setVhcRequired(choice)}
+                    style={{
+                      flex: 1,
+                      padding: "10px",
+                      borderRadius: "8px",
+                      border: "2px solid",
+                      borderColor: vhcRequired === choice ? "#d10000" : "#e5e7eb",
+                      backgroundColor: vhcRequired === choice ? "#fff1f2" : "#f9fafb",
+                      color: "#111827",
+                      fontWeight: "600",
+                      fontSize: "13px",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    {choice ? "Yes" : "No"}
+                  </button>
+                ))}
+              </div>
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#9ca3af",
+                  lineHeight: 1.4,
+                }}
+              >
+                {vhcRequired
+                  ? "✓ This job will appear in the VHC dashboard for technicians and customers."
+                  : "✕ This job stays hidden from VHC workflows until enabled."}
+              </div>
+            </div>
+            <div
+              style={{
+                flex: 1,
                 background: "linear-gradient(135deg, #d10000, #b00000)",
                 color: "white",
                 borderRadius: "16px",
