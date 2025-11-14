@@ -3,10 +3,11 @@
 // file location: src/pages/job-cards/create/index.js
 "use client"; // enables client-side rendering for Next.js
 
-import React, { useEffect, useState } from "react"; // import React hooks including useEffect for syncing customer forms
+import React, { useEffect, useRef, useState } from "react"; // import React hooks including useEffect and useRef for syncing customer forms
 import { useRouter } from "next/router"; // for navigation
 import Layout from "@/components/Layout"; // import layout wrapper
 import { useJobs } from "@/context/JobsContext"; // import jobs context
+import { useUser } from "@/context/UserContext"; // import user context for signature + uploads
 import {
   addCustomerToDatabase,
   checkCustomerExists,
@@ -64,6 +65,8 @@ const normalizeCustomerRecord = (record = {}) => ({
 export default function CreateJobCardPage() {
   const router = useRouter(); // Next.js router for navigation
   const { fetchJobs } = useJobs(); // refresh job cache after saves
+  const { dbUserId } = useUser(); // get Supabase user id for uploads + signatures
+  const checkSheetCanvasRef = useRef(null); // ref for check-sheet canvas to calculate click offsets
 
   // state for vehicle information
   const [vehicle, setVehicle] = useState({
@@ -96,10 +99,14 @@ export default function CreateJobCardPage() {
   const [jobCategories, setJobCategories] = useState(["Other"]); // auto-detected job categories
   const [showNewCustomer, setShowNewCustomer] = useState(false); // toggle new customer popup
   const [showExistingCustomer, setShowExistingCustomer] = useState(false); // toggle existing customer popup
-  const [showVhcPopup, setShowVhcPopup] = useState(false); // toggle VHC popup
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false); // toggle documents popup
   const [pendingDocuments, setPendingDocuments] = useState([]); // hold selected files before job exists
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false); // track when uploads running
+  const [checkSheetFile, setCheckSheetFile] = useState(null); // uploaded check-sheet file before save
+  const [checkSheetPreviewUrl, setCheckSheetPreviewUrl] = useState(""); // preview URL for image check-sheets
+  const [checkSheetCheckboxes, setCheckSheetCheckboxes] = useState([]); // list of checkbox metadata for current sheet
+  const [userSignature, setUserSignature] = useState(null); // store current user's signature metadata
+  const [isUploadingSignature, setIsUploadingSignature] = useState(false); // track signature upload state
 
   // state for maintenance information (simplified - only MOT date now)
   const [nextMotDate, setNextMotDate] = useState(""); // store upcoming MOT date for maintenance info
@@ -113,6 +120,43 @@ export default function CreateJobCardPage() {
     setIsCustomerEditing(false); // always exit edit mode on change
     setIsSavingCustomer(false); // clear any pending loading state
   }, [customer]); // rerun whenever the selected customer reference changes
+
+  useEffect(() => { // fetch stored signature for logged in user
+    let cancelled = false; // guard against state updates after unmount
+
+    const fetchSignature = async () => {
+      if (!dbUserId) { // if no db user id available
+        setUserSignature(null); // reset signature state
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("user_signatures")
+        .select("id, user_id, file_url, storage_path")
+        .eq("user_id", dbUserId)
+        .maybeSingle();
+
+      if (!cancelled) {
+        if (error) {
+          console.warn("Signature lookup failed", error.message);
+          setUserSignature(null);
+        } else {
+          setUserSignature(data || null);
+        }
+      }
+    };
+
+    fetchSignature();
+    return () => {
+      cancelled = true;
+    };
+  }, [dbUserId]);
+
+  useEffect(() => () => { // cleanup preview object URLs when component unmounts or url changes
+    if (checkSheetPreviewUrl) {
+      URL.revokeObjectURL(checkSheetPreviewUrl);
+    }
+  }, [checkSheetPreviewUrl]);
 
   // function to determine background color based on waiting status and job source
   const getBackgroundColor = (status, source) => {
@@ -349,9 +393,193 @@ export default function CreateJobCardPage() {
           uploadedBy
         );
       }
+    } catch (err) {
+      console.error("Document upload failed", err);
+      throw err;
     } finally {
       setIsUploadingDocuments(false); // clear uploading state regardless of success
       setPendingDocuments([]); // clear pending queue after attempt
+    }
+  };
+
+  const handleCheckSheetFileChange = (file) => { // respond to user selecting a check-sheet file
+    if (!file) {
+      setCheckSheetFile(null);
+      setCheckSheetPreviewUrl("");
+      setCheckSheetCheckboxes([]);
+      return;
+    }
+
+    if (checkSheetPreviewUrl) {
+      URL.revokeObjectURL(checkSheetPreviewUrl); // release existing preview url
+    }
+
+    const isImage = file.type?.startsWith("image/");
+    const preview = isImage ? URL.createObjectURL(file) : ""; // create preview for images only
+
+    setCheckSheetFile(file);
+    setCheckSheetPreviewUrl(preview);
+    setCheckSheetCheckboxes([]); // reset checkbox layout when new file selected
+  };
+
+  const handleCheckSheetCanvasClick = (event) => { // add checkbox metadata at click position
+    if (!checkSheetFile || (!checkSheetPreviewUrl && !checkSheetFile.type?.includes("pdf"))) {
+      return; // skip when no sheet ready
+    }
+
+    const container = checkSheetCanvasRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const xRatio = (event.clientX - rect.left) / rect.width;
+    const yRatio = (event.clientY - rect.top) / rect.height;
+
+    if (xRatio < 0 || xRatio > 1 || yRatio < 0 || yRatio > 1) {
+      return; // ignore clicks outside bounds
+    }
+
+    setCheckSheetCheckboxes((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        label: `Check Item ${prev.length + 1}`,
+        x: Number(xRatio.toFixed(4)),
+        y: Number(yRatio.toFixed(4)),
+      },
+    ]);
+  };
+
+  const handleCheckboxLabelChange = (checkboxId, value) => { // update checkbox label text
+    setCheckSheetCheckboxes((prev) =>
+      prev.map((box) =>
+        box.id === checkboxId
+          ? {
+              ...box,
+              label: value,
+            }
+          : box
+      )
+    );
+  };
+
+  const handleRemoveCheckbox = (checkboxId) => { // delete a checkbox configuration
+    setCheckSheetCheckboxes((prev) => prev.filter((box) => box.id !== checkboxId));
+  };
+
+  const handleSignatureUpload = async (file) => { // upload/update the current user's signature asset
+    if (!file || !dbUserId) {
+      alert("Please log in before uploading a signature");
+      return;
+    }
+
+    setIsUploadingSignature(true);
+    try {
+      const ext = file.name?.split(".").pop() || "png";
+      const objectPath = `users/${dbUserId}/signature.${ext}`;
+      const { error: storageError } = await supabase.storage
+        .from("user-signatures")
+        .upload(objectPath, file, {
+          contentType: file.type || "image/png",
+          upsert: true,
+        });
+
+      if (storageError) {
+        throw new Error(storageError.message);
+      }
+
+      const publicUrl = supabase.storage.from("user-signatures").getPublicUrl(objectPath).data.publicUrl;
+
+      const payload = {
+        user_id: dbUserId,
+        storage_path: objectPath,
+        file_url: publicUrl,
+        updated_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      };
+
+      const { data, error } = await supabase
+        .from("user_signatures")
+        .upsert(payload, { onConflict: "user_id" })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setUserSignature(data);
+    } catch (err) {
+      console.error("Signature upload failed", err);
+      alert(err.message || "Failed to upload signature");
+    } finally {
+      setIsUploadingSignature(false);
+    }
+  };
+
+  const saveCheckSheetData = async (jobId) => { // persist check-sheet file + checkbox metadata to DB
+    if (!jobId || !checkSheetFile) {
+      return; // nothing to save when no sheet selected
+    }
+
+    try {
+      const ext = checkSheetFile.name?.split(".").pop() || "png";
+      const storagePath = `jobs/${jobId}/checksheets/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: storageError } = await supabase.storage
+        .from("job-documents")
+        .upload(storagePath, checkSheetFile, {
+          contentType: checkSheetFile.type || "application/octet-stream",
+          upsert: false,
+        });
+
+      if (storageError) {
+        throw new Error(storageError.message);
+      }
+
+      const publicUrl = supabase.storage.from("job-documents").getPublicUrl(storagePath).data.publicUrl;
+
+      const signatureUrl = userSignature?.file_url || null;
+
+      const { data: sheetRecord, error: sheetError } = await supabase
+        .from("job_check_sheets")
+        .insert([
+          {
+            job_id: jobId,
+            file_name: checkSheetFile.name,
+            file_url: publicUrl,
+            storage_path: storagePath,
+            file_type: checkSheetFile.type || "application/octet-stream",
+            created_by: dbUserId || null,
+            signature_url: signatureUrl,
+          },
+        ])
+        .select()
+        .single();
+
+      if (sheetError) {
+        throw new Error(sheetError.message);
+      }
+
+      const sheetId = sheetRecord.sheet_id || sheetRecord.id;
+
+      if (sheetId && checkSheetCheckboxes.length > 0) {
+        const checkboxPayload = checkSheetCheckboxes.map((box, index) => ({
+          sheet_id: sheetId,
+          label: box.label || `Item ${index + 1}`,
+          position_x: box.x,
+          position_y: box.y,
+        }));
+
+        const { error: checkboxError } = await supabase
+          .from("job_check_sheet_checkboxes")
+          .insert(checkboxPayload);
+
+        if (checkboxError) {
+          throw new Error(checkboxError.message);
+        }
+      }
+    } finally {
+      setCheckSheetFile(null);
+      setCheckSheetCheckboxes([]);
+      setCheckSheetPreviewUrl("");
     }
   };
 
@@ -651,8 +879,9 @@ export default function CreateJobCardPage() {
       await saveCosmeticDamageDetails(persistedJobId, cosmeticDamagePresent, cosmeticNotes); // store cosmetic damage toggle + notes
       await saveJobRequestsToDatabase(persistedJobId, sanitizedRequests); // create job request rows linked to job id
       if (pendingDocuments.length > 0) { // check if any documents queued
-        await uploadDocumentsForJob(persistedJobId, pendingDocuments); // upload queued documents against the job
+        await uploadDocumentsForJob(persistedJobId, pendingDocuments, dbUserId || null); // upload queued documents against the job
       } // end conditional upload
+      await saveCheckSheetData(persistedJobId); // persist check-sheet configuration when provided
       console.log("Job saved successfully with ID:", insertedJob.id);
 
       if (typeof fetchJobs === "function") {
@@ -1749,31 +1978,6 @@ export default function CreateJobCardPage() {
             <div
               style={{
                 flex: 1,
-                background: "linear-gradient(135deg, #d10000, #b00000)",
-                color: "white",
-                borderRadius: "16px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                boxShadow: "0 4px 8px rgba(209,0,0,0.3)",
-                transition: "all 0.2s",
-              }}
-              onClick={() => setShowVhcPopup(true)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 6px 12px rgba(209,0,0,0.4)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 8px rgba(209,0,0,0.3)";
-              }}
-            >
-              <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600" }}>Add VHC</h4>
-            </div>
-            <div
-              style={{
-                flex: 1,
                 background: "linear-gradient(135deg, #6366f1, #4338ca)",
                 color: "white",
                 borderRadius: "16px",
@@ -1931,6 +2135,207 @@ export default function CreateJobCardPage() {
                 </div>
               )}
 
+              <div
+                style={{
+                  marginTop: "12px",
+                  padding: "16px",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "14px",
+                  backgroundColor: "#f8fafc",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                <div>
+                  <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "#0f172a" }}>Check-Sheet Builder</h4>
+                  <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#64748b" }}>
+                    Upload a check-sheet image/PDF then click the preview to place interactive checkboxes.
+                  </p>
+                </div>
+                <label
+                  htmlFor="checksheet-input"
+                  style={{
+                    border: "1px solid #cbd5f5",
+                    borderRadius: "10px",
+                    padding: "10px 14px",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "#312e81",
+                    cursor: "pointer",
+                    backgroundColor: "white",
+                    width: "fit-content",
+                  }}
+                >
+                  Choose Check-Sheet
+                  <input
+                    id="checksheet-input"
+                    type="file"
+                    accept="image/*,application/pdf"
+                    style={{ display: "none" }}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      handleCheckSheetFileChange(file || null);
+                    }}
+                  />
+                </label>
+
+                <div
+                  ref={checkSheetCanvasRef}
+                  onClick={handleCheckSheetCanvasClick}
+                  style={{
+                    position: "relative",
+                    width: "100%",
+                    minHeight: "260px",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    backgroundColor: "#fff",
+                    cursor: checkSheetFile ? "crosshair" : "not-allowed",
+                  }}
+                >
+                  {checkSheetPreviewUrl ? (
+                    <>
+                      <img
+                        src={checkSheetPreviewUrl}
+                        alt="Check sheet preview"
+                        style={{ width: "100%", display: "block" }}
+                      />
+                      {checkSheetCheckboxes.map((box) => (
+                        <div
+                          key={box.id}
+                          style={{
+                            position: "absolute",
+                            top: `${box.y * 100}%`,
+                            left: `${box.x * 100}%`,
+                            transform: "translate(-50%, -50%)",
+                            width: "20px",
+                            height: "20px",
+                            borderRadius: "4px",
+                            border: "2px solid #d10000",
+                            backgroundColor: "rgba(209,0,0,0.2)",
+                          }}
+                        />
+                      ))}
+                      {userSignature?.file_url && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            bottom: "12px",
+                            right: "12px",
+                            backgroundColor: "rgba(15,23,42,0.85)",
+                            color: "white",
+                            padding: "6px 10px",
+                            borderRadius: "8px",
+                            fontSize: "11px",
+                          }}
+                        >
+                          Signature Ready
+                        </div>
+                      )}
+                    </>
+                  ) : checkSheetFile ? (
+                    <div style={{ padding: "24px", textAlign: "center", color: "#94a3b8", fontSize: "13px" }}>
+                      PDF preview not available. Coordinates will still be recorded when you click this box.
+                    </div>
+                  ) : (
+                    <div style={{ padding: "24px", textAlign: "center", color: "#94a3b8", fontSize: "13px" }}>
+                      Select a check-sheet file above to start placing checkboxes.
+                    </div>
+                  )}
+                </div>
+
+                {checkSheetCheckboxes.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {checkSheetCheckboxes.map((box) => (
+                      <div
+                        key={box.id}
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          alignItems: "center",
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={box.label}
+                          onChange={(e) => handleCheckboxLabelChange(box.id, e.target.value)}
+                          style={{
+                            flex: 1,
+                            border: "1px solid #cbd5f5",
+                            borderRadius: "8px",
+                            padding: "8px 10px",
+                            fontSize: "13px",
+                          }}
+                        />
+                        <span style={{ fontSize: "11px", color: "#94a3b8", width: "120px" }}>
+                          {Math.round(box.x * 100)}% / {Math.round(box.y * 100)}%
+                        </span>
+                        <button
+                          onClick={() => handleRemoveCheckbox(box.id)}
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            color: "#ef4444",
+                            cursor: "pointer",
+                            fontSize: "12px",
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    padding: "14px",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    backgroundColor: "white",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: "13px", fontWeight: "600", color: "#0f172a" }}>Signature on File</div>
+                    <div style={{ fontSize: "12px", color: "#64748b" }}>
+                      {userSignature?.file_url ? "Will auto-fill on the check-sheet" : "Upload a signature image to auto-fill"}
+                    </div>
+                  </div>
+                  <label
+                    htmlFor="signature-input"
+                    style={{
+                      border: "1px solid #cbd5f5",
+                      borderRadius: "8px",
+                      padding: "8px 12px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color: "#4338ca",
+                      cursor: "pointer",
+                      opacity: isUploadingSignature ? 0.6 : 1,
+                    }}
+                  >
+                    {isUploadingSignature ? "Uploading..." : userSignature ? "Replace" : "Upload"}
+                    <input
+                      id="signature-input"
+                      type="file"
+                      accept="image/*"
+                      style={{ display: "none" }}
+                      disabled={isUploadingSignature}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) {
+                          handleSignatureUpload(file);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
               <div style={{ display: "flex", gap: "12px" }}>
                 <button
                   onClick={() => setShowDocumentsPopup(false)}
@@ -1955,6 +2360,7 @@ export default function CreateJobCardPage() {
                     }
                     alert("Documents will upload once the job is saved.");
                   }}
+                  disabled={isUploadingDocuments}
                   style={{
                     flex: 1,
                     padding: "12px",
@@ -1963,128 +2369,18 @@ export default function CreateJobCardPage() {
                     background: "linear-gradient(135deg, #6366f1, #4338ca)",
                     color: "white",
                     fontWeight: "600",
-                    cursor: "pointer",
+                    cursor: isUploadingDocuments ? "not-allowed" : "pointer",
                     boxShadow: "0 10px 20px rgba(99,102,241,0.25)",
+                    opacity: isUploadingDocuments ? 0.7 : 1,
                   }}
                 >
-                  Queue Uploads
+                  {isUploadingDocuments ? "Uploading..." : "Queue Uploads"}
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {showVhcPopup && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0,0,0,0.5)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 1000,
-            }}
-            onClick={() => setShowVhcPopup(false)}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                backgroundColor: "white",
-                padding: "32px",
-                borderRadius: "16px",
-                width: "400px",
-                textAlign: "center",
-                boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-              }}
-            >
-              <h3
-                style={{
-                  margin: "0 0 24px 0",
-                  fontSize: "20px",
-                  color: "#1a1a1a",
-                  fontWeight: "600",
-                }}
-              >
-                Add VHC to this job?
-              </h3>
-              <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "20px" }}>
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    cursor: "pointer",
-                    padding: "12px 24px",
-                    borderRadius: "8px",
-                    border: vhcRequired === true ? "2px solid #10b981" : "2px solid #e0e0e0",
-                    backgroundColor: vhcRequired === true ? "#f0fdf4" : "white",
-                    transition: "all 0.2s",
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="vhc"
-                    value="yes"
-                    onChange={() => setVhcRequired(true)}
-                    checked={vhcRequired === true}
-                    style={{ width: "18px", height: "18px", cursor: "pointer" }}
-                  />
-                  <span style={{ fontSize: "15px", fontWeight: "500" }}>Yes</span>
-                </label>
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    cursor: "pointer",
-                    padding: "12px 24px",
-                    borderRadius: "8px",
-                    border: vhcRequired === false ? "2px solid #ef4444" : "2px solid #e0e0e0",
-                    backgroundColor: vhcRequired === false ? "#fef2f2" : "white",
-                    transition: "all 0.2s",
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="vhc"
-                    value="no"
-                    onChange={() => setVhcRequired(false)}
-                    checked={vhcRequired === false}
-                    style={{ width: "18px", height: "18px", cursor: "pointer" }}
-                  />
-                  <span style={{ fontSize: "15px", fontWeight: "500" }}>No</span>
-                </label>
-              </div>
-              <button
-                onClick={() => setShowVhcPopup(false)}
-                style={{
-                  marginTop: "24px",
-                  padding: "12px 32px",
-                  backgroundColor: "#d10000",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontWeight: "600",
-                  fontSize: "15px",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = "#b00000";
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = "#d10000";
-                }}
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </Layout>
   );
