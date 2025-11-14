@@ -14,7 +14,7 @@ import {
   updateCustomer,
 } from "@/lib/database/customers";
 import { createOrUpdateVehicle, getVehicleByReg } from "@/lib/database/vehicles";
-import { addJobToDatabase } from "@/lib/database/jobs";
+import { addJobToDatabase, addJobFile } from "@/lib/database/jobs";
 import { supabase } from "@/lib/supabaseClient"; // import supabase client for job request inserts
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import new customer popup
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
@@ -97,6 +97,9 @@ export default function CreateJobCardPage() {
   const [showNewCustomer, setShowNewCustomer] = useState(false); // toggle new customer popup
   const [showExistingCustomer, setShowExistingCustomer] = useState(false); // toggle existing customer popup
   const [showVhcPopup, setShowVhcPopup] = useState(false); // toggle VHC popup
+  const [showDocumentsPopup, setShowDocumentsPopup] = useState(false); // toggle documents popup
+  const [pendingDocuments, setPendingDocuments] = useState([]); // hold selected files before job exists
+  const [isUploadingDocuments, setIsUploadingDocuments] = useState(false); // track when uploads running
 
   // state for maintenance information (simplified - only MOT date now)
   const [nextMotDate, setNextMotDate] = useState(""); // store upcoming MOT date for maintenance info
@@ -310,6 +313,47 @@ export default function CreateJobCardPage() {
       throw new Error(error.message || "Failed to save cosmetic damage details"); // propagate for caller to handle
     } // finish error handling
   }; // end helper
+
+  const uploadDocumentsForJob = async (jobId, files, uploadedBy = null) => { // push pending files into Supabase storage + DB
+    if (!jobId || !Array.isArray(files) || files.length === 0) { // guard against missing data
+      return; // nothing to upload
+    } // guard end
+
+    setIsUploadingDocuments(true); // set uploading flag
+
+    try {
+      for (const file of files) { // iterate each file sequentially to maintain order
+        const safeName = file.name || `document-${Date.now()}`; // derive filename fallback
+        const ext = safeName.split(".").pop(); // capture extension
+        const objectPath = `jobs/${jobId}/documents/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext || "bin"}`; // build storage key
+
+        const { error: storageError } = await supabase.storage // upload into Supabase Storage bucket
+          .from("job-documents")
+          .upload(objectPath, file, {
+            contentType: file.type || "application/octet-stream",
+            upsert: false,
+          });
+
+        if (storageError) {
+          throw new Error(storageError.message || "Failed to upload document");
+        }
+
+        const publicUrl = supabase.storage.from("job-documents").getPublicUrl(objectPath).data.publicUrl; // obtain accessible URL
+
+        await addJobFile( // persist metadata in job_files table
+          jobId,
+          safeName,
+          publicUrl,
+          file.type || "application/octet-stream",
+          "documents",
+          uploadedBy
+        );
+      }
+    } finally {
+      setIsUploadingDocuments(false); // clear uploading state regardless of success
+      setPendingDocuments([]); // clear pending queue after attempt
+    }
+  };
 
   // ✅ Handle customer selection with shared database helpers
   const handleCustomerSelect = async (customerData) => {
@@ -606,6 +650,9 @@ export default function CreateJobCardPage() {
 
       await saveCosmeticDamageDetails(persistedJobId, cosmeticDamagePresent, cosmeticNotes); // store cosmetic damage toggle + notes
       await saveJobRequestsToDatabase(persistedJobId, sanitizedRequests); // create job request rows linked to job id
+      if (pendingDocuments.length > 0) { // check if any documents queued
+        await uploadDocumentsForJob(persistedJobId, pendingDocuments); // upload queued documents against the job
+      } // end conditional upload
       console.log("Job saved successfully with ID:", insertedJob.id);
 
       if (typeof fetchJobs === "function") {
@@ -1727,27 +1774,27 @@ export default function CreateJobCardPage() {
             <div
               style={{
                 flex: 1,
-                background: "linear-gradient(135deg, #ef4444, #b91c1c)",
+                background: "linear-gradient(135deg, #6366f1, #4338ca)",
                 color: "white",
                 borderRadius: "16px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
-                boxShadow: "0 4px 8px rgba(239,68,68,0.3)",
+                boxShadow: "0 4px 8px rgba(99,102,241,0.3)",
                 transition: "all 0.2s",
               }}
-              onClick={() => alert("Full Car Details Coming Soon")}
+              onClick={() => setShowDocumentsPopup(true)}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 6px 12px rgba(239,68,68,0.4)";
+                e.currentTarget.style.boxShadow = "0 6px 12px rgba(99,102,241,0.4)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 8px rgba(239,68,68,0.3)";
+                e.currentTarget.style.boxShadow = "0 4px 8px rgba(99,102,241,0.3)";
               }}
             >
-              <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600" }}>Full Car Details</h4>
+              <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600" }}>Documents</h4>
             </div>
           </div>
         </div>
@@ -1757,6 +1804,174 @@ export default function CreateJobCardPage() {
         )}
         {showExistingCustomer && (
           <ExistingCustomerPopup onClose={() => setShowExistingCustomer(false)} onSelect={(c) => handleCustomerSelect(c)} />
+        )}
+
+        {showDocumentsPopup && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.55)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1100,
+            }}
+            onClick={() => setShowDocumentsPopup(false)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "520px",
+                maxWidth: "90%",
+                backgroundColor: "white",
+                borderRadius: "18px",
+                padding: "28px",
+                boxShadow: "0 24px 60px rgba(15,23,42,0.35)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "#0f172a" }}>Upload Documents</h3>
+                  <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#64748b" }}>
+                    Attach PDFs or images now. Files stay queued until the job is saved.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowDocumentsPopup(false)}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    fontSize: "22px",
+                    cursor: "pointer",
+                    color: "#94a3b8",
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <label
+                htmlFor="documents-input"
+                style={{
+                  border: "2px dashed #c7d2fe",
+                  borderRadius: "16px",
+                  padding: "28px",
+                  textAlign: "center",
+                  cursor: "pointer",
+                  backgroundColor: "#eef2ff",
+                  color: "#312e81",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                }}
+              >
+                Click to select files (PNG, JPG, PDF)
+                <input
+                  id="documents-input"
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf"
+                  style={{ display: "none" }}
+                  onChange={(event) => {
+                    const files = Array.from(event.target.files || []);
+                    if (files.length > 0) {
+                      setPendingDocuments((prev) => [...prev, ...files]);
+                    }
+                  }}
+                />
+              </label>
+
+              {pendingDocuments.length > 0 && (
+                <div
+                  style={{
+                    maxHeight: "220px",
+                    overflowY: "auto",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    padding: "12px",
+                  }}
+                >
+                  {pendingDocuments.map((file, idx) => (
+                    <div
+                      key={`${file.name}-${idx}`}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "8px",
+                        borderBottom: "1px solid #f1f5f9",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}>{file.name}</div>
+                        <div style={{ fontSize: "12px", color: "#475569" }}>{(file.size / 1024).toFixed(1)} KB</div>
+                      </div>
+                      <button
+                        onClick={() =>
+                          setPendingDocuments((prev) => prev.filter((_, removeIndex) => removeIndex !== idx))
+                        }
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          color: "#ef4444",
+                          fontSize: "13px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  onClick={() => setShowDocumentsPopup(false)}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    borderRadius: "10px",
+                    border: "1px solid #e2e8f0",
+                    backgroundColor: "white",
+                    color: "#334155",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                  }}
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    if (pendingDocuments.length === 0) {
+                      alert("Please select files first");
+                      return;
+                    }
+                    alert("Documents will upload once the job is saved.");
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    borderRadius: "10px",
+                    border: "none",
+                    background: "linear-gradient(135deg, #6366f1, #4338ca)",
+                    color: "white",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    boxShadow: "0 10px 20px rgba(99,102,241,0.25)",
+                  }}
+                >
+                  Queue Uploads
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {showVhcPopup && (
