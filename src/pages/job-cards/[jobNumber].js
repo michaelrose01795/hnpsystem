@@ -364,15 +364,15 @@ export default function JobCardDetailPage() {
 
   // ✅ Tab Configuration
   const tabs = [
-    { id: "customer-requests", label: "Customer Requests", icon: "📋" },
-    { id: "contact", label: "Contact", icon: "📞" },
-    { id: "scheduling", label: "Scheduling", icon: "📅" },
-    { id: "service-history", label: "Service History", icon: "🔧" },
-    { id: "parts", label: "Parts", icon: "🔩", badge: "TODO" },
-    { id: "notes", label: "Notes", icon: "📝", badge: notes.length },
-    { id: "vhc", label: "VHC", icon: "✅", badge: vhcTabBadge },
-    { id: "messages", label: "Messages", icon: "💬", badge: "TODO" },
-    { id: "documents", label: "Documents", icon: "📄", badge: "TODO" }
+    { id: "customer-requests", label: "Customer Requests"},
+    { id: "contact", label: "Contact"},
+    { id: "scheduling", label: "Scheduling"},
+    { id: "service-history", label: "Service History"},
+    { id: "parts", label: "Parts"},
+    { id: "notes", label: "Notes"},
+    { id: "vhc", label: "VHC"},
+    { id: "messages", label: "Messages"},
+    { id: "documents", label: "Documents"}
   ];
 
   // ✅ Main Render
@@ -481,7 +481,7 @@ export default function JobCardDetailPage() {
                 onMouseEnter={(e) => e.target.style.backgroundColor = "#2563eb"}
                 onMouseLeave={(e) => e.target.style.backgroundColor = "#3b82f6"}
               >
-                ✏️ Edit Job
+                Edit Job
               </button>
             )}
           </div>
@@ -517,7 +517,7 @@ export default function JobCardDetailPage() {
                         fontSize: "14px"
                       }}
                     >
-                      💾 Save
+                      Save
                     </button>
                     <button
                       onClick={handleDescriptionCancel}
@@ -549,7 +549,7 @@ export default function JobCardDetailPage() {
                       fontSize: "14px"
                     }}
                   >
-                    ✏️ Edit Description
+                    Edit Description
                   </button>
                 )
               )}
@@ -845,7 +845,7 @@ function CustomerRequestsTab({
               fontSize: "14px"
             }}
           >
-            ✏️ Edit Requests
+            Edit Requests
           </button>
         )}
         {editing && (
@@ -863,7 +863,7 @@ function CustomerRequestsTab({
                 fontSize: "14px"
               }}
             >
-              💾 Save
+              Save
             </button>
             <button
               onClick={() => {
@@ -1095,7 +1095,7 @@ function CustomerRequestsTab({
                 fontSize: "12px",
                 fontWeight: "600"
               }}>
-                🔴 Red: {vhcSummary.red}
+                Red: {vhcSummary.red}
               </span>
               <span style={{
                 display: "inline-flex",
@@ -1108,7 +1108,7 @@ function CustomerRequestsTab({
                 fontSize: "12px",
                 fontWeight: "600"
               }}>
-                🟠 Amber: {vhcSummary.amber}
+                Amber: {vhcSummary.amber}
               </span>
               <span style={{
                 display: "inline-flex",
@@ -1121,7 +1121,7 @@ function CustomerRequestsTab({
                 fontSize: "12px",
                 fontWeight: "600"
               }}>
-                📋 Total Checks: {vhcSummary.total}
+                Total Checks: {vhcSummary.total}
               </span>
             </div>
 
@@ -1333,7 +1333,7 @@ function ContactTab({ jobData, canEdit }) {
               fontSize: "14px"
             }}
           >
-            📝 Edit Customer Details
+            Edit Customer Details
           </button>
           <p style={{ fontSize: "12px", color: "#999", marginTop: "8px" }}>
             Note: Changes to customer details must be approved by the customer
@@ -1362,7 +1362,7 @@ function SchedulingTab({ jobData, canEdit }) {
           marginBottom: "24px"
         }}>
           <h3 style={{ margin: "0 0 16px 0", fontSize: "16px", fontWeight: "600", color: "#2e7d32" }}>
-            📅 Appointment Scheduled
+            Appointment Scheduled
           </h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
             <div>
@@ -1396,7 +1396,7 @@ function SchedulingTab({ jobData, canEdit }) {
           marginBottom: "24px"
         }}>
           <p style={{ margin: 0, fontSize: "14px", color: "#e65100", fontWeight: "500" }}>
-            ⚠️ No appointment scheduled yet
+            No appointment scheduled yet
           </p>
         </div>
       )}
@@ -1582,7 +1582,7 @@ function PartsTab({ jobData, canEdit }) {
         borderRadius: "8px",
         border: "2px dashed #ff9800"
       }}>
-        <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔩</div>
+        <div style={{ fontSize: "48px", marginBottom: "16px" }}></div>
         <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#e65100", marginBottom: "8px" }}>
           Parts Management Coming Soon
         </h3>
@@ -1640,7 +1640,7 @@ function NotesTab({ notes, newNote, setNewNote, onAddNote, onDeleteNote, canEdit
               fontSize: "14px"
             }}
           >
-            ➕ Add Note
+            Add Note
           </button>
         </div>
       )}
@@ -1735,7 +1735,7 @@ function VHCTab({ jobNumber }) {
         backgroundColor: "#f9f9f9",
         borderRadius: "8px"
       }}>
-        <div style={{ fontSize: "64px", marginBottom: "16px" }}>✅</div>
+        <div style={{ fontSize: "64px", marginBottom: "16px" }}></div>
         <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#333", marginBottom: "16px" }}>
           View Full VHC Report
         </h3>
@@ -1773,7 +1773,7 @@ function MessagesTab({ jobData }) {
         borderRadius: "8px",
         border: "2px dashed #ff9800"
       }}>
-        <div style={{ fontSize: "48px", marginBottom: "16px" }}>💬</div>
+        <div style={{ fontSize: "48px", marginBottom: "16px" }}></div>
         <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#e65100", marginBottom: "8px" }}>
           Messaging System Coming Soon
         </h3>
@@ -1799,7 +1799,7 @@ function DocumentsTab({ jobData, canEdit }) {
         borderRadius: "8px",
         border: "2px dashed #ff9800"
       }}>
-        <div style={{ fontSize: "48px", marginBottom: "16px" }}>📄</div>
+        <div style={{ fontSize: "48px", marginBottom: "16px" }}></div>
         <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#e65100", marginBottom: "8px" }}>
           Document Management Coming Soon
         </h3>
@@ -1905,7 +1905,7 @@ function JobHistoryPopup({ job, onClose }) {
               fontSize: "14px"
             }}
           >
-            📋 View Full Job Card
+            View Full Job Card
           </button>
           <button
             onClick={() => alert("Invoice viewing coming soon")}
@@ -1921,7 +1921,7 @@ function JobHistoryPopup({ job, onClose }) {
               fontSize: "14px"
             }}
           >
-            📄 View Invoice
+            View Invoice
           </button>
         </div>
       </div>
