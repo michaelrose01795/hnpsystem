@@ -10,11 +10,33 @@ import Link from "next/link"; // Import Link for navigation shortcuts
 import { consumableOrderHistory } from "@/lib/data/consumablesSample"; // Shared seed data for consumables
 
 const containerStyle = {
-  padding: "24px", // Provide roomy spacing around the page
-  maxWidth: "1400px", // Limit page width for readability
-  margin: "0 auto", // Center the content on large displays
-  display: "flex", // Use flex layout to position columns
-  gap: "24px", // Maintain comfortable distance between sections
+  flex: 1, // Allow the consumables workspace to stretch to fill the Layout content area
+  height: "100%", // Match the vhc dashboard full-height canvas
+  display: "flex", // Use column layout to mirror dashboard scaffolding
+  flexDirection: "column", // Stack nested sections vertically
+  padding: "8px 16px", // Align outer padding with VHC dashboard
+  overflow: "hidden", // Prevent double scrollbars by containing overflow
+};
+
+const workspaceShellStyle = {
+  flex: 1, // Allow the primary card to fill the available height
+  display: "flex", // Stack header / columns vertically
+  flexDirection: "column", // Ensure columns sit beneath the header
+  borderRadius: "24px", // Match the rounded dashboard shell
+  boxShadow: "0 4px 12px rgba(0,0,0,0.08)", // Mirror the subtle VHC elevation
+  border: "1px solid #ffe5e5", // Reuse the soft red border from VHC
+  background: "linear-gradient(to bottom right, #ffffff, #fff9f9, #ffecec)", // Align the gradient background treatment
+  padding: "24px", // Match inner spacing used on VHC card
+  minHeight: 0, // Allow inner columns to manage their own scrolling
+  overflow: "hidden", // Keep the shell tidy when children scroll
+};
+
+const workspaceColumnsStyle = {
+  flex: 1, // Let the column layout take the remaining height
+  display: "flex", // Place main + side content next to each other
+  gap: "24px", // Maintain spacing consistent with dashboard rows
+  minHeight: 0, // Enable child overflow areas
+  overflow: "hidden", // Prevent the columns container from scrolling
 };
 
 const mainColumnStyle = {
@@ -22,6 +44,10 @@ const mainColumnStyle = {
   display: "flex", // Stack children vertically
   flexDirection: "column", // Arrange sections in a column
   gap: "20px", // Space out sections evenly
+  minHeight: 0, // Allow scroll container to calculate height
+  minWidth: 0, // Prevent flexbox from enforcing a minimum width
+  overflowY: "auto", // Enable internal scrolling similar to VHC job list
+  paddingRight: "8px", // Provide breathing room near the scrollbar
 };
 
 const sideColumnStyle = {
@@ -29,6 +55,10 @@ const sideColumnStyle = {
   display: "flex", // Stack panels vertically
   flexDirection: "column", // Arrange panels from top to bottom
   gap: "20px", // Add consistent spacing between panels
+  minHeight: 0, // Ensure the reminders column can scroll independently
+  minWidth: 0, // Avoid overflow due to intrinsic sizing
+  overflowY: "auto", // Allow reminders to scroll without stretching the page
+  paddingRight: "4px", // Match the subtle gutter on the VHC dashboard
 };
 
 const cardStyle = {
@@ -269,6 +299,8 @@ function ConsumablesTrackerPage() {
   return (
     <Layout>
       <div style={containerStyle}>
+        <div style={workspaceShellStyle}>
+          <div style={workspaceColumnsStyle}>
         <div style={mainColumnStyle}>
           <div style={{ ...cardStyle }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -594,6 +626,8 @@ function ConsumablesTrackerPage() {
                 field for quick reference.
               </li>
             </ul>
+          </div>
+        </div>
           </div>
         </div>
       </div>
