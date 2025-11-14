@@ -15,6 +15,7 @@ import {
 } from "@/lib/database/customers";
 import { createOrUpdateVehicle, getVehicleByReg } from "@/lib/database/vehicles";
 import { addJobToDatabase } from "@/lib/database/jobs";
+import { supabase } from "@/lib/supabaseClient"; // import supabase client for job request inserts
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import new customer popup
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
 
@@ -246,6 +247,45 @@ export default function CreateJobCardPage() {
       setIsSavingCustomer(false);
     }
   };
+
+  const saveJobRequestsToDatabase = async (jobId, jobRequestEntries) => { // persist each job request as its own Supabase row
+    if (!jobId || !Array.isArray(jobRequestEntries) || jobRequestEntries.length === 0) { // guard against invalid inputs
+      return; // nothing to do when payload missing
+    } // comment for guard end
+
+    const timestamp = new Date().toISOString(); // reuse timestamp for created/updated columns
+
+    const payload = jobRequestEntries // begin mapping job requests into insert payload
+      .map((entry, index) => { // iterate each request to normalize fields
+        const trimmedDescription = (entry.text || "").trim(); // sanitize description text
+        if (!trimmedDescription) { // skip empty descriptions
+          return null; // produce null placeholder removed later
+        } // finish empty guard
+
+        const parsedHours = entry.time === "" || entry.time === null || entry.time === undefined ? null : Number(entry.time); // parse numeric hours when present
+        const safeHours = Number.isFinite(parsedHours) ? parsedHours : null; // ensure NaN becomes null
+
+        return { // build insert row
+          job_id: jobId, // link to parent job id
+          description: trimmedDescription, // set description text
+          hours: safeHours, // store parsed hours or null
+          job_type: (entry.paymentType || "Customer").trim() || "Customer", // persist job type label
+          sort_order: index + 1, // keep order for UI grouping
+          created_at: timestamp, // assign creation timestamp
+          updated_at: timestamp, // assign update timestamp
+        }; // end row object
+      })
+      .filter(Boolean); // remove null rows from skipped descriptions
+
+    if (payload.length === 0) { // guard when all rows skipped
+      return; // nothing to insert
+    } // finish guard
+
+    const { error } = await supabase.from("job_requests").insert(payload); // insert payload into Supabase table
+    if (error) { // check for insert failure
+      throw new Error(error.message || "Failed to save job requests"); // bubble error so caller can abort
+    } // finish error handling
+  }; // end helper
 
   // ✅ Handle customer selection with shared database helpers
   const handleCustomerSelect = async (customerData) => {
@@ -532,6 +572,12 @@ export default function CreateJobCardPage() {
       }
 
       const insertedJob = jobResult.data;
+      const persistedJobId = insertedJob.id || insertedJob.jobId || insertedJob.job_id; // normalize job identifier for inserts
+      if (!persistedJobId) { // ensure job id exists
+        throw new Error("Job ID missing after creation"); // abort when job id not returned
+      } // finish guard
+
+      await saveJobRequestsToDatabase(persistedJobId, sanitizedRequests); // create job request rows linked to job id
       console.log("Job saved successfully with ID:", insertedJob.id);
 
       if (typeof fetchJobs === "function") {

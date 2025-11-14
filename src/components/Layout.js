@@ -16,6 +16,7 @@ import { sidebarSections } from "@/config/navigation";
 import { useRoster } from "@/context/RosterContext";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import { workshopTabs, workshopQuickActions } from "@/components/Workshop/WorkshopTabsBar";
+import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 
 const WORKSHOP_ACCESS_ROLES = [
   "workshop manager",
@@ -112,6 +113,13 @@ export default function Layout({ children, jobNumber }) {
   ];
 
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const matchesDepartment = (rolesToMatch = []) => {
+    if (!rolesToMatch || rolesToMatch.length === 0) return true;
+    return rolesToMatch.some((roleName) => userRoles.includes(roleName));
+  };
+  const dashboardShortcuts = departmentDashboardShortcuts.filter((shortcut) =>
+    matchesDepartment(shortcut.roles || [])
+  );
   const showServiceButtons =
     userRoles.some((role) => workshopAccessRoles.has(role)) &&
     workshopNavRoutes.some(
@@ -831,6 +839,104 @@ export default function Layout({ children, jobNumber }) {
             }}
           >
             {showHrTabs && <HrTabsBar />}
+            {dashboardShortcuts.length > 0 && (
+              <section
+                style={{
+                  background: "#ffffff",
+                  borderRadius: "18px",
+                  padding: isMobile ? "12px" : "14px 18px",
+                  border: "1px solid #ffe0e0",
+                  boxShadow: "0 16px 30px rgba(209, 0, 0, 0.08)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "14px",
+                  marginBottom: isMobile ? "12px" : "18px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "12px",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
+                      minWidth: "200px",
+                      flex: "1 1 220px",
+                    }}
+                  >
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "0.65rem",
+                        letterSpacing: "0.12em",
+                        textTransform: "uppercase",
+                        color: colors.mutedText,
+                      }}
+                    >
+                      My Dashboards
+                    </p>
+                    <strong
+                      style={{
+                        fontSize: isMobile ? "1rem" : "1.1rem",
+                        color: colors.accent,
+                      }}
+                    >
+                      Jump to your departmental control room
+                    </strong>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "10px",
+                      justifyContent: "flex-end",
+                      flex: "2 1 280px",
+                    }}
+                  >
+                    {dashboardShortcuts.map((shortcut) => {
+                      const active =
+                        router.pathname === shortcut.href ||
+                        router.pathname.startsWith(`${shortcut.href}/`);
+                      return (
+                        <Link
+                          key={shortcut.href}
+                          href={shortcut.href}
+                          title={shortcut.description}
+                          style={{
+                            minWidth: "150px",
+                            textAlign: "center",
+                            padding: "10px 18px",
+                            borderRadius: "12px",
+                            border: active ? "1px solid #b10000" : "1px solid #ffe0e0",
+                            backgroundColor: active ? "#b10000" : "#fff5f5",
+                            color: active ? "#ffffff" : "#720000",
+                            fontWeight: 600,
+                            fontSize: "0.9rem",
+                            textDecoration: "none",
+                            boxShadow: active
+                              ? "0 16px 32px rgba(177, 0, 0, 0.22)"
+                              : "0 10px 20px rgba(209, 0, 0, 0.12)",
+                            transition:
+                              "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {shortcut.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+            )}
             {showServiceButtons && (
               <section
                 style={{

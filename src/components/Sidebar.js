@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 import { useUser } from "@/context/UserContext";
 import { sidebarSections } from "@/config/navigation";
+import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 
 const hiddenHrRoutes = new Set([
   "/hr/employees",
@@ -25,6 +26,10 @@ export default function Sidebar({ onToggle, isCondensed = false, extraSections =
   const pathname = usePathname();
   const { user, logout } = useUser();
   const userRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
+  const dashboardShortcuts = departmentDashboardShortcuts.filter((shortcut) => {
+    if (!shortcut.roles || shortcut.roles.length === 0) return true;
+    return shortcut.roles.some((role) => userRoles.includes(role));
+  });
 
   const groupedSections = useMemo(() => {
     const groups = { general: [], departments: [], account: [] };
@@ -134,6 +139,61 @@ export default function Sidebar({ onToggle, isCondensed = false, extraSections =
 
       {/* Navigation Content */}
       <div style={{ padding: "20px" }}>
+        {dashboardShortcuts.length > 0 && (
+          <>
+            <div
+              style={{
+                color: "#a00000",
+                fontWeight: 700,
+                fontSize: "0.85rem",
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+                marginBottom: "10px",
+              }}
+            >
+              My Dashboards
+            </div>
+            {dashboardShortcuts.map((shortcut) => {
+              const isActive =
+                pathname === shortcut.href || pathname.startsWith(`${shortcut.href}/`);
+              return (
+                <Link
+                  key={shortcut.href}
+                  href={shortcut.href}
+                  title={shortcut.description}
+                  style={{
+                    display: "block",
+                    padding: "10px 14px",
+                    marginBottom: "10px",
+                    background: isActive
+                      ? "linear-gradient(90deg, #d10000, #a00000)"
+                      : "#ffffff",
+                    color: isActive ? "#ffffff" : "#a00000",
+                    borderRadius: "10px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    border: isActive ? "none" : "1px solid #ffe0e0",
+                    boxShadow: isActive
+                      ? "0 12px 20px rgba(161, 0, 0, 0.25)"
+                      : "0 4px 12px rgba(0, 0, 0, 0.05)",
+                    textDecoration: "none",
+                  }}
+                >
+                  {shortcut.label}
+                </Link>
+              );
+            })}
+            <div
+              style={{
+                height: "1px",
+                width: "100%",
+                background: "rgba(160,0,0,0.12)",
+                margin: "14px 0",
+              }}
+            />
+          </>
+        )}
+
         {/* General Section */}
         {generalSections.length > 0 && (
           <>
