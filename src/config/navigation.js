@@ -9,7 +9,7 @@ export const sidebarSections = [
       {
         label: "📊 Retail Dashboard",
         href: "/dashboard",
-        roles: ["service manager", "workshop manager", "after sales director", "parts manager"],
+        roles: ["service manager", "workshop manager", "after sales director"],
       },
       {
         label: "🛠️ Tech Dashboard",

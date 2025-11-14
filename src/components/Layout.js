@@ -117,12 +117,7 @@ export default function Layout({ children, jobNumber }) {
     workshopNavRoutes.some(
       (href) => router.pathname === href || router.pathname.startsWith(`${href}/`)
     );
-  const retailManagerDashboardRoles = [
-    "service manager",
-    "workshop manager",
-    "after sales director",
-    "parts manager",
-  ];
+  const retailManagerDashboardRoles = ["service manager", "workshop manager", "after sales director"];
   const hasRetailDashboardAccess = userRoles.some((role) =>
     retailManagerDashboardRoles.includes(role)
   );

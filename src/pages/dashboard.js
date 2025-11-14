@@ -9,6 +9,7 @@ import WorkshopManagerDashboard from "@/components/dashboards/WorkshopManagerDas
 import ServiceManagerDashboard from "@/components/dashboards/ServiceManagerDashboard"; // import service manager dashboard
 import AfterSalesManagerDashboard from "@/components/dashboards/AfterSalesManagerDashboard"; // import after sales manager dashboard
 import RetailManagersDashboard from "@/components/dashboards/RetailManagersDashboard"; // import retail managers dashboard component
+import PartsOpsDashboard from "@/components/dashboards/PartsOpsDashboard";
 import { roleCategories } from "@/config/users"; // import role category definitions
 
 const retailManagerRoles = (roleCategories?.Retail || []) // build a list of retail manager roles
@@ -26,8 +27,11 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return; // stop if user data not ready
 
-    const normalizedRoles = user.roles?.map((role) => role.toLowerCase()) || []; // normalize user roles for comparisons
-    const shouldStayOnRetailDashboard = normalizedRoles.some((roleName) => // determine if user should stay on retail dashboard
+    const normalizedRoles = user.roles?.map((role) => role.toLowerCase()) || [];
+    const isPartsRole = normalizedRoles.some((role) => role === "parts" || role === "parts manager");
+    if (isPartsRole) return; // parts roles now use this dashboard
+
+    const shouldStayOnRetailDashboard = normalizedRoles.some((roleName) =>
       retailManagerRoles.includes(roleName)
     );
     if (shouldStayOnRetailDashboard) return; // keep retail managers on this page
@@ -41,9 +45,6 @@ export default function Dashboard() {
       case "TECHS":
       case "WORKSHOP":
         router.replace("/dashboard/techs");
-        break;
-      case "PARTS":
-        router.replace("/dashboard/parts");
         break;
       case "MANAGER":
         router.replace("/dashboard/manager");
@@ -69,6 +70,7 @@ export default function Dashboard() {
   const normalizedRoles = user?.roles?.map((r) => r.toLowerCase()) || []; // normalize roles for checks
   const hasRole = (rolesToMatch = []) =>
     normalizedRoles.some((roleName) => rolesToMatch.includes(roleName)); // helper to match roles
+  const isPartsRole = hasRole(["parts", "parts manager"]);
   const specialDashboardRoles = [
     "workshop manager",
     "service manager",
@@ -84,8 +86,20 @@ export default function Dashboard() {
     "aftersales manager",
   ]); // after sales leadership roles
   const isRetailManager = normalizedRoles.some(
-    (roleName) => retailManagerRoles.includes(roleName) && !specialDashboardRoles.includes(roleName)
+    (roleName) =>
+      retailManagerRoles.includes(roleName) &&
+      !specialDashboardRoles.includes(roleName) &&
+      roleName !== "parts manager" &&
+      roleName !== "parts"
   ); // show shared retail dashboard only for remaining roles
+
+  if (isPartsRole) {
+    return (
+      <Layout>
+        <PartsOpsDashboard />
+      </Layout>
+    );
+  }
 
   if (isWorkshopManager) {
     return (
