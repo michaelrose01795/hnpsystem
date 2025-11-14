@@ -849,7 +849,7 @@ export default function CreateJobCardPage() {
     }
   };
 
-  // ✅ Save Job Function - persist vehicle + job via shared helpers
+  // ✅ Save Job Function - persist job info, vehicle, customer status, requests, documents, and check-sheets together
   const handleSaveJob = async () => {
     try {
       if (!customer) {
@@ -952,13 +952,16 @@ export default function CreateJobCardPage() {
         throw new Error("Job ID missing after creation"); // abort when job id not returned
       } // finish guard
 
-      await saveCosmeticDamageDetails(persistedJobId, cosmeticDamagePresent, cosmeticNotes); // store cosmetic damage toggle + notes
-      await saveCustomerStatus(persistedJobId, waitingStatus); // persist customer waiting status for downstream scheduling
-      await saveJobRequestsToDatabase(persistedJobId, sanitizedRequests); // create job request rows linked to job id
-      if (pendingDocuments.length > 0) { // check if any documents queued
-        await uploadDocumentsForJob(persistedJobId, pendingDocuments, dbUserId || null); // upload queued documents against the job
-      } // end conditional upload
-      await saveCheckSheetData(persistedJobId); // persist check-sheet configuration when provided
+      await Promise.all([
+        saveCosmeticDamageDetails(persistedJobId, cosmeticDamagePresent, cosmeticNotes), // persist cosmetic data
+        saveCustomerStatus(persistedJobId, waitingStatus), // record customer status row
+        saveJobRequestsToDatabase(persistedJobId, sanitizedRequests), // persist job requests
+        pendingDocuments.length > 0
+          ? uploadDocumentsForJob(persistedJobId, pendingDocuments, dbUserId || null)
+          : Promise.resolve(), // conditionally upload documents
+        saveCheckSheetData(persistedJobId), // persist check-sheet if provided
+      ]);
+
       console.log("Job saved successfully with ID:", insertedJob.id);
 
       if (typeof fetchJobs === "function") {
@@ -968,10 +971,10 @@ export default function CreateJobCardPage() {
       const finalJobNumber = insertedJob.jobNumber || insertedJob.id;
       setJobNumberDisplay(finalJobNumber || null); // update header display with new job number
       alert(
-        `Job created successfully! Job Number: ${finalJobNumber}\n\nVehicle ${regUpper} has been saved and linked to ${customer.firstName} ${customer.lastName}`
+        `Job created successfully! ${jobSource} — ${finalJobNumber}\n\nVehicle ${regUpper} has been saved and linked to ${customer.firstName} ${customer.lastName}`
       );
 
-      router.push(`/appointments?jobNumber=${finalJobNumber}`);
+      router.push(`/job-cards/${finalJobNumber}`); // redirect to job detail page for follow-up actions
     } catch (err) {
       console.error("❌ Error saving job:", err);
       alert(`Error saving job: ${err.message}. Check console for details.`);
