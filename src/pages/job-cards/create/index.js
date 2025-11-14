@@ -2056,27 +2056,67 @@ export default function CreateJobCardPage() {
             <div
               style={{
                 flex: 1,
-                background: "linear-gradient(135deg, #6366f1, #4338ca)",
-                color: "white",
+                background: "white",
+                padding: "16px",
                 borderRadius: "16px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                border: "1px solid #e0e0e0",
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                boxShadow: "0 4px 8px rgba(99,102,241,0.3)",
-                transition: "all 0.2s",
-              }}
-              onClick={() => setShowDocumentsPopup(true)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 6px 12px rgba(99,102,241,0.4)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 8px rgba(99,102,241,0.3)";
+                flexDirection: "column",
+                gap: "12px",
+                justifyContent: "space-between",
               }}
             >
-              <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600" }}>Documents</h4>
+              <div>
+                <h4
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#1a1a1a",
+                    marginTop: 0,
+                    marginBottom: "6px",
+                  }}
+                >
+                  Documents
+                </h4>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "13px",
+                    color: "#6b7280",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  Keep service letters, signed paperwork, and photos attached to this job card.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDocumentsPopup(true)}
+                style={{
+                  alignSelf: "flex-start",
+                  padding: "10px 18px",
+                  borderRadius: "10px",
+                  border: "none",
+                  backgroundColor: "#d10000",
+                  color: "white",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  transition: "background-color 0.2s, transform 0.2s",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#b00000";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#d10000";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                Manage Documents
+              </button>
             </div>
           </div>
         </div>
