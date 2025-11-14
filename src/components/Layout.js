@@ -28,27 +28,6 @@ const WORKSHOP_ACCESS_ROLES_SET = new Set(WORKSHOP_ACCESS_ROLES);
 
 const WORKSHOP_SHORTCUT_LINKS = [
   {
-    label: "🔜 Next Jobs",
-    href: "/job-cards/waiting/nextjobs",
-    roles: WORKSHOP_ACCESS_ROLES,
-    keywords: ["next jobs", "waiting", "queue"],
-    description: "View the live queue of waiting jobs",
-  },
-  {
-    label: "📝 VHC Dashboard",
-    href: "/vhc/dashboard",
-    roles: WORKSHOP_ACCESS_ROLES,
-    keywords: ["vhc", "dashboard"],
-    description: "Monitor VHC pipeline and completions",
-  },
-  {
-    label: "🧾 Consumables",
-    href: "/workshop/consumables-tracker",
-    roles: WORKSHOP_ACCESS_ROLES,
-    keywords: ["consumables", "tracker"],
-    description: "Track consumable usage and budgets",
-  },
-  {
     label: "⏱️ Clocking",
     href: "/workshop/Clocking",
     roles: WORKSHOP_ACCESS_ROLES,
