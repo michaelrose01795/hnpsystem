@@ -974,7 +974,7 @@ export default function CreateJobCardPage() {
         `Job created successfully! ${jobSource} — ${finalJobNumber}\n\nVehicle ${regUpper} has been saved and linked to ${customer.firstName} ${customer.lastName}`
       );
 
-      router.push(`/job-cards/${finalJobNumber}`); // redirect to job detail page for follow-up actions
+      router.push(`/appointments?jobNumber=${encodeURIComponent(finalJobNumber || "")}`); // Redirect to the new appointments calendar with job number prefilled
     } catch (err) {
       console.error("❌ Error saving job:", err);
       alert(`Error saving job: ${err.message}. Check console for details.`);
