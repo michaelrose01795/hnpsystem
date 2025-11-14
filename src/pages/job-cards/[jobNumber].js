@@ -461,7 +461,7 @@ export default function JobCardDetailPage() {
               onMouseEnter={(e) => e.target.style.backgroundColor = "#5a6268"}
               onMouseLeave={(e) => e.target.style.backgroundColor = "#6c757d"}
             >
-              ← Back
+              Back
             </button>
             
             {canEdit && (
@@ -469,7 +469,7 @@ export default function JobCardDetailPage() {
                 onClick={() => router.push(`/job-cards/create?edit=${jobData.id}`)}
                 style={{
                   padding: "10px 20px",
-                  backgroundColor: "#3b82f6",
+                  backgroundColor: "#d10000",
                   color: "white",
                   border: "none",
                   borderRadius: "8px",
@@ -992,7 +992,7 @@ function CustomerRequestsTab({
               fontSize: "14px"
             }}
           >
-            + Add Request
+            Add Request
           </button>
         </div>
       ) : (

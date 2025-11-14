@@ -4,6 +4,7 @@
 "use client"; // enables client-side rendering for Next.js
 
 import React, { useEffect, useState } from "react"; // import React and hooks
+import Link from "next/link"; // for linking back to job card
 import { useRouter } from "next/router"; // for getting URL params and navigation
 import { supabase } from "@/lib/supabaseClient"; // import Supabase client
 import Layout from "@/components/Layout"; // import layout wrapper
@@ -610,7 +611,18 @@ export default function VHCDetails() {
           </button>
           
           <h1 style={{ fontSize: "24px", fontWeight: "700", color: "#1a1a1a" }}>
-            VHC Details - {vhcData.job_number}
+            VHC Details -{" "}
+            <Link
+              href={`/job-cards/${vhcData.job_number}`}
+              style={{
+                color: "#d10000",
+                textDecoration: "none",
+                fontWeight: "700",
+                cursor: "pointer"
+              }}
+            >
+              {vhcData.job_number}
+            </Link>
           </h1>
           
           <button
