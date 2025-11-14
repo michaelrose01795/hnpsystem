@@ -94,6 +94,7 @@ export default function CreateJobCardPage() {
   const [cosmeticDamagePresent, setCosmeticDamagePresent] = useState(false); // track whether cosmetic damage observed
   const [cosmeticNotes, setCosmeticNotes] = useState(""); // notes about cosmetic damage
   const [vhcRequired, setVhcRequired] = useState(false); // whether VHC is required
+  const WAITING_STATUS_STORAGE_KEY = "jobCardCreateWaitingStatus"; // key used to persist waiting status background choice
   const [waitingStatus, setWaitingStatus] = useState("Neither"); // customer waiting status
   const [jobSource, setJobSource] = useState("Retail"); // job source (Retail or Warranty)
   const [jobCategories, setJobCategories] = useState(["Other"]); // auto-detected job categories
@@ -158,6 +159,19 @@ export default function CreateJobCardPage() {
       URL.revokeObjectURL(checkSheetPreviewUrl);
     }
   }, [checkSheetPreviewUrl]);
+
+  useEffect(() => { // load persisted waiting status for consistent background when revisiting the page
+    if (typeof window === "undefined") return; // ensure browser environment before accessing localStorage
+    const storedStatus = localStorage.getItem(WAITING_STATUS_STORAGE_KEY); // read stored value
+    if (storedStatus && ["Waiting", "Loan Car", "Collection", "Neither"].includes(storedStatus)) { // validate stored option
+      setWaitingStatus(storedStatus); // apply stored status to restore background colour
+    }
+  }, []); // run once on mount
+
+  useEffect(() => { // persist waiting status selection for future visits
+    if (typeof window === "undefined") return; // guard for SSR
+    localStorage.setItem(WAITING_STATUS_STORAGE_KEY, waitingStatus); // store the selection for next visit
+  }, [waitingStatus]); // run whenever waiting status changes
 
   // function to determine background color based on waiting status and job source
   const getBackgroundColor = (status, source) => {
