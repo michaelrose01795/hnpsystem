@@ -107,6 +107,7 @@ export default function CreateJobCardPage() {
   const [checkSheetCheckboxes, setCheckSheetCheckboxes] = useState([]); // list of checkbox metadata for current sheet
   const [userSignature, setUserSignature] = useState(null); // store current user's signature metadata
   const [isUploadingSignature, setIsUploadingSignature] = useState(false); // track signature upload state
+  const [jobNumberDisplay, setJobNumberDisplay] = useState(null); // store assigned job number for header display
 
   // state for maintenance information (simplified - only MOT date now)
   const [nextMotDate, setNextMotDate] = useState(""); // store upcoming MOT date for maintenance info
@@ -889,6 +890,7 @@ export default function CreateJobCardPage() {
       }
 
       const finalJobNumber = insertedJob.jobNumber || insertedJob.id;
+      setJobNumberDisplay(finalJobNumber || null); // update header display with new job number
       alert(
         `Job created successfully! Job Number: ${finalJobNumber}\n\nVehicle ${regUpper} has been saved and linked to ${customer.firstName} ${customer.lastName}`
       );
@@ -933,7 +935,7 @@ export default function CreateJobCardPage() {
                 marginBottom: "4px",
               }}
             >
-              {jobSource} Job Card
+              {jobNumberDisplay ? `${jobSource} — ${jobNumberDisplay}` : `${jobSource} Job Card`}
             </h2>
           </div>
           <button
