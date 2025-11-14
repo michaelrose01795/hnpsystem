@@ -31,14 +31,6 @@ const workspaceShellStyle = {
   overflow: "hidden", // Keep the shell tidy when children scroll
 };
 
-const workspaceColumnsStyle = {
-  flex: 1, // Let the column layout take the remaining height
-  display: "flex", // Place main + side content next to each other
-  gap: "24px", // Maintain spacing consistent with dashboard rows
-  minHeight: 0, // Enable child overflow areas
-  overflow: "hidden", // Prevent the columns container from scrolling
-};
-
 const mainColumnStyle = {
   flex: 3, // Allocate more space to the tracker content
   display: "flex", // Stack children vertically
@@ -48,17 +40,6 @@ const mainColumnStyle = {
   minWidth: 0, // Prevent flexbox from enforcing a minimum width
   overflowY: "auto", // Enable internal scrolling similar to VHC job list
   paddingRight: "8px", // Provide breathing room near the scrollbar
-};
-
-const sideColumnStyle = {
-  flex: 1.2, // Narrower column for reminders and notes
-  display: "flex", // Stack panels vertically
-  flexDirection: "column", // Arrange panels from top to bottom
-  gap: "20px", // Add consistent spacing between panels
-  minHeight: 0, // Ensure the reminders column can scroll independently
-  minWidth: 0, // Avoid overflow due to intrinsic sizing
-  overflowY: "auto", // Allow reminders to scroll without stretching the page
-  paddingRight: "4px", // Match the subtle gutter on the VHC dashboard
 };
 
 const cardStyle = {
@@ -229,17 +210,6 @@ function ConsumablesTrackerPage() {
     );
   };
 
-  const reminderEntries = useMemo(() => {
-    return consumables
-      .map((item) => {
-        const reminderDate = calculateReminderDate(item.nextReorderDate); // Determine reminder date for item
-        const status = getStatus(reminderDate, item.nextReorderDate); // Determine reminder status tone
-        return { ...item, reminderDate, status }; // Build enriched record for reminder list
-      })
-      .filter((item) => item.status.tone !== "safe") // Only show items that are due soon or overdue
-      .sort((a, b) => new Date(a.reminderDate) - new Date(b.reminderDate)); // Sort by reminder date ascending
-  }, [consumables]);
-
   const totals = useMemo(() => {
     const currentDate = new Date(); // Reference date for monthly calculations
     const currentMonth = currentDate.getMonth(); // Month index 0-11
@@ -300,8 +270,7 @@ function ConsumablesTrackerPage() {
     <Layout>
       <div style={containerStyle}>
         <div style={workspaceShellStyle}>
-          <div style={workspaceColumnsStyle}>
-        <div style={mainColumnStyle}>
+          <div style={mainColumnStyle}>
           <div style={{ ...cardStyle }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
@@ -582,55 +551,8 @@ function ConsumablesTrackerPage() {
             </form>
           </div>
         </div>
-
-        <div style={sideColumnStyle}>
-          <div style={{ ...cardStyle }}>
-            <h2 style={sectionTitleStyle}>Reminders & Alerts</h2>
-            {reminderEntries.length === 0 ? (
-              <p style={{ color: "#555" }}>All consumables are currently on track.</p>
-            ) : (
-              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
-                {reminderEntries.map((item) => (
-                  <li key={item.id} style={{ background: "#fff7f0", borderRadius: "12px", padding: "14px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <strong style={{ color: "#b10000" }}>{item.name}</strong>
-                        <p style={{ margin: "4px 0 0", color: "#666", fontSize: "0.85rem" }}>
-                          Order on {item.nextReorderDate} · Reminder {item.reminderDate}
-                        </p>
-                      </div>
-                      <span style={toneToStyles(item.status.tone)}>{item.status.label}</span>
-                    </div>
-                    <p style={{ margin: "10px 0 0", color: "#777", fontSize: "0.8rem" }}>
-                      Supplier: <strong>{item.supplier || "Not set"}</strong> ·
-                      Last spend {formatCurrency(item.unitCost * item.quantityPerOrder)}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div style={{ ...cardStyle }}>
-            <h2 style={sectionTitleStyle}>Budget Notes</h2>
-            <p style={{ color: "#555", fontSize: "0.9rem", marginBottom: "12px" }}>
-              Keep budget tracking accurate by logging orders as soon as they are
-              placed. The tracker recalculates reminders automatically using the
-              reorder frequency for each consumable.
-            </p>
-            <ul style={{ listStyle: "disc", paddingLeft: "20px", color: "#666", fontSize: "0.85rem", display: "flex", flexDirection: "column", gap: "8px" }}>
-              <li>Use the "Log Order Now" button after placing supplier orders.</li>
-              <li>Adjust the monthly budget when headcount or throughput changes.</li>
-              <li>
-                Capture any special pricing or supplier promotions in the notes
-                field for quick reference.
-              </li>
-            </ul>
-          </div>
-        </div>
-          </div>
-        </div>
       </div>
+    </div>
     </Layout>
   );
 }
