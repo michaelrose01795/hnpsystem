@@ -373,6 +373,25 @@ export default function CreateJobCardPage() {
     } // finish error handling
   }; // end helper
 
+  const saveCustomerStatus = async (jobId, status) => { // persist customer status in dedicated table for later scheduling hook
+    if (!jobId) { // ensure we have a job id before writing
+      return; // skip when job missing
+    }
+
+    const timestamp = new Date().toISOString(); // shared timestamp for audit trail
+    const payload = { // build insert payload for status table
+      job_id: jobId,
+      status: status || "Neither",
+      created_at: timestamp,
+      updated_at: timestamp,
+    };
+
+    const { error } = await supabase.from("job_customer_statuses").insert([payload]); // insert status row
+    if (error) { // log but don't block job creation
+      console.error("Failed to save customer status", error.message);
+    }
+  };
+
   const uploadDocumentsForJob = async (jobId, files, uploadedBy = null) => { // push pending files into Supabase storage + DB
     if (!jobId || !Array.isArray(files) || files.length === 0) { // guard against missing data
       return; // nothing to upload
@@ -892,6 +911,7 @@ export default function CreateJobCardPage() {
       } // finish guard
 
       await saveCosmeticDamageDetails(persistedJobId, cosmeticDamagePresent, cosmeticNotes); // store cosmetic damage toggle + notes
+      await saveCustomerStatus(persistedJobId, waitingStatus); // persist customer waiting status for downstream scheduling
       await saveJobRequestsToDatabase(persistedJobId, sanitizedRequests); // create job request rows linked to job id
       if (pendingDocuments.length > 0) { // check if any documents queued
         await uploadDocumentsForJob(persistedJobId, pendingDocuments, dbUserId || null); // upload queued documents against the job
