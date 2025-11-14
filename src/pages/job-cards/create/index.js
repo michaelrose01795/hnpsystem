@@ -3,7 +3,7 @@
 // file location: src/pages/job-cards/create/index.js
 "use client"; // enables client-side rendering for Next.js
 
-import React, { useEffect, useRef, useState } from "react"; // import React hooks including useEffect and useRef for syncing customer forms
+import React, { useCallback, useEffect, useRef, useState } from "react"; // import React hooks including useEffect/useCallback/useRef for syncing customer forms
 import { useRouter } from "next/router"; // for navigation
 import Layout from "@/components/Layout"; // import layout wrapper
 import { useJobs } from "@/context/JobsContext"; // import jobs context
@@ -109,6 +109,7 @@ export default function CreateJobCardPage() {
   const [userSignature, setUserSignature] = useState(null); // store current user's signature metadata
   const [isUploadingSignature, setIsUploadingSignature] = useState(false); // track signature upload state
   const [jobNumberDisplay, setJobNumberDisplay] = useState(null); // store assigned job number for header display
+  const lastVehicleLookupRef = useRef(""); // track last registration looked up to avoid duplicate fetches
 
   // state for maintenance information (simplified - only MOT date now)
   const [nextMotDate, setNextMotDate] = useState(""); // store upcoming MOT date for maintenance info
@@ -242,6 +243,76 @@ export default function CreateJobCardPage() {
       setTimeout(() => setVehicleNotification(null), 5000); // auto-hide after 5 seconds
     }
   };
+
+  const hydrateVehicleFromRecord = useCallback(
+    (storedVehicle, { notifyCustomer = false } = {}) => { // copy Supabase vehicle into local form state
+      if (!storedVehicle) { // guard when no record provided
+        return; // nothing to hydrate
+      }
+
+      const normalizedReg = (storedVehicle.registration || storedVehicle.reg_number || "")
+        .toString()
+        .toUpperCase(); // normalize registration text
+      const combinedMakeModel = (storedVehicle.make_model || `${storedVehicle.make || ""} ${storedVehicle.model || ""}`)
+        .trim(); // build make/model label
+
+      setVehicle((prev) => ({ // merge values into form state
+        ...prev,
+        reg: normalizedReg || prev.reg,
+        makeModel: combinedMakeModel || prev.makeModel,
+        colour: storedVehicle.colour || prev.colour,
+        chassis: storedVehicle.chassis || storedVehicle.vin || prev.chassis,
+        engine: storedVehicle.engine || storedVehicle.engine_number || prev.engine,
+        mileage: storedVehicle.mileage ? String(storedVehicle.mileage) : prev.mileage,
+      }));
+
+      if (storedVehicle.mot_due) { // hydrate MOT date when available
+        const motDate = new Date(storedVehicle.mot_due);
+        if (!Number.isNaN(motDate.getTime())) {
+          setNextMotDate(motDate.toISOString().split("T")[0]); // store ISO date for preview
+        }
+      }
+
+      if (storedVehicle.customer) { // auto-link stored customer when present
+        setCustomer(normalizeCustomerRecord(storedVehicle.customer));
+        if (notifyCustomer) {
+          showNotification("customer", "success", "✓ Loaded customer linked to this vehicle");
+        }
+      }
+    },
+    [normalizeCustomerRecord, showNotification]
+  );
+
+  useEffect(() => { // auto-fetch vehicle details from Supabase when registration changes
+    const regTrimmed = (vehicle.reg || "").trim().toUpperCase(); // normalized registration input
+    if (!regTrimmed || regTrimmed.length < 3) { // skip when not enough characters
+      return;
+    }
+
+    if (lastVehicleLookupRef.current === regTrimmed) { // avoid duplicate lookups
+      return;
+    }
+
+    let cancelled = false; // track cleanup flag
+
+    const lookupVehicle = async () => {
+      try {
+        const storedVehicle = await getVehicleByReg(regTrimmed); // query Supabase for existing vehicle row
+        lastVehicleLookupRef.current = regTrimmed; // mark lookup as completed for this reg
+        if (!cancelled && storedVehicle) {
+          hydrateVehicleFromRecord(storedVehicle, { notifyCustomer: false }); // hydrate local form state
+        }
+      } catch (err) {
+        console.error("Automatic vehicle lookup failed", err); // log lookup failures without blocking user
+      }
+    };
+
+    lookupVehicle();
+
+    return () => {
+      cancelled = true; // prevent state updates after unmount or reg change
+    };
+  }, [vehicle.reg, hydrateVehicleFromRecord]);
 
   // update the editable customer form when any field changes
   const handleCustomerFieldChange = (field, value) => {
@@ -702,36 +773,7 @@ export default function CreateJobCardPage() {
 
       if (storedVehicle) { // if the vehicle already lives in our database
         console.log("Vehicle found in Supabase, hydrating from DB:", storedVehicle.vehicle_id);
-        const normalizedReg = (storedVehicle.registration || storedVehicle.reg_number || regUpper || "").toString().toUpperCase(); // normalize stored registration
-        const storedMakeModel =
-          (storedVehicle.make_model || `${storedVehicle.make || ""} ${storedVehicle.model || ""}`)
-            .trim(); // combine make and model if needed
-
-        setVehicle((prev) => ({
-          reg: normalizedReg,
-          makeModel: storedMakeModel || prev.makeModel || "",
-          colour: storedVehicle.colour || prev.colour || "",
-          chassis: storedVehicle.chassis || storedVehicle.vin || prev.chassis || "",
-          engine: storedVehicle.engine || storedVehicle.engine_number || prev.engine || "",
-          mileage: storedVehicle.mileage ? String(storedVehicle.mileage) : prev.mileage || "",
-        }));
-
-        if (storedVehicle.mot_due) {
-          const motSource = new Date(storedVehicle.mot_due);
-          if (!Number.isNaN(motSource.getTime())) {
-            const motDate = motSource.toISOString().split("T")[0]; // normalize date to YYYY-MM-DD
-            setNextMotDate(motDate);
-          }
-        }
-
-        if (storedVehicle.customer) {
-          const normalizedCustomer = normalizeCustomerRecord(storedVehicle.customer);
-          if (!customer || customer.id !== normalizedCustomer.id) {
-            setCustomer(normalizedCustomer);
-            showNotification("customer", "success", "✓ Customer linked from existing vehicle!");
-          }
-        }
-
+        hydrateVehicleFromRecord(storedVehicle, { notifyCustomer: true }); // unify hydration logic for stored vehicles
         showNotification("vehicle", "success", "✓ Vehicle details loaded from database!");
         return; // stop here because DB already satisfied the lookup
       }
