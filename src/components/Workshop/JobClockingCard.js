@@ -638,7 +638,7 @@ export default function JobClockingCard() {
                             }}
                             style={{
                               padding: "6px 12px",
-                              backgroundColor: "#3b82f6",
+                              backgroundColor: "#ef4444",
                               color: "white",
                               border: "none",
                               borderRadius: "6px",
@@ -647,8 +647,8 @@ export default function JobClockingCard() {
                               fontWeight: "600",
                               transition: "background-color 0.2s"
                             }}
-                            onMouseEnter={(e) => e.target.style.backgroundColor = "#2563eb"}
-                            onMouseLeave={(e) => e.target.style.backgroundColor = "#3b82f6"}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = "#dc2626"}
+                            onMouseLeave={(e) => e.target.style.backgroundColor = "#ef4444"}
                           >
                             Select
                           </button>

@@ -991,7 +991,7 @@ export default function CreateJobCardPage() {
                     style={{
                       padding: "16px",
                       fontSize: "14px",
-                      backgroundColor: "#3b82f6",
+                      backgroundColor: "#ef4444",
                       color: "white",
                       border: "none",
                       borderRadius: "8px",
@@ -1000,10 +1000,10 @@ export default function CreateJobCardPage() {
                       transition: "all 0.2s",
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = "#2563eb";
+                      e.target.style.backgroundColor = "#dc2626";
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "#3b82f6";
+                      e.target.style.backgroundColor = "#ef4444";
                     }}
                   >
                     Search Existing Customer
@@ -1266,24 +1266,24 @@ export default function CreateJobCardPage() {
             <div
               style={{
                 flex: 1,
-                background: "linear-gradient(135deg, #3b82f6, #2563eb)",
+                background: "linear-gradient(135deg, #ef4444, #b91c1c)",
                 color: "white",
                 borderRadius: "16px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
-                boxShadow: "0 4px 8px rgba(59,130,246,0.3)",
+                boxShadow: "0 4px 8px rgba(239,68,68,0.3)",
                 transition: "all 0.2s",
               }}
               onClick={() => alert("Full Car Details Coming Soon")}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 6px 12px rgba(59,130,246,0.4)";
+                e.currentTarget.style.boxShadow = "0 6px 12px rgba(239,68,68,0.4)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 8px rgba(59,130,246,0.3)";
+                e.currentTarget.style.boxShadow = "0 4px 8px rgba(239,68,68,0.3)";
               }}
             >
               <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600" }}>Full Car Details</h4>

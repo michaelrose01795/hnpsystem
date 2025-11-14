@@ -950,7 +950,7 @@ export default function NextJobsPage() {
                   position: "absolute",
                   top: "20px",
                   right: "20px",
-                  backgroundColor: "#3b82f6",
+                  backgroundColor: "#ef4444",
                   color: "white",
                   padding: "8px 16px",
                   borderRadius: "8px",
@@ -959,10 +959,10 @@ export default function NextJobsPage() {
                   fontSize: "13px",
                   fontWeight: "600",
                   transition: "background-color 0.2s",
-                  boxShadow: "0 2px 4px rgba(59,130,246,0.2)"
+                  boxShadow: "0 2px 4px rgba(239,68,68,0.2)"
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#2563eb"}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#3b82f6"}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#dc2626"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#ef4444"}
               >
                 Edit Job
               </button>

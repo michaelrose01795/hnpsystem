@@ -882,7 +882,7 @@ export default function ViewJobCards() {
                   style={{
                     flex: 1,
                     padding: "12px 20px",
-                    backgroundColor: "#3b82f6",
+                    backgroundColor: "#ef4444",
                     color: "white",
                     border: "none",
                     borderRadius: "8px",
@@ -891,8 +891,8 @@ export default function ViewJobCards() {
                     fontWeight: "600",
                     transition: "background-color 0.2s"
                   }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "#2563eb"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "#3b82f6"}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "#dc2626"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "#ef4444"}
                 >
                   🔍 View VHC
                 </button>

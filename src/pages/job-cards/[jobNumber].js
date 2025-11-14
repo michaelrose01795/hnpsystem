@@ -478,8 +478,8 @@ export default function JobCardDetailPage() {
                   fontSize: "14px",
                   transition: "background-color 0.2s"
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = "#2563eb"}
-                onMouseLeave={(e) => e.target.style.backgroundColor = "#3b82f6"}
+                onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
+                onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
               >
                 Edit Job
               </button>
@@ -540,7 +540,7 @@ export default function JobCardDetailPage() {
                     onClick={handleStartDescriptionEdit}
                     style={{
                       padding: "8px 16px",
-                      backgroundColor: "#3b82f6",
+                      backgroundColor: "#ef4444",
                       color: "white",
                       border: "none",
                       borderRadius: "8px",
@@ -836,7 +836,7 @@ function CustomerRequestsTab({
             onClick={() => setEditing(true)}
             style={{
               padding: "8px 16px",
-              backgroundColor: "#3b82f6",
+              backgroundColor: "#ef4444",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -1324,7 +1324,7 @@ function ContactTab({ jobData, canEdit }) {
             onClick={() => alert("Customer editing coming soon - will open customer profile page")}
             style={{
               padding: "10px 20px",
-              backgroundColor: "#3b82f6",
+              backgroundColor: "#ef4444",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -1896,7 +1896,7 @@ function JobHistoryPopup({ job, onClose }) {
             style={{
               flex: 1,
               padding: "10px 20px",
-              backgroundColor: "#3b82f6",
+              backgroundColor: "#ef4444",
               color: "white",
               border: "none",
               borderRadius: "8px",
