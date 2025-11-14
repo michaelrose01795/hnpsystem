@@ -382,6 +382,11 @@ export default function Layout({ children, jobNumber }) {
   }
 
   if (userRoles.includes("parts") || userRoles.includes("parts manager")) {
+    addNavItem("📊 Parts Dashboard", "/dashboard/parts", {
+      keywords: ["parts dashboard", "parts ops", "parts overview"],
+      description: "Live queue, deliveries, and focus items for the parts counter",
+      section: "Parts",
+    });
     addNavItem("🧰 Parts Workspace", "/parts", {
       keywords: ["parts", "inventory", "vhc parts"],
       description: "Manage parts allocations and deliveries",
@@ -390,7 +395,7 @@ export default function Layout({ children, jobNumber }) {
   }
 
   if (userRoles.includes("parts manager")) {
-    addNavItem("📈 Parts Manager Overview", "/parts/manager", {
+    addNavItem("📈 Parts Manager Dashboard", "/parts/manager", {
       keywords: ["parts manager", "stock value", "parts dashboard"],
       description: "View stock, spending, and income KPIs",
       section: "Parts",
