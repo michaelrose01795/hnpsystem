@@ -207,7 +207,7 @@ export default function Layout({ children, jobNumber }) {
     .join(" ");
 
   const viewRoles = ["manager", "service", "sales"];
-  const vhcRoles = [
+  const vhcAccessRoles = new Set([
     "admin",
     "service",
     "service manager",
@@ -216,7 +216,7 @@ export default function Layout({ children, jobNumber }) {
     "general manager",
     "parts",
     "parts manager",
-  ];
+  ]);
   const isActive = (path) => router.pathname.startsWith(path);
 
   const colors = appShellTheme.light;
@@ -397,7 +397,7 @@ export default function Layout({ children, jobNumber }) {
     });
   }
 
-  if (vhcRoles.some((r) => userRoles.includes(r))) {
+  if (userRoles.some((role) => vhcAccessRoles.has(role))) {
     addNavItem("📝 VHC Dashboard", "/vhc/dashboard", {
       keywords: ["vhc", "vehicle health check", "dashboard"],
       section: "Workshop",
