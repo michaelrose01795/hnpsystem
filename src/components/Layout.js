@@ -26,25 +26,27 @@ const WORKSHOP_ACCESS_ROLES = [
 
 const WORKSHOP_ACCESS_ROLES_SET = new Set(WORKSHOP_ACCESS_ROLES);
 
+const WORKSHOP_SHORTCUT_ROLES = ["workshop manager", "aftersales manager"];
+
 const WORKSHOP_SHORTCUT_LINKS = [
   {
     label: "⏱️ Clocking",
     href: "/workshop/Clocking",
-    roles: WORKSHOP_ACCESS_ROLES,
+    roles: WORKSHOP_SHORTCUT_ROLES,
     keywords: ["clocking", "time"],
     description: "Workshop clocking overview",
   },
   {
     label: "🧰 Clocking Tech",
     href: "/workshop/ClockingTech",
-    roles: WORKSHOP_ACCESS_ROLES,
+    roles: WORKSHOP_SHORTCUT_ROLES,
     keywords: ["clocking", "tech"],
     description: "Technician clocking view",
   },
   {
     label: "🕹️ Controller Clocking",
     href: "/workshop/ControllerClocking",
-    roles: WORKSHOP_ACCESS_ROLES,
+    roles: WORKSHOP_SHORTCUT_ROLES,
     keywords: ["controller", "clocking"],
     description: "Controller-specific clocking tools",
   },
