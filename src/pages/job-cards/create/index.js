@@ -88,6 +88,7 @@ export default function CreateJobCardPage() {
 
   // state for job requests (multiple requests can be added)
   const [requests, setRequests] = useState([{ text: "", time: "", paymentType: "Customer" }]);
+  const [cosmeticDamagePresent, setCosmeticDamagePresent] = useState(false); // track whether cosmetic damage observed
   const [cosmeticNotes, setCosmeticNotes] = useState(""); // notes about cosmetic damage
   const [vhcRequired, setVhcRequired] = useState(false); // whether VHC is required
   const [waitingStatus, setWaitingStatus] = useState("Neither"); // customer waiting status
@@ -284,6 +285,29 @@ export default function CreateJobCardPage() {
     const { error } = await supabase.from("job_requests").insert(payload); // insert payload into Supabase table
     if (error) { // check for insert failure
       throw new Error(error.message || "Failed to save job requests"); // bubble error so caller can abort
+    } // finish error handling
+  }; // end helper
+
+  const saveCosmeticDamageDetails = async (jobId, hasDamage, notes) => { // persist cosmetic damage flag + notes per job
+    if (!jobId) { // ensure job id provided
+      return; // skip when no job id available
+    } // end guard
+
+    const timestamp = new Date().toISOString(); // shared timestamp for audit columns
+    const payload = { // build upsert payload
+      job_id: jobId, // link to parent job
+      has_damage: hasDamage === true, // coerce boolean flag
+      notes: (notes || "").trim() || null, // store trimmed notes or null
+      created_at: timestamp, // track creation time
+      updated_at: timestamp, // track update time
+    }; // end payload
+
+    const { error } = await supabase // insert or upsert record
+      .from("job_cosmetic_damage") // target cosmetic table
+      .upsert(payload, { onConflict: "job_id" }); // enforce single record per job
+
+    if (error) { // handle supabase error
+      throw new Error(error.message || "Failed to save cosmetic damage details"); // propagate for caller to handle
     } // finish error handling
   }; // end helper
 
@@ -560,7 +584,10 @@ export default function CreateJobCardPage() {
         requests: sanitizedRequests,
         cosmeticNotes: cosmeticNotes || null,
         vhcRequired: vhcRequired,
-        maintenanceInfo: { nextMotDate: nextMotDate || null },
+        maintenanceInfo: {
+          nextMotDate: nextMotDate || null,
+          cosmeticDamagePresent,
+        },
       };
 
       console.log("Saving job via shared helper:", jobPayload);
@@ -577,6 +604,7 @@ export default function CreateJobCardPage() {
         throw new Error("Job ID missing after creation"); // abort when job id not returned
       } // finish guard
 
+      await saveCosmeticDamageDetails(persistedJobId, cosmeticDamagePresent, cosmeticNotes); // store cosmetic damage toggle + notes
       await saveJobRequestsToDatabase(persistedJobId, sanitizedRequests); // create job request rows linked to job id
       console.log("Job saved successfully with ID:", insertedJob.id);
 
@@ -1548,10 +1576,37 @@ export default function CreateJobCardPage() {
               >
                 Cosmetic Damage
               </h4>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px", gap: "12px" }}>
+                <span style={{ fontSize: "13px", fontWeight: "500", color: "#666" }}>Damage Present?</span>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  {[true, false].map((choice) => (
+                    <button
+                      key={choice ? "yes" : "no"}
+                      onClick={() => setCosmeticDamagePresent(choice)}
+                      type="button"
+                      style={{
+                        padding: "8px 14px",
+                        borderRadius: "999px",
+                        border: "1px solid",
+                        borderColor: cosmeticDamagePresent === choice ? "#d10000" : "#e5e7eb",
+                        backgroundColor: cosmeticDamagePresent === choice ? "#fee2e2" : "white",
+                        color: "#1a1a1a",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      {choice ? "Yes" : "No"}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <textarea
                 value={cosmeticNotes}
                 onChange={(e) => setCosmeticNotes(e.target.value)}
                 placeholder="Describe any scratches, dents, or cosmetic damage..."
+                disabled={!cosmeticDamagePresent}
                 style={{
                   width: "100%",
                   height: "80px",
@@ -1563,6 +1618,8 @@ export default function CreateJobCardPage() {
                   fontSize: "13px",
                   outline: "none",
                   transition: "border-color 0.2s",
+                  backgroundColor: cosmeticDamagePresent ? "white" : "#f3f4f6",
+                  color: cosmeticDamagePresent ? "#1a1a1a" : "#9ca3af",
                 }}
                 onFocus={(e) => {
                   e.target.style.borderColor = "#d10000";
