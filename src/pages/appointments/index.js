@@ -2,7 +2,7 @@
 // file location: src/pages/appointments/index.js
 "use client";
 
-import React, { useState, useEffect } from "react"; // Import React and useState/useEffect hooks
+import React, { useState, useEffect, useCallback } from "react"; // Import React hooks
 import Layout from "@/components/Layout"; // Main layout wrapper
 import Popup from "@/components/popups/Popup"; // Reusable popup modal
 import { useRouter } from "next/router"; // For reading query params
@@ -12,8 +12,27 @@ import {
   getJobByNumberOrReg,
   getJobsByDate // ✅ NEW: Get appointments by date
 } from "@/lib/database/jobs"; // DB functions
+import supabase from "@/lib/supabaseClient"; // Supabase client for live tech availability
 
-const techsDefault = 6; // Default number of technicians available per day
+const TECH_AVAILABILITY_TABLE = "job_clocking"; // Source table for tech availability data
+
+// Calculate hours worked between two timestamps
+const calculateDurationHours = (start, end) => {
+  if (!start || !end) return 0;
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return 0;
+  }
+  const diffMs = endDate.getTime() - startDate.getTime();
+  if (diffMs <= 0) return 0;
+  return parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));
+};
+
+const getDateKey = (dateInput) => {
+  const dateObj = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  return dateObj.toDateString();
+};
 
 // Generate list of dates excluding Sundays
 const generateDates = (daysAhead = 60) => {
@@ -54,6 +73,71 @@ const getVehicleDisplay = (job) => {
   return [year, make, model].filter(Boolean).join(" ") || "-";
 };
 
+const buildTechAvailabilityMap = (records = []) => {
+  const availability = {};
+
+  records.forEach((entry) => {
+    if (!entry?.clock_in) return;
+
+    const dateKey = getDateKey(entry.clock_in);
+    if (!availability[dateKey]) {
+      availability[dateKey] = { totalTechs: 0, techs: [] };
+    }
+
+    const techId = entry.user_id;
+    const techName = entry.user
+      ? `${entry.user.first_name || ""} ${entry.user.last_name || ""}`.trim()
+      : "";
+    const normalizedName = techName || `Tech #${techId}`;
+
+    let techRecord = availability[dateKey].techs.find(
+      (tech) => tech.techId === techId
+    );
+
+    if (!techRecord) {
+      techRecord = {
+        techId,
+        name: normalizedName,
+        totalHours: 0,
+        segments: [],
+        latestClockIn: entry.clock_in,
+        latestClockOut: entry.clock_out || null,
+        currentlyClockedIn: !entry.clock_out,
+      };
+      availability[dateKey].techs.push(techRecord);
+    }
+
+    const duration = entry.clock_out
+      ? calculateDurationHours(entry.clock_in, entry.clock_out)
+      : 0;
+
+    techRecord.totalHours = parseFloat(
+      (techRecord.totalHours + duration).toFixed(2)
+    );
+    techRecord.latestClockIn = entry.clock_in;
+    techRecord.latestClockOut = entry.clock_out || techRecord.latestClockOut;
+    techRecord.currentlyClockedIn =
+      techRecord.currentlyClockedIn || !entry.clock_out;
+
+    if (entry.job_number) {
+      techRecord.segments.push({
+        jobNumber: entry.job_number,
+        workType: entry.work_type || "general",
+        startedAt: entry.clock_in,
+        endedAt: entry.clock_out,
+      });
+    }
+
+    availability[dateKey].totalTechs = availability[dateKey].techs.length;
+  });
+
+  Object.values(availability).forEach((day) => {
+    day.techs.sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  return availability;
+};
+
 export default function Appointments() {
   const router = useRouter();
   const jobQueryParam = Array.isArray(router.query.jobNumber)
@@ -70,7 +154,9 @@ export default function Appointments() {
   const [jobNumber, setJobNumber] = useState("");
   const [time, setTime] = useState("");
   const [highlightJob, setHighlightJob] = useState("");
-  const [techHours, setTechHours] = useState({});
+  const [techAvailability, setTechAvailability] = useState({});
+  const [isTechAvailabilityLoading, setIsTechAvailabilityLoading] = useState(false);
+  const [techAvailabilityError, setTechAvailabilityError] = useState("");
   const [showTechHoursEditor, setShowTechHoursEditor] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [timeSlots] = useState(generateTimeSlots());
@@ -98,10 +184,76 @@ export default function Appointments() {
     }
   };
 
+  const fetchTechAvailability = useCallback(async () => {
+    if (!dates || dates.length === 0) return;
+
+    setIsTechAvailabilityLoading(true);
+    setTechAvailabilityError("");
+
+    const startDate = dates[0].toISOString().split("T")[0];
+    const endDate = dates[dates.length - 1].toISOString().split("T")[0];
+
+    try {
+      const { data, error } = await supabase
+        .from(TECH_AVAILABILITY_TABLE)
+        .select(`
+          id,
+          user_id,
+          job_id,
+          job_number,
+          clock_in,
+          clock_out,
+          work_type,
+          updated_at,
+          user:user_id(
+            user_id,
+            first_name,
+            last_name
+          )
+        `)
+        .gte("clock_in", `${startDate}T00:00:00.000Z`)
+        .lte("clock_in", `${endDate}T23:59:59.999Z`);
+
+      if (error) throw error;
+
+      const availabilityMap = buildTechAvailabilityMap(data || []);
+      setTechAvailability(availabilityMap);
+    } catch (error) {
+      console.error("❌ Error fetching tech availability:", error);
+      setTechAvailabilityError("Unable to load live tech availability.");
+    } finally {
+      setIsTechAvailabilityLoading(false);
+    }
+  }, [dates]);
+
   useEffect(() => {
     setDates(generateDates(60));
     fetchJobs();
   }, []);
+
+  useEffect(() => {
+    if (!dates.length) return;
+    fetchTechAvailability();
+  }, [dates, fetchTechAvailability]);
+
+  useEffect(() => {
+    if (!dates.length) return;
+
+    const channel = supabase
+      .channel("job_clocking_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: TECH_AVAILABILITY_TABLE },
+        () => {
+          fetchTechAvailability();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [dates, fetchTechAvailability]);
 
   // ✅ Handle jobNumber from URL parameters
   useEffect(() => {
@@ -259,12 +411,13 @@ export default function Appointments() {
   
   const isSaturday = (date) => date.getDay() === 6;
   
-  const getTechHoursForDay = (date) => techHours[date.toDateString()] || techsDefault;
-  
-  const handleTechHoursChange = (e) => {
-    const value = parseInt(e.target.value) || 0;
-    setTechHours({ ...techHours, [selectedDay.toDateString()]: value });
-    // ✅ TODO: Save to database or localStorage
+  const getTechHoursForDay = (date) => {
+    const dateKey = date.toDateString();
+    const dayData = techAvailability[dateKey];
+    if (dayData?.totalTechs >= 0) {
+      return dayData.totalTechs;
+    }
+    return 0;
   };
   
   const toggleTechHoursEditor = () => setShowTechHoursEditor(!showTechHoursEditor);
@@ -314,6 +467,9 @@ export default function Appointments() {
 
   // ---------------- Filtered Jobs for Selected Day ----------------
   const jobsForDay = jobs.filter((j) => j.appointment?.date === selectedDay.toISOString().split("T")[0]);
+  const selectedDayKey = selectedDay.toDateString();
+  const techAvailabilityForSelectedDay = techAvailability[selectedDayKey] || { totalTechs: 0, techs: [] };
+  const techsForSelectedDay = techAvailabilityForSelectedDay.techs || [];
   
   const filteredJobs = jobsForDay.filter((job) => {
     const query = searchQuery.toLowerCase();
@@ -633,27 +789,104 @@ export default function Appointments() {
               borderRadius: "8px", 
               background: "#FFF5F5" 
             }}>
-              <label style={{ fontSize: "14px", fontWeight: "600", color: "#333", display: "block", marginBottom: "8px" }}>
-                Tech Hours for {formatDateNoYear(selectedDay)}:
-              </label>
-              <input 
-                type="number" 
-                min="0" 
-                max="20"
-                value={getTechHoursForDay(selectedDay)} 
-                onChange={handleTechHoursChange} 
-                style={{ 
-                  padding: "8px 12px", 
-                  width: "100px", 
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                <div>
+                  <div style={{ fontSize: "14px", fontWeight: "600", color: "#333" }}>
+                    Live Tech Availability — {formatDateNoYear(selectedDay)}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#777" }}>
+                    Source: {TECH_AVAILABILITY_TABLE === "tech_hours" ? "tech_hours" : "job_clocking"} table
+                  </div>
+                </div>
+                <span style={{ 
+                  padding: "4px 12px", 
+                  borderRadius: "999px", 
+                  backgroundColor: "#FFE0E0", 
+                  color: "#FF4040", 
+                  fontWeight: "600", 
+                  fontSize: "13px" 
+                }}>
+                  {getTechHoursForDay(selectedDay)} tech{getTechHoursForDay(selectedDay) === 1 ? "" : "s"}
+                </span>
+              </div>
+
+              {techAvailabilityError && (
+                <div style={{ 
+                  marginBottom: "10px", 
+                  padding: "10px 12px", 
+                  background: "#fff0f0", 
                   borderRadius: "6px", 
-                  border: "1px solid #ccc",
-                  fontSize: "14px",
-                  fontWeight: "600"
-                }} 
-              />
-              <span style={{ marginLeft: "8px", fontSize: "14px", color: "#666" }}>
-                technicians available
-              </span>
+                  color: "#c62828", 
+                  fontSize: "13px" 
+                }}>
+                  {techAvailabilityError}
+                </div>
+              )}
+
+              {isTechAvailabilityLoading ? (
+                <div style={{ padding: "10px 0", color: "#666", fontSize: "13px" }}>
+                  Loading live tech availability...
+                </div>
+              ) : techsForSelectedDay.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {techsForSelectedDay.map((tech) => {
+                    const latestSegment = tech.segments[tech.segments.length - 1];
+                    const latestJobDisplay = latestSegment
+                      ? `Job ${latestSegment.jobNumber || "-"} (${latestSegment.workType})`
+                      : "No jobs recorded";
+                    const latestClockIn = tech.latestClockIn
+                      ? new Date(tech.latestClockIn).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+                      : "-";
+                    const latestClockOut = tech.latestClockOut
+                      ? new Date(tech.latestClockOut).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+                      : "-";
+
+                    return (
+                      <div 
+                        key={tech.techId} 
+                        style={{ 
+                          display: "flex", 
+                          justifyContent: "space-between", 
+                          alignItems: "center", 
+                          padding: "10px 12px", 
+                          background: "#fff", 
+                          borderRadius: "8px", 
+                          border: "1px solid #ffd6d6",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.04)"
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontSize: "14px", fontWeight: "600", color: "#333" }}>
+                            {tech.name}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#777" }}>
+                            {latestJobDisplay}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#999", marginTop: "4px" }}>
+                            Shift: {latestClockIn} – {tech.currentlyClockedIn ? "Present" : latestClockOut}
+                            {" · "}
+                            {tech.totalHours > 0 ? `${tech.totalHours}h logged` : "0h recorded"}
+                          </div>
+                        </div>
+                        <span style={{ 
+                          padding: "6px 12px", 
+                          borderRadius: "999px", 
+                          fontSize: "12px", 
+                          fontWeight: "600", 
+                          backgroundColor: tech.currentlyClockedIn ? "#E8F5E9" : "#F5F5F5",
+                          color: tech.currentlyClockedIn ? "#2E7D32" : "#666" 
+                        }}>
+                          {tech.currentlyClockedIn ? "Clocked In" : "Clocked Out"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ padding: "12px 0", fontSize: "13px", color: "#666" }}>
+                  No tech availability recorded for this day yet.
+                </div>
+              )}
             </div>
           )}
 
