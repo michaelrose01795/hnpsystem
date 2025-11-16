@@ -376,40 +376,6 @@ export default function Appointments() {
     }
   }, [dates]);
 
-  useEffect(() => {
-    setDates(generateDates(60));
-    fetchJobs();
-  }, []);
-
-  useEffect(() => {
-    if (!dates.length) return;
-    fetchTechAvailability();
-  }, [dates, fetchTechAvailability]);
-
-  useEffect(() => {
-    if (!dates.length) return;
-    fetchStaffAbsences();
-  }, [dates, fetchStaffAbsences]);
-
-  useEffect(() => {
-    if (!dates.length) return;
-
-    const channel = supabase
-      .channel("job_clocking_changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: TECH_AVAILABILITY_TABLE },
-        () => {
-          fetchTechAvailability();
-        }
-        )
-        .subscribe();
-  
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [dates, fetchTechAvailability]);
-
   const fetchStaffAbsences = useCallback(async () => {
     if (!dates || dates.length === 0) return;
 
@@ -446,6 +412,40 @@ export default function Appointments() {
       setStaffAbsences({});
     }
   }, [dates]);
+
+  useEffect(() => {
+    setDates(generateDates(60));
+    fetchJobs();
+  }, []);
+
+  useEffect(() => {
+    if (!dates.length) return;
+    fetchTechAvailability();
+  }, [dates, fetchTechAvailability]);
+
+  useEffect(() => {
+    if (!dates.length) return;
+    fetchStaffAbsences();
+  }, [dates, fetchStaffAbsences]);
+
+  useEffect(() => {
+    if (!dates.length) return;
+
+    const channel = supabase
+      .channel("job_clocking_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: TECH_AVAILABILITY_TABLE },
+        () => {
+          fetchTechAvailability();
+        }
+        )
+        .subscribe();
+  
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [dates, fetchTechAvailability]);
 
   // ✅ Handle jobNumber from URL parameters
   useEffect(() => {
