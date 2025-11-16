@@ -900,7 +900,7 @@ export default function Appointments() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
               <tr style={{ backgroundColor: "#f6f6f6", borderBottom: "2px solid #FF4040" }}>
-                {["Day/Date","Availability","Total Hours","Total Jobs","Services","MOT","Diagnosis","Other","Staff Off"].map(header => (
+                {["Day/Date","Availability","Total Hours","Total Jobs","Jobs Scheduled","Services","MOT","Diagnosis","Other","Staff Off"].map(header => (
                   <th 
                     key={header} 
                     style={{ 
@@ -961,7 +961,14 @@ export default function Appointments() {
                     }}>
                       {counts.totalHours}h
                     </td>
-                    <td style={{ 
+                    <td style={{
+                      padding: "10px 12px", 
+                      borderBottom: "1px solid #eee",
+                      fontWeight: counts.totalJobs > 0 ? "600" : "400"
+                    }}>
+                      {counts.totalJobs}
+                    </td>
+                    <td style={{
                       padding: "10px 12px", 
                       borderBottom: "1px solid #eee",
                       fontWeight: counts.totalJobs > 0 ? "600" : "400"
