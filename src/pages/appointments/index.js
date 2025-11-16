@@ -308,6 +308,7 @@ export default function Appointments() {
   const [timeSlots] = useState(generateTimeSlots());
   const [isLoading, setIsLoading] = useState(false);
   const [jobRequestHours, setJobRequestHours] = useState({});
+  const [jobVhcLabourHours, setJobVhcLabourHours] = useState({});
   const [staffAbsences, setStaffAbsences] = useState({});
   const [showStaffOffPopup, setShowStaffOffPopup] = useState(false);
   const [staffOffPopupDetails, setStaffOffPopupDetails] = useState([]);
@@ -362,6 +363,71 @@ export default function Appointments() {
       setJobRequestHours(aggregated);
     } catch (error) {
       console.error("❌ Error fetching job request hours:", error);
+    }
+  }, []);
+
+  const parseVhcItemHours = (item) => {
+    if (!item || typeof item !== "object") return null;
+    const candidates = [
+      "labour_hours",
+      "labor_hours",
+      "labour_time",
+      "labor_time",
+      "hours",
+      "time",
+      "duration",
+    ];
+
+    for (const key of candidates) {
+      if (!Object.prototype.hasOwnProperty.call(item, key)) continue;
+      const numeric = parseHoursValue(item[key]);
+      if (numeric !== null) {
+        return numeric;
+      }
+    }
+
+    return null;
+  };
+
+  const sumAuthorizedVhcLabourHours = (items = []) => {
+    if (!Array.isArray(items)) return 0;
+    return items.reduce((sum, item) => {
+      const hours = parseVhcItemHours(item);
+      if (hours !== null) {
+        return sum + hours;
+      }
+      return sum;
+    }, 0);
+  };
+
+  const fetchJobVhcLabourHours = useCallback(async (jobIds = []) => {
+    if (!jobIds || jobIds.length === 0) {
+      setJobVhcLabourHours({});
+      return;
+    }
+
+    const uniqueJobIds = Array.from(new Set(jobIds));
+
+    try {
+      const { data, error } = await supabase
+        .from("vhc_authorizations")
+        .select("job_id, authorized_items")
+        .in("job_id", uniqueJobIds);
+
+      if (error) throw error;
+
+      const aggregated = {};
+      (data || []).forEach((row) => {
+        if (!row?.job_id) return;
+        const vhcHours = sumAuthorizedVhcLabourHours(row.authorized_items);
+        if (vhcHours <= 0) return;
+        const key = row.job_id;
+        aggregated[key] = (aggregated[key] || 0) + vhcHours;
+      });
+
+      setJobVhcLabourHours(aggregated);
+    } catch (error) {
+      console.error("❌ Error fetching VHC labour hours:", error);
     }
   }, []);
 
@@ -462,11 +528,13 @@ export default function Appointments() {
 
     if (jobIdsWithAppointments.length === 0) {
       setJobRequestHours({});
+      setJobVhcLabourHours({});
       return;
     }
 
     fetchJobRequestHours(jobIdsWithAppointments);
-  }, [jobs, fetchJobRequestHours]);
+    fetchJobVhcLabourHours(jobIdsWithAppointments);
+  }, [jobs, fetchJobRequestHours, fetchJobVhcLabourHours]);
 
   useEffect(() => {
     if (!dates.length) return;
@@ -734,6 +802,53 @@ export default function Appointments() {
       ...totals,
       totalHours: hours.toFixed(1),
     };
+  };
+
+  const getDetectedJobTypeLabel = (job) => {
+    const labels = Array.from(getDetectedJobTypeLabels(job)).filter(Boolean);
+    if (labels.length > 0) {
+      return labels.join(", ");
+    }
+    return job.type || "Service";
+  };
+
+  const getCustomerStatusBadgeColors = (status) => {
+    const normalized = (status || "").toLowerCase();
+    if (normalized === "waiting") {
+      return {
+        backgroundColor: "#ffe5e5",
+        color: "#c62828",
+      };
+    }
+    if (normalized === "loan car") {
+      return {
+        backgroundColor: "#e3f2fd",
+        color: "#1565c0",
+      };
+    }
+    if (normalized === "collection") {
+      return {
+        backgroundColor: "#fff8e1",
+        color: "#ff9800",
+      };
+    }
+    return {
+      backgroundColor: "#e8f5e9",
+      color: "#2e7d32",
+    };
+  };
+
+  const getEstimatedFinishTime = (job) => {
+    const appointment = job.appointment;
+    if (!appointment?.date || !appointment?.time) return "-";
+    const start = new Date(`${appointment.date}T${appointment.time}:00`);
+    if (Number.isNaN(start.getTime())) return "-";
+
+    const requestHours = parseHoursValue(jobRequestHours[job.id]) || 0;
+    const vhcHours = parseHoursValue(jobVhcLabourHours[job.id]) || 0;
+    const totalHours = requestHours + vhcHours + 0.5;
+    const finish = new Date(start.getTime() + totalHours * 60 * 60 * 1000);
+    return finish.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   };
 
   // ---------------- Filtered Jobs for Selected Day ----------------
@@ -1256,17 +1371,16 @@ export default function Appointments() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
                 <tr>
-                  {[
-                    "Time",
-                    "Job #",
-                    "Reg",
-                    "Vehicle",
-                    "Customer",
-                    "Job Type",
-                    "Waiting Status", // ✅ NEW
-                    "Source", // ✅ NEW
-                    "Est. Hours" // ✅ NEW
-                  ].map(head => (
+                {[
+                  "Time",
+                  "Job #",
+                  "Reg",
+                  "Vehicle",
+                  "Customer",
+                  "Job Type",
+                  "Customer Status",
+                  "Estimated Finish Time"
+                ].map(head => (
                     <th 
                       key={head} 
                       style={{ 
@@ -1324,71 +1438,29 @@ export default function Appointments() {
                         {job.customer || "-"}
                       </td>
                       <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
-                        {/* ✅ Show job categories as badges */}
-                        {job.jobCategories && job.jobCategories.length > 0 ? (
-                          <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                            {job.jobCategories.map((cat, i) => (
-                              <span 
-                                key={i}
-                                style={{
-                                  padding: "2px 8px",
-                                  backgroundColor: "#e0e0e0",
-                                  borderRadius: "10px",
-                                  fontSize: "11px",
-                                  fontWeight: "600"
-                                }}
-                              >
-                                {cat}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          job.type || "-"
-                        )}
+                        <span style={{
+                          fontSize: "13px",
+                          fontWeight: "600",
+                          color: "#222"
+                        }}>
+                          {getDetectedJobTypeLabel(job)}
+                        </span>
                       </td>
                       <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
-                        {/* ✅ Waiting status with color coding */}
-                        {job.waitingStatus && job.waitingStatus !== "Neither" ? (
-                          <span style={{
+                        <span
+                          style={{
                             padding: "4px 10px",
                             borderRadius: "12px",
                             fontSize: "11px",
                             fontWeight: "600",
-                            backgroundColor: 
-                              job.waitingStatus === "Waiting" ? "#ffebee" :
-                              job.waitingStatus === "Loan Car" ? "#e3f2fd" :
-                              "#e8f5e9",
-                            color:
-                              job.waitingStatus === "Waiting" ? "#c62828" :
-                              job.waitingStatus === "Loan Car" ? "#1565c0" :
-                              "#2e7d32"
-                          }}>
-                            {job.waitingStatus}
-                          </span>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
-                        {/* ✅ Job source badge */}
-                        <span style={{
-                          padding: "4px 10px",
-                          borderRadius: "12px",
-                          fontSize: "11px",
-                          fontWeight: "600",
-                          backgroundColor: job.jobSource === "Warranty" ? "#fff3e0" : "#e8f5e9",
-                          color: job.jobSource === "Warranty" ? "#e65100" : "#2e7d32"
-                        }}>
-                          {job.jobSource || "Retail"}
+                            ...getCustomerStatusBadgeColors(job.waitingStatus || "Neither"),
+                          }}
+                        >
+                          {job.waitingStatus || "Neither"}
                         </span>
                       </td>
                       <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", fontWeight: "600" }}>
-                        {/* ✅ FIXED: Calculate total estimated hours safely */}
-                        {job.requests && Array.isArray(job.requests) && job.requests.length > 0 ? (
-                          job.requests.reduce((sum, req) => sum + (parseFloat(req.time) || 0), 0).toFixed(1) + "h"
-                        ) : (
-                          "-"
-                        )}
+                        {getEstimatedFinishTime(job)}
                       </td>
                     </tr>
                   ))
