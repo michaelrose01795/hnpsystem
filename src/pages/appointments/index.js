@@ -839,6 +839,30 @@ export default function Appointments() {
     };
   };
 
+  const isSameDate = (a, b) => {
+    if (!a || !b) return false;
+    const dateA = a instanceof Date ? a : new Date(a);
+    const dateB = b instanceof Date ? b : new Date(b);
+    return (
+      !Number.isNaN(dateA.getTime()) &&
+      !Number.isNaN(dateB.getTime()) &&
+      dateA.toDateString() === dateB.toDateString()
+    );
+  };
+
+  const getCheckinStatsForDate = (date) => {
+    const targetDateKey = date.toISOString().split("T")[0];
+    const appointmentsForDate = jobs.filter((job) => job.appointment?.date === targetDateKey);
+    const normalizedStatus = (job) => (job.status || "").trim().toLowerCase();
+    const total = appointmentsForDate.length;
+    const checkedIn = appointmentsForDate.filter((job) => normalizedStatus(job) !== "booked").length;
+    const awaiting =
+      isSameDate(date, new Date()) ?
+        appointmentsForDate.filter((job) => normalizedStatus(job) === "booked").length
+        : 0;
+    return { total, checkedIn, awaiting };
+  };
+
   const getDetectedJobTypeLabel = (job) => {
     const labels = Array.from(getDetectedJobTypeLabels(job)).filter(Boolean);
     if (labels.length > 0) {
@@ -891,6 +915,7 @@ export default function Appointments() {
   const selectedDayKey = selectedDay.toDateString();
   const techAvailabilityForSelectedDay = techAvailability[selectedDayKey] || { totalTechs: 0, techs: [] };
   const techsForSelectedDay = techAvailabilityForSelectedDay.techs || [];
+  const checkinStatsForSelectedDay = getCheckinStatsForDate(selectedDay);
 
   const totalBookedTechHours = techsForSelectedDay.reduce(
     (sum, tech) => sum + (parseHoursValue(tech.totalHours) || 0),
@@ -1208,6 +1233,25 @@ export default function Appointments() {
             }}>
               {sortedJobs.length} job{sortedJobs.length !== 1 ? 's' : ''}
             </span>
+          </div>
+
+          <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
+            <div style={{ flex: "1", minWidth: "140px", background: "#f9f9f9", borderRadius: "10px", padding: "12px", border: "1px solid #ececec" }}>
+              <div style={{ fontSize: "12px", color: "#666", marginBottom: "6px" }}>Total Appointments</div>
+              <div style={{ fontSize: "20px", fontWeight: "700", color: "#222" }}>{checkinStatsForSelectedDay.total}</div>
+            </div>
+            <div style={{ flex: "1", minWidth: "140px", background: "#f9f9f9", borderRadius: "10px", padding: "12px", border: "1px solid #ececec" }}>
+              <div style={{ fontSize: "12px", color: "#666", marginBottom: "6px" }}>Checked In</div>
+              <div style={{ fontSize: "20px", fontWeight: "700", color: "#222" }}>{checkinStatsForSelectedDay.checkedIn}</div>
+            </div>
+            <div style={{ flex: "1", minWidth: "140px", background: "#f9f9f9", borderRadius: "10px", padding: "12px", border: "1px solid #ececec" }}>
+              <div style={{ fontSize: "12px", color: "#666", marginBottom: "6px" }}>
+                {isSameDate(selectedDay, new Date()) ? "Awaiting Check-in" : "Awaiting (today only)"}
+              </div>
+              <div style={{ fontSize: "20px", fontWeight: "700", color: "#222" }}>
+                {isSameDate(selectedDay, new Date()) ? checkinStatsForSelectedDay.awaiting : "-"}
+              </div>
+            </div>
           </div>
 
           <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
