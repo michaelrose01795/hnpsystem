@@ -61,6 +61,71 @@ const generateTimeSlots = () => {
   return slots;
 };
 
+const parseHoursValue = (value) => {
+  if (value === undefined || value === null || value === "") return null;
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
+const deriveAvailableHours = (entry) => {
+  if (!entry || typeof entry !== "object") {
+    return null;
+  }
+
+  const fallbackFields = [
+    "available_hours",
+    "scheduled_hours",
+    "max_hours",
+    "assigned_hours",
+    "hours",
+    "hours_worked",
+  ];
+
+  for (const field of fallbackFields) {
+    if (Object.prototype.hasOwnProperty.call(entry, field)) {
+      const numeric = parseHoursValue(entry[field]);
+      if (numeric !== null) return numeric;
+    }
+  }
+
+  return null;
+};
+
+const getCapacityStatus = (booked, available) => {
+  const numericBooked = parseHoursValue(booked) || 0;
+  const numericAvailable = parseHoursValue(available) || 0;
+
+  if (numericAvailable <= 0) {
+    return numericBooked > 0 ? "red" : "default";
+  }
+
+  if (numericBooked >= numericAvailable + 0.5) {
+    return "red";
+  }
+
+  if (numericAvailable - numericBooked <= 3) {
+    return "amber";
+  }
+
+  return "default";
+};
+
+const getStatusBadgeStyle = (status) => {
+  if (status === "red") {
+    return { backgroundColor: "#ffe5e5", color: "#b71c1c" };
+  }
+  if (status === "amber") {
+    return { backgroundColor: "#fff4e5", color: "#ef6c00" };
+  }
+  return { backgroundColor: "#e8f5e9", color: "#2e7d32" };
+};
+
+const getCapacityStatusLabel = (status) => {
+  if (status === "red") return "Over capacity";
+  if (status === "amber") return "Approaching max";
+  return "Within capacity";
+};
+
 const STAFF_ROLES = new Set([
   "service advisor",
   "technician",
@@ -178,6 +243,7 @@ const buildTechAvailabilityMap = (records = []) => {
         latestClockIn: entry.clock_in,
         latestClockOut: entry.clock_out || null,
         currentlyClockedIn: !entry.clock_out,
+        availableHours: deriveAvailableHours(entry) ?? 5,
       };
       availability[dateKey].techs.push(techRecord);
     }
@@ -201,6 +267,11 @@ const buildTechAvailabilityMap = (records = []) => {
         startedAt: entry.clock_in,
         endedAt: entry.clock_out,
       });
+    }
+
+    const explicitAvailableHours = deriveAvailableHours(entry);
+    if (explicitAvailableHours !== null) {
+      techRecord.availableHours = explicitAvailableHours;
     }
 
     availability[dateKey].totalTechs = availability[dateKey].techs.length;
@@ -631,6 +702,20 @@ export default function Appointments() {
   const selectedDayKey = selectedDay.toDateString();
   const techAvailabilityForSelectedDay = techAvailability[selectedDayKey] || { totalTechs: 0, techs: [] };
   const techsForSelectedDay = techAvailabilityForSelectedDay.techs || [];
+
+  const totalBookedTechHours = techsForSelectedDay.reduce(
+    (sum, tech) => sum + (parseHoursValue(tech.totalHours) || 0),
+    0
+  );
+
+  const totalAvailableTechHours = techsForSelectedDay.reduce(
+    (sum, tech) => sum + (parseHoursValue(tech.availableHours) || 5),
+    0
+  );
+
+  const totalCapacityStatus = getCapacityStatus(totalBookedTechHours, totalAvailableTechHours);
+  const totalCapacityBadgeStyle = getStatusBadgeStyle(totalCapacityStatus);
+  const totalCapacityLabel = getCapacityStatusLabel(totalCapacityStatus);
   
   const filteredJobs = jobsForDay.filter((job) => {
     const query = searchQuery.toLowerCase();
@@ -966,29 +1051,58 @@ export default function Appointments() {
               borderRadius: "8px", 
               background: "#FFF5F5" 
             }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <div>
-                  <div style={{ fontSize: "14px", fontWeight: "600", color: "#333" }}>
-                    Live Tech Availability — {formatDateNoYear(selectedDay)}
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#777" }}>
-                    Source: {TECH_AVAILABILITY_TABLE === "tech_hours" ? "tech_hours" : "job_clocking"} table
-                  </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+              <div>
+                <div style={{ fontSize: "14px", fontWeight: "600", color: "#333" }}>
+                  Live Tech Availability — {formatDateNoYear(selectedDay)}
                 </div>
-                <span style={{ 
-                  padding: "4px 12px", 
-                  borderRadius: "999px", 
-                  backgroundColor: "#FFE0E0", 
-                  color: "#FF4040", 
-                  fontWeight: "600", 
-                  fontSize: "13px" 
-                }}>
-                  {getTechHoursForDay(selectedDay)} tech{getTechHoursForDay(selectedDay) === 1 ? "" : "s"}
-                </span>
+                <div style={{ fontSize: "12px", color: "#777" }}>
+                  Source: {TECH_AVAILABILITY_TABLE === "tech_hours" ? "tech_hours" : "job_clocking"} table
+                </div>
               </div>
+              <span style={{ 
+                padding: "4px 12px", 
+                borderRadius: "999px", 
+                backgroundColor: "#FFE0E0", 
+                color: "#FF4040", 
+                fontWeight: "600", 
+                fontSize: "13px" 
+              }}>
+                {getTechHoursForDay(selectedDay)} tech{getTechHoursForDay(selectedDay) === 1 ? "" : "s"}
+              </span>
+            </div>
+            <div style={{ 
+              marginBottom: "12px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "6px"
+            }}>
+              <div style={{ fontSize: "13px", fontWeight: "600", color: "#222" }}>
+                Booked {totalBookedTechHours.toFixed(1)}h
+              </div>
+              <div style={{ fontSize: "12px", color: "#555" }}>
+                of {totalAvailableTechHours.toFixed(1)}h available
+              </div>
+              <span 
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "999px",
+                  padding: "4px 10px",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  ...totalCapacityBadgeStyle
+                }}
+              >
+                {totalCapacityLabel}
+              </span>
+            </div>
 
-              {techAvailabilityError && (
-                <div style={{ 
+            {techAvailabilityError && (
+              <div style={{ 
                   marginBottom: "10px", 
                   padding: "10px 12px", 
                   background: "#fff0f0", 
@@ -1006,22 +1120,27 @@ export default function Appointments() {
                 </div>
               ) : techsForSelectedDay.length > 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {techsForSelectedDay.map((tech) => {
-                    const latestSegment = tech.segments[tech.segments.length - 1];
-                    const latestJobDisplay = latestSegment
-                      ? `Job ${latestSegment.jobNumber || "-"} (${latestSegment.workType})`
-                      : "No jobs recorded";
-                    const latestClockIn = tech.latestClockIn
-                      ? new Date(tech.latestClockIn).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
-                      : "-";
-                    const latestClockOut = tech.latestClockOut
-                      ? new Date(tech.latestClockOut).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
-                      : "-";
+              {techsForSelectedDay.map((tech) => {
+                const latestSegment = tech.segments[tech.segments.length - 1];
+                const latestJobDisplay = latestSegment
+                  ? `Job ${latestSegment.jobNumber || "-"} (${latestSegment.workType})`
+                  : "No jobs recorded";
+                const latestClockIn = tech.latestClockIn
+                  ? new Date(tech.latestClockIn).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+                  : "-";
+                const latestClockOut = tech.latestClockOut
+                  ? new Date(tech.latestClockOut).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+                  : "-";
+                const availableHours = parseHoursValue(tech.availableHours) || 5;
+                const bookedHours = parseHoursValue(tech.totalHours) || 0;
+                const techCapacityStatus = getCapacityStatus(bookedHours, availableHours);
+                const techBadgeStyle = getStatusBadgeStyle(techCapacityStatus);
+                const techStatusLabel = getCapacityStatusLabel(techCapacityStatus);
 
-                    return (
-                      <div 
-                        key={tech.techId} 
-                        style={{ 
+                return (
+                  <div 
+                    key={tech.techId} 
+                    style={{ 
                           display: "flex", 
                           justifyContent: "space-between", 
                           alignItems: "center", 
@@ -1039,14 +1158,33 @@ export default function Appointments() {
                           <div style={{ fontSize: "12px", color: "#777" }}>
                             {latestJobDisplay}
                           </div>
-                          <div style={{ fontSize: "12px", color: "#999", marginTop: "4px" }}>
-                            Shift: {latestClockIn} – {tech.currentlyClockedIn ? "Present" : latestClockOut}
-                            {" · "}
-                            {tech.totalHours > 0 ? `${tech.totalHours}h logged` : "0h recorded"}
-                          </div>
+                        <div style={{ fontSize: "12px", color: "#999", marginTop: "4px" }}>
+                          Shift: {latestClockIn} – {tech.currentlyClockedIn ? "Present" : latestClockOut}
+                          {" · "}
+                          {tech.totalHours > 0 ? `${tech.totalHours}h logged` : "0h recorded"}
                         </div>
-                        <span style={{ 
-                          padding: "6px 12px", 
+                        <div style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "6px", flexWrap: "wrap" }}>
+                          <span style={{ fontSize: "12px", color: "#444" }}>
+                            {bookedHours.toFixed(1)}h booked
+                          </span>
+                          <span style={{ fontSize: "12px", color: "#666" }}>
+                            of {availableHours.toFixed(1)}h available
+                          </span>
+                          <span
+                            style={{
+                              borderRadius: "999px",
+                              padding: "4px 10px",
+                              fontSize: "11px",
+                              fontWeight: "600",
+                              ...techBadgeStyle,
+                            }}
+                          >
+                            {techStatusLabel}
+                          </span>
+                        </div>
+                      </div>
+                      <span style={{ 
+                        padding: "6px 12px", 
                           borderRadius: "999px", 
                           fontSize: "12px", 
                           fontWeight: "600", 
