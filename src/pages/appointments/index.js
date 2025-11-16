@@ -61,6 +61,81 @@ const generateTimeSlots = () => {
   return slots;
 };
 
+const STAFF_ROLES = new Set([
+  "service advisor",
+  "technician",
+  "workshop manager",
+  "service manager",
+  "after sales manager",
+]);
+
+const toMidnightDate = (value) => {
+  if (!value) return null;
+  const dateObj = value instanceof Date ? new Date(value.getTime()) : new Date(value);
+  if (Number.isNaN(dateObj.getTime())) return null;
+  dateObj.setHours(0, 0, 0, 0);
+  return dateObj;
+};
+
+const formatRoleLabel = (role) => {
+  if (!role || typeof role !== "string") return "Staff";
+  return role
+    .split(/\s+/)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase())
+    .join(" ");
+};
+
+const formatStaffName = (user) => {
+  if (!user) return "Staff Member";
+  const first = (user.first_name || "").trim();
+  const last = (user.last_name || "").trim();
+  return [first, last].filter(Boolean).join(" ") || user.email || "Staff Member";
+};
+
+const buildStaffAbsenceMap = (records = [], calendarStart, calendarEnd) => {
+  const map = {};
+  const startBoundary = toMidnightDate(calendarStart);
+  const endBoundary = toMidnightDate(calendarEnd);
+  if (!startBoundary || !endBoundary || startBoundary > endBoundary) return map;
+
+  const oneDayMs = 24 * 60 * 60 * 1000;
+
+  (records || []).forEach((absence) => {
+    const user = absence?.user;
+    const normalizedRole = (user?.role || "").trim();
+    const roleKey = normalizedRole.toLowerCase();
+    if (!STAFF_ROLES.has(roleKey)) return;
+
+    const absenceStart = toMidnightDate(absence?.start_date);
+    const absenceEnd = absence?.end_date
+      ? toMidnightDate(absence.end_date)
+      : absenceStart;
+    if (!absenceStart || !absenceEnd) return;
+
+    const effectiveStartMs = Math.max(absenceStart.getTime(), startBoundary.getTime());
+    const effectiveEndMs = Math.min(absenceEnd.getTime(), endBoundary.getTime());
+    if (effectiveStartMs > effectiveEndMs) return;
+
+    const entryBase = {
+      id: `${absence.absence_id}-${user?.user_id || absence.absence_id}`,
+      name: formatStaffName(user),
+      role: formatRoleLabel(normalizedRole),
+      type: absence?.type || "Holiday",
+    };
+
+    for (let currentMs = effectiveStartMs; currentMs <= effectiveEndMs; currentMs += oneDayMs) {
+      const dateKey = new Date(currentMs).toDateString();
+      if (!map[dateKey]) {
+        map[dateKey] = [];
+      }
+
+      map[dateKey].push(entryBase);
+    }
+  });
+
+  return map;
+};
+
 // ---------------- Utility Functions ----------------
 // ✅ Display vehicle info using new database fields
 const getVehicleDisplay = (job) => {
@@ -161,6 +236,10 @@ export default function Appointments() {
   const [searchQuery, setSearchQuery] = useState("");
   const [timeSlots] = useState(generateTimeSlots());
   const [isLoading, setIsLoading] = useState(false);
+  const [staffAbsences, setStaffAbsences] = useState({});
+  const [showStaffOffPopup, setShowStaffOffPopup] = useState(false);
+  const [staffOffPopupDetails, setStaffOffPopupDetails] = useState([]);
+  const [staffOffPopupDate, setStaffOffPopupDate] = useState(null);
 
   // ---------------- Fetch Jobs ----------------
   const fetchJobs = async () => {
@@ -238,6 +317,11 @@ export default function Appointments() {
 
   useEffect(() => {
     if (!dates.length) return;
+    fetchStaffAbsences();
+  }, [dates, fetchStaffAbsences]);
+
+  useEffect(() => {
+    if (!dates.length) return;
 
     const channel = supabase
       .channel("job_clocking_changes")
@@ -247,13 +331,50 @@ export default function Appointments() {
         () => {
           fetchTechAvailability();
         }
-      )
-      .subscribe();
-
+        )
+        .subscribe();
+  
     return () => {
       supabase.removeChannel(channel);
     };
   }, [dates, fetchTechAvailability]);
+
+  const fetchStaffAbsences = useCallback(async () => {
+    if (!dates || dates.length === 0) return;
+
+    const startDate = dates[0].toISOString().split("T")[0];
+    const endDate = dates[dates.length - 1].toISOString().split("T")[0];
+
+    try {
+      const { data, error } = await supabase
+        .from("hr_absences")
+        .select(`
+          absence_id,
+          type,
+          start_date,
+          end_date,
+          approval_status,
+          user:user_id(
+            user_id,
+            first_name,
+            last_name,
+            email,
+            role
+          )
+        `)
+        .eq("approval_status", "Approved")
+        .lte("start_date", endDate)
+        .gte("end_date", startDate);
+
+      if (error) throw error;
+
+      const map = buildStaffAbsenceMap(data || [], dates[0], dates[dates.length - 1]);
+      setStaffAbsences(map);
+    } catch (error) {
+      console.error("❌ Error fetching staff absences:", error);
+      setStaffAbsences({});
+    }
+  }, [dates]);
 
   // ✅ Handle jobNumber from URL parameters
   useEffect(() => {
@@ -281,6 +402,13 @@ export default function Appointments() {
     setNotes({ ...notes, [selectedDay.toDateString()]: currentNote });
     setShowNotePopup(false);
     // ✅ TODO: Save note to database (create appointments_notes table or use job_notes)
+  };
+
+  const handleShowStaffOff = (event, date, entries) => {
+    event.stopPropagation();
+    setStaffOffPopupDate(date);
+    setStaffOffPopupDetails(entries.slice());
+    setShowStaffOffPopup(true);
   };
 
   // ---------------- Add / Update Appointment ----------------
@@ -648,7 +776,7 @@ export default function Appointments() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
               <tr style={{ backgroundColor: "#f6f6f6", borderBottom: "2px solid #FF4040" }}>
-                {["Day/Date","Availability","Total Hours","Total Jobs","Services","MOT","Diagnosis","Other","Notes"].map(header => (
+                {["Day/Date","Availability","Total Hours","Total Jobs","Services","MOT","Diagnosis","Other","Staff Off"].map(header => (
                   <th 
                     key={header} 
                     style={{ 
@@ -669,11 +797,12 @@ export default function Appointments() {
               </tr>
             </thead>
             <tbody>
-              {dates.map((date) => {
-                const dateKey = date.toDateString();
-                const counts = getJobCounts(date);
-                const isSelected = selectedDay.toDateString() === date.toDateString();
-                const isSat = isSaturday(date);
+                {dates.map((date) => {
+                  const dateKey = date.toDateString();
+                  const counts = getJobCounts(date);
+                  const staffEntries = staffAbsences[dateKey] || [];
+                  const isSelected = selectedDay.toDateString() === date.toDateString();
+                  const isSat = isSaturday(date);
                 
                 return (
                   <tr 
@@ -729,15 +858,30 @@ export default function Appointments() {
                     </td>
                     <td style={{ 
                       padding: "10px 12px", 
-                      borderBottom: "1px solid #eee",
-                      fontSize: "13px",
-                      color: "#666",
-                      maxWidth: "200px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap"
+                      borderBottom: "1px solid #eee"
                     }}>
-                      {notes[dateKey] || ""}
+                      {staffEntries.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={(event) => handleShowStaffOff(event, date, staffEntries)}
+                          style={{
+                            padding: "6px 12px",
+                            borderRadius: "999px",
+                            border: "1px solid #FF4040",
+                            backgroundColor: "#FFF2F2",
+                            color: "#FF4040",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            fontSize: "12px"
+                          }}
+                          onMouseEnter={(event) => event.currentTarget.style.backgroundColor = "#ffe5e5"}
+                          onMouseLeave={(event) => event.currentTarget.style.backgroundColor = "#FFF2F2"}
+                        >
+                          {`View ${staffEntries.length} staff off`}
+                        </button>
+                      ) : (
+                        "-"
+                      )}
                     </td>
                   </tr>
                 );
@@ -1145,6 +1289,57 @@ export default function Appointments() {
               onMouseLeave={(e) => e.target.style.backgroundColor = "#666"}
             >
               Cancel
+            </button>
+          </div>
+        </Popup>
+        {/* Staff Off Popup */}
+        <Popup isOpen={showStaffOffPopup} onClose={() => setShowStaffOffPopup(false)}>
+          <h3 style={{ marginTop: 0, marginBottom: "12px", fontSize: "20px", fontWeight: "600" }}>
+            Staff Off · {formatDate(staffOffPopupDate || selectedDay)}
+          </h3>
+          <p style={{ marginTop: 0, marginBottom: "16px", color: "#666", fontSize: "14px" }}>
+            Showing approved holiday/absence data for the selected roles.
+          </p>
+          {staffOffPopupDetails.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "16px" }}>
+              {staffOffPopupDetails.map((entry, index) => (
+                <div
+                  key={`${entry.id}-${index}`}
+                  style={{
+                    padding: "12px",
+                    borderRadius: "10px",
+                    backgroundColor: "#fff",
+                    border: "1px solid #ffe5e5",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.06)"
+                  }}
+                >
+                  <div style={{ fontWeight: "600", color: "#333" }}>{entry.name}</div>
+                  <div style={{ fontSize: "13px", color: "#555", marginTop: "4px" }}>
+                    {entry.role} · {entry.type}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ color: "#666", marginBottom: "16px" }}>No recorded absences for the selected roles today.</div>
+          )}
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button
+              onClick={() => setShowStaffOffPopup(false)}
+              style={{
+                padding: "10px 20px",
+                borderRadius: "8px",
+                border: "none",
+                backgroundColor: "#FF4040",
+                color: "#fff",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "background-color 0.2s"
+              }}
+              onMouseEnter={(event) => (event.currentTarget.style.backgroundColor = "#cc0000")}
+              onMouseLeave={(event) => (event.currentTarget.style.backgroundColor = "#FF4040")}
+            >
+              Close
             </button>
           </div>
         </Popup>
