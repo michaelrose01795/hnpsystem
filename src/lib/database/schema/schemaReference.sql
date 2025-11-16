@@ -286,6 +286,32 @@ CREATE TABLE public.hr_training_events (
   CONSTRAINT hr_training_events_pkey PRIMARY KEY (event_id),
   CONSTRAINT hr_training_events_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.hr_training_courses(course_id)
 );
+CREATE TABLE public.job_check_sheet_checkboxes (
+  checkbox_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  sheet_id bigint NOT NULL,
+  label text,
+  position_x numeric NOT NULL,
+  position_y numeric NOT NULL,
+  is_checked boolean DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT job_check_sheet_checkboxes_pkey PRIMARY KEY (checkbox_id),
+  CONSTRAINT job_check_sheet_checkboxes_sheet_id_fkey FOREIGN KEY (sheet_id) REFERENCES public.job_check_sheets(sheet_id)
+);
+CREATE TABLE public.job_check_sheets (
+  sheet_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  job_id integer NOT NULL,
+  file_name text NOT NULL,
+  file_type text,
+  file_url text NOT NULL,
+  storage_path text NOT NULL,
+  created_by integer,
+  signature_url text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT job_check_sheets_pkey PRIMARY KEY (sheet_id),
+  CONSTRAINT job_check_sheets_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT job_check_sheets_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
+);
 CREATE TABLE public.job_clocking (
   id integer NOT NULL DEFAULT nextval('job_clocking_id_seq'::regclass),
   user_id integer NOT NULL,
@@ -299,6 +325,25 @@ CREATE TABLE public.job_clocking (
   CONSTRAINT job_clocking_pkey PRIMARY KEY (id),
   CONSTRAINT job_clocking_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
   CONSTRAINT job_clocking_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
+);
+CREATE TABLE public.job_cosmetic_damage (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  job_id integer NOT NULL UNIQUE,
+  has_damage boolean NOT NULL DEFAULT false,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT job_cosmetic_damage_pkey PRIMARY KEY (id),
+  CONSTRAINT job_cosmetic_damage_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
+);
+CREATE TABLE public.job_customer_statuses (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  job_id integer NOT NULL,
+  status text NOT NULL DEFAULT 'Neither'::text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT job_customer_statuses_pkey PRIMARY KEY (id),
+  CONSTRAINT job_customer_statuses_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
 CREATE TABLE public.job_files (
   file_id integer NOT NULL DEFAULT nextval('job_files_file_id_seq'::regclass),
@@ -336,6 +381,18 @@ CREATE TABLE public.job_progress (
   CONSTRAINT job_progress_pkey PRIMARY KEY (progress_id),
   CONSTRAINT job_progress_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT job_progress_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.job_requests (
+  request_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  job_id integer NOT NULL,
+  description text NOT NULL,
+  hours numeric,
+  job_type text NOT NULL DEFAULT 'Customer'::text,
+  sort_order integer NOT NULL DEFAULT 1,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT job_requests_pkey PRIMARY KEY (request_id),
+  CONSTRAINT job_requests_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
 CREATE TABLE public.job_status_history (
   id integer NOT NULL DEFAULT nextval('job_status_history_id_seq'::regclass),
@@ -683,6 +740,16 @@ CREATE TABLE public.tyre_inspections (
   CONSTRAINT tyre_inspections_pkey PRIMARY KEY (inspection_id),
   CONSTRAINT tyre_inspections_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT tyre_inspections_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(vehicle_id)
+);
+CREATE TABLE public.user_signatures (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  user_id integer NOT NULL UNIQUE,
+  storage_path text NOT NULL,
+  file_url text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT user_signatures_pkey PRIMARY KEY (id),
+  CONSTRAINT user_signatures_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.users (
   user_id integer NOT NULL DEFAULT nextval('users_user_id_seq'::regclass),

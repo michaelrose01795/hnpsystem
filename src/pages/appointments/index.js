@@ -422,46 +422,79 @@ export default function Appointments() {
   
   const toggleTechHoursEditor = () => setShowTechHoursEditor(!showTechHoursEditor);
 
+  const normalizeJobCategoryLabel = (rawLabel) => {
+    if (!rawLabel || typeof rawLabel !== "string") return null;
+    const cleaned = rawLabel.trim().toLowerCase();
+
+    if (cleaned === "service") return "service";
+    if (cleaned === "mot") return "mot";
+    if (cleaned === "diagnostic" || cleaned === "diagnostics" || cleaned === "diagnosis")
+      return "diagnosis";
+    if (cleaned === "other") return "other";
+
+    return null;
+  };
+
+  const getDetectedJobTypeLabels = (job) => {
+    const categories = Array.isArray(job.jobCategories) ? job.jobCategories : [];
+    const normalizedLabels = new Set(
+      categories
+        .map((category) => normalizeJobCategoryLabel(category))
+        .filter(Boolean)
+    );
+
+    if (normalizedLabels.size === 0) {
+      const fallbackType = (job.type || "").trim().toLowerCase();
+      if (fallbackType.includes("mot")) {
+        normalizedLabels.add("mot");
+      } else if (fallbackType.includes("diag")) {
+        normalizedLabels.add("diagnosis");
+      } else if (fallbackType.includes("service")) {
+        normalizedLabels.add("service");
+      }
+    }
+
+    if (normalizedLabels.size === 0) {
+      normalizedLabels.add("other");
+    }
+
+    return normalizedLabels;
+  };
+
   // ✅ Enhanced job counts with new job categories - FIXED to handle non-array requests
   const getJobCounts = (date) => {
     const jobsForDate = jobs.filter((j) => j.appointment?.date === date.toISOString().split("T")[0]);
-    
-    return {
+    const totals = {
       totalJobs: jobsForDate.length,
-      services: jobsForDate.filter((j) => 
-        j.jobCategories?.includes("Service") || 
-        j.type?.toLowerCase().includes("service")
-      ).length,
-      MOT: jobsForDate.filter((j) => 
-        j.jobCategories?.includes("MOT") || 
-        j.type?.toLowerCase().includes("mot")
-      ).length,
-      diagnosis: jobsForDate.filter((j) => 
-        j.jobCategories?.includes("Diagnostic") || 
-        j.type?.toLowerCase().includes("diagnosis") ||
-        j.type?.toLowerCase().includes("diagnostic")
-      ).length,
-      other: jobsForDate.filter((j) => 
-        !j.jobCategories?.includes("MOT") &&
-        !j.jobCategories?.includes("Service") &&
-        !j.jobCategories?.includes("Diagnostic") &&
-        !j.type?.toLowerCase().includes("mot") &&
-        !j.type?.toLowerCase().includes("service") &&
-        !j.type?.toLowerCase().includes("diagnosis")
-      ).length,
-      // ✅ FIXED: Calculate total estimated hours safely checking if requests is an array
-      totalHours: jobsForDate.reduce((sum, j) => {
-        // ✅ Check if requests exists and is an array before using reduce
-        if (!j.requests || !Array.isArray(j.requests)) {
-          return sum; // Return current sum if no valid requests array
-        }
-        
-        const jobHours = j.requests.reduce((reqSum, req) => {
-          return reqSum + (parseFloat(req.time) || 0);
-        }, 0);
-        
-        return sum + jobHours;
-      }, 0).toFixed(1),
+      services: 0,
+      mot: 0,
+      diagnosis: 0,
+      other: 0,
+    };
+
+    let hours = 0;
+
+    jobsForDate.forEach((job) => {
+      const detectedLabels = getDetectedJobTypeLabels(job);
+
+      if (detectedLabels.has("service")) totals.services += 1;
+      if (detectedLabels.has("mot")) totals.mot += 1;
+      if (detectedLabels.has("diagnosis")) totals.diagnosis += 1;
+      if (detectedLabels.has("other")) totals.other += 1;
+
+      const requests = Array.isArray(job.requests) ? job.requests : [];
+      const jobHours = requests.reduce((reqSum, req) => {
+        const rawTime = req?.time ?? req?.hours;
+        const parsedTime = parseFloat(rawTime);
+        return reqSum + (Number.isFinite(parsedTime) ? parsedTime : 0);
+      }, 0);
+
+      hours += jobHours;
+    });
+
+    return {
+      ...totals,
+      totalHours: hours.toFixed(1),
     };
   };
 
@@ -686,7 +719,7 @@ export default function Appointments() {
                       {counts.services}
                     </td>
                     <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
-                      {counts.MOT}
+                      {counts.mot}
                     </td>
                     <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
                       {counts.diagnosis}
