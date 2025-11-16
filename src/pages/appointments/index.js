@@ -731,6 +731,35 @@ export default function Appointments() {
     }
     return 0;
   };
+
+  const getEarliestTechStartForDate = (date) => {
+    const dateKey = date.toDateString();
+    const dayData = techAvailability[dateKey];
+    if (!dayData || !Array.isArray(dayData.techs)) return null;
+
+    let earliest = null;
+    dayData.techs.forEach((tech) => {
+      const segments = Array.isArray(tech.segments) ? tech.segments : [];
+      segments.forEach((segment) => {
+        if (!segment?.startedAt) return;
+        const start = new Date(segment.startedAt);
+        if (Number.isNaN(start.getTime())) return;
+        if (!earliest || start < earliest) {
+          earliest = start;
+        }
+      });
+    });
+
+    return earliest;
+  };
+
+  const calculateFinishTimeForDate = (date, jobHours, vhcHours) => {
+    const start = getEarliestTechStartForDate(date);
+    if (!start) return "-";
+    const totalHours = (parseHoursValue(jobHours) || 0) + (parseHoursValue(vhcHours) || 0) + 0.5;
+    const finish = new Date(start.getTime() + totalHours * 60 * 60 * 1000);
+    return finish.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  };
   
   const toggleTechHoursEditor = () => setShowTechHoursEditor(!showTechHoursEditor);
 
@@ -784,7 +813,8 @@ export default function Appointments() {
       other: 0,
     };
 
-    let hours = 0;
+    let jobHours = 0;
+    let vhcHours = 0;
 
     jobsForDate.forEach((job) => {
       const detectedLabels = getDetectedJobTypeLabels(job);
@@ -794,13 +824,18 @@ export default function Appointments() {
       if (detectedLabels.has("diagnosis")) totals.diagnosis += 1;
       if (detectedLabels.has("other")) totals.other += 1;
 
-      const jobHours = parseHoursValue(jobRequestHours[job.id]) || 0;
-      hours += jobHours;
+      const currentJobHours = parseHoursValue(jobRequestHours[job.id]) || 0;
+      const currentVhcHours = parseHoursValue(jobVhcLabourHours[job.id]) || 0;
+      jobHours += currentJobHours;
+      vhcHours += currentVhcHours;
     });
+
+    const finishTime = calculateFinishTimeForDate(date, jobHours, vhcHours);
 
     return {
       ...totals,
-      totalHours: hours.toFixed(1),
+      totalHours: jobHours.toFixed(1),
+      finishTime,
     };
   };
 
@@ -1015,7 +1050,7 @@ export default function Appointments() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
               <tr style={{ backgroundColor: "#f6f6f6", borderBottom: "2px solid #FF4040" }}>
-                {["Day/Date","Availability","Total Hours","Total Jobs","Jobs Scheduled","Services","MOT","Diagnosis","Other","Staff Off"].map(header => (
+                {["Day/Date","Availability","Total Hours","Total Jobs","Jobs Scheduled","Finish","Services","MOT","Diagnosis","Other","Staff Off"].map(header => (
                   <th 
                     key={header} 
                     style={{ 
@@ -1089,6 +1124,13 @@ export default function Appointments() {
                       fontWeight: counts.totalJobs > 0 ? "600" : "400"
                     }}>
                       {counts.totalJobs}
+                    </td>
+                    <td style={{
+                      padding: "10px 12px", 
+                      borderBottom: "1px solid #eee",
+                      fontWeight: "500"
+                    }}>
+                      {counts.finishTime || "-"}
                     </td>
                     <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
                       {counts.services}
