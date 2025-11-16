@@ -307,6 +307,7 @@ export default function Appointments() {
   const [searchQuery, setSearchQuery] = useState("");
   const [timeSlots] = useState(generateTimeSlots());
   const [isLoading, setIsLoading] = useState(false);
+  const [jobRequestHours, setJobRequestHours] = useState({});
   const [staffAbsences, setStaffAbsences] = useState({});
   const [showStaffOffPopup, setShowStaffOffPopup] = useState(false);
   const [staffOffPopupDetails, setStaffOffPopupDetails] = useState([]);
@@ -333,6 +334,36 @@ export default function Appointments() {
       setIsLoading(false);
     }
   };
+
+  const fetchJobRequestHours = useCallback(async (jobIds = []) => {
+    if (!jobIds || jobIds.length === 0) {
+      setJobRequestHours({});
+      return;
+    }
+
+    const uniqueJobIds = Array.from(new Set(jobIds));
+
+    try {
+      const { data, error } = await supabase
+        .from("job_requests")
+        .select("job_id, hours")
+        .in("job_id", uniqueJobIds);
+
+      if (error) throw error;
+
+      const aggregated = {};
+      (data || []).forEach((row) => {
+        if (!row?.job_id) return;
+        const hours = parseHoursValue(row.hours) ?? 0;
+        const key = row.job_id;
+        aggregated[key] = (aggregated[key] || 0) + hours;
+      });
+
+      setJobRequestHours(aggregated);
+    } catch (error) {
+      console.error("❌ Error fetching job request hours:", error);
+    }
+  }, []);
 
   const fetchTechAvailability = useCallback(async () => {
     if (!dates || dates.length === 0) return;
@@ -422,6 +453,20 @@ export default function Appointments() {
     if (!dates.length) return;
     fetchTechAvailability();
   }, [dates, fetchTechAvailability]);
+
+  useEffect(() => {
+    const jobIdsWithAppointments = jobs
+      .filter((job) => job.appointment?.date)
+      .map((job) => job.id)
+      .filter(Boolean);
+
+    if (jobIdsWithAppointments.length === 0) {
+      setJobRequestHours({});
+      return;
+    }
+
+    fetchJobRequestHours(jobIdsWithAppointments);
+  }, [jobs, fetchJobRequestHours]);
 
   useEffect(() => {
     if (!dates.length) return;
@@ -681,13 +726,7 @@ export default function Appointments() {
       if (detectedLabels.has("diagnosis")) totals.diagnosis += 1;
       if (detectedLabels.has("other")) totals.other += 1;
 
-      const requests = Array.isArray(job.requests) ? job.requests : [];
-      const jobHours = requests.reduce((reqSum, req) => {
-        const rawTime = req?.time ?? req?.hours;
-        const parsedTime = parseFloat(rawTime);
-        return reqSum + (Number.isFinite(parsedTime) ? parsedTime : 0);
-      }, 0);
-
+      const jobHours = parseHoursValue(jobRequestHours[job.id]) || 0;
       hours += jobHours;
     });
 
