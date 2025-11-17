@@ -2,19 +2,19 @@
 // file location: src/pages/job-cards/waiting/nextjobs.js
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react"; // Core React hooks
+import React, { useState, useMemo, useEffect, useCallback } from "react"; // Core React hooks
 import Layout from "@/components/Layout"; // Main layout wrapper
 import { useUser } from "@/context/UserContext"; // Logged-in user context
 import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router"; // Next.js router for navigation
 import { 
-  getAllJobs, 
   assignTechnicianToJob, 
   unassignTechnicianFromJob, 
   updateJobPosition 
 } from "@/lib/database/jobs"; // ✅ Fetch and update jobs from Supabase
 import { getTechnicianUsers, getMotTesterUsers } from "@/lib/database/users";
 import { normalizeDisplayName } from "@/utils/nameUtils";
+import { supabase } from "@/lib/supabaseClient";
 
 // Layout constants ensure consistent panel sizing and scroll thresholds
 const VISIBLE_JOBS_PER_PANEL = 5;
@@ -39,6 +39,63 @@ const isMotRole = (role) => {
   if (!role) return false;
   const normalized = String(role).toLowerCase();
   return normalized.includes("mot");
+};
+
+const STATUS_WAITING_QUEUE = new Set([
+  "CHECKED IN",
+  "WAITING FOR WORKSHOP",
+  "AWAITING WORKSHOP",
+  "AWAITING TECH",
+  "AWAITING ALLOCATION",
+  "ARRIVED",
+  "IN RECEPTION",
+]);
+
+const STATUS_IN_PROGRESS = new Set([
+  "WORKSHOP/MOT",
+  "WORKSHOP",
+  "IN PROGRESS",
+  "VHC COMPLETE",
+  "VHC SENT",
+  "ADDITIONAL WORK REQUIRED",
+  "ADDITIONAL WORK BEING CARRIED OUT",
+  "ADDITIONAL WORK",
+  "BEING WASHED",
+]);
+
+const STATUS_COMPLETED = new Set([
+  "COMPLETE",
+  "COMPLETED",
+  "INVOICED",
+  "COLLECTED",
+  "CLOSED",
+  "FINISHED",
+  "CANCELLED",
+]);
+
+const toStatusKey = (status) => (status ? String(status).trim().toUpperCase() : "");
+
+const formatCheckedInTime = (value) => {
+  if (!value) return "Not recorded";
+  try {
+    return new Date(value).toLocaleString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "short",
+    });
+  } catch (err) {
+    return "Not recorded";
+  }
+};
+
+const formatCustomerStatus = (value) => {
+  if (!value) return "Neither";
+  const lower = value.toString().toLowerCase();
+  if (lower.includes("loan")) return "Loan Car";
+  if (lower.includes("collect")) return "Collection";
+  if (lower.includes("wait")) return "Waiting";
+  return value;
 };
 
 export default function NextJobsPage() {
@@ -105,21 +162,146 @@ export default function NextJobsPage() {
   useEffect(() => {
     fetchJobs();
     fetchTechnicians();
+  }, [fetchJobs]);
+
+  const isWaitingJob = (job) => {
+    const statusKey = toStatusKey(job.status);
+    const hasStarted =
+      STATUS_IN_PROGRESS.has(statusKey) || Boolean(job.workshopStartedAt);
+    const isFinished =
+      STATUS_COMPLETED.has(statusKey) || Boolean(job.completedAt);
+    const hasArrived =
+      STATUS_WAITING_QUEUE.has(statusKey) ||
+      (Boolean(job.checkedInAt) && !isFinished);
+
+    return hasArrived && !hasStarted && !isFinished;
+  };
+
+  const waitingJobs = useMemo(() => jobs.filter(isWaitingJob), [jobs]);
+
+  const mapJobFromDatabase = (row) => {
+    const customerFirst = row.customer?.firstname?.trim() || "";
+    const customerLast = row.customer?.lastname?.trim() || "";
+    const customerName =
+      row.customer?.name ||
+      [customerFirst, customerLast].filter(Boolean).join(" ").trim();
+
+    const vehicleReg =
+      row.vehicle_reg ||
+      row.vehicle?.registration ||
+      row.vehicle?.reg_number ||
+      "";
+
+    const assignedTechRecord = row.technician;
+    const assignedTech = assignedTechRecord
+      ? {
+          id: assignedTechRecord.user_id || null,
+          name:
+            [assignedTechRecord.first_name, assignedTechRecord.last_name]
+              .filter(Boolean)
+              .join(" ")
+              .trim() || assignedTechRecord.email || "",
+          role: assignedTechRecord.role || "",
+          email: assignedTechRecord.email || "",
+        }
+      : null;
+
+    return {
+      id: row.id,
+      jobNumber: row.job_number,
+      description: row.description || "",
+      type: row.type || "Service",
+      status: row.status || "",
+      reg: vehicleReg,
+      make: row.vehicle?.make || "",
+      model: row.vehicle?.model || "",
+      makeModel: row.vehicle_make_model || row.vehicle?.make_model || "",
+      waitingStatus: row.waiting_status || "Neither",
+      vhcRequired: Boolean(row.vhc_required),
+      assignedTo: row.assigned_to,
+      assignedTech,
+      technician: assignedTech?.name || "",
+      technicianRole: assignedTech?.role || "",
+      customer: customerName || "",
+      customerId: row.customer_id || null,
+      customerPhone: row.customer?.mobile || row.customer?.telephone || "",
+      customerEmail: row.customer?.email || "",
+      customerAddress: row.customer?.address || "",
+      customerPostcode: row.customer?.postcode || "",
+      customerContactPreference: row.customer?.contact_preference || "email",
+      checkedInAt: row.checked_in_at || null,
+      workshopStartedAt: row.workshop_started_at || null,
+      completedAt: row.completed_at || null,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      position: row.position || null,
+    };
+  };
+
+  const fetchJobs = useCallback(async () => {
+    setLoading(true); // Start loading
+
+    const { data, error } = await supabase
+      .from("jobs")
+      .select(
+        `
+        id,
+        job_number,
+        description,
+        type,
+        status,
+        assigned_to,
+        waiting_status,
+        vhc_required,
+        vehicle_reg,
+        vehicle_make_model,
+        customer_id,
+        checked_in_at,
+        workshop_started_at,
+        completed_at,
+        created_at,
+        updated_at,
+        technician:assigned_to(user_id, first_name, last_name, email, role),
+        customer:customer_id(firstname, lastname, name, mobile, telephone, email, address, postcode, contact_preference),
+        vehicle:vehicle_id(registration, reg_number, make, model, make_model)
+      `
+      )
+      .order("checked_in_at", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("❌ Error fetching waiting jobs:", error);
+      setJobs([]);
+      setLoading(false);
+      return [];
+    }
+
+    const formatted = (data || [])
+      .map(mapJobFromDatabase)
+      .filter((job) => job.jobNumber && job.jobNumber.trim() !== "")
+      .filter(isWaitingJob);
+
+    setJobs(formatted);
+    setLoading(false); // Stop loading
+    return formatted;
   }, []);
 
-  const fetchJobs = async () => {
-    setLoading(true); // Start loading
-    const fetchedJobs = await getAllJobs(); // Fetch all jobs from database
+  useEffect(() => {
+    const channel = supabase
+      .channel("nextjobs-waiting-jobs")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "jobs" },
+        () => {
+          fetchJobs();
+        }
+      )
+      .subscribe();
 
-    // Only include jobs with a real job number (actual job cards)
-    const filtered = fetchedJobs.filter(
-      (job) => job.jobNumber && job.jobNumber.trim() !== ""
-    );
-
-    setJobs(filtered); // Update state with filtered jobs
-    setLoading(false); // Stop loading
-    return filtered;
-  };
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchJobs]);
 
   const fetchTechnicians = async () => {
     try {
@@ -178,7 +360,7 @@ export default function NextJobsPage() {
     const motSource = dbMotTesters.length > 0 ? dbMotTesters : fallbackMot;
     motSource.forEach((person, index) => mergePerson(person, "mot", index, "mot"));
 
-    jobs.forEach((job) => {
+    waitingJobs.forEach((job) => {
       const rawName =
         job.assignedTech?.name ||
         job.technician ||
@@ -217,7 +399,7 @@ export default function NextJobsPage() {
       normalizedName: normalized,
       roles: Array.from(entry.roles),
     }));
-  }, [jobs, dbTechnicians, dbMotTesters, fallbackTechs, fallbackMot]);
+  }, [waitingJobs, dbTechnicians, dbMotTesters, fallbackTechs, fallbackMot]);
 
   const techPanelList = useMemo(
     () => staffDirectory.filter((person) => person.roles.includes("tech")),
@@ -238,46 +420,33 @@ export default function NextJobsPage() {
     [staffDirectory]
   );
 
-  // ✅ Filter ALL outstanding/not started jobs (unassigned AND not completed)
-  // These are jobs that are not finished - they show in the top section
-  const unassignedJobs = useMemo(
-    () =>
-      jobs.filter((job) => {
-        const completedStatuses = ["Completed", "Finished", "Closed", "Invoiced", "Collected"];
-        const assignedName =
-          job.assignedTech?.name ||
-          job.technician ||
-          (typeof job.assignedTo === "string" ? job.assignedTo : "");
-
-        const normalizedAssigned = normalizeDisplayName(assignedName);
-        const hasAssignedTech =
-          (normalizedAssigned && normalizedAssigned.length > 0) ||
-          (typeof job.assignedTo === "number" && job.assignedTo !== null);
-
-        return !completedStatuses.includes(job.status) && !hasAssignedTech;
-      }),
-    [jobs]
-  );
-
   // ✅ Search logic for job cards in the outstanding section
   const filteredJobs = useMemo(() => {
-    if (!searchTerm.trim()) return unassignedJobs; // Return all unassigned jobs if no search term
+    if (!searchTerm.trim()) return waitingJobs; // Return all not-started jobs if no search term
     const lower = searchTerm.toLowerCase(); // Convert search term to lowercase for case-insensitive search
-    return unassignedJobs.filter(
-      (job) =>
-        job.jobNumber?.toLowerCase().includes(lower) || // Search in job number
-        job.customer?.toLowerCase().includes(lower) || // Search in customer name
-        job.make?.toLowerCase().includes(lower) || // Search in make
-        job.model?.toLowerCase().includes(lower) || // Search in model
-        job.reg?.toLowerCase().includes(lower) // Search in registration
-    );
-  }, [searchTerm, unassignedJobs]); // Recalculate when search term or unassigned jobs change
+    return waitingJobs.filter((job) => {
+      const haystack = [
+        job.jobNumber,
+        job.customer,
+        job.make,
+        job.model,
+        job.reg,
+        job.type,
+        job.waitingStatus,
+        job.assignedTech?.name,
+      ]
+        .filter(Boolean)
+        .map((value) => value.toString().toLowerCase());
+
+      return haystack.some((value) => value.includes(lower));
+    });
+  }, [searchTerm, waitingJobs]); // Recalculate when search term or waiting jobs change
 
   // ✅ Group jobs by technician (using assignedTech.name)
   const getJobsForAssignee = (assigneeName) => {
     const normalizedAssignee = normalizeDisplayName(assigneeName);
 
-    return jobs
+    return waitingJobs
       .filter((job) => {
         const assignedNameRaw =
           job.assignedTech?.name ||
@@ -298,7 +467,7 @@ export default function NextJobsPage() {
         panelKey: `${tech.id || tech.normalizedName || "tech"}-tech-${index}`,
         jobs: getJobsForAssignee(tech.name),
       })),
-    [jobs, techPanelList]
+    [waitingJobs, techPanelList]
   );
 
   const assignedMotJobs = useMemo(
@@ -308,7 +477,7 @@ export default function NextJobsPage() {
         panelKey: `${tester.id || tester.normalizedName || "mot"}-mot-${index}`,
         jobs: getJobsForAssignee(tester.name),
       })),
-    [jobs, motPanelList]
+    [waitingJobs, motPanelList]
   );
 
   const handleOpenJobDetails = (job) => {
@@ -773,7 +942,7 @@ export default function NextJobsPage() {
             padding: "16px",
             display: "flex",
             flexDirection: "column",
-            maxHeight: "180px",
+            maxHeight: "360px",
             flexShrink: 0,
             transition: "all 0.2s ease",
             backgroundColor: dragOverTarget === "outstanding" ? "#fff5f5" : "#fff" // Highlight entire box
@@ -795,7 +964,7 @@ export default function NextJobsPage() {
               color: "#1f2937",
               margin: 0
             }}>
-              Outstanding Jobs ({unassignedJobs.length})
+              Outstanding Jobs ({waitingJobs.length})
             </h2>
           </div>
           
@@ -818,10 +987,12 @@ export default function NextJobsPage() {
           />
 
           <div style={{ 
-            overflowX: "auto", 
-            whiteSpace: "nowrap", 
+            overflowY: "auto", 
             flex: 1,
-            paddingBottom: "8px"
+            paddingBottom: "8px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px"
           }}>
             {filteredJobs.length === 0 ? (
               <p style={{ color: "#9ca3af", fontSize: "14px", margin: 0 }}>
@@ -829,40 +1000,54 @@ export default function NextJobsPage() {
               </p>
             ) : (
               filteredJobs.map((job) => (
-                <button
+                <div
                   key={job.jobNumber}
                   draggable={hasAccess}
                   onDragStart={(e) => handleDragStart(job, e)}
                   onClick={() => handleOpenJobDetails(job)} // Open job details popup
                   style={{
-                    display: "inline-block",
-                    backgroundColor: draggingJob?.jobNumber === job.jobNumber ? "#ffe5e5" : "#d10000",
-                    color: "white",
-                    padding: "8px 12px",
-                    marginRight: "8px",
-                    borderRadius: "8px",
-                    fontSize: "13px",
-                    fontWeight: "600",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                    padding: "12px",
+                    borderRadius: "10px",
+                    border:
+                      draggingJob?.jobNumber === job.jobNumber
+                        ? "2px dashed #d10000"
+                        : "1px solid #f3f4f6",
+                    backgroundColor:
+                      draggingJob?.jobNumber === job.jobNumber ? "#fff5f5" : "#fdf2f2",
                     cursor: hasAccess ? "grab" : "pointer",
-                    border: "none",
-                    boxShadow: "0 2px 4px rgba(209,0,0,0.18)",
-                    transition: "background-color 0.2s",
-                    opacity: draggingJob?.jobNumber === job.jobNumber ? 0.5 : 1
-                  }}
-                  onMouseEnter={(e) => {
-                    if (draggingJob?.jobNumber !== job.jobNumber) {
-                      e.currentTarget.style.backgroundColor = "#a60a0a";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (draggingJob?.jobNumber !== job.jobNumber) {
-                      e.currentTarget.style.backgroundColor = "#d10000";
-                    }
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                    transition: "border 0.2s, background-color 0.2s"
                   }}
                   title={`${job.jobNumber} - ${job.customer} - ${job.make} ${job.model} - Status: ${job.status}`}
                 >
-                  {`${job.jobNumber} - ${job.reg}`}
-                </button>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span style={{ fontWeight: 700, fontSize: "15px", color: "#1f2937" }}>
+                        {job.jobNumber} • {job.reg || "No reg"}
+                      </span>
+                      <span style={{ color: "#6b7280", fontSize: "13px" }}>
+                        {job.customer || "Unknown customer"} • {job.makeModel || `${job.make} ${job.model}`.trim()}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
+                      <span style={{ backgroundColor: "#fee2e2", color: "#b91c1c", padding: "4px 8px", borderRadius: "999px", fontSize: "12px", fontWeight: 700 }}>
+                        {job.type || "Service"}
+                      </span>
+                      <span style={{ color: "#374151", fontSize: "12px" }}>
+                        Checked in: {formatCheckedInTime(job.checkedInAt)}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", fontSize: "12px", color: "#374151" }}>
+                    <span><strong>Status:</strong> {job.status || "–"}</span>
+                    <span><strong>Tech:</strong> {job.assignedTech?.name || "Unassigned"}</span>
+                    <span><strong>Customer Status:</strong> {formatCustomerStatus(job.waitingStatus)}</span>
+                    <span><strong>VHC Required:</strong> {job.vhcRequired ? "Yes" : "No"}</span>
+                  </div>
+                </div>
               ))
             )}
           </div>
