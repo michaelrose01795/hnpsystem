@@ -158,12 +158,6 @@ export default function NextJobsPage() {
     [usersByRole]
   );
 
-  // ✅ Fetch jobs from Supabase on component mount
-  useEffect(() => {
-    fetchJobs();
-    fetchTechnicians();
-  }, [fetchJobs]);
-
   const isWaitingJob = (job) => {
     const statusKey = toStatusKey(job.status);
     const hasStarted =
@@ -238,8 +232,8 @@ export default function NextJobsPage() {
     };
   };
 
-  const fetchJobs = useCallback(async () => {
-    setLoading(true); // Start loading
+  const fetchJobs = useCallback(async () => { // Wrap Supabase fetch in stable callback to avoid TDZ
+    setLoading(true); // Start loading to show spinner
 
     const { data, error } = await supabase
       .from("jobs")
@@ -286,7 +280,26 @@ export default function NextJobsPage() {
     return formatted;
   }, []);
 
-  useEffect(() => {
+  const fetchTechnicians = useCallback(async () => { // Wrap technician lookup in stable callback
+    try {
+      const [techList, testerList] = await Promise.all([
+        getTechnicianUsers(), // Load technician list
+        getMotTesterUsers(), // Load MOT tester list
+      ]);
+      setDbTechnicians(techList); // Cache technicians
+      setDbMotTesters(testerList); // Cache MOT testers
+    } catch (err) {
+      console.error("❌ Error fetching technicians:", err); // Log fetch errors
+    }
+  }, []);
+
+  // ✅ Fetch jobs and technicians from Supabase on component mount
+  useEffect(() => { // Kick off initial data fetch
+    fetchJobs(); // Load waiting jobs
+    fetchTechnicians(); // Load staff lists
+  }, [fetchJobs, fetchTechnicians]);
+
+  useEffect(() => { // Subscribe to Supabase changes for live updates
     const channel = supabase
       .channel("nextjobs-waiting-jobs")
       .on(
@@ -302,19 +315,6 @@ export default function NextJobsPage() {
       supabase.removeChannel(channel);
     };
   }, [fetchJobs]);
-
-  const fetchTechnicians = async () => {
-    try {
-      const [techList, testerList] = await Promise.all([
-        getTechnicianUsers(),
-        getMotTesterUsers(),
-      ]);
-      setDbTechnicians(techList);
-      setDbMotTesters(testerList);
-    } catch (err) {
-      console.error("❌ Error fetching technicians:", err);
-    }
-  };
 
   const staffDirectory = useMemo(() => {
     const map = new Map();

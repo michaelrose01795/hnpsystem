@@ -6,22 +6,19 @@ import React, { useEffect, useState } from "react"; // import React hooks for st
 import Layout from "@/components/Layout"; // import shared layout component
 import { useRouter } from "next/router"; // import router hook for navigation
 import { getAllJobs } from "@/lib/database/jobs"; // import Supabase helper to fetch jobs
-import { getVhcChecksByJob } from "@/lib/database/vhc"; // import Supabase helper to fetch technician VHC data (note: lowercase 'hc')
+import { getVhcChecksByJob, getVhcWorkflowStatus } from "@/lib/database/vhc"; // import Supabase helpers to fetch VHC data and workflow status
 import { useUser } from "@/context/UserContext"; // import context hook to read current user roles
 
 // ✅ Status color mapping for the headline badge
 const STATUS_COLORS = {
-  Outstanding: "#9ca3af",
-  Accepted: "#d10000",
-  "In Progress": "#3b82f6",
-  "Awaiting Authorization": "#fbbf24",
-  Authorized: "#9333ea",
-  Ready: "#10b981",
-  "Carry Over": "#f97316",
-  Complete: "#06b6d4",
-  Sent: "#8b5cf6",
-  Viewed: "#06b6d4",
-  "Parts Request": "#f97316",
+  "VHC not started": "#9ca3af",
+  "In progress": "#3b82f6",
+  "Waiting for parts": "#f97316",
+  "Sent to customer": "#8b5cf6",
+  "Awaiting approval": "#fbbf24",
+  Approved: "#10b981",
+  Declined: "#ef4444",
+  Completed: "#06b6d4",
 };
 
 // ✅ Severity priority map so we can compare statuses consistently
@@ -79,6 +76,68 @@ const OPTIONAL_SECTION_TITLES = {
   externalInspection: "External / Drive-in Inspection",
   internalElectrics: "Internal / Lamps / Electrics",
   underside: "Underside Inspection",
+};
+
+// ✅ Normalise job status strings for consistent comparisons
+const normaliseWorkflowLabel = (value) => (value ? value.toString().trim().toLowerCase() : "");
+
+// ✅ Map raw job/workflow status into the dashboard-friendly buckets
+const deriveVhcDashboardStatus = ({ job = {}, workflow = null, hasChecks = false, partsCount = 0 }) => {
+  const jobStatus = normaliseWorkflowLabel(job.status);
+  const waitingStatus = normaliseWorkflowLabel(job.waitingStatus);
+  const workflowStatus = normaliseWorkflowLabel(workflow?.status);
+  const vhcChecksCount = typeof workflow?.vhcChecksCount === "number" ? workflow.vhcChecksCount : 0;
+  const authorizationCount = typeof workflow?.authorizationCount === "number" ? workflow.authorizationCount : 0;
+  const declinationCount = typeof workflow?.declinationCount === "number" ? workflow.declinationCount : 0;
+  const hasSentTimestamp = Boolean(workflow?.vhcSentAt || workflow?.lastSentAt);
+
+  const statusIncludes = (source, terms = []) => terms.some((term) => source.includes(term));
+
+  if (workflow?.vhcCompletedAt || statusIncludes(workflowStatus, ["vhc complete"]) || statusIncludes(jobStatus, ["vhc complete"]) || jobStatus === "complete") {
+    return "Completed";
+  }
+
+  if (declinationCount > 0 || statusIncludes(workflowStatus, ["declin"]) || statusIncludes(jobStatus, ["declin"])) {
+    return "Declined";
+  }
+
+  if (authorizationCount > 0 || statusIncludes(workflowStatus, ["approv"]) || statusIncludes(jobStatus, ["approv"])) {
+    return "Approved";
+  }
+
+  if (
+    statusIncludes(workflowStatus, ["waiting_for_parts", "waiting for parts"]) ||
+    statusIncludes(jobStatus, ["waiting_for_parts", "waiting for parts"]) ||
+    statusIncludes(waitingStatus, ["waiting for parts", "waiting"])
+  ) {
+    return "Waiting for parts";
+  }
+
+  if (statusIncludes(workflowStatus, ["vhc_sent", "vhc sent", "sent to customer"]) || statusIncludes(jobStatus, ["vhc_sent", "vhc sent", "sent to customer"])) {
+    return "Sent to customer";
+  }
+
+  if (hasSentTimestamp) {
+    return "Awaiting approval";
+  }
+
+  if (statusIncludes(workflowStatus, ["awaiting approval", "awaiting_authorization"]) || statusIncludes(jobStatus, ["awaiting approval", "awaiting_authorization"])) {
+    return "Awaiting approval";
+  }
+
+  if (statusIncludes(workflowStatus, ["vhc"]) || statusIncludes(jobStatus, ["vhc"]) || vhcChecksCount > 0 || hasChecks) {
+    return "In progress";
+  }
+
+  if (job.vhcRequired) {
+    return "VHC not started";
+  }
+
+  if (partsCount > 0) {
+    return "Waiting for parts";
+  }
+
+  return "VHC not started";
 };
 
 // ✅ Normalise an incoming status string to a consistent label
@@ -990,15 +1049,14 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
 // ✅ Status filter tabs used by the dashboard header
 const STATUS_TABS = [
   "All",
-  "Outstanding",
-  "Accepted",
-  "In Progress",
-  "Awaiting Authorization",
-  "Authorized",
-  "Ready",
-  "Carry Over",
-  "Parts Request",
-  "Complete",
+  "VHC not started",
+  "In progress",
+  "Waiting for parts",
+  "Sent to customer",
+  "Awaiting approval",
+  "Approved",
+  "Declined",
+  "Completed",
 ];
 
 // ✅ Main VHC dashboard page component
@@ -1050,6 +1108,12 @@ export default function VHCDashboard() {
         const jobsWithVhc = await Promise.all(
           vhcEligibleJobs.map(async (job) => {
             const checks = await getVhcChecksByJob(job.id); // fetch technician VHC records (note: lowercase 'hc')
+            let workflow = null;
+            try {
+              workflow = await getVhcWorkflowStatus(job.id); // pull workflow snapshot so statuses mirror job card + appointments
+            } catch (workflowError) {
+              console.error("❌ Failed to load VHC workflow status", workflowError);
+            }
 
             const allocationCount = Array.isArray(job.partsAllocations)
               ? job.partsAllocations.length
@@ -1076,24 +1140,12 @@ export default function VHCDashboard() {
               ? checks.length
               : partsCount; // number of cards/sections available for counter display
 
-            let vhcStatus = "Outstanding"; // default dashboard status
-            if (hasBuilderSections) {
-              if (builderSummary.totals.red > 0) {
-                vhcStatus = "In Progress"; // red items need attention
-              } else if (builderSummary.totals.amber > 0) {
-                vhcStatus = "Awaiting Authorization"; // amber items logged
-              } else {
-                vhcStatus = "Complete"; // all technician sections recorded with no amber/red
-              }
-            } else if (partsCount > 0) {
-              vhcStatus = "Parts Request"; // no technician data but parts activity present
-            } else if (legacyRedIssues > 0) {
-              vhcStatus = "In Progress"; // legacy red entries fallback
-            } else if (legacyAmberIssues > 0) {
-              vhcStatus = "Awaiting Authorization"; // legacy amber entries fallback
-            } else if (checks.length > 0) {
-              vhcStatus = "Complete"; // legacy entries exist with no amber/red
-            }
+            const vhcStatus = deriveVhcDashboardStatus({
+              job,
+              workflow,
+              hasChecks: hasBuilderSections || checks.length > 0,
+              partsCount,
+            }); // resolve dashboard status directly from workflow + job fields
 
             const redIssues = hasBuilderSections ? builderSummary.totals.red : legacyRedIssues; // final red count
             const amberIssues = hasBuilderSections ? builderSummary.totals.amber : legacyAmberIssues; // final amber count
@@ -1117,6 +1169,7 @@ export default function VHCDashboard() {
               customer: job.customer,
               makeModel: job.makeModel,
               vhcStatus,
+              workflowStatus: workflow?.status || null,
               vhcSections: hasBuilderSections ? builderSummary.sections : [],
               sectionItemCount,
               redIssues,
