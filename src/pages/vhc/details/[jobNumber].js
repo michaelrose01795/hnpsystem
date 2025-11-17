@@ -144,6 +144,14 @@ const [partsModal, setPartsModal] = useState({ open: false, itemId: null }); // 
 const [partsForm, setPartsForm] = useState(defaultPartsForm); // store modal form fields
 const [partsDrafts, setPartsDrafts] = useState({}); // cache unsaved modal entries by item id
 const [partsSearchResults, setPartsSearchResults] = useState([]); // store search results from parts catalog
+const SECTION_CATEGORY_MAP = {
+  brakes: ["Brakes", "Hubs", "Discs", "Pads"],
+  tyres: ["Tyres", "Wheels"],
+  underside: ["Underside", "Suspension", "Exhaust"],
+  underBonnet: ["Fluid Levels", "Engine", "Under Bonnet"],
+  cosmetics: ["Cosmetics", "Bodywork", "Interior", "Exterior"],
+  electronics: ["Electronics", "Lights", "Electrical"],
+};
 
   // ✅ Fetch VHC details from Supabase (or use dummy data)
   useEffect(() => {
@@ -528,6 +536,20 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
       search: part.part_number,
       customerCost: part.unit_price?.toString() || prev.customerCost,
       costToOrder: part.unit_cost?.toString() || prev.costToOrder,
+    }));
+  };
+
+  const handleItemFieldChange = (itemId, field, value) => {
+    setVhcData((prev) => ({
+      ...prev,
+      vhc_items: prev.vhc_items.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              [field]: value,
+            }
+          : item,
+      ),
     }));
   };
 
@@ -1669,54 +1691,133 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
 
           {/* ========== HEALTH CHECK TAB ========== */}
           {activeTab === "health-check" && (
-            <div style={{
-              background: "white",
-              border: "1px solid #e0e0e0",
-              borderRadius: "16px",
-              padding: "20px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-            }}>
-              <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
-                Vehicle Health Check - Technician View
+            <div
+              style={{
+                background: "white",
+                border: "1px solid #e0e0e0",
+                borderRadius: "16px",
+                padding: "20px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  color: "#1a1a1a",
+                  marginBottom: "4px",
+                }}
+              >
+                Vehicle Health Check – Technician Inputs (editable for managers)
               </h3>
-              <p style={{ fontSize: "14px", color: "#666", marginBottom: "20px" }}>
-                This section will allow technicians to add/edit VHC items with popup modals.
-              </p>
-              {/* TODO: Add popup functionality for editing VHC items */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {vhcData.vhc_items.map(item => (
-                  <div key={item.id} style={{
-                    border: "1px solid #e0e0e0",
-                    borderRadius: "8px",
-                    padding: "12px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    cursor: "pointer"
-                  }}
-                  onClick={() => alert(`Edit popup for: ${item.item} - TODO: Implement modal`)}
-                  >
-                    <div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                        {item.category} - {item.item}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#666" }}>
-                        Status: {item.status} | {item.notes}
-                      </p>
+              <p style={{ fontSize: "13px", color: "#666" }}>Statuses and notes captured by technicians are shown below. Managers can edit fields directly.</p>
+
+              {[
+                { key: "brakes", label: "Brakes" },
+                { key: "tyres", label: "Tyres" },
+                { key: "underside", label: "Underside" },
+                { key: "underBonnet", label: "Under Bonnet" },
+                { key: "cosmetics", label: "Cosmetics" },
+                { key: "electronics", label: "Electronics" },
+              ].map((section) => {
+                const items =
+                  vhcData.vhc_items?.filter((item) =>
+                    SECTION_CATEGORY_MAP[section.key].some((cat) =>
+                      (item.category || "").toLowerCase().includes(cat.toLowerCase()),
+                    ),
+                  ) || [];
+                return (
+                  <div key={section.key} style={{ border: "1px solid #e5e7eb", borderRadius: "12px", padding: "14px", background: "#fafafa" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                      <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#111" }}>{section.label}</h4>
+                      <span style={{ fontSize: "12px", color: "#6b7280" }}>{items.length} items</span>
                     </div>
-                    <div style={{
-                      backgroundColor: STATUS_COLORS[item.status] || "#9ca3af",
-                      color: "white",
-                      padding: "6px 12px",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                      fontWeight: "600"
-                    }}>
-                      {item.status}
-                    </div>
+                    {items.length === 0 ? (
+                      <p style={{ fontSize: "12px", color: "#9ca3af", margin: 0 }}>No items recorded in this section.</p>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {items.map((item) => (
+                          <div
+                            key={item.id}
+                            style={{
+                              border: "1px solid #e5e7eb",
+                              borderRadius: "10px",
+                              padding: "12px",
+                              background: "white",
+                              display: "grid",
+                              gridTemplateColumns: "2fr 1fr 1fr",
+                              gap: "12px",
+                              alignItems: "center",
+                            }}
+                          >
+                            <div>
+                              <p style={{ fontSize: "14px", fontWeight: "700", color: "#111827", marginBottom: "4px" }}>
+                                {item.category} - {item.item}
+                              </p>
+                              <textarea
+                                value={item.notes || ""}
+                                onChange={(e) => handleItemFieldChange(item.id, "notes", e.target.value)}
+                                rows={2}
+                                placeholder="Manager note / technician note"
+                                style={{
+                                  width: "100%",
+                                  border: "1px solid #e5e7eb",
+                                  borderRadius: "8px",
+                                  padding: "8px",
+                                  fontSize: "13px",
+                                  color: "#374151",
+                                }}
+                              />
+                            </div>
+                            <div style={{ textAlign: "center" }}>
+                              <label style={{ fontSize: "12px", color: "#6b7280" }}>Status</label>
+                              <select
+                                value={item.status || "Grey"}
+                                onChange={(e) => handleItemFieldChange(item.id, "status", e.target.value)}
+                                style={{
+                                  width: "100%",
+                                  padding: "8px",
+                                  borderRadius: "8px",
+                                  border: "1px solid #e5e7eb",
+                                  fontSize: "13px",
+                                  marginTop: "4px",
+                                }}
+                              >
+                                {["Red", "Amber", "Green", "Grey"].map((opt) => (
+                                  <option key={opt} value={opt}>
+                                    {opt}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div style={{ textAlign: "center" }}>
+                              <label style={{ fontSize: "12px", color: "#6b7280" }}>Estimated Cost</label>
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                value={item.total_price || 0}
+                                onChange={(e) => handleItemFieldChange(item.id, "total_price", parseFloat(e.target.value) || 0)}
+                                style={{
+                                  width: "100%",
+                                  padding: "8px",
+                                  borderRadius: "8px",
+                                  border: "1px solid #e5e7eb",
+                                  fontSize: "13px",
+                                  marginTop: "4px",
+                                }}
+                              />
+                              <p style={{ fontSize: "11px", color: "#9ca3af", marginTop: "4px" }}>Tech entry remains visible; managers may override.</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           )}
 
