@@ -728,19 +728,6 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
   const nextServiceColor = getNextServiceColor(job.nextService); // determine color for next service pill
   const motColor = getMOTColor(job.motExpiry); // determine color for MOT pill
   const statusColor = STATUS_COLORS[job.vhcStatus] || "#9ca3af"; // pick brand color for status badge
-  const showPartsCounter = partsMode || job.vhcStatus === "Parts Request"; // decide whether counter shows parts or checks
-  const counterValue = showPartsCounter ? job.partsCount || 0 : job.sectionItemCount || 0; // derive counter value
-  const counterLabel = showPartsCounter ? "Parts" : "Checks"; // counter label text
-  const counterBackground = counterValue > 0
-    ? showPartsCounter
-      ? "#fef3c7"
-      : "#e0f2fe"
-    : "#f5f5f5"; // background color for counter pill
-  const counterColor = counterValue > 0
-    ? showPartsCounter
-      ? "#b45309"
-      : "#0369a1"
-    : "#999"; // text color for counter pill
 
   const renderSectionMetrics = (section) => (
     <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
@@ -966,30 +953,6 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
             ) : (
               <span style={{ fontSize: "11px", color: "#ccc" }}>-</span>
             )}
-          </div>
-
-          <div style={{ width: "1px", height: "35px", backgroundColor: "#e5e5e5" }}></div>
-
-          <div style={{ textAlign: "center", minWidth: "80px" }}>
-            <div
-              style={{
-                backgroundColor: counterBackground,
-                color: counterColor,
-                padding: "6px 12px",
-                borderRadius: "8px",
-                fontSize: "13px",
-                fontWeight: "600",
-                display: "flex",
-                flexDirection: "column",
-                gap: "2px",
-                alignItems: "center",
-              }}
-            >
-              <span>{counterValue}</span>
-              <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                {counterLabel}
-              </span>
-            </div>
           </div>
 
           {job.partsCount > 0 && (
@@ -1578,8 +1541,6 @@ export default function VHCDashboard() {
                   <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "90px", textAlign: "center" }}>Last Visit</span>
                   <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "90px", textAlign: "center" }}>Next Service</span>
                   <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "90px", textAlign: "center" }}>MOT</span>
-                  <div style={{ width: "1px" }}></div>
-                  <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "70px", textAlign: "center" }}>Checks</span>
                   <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "70px", textAlign: "center" }}>Red</span>
                   <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "70px", textAlign: "center" }}>Amber</span>
                   <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "70px", textAlign: "center" }}>Grey</span>
