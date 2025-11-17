@@ -218,6 +218,24 @@ const [partsSearchResults, setPartsSearchResults] = useState([]); // store searc
     };
   }, [vhcData?.vhc_items]);
 
+  const approvedSeverityTotals = useMemo(() => {
+    const items = vhcData?.vhc_items || [];
+    const calc = (status) => {
+      const net = items
+        .filter((item) => item.authorized && item.status === status && !item.part_not_required)
+        .reduce((sum, item) => sum + (parseFloat(item.total_price) || 0), 0);
+      const vat = net * VAT_RATE;
+      return {
+        net,
+        gross: net + vat,
+      };
+    };
+    return {
+      red: calc("Red"),
+      amber: calc("Amber"),
+    };
+  }, [vhcData?.vhc_items]);
+
   // ✅ Handle checkbox selection
   const handleSelectItem = (itemId) => {
     setSelectedItems(prev =>
@@ -955,6 +973,18 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
               <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Declined (incl VAT)</p>
               <p style={{ fontSize: "22px", fontWeight: "700", color: "#ef4444" }}>
                 £{formatMoney(vhcData.declined_work)}
+              </p>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Approved Red (incl VAT)</p>
+              <p style={{ fontSize: "20px", fontWeight: "700", color: "#ef4444" }}>
+                £{formatMoney(approvedSeverityTotals.red.gross)}
+              </p>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Approved Amber (incl VAT)</p>
+              <p style={{ fontSize: "20px", fontWeight: "700", color: "#f59e0b" }}>
+                £{formatMoney(approvedSeverityTotals.amber.gross)}
               </p>
             </div>
             <div style={{ textAlign: "center" }}>
