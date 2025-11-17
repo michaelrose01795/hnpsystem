@@ -144,6 +144,8 @@ const [partsModal, setPartsModal] = useState({ open: false, itemId: null }); // 
 const [partsForm, setPartsForm] = useState(defaultPartsForm); // store modal form fields
 const [partsDrafts, setPartsDrafts] = useState({}); // cache unsaved modal entries by item id
 const [partsSearchResults, setPartsSearchResults] = useState([]); // store search results from parts catalog
+const [partsOnOrder, setPartsOnOrder] = useState([]); // live parts on order linked to job
+const [partsOnOrderLoading, setPartsOnOrderLoading] = useState(false); // loading flag for parts on order
 const SECTION_CATEGORY_MAP = {
   brakes: ["Brakes", "Hubs", "Discs", "Pads"],
   tyres: ["Tyres", "Wheels"],
@@ -179,6 +181,70 @@ const SECTION_CATEGORY_MAP = {
 
     fetchVHCDetails(); // call on load
   }, [jobNumber]);
+
+  // ✅ Fetch parts on order / related parts activity for the job
+  useEffect(() => {
+    const fetchPartsOnOrder = async () => {
+      if (!jobNumber) return;
+      setPartsOnOrderLoading(true);
+      try {
+        const { data: jobRow, error: jobError } = await supabase
+          .from("jobs")
+          .select("id")
+          .eq("job_number", jobNumber)
+          .maybeSingle();
+        if (jobError || !jobRow?.id) {
+          setPartsOnOrder(vhcData?.parts_on_order || []);
+          return;
+        }
+
+        const { data: items, error: partsError } = await supabase
+          .from("parts_job_items")
+          .select(
+            `
+              id,
+              part_id,
+              status,
+              quantity_requested,
+              quantity_allocated,
+              quantity_fitted,
+              request_notes,
+              part:part_id(id, part_number, name, unit_price, unit_cost, supplier, qty_in_stock, qty_on_order)
+            `,
+          )
+          .eq("job_id", jobRow.id)
+          .in("status", ["awaiting_stock", "pending", "picked", "allocated"]);
+
+        if (partsError) {
+          console.error("❌ Error fetching parts on order:", partsError);
+          setPartsOnOrder(vhcData?.parts_on_order || []);
+          return;
+        }
+
+        const mapped = (items || []).map((row) => ({
+          id: row.id,
+          status: row.status,
+          quantity: row.quantity_requested,
+          notes: row.request_notes,
+          part: {
+            id: row.part?.id,
+            number: row.part?.part_number,
+            name: row.part?.name,
+            unit_price: row.part?.unit_price,
+            unit_cost: row.part?.unit_cost,
+            supplier: row.part?.supplier,
+            in_stock: row.part?.qty_in_stock,
+            on_order: row.part?.qty_on_order,
+          },
+        }));
+        setPartsOnOrder(mapped);
+      } finally {
+        setPartsOnOrderLoading(false);
+      }
+    };
+
+    fetchPartsOnOrder();
+  }, [jobNumber, vhcData?.parts_on_order]);
 
   // ✅ Recalculate totals when vhcData changes
   useEffect(() => {
@@ -1977,38 +2043,56 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
               <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
                 Parts On Order
               </h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {vhcData.parts_on_order.map(part => (
-                  <div key={part.id} style={{
-                    border: "1px solid #3b82f630",
-                    borderRadius: "8px",
-                    padding: "12px",
-                    backgroundColor: "#3b82f610",
-                    display: "grid",
-                    gridTemplateColumns: "2fr 1fr 1fr 1fr",
-                    gap: "12px",
-                    alignItems: "center"
-                  }}>
-                    <div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                        {part.part_name}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#666" }}>
-                        Part #: {part.part_number}
-                      </p>
-                    </div>
-                    <p style={{ fontSize: "13px", color: "#666" }}>
-                      {part.supplier}
-                    </p>
-                    <p style={{ fontSize: "13px", color: "#666", textAlign: "center" }}>
-                      Order #: {part.order_number}
-                    </p>
-                    <p style={{ fontSize: "13px", fontWeight: "600", textAlign: "center" }}>
-                      Expected: {part.expected_date}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              {partsOnOrderLoading ? (
+                <p style={{ color: "#666", fontSize: "14px" }}>Loading parts on order…</p>
+              ) : partsOnOrder.length === 0 ? (
+                <p style={{ color: "#9ca3af", fontSize: "14px" }}>No parts on order or awaiting stock for this job.</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {partsOnOrder.map((order) => {
+                    const statusLabelMap = {
+                      awaiting_stock: "On Order",
+                      pending: "Waiting Authorisation",
+                      picked: "Pre Picked",
+                      allocated: "In Stock",
+                    };
+                    const statusLabel = statusLabelMap[order.status] || order.status;
+                    return (
+                      <div key={order.id} style={{
+                        border: "1px solid #3b82f630",
+                        borderRadius: "8px",
+                        padding: "12px",
+                        backgroundColor: "#3b82f610",
+                        display: "grid",
+                        gridTemplateColumns: "2fr 1fr 1fr 1fr",
+                        gap: "12px",
+                        alignItems: "center"
+                      }}>
+                        <div>
+                          <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
+                            {order.part?.name || "Part"}
+                          </p>
+                          <p style={{ fontSize: "12px", color: "#666" }}>
+                            Part #: {order.part?.number || "N/A"}
+                          </p>
+                          <p style={{ fontSize: "12px", color: "#666" }}>
+                            Supplier: {order.part?.supplier || "N/A"}
+                          </p>
+                        </div>
+                        <p style={{ fontSize: "13px", color: "#666" }}>
+                          Status: {statusLabel}
+                        </p>
+                        <p style={{ fontSize: "13px", color: "#666", textAlign: "center" }}>
+                          Qty: {order.quantity}
+                        </p>
+                        <p style={{ fontSize: "13px", fontWeight: "600", textAlign: "center" }}>
+                          Stock: {order.part?.in_stock ?? 0} | On Order: {order.part?.on_order ?? 0}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
