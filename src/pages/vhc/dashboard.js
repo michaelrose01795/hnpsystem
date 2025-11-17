@@ -8,6 +8,9 @@ import { useRouter } from "next/router"; // import router hook for navigation
 import { getAllJobs } from "@/lib/database/jobs"; // import Supabase helper to fetch jobs
 import { getVhcChecksByJob, getVhcWorkflowStatus } from "@/lib/database/vhc"; // import Supabase helpers to fetch VHC data and workflow status
 import { useUser } from "@/context/UserContext"; // import context hook to read current user roles
+import { getDatabaseClient } from "@/lib/database/client"; // import shared Supabase client for additional VHC history lookups
+
+const supabase = getDatabaseClient(); // reuse a single Supabase client instance
 
 // ✅ Status color mapping for the headline badge
 const STATUS_COLORS = {
@@ -76,6 +79,17 @@ const OPTIONAL_SECTION_TITLES = {
   externalInspection: "External / Drive-in Inspection",
   internalElectrics: "Internal / Lamps / Electrics",
   underside: "Underside Inspection",
+};
+
+// ✅ Derive human readable text for how long ago a timestamp occurred (in months)
+const formatMonthsAgo = (timestamp) => {
+  if (!timestamp) return null;
+  const then = new Date(timestamp);
+  if (Number.isNaN(then.getTime())) return null;
+  const now = new Date();
+  const diffMonths = Math.max(0, (now - then) / (1000 * 60 * 60 * 24 * 30));
+  const rounded = Math.max(1, Math.round(diffMonths));
+  return `${rounded} month${rounded === 1 ? "" : "s"} ago`;
 };
 
 // ✅ Normalise job status strings for consistent comparisons
@@ -1105,6 +1119,42 @@ export default function VHCDashboard() {
           vhcEligibleJobs.length,
         ); // debug filtered count
 
+        // Build a vehicle registration -> last VHC sent timestamp map using the vhc_send_history table
+        const jobIdToReg = new Map();
+        const allJobIds = [];
+        jobs.forEach((job) => {
+          if (typeof job.id === "number") {
+            allJobIds.push(job.id);
+            if (job.reg) {
+              jobIdToReg.set(job.id, job.reg.toUpperCase());
+            }
+          }
+        });
+
+        let regLastVhcMap = new Map();
+        if (allJobIds.length > 0) {
+          const { data: historyRows, error: historyError } = await supabase
+            .from("vhc_send_history")
+            .select("job_id, sent_at")
+            .in("job_id", allJobIds);
+
+          if (historyError) {
+            console.error("❌ Error loading VHC send history:", historyError);
+          } else {
+            regLastVhcMap = historyRows.reduce((map, row) => {
+              const reg = jobIdToReg.get(row.job_id);
+              if (!reg) return map;
+              const current = map.get(reg);
+              const rowDate = row.sent_at ? new Date(row.sent_at).getTime() : null;
+              if (!rowDate || Number.isNaN(rowDate)) return map;
+              if (!current || rowDate > current) {
+                map.set(reg, rowDate);
+              }
+              return map;
+            }, new Map());
+          }
+        }
+
         const jobsWithVhc = await Promise.all(
           vhcEligibleJobs.map(async (job) => {
             const checks = await getVhcChecksByJob(job.id); // fetch technician VHC records (note: lowercase 'hc')
@@ -1176,7 +1226,13 @@ export default function VHCDashboard() {
               amberIssues,
               partsCount,
               partsValue: partsValue.toFixed(2),
-              lastVisit: job.lastVisit || "First visit",
+              lastVisit: (() => {
+                const regKey = job.reg ? job.reg.toUpperCase() : null;
+                const lastVhcMs = regKey ? regLastVhcMap.get(regKey) : null;
+                if (!lastVhcMs) return "First Visit";
+                const label = formatMonthsAgo(lastVhcMs);
+                return label || "First Visit";
+              })(),
               nextService: job.nextService || "Not scheduled",
               motExpiry: job.motExpiry || null,
               createdAt: job.createdAt,
