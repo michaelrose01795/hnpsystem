@@ -127,8 +127,18 @@ export default function VHCDetails() {
   const [activeTab, setActiveTab] = useState("summary"); // active tab state
   const [selectedItems, setSelectedItems] = useState([]); // selected items for authorization
   const [editingLabor, setEditingLabor] = useState({}); // track which labor fields are being edited
-  const [declineReason, setDeclineReason] = useState(DECLINE_REASON_OPTIONS[0]); // default decline reason dropdown selection
-  const [declineReminderMonths, setDeclineReminderMonths] = useState("3"); // default reminder period in months
+const [declineReason, setDeclineReason] = useState(DECLINE_REASON_OPTIONS[0]); // default decline reason dropdown selection
+const [declineReminderMonths, setDeclineReminderMonths] = useState("3"); // default reminder period in months
+const [partsModal, setPartsModal] = useState({ open: false, itemId: null }); // track active parts modal
+const [partsForm, setPartsForm] = useState({
+  search: "",
+  selectedPart: null,
+  costToOrder: "",
+  customerCost: "",
+  quantity: 1,
+  backOrder: false,
+}); // store modal form fields
+const [partsSearchResults, setPartsSearchResults] = useState([]); // store search results from parts catalog
 
   // ✅ Fetch VHC details from Supabase (or use dummy data)
   useEffect(() => {
@@ -409,6 +419,135 @@ export default function VHCDetails() {
           : sum,
       0
     );
+
+  const handleOpenPartsModal = (item) => {
+    const existing = item.part_selection || {};
+    setPartsForm({
+      search: "",
+      selectedPart: existing.selectedPart || null,
+      costToOrder: existing.costToOrder ? existing.costToOrder.toString() : "",
+      customerCost: existing.customerCost ? existing.customerCost.toString() : "",
+      quantity: existing.quantity || 1,
+      backOrder: !!existing.backOrder,
+    });
+    setPartsModal({ open: true, itemId: item.id });
+  };
+
+  const handleClosePartsModal = () => {
+    setPartsModal({ open: false, itemId: null });
+    setPartsForm({
+      search: "",
+      selectedPart: null,
+      costToOrder: "",
+      customerCost: "",
+      quantity: 1,
+      backOrder: false,
+    });
+    setPartsSearchResults([]);
+  };
+
+  const handlePartsSearch = async (term) => {
+    setPartsForm((prev) => ({ ...prev, search: term }));
+    const queryText = term?.trim();
+    if (!queryText) {
+      setPartsSearchResults([]);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("parts_catalog")
+      .select("id, part_number, name, unit_cost, unit_price, supplier, qty_in_stock, qty_on_order")
+      .or(`part_number.ilike.%${queryText}%,name.ilike.%${queryText}%`)
+      .limit(10);
+
+    if (error) {
+      console.error("❌ Parts search error:", error.message);
+      setPartsSearchResults([]);
+      return;
+    }
+    setPartsSearchResults(data || []);
+  };
+
+  const handleSelectPart = (part) => {
+    setPartsForm((prev) => ({
+      ...prev,
+      selectedPart: part,
+      search: part.part_number,
+      customerCost: part.unit_price?.toString() || prev.customerCost,
+      costToOrder: part.unit_cost?.toString() || prev.costToOrder,
+    }));
+  };
+
+  const updateItemPricing = (item, nextPartsPrice) => {
+    const currentParts = Number.parseFloat(item.parts_price || 0) || 0;
+    const baseOther = Math.max(0, Number.parseFloat(item.total_price || 0) - currentParts);
+    const partsPrice = Number.isFinite(nextPartsPrice) ? nextPartsPrice : 0;
+    const totalPrice = baseOther + partsPrice;
+    return { parts_price: partsPrice.toFixed(2), total_price: totalPrice.toFixed(2) };
+  };
+
+  const handleSavePartsSelection = () => {
+    if (!partsModal.itemId) return;
+    const qty = Math.max(1, parseInt(partsForm.quantity, 10) || 1);
+    const customerCost = Number.parseFloat(partsForm.customerCost || 0) || 0;
+    const costToOrder = Number.parseFloat(partsForm.costToOrder || 0) || 0;
+    const partsPrice = customerCost * qty;
+
+    setVhcData((prev) => ({
+      ...prev,
+      vhc_items: prev.vhc_items.map((item) => {
+        if (item.id !== partsModal.itemId) return item;
+        const prc = updateItemPricing(item, partsPrice);
+        return {
+          ...item,
+          ...prc,
+          part_selection: {
+            selectedPart: partsForm.selectedPart,
+            costToOrder,
+            customerCost,
+            quantity: qty,
+            backOrder: partsForm.backOrder,
+          },
+          part_not_required: false,
+        };
+      }),
+    }));
+    handleClosePartsModal();
+  };
+
+  const handleClearPartsSelection = () => {
+    if (!partsModal.itemId) return;
+    setVhcData((prev) => ({
+      ...prev,
+      vhc_items: prev.vhc_items.map((item) => {
+        if (item.id !== partsModal.itemId) return item;
+        const prc = updateItemPricing(item, 0);
+        return {
+          ...item,
+          ...prc,
+          part_selection: null,
+        };
+      }),
+    }));
+    handleClosePartsModal();
+  };
+
+  const handlePartsNotRequired = () => {
+    if (!partsModal.itemId) return;
+    setVhcData((prev) => ({
+      ...prev,
+      vhc_items: prev.vhc_items.map((item) => {
+        if (item.id !== partsModal.itemId) return item;
+        const prc = updateItemPricing(item, 0);
+        return {
+          ...item,
+          ...prc,
+          part_selection: null,
+          part_not_required: true,
+        };
+      }),
+    }));
+    handleClosePartsModal();
+  };
 
   // ✅ Shared layout for decline reason dropdowns and bulk action buttons
   const renderBulkActionControls = (items = []) => {
@@ -1462,53 +1601,68 @@ export default function VHCDetails() {
               boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
             }}>
               <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
-                Parts Identified
+                Parts Needed
               </h3>
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "12px" }}>
+                Select a VHC item to search stock, price parts, and push the figures into the summary.
+              </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {vhcData.parts_identified.map(part => (
-                  <div key={part.id} style={{
-                    border: "1px solid #e0e0e0",
-                    borderRadius: "8px",
-                    padding: "12px",
-                    display: "grid",
-                    gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr",
-                    gap: "12px",
-                    alignItems: "center"
-                  }}>
-                    <div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                        {part.part_name}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#666" }}>
-                        Part #: {part.part_number}
-                      </p>
-                    </div>
-                    <p style={{ fontSize: "13px", color: "#666" }}>
-                      {part.supplier}
-                    </p>
-                    <p style={{ fontSize: "14px", fontWeight: "600", textAlign: "center" }}>
-                      £{part.price}
-                    </p>
-                    <p style={{ fontSize: "13px", textAlign: "center" }}>
-                      Qty: {part.quantity}
-                    </p>
-                    <button
-                      style={{
-                        padding: "6px 12px",
-                        backgroundColor: "#d10000",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        fontWeight: "600"
-                      }}
-                      onClick={() => alert(`Order part: ${part.part_name} - TODO: Implement ordering`)}
-                    >
-                      Order
-                    </button>
-                  </div>
-                ))}
+                {vhcData.vhc_items
+                  .filter(item => (item.status === "Red" || item.status === "Amber") && !item.declined && !item.part_not_required)
+                  .map(item => {
+                    const selection = item.part_selection;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleOpenPartsModal(item)}
+                        style={{
+                          border: "1px solid #e0e0e0",
+                          borderRadius: "10px",
+                          padding: "12px",
+                          textAlign: "left",
+                          display: "grid",
+                          gridTemplateColumns: "2fr 1fr 1fr",
+                          gap: "12px",
+                          alignItems: "center",
+                          background: "white",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                            <span style={{
+                              backgroundColor: STATUS_COLORS[item.status] || "#9ca3af",
+                              color: "white",
+                              padding: "2px 8px",
+                              borderRadius: "6px",
+                              fontSize: "11px",
+                              fontWeight: "700"
+                            }}>
+                              {item.status}
+                            </span>
+                            <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
+                              {item.category} - {item.item}
+                            </p>
+                          </div>
+                          <p style={{ fontSize: "12px", color: "#666" }}>{item.notes}</p>
+                        </div>
+                        <div style={{ fontSize: "13px", color: "#555" }}>
+                          {selection?.selectedPart ? (
+                            <>
+                              <div><strong>Part:</strong> {selection.selectedPart.part_number}</div>
+                              <div><strong>Qty:</strong> {selection.quantity}</div>
+                            </>
+                          ) : (
+                            <span style={{ color: "#d10000", fontWeight: "600" }}>Select part</span>
+                          )}
+                        </div>
+                        <div style={{ textAlign: "right", fontSize: "13px", color: "#444" }}>
+                          <div><strong>Cost:</strong> £{selection?.customerCost ? (selection.customerCost * (selection.quantity || 1)).toFixed(2) : "0.00"}</div>
+                          <div><strong>Back Order:</strong> {selection?.backOrder ? "Yes" : "No"}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
               </div>
             </div>
           )}
@@ -1762,6 +1916,236 @@ export default function VHCDetails() {
             </div>
           )}
         </div>
+
+        {/* Parts Modal */}
+        {partsModal.open && vhcData?.vhc_items && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0,0,0,0.45)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 9999,
+              padding: "20px",
+            }}
+            onClick={handleClosePartsModal}
+          >
+            <div
+              style={{
+                background: "white",
+                borderRadius: "12px",
+                padding: "20px",
+                width: "520px",
+                maxHeight: "90vh",
+                overflowY: "auto",
+                border: "1px solid #e5e7eb",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {(() => {
+                const item = vhcData.vhc_items.find((entry) => entry.id === partsModal.itemId);
+                if (!item) return null;
+                return (
+                  <>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                      <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#111" }}>
+                        Parts for {item.category} - {item.item}
+                      </h3>
+                      <button
+                        onClick={handleClosePartsModal}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          fontSize: "16px",
+                          cursor: "pointer",
+                          color: "#666",
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div>
+                        <label style={{ fontSize: "12px", fontWeight: "600", color: "#444" }}>Search part number or name</label>
+                        <input
+                          type="text"
+                          value={partsForm.search}
+                          onChange={(e) => handlePartsSearch(e.target.value)}
+                          placeholder="Type to search parts catalog"
+                          style={{
+                            width: "100%",
+                            padding: "10px",
+                            borderRadius: "8px",
+                            border: "1px solid #e5e5e5",
+                            marginTop: "6px",
+                          }}
+                        />
+                        {partsSearchResults.length > 0 && (
+                          <div style={{ marginTop: "8px", border: "1px solid #e5e5e5", borderRadius: "8px", maxHeight: "160px", overflowY: "auto" }}>
+                            {partsSearchResults.map((part) => (
+                              <button
+                                key={part.id}
+                                onClick={() => handleSelectPart(part)}
+                                style={{
+                                  display: "flex",
+                                  width: "100%",
+                                  padding: "10px",
+                                  border: "none",
+                                  borderBottom: "1px solid #f0f0f0",
+                                  background: partsForm.selectedPart?.id === part.id ? "#fef2f2" : "white",
+                                  textAlign: "left",
+                                  cursor: "pointer",
+                                  gap: "8px",
+                                }}
+                              >
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontWeight: "700", fontSize: "13px" }}>{part.part_number}</div>
+                                  <div style={{ fontSize: "12px", color: "#555" }}>{part.name}</div>
+                                </div>
+                                <div style={{ fontSize: "12px", color: "#444" }}>
+                                  <div>Cost: £{part.unit_cost ?? "0.00"}</div>
+                                  <div>Sell: £{part.unit_price ?? "0.00"}</div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {partsForm.selectedPart && (
+                        <div style={{ padding: "10px", borderRadius: "8px", background: "#f9fafb", border: "1px solid #e5e7eb" }}>
+                          <div style={{ fontSize: "13px", fontWeight: "700" }}>
+                            Selected: {partsForm.selectedPart.part_number} — {partsForm.selectedPart.name}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#555" }}>
+                            Supplier: {partsForm.selectedPart.supplier || "N/A"} | In stock: {partsForm.selectedPart.qty_in_stock ?? 0} | On order: {partsForm.selectedPart.qty_on_order ?? 0}
+                          </div>
+                        </div>
+                      )}
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                        <div>
+                          <label style={{ fontSize: "12px", fontWeight: "600", color: "#444" }}>Cost to order</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={partsForm.costToOrder}
+                            onChange={(e) => setPartsForm((prev) => ({ ...prev, costToOrder: e.target.value }))}
+                            placeholder="0.00"
+                            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e5e5e5", marginTop: "6px" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: "12px", fontWeight: "600", color: "#444" }}>Customer cost</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={partsForm.customerCost}
+                            onChange={(e) => setPartsForm((prev) => ({ ...prev, customerCost: e.target.value }))}
+                            placeholder="0.00"
+                            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e5e5e5", marginTop: "6px" }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", alignItems: "center" }}>
+                        <div>
+                          <label style={{ fontSize: "12px", fontWeight: "600", color: "#444" }}>Quantity</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={partsForm.quantity}
+                            onChange={(e) => setPartsForm((prev) => ({ ...prev, quantity: e.target.value }))}
+                            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e5e5e5", marginTop: "6px" }}
+                          />
+                        </div>
+                        <label style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "18px", fontSize: "13px", color: "#444" }}>
+                          <input
+                            type="checkbox"
+                            checked={partsForm.backOrder}
+                            onChange={(e) => setPartsForm((prev) => ({ ...prev, backOrder: e.target.checked }))}
+                          />
+                          Back order this part
+                        </label>
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px", gap: "8px", flexWrap: "wrap" }}>
+                        <button
+                          onClick={handleSavePartsSelection}
+                          style={{
+                            flex: 1,
+                            padding: "10px 16px",
+                            backgroundColor: "#d10000",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "8px",
+                            fontWeight: "700",
+                            cursor: "pointer",
+                            minWidth: "120px",
+                          }}
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleClearPartsSelection}
+                          style={{
+                            flex: 1,
+                            padding: "10px 16px",
+                            backgroundColor: "#f3f4f6",
+                            color: "#1f2937",
+                            border: "1px solid #e5e7eb",
+                            borderRadius: "8px",
+                            fontWeight: "700",
+                            cursor: "pointer",
+                            minWidth: "120px",
+                          }}
+                        >
+                          Clear
+                        </button>
+                        <button
+                          onClick={handlePartsNotRequired}
+                          style={{
+                            flex: 1,
+                            padding: "10px 16px",
+                            backgroundColor: "#fef3c7",
+                            color: "#92400e",
+                            border: "1px solid #fcd34d",
+                            borderRadius: "8px",
+                            fontWeight: "700",
+                            cursor: "pointer",
+                            minWidth: "160px",
+                          }}
+                        >
+                          Parts Not Required
+                        </button>
+                        <button
+                          onClick={handleClosePartsModal}
+                          style={{
+                            flex: 1,
+                            padding: "10px 16px",
+                            backgroundColor: "white",
+                            color: "#374151",
+                            border: "1px solid #e5e7eb",
+                            borderRadius: "8px",
+                            fontWeight: "700",
+                            cursor: "pointer",
+                            minWidth: "120px",
+                          }}
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );
