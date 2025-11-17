@@ -9,6 +9,8 @@ import { useRouter } from "next/router"; // for getting URL params and navigatio
 import { supabase } from "@/lib/supabaseClient"; // import Supabase client
 import Layout from "@/components/Layout"; // import layout wrapper
 import { useMemo } from "react";
+import { updateJob } from "@/lib/database/jobs";
+import { logVhcSendEvent } from "@/lib/database/vhc";
 import { useMemo } from "react";
 
 // ✅ Status color mapping (same as dashboard)
@@ -132,6 +134,7 @@ export default function VHCDetails() {
   const [activeTab, setActiveTab] = useState("summary"); // active tab state
   const [selectedItems, setSelectedItems] = useState([]); // selected items for authorization
   const [editingLabor, setEditingLabor] = useState({}); // track which labor fields are being edited
+  const [followUpPopup, setFollowUpPopup] = useState(false); // show follow-up call popup after send
 const [declineReason, setDeclineReason] = useState(DECLINE_REASON_OPTIONS[0]); // default decline reason dropdown selection
 const [declineReminderMonths, setDeclineReminderMonths] = useState("3"); // default reminder period in months
 const defaultPartsForm = {
@@ -485,7 +488,7 @@ const SECTION_CATEGORY_MAP = {
   };
 
   // ✅ Handle send VHC button
-  const handleSendVHC = () => {
+  const handleSendVHC = async () => {
     // Check if all items have labor and parts
     const allItemsComplete = vhcData.vhc_items
       .filter(item => item.status === "Red" || item.status === "Amber")
@@ -496,9 +499,55 @@ const SECTION_CATEGORY_MAP = {
       return;
     }
 
-    // Update status to "Sent"
-    setVhcData(prev => ({ ...prev, status: "Sent" }));
-    alert("VHC sent to customer!"); // TODO: Replace with proper notification and email system
+    const jobId = vhcData.job_id || vhcData.jobId || vhcData.job?.id;
+    if (!jobId) {
+      alert("Unable to determine job link; please verify job record before sending.");
+      return;
+    }
+
+    const sendTime = new Date().toISOString();
+    try {
+      await updateJob(jobId, {
+        status: "Sent",
+        status_updated_at: sendTime,
+        status_updated_by: "VHC_SEND",
+        vhc_sent_at: sendTime,
+      });
+
+      await logVhcSendEvent({
+        jobId,
+        sentBy: "SYSTEM_VHC",
+        customerEmail: vhcData.customer_email || null,
+        sendMethod: "email",
+      });
+
+      const portalLink = `${window.location.origin}/vhc/details/${jobNumber}?view=customer`;
+      await supabase
+        .from("vhc_send_history")
+        .insert([
+          {
+            job_id: jobId,
+            sent_by: "SYSTEM_VHC",
+            send_method: "portal",
+            customer_email: vhcData.customer_email || null,
+            created_at: sendTime,
+            sent_at: sendTime,
+          },
+        ]);
+
+      window.open(`mailto:${vhcData.customer_email || ""}?subject=Your+Vehicle+Health+Check&body=Your VHC is ready: ${portalLink}`, "_blank");
+
+      setVhcData(prev => ({
+        ...prev,
+        status: "Sent",
+        vhc_sent_at: sendTime,
+      }));
+      setFollowUpPopup(true);
+      alert("VHC sent to customer!"); // confirm
+    } catch (error) {
+      console.error("❌ Failed to send VHC:", error);
+      alert("Failed to send VHC. Please try again.");
+    }
   };
 
   // ✅ Toggle send to customer for photos/videos
@@ -2567,6 +2616,73 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
                   </>
                 );
               })()}
+            </div>
+          </div>
+        )}
+        {followUpPopup && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0,0,0,0.35)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 9999,
+              padding: "20px",
+            }}
+          >
+            <div
+              style={{
+                width: "100%",
+                maxWidth: "420px",
+                background: "white",
+                borderRadius: "16px",
+                padding: "24px",
+                boxShadow: "0 16px 40px rgba(0,0,0,0.25)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: "20px", fontWeight: "700" }}>Follow-up call</h3>
+              <p style={{ margin: 0, fontSize: "14px", color: "#374151" }}>
+                Customer phone: <strong>{vhcData.customer_phone || "Not provided"}</strong>
+              </p>
+              <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>
+                Thank them for reviewing the VHC, confirm expectations, and discuss next steps.
+              </p>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <a
+                  href={`tel:${vhcData.customer_phone || ""}`}
+                  style={{
+                    flex: 1,
+                    textAlign: "center",
+                    padding: "10px 14px",
+                    background: "#10b981",
+                    color: "white",
+                    borderRadius: "10px",
+                    fontWeight: "700",
+                    textDecoration: "none",
+                  }}
+                >
+                  Call Customer
+                </a>
+                <button
+                  onClick={() => setFollowUpPopup(false)}
+                  style={{
+                    flex: 1,
+                    padding: "10px 14px",
+                    borderRadius: "10px",
+                    border: "1px solid #e5e7eb",
+                    background: "white",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                  }}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}
