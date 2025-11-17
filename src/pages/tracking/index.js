@@ -3,15 +3,15 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
-import { initialTrackingEntries } from "@/lib/tracking/mockEntries";
+import { useUser } from "@/context/UserContext";
 import { buildApiUrl } from "@/utils/apiClient";
+import { fetchTrackingSnapshot } from "@/lib/database/tracking";
+import { supabaseClient } from "@/lib/supabaseClient";
 
 const CAR_LOCATIONS = [
-  { id: "front-a", label: "Front Row – Bay A" },
-  { id: "front-b", label: "Front Row – Bay B" },
-  { id: "valet-1", label: "Valet Lane" },
-  { id: "overflow-west", label: "Overflow – West Fence" },
-  { id: "handover-suite", label: "Handover Suite" },
+  { id: "service-side", label: "Service side" },
+  { id: "sales-side", label: "Sales side" },
+  { id: "staff-parking", label: "Staff parking" },
 ];
 
 const KEY_LOCATIONS = [
@@ -31,7 +31,6 @@ const STATUS_COLORS = {
   "In Transit": "#6366f1",
 };
 
-const SNAPSHOT_ENDPOINT = "/api/tracking/snapshot";
 const NEXT_ACTION_ENDPOINT = "/api/tracking/next-action";
 
 const emptyForm = {
@@ -233,7 +232,8 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    onSave(form);
+    const actionType = context === "car" ? "job_checked_in" : "job_complete";
+    onSave({ ...form, actionType, context });
   };
 
   return (
@@ -424,55 +424,29 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
 };
 
 export default function TrackingDashboard() {
-  const [entries, setEntries] = useState(initialTrackingEntries);
+  const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [searchModal, setSearchModal] = useState({ open: false, type: null });
   const [entryModal, setEntryModal] = useState({ open: false, type: null, entry: null });
+  const { dbUserId } = useUser();
 
   const loadEntries = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(buildApiUrl(SNAPSHOT_ENDPOINT), {
-        headers: { Accept: "application/json" },
-      });
-      if (!response.ok) {
-        const errorPayload = await response.json().catch(() => ({ message: "Failed to load tracking data" }));
-        throw new Error(errorPayload?.message || "Failed to load tracking data");
+      const snapshot = await fetchTrackingSnapshot();
+      if (!snapshot.success) {
+        throw new Error(snapshot.error?.message || "Failed to load tracking data");
       }
-      const payload = await response.json().catch(() => ({ data: [] }));
-      const data = Array.isArray(payload.data) ? payload.data : [];
-      const normalised = data.length > 0
-        ? data.map((entry, index) => ({
-            id: entry.jobId || entry.jobNumber || entry.vehicleReg || `snapshot-${index}`,
-            jobNumber: entry.jobNumber || "Unknown",
-            reg: entry.vehicleReg || entry.reg || "",
-            customer: entry.customer || "Customer Pending",
-            serviceType: entry.serviceType || "Service",
-            status: entry.status || "In Progress",
-            vehicleLocation: entry.vehicleLocation || "Awaiting Allocation",
-            keyLocation: entry.keyLocation || "Key safe pending",
-            keyTip: entry.keyNotes || entry.notes || "",
-            notes: entry.notes || entry.keyNotes || "",
-            updatedAt: entry.updatedAt || new Date().toISOString(),
-            parkedBy: entry.parkedBy || "System",
-            parkedAt:
-              entry.parkedAt ||
-              new Date(entry.updatedAt || Date.now()).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
-          }))
-        : initialTrackingEntries;
-      setEntries(normalised);
+      const normalized = Array.isArray(snapshot.data) ? snapshot.data : [];
+      setEntries(normalized);
       setLastUpdated(new Date().toISOString());
     } catch (fetchError) {
       console.error("Failed to fetch tracking snapshot", fetchError);
-      setEntries((current) => (Array.isArray(current) && current.length > 0 ? current : initialTrackingEntries));
-      const networkMessage =
-        fetchError?.message && fetchError.message.toLowerCase().includes("fetch failed")
-          ? "Unable to reach the tracking API. Ensure the Next.js server (or external API base) is running."
-          : null;
-      setError(networkMessage || fetchError?.message || "Unable to load tracking data");
+      setEntries([]);
+      setError(fetchError?.message || "Unable to load tracking data");
     } finally {
       setLoading(false);
     }
@@ -502,16 +476,48 @@ export default function TrackingDashboard() {
   const handleSave = async (form) => {
     try {
       setError(null);
+      const jobNumberQuery = form.jobNumber ? form.jobNumber.trim() : "";
+      const regQuery = form.reg ? form.reg.trim() : "";
+      let resolvedJob = null;
+
+      if (!form.jobId && jobNumberQuery) {
+        const { data: jobMatches, error: jobLookupError } = await supabaseClient
+          .from("jobs")
+          .select("id, vehicle_id")
+          .ilike("job_number", jobNumberQuery)
+          .limit(1);
+
+        if (jobLookupError) {
+          console.warn("Job lookup failed", jobLookupError);
+        } else {
+          resolvedJob = jobMatches?.[0] || null;
+        }
+      }
+
+      if (!resolvedJob && !form.vehicleId && regQuery) {
+        const { data: regMatches, error: regLookupError } = await supabaseClient
+          .from("jobs")
+          .select("id, vehicle_id")
+          .ilike("vehicle_reg", regQuery)
+          .limit(1);
+
+        if (regLookupError) {
+          console.warn("Vehicle lookup failed", regLookupError);
+        } else {
+          resolvedJob = regMatches?.[0] || null;
+        }
+      }
+
       const payload = {
-        actionType: "job_complete",
-        jobId: form.jobId || null,
-        jobNumber: form.jobNumber ? form.jobNumber.trim().toUpperCase() : "",
-        vehicleId: form.vehicleId || null,
-        vehicleReg: form.reg ? form.reg.trim().toUpperCase() : "",
+        actionType: form.actionType || "job_complete",
+        jobId: form.jobId || resolvedJob?.id || null,
+        jobNumber: jobNumberQuery ? jobNumberQuery.toUpperCase() : "",
+        vehicleId: form.vehicleId || resolvedJob?.vehicle_id || null,
+        vehicleReg: regQuery ? regQuery.toUpperCase() : "",
         keyLocation: form.keyLocation,
         vehicleLocation: form.vehicleLocation,
         notes: form.notes,
-        performedBy: null,
+        performedBy: dbUserId || null,
       };
 
       const response = await fetch(buildApiUrl(NEXT_ACTION_ENDPOINT), {
