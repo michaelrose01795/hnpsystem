@@ -9,6 +9,7 @@ import { useRouter } from "next/router"; // for getting URL params and navigatio
 import { supabase } from "@/lib/supabaseClient"; // import Supabase client
 import Layout from "@/components/Layout"; // import layout wrapper
 import { useMemo } from "react";
+import { useMemo } from "react";
 
 // ✅ Status color mapping (same as dashboard)
 const STATUS_COLORS = {
@@ -125,6 +126,7 @@ const generateDummyVHCDetail = (jobNumber) => {
 export default function VHCDetails() {
   const router = useRouter(); // router for navigation and params
   const { jobNumber } = router.query; // get job number from URL
+  const isCustomerView = router.query?.view === "customer";
   const [vhcData, setVhcData] = useState(null); // VHC job data
   const [loading, setLoading] = useState(true); // loading state
   const [activeTab, setActiveTab] = useState("summary"); // active tab state
@@ -309,6 +311,11 @@ const SECTION_CATEGORY_MAP = {
       amber: calc("Amber"),
     };
   }, [vhcData?.vhc_items]);
+
+  const customerViewItems = useMemo(
+    () => (vhcData?.vhc_items || []).filter((item) => (item.status === "Red" || item.status === "Amber") && !item.part_not_required),
+    [vhcData?.vhc_items],
+  );
 
   // ✅ Handle checkbox selection
   const handleSelectItem = (itemId) => {
@@ -869,6 +876,91 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
     );
   }
 
+  if (isCustomerView) {
+    const customerTotals = calculateTotals(customerViewItems);
+    return (
+      <Layout>
+        <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700" }}>Customer View • Job {jobNumber}</h2>
+            <Link href={`/vhc/details/${jobNumber}`}>
+              <span style={{ color: "#d10000", fontWeight: "700", cursor: "pointer" }}>Back to staff view</span>
+            </Link>
+          </div>
+
+          <div style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "14px" }}>
+            <h3 style={{ marginTop: 0, fontSize: "16px", fontWeight: "700" }}>Red & Amber Items</h3>
+            {customerViewItems.length === 0 ? (
+              <p style={{ color: "#9ca3af", fontSize: "14px" }}>No red or amber items to show.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {customerViewItems.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "10px",
+                      padding: "12px",
+                      display: "grid",
+                      gridTemplateColumns: "2fr 1fr 1fr 1fr",
+                      gap: "10px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                        <span
+                          style={{
+                            backgroundColor: item.status === "Red" ? "#ef4444" : "#fbbf24",
+                            color: "white",
+                            padding: "2px 8px",
+                            borderRadius: "6px",
+                            fontSize: "11px",
+                            fontWeight: "700",
+                          }}
+                        >
+                          {item.status}
+                        </span>
+                        <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>
+                          {item.category} - {item.item}
+                        </p>
+                      </div>
+                      <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>{item.notes}</p>
+                    </div>
+                    <div style={{ textAlign: "center", fontSize: "13px", color: "#374151" }}>
+                      <div><strong>Parts:</strong> £{formatMoney(item.parts_price)}</div>
+                      <div><strong>Labour:</strong> {item.labor_hours || 0}h</div>
+                    </div>
+                    <div style={{ textAlign: "center", fontSize: "13px", color: "#374151" }}>
+                      <div><strong>Total:</strong> £{formatMoney(item.total_price)}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+                      <button style={{ padding: "8px 12px", background: "#10b981", color: "white", border: "none", borderRadius: "8px", fontWeight: "700", cursor: "pointer" }}>
+                        Accept
+                      </button>
+                      <button style={{ padding: "8px 12px", background: "#ef4444", color: "white", border: "none", borderRadius: "8px", fontWeight: "700", cursor: "pointer" }}>
+                        Decline
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "14px" }}>
+            <h4 style={{ marginTop: 0, fontSize: "15px", fontWeight: "700", color: "#111827" }}>Totals</h4>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", fontSize: "13px", color: "#374151" }}>
+              <div><strong>Net:</strong> £{formatMoney(customerTotals.net)}</div>
+              <div><strong>VAT:</strong> £{formatMoney(customerTotals.vat)}</div>
+              <div><strong>Gross:</strong> £{formatMoney(customerTotals.gross)}</div>
+              <div><strong>Items:</strong> {customerViewItems.length}</div>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
   const statusColor = STATUS_COLORS[vhcData.status] || "#9ca3af";
 
   // Filter items by status (excluding authorized and declined for red/amber sections)
@@ -1022,9 +1114,27 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          gap: "12px",
           marginBottom: "16px",
-          flexShrink: 0
+          flexShrink: 0,
+          flexWrap: "wrap"
         }}>
+          {!isCustomerView && (
+            <button
+              onClick={() => window.open(`/vhc/details/${jobNumber}?view=customer`, "_blank")}
+              style={{
+                padding: "10px 14px",
+                backgroundColor: "#f3f4f6",
+                color: "#d10000",
+                border: "1px solid #e5e7eb",
+                borderRadius: "10px",
+                cursor: "pointer",
+                fontWeight: "700"
+              }}
+            >
+              View As Customer
+            </button>
+          )}
           {/* Left - VHC Status Badge */}
           <div style={{
             backgroundColor: statusColor,
