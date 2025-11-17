@@ -135,6 +135,7 @@ export default function VHCDetails() {
   const [followUpPopup, setFollowUpPopup] = useState(false); // show follow-up call popup after send
 const [declineReason, setDeclineReason] = useState(DECLINE_REASON_OPTIONS[0]); // default decline reason dropdown selection
 const [declineReminderMonths, setDeclineReminderMonths] = useState("3"); // default reminder period in months
+const PART_STORAGE_OPTIONS = ["Pre Pick", "Auto Pick", "Service Rack 1", "Service Rack 2"];
 const defaultPartsForm = {
   search: "",
   selectedPart: null,
@@ -142,6 +143,7 @@ const defaultPartsForm = {
   customerCost: "",
   quantity: 1,
   backOrder: false,
+  location: PART_STORAGE_OPTIONS[0],
 }; // default modal form
 const [partsModal, setPartsModal] = useState({ open: false, itemId: null }); // track active parts modal
 const [partsForm, setPartsForm] = useState(defaultPartsForm); // store modal form fields
@@ -212,6 +214,7 @@ const SECTION_CATEGORY_MAP = {
               quantity_allocated,
               quantity_fitted,
               request_notes,
+              storage_location,
               part:part_id(id, part_number, name, unit_price, unit_cost, supplier, qty_in_stock, qty_on_order)
             `,
           )
@@ -603,6 +606,7 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
       customerCost: draft?.customerCost !== undefined ? draft.customerCost : existing.customerCost ? existing.customerCost.toString() : "",
       quantity: draft?.quantity !== undefined ? draft.quantity : existing.quantity || 1,
       backOrder: draft?.backOrder !== undefined ? draft.backOrder : !!existing.backOrder,
+      location: draft?.location || existing.location || defaultPartsForm.location,
     });
     setPartsModal({ open: true, itemId: item.id });
   };
@@ -696,13 +700,14 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
         return {
           ...item,
           ...prc,
-          part_selection: {
-            selectedPart: partsForm.selectedPart,
-            costToOrder,
-            customerCost,
-            quantity: qty,
-            backOrder: partsForm.backOrder,
-          },
+        part_selection: {
+          selectedPart: partsForm.selectedPart,
+          costToOrder,
+          customerCost,
+          quantity: qty,
+          backOrder: partsForm.backOrder,
+          location: partsForm.location || defaultPartsForm.location,
+        },
           part_not_required: false,
         };
       }),
@@ -802,8 +807,10 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
       if (approve && item.part_selection?.selectedPart?.id) {
         const part = item.part_selection.selectedPart;
         const qty = item.part_selection.quantity || 1;
+        const inStock = part.in_stock || 0;
+        const location = item.part_selection?.location || PART_STORAGE_OPTIONS[0];
         const status =
-          (part.in_stock || 0) >= qty && part.in_stock !== null ? "picked" : "awaiting_stock";
+          inStock >= qty && typeof inStock === "number" ? "picked" : "awaiting_stock";
         await supabase.from("parts_job_items").insert([
           {
             job_id: jobId,
@@ -811,7 +818,7 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
             quantity_requested: qty,
             status,
             origin: "vhc",
-            storage_location: status === "picked" ? "Pre Pick" : null,
+            storage_location: location,
             request_notes: "Auto-generated from VHC approval",
             unit_cost: part.unit_cost || 0,
             unit_price: part.unit_price || 0,
@@ -2163,6 +2170,7 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
                             <>
                               <div><strong>Part:</strong> {selection.selectedPart.part_number}</div>
                               <div><strong>Qty:</strong> {selection.quantity}</div>
+                              <div><strong>Location:</strong> {selection.location || "Auto Pick"}</div>
                             </>
                           ) : (
                             <span style={{ color: "#d10000", fontWeight: "600" }}>Select part</span>
@@ -2303,6 +2311,9 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
                         </p>
                         <p style={{ fontSize: "13px", fontWeight: "600", textAlign: "center" }}>
                           Stock: {order.part?.in_stock ?? 0} | On Order: {order.part?.on_order ?? 0}
+                        </p>
+                        <p style={{ fontSize: "12px", color: "#1f2937" }}>
+                          Location: {order.storage_location || "Auto Pick"}
                         </p>
                       </div>
                     );
@@ -2601,6 +2612,20 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
                           />
                           Back order this part
                         </label>
+                      </div>
+
+                      <div style={{ marginTop: "10px" }}>
+                        <label style={{ fontSize: "12px", fontWeight: "600", color: "#444" }}>Storage location</label>
+                        <select
+                          value={partsForm.location}
+                          onChange={(e) => setPartsForm((prev) => ({ ...prev, location: e.target.value }))}
+                          style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e5e5e5", marginTop: "6px" }}
+                        >
+                          {PART_STORAGE_OPTIONS.map((option) => (
+                            <option key={option} value={option}>{option}</option>
+                          ))}
+                        </select>
+                        <p style={{ fontSize: "10px", color: "#9ca3af", marginTop: "6px" }}>Default is auto-pick when parts are approved.</p>
                       </div>
 
                       <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px", gap: "8px", flexWrap: "wrap" }}>
