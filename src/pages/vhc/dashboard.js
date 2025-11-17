@@ -955,30 +955,6 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
             )}
           </div>
 
-          {job.partsCount > 0 && (
-            <div style={{ textAlign: "center", minWidth: "80px" }}>
-              <span
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "#b45309",
-                }}
-              >
-                £{job.partsValue || "0.00"}
-              </span>
-              <div
-                style={{
-                  fontSize: "10px",
-                  color: "#b45309",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                Parts
-              </div>
-            </div>
-          )}
-
           <div
             style={{ textAlign: "center", minWidth: "70px", cursor: "pointer" }}
             onClick={(e) => {
@@ -1031,51 +1007,29 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
             </div>
           </div>
 
-          <div
-            style={{ textAlign: "center", minWidth: "70px", cursor: "pointer" }}
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/vhc/${job.jobNumber}`);
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: "rgba(107,114,128,0.12)",
-                color: "#374151",
-                padding: "6px 12px",
-                borderRadius: "8px",
-                fontSize: "13px",
-                fontWeight: "600",
-                display: "flex",
-                flexDirection: "column",
-                gap: "2px",
-                alignItems: "center",
-              }}
-            >
-              <span>{job.greyIssues || 0}</span>
-              <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Grey</span>
+          {job.partsCount > 0 && (
+            <div style={{ textAlign: "center", minWidth: "80px" }}>
+              <span
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#b45309",
+                }}
+              >
+                £{job.partsValue || "0.00"}
+              </span>
+              <div
+                style={{
+                  fontSize: "10px",
+                  color: "#b45309",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                Parts
+              </div>
             </div>
-          </div>
-
-          <div style={{ width: "1px", height: "35px", backgroundColor: "#e5e5e5" }}></div>
-
-          <div
-            style={{
-              textAlign: "center",
-              minWidth: "120px",
-              fontSize: "11px",
-              color: "#999",
-            }}
-          >
-            {job.createdAt
-              ? new Date(job.createdAt).toLocaleString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : "N/A"}
-          </div>
+          )}
         </div>
       </div>
 
@@ -1543,9 +1497,6 @@ export default function VHCDashboard() {
                   <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "90px", textAlign: "center" }}>MOT</span>
                   <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "70px", textAlign: "center" }}>Red</span>
                   <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "70px", textAlign: "center" }}>Amber</span>
-                  <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "70px", textAlign: "center" }}>Grey</span>
-                  <div style={{ width: "1px" }}></div>
-                  <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "120px", textAlign: "center" }}>Time</span>
                 </div>
               </div>
 
