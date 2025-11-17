@@ -500,7 +500,12 @@ export default function CheckInPage() {
               </thead>
               <tbody>
                 {filteredJobs.map((job, index) => {
-                  const isCheckedIn = ["Checked In", "Workshop/MOT", "VHC Complete", "VHC Sent", "Being Washed", "Complete"].includes(job.status);
+                  const statusNormalized = (job.status || "").trim().toLowerCase();
+                  const isBooked = statusNormalized === "booked";
+                  const isCheckedIn =
+                    ["checked in", "workshop/mot", "vhc complete", "vhc sent", "being washed", "complete"].includes(
+                      statusNormalized
+                    ) || !isBooked;
                   const isCurrentlyCheckingIn = checkingIn === job.id;
                   
                   return (
@@ -576,18 +581,7 @@ export default function CheckInPage() {
                         </span>
                       </td>
                       <td style={{ ...tableCellStyle, textAlign: "center" }}>
-                        {isCheckedIn ? (
-                          <span style={{
-                            padding: "8px 16px",
-                            borderRadius: "6px",
-                            fontSize: "13px",
-                            fontWeight: "600",
-                            backgroundColor: "#d1fae5",
-                            color: "#065f46"
-                          }}>
-                            ✓ Checked In
-                          </span>
-                        ) : (
+                        {isBooked ? (
                           <button
                             onClick={() => handleCheckIn(job)}
                             disabled={isCurrentlyCheckingIn}
@@ -607,6 +601,17 @@ export default function CheckInPage() {
                           >
                             {isCurrentlyCheckingIn ? "Checking In..." : "Check In"}
                           </button>
+                        ) : (
+                          <span style={{
+                            padding: "8px 16px",
+                            borderRadius: "6px",
+                            fontSize: "13px",
+                            fontWeight: "600",
+                            backgroundColor: "#d1fae5",
+                            color: "#065f46"
+                          }}>
+                            ✓ Checked In
+                          </span>
                         )}
                       </td>
                     </tr>
