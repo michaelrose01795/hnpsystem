@@ -129,15 +129,17 @@ export default function VHCDetails() {
   const [editingLabor, setEditingLabor] = useState({}); // track which labor fields are being edited
 const [declineReason, setDeclineReason] = useState(DECLINE_REASON_OPTIONS[0]); // default decline reason dropdown selection
 const [declineReminderMonths, setDeclineReminderMonths] = useState("3"); // default reminder period in months
-const [partsModal, setPartsModal] = useState({ open: false, itemId: null }); // track active parts modal
-const [partsForm, setPartsForm] = useState({
+const defaultPartsForm = {
   search: "",
   selectedPart: null,
   costToOrder: "",
   customerCost: "",
   quantity: 1,
   backOrder: false,
-}); // store modal form fields
+}; // default modal form
+const [partsModal, setPartsModal] = useState({ open: false, itemId: null }); // track active parts modal
+const [partsForm, setPartsForm] = useState(defaultPartsForm); // store modal form fields
+const [partsDrafts, setPartsDrafts] = useState({}); // cache unsaved modal entries by item id
 const [partsSearchResults, setPartsSearchResults] = useState([]); // store search results from parts catalog
 
   // ✅ Fetch VHC details from Supabase (or use dummy data)
@@ -422,28 +424,37 @@ const [partsSearchResults, setPartsSearchResults] = useState([]); // store searc
 
   const handleOpenPartsModal = (item) => {
     const existing = item.part_selection || {};
+    const draft = partsDrafts[item.id];
     setPartsForm({
-      search: "",
-      selectedPart: existing.selectedPart || null,
-      costToOrder: existing.costToOrder ? existing.costToOrder.toString() : "",
-      customerCost: existing.customerCost ? existing.customerCost.toString() : "",
-      quantity: existing.quantity || 1,
-      backOrder: !!existing.backOrder,
+      search: draft?.search || "",
+      selectedPart: draft?.selectedPart || existing.selectedPart || null,
+      costToOrder: draft?.costToOrder !== undefined ? draft.costToOrder : existing.costToOrder ? existing.costToOrder.toString() : "",
+      customerCost: draft?.customerCost !== undefined ? draft.customerCost : existing.customerCost ? existing.customerCost.toString() : "",
+      quantity: draft?.quantity !== undefined ? draft.quantity : existing.quantity || 1,
+      backOrder: draft?.backOrder !== undefined ? draft.backOrder : !!existing.backOrder,
     });
     setPartsModal({ open: true, itemId: item.id });
   };
 
-  const handleClosePartsModal = () => {
+  const handleClosePartsModal = ({ resetForm = false, clearDraft = false } = {}) => {
+    if (partsModal.itemId) {
+      setPartsDrafts((prev) => {
+        if (clearDraft) {
+          const next = { ...prev };
+          delete next[partsModal.itemId];
+          return next;
+        }
+        return {
+          ...prev,
+          [partsModal.itemId]: partsForm,
+        };
+      });
+    }
     setPartsModal({ open: false, itemId: null });
-    setPartsForm({
-      search: "",
-      selectedPart: null,
-      costToOrder: "",
-      customerCost: "",
-      quantity: 1,
-      backOrder: false,
-    });
-    setPartsSearchResults([]);
+    if (resetForm) {
+      setPartsForm(defaultPartsForm);
+      setPartsSearchResults([]);
+    }
   };
 
   const handlePartsSearch = async (term) => {
@@ -511,7 +522,12 @@ const [partsSearchResults, setPartsSearchResults] = useState([]); // store searc
         };
       }),
     }));
-    handleClosePartsModal();
+    setPartsDrafts((prev) => {
+      const next = { ...prev };
+      delete next[partsModal.itemId];
+      return next;
+    });
+    handleClosePartsModal({ resetForm: true, clearDraft: true });
   };
 
   const handleClearPartsSelection = () => {
@@ -528,7 +544,12 @@ const [partsSearchResults, setPartsSearchResults] = useState([]); // store searc
         };
       }),
     }));
-    handleClosePartsModal();
+    setPartsDrafts((prev) => {
+      const next = { ...prev };
+      delete next[partsModal.itemId];
+      return next;
+    });
+    handleClosePartsModal({ resetForm: true, clearDraft: true });
   };
 
   const handlePartsNotRequired = () => {
@@ -546,7 +567,12 @@ const [partsSearchResults, setPartsSearchResults] = useState([]); // store searc
         };
       }),
     }));
-    handleClosePartsModal();
+    setPartsDrafts((prev) => {
+      const next = { ...prev };
+      delete next[partsModal.itemId];
+      return next;
+    });
+    handleClosePartsModal({ resetForm: true, clearDraft: true });
   };
 
   // ✅ Shared layout for decline reason dropdowns and bulk action buttons
