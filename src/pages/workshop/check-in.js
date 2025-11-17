@@ -3,12 +3,13 @@
 
 "use client"; // Enable client-side rendering for Next.js
 
-import React, { useState, useEffect } from "react"; // React hooks
+import React, { useState, useEffect, useCallback } from "react"; // React hooks
 import Layout from "@/components/Layout"; // Main layout wrapper
 import { useUser } from "@/context/UserContext"; // Get logged-in user
 import { useNextAction } from "@/context/NextActionContext"; // Next action dispatcher
 import { getAllJobs } from "@/lib/database/jobs"; // Get all jobs
 import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService"; // Auto check-in function
+import { supabaseClient } from "@/lib/supabaseClient"; // Supabase client for live counters
 
 export default function CheckInPage() {
   const { user } = useUser(); // Get logged-in user
@@ -19,6 +20,12 @@ export default function CheckInPage() {
   const [checkingIn, setCheckingIn] = useState(null); // Job currently being checked in
   const [showCheckedIn, setShowCheckedIn] = useState(false); // Toggle to show already checked in jobs
   const [displayDate, setDisplayDate] = useState("Loading date..."); // Friendly header date label
+  const [appointmentCounts, setAppointmentCounts] = useState({
+    total: 0,
+    checkedIn: 0,
+    awaiting: 0,
+  });
+  const [countsLoading, setCountsLoading] = useState(true); // Loading state for counters
 
   // ✅ Get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
@@ -31,23 +38,54 @@ export default function CheckInPage() {
 
   const today = getTodayDate();
 
-  // ✅ Fetch jobs on component mount
-  useEffect(() => {
-    fetchJobs();
-  }, []);
+  // ✅ Fetch appointment counters for today
+  const fetchAppointmentCounters = useCallback(async () => {
+    setCountsLoading(true);
 
-  useEffect(() => {
-    const formatter = new Intl.DateTimeFormat("en-GB", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    setDisplayDate(formatter.format(new Date()));
-  }, []);
+    try {
+      const { data, error } = await supabaseClient
+        .from("appointments")
+        .select(
+          `
+            appointment_id,
+            scheduled_time,
+            job:job_id(status)
+          `
+        )
+        .gte("scheduled_time", `${today}T00:00:00`)
+        .lte("scheduled_time", `${today}T23:59:59`);
+
+      if (error) {
+        console.error("❌ Error fetching appointment counters:", error);
+        setAppointmentCounts({ total: 0, checkedIn: 0, awaiting: 0 });
+        return;
+      }
+
+      const total = data?.length || 0;
+      const checkedIn = (data || []).filter((entry) => {
+        const status = (entry.job?.status || "").trim().toLowerCase();
+        return status && status !== "booked";
+      }).length;
+      const awaiting = (data || []).filter((entry) => {
+        const status = (entry.job?.status || "").trim().toLowerCase();
+        return status === "booked";
+      }).length;
+
+      setAppointmentCounts({
+        total,
+        checkedIn,
+        awaiting,
+      });
+    } catch (err) {
+      console.error("❌ Unexpected error fetching appointment counters:", err);
+      setAppointmentCounts({ total: 0, checkedIn: 0, awaiting: 0 });
+    } finally {
+      setCountsLoading(false);
+    }
+  }, [today]);
 
   // ✅ Fetch all jobs and filter for today's appointments
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     setLoading(true);
     console.log("📅 Fetching today's appointments...");
     
@@ -79,7 +117,44 @@ export default function CheckInPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [today]);
+
+  // ✅ Fetch jobs on component mount
+  useEffect(() => {
+    fetchJobs();
+    fetchAppointmentCounters();
+  }, [fetchJobs, fetchAppointmentCounters]);
+
+  useEffect(() => {
+    const formatter = new Intl.DateTimeFormat("en-GB", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    setDisplayDate(formatter.format(new Date()));
+  }, []);
+
+  // ✅ Subscribe for live counter updates
+  useEffect(() => {
+    const channel = supabaseClient
+      .channel("check-in-counters")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "appointments" },
+        () => fetchAppointmentCounters()
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "jobs" },
+        () => fetchAppointmentCounters()
+      )
+      .subscribe();
+
+    return () => {
+      supabaseClient.removeChannel(channel);
+    };
+  }, [fetchAppointmentCounters]);
 
   // ✅ Handle check-in
   const handleCheckIn = async (job) => {
@@ -123,6 +198,7 @@ export default function CheckInPage() {
 
         // Refresh jobs list
         await fetchJobs();
+        await fetchAppointmentCounters();
       } else {
         console.error("❌ Check-in failed:", result.error);
         alert(`❌ Failed to check in: ${result.error?.message || "Unknown error"}`);
@@ -167,11 +243,9 @@ export default function CheckInPage() {
   });
 
   // ✅ Count stats
-  const totalAppointments = jobs.length;
-  const checkedInCount = jobs.filter(job => 
-    ["Checked In", "Workshop/MOT", "VHC Complete", "VHC Sent", "Being Washed", "Complete"].includes(job.status)
-  ).length;
-  const awaitingCheckIn = totalAppointments - checkedInCount;
+  const totalAppointments = appointmentCounts.total;
+  const checkedInCount = appointmentCounts.checkedIn;
+  const awaitingCheckIn = appointmentCounts.awaiting;
 
   // ✅ Loading state
   if (loading) {
@@ -229,7 +303,10 @@ export default function CheckInPage() {
           </div>
 
           <button
-            onClick={fetchJobs}
+            onClick={() => {
+              fetchJobs();
+              fetchAppointmentCounters();
+            }}
             disabled={loading}
             style={{
               padding: "12px 24px",
@@ -268,7 +345,7 @@ export default function CheckInPage() {
               Total Appointments
             </p>
             <p style={{ fontSize: "32px", fontWeight: "700", color: "#1a1a1a", margin: 0 }}>
-              {totalAppointments}
+              {countsLoading ? "…" : totalAppointments}
             </p>
           </div>
 
@@ -283,7 +360,7 @@ export default function CheckInPage() {
               Checked In
             </p>
             <p style={{ fontSize: "32px", fontWeight: "700", color: "#10b981", margin: 0 }}>
-              {checkedInCount}
+              {countsLoading ? "…" : checkedInCount}
             </p>
           </div>
 
@@ -298,7 +375,7 @@ export default function CheckInPage() {
               Awaiting Check-In
             </p>
             <p style={{ fontSize: "32px", fontWeight: "700", color: "#f59e0b", margin: 0 }}>
-              {awaitingCheckIn}
+              {countsLoading ? "…" : awaitingCheckIn}
             </p>
           </div>
         </div>
