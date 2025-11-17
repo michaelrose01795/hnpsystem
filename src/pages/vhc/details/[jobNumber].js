@@ -151,6 +151,7 @@ const [partsDrafts, setPartsDrafts] = useState({}); // cache unsaved modal entri
 const [partsSearchResults, setPartsSearchResults] = useState([]); // store search results from parts catalog
 const [partsOnOrder, setPartsOnOrder] = useState([]); // live parts on order linked to job
 const [partsOnOrderLoading, setPartsOnOrderLoading] = useState(false); // loading flag for parts on order
+const [orderNeededWarning, setOrderNeededWarning] = useState(null); // order-needed notification
 const SECTION_CATEGORY_MAP = {
   brakes: ["Brakes", "Hubs", "Discs", "Pads"],
   tyres: ["Tyres", "Wheels"],
@@ -826,6 +827,23 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
             updated_at: new Date().toISOString(),
           },
         ]);
+        if (inStock < qty) {
+          setOrderNeededWarning({
+            partNumber: part.part_number,
+            qty,
+            eta: part.expected_eta || null,
+          });
+          await supabase.from("parts_requests").insert([
+            {
+              job_id: jobId,
+              part_id: part.id,
+              quantity: qty,
+              status: "awaiting_stock",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ]);
+        }
       }
     } catch (error) {
       console.error("❌ Failed to sync customer decision:", error);
@@ -1217,6 +1235,29 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
           </div>
         </div>
 
+        {/* Order needed warning */}
+        {orderNeededWarning && (
+          <div
+            style={{
+              marginBottom: "16px",
+              padding: "12px 16px",
+              borderRadius: "12px",
+              background: "#fff4e6",
+              border: "1px solid #fbbf24",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+            }}
+          >
+            <strong style={{ color: "#92400e" }}>Order needed:</strong>
+            <span style={{ fontSize: "14px", color: "#92400e" }}>
+              {orderNeededWarning.qty} × {orderNeededWarning.partNumber} – move to Order Needed.
+              {orderNeededWarning.eta ? (
+                <span style={{ fontSize: "13px", color: "#92400e" }}> ETA: {orderNeededWarning.eta}</span>
+              ) : null}
+            </span>
+          </div>
+        )}
         {/* ✅ Status and Cost Summary Bar - Updated Layout */}
         <div style={{
           background: "white",
@@ -2306,6 +2347,21 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
                         <p style={{ fontSize: "13px", color: "#666" }}>
                           Status: {statusLabel}
                         </p>
+                        {order.status === "awaiting_stock" && (
+                          <span
+                            style={{
+                              display: "inline-block",
+                              marginTop: "4px",
+                              padding: "2px 6px",
+                              background: "#fef3c7",
+                              color: "#92400e",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                            }}
+                          >
+                            Order Needed
+                          </span>
+                        )}
                         <p style={{ fontSize: "13px", color: "#666", textAlign: "center" }}>
                           Qty: {order.quantity}
                         </p>
