@@ -22,6 +22,8 @@ const STATUS_COLORS = {
   "Sent": "#8b5cf6", // purple for sent status
   "Viewed": "#06b6d4", // cyan for viewed status
 };
+const VAT_RATE = 0.2; // 20% VAT
+const HOURLY_LABOUR_RATE = 125; // hourly labour rate (ex VAT) -> £150 inc VAT
 
 // ✅ Dropdown options for decline reasons so managers can provide quick context
 const DECLINE_REASON_OPTIONS = [
@@ -173,27 +175,18 @@ const [partsSearchResults, setPartsSearchResults] = useState([]); // store searc
   useEffect(() => {
     if (!vhcData) return;
 
-    // Calculate red work total (unactioned only)
-    const redTotal = vhcData.vhc_items
-      .filter(item => item.status === "Red" && !item.authorized && !item.declined)
-      .reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+    const sumGross = (filterFn) => {
+      const net = vhcData.vhc_items
+        .filter(filterFn)
+        .reduce((sum, item) => item.part_not_required ? sum : sum + parseFloat(item.total_price || 0), 0);
+      return net * (1 + VAT_RATE);
+    };
 
-    // Calculate amber work total (unactioned only)
-    const amberTotal = vhcData.vhc_items
-      .filter(item => item.status === "Amber" && !item.authorized && !item.declined)
-      .reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+    const redTotal = sumGross(item => item.status === "Red" && !item.authorized && !item.declined);
+    const amberTotal = sumGross(item => item.status === "Amber" && !item.authorized && !item.declined);
+    const authorizedTotal = sumGross(item => item.authorized);
+    const declinedTotal = sumGross(item => item.declined);
 
-    // Calculate authorized total
-    const authorizedTotal = vhcData.vhc_items
-      .filter(item => item.authorized)
-      .reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
-
-    // Calculate declined total
-    const declinedTotal = vhcData.vhc_items
-      .filter(item => item.declined)
-      .reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
-
-    // Update totals in vhcData
     setVhcData(prev => ({
       ...prev,
       red_work: redTotal.toFixed(2),
@@ -338,17 +331,18 @@ const [partsSearchResults, setPartsSearchResults] = useState([]); // store searc
 
   // ✅ Handle labor hours change
   const handleLaborChange = (itemId, hours) => {
-    const laborCost = parseFloat(hours) * 150; // £150 per hour including VAT
+    const parsedHours = parseFloat(hours) || 0;
+    const labourCostNet = parsedHours * HOURLY_LABOUR_RATE;
     setVhcData(prev => ({
       ...prev,
       vhc_items: prev.vhc_items.map(item => {
         if (item.id === itemId) {
           const partsCost = parseFloat(item.parts_price) || 0;
-          const newTotal = partsCost + laborCost;
+          const newTotal = partsCost + labourCostNet;
           return { 
             ...item, 
-            labor_hours: parseFloat(hours) || 0, 
-            labor_cost: laborCost.toFixed(2),
+            labor_hours: parsedHours, 
+            labor_cost: labourCostNet.toFixed(2),
             total_price: newTotal.toFixed(2)
           };
         }
@@ -409,13 +403,18 @@ const [partsSearchResults, setPartsSearchResults] = useState([]); // store searc
     }
   };
 
-  // ✅ Calculate totals
-const calculateTotal = (items) =>
-  items.reduce(
+// ✅ Money helpers
+const calculateTotals = (items) => {
+  const net = items.reduce(
     (sum, item) =>
       item.part_not_required ? sum : sum + parseFloat(item.total_price || 0),
     0,
   );
+  const vat = net * VAT_RATE;
+  return { net, vat, gross: net + vat };
+};
+
+const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
 
   const calculateSelectedTotal = (items) =>
     items.reduce(
@@ -913,27 +912,27 @@ const calculateTotal = (items) =>
           {/* Right - Cost Summary - Spread Out More */}
           <div style={{ display: "flex", gap: "48px" }}>
             <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Red Work</p>
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Red Work (incl VAT)</p>
               <p style={{ fontSize: "22px", fontWeight: "700", color: "#ef4444" }}>
-                £{vhcData.red_work}
+                £{formatMoney(vhcData.red_work)}
               </p>
             </div>
             <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Amber Work</p>
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Amber Work (incl VAT)</p>
               <p style={{ fontSize: "22px", fontWeight: "700", color: "#fbbf24" }}>
-                £{vhcData.amber_work}
+                £{formatMoney(vhcData.amber_work)}
               </p>
             </div>
             <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Authorized</p>
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Authorized (incl VAT)</p>
               <p style={{ fontSize: "22px", fontWeight: "700", color: "#10b981" }}>
-                £{vhcData.authorized}
+                £{formatMoney(vhcData.authorized)}
               </p>
             </div>
             <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Declined</p>
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Declined (incl VAT)</p>
               <p style={{ fontSize: "22px", fontWeight: "700", color: "#ef4444" }}>
-                £{vhcData.declined_work}
+                £{formatMoney(vhcData.declined_work)}
               </p>
             </div>
           </div>
@@ -995,7 +994,7 @@ const calculateTotal = (items) =>
                       ✓ Authorized Work
                     </h3>
                     <p style={{ fontSize: "20px", fontWeight: "700", color: "#10b981" }}>
-                      Total: £{calculateTotal(authorizedItems).toFixed(2)}
+                      Total: £{formatMoney(calculateTotals(authorizedItems).gross)}
                     </p>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -1067,7 +1066,7 @@ const calculateTotal = (items) =>
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <p style={{ fontSize: "20px", fontWeight: "700", color: "#ef4444" }}>
-                        Section Total: £{calculateTotal(redItems).toFixed(2)}
+                        Section Total: £{formatMoney(calculateTotals(redItems).gross)}
                       </p>
                       <p style={{ fontSize: "14px", fontWeight: "600", color: "#991b1b" }}>
                         Selected Total: £{calculateSelectedTotal(redItems).toFixed(2)}
@@ -1106,7 +1105,7 @@ const calculateTotal = (items) =>
                   {/* Red Items */}
                   {redItems.map(item => {
                     const partsCost = parseFloat(item.parts_price) || 0;
-                    const laborCost = (parseFloat(item.labor_hours) || 0) * 150;
+                    const laborCostGross = (parseFloat(item.labor_hours) || 0) * HOURLY_LABOUR_RATE * (1 + VAT_RATE);
                     
                     return (
                       <div key={item.id} style={{
@@ -1153,7 +1152,10 @@ const calculateTotal = (items) =>
                             }}
                           />
                           <p style={{ fontSize: "11px", color: "#666", marginTop: "4px" }}>
-                            £{laborCost.toFixed(2)}
+                            £{laborCostGross.toFixed(2)}
+                          </p>
+                          <p style={{ fontSize: "10px", color: "#9ca3af", marginTop: "2px" }}>
+                            TODO: auto-calc labour time from parts in future
                           </p>
                         </div>
                         
@@ -1220,7 +1222,7 @@ const calculateTotal = (items) =>
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <p style={{ fontSize: "20px", fontWeight: "700", color: "#fbbf24" }}>
-                        Section Total: £{calculateTotal(amberItems).toFixed(2)}
+                        Section Total: £{formatMoney(calculateTotals(amberItems).gross)}
                       </p>
                       <p style={{ fontSize: "14px", fontWeight: "600", color: "#92400e" }}>
                         Selected Total: £{calculateSelectedTotal(amberItems).toFixed(2)}
@@ -1259,7 +1261,7 @@ const calculateTotal = (items) =>
                   {/* Amber Items */}
                   {amberItems.map(item => {
                     const partsCost = parseFloat(item.parts_price) || 0;
-                    const laborCost = (parseFloat(item.labor_hours) || 0) * 150;
+                    const laborCostGross = (parseFloat(item.labor_hours) || 0) * HOURLY_LABOUR_RATE * (1 + VAT_RATE);
                     
                     return (
                       <div key={item.id} style={{
@@ -1306,7 +1308,10 @@ const calculateTotal = (items) =>
                             }}
                           />
                           <p style={{ fontSize: "11px", color: "#666", marginTop: "4px" }}>
-                            £{laborCost.toFixed(2)}
+                            £{laborCostGross.toFixed(2)}
+                          </p>
+                          <p style={{ fontSize: "10px", color: "#9ca3af", marginTop: "2px" }}>
+                            TODO: auto-calc labour time from parts in future
                           </p>
                         </div>
                         
@@ -1370,7 +1375,7 @@ const calculateTotal = (items) =>
                       ✕ Declined Work
                     </h3>
                     <p style={{ fontSize: "20px", fontWeight: "700", color: "#ef4444" }}>
-                      Total: £{calculateTotal(declinedItems).toFixed(2)}
+                      Total: £{formatMoney(calculateTotals(declinedItems).gross)}
                     </p>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
