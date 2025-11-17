@@ -142,19 +142,25 @@ export default function CheckInPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "appointments" },
-        () => fetchAppointmentCounters()
+        () => {
+          fetchAppointmentCounters();
+          fetchJobs();
+        }
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "jobs" },
-        () => fetchAppointmentCounters()
+        () => {
+          fetchAppointmentCounters();
+          fetchJobs(); // keep local list in sync with status changes elsewhere
+        }
       )
       .subscribe();
 
     return () => {
       supabaseClient.removeChannel(channel);
     };
-  }, [fetchAppointmentCounters]);
+  }, [fetchAppointmentCounters, fetchJobs]);
 
   // ✅ Handle check-in
   const handleCheckIn = async (job) => {
