@@ -272,6 +272,7 @@ const buildTyreSection = (tyres) => {
   const items = []; // store cards for each wheel
   let red = 0; // count red concerns
   let amber = 0; // count amber concerns
+  let grey = 0; // count grey/neutral concerns
 
   const processWheel = (wheelKey) => {
     const tyre = tyres[wheelKey]; // pull tyre data for this wheel
@@ -300,6 +301,7 @@ const buildTyreSection = (tyres) => {
     concerns.forEach((concern) => {
       if (concern.status === "Red") red += 1; // accumulate red issues
       if (concern.status === "Amber") amber += 1; // accumulate amber issues
+      if (concern.status === "Grey") grey += 1; // accumulate grey issues
     });
     const status = determineDominantStatus(
       concerns.map((concern) => concern.status),
@@ -337,6 +339,7 @@ const buildTyreSection = (tyres) => {
     spareConcerns.forEach((concern) => {
       if (concern.status === "Red") red += 1; // accumulate red issues
       if (concern.status === "Amber") amber += 1; // accumulate amber issues
+      if (concern.status === "Grey") grey += 1; // accumulate grey issues
     });
     const status = determineDominantStatus(spareConcerns.map((concern) => concern.status)); // highest severity for spare
     if (rows.length > 0 || spareConcerns.length > 0) {
@@ -355,7 +358,7 @@ const buildTyreSection = (tyres) => {
     key: "wheelsTyres", // unique key for section rendering
     title: "Wheels & Tyres", // section heading text
     type: "mandatory", // mark as mandatory section
-    metrics: { total: red + amber, red, amber }, // aggregated severity counts
+    metrics: { total: red + amber + grey, red, amber, grey }, // aggregated severity counts
     items, // card data for the renderer
   };
 };
@@ -366,6 +369,7 @@ const buildBrakesSection = (brakes) => {
   const items = []; // cards to render
   let red = 0; // red counter
   let amber = 0; // amber counter
+  let grey = 0; // grey counter
 
   const appendPad = (key, label) => {
     const pad = brakes[key]; // read pad data
@@ -377,12 +381,14 @@ const buildBrakesSection = (brakes) => {
     if (statusLabel) rows.push(`Status: ${statusLabel}`); // include status text
     if (statusLabel === "Red") red += 1; // pad status counts towards red
     if (statusLabel === "Amber") amber += 1; // pad status counts towards amber
+    if (statusLabel === "Grey") grey += 1; // pad status counts towards grey
     const concerns = Array.isArray(pad.concerns)
       ? pad.concerns.map(normaliseConcern).filter(Boolean)
       : []; // normalise pad concerns
     concerns.forEach((concern) => {
       if (concern.status === "Red") red += 1; // accumulate red concerns
       if (concern.status === "Amber") amber += 1; // accumulate amber concerns
+      if (concern.status === "Grey") grey += 1; // accumulate grey concerns
     });
     const overallStatus = determineDominantStatus([
       statusLabel,
@@ -415,12 +421,14 @@ const buildBrakesSection = (brakes) => {
     const discSeverity = determineDominantStatus([measurementStatus, visualStatus]); // combined severity for disc
     if (discSeverity === "Red") red += 1; // count red disc finding
     if (discSeverity === "Amber") amber += 1; // count amber disc finding
+    if (discSeverity === "Grey") grey += 1; // count grey disc finding
     const concerns = Array.isArray(disc.concerns)
       ? disc.concerns.map(normaliseConcern).filter(Boolean)
       : []; // normalise disc concerns
     concerns.forEach((concern) => {
       if (concern.status === "Red") red += 1; // accumulate red concerns
       if (concern.status === "Amber") amber += 1; // accumulate amber concerns
+      if (concern.status === "Grey") grey += 1; // accumulate grey concerns
     });
     const overallStatus = determineDominantStatus([
       discSeverity,
@@ -443,6 +451,7 @@ const buildBrakesSection = (brakes) => {
     const drumStatus = normaliseStatus(rearDrums.status); // normalise drum status
     if (drumStatus === "Red") red += 1; // count replace recommendation as red
     if (drumStatus === "Amber") amber += 1; // count advisory as amber
+    if (drumStatus === "Grey") grey += 1; // count neutral as grey
     items.push({
       heading: "Rear Drums", // card heading
       status: drumStatus || "Neutral", // show severity badge if recognised
@@ -457,7 +466,7 @@ const buildBrakesSection = (brakes) => {
     key: "brakesHubs", // unique key for renderer
     title: "Brakes & Hubs", // section heading
     type: "mandatory", // mark as mandatory section
-    metrics: { total: red + amber, red, amber }, // severity totals for badges
+    metrics: { total: red + amber + grey, red, amber, grey }, // severity totals for badges
     items, // cards to render
   };
 };
@@ -468,6 +477,7 @@ const buildServiceIndicatorSection = (service) => {
   const items = []; // cards for this section
   let red = 0; // red concern count
   let amber = 0; // amber concern count
+  let grey = 0; // grey concern count
 
   const overviewRows = []; // overview card rows
   if (service.serviceChoice) {
@@ -505,6 +515,7 @@ const buildServiceIndicatorSection = (service) => {
     entry.status = determineDominantStatus([entry.status, normalised.status]); // update severity badge
     if (normalised.status === "Red") red += 1; // count red concern
     if (normalised.status === "Amber") amber += 1; // count amber concern
+    if (normalised.status === "Grey") grey += 1; // count grey concern
   });
 
   grouped.forEach((value) => {
@@ -517,7 +528,7 @@ const buildServiceIndicatorSection = (service) => {
     key: "serviceIndicator", // unique key for renderer
     title: "Service Indicator & Under Bonnet", // section heading text
     type: "mandatory", // mark as mandatory
-    metrics: { total: red + amber, red, amber }, // severity counts for badges
+    metrics: { total: red + amber + grey, red, amber, grey }, // severity counts for badges
     items, // cards to render
   };
 };
@@ -528,16 +539,18 @@ const buildOptionalConcernSection = (data, title, key) => {
   const items = []; // cards to render
   let red = 0; // red concern counter
   let amber = 0; // amber concern counter
+  let grey = 0; // grey concern counter
 
   Object.entries(data).forEach(([category, entry]) => {
     const rawConcerns = Array.isArray(entry?.concerns) ? entry.concerns : []; // raw concern list
     const concerns = rawConcerns
       .map(normaliseConcern)
-      .filter((concern) => concern && (concern.status === "Red" || concern.status === "Amber")); // only keep amber/red concerns per requirements
+      .filter((concern) => concern); // keep all normalised concerns for severity counting
     if (concerns.length === 0) return; // skip categories without actionable items
     concerns.forEach((concern) => {
       if (concern.status === "Red") red += 1; // accumulate red totals
       if (concern.status === "Amber") amber += 1; // accumulate amber totals
+      if (concern.status === "Grey") grey += 1; // accumulate grey totals
     });
     items.push({
       heading: category, // card heading uses the category label
@@ -553,7 +566,7 @@ const buildOptionalConcernSection = (data, title, key) => {
     key, // unique key for renderer
     title, // section heading text
     type: "optional", // mark as optional
-    metrics: { total: red + amber, red, amber }, // severity totals used for badges
+    metrics: { total: red + amber + grey, red, amber, grey }, // severity totals used for badges
     items, // cards to render
   };
 };
@@ -561,11 +574,11 @@ const buildOptionalConcernSection = (data, title, key) => {
 // ✅ Summarise the full technician VHC payload into dashboard friendly sections
 const summariseTechnicianVhc = (vhcData) => {
   if (!vhcData || typeof vhcData !== "object") {
-    return { sections: [], totals: { total: 0, red: 0, amber: 0 }, itemCount: 0 }; // default when no payload found
+    return { sections: [], totals: { total: 0, red: 0, amber: 0, grey: 0 }, itemCount: 0 }; // default when no payload found
   }
 
   const sections = []; // collect section summaries
-  const totals = { total: 0, red: 0, amber: 0 }; // aggregate severity totals
+  const totals = { total: 0, red: 0, amber: 0, grey: 0 }; // aggregate severity totals including grey
   let itemCount = 0; // count number of cards generated across all sections
 
   const pushSection = (section) => {
@@ -573,6 +586,7 @@ const summariseTechnicianVhc = (vhcData) => {
     sections.push(section); // store section for rendering
     totals.red += section.metrics?.red || 0; // accumulate red totals
     totals.amber += section.metrics?.amber || 0; // accumulate amber totals
+    totals.grey += section.metrics?.grey || 0; // accumulate grey totals
     totals.total += section.metrics?.total || 0; // accumulate overall actionable total
     itemCount += section.items?.length || 0; // accumulate total number of cards
   };
@@ -586,6 +600,42 @@ const summariseTechnicianVhc = (vhcData) => {
   });
 
   return { sections, totals, itemCount }; // return structured summary for the dashboard
+};
+
+// ✅ Roll up severity counts from sections and legacy checks to expose Red/Amber/Grey totals
+const computeSeverityTotals = ({ builderSummary, checks, legacyRedIssues = 0, legacyAmberIssues = 0 }) => {
+  const totals = { red: 0, amber: 0, grey: 0 };
+
+  const recordStatus = (value) => {
+    const normalised = normaliseStatus(value);
+    if (normalised === "Red") totals.red += 1;
+    else if (normalised === "Amber") totals.amber += 1;
+    else if (normalised === "Grey" || normalised === "Neutral") totals.grey += 1;
+  };
+
+  (builderSummary?.sections || []).forEach((section) => {
+    (section.items || []).forEach((item) => {
+      recordStatus(item.status);
+      (item.concerns || []).forEach((concern) => recordStatus(concern.status));
+    });
+  });
+
+  // Fallback: infer severity from legacy checks text when builder payload not available
+  (checks || []).forEach((check) => {
+    if (check.section === "VHC_CHECKSHEET") return; // skip embedded JSON row
+    const derived = determineDominantStatus([
+      check.status,
+      check.section,
+      check.issueTitle,
+      check.issueDescription,
+    ]);
+    recordStatus(derived);
+  });
+
+  totals.red += legacyRedIssues;
+  totals.amber += legacyAmberIssues;
+
+  return totals;
 };
 
 // ✅ Extract the technician VHC JSON blob from Supabase records
@@ -673,6 +723,7 @@ const getConcernColor = (status) => CONCERN_STATUS_COLORS[status] || CONCERN_STA
 
 // ✅ VHC Job Card Component
 const VHCJobCard = ({ job, onClick, partsMode }) => {
+  const router = useRouter(); // enable in-card navigation for severity counters
   const lastVisitColor = getLastVisitColor(job.lastVisit); // determine color for last visit pill
   const nextServiceColor = getNextServiceColor(job.nextService); // determine color for next service pill
   const motColor = getMOTColor(job.motExpiry); // determine color for MOT pill
@@ -701,6 +752,11 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
       {section.metrics.amber > 0 ? (
         <span style={{ ...buildBadgeStyle("Amber"), fontSize: "10px" }}>
           {section.metrics.amber} Amber
+        </span>
+      ) : null}
+      {section.metrics.grey > 0 ? (
+        <span style={{ ...buildBadgeStyle("Neutral"), fontSize: "10px" }}>
+          {section.metrics.grey} Grey
         </span>
       ) : null}
     </div>
@@ -960,7 +1016,13 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
             </div>
           )}
 
-          <div style={{ textAlign: "center", minWidth: "70px" }}>
+          <div
+            style={{ textAlign: "center", minWidth: "70px", cursor: "pointer" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/vhc/${job.jobNumber}`);
+            }}
+          >
             <div
               style={{
                 backgroundColor: "rgba(239,68,68,0.12)",
@@ -980,7 +1042,13 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
             </div>
           </div>
 
-          <div style={{ textAlign: "center", minWidth: "70px" }}>
+          <div
+            style={{ textAlign: "center", minWidth: "70px", cursor: "pointer" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/vhc/${job.jobNumber}`);
+            }}
+          >
             <div
               style={{
                 backgroundColor: "rgba(245,158,11,0.12)",
@@ -997,6 +1065,32 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
             >
               <span>{job.amberIssues || 0}</span>
               <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Amber</span>
+            </div>
+          </div>
+
+          <div
+            style={{ textAlign: "center", minWidth: "70px", cursor: "pointer" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/vhc/${job.jobNumber}`);
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: "rgba(107,114,128,0.12)",
+                color: "#374151",
+                padding: "6px 12px",
+                borderRadius: "8px",
+                fontSize: "13px",
+                fontWeight: "600",
+                display: "flex",
+                flexDirection: "column",
+                gap: "2px",
+                alignItems: "center",
+              }}
+            >
+              <span>{job.greyIssues || 0}</span>
+              <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Grey</span>
             </div>
           </div>
 
@@ -1197,8 +1291,15 @@ export default function VHCDashboard() {
               partsCount,
             }); // resolve dashboard status directly from workflow + job fields
 
-            const redIssues = hasBuilderSections ? builderSummary.totals.red : legacyRedIssues; // final red count
-            const amberIssues = hasBuilderSections ? builderSummary.totals.amber : legacyAmberIssues; // final amber count
+            const severityTotals = computeSeverityTotals({
+              builderSummary,
+              checks,
+              legacyRedIssues,
+              legacyAmberIssues,
+            }); // aggregate severity counts across builder + legacy data
+            const redIssues = severityTotals.red; // final red count
+            const amberIssues = severityTotals.amber; // final amber count
+            const greyIssues = severityTotals.grey; // final grey count
 
             const allocationValue = (job.partsAllocations || []).reduce((sum, allocation) => {
               const qty = allocation.quantityRequested || allocation.quantityAllocated || 0; // use requested or allocated quantity
@@ -1224,6 +1325,7 @@ export default function VHCDashboard() {
               sectionItemCount,
               redIssues,
               amberIssues,
+              greyIssues,
               partsCount,
               partsValue: partsValue.toFixed(2),
               lastVisit: (() => {
@@ -1480,6 +1582,7 @@ export default function VHCDashboard() {
                   <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "70px", textAlign: "center" }}>Checks</span>
                   <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "70px", textAlign: "center" }}>Red</span>
                   <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "70px", textAlign: "center" }}>Amber</span>
+                  <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "70px", textAlign: "center" }}>Grey</span>
                   <div style={{ width: "1px" }}></div>
                   <span style={{ fontSize: "11px", fontWeight: "600", minWidth: "120px", textAlign: "center" }}>Time</span>
                 </div>
