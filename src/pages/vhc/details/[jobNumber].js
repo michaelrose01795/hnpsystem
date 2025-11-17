@@ -8,6 +8,7 @@ import Link from "next/link"; // for linking back to job card
 import { useRouter } from "next/router"; // for getting URL params and navigation
 import { supabase } from "@/lib/supabaseClient"; // import Supabase client
 import Layout from "@/components/Layout"; // import layout wrapper
+import { useMemo } from "react";
 
 // ✅ Status color mapping (same as dashboard)
 const STATUS_COLORS = {
@@ -194,6 +195,27 @@ const [partsSearchResults, setPartsSearchResults] = useState([]); // store searc
       authorized: authorizedTotal.toFixed(2),
       declined_work: declinedTotal.toFixed(2)
     }));
+  }, [vhcData?.vhc_items]);
+
+  const computedTotals = useMemo(() => {
+    const partsNet = (vhcData?.vhc_items || []).reduce((sum, item) => {
+      if (item.part_not_required) return sum;
+      return sum + (parseFloat(item.parts_price) || 0);
+    }, 0);
+    const labourNet = (vhcData?.vhc_items || []).reduce((sum, item) => {
+      if (item.part_not_required) return sum;
+      return sum + (parseFloat(item.labor_cost) || 0);
+    }, 0);
+    const net = partsNet + labourNet;
+    const vat = net * VAT_RATE;
+    const gross = net + vat;
+    return {
+      partsNet,
+      labourNet,
+      net,
+      vat,
+      gross,
+    };
   }, [vhcData?.vhc_items]);
 
   // ✅ Handle checkbox selection
@@ -910,7 +932,7 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
           </div>
 
           {/* Right - Cost Summary - Spread Out More */}
-          <div style={{ display: "flex", gap: "48px" }}>
+          <div style={{ display: "flex", gap: "48px", flexWrap: "wrap" }}>
             <div style={{ textAlign: "center" }}>
               <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Red Work (incl VAT)</p>
               <p style={{ fontSize: "22px", fontWeight: "700", color: "#ef4444" }}>
@@ -933,6 +955,36 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
               <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Declined (incl VAT)</p>
               <p style={{ fontSize: "22px", fontWeight: "700", color: "#ef4444" }}>
                 £{formatMoney(vhcData.declined_work)}
+              </p>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Parts Total (net)</p>
+              <p style={{ fontSize: "20px", fontWeight: "700", color: "#1f2937" }}>
+                £{formatMoney(computedTotals.partsNet)}
+              </p>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Labour Total (net)</p>
+              <p style={{ fontSize: "20px", fontWeight: "700", color: "#1f2937" }}>
+                £{formatMoney(computedTotals.labourNet)}
+              </p>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Combined (net)</p>
+              <p style={{ fontSize: "20px", fontWeight: "700", color: "#111827" }}>
+                £{formatMoney(computedTotals.net)}
+              </p>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>VAT</p>
+              <p style={{ fontSize: "20px", fontWeight: "700", color: "#111827" }}>
+                £{formatMoney(computedTotals.vat)}
+              </p>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Grand Total (incl VAT)</p>
+              <p style={{ fontSize: "22px", fontWeight: "700", color: "#111827" }}>
+                £{formatMoney(computedTotals.gross)}
               </p>
             </div>
           </div>
