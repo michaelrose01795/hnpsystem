@@ -3,15 +3,13 @@
 // file location: src/pages/vhc/details/[jobNumber].js
 "use client"; // enables client-side rendering for Next.js
 
-import React, { useEffect, useState } from "react"; // import React and hooks
+import React, { useEffect, useMemo, useState } from "react"; // import React and hooks
 import Link from "next/link"; // for linking back to job card
 import { useRouter } from "next/router"; // for getting URL params and navigation
 import { supabase } from "@/lib/supabaseClient"; // import Supabase client
 import Layout from "@/components/Layout"; // import layout wrapper
-import { useMemo } from "react";
 import { updateJob } from "@/lib/database/jobs";
 import { logVhcSendEvent } from "@/lib/database/vhc";
-import { useMemo } from "react";
 
 // ✅ Status color mapping (same as dashboard)
 const STATUS_COLORS = {
@@ -316,7 +314,7 @@ const SECTION_CATEGORY_MAP = {
   }, [vhcData?.vhc_items]);
 
   const customerViewItems = useMemo(
-    () => (vhcData?.vhc_items || []).filter((item) => (item.status === "Red" || item.status === "Amber") && !item.part_not_required),
+    () => (vhcData?.vhc_items || []).filter((item) => (item.status === "Red" || item.status === "Amber") && !item.part_not_required && !item.declined),
     [vhcData?.vhc_items],
   );
 
@@ -577,7 +575,7 @@ const SECTION_CATEGORY_MAP = {
 const calculateTotals = (items) => {
   const net = items.reduce(
     (sum, item) =>
-      item.part_not_required ? sum : sum + parseFloat(item.total_price || 0),
+      item.part_not_required || item.declined ? sum : sum + parseFloat(item.total_price || 0),
     0,
   );
   const vat = net * VAT_RATE;
@@ -772,6 +770,59 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
       return next;
     });
     handleClosePartsModal({ resetForm: true, clearDraft: true });
+  };
+
+  const handleCustomerDecision = async (item, approve) => {
+    const jobId = vhcData.job_id || vhcData.job?.id || vhcData.id;
+    if (!jobId) {
+      alert("Cannot sync decision without job reference");
+      return;
+    }
+
+    setVhcData((prev) => ({
+      ...prev,
+      vhc_items: prev.vhc_items.map((entry) => {
+        if (entry.id !== item.id) return entry;
+        return {
+          ...entry,
+          authorized: approve,
+          declined: !approve,
+          part_not_required: !approve,
+          decline_reason: !approve ? "Customer declined" : entry.decline_reason,
+        };
+      }),
+    }));
+
+    try {
+      await supabase
+        .from("vhc_checks")
+        .update({ issue_description: approve ? "Customer accepted" : "Customer declined" })
+        .eq("vhc_id", item.id);
+
+      if (approve && item.part_selection?.selectedPart?.id) {
+        const part = item.part_selection.selectedPart;
+        const qty = item.part_selection.quantity || 1;
+        const status =
+          (part.in_stock || 0) >= qty && part.in_stock !== null ? "picked" : "awaiting_stock";
+        await supabase.from("parts_job_items").insert([
+          {
+            job_id: jobId,
+            part_id: part.id,
+            quantity_requested: qty,
+            status,
+            origin: "vhc",
+            storage_location: status === "picked" ? "Pre Pick" : null,
+            request_notes: "Auto-generated from VHC approval",
+            unit_cost: part.unit_cost || 0,
+            unit_price: part.unit_price || 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("❌ Failed to sync customer decision:", error);
+    }
   };
 
   // ✅ Shared layout for decline reason dropdowns and bulk action buttons
@@ -984,10 +1035,16 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
                       <div><strong>Total:</strong> £{formatMoney(item.total_price)}</div>
                     </div>
                     <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
-                      <button style={{ padding: "8px 12px", background: "#10b981", color: "white", border: "none", borderRadius: "8px", fontWeight: "700", cursor: "pointer" }}>
+                      <button
+                        onClick={() => handleCustomerDecision(item, true)}
+                        style={{ padding: "8px 12px", background: "#10b981", color: "white", border: "none", borderRadius: "8px", fontWeight: "700", cursor: "pointer" }}
+                      >
                         Accept
                       </button>
-                      <button style={{ padding: "8px 12px", background: "#ef4444", color: "white", border: "none", borderRadius: "8px", fontWeight: "700", cursor: "pointer" }}>
+                      <button
+                        onClick={() => handleCustomerDecision(item, false)}
+                        style={{ padding: "8px 12px", background: "#ef4444", color: "white", border: "none", borderRadius: "8px", fontWeight: "700", cursor: "pointer" }}
+                      >
                         Decline
                       </button>
                     </div>
