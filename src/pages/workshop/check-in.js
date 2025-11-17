@@ -489,10 +489,12 @@ export default function CheckInPage() {
                   <th style={tableHeaderStyle}>Time</th>
                   <th style={tableHeaderStyle}>Job #</th>
                   <th style={tableHeaderStyle}>Registration</th>
-                  <th style={tableHeaderStyle}>Vehicle</th>
                   <th style={tableHeaderStyle}>Customer</th>
-                  <th style={tableHeaderStyle}>Status</th>
-                  <th style={tableHeaderStyle}>Job Types</th>
+                  <th style={tableHeaderStyle}>Job Type</th>
+                  <th style={tableHeaderStyle}>Customer Status</th>
+                  <th style={tableHeaderStyle}>Estimated Finish</th>
+                  <th style={tableHeaderStyle}>Job Source</th>
+                  <th style={tableHeaderStyle}>VHC Required</th>
                   <th style={{ ...tableHeaderStyle, textAlign: "center" }}>Action</th>
                 </tr>
               </thead>
@@ -529,49 +531,49 @@ export default function CheckInPage() {
                         </span>
                       </td>
                       <td style={tableCellStyle}>
-                        <span style={{ fontWeight: "500" }}>
+                        <span style={{ fontWeight: "600" }}>
                           {job.reg || "N/A"}
                         </span>
-                      </td>
-                      <td style={tableCellStyle}>
-                        {job.makeModel || "N/A"}
                       </td>
                       <td style={tableCellStyle}>
                         {job.customer || "N/A"}
                       </td>
                       <td style={tableCellStyle}>
-                        <span style={{
-                          padding: "6px 12px",
-                          borderRadius: "6px",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          backgroundColor: getStatusColor(job.status),
-                          color: "white"
-                        }}>
-                          {job.status}
+                        <span style={{ fontWeight: "600", color: "#222" }}>
+                          {getDetectedJobTypeLabel(job)}
                         </span>
                       </td>
                       <td style={tableCellStyle}>
-                        {job.jobCategories && job.jobCategories.length > 0 ? (
-                          <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                            {job.jobCategories.map((cat, i) => (
-                              <span
-                                key={i}
-                                style={{
-                                  padding: "2px 8px",
-                                  backgroundColor: "#e0e0e0",
-                                  borderRadius: "10px",
-                                  fontSize: "11px",
-                                  fontWeight: "600"
-                                }}
-                              >
-                                {cat}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <span style={{ color: "#999", fontSize: "13px" }}>-</span>
-                        )}
+                        <span
+                          style={{
+                            padding: "6px 12px",
+                            borderRadius: "12px",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            ...getCustomerStatusBadgeColors(job.waitingStatus || "Neither"),
+                          }}
+                        >
+                          {job.waitingStatus || "Neither"}
+                        </span>
+                      </td>
+                      <td style={{ ...tableCellStyle, fontWeight: "600" }}>
+                        {getEstimatedFinishTime(job)}
+                      </td>
+                      <td style={tableCellStyle}>
+                        {job.jobSource || "Retail"}
+                      </td>
+                      <td style={tableCellStyle}>
+                        <span style={{
+                          padding: "4px 10px",
+                          borderRadius: "12px",
+                          fontSize: "12px",
+                          fontWeight: "700",
+                          backgroundColor: job.vhcRequired ? "#e0f2fe" : "#f3f4f6",
+                          color: job.vhcRequired ? "#0369a1" : "#4b5563",
+                          display: "inline-block"
+                        }}>
+                          {job.vhcRequired ? "Yes" : "No"}
+                        </span>
                       </td>
                       <td style={{ ...tableCellStyle, textAlign: "center" }}>
                         {isCheckedIn ? (
@@ -630,6 +632,77 @@ export default function CheckInPage() {
       </div>
     </Layout>
   );
+}
+
+// ✅ Helpers for job list fields
+function normalizeJobCategoryLabel(rawLabel) {
+  if (!rawLabel || typeof rawLabel !== "string") return null;
+  const cleaned = rawLabel.trim().toLowerCase();
+
+  if (cleaned === "service") return "service";
+  if (cleaned === "mot") return "mot";
+  if (cleaned === "diagnostic" || cleaned === "diagnostics" || cleaned === "diagnosis")
+    return "diagnosis";
+  if (cleaned === "other") return "other";
+
+  return null;
+}
+
+function getDetectedJobTypeLabel(job) {
+  const categories = Array.isArray(job.jobCategories) ? job.jobCategories : job.job_categories || [];
+  const normalized = new Set(
+    categories.map((category) => normalizeJobCategoryLabel(category)).filter(Boolean)
+  );
+
+  if (normalized.size === 0) {
+    const fallbackType = (job.type || "").trim().toLowerCase();
+    if (fallbackType.includes("mot")) {
+      normalized.add("mot");
+    } else if (fallbackType.includes("diag")) {
+      normalized.add("diagnosis");
+    } else if (fallbackType.includes("service")) {
+      normalized.add("service");
+    }
+  }
+
+  if (normalized.size === 0) {
+    normalized.add("other");
+  }
+
+  return Array.from(normalized)
+    .map((label) => {
+      if (label === "mot") return "MOT";
+      if (label === "diagnosis") return "Diagnostic";
+      if (label === "service") return "Service";
+      return "Other";
+    })
+    .join(", ");
+}
+
+function getCustomerStatusBadgeColors(status) {
+  const normalized = (status || "").toLowerCase();
+  if (normalized === "waiting") {
+    return { backgroundColor: "#ffe5e5", color: "#c62828" };
+  }
+  if (normalized === "loan car") {
+    return { backgroundColor: "#e3f2fd", color: "#1565c0" };
+  }
+  if (normalized === "collection") {
+    return { backgroundColor: "#fff8e1", color: "#ff9800" };
+  }
+  return { backgroundColor: "#e8f5e9", color: "#2e7d32" };
+}
+
+function getEstimatedFinishTime(job) {
+  const appointment = job.appointment;
+  if (!appointment?.date || !appointment?.time) return "-";
+
+  const start = new Date(`${appointment.date}T${appointment.time}:00`);
+  if (Number.isNaN(start.getTime())) return "-";
+
+  const baseHours = 2; // Simple base estimate for workshop work
+  const finish = new Date(start.getTime() + baseHours * 60 * 60 * 1000);
+  return finish.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
 // ✅ Helper function for status colors
