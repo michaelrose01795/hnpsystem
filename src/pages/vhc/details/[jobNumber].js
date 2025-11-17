@@ -410,8 +410,12 @@ const [partsSearchResults, setPartsSearchResults] = useState([]); // store searc
   };
 
   // ✅ Calculate totals
-  const calculateTotal = (items) =>
-    items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+const calculateTotal = (items) =>
+  items.reduce(
+    (sum, item) =>
+      item.part_not_required ? sum : sum + parseFloat(item.total_price || 0),
+    0,
+  );
 
   const calculateSelectedTotal = (items) =>
     items.reduce(
@@ -552,12 +556,13 @@ const [partsSearchResults, setPartsSearchResults] = useState([]); // store searc
     handleClosePartsModal({ resetForm: true, clearDraft: true });
   };
 
-  const handlePartsNotRequired = () => {
+  const handlePartsNotRequired = async () => {
     if (!partsModal.itemId) return;
+    const targetId = partsModal.itemId;
     setVhcData((prev) => ({
       ...prev,
       vhc_items: prev.vhc_items.map((item) => {
-        if (item.id !== partsModal.itemId) return item;
+        if (item.id !== targetId) return item;
         const prc = updateItemPricing(item, 0);
         return {
           ...item,
@@ -567,9 +572,20 @@ const [partsSearchResults, setPartsSearchResults] = useState([]); // store searc
         };
       }),
     }));
+    try {
+      await supabase
+        .from("vhc_checks")
+        .update({
+          issue_description: "PARTS_NOT_REQUIRED",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("vhc_id", targetId);
+    } catch (error) {
+      console.error("❌ Failed to persist parts not required:", error);
+    }
     setPartsDrafts((prev) => {
       const next = { ...prev };
-      delete next[partsModal.itemId];
+      delete next[targetId];
       return next;
     });
     handleClosePartsModal({ resetForm: true, clearDraft: true });
