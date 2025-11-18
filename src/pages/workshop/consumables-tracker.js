@@ -1,4 +1,5 @@
 "use client";
+// file location: src/pages/workshop/consumables-tracker.js
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Layout from "@/components/Layout";
@@ -187,6 +188,23 @@ const orderButtonStyle = {
   cursor: "pointer",
   boxShadow: "0 10px 18px rgba(209,0,0,0.18)",
 };
+
+function normalizeConsumableName(value) {
+  return (value || "").trim().toLowerCase();
+}
+
+function compactConsumableKey(value) {
+  return normalizeConsumableName(value).replace(/\s+/g, "");
+}
+
+function namesMatch(valueA, valueB) {
+  const keyA = compactConsumableKey(valueA);
+  const keyB = compactConsumableKey(valueB);
+  if (!keyA || !keyB) {
+    return false;
+  }
+  return keyA === keyB;
+}
 function formatCurrency(value) {
   if (value === null || value === undefined) {
     return "—";
@@ -394,25 +412,8 @@ function ConsumablesTrackerPage() {
     } finally {
       if (isMountedRef.current) {
         setLoadingConsumables(false);
-  }
-}
-
-function normalizeConsumableName(value) {
-  return (value || "").trim().toLowerCase();
-}
-
-function compactConsumableKey(value) {
-  return normalizeConsumableName(value).replace(/\s+/g, "");
-}
-
-function namesMatch(valueA, valueB) {
-  const keyA = compactConsumableKey(valueA);
-  const keyB = compactConsumableKey(valueB);
-  if (!keyA || !keyB) {
-    return false;
-  }
-  return keyA === keyB;
-}
+      }
+    }
   }, [isWorkshopManager]);
 
   useEffect(() => {
