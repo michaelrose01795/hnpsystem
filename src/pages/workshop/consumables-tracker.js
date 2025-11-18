@@ -379,6 +379,42 @@ function ConsumablesTrackerPage() {
   const statusNotificationCacheRef = useRef(new Map());
   const statusNotificationPendingRef = useRef(new Map());
 
+  const closeOrderModal = useCallback(() => {
+    setOrderModalConsumable(null);
+    setShowEditForm(false);
+    setOrderModalError("");
+    setPendingRequestOrderId(null);
+  }, []);
+
+  const openOrderModal = useCallback(
+    (item, { requestId } = {}) => {
+      if (!item) {
+        return;
+      }
+      const lastLog = item.orderHistory?.[0];
+      const baseQuantity =
+        lastLog?.quantity ?? item.lastOrderQuantity ?? item.estimatedQuantity ?? "";
+      const baseUnitCost =
+        lastLog?.unitCost ??
+        (item.unitCost !== undefined && item.unitCost !== null ? item.unitCost : "");
+
+      setOrderModalConsumable(item);
+      setOrderForm({
+        quantity: baseQuantity !== "" ? String(baseQuantity) : "",
+        unitCost:
+          baseUnitCost !== "" && baseUnitCost !== null && baseUnitCost !== undefined
+            ? Number(baseUnitCost).toFixed(2)
+            : "",
+        supplier: lastLog?.supplier ?? item.supplier ?? "",
+        orderDate: todayIso,
+      });
+      setShowEditForm(false);
+      setOrderModalError("");
+      setPendingRequestOrderId(requestId ?? null);
+    },
+    [todayIso]
+  );
+
   const refreshConsumables = useCallback(async () => {
     if (!isWorkshopManager) {
       setConsumables([]);
@@ -920,44 +956,6 @@ function ConsumablesTrackerPage() {
       return candidateValues.some((value) => value.includes(term));
     });
   }, [consumables, searchQuery]);
-
-  const closeOrderModal = useCallback(() => {
-    setOrderModalConsumable(null);
-    setShowEditForm(false);
-    setOrderModalError("");
-    setPendingRequestOrderId(null);
-  }, []);
-
-  const openOrderModal = useCallback(
-    (item, { requestId } = {}) => {
-      if (!item) {
-        return;
-      }
-      const lastLog = item.orderHistory?.[0];
-      const baseQuantity =
-        lastLog?.quantity ?? item.lastOrderQuantity ?? item.estimatedQuantity ?? "";
-      const baseUnitCost =
-        lastLog?.unitCost ??
-        (item.unitCost !== undefined && item.unitCost !== null
-          ? item.unitCost
-          : "");
-
-      setOrderModalConsumable(item);
-      setOrderForm({
-        quantity: baseQuantity !== "" ? String(baseQuantity) : "",
-        unitCost:
-          baseUnitCost !== "" && baseUnitCost !== null && baseUnitCost !== undefined
-            ? Number(baseUnitCost).toFixed(2)
-            : "",
-        supplier: lastLog?.supplier ?? item.supplier ?? "",
-        orderDate: todayIso,
-      });
-      setShowEditForm(false);
-      setOrderModalError("");
-      setPendingRequestOrderId(requestId ?? null);
-    },
-    [todayIso]
-  );
 
   const handleOrderFormChange = useCallback((field) => (event) => {
     setOrderForm((previous) => ({ ...previous, [field]: event.target.value }));
