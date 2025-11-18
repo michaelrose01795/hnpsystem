@@ -336,6 +336,7 @@ function ConsumablesTrackerPage() {
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState("");
   const [orderingRequestId, setOrderingRequestId] = useState(null);
+  const [pendingRequestOrderId, setPendingRequestOrderId] = useState(null);
   const isMountedRef = useRef(true);
   const [orderModalConsumable, setOrderModalConsumable] = useState(null);
   const [orderModalError, setOrderModalError] = useState("");
@@ -393,6 +394,15 @@ function normalizeConsumableName(value) {
 function compactConsumableKey(value) {
   return normalizeConsumableName(value).replace(/\s+/g, "");
 }
+
+function namesMatch(valueA, valueB) {
+  const keyA = compactConsumableKey(valueA);
+  const keyB = compactConsumableKey(valueB);
+  if (!keyA || !keyB) {
+    return false;
+  }
+  return keyA === keyB;
+}
   }, [isWorkshopManager]);
 
   useEffect(() => {
@@ -433,6 +443,16 @@ function compactConsumableKey(value) {
   useEffect(() => {
     fetchTechRequests();
   }, [fetchTechRequests]);
+
+  const findConsumableByName = useCallback(
+    (name) => {
+      if (!name) {
+        return null;
+      }
+      return consumables.find((item) => namesMatch(item.name, name));
+    },
+    [consumables]
+  );
 
   const handleRequestOrdered = useCallback(
     async (requestId) => {
@@ -803,10 +823,11 @@ function compactConsumableKey(value) {
     setOrderModalConsumable(null);
     setShowEditForm(false);
     setOrderModalError("");
+    setPendingRequestOrderId(null);
   }, []);
 
   const openOrderModal = useCallback(
-    (item) => {
+    (item, { requestId } = {}) => {
       if (!item) {
         return;
       }
@@ -831,6 +852,7 @@ function compactConsumableKey(value) {
       });
       setShowEditForm(false);
       setOrderModalError("");
+      setPendingRequestOrderId(requestId ?? null);
     },
     [todayIso]
   );
@@ -861,6 +883,10 @@ function compactConsumableKey(value) {
 
     try {
       await addConsumableOrder(orderModalConsumable.id, payload);
+      if (pendingRequestOrderId) {
+        await handleRequestOrdered(pendingRequestOrderId);
+        setPendingRequestOrderId(null);
+      }
       await refreshConsumables();
       closeOrderModal();
     } catch (error) {
@@ -868,7 +894,14 @@ function compactConsumableKey(value) {
     } finally {
       setOrderModalLoading(false);
     }
-  }, [closeOrderModal, orderModalConsumable, refreshConsumables, todayIso]);
+  }, [
+    closeOrderModal,
+    handleRequestOrdered,
+    orderModalConsumable,
+    pendingRequestOrderId,
+    refreshConsumables,
+    todayIso,
+  ]);
 
   const handleEditedOrder = useCallback(
     async (event) => {
@@ -888,12 +921,16 @@ function compactConsumableKey(value) {
       };
 
       try {
-        await addConsumableOrder(orderModalConsumable.id, {
-          ...payload,
-          estimatedQuantityOverride: payload.quantity,
-        });
-        await refreshConsumables();
-        closeOrderModal();
+      await addConsumableOrder(orderModalConsumable.id, {
+        ...payload,
+        estimatedQuantityOverride: payload.quantity,
+      });
+      if (pendingRequestOrderId) {
+        await handleRequestOrdered(pendingRequestOrderId);
+        setPendingRequestOrderId(null);
+      }
+      await refreshConsumables();
+      closeOrderModal();
       } catch (error) {
         setOrderModalError(error?.message || "Failed to place order.");
       } finally {
@@ -906,7 +943,7 @@ function compactConsumableKey(value) {
       orderModalConsumable,
       refreshConsumables,
       todayIso,
-    ]
+    ] // previous dependencies
   );
 
   const previewLogs = orderModalConsumable?.orderHistory?.slice(0, 3) ?? [];
