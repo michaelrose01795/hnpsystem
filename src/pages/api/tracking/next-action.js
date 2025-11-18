@@ -17,6 +17,7 @@ export default async function handler(req, res) {
     vehicleLocation,
     notes,
     performedBy,
+    vehicleStatus,
   } = req.body || {};
 
   if (!actionType) {
@@ -34,6 +35,7 @@ export default async function handler(req, res) {
       vehicleLocation,
       notes,
       performedBy,
+      vehicleStatus,
     });
 
     if (!result.success) {

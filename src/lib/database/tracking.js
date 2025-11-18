@@ -32,6 +32,7 @@ export const logNextActionEvents = async ({
   vehicleLocation,
   notes,
   performedBy,
+  vehicleStatus,
 }) => {
   const keyPayload = {
     job_id: jobId || null,
@@ -46,7 +47,7 @@ export const logNextActionEvents = async ({
   const vehiclePayload = {
     job_id: jobId || null,
     vehicle_id: vehicleId || null,
-    status: statusLabelForAction(actionType),
+    status: vehicleStatus || statusLabelForAction(actionType),
     location: vehicleLocation || null,
     notes: buildVehicleNotes({ notes }),
     created_by: performedBy || null,

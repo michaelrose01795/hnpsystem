@@ -41,6 +41,28 @@ const KEY_LOCATIONS = KEY_LOCATION_GROUPS.flatMap((group) =>
   }))
 );
 
+const AUTO_MOVEMENT_RULES = {
+  "workshop in progress": {
+    keyLocation: "Workshop Cupboard – Jobs in Progress",
+    vehicleLocation: "In Workshop",
+    vehicleStatus: "In Workshop",
+  },
+  wash: {
+    keyLocation: "Workshop Cupboard – Wash",
+    vehicleStatus: "Wash",
+  },
+  complete: {
+    keyLocation: "Workshop Cupboard – Complete",
+    vehicleLocation: "Ready for Release",
+    vehicleStatus: "Ready for Release",
+  },
+};
+
+const getAutoMovementRule = (status) => {
+  if (!status) return null;
+  return AUTO_MOVEMENT_RULES[status.trim().toLowerCase()] || null;
+};
+
 const STATUS_COLORS = {
   "Awaiting Authorization": "#f97316",
   "Waiting For Collection": "#0ea5e9",
@@ -483,6 +505,30 @@ export default function TrackingDashboard() {
     loadEntries();
   }, [loadEntries]);
 
+  useEffect(() => {
+    const channel = supabaseClient
+      .channel("tracking-job-status")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "jobs" },
+        (payload) => {
+          const newJob = payload?.new;
+          const oldJob = payload?.old;
+          if (!newJob?.status || newJob.status === oldJob?.status) {
+            return;
+          }
+          const rule = getAutoMovementRule(newJob.status);
+          if (!rule) return;
+          handleAutoMovement(newJob, rule, newJob.status);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabaseClient.removeChannel(channel);
+    };
+  }, [handleAutoMovement]);
+
   const recentEntries = useMemo(() => entries.slice(0, 3), [entries]);
 
   const openSearchModal = (type) => setSearchModal({ open: true, type });
@@ -499,6 +545,42 @@ export default function TrackingDashboard() {
       keyLocation: searchModal.type === "key" ? option.label : KEY_LOCATIONS[0].label,
     });
   };
+
+  const handleAutoMovement = useCallback(
+    async (job, rule, newStatus) => {
+      try {
+        const payload = {
+          actionType: "job_status_change",
+          jobId: job.id || job.job_id || null,
+          jobNumber: (job.job_number || job.jobNumber || "").toString().trim().toUpperCase(),
+          vehicleId: job.vehicle_id || job.vehicleId || null,
+          vehicleReg: (job.vehicle_reg || job.reg || "").toString().trim().toUpperCase(),
+          keyLocation: rule.keyLocation,
+          vehicleLocation: rule.vehicleLocation,
+          vehicleStatus: rule.vehicleStatus,
+          notes: `Auto-sync from status "${newStatus}"`,
+          performedBy: dbUserId || null,
+        };
+
+        const response = await fetch(buildApiUrl(NEXT_ACTION_ENDPOINT), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorPayload = await response.json().catch(() => ({ message: "Failed to auto-sync locations" }));
+          console.error("Auto movement failed", errorPayload?.message || response.statusText);
+          return;
+        }
+
+        await loadEntries();
+      } catch (autoError) {
+        console.error("Auto movement error", autoError);
+      }
+    },
+    [dbUserId, loadEntries]
+  );
 
   const handleSave = async (form) => {
     try {
