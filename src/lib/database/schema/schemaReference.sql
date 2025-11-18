@@ -897,3 +897,14 @@ CREATE TABLE public.workshop_consumables (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT workshop_consumables_pkey PRIMARY KEY (id)
 );
+
+CREATE TABLE public.workshop_consumable_budgets (
+  id SERIAL PRIMARY KEY,
+  year integer NOT NULL,
+  month integer NOT NULL,
+  monthly_budget numeric NOT NULL DEFAULT 0,
+  updated_by integer REFERENCES public.users(user_id),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT workshop_consumable_budgets_year_month_key UNIQUE (year, month)
+);

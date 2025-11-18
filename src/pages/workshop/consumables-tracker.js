@@ -293,11 +293,26 @@ const duplicateModalStyle = {
 };
 
 function ConsumablesTrackerPage() {
-  const { user } = useUser();
+  const { user, dbUserId } = useUser();
   const userRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
   const isWorkshopManager = userRoles.includes("workshop manager");
   const todayIso = useMemo(() => new Date().toISOString().split("T")[0], []);
-  const [monthlyBudget, setMonthlyBudget] = useState(2500);
+  const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
+  const [viewMonth, setViewMonth] = useState(
+    () => new Date().getMonth() + 1
+  );
+  const [financialSummary, setFinancialSummary] = useState({
+    monthSpend: 0,
+    projectedSpend: 0,
+    monthlyBudget: 0,
+    budgetUpdatedAt: null,
+  });
+  const [financialLoading, setFinancialLoading] = useState(false);
+  const [financialError, setFinancialError] = useState("");
+  const [budgetInput, setBudgetInput] = useState("");
+  const [budgetSaving, setBudgetSaving] = useState(false);
+  const [budgetSaveError, setBudgetSaveError] = useState("");
+  const [budgetSaveMessage, setBudgetSaveMessage] = useState("");
   const [consumables, setConsumables] = useState([]);
   const [potentialDuplicates, setPotentialDuplicates] = useState([]);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
@@ -362,6 +377,158 @@ function ConsumablesTrackerPage() {
     };
   }, [isWorkshopManager, refreshConsumables]);
 
+  const currentMonthNumber = useMemo(() => new Date().getMonth() + 1, []);
+  const currentYearNumber = useMemo(() => new Date().getFullYear(), []);
+  const monthLabel = useMemo(
+    () =>
+      new Date(viewYear, viewMonth - 1).toLocaleDateString("en-GB", {
+        month: "long",
+        year: "numeric",
+      }),
+    [viewMonth, viewYear]
+  );
+  const canAdvanceToNextMonth = useMemo(
+    () =>
+      viewYear < currentYearNumber ||
+      (viewYear === currentYearNumber && viewMonth < currentMonthNumber),
+    [viewYear, viewMonth, currentMonthNumber, currentYearNumber]
+  );
+  const formattedBudgetUpdatedAt = useMemo(() => {
+    if (!financialSummary.budgetUpdatedAt) {
+      return null;
+    }
+    const parsed = new Date(financialSummary.budgetUpdatedAt);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+    return parsed.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }, [financialSummary.budgetUpdatedAt]);
+
+  const fetchFinancialSummary = useCallback(async () => {
+    setFinancialLoading(true);
+    setFinancialError("");
+
+    try {
+      const response = await fetch(
+        `/api/workshop/consumables/financials?year=${viewYear}&month=${viewMonth}`
+      );
+      if (!response.ok) {
+        const body = await response
+          .json()
+          .catch(() => ({ message: "Unable to load financial summary." }));
+        throw new Error(body.message || "Unable to load financial summary.");
+      }
+      const payload = await response.json();
+      if (!payload.success) {
+        throw new Error(payload.message || "Unable to load financial summary.");
+      }
+
+      const { monthSpend, projectedSpend, monthlyBudget, budgetUpdatedAt } =
+        payload.data || {};
+      setFinancialSummary({
+        monthSpend: Number(monthSpend) || 0,
+        projectedSpend: Number(projectedSpend) || 0,
+        monthlyBudget: Number(monthlyBudget) || 0,
+        budgetUpdatedAt: budgetUpdatedAt || null,
+      });
+    } catch (error) {
+      console.error("❌ Failed to load financial summary", error);
+      setFinancialError(error?.message || "Unable to load consumable finances.");
+    } finally {
+      setFinancialLoading(false);
+    }
+  }, [viewMonth, viewYear]);
+
+  useEffect(() => {
+    fetchFinancialSummary();
+  }, [fetchFinancialSummary]);
+
+  useEffect(() => {
+    if (
+      financialSummary.monthlyBudget !== undefined &&
+      financialSummary.monthlyBudget !== null
+    ) {
+      setBudgetInput(String(financialSummary.monthlyBudget));
+    } else {
+      setBudgetInput("");
+    }
+  }, [financialSummary.monthlyBudget]);
+
+  const handleBudgetInputChange = useCallback((event) => {
+    setBudgetInput(event.target.value);
+    setBudgetSaveError("");
+    setBudgetSaveMessage("");
+  }, []);
+
+  const handleMonthChange = useCallback(
+    (offset) => {
+      const candidate = new Date(viewYear, viewMonth - 1 + offset, 1);
+      setViewYear(candidate.getFullYear());
+      setViewMonth(candidate.getMonth() + 1);
+    },
+    [viewMonth, viewYear]
+  );
+
+  const handleBudgetSave = useCallback(async () => {
+    setBudgetSaving(true);
+    setBudgetSaveError("");
+    setBudgetSaveMessage("");
+    const parsed = Number(budgetInput);
+    if (Number.isNaN(parsed) || parsed < 0) {
+      setBudgetSaveError("Enter a valid budget amount.");
+      setBudgetSaving(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/workshop/consumables/financials", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          year: viewYear,
+          month: viewMonth,
+          budget: parsed,
+          updatedBy: dbUserId,
+        }),
+      });
+
+      if (!response.ok) {
+        const body = await response
+          .json()
+          .catch(() => ({ message: "Unable to save budget." }));
+        throw new Error(body.message || "Unable to save budget.");
+      }
+
+      const payload = await response.json();
+      if (!payload.success) {
+        throw new Error(payload.message || "Unable to save budget.");
+      }
+
+      const { monthSpend, projectedSpend, monthlyBudget, budgetUpdatedAt } =
+        payload.data || {};
+      setFinancialSummary({
+        monthSpend: Number(monthSpend) || 0,
+        projectedSpend: Number(projectedSpend) || 0,
+        monthlyBudget: Number(monthlyBudget) || 0,
+        budgetUpdatedAt: budgetUpdatedAt || null,
+      });
+      setBudgetSaveMessage("Budget saved.");
+    } catch (error) {
+      console.error("❌ Failed to save monthly budget", error);
+      setBudgetSaveError(error?.message || "Unable to save budget.");
+    } finally {
+      setBudgetSaving(false);
+    }
+  }, [budgetInput, viewMonth, viewYear, dbUserId]);
+
   const sendConsumableStatusNotification = useCallback(
     async (item, statusLabel) => {
       try {
@@ -419,37 +586,17 @@ function ConsumablesTrackerPage() {
     });
   }, [consumables, loadingConsumables, sendConsumableStatusNotification]);
 
-  const handleBudgetChange = (event) => {
-    setMonthlyBudget(Number(event.target.value) || 0);
-  };
-
   const totals = useMemo(() => {
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth();
-    const currentYear = currentDate.getFullYear();
-
-    const monthSpend = consumables.reduce((acc, item) => {
-      if (!item.lastOrderDate) {
-        return acc;
-      }
-      const lastOrder = new Date(item.lastOrderDate);
-      if (
-        lastOrder.getMonth() === currentMonth &&
-        lastOrder.getFullYear() === currentYear
-      ) {
-        acc += item.lastOrderTotalValue ?? item.unitCost * (item.lastOrderQuantity || 0);
-      }
-      return acc;
-    }, 0);
-
-    const projectedSpend = consumables.reduce((acc, item) => {
-      const qty = item.estimatedQuantity || 0;
-      acc += (item.unitCost || 0) * qty;
-      return acc;
-    }, 0);
-
-    return { monthSpend, projectedSpend };
-  }, [consumables]);
+    const monthSpend = Number(financialSummary.monthSpend) || 0;
+    const projectedSpend = Number(financialSummary.projectedSpend) || 0;
+    const monthlyBudget = Number(financialSummary.monthlyBudget) || 0;
+    return {
+      monthSpend,
+      projectedSpend,
+      monthlyBudget,
+      budgetRemaining: monthlyBudget - monthSpend,
+    };
+  }, [financialSummary]);
 
   const closeOrderModal = useCallback(() => {
     setOrderModalConsumable(null);
@@ -823,12 +970,78 @@ function ConsumablesTrackerPage() {
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <p style={{ margin: 0, fontSize: "0.8rem", color: "#888" }}>
-                    Monthly Budget
+                    Budget for {monthLabel}
                   </p>
                   <strong style={{ fontSize: "1.4rem", color: "#b10000" }}>
-                    {formatCurrency(monthlyBudget)}
+                    {financialLoading
+                      ? "Loading…"
+                      : formatCurrency(totals.monthlyBudget)}
                   </strong>
                 </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: "20px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  gap: "12px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleMonthChange(-1)}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: "10px",
+                      border: "1px solid #d10000",
+                      background: "#fff",
+                      color: "#b10000",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ← Previous
+                  </button>
+                  <span
+                    style={{
+                      fontWeight: 600,
+                      color: "#a00000",
+                    }}
+                  >
+                    {monthLabel}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleMonthChange(1)}
+                    disabled={!canAdvanceToNextMonth}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: "10px",
+                      border: "1px solid #d10000",
+                      background: canAdvanceToNextMonth
+                        ? "#fff"
+                        : "rgba(209,0,0,0.2)",
+                      color: canAdvanceToNextMonth ? "#b10000" : "#a00000",
+                      fontWeight: 600,
+                      cursor: canAdvanceToNextMonth ? "pointer" : "not-allowed",
+                    }}
+                  >
+                    Next →
+                  </button>
+                </div>
+                {financialError && (
+                  <p style={{ margin: 0, color: "#a00000" }}>{financialError}</p>
+                )}
               </div>
 
               <div
@@ -859,7 +1072,9 @@ function ConsumablesTrackerPage() {
                       color: "#b10000",
                     }}
                   >
-                    {formatCurrency(totals.monthSpend)}
+                    {financialLoading
+                      ? "Loading…"
+                      : formatCurrency(totals.monthSpend)}
                   </h2>
                 </div>
                 <div
@@ -882,7 +1097,9 @@ function ConsumablesTrackerPage() {
                       color: "#b10000",
                     }}
                   >
-                    {formatCurrency(totals.projectedSpend)}
+                    {financialLoading
+                      ? "Loading…"
+                      : formatCurrency(totals.projectedSpend)}
                   </h2>
                 </div>
                 <div
@@ -902,12 +1119,17 @@ function ConsumablesTrackerPage() {
                     style={{
                       margin: "6px 0 0",
                       fontSize: "1.4rem",
-                      color: totals.monthSpend > monthlyBudget ? "#a00000" : "#007a4e",
+                      color:
+                        totals.monthSpend > totals.monthlyBudget
+                          ? "#a00000"
+                          : "#007a4e",
                     }}
                   >
-                    {formatCurrency(
-                      Math.max(monthlyBudget - totals.monthSpend, -999999)
-                    )}
+                    {financialLoading
+                      ? "Loading…"
+                      : formatCurrency(
+                          Math.max(totals.budgetRemaining, -999999)
+                        )}
                   </h2>
                 </div>
               </div>
@@ -922,17 +1144,56 @@ function ConsumablesTrackerPage() {
                     marginBottom: "6px",
                   }}
                 >
-                  Adjust Monthly Consumables Budget
+                  Adjust Consumables Budget for {monthLabel}
                 </label>
-                <input
-                  id="monthlyBudget"
-                  type="number"
-                  min="0"
-                  step="50"
-                  value={monthlyBudget}
-                  onChange={handleBudgetChange}
-                  style={budgetInputStyle}
-                />
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "12px",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
+                  <input
+                    id="monthlyBudget"
+                    type="number"
+                    min="0"
+                    step="50"
+                    value={budgetInput}
+                    onChange={handleBudgetInputChange}
+                    style={budgetInputStyle}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleBudgetSave}
+                    disabled={budgetSaving || financialLoading}
+                    style={{
+                      ...orderModalButtonStyle,
+                      background: budgetSaving
+                        ? "rgba(209,0,0,0.4)"
+                        : "linear-gradient(135deg, #d10000, #940000)",
+                      color: "#ffffff",
+                      width: "auto",
+                    }}
+                  >
+                    {budgetSaving ? "Saving…" : "Save Budget"}
+                  </button>
+                </div>
+                {budgetSaveMessage && (
+                  <p style={{ margin: "6px 0 0", color: "#007a4e" }}>
+                    {budgetSaveMessage}
+                  </p>
+                )}
+                {budgetSaveError && (
+                  <p style={{ margin: "6px 0 0", color: "#a00000" }}>
+                    {budgetSaveError}
+                  </p>
+                )}
+                {formattedBudgetUpdatedAt && (
+                  <p style={{ margin: "6px 0 0", color: "#555", fontSize: "0.85rem" }}>
+                    Last updated {formattedBudgetUpdatedAt}
+                  </p>
+                )}
               </div>
             </div>
 
