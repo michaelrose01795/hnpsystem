@@ -220,7 +220,7 @@ function getConsumableStatus({ nextEstimatedOrderDate, isRequired }) {
   }
 
   if (!nextEstimatedOrderDate) {
-    return { label: "Coming Up", tone: "warning" };
+    return { label: "Not Required", tone: "safe" };
   }
 
   const today = new Date();
@@ -230,14 +230,19 @@ function getConsumableStatus({ nextEstimatedOrderDate, isRequired }) {
   nextDate.setHours(0, 0, 0, 0);
 
   if (Number.isNaN(nextDate.getTime())) {
-    return { label: "Coming Up", tone: "warning" };
+    return { label: "Not Required", tone: "safe" };
   }
 
-  if (today > nextDate) {
+  if (nextDate < today) {
     return { label: "Overdue", tone: "danger" };
   }
 
-  return { label: "Coming Up", tone: "warning" };
+  const diffDays = Math.ceil((nextDate - today) / (1000 * 60 * 60 * 24));
+  if (diffDays <= 14) {
+    return { label: "Coming Up", tone: "warning" };
+  }
+
+  return { label: "Not Required", tone: "safe" };
 }
 
 function toneToStyles(tone) {
