@@ -316,6 +316,24 @@ const duplicateModalStyle = {
   border: "1px solid #ffdede",
 };
 
+const statusBadgeStyles = {
+  pending: {
+    backgroundColor: "rgba(255,172,0,0.16)",
+    color: "#b06000",
+    border: "1px solid rgba(255,172,0,0.35)",
+  },
+  urgent: {
+    backgroundColor: "rgba(209,0,0,0.12)",
+    color: "#a00000",
+    border: "1px solid rgba(209,0,0,0.35)",
+  },
+  ordered: {
+    backgroundColor: "rgba(0,176,112,0.12)",
+    color: "#007a4e",
+    border: "1px solid rgba(0,176,112,0.35)",
+  },
+};
+
 function ConsumablesTrackerPage() {
   const { user, dbUserId } = useUser();
   const userRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
