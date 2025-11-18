@@ -908,3 +908,15 @@ CREATE TABLE public.workshop_consumable_budgets (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT workshop_consumable_budgets_year_month_key UNIQUE (year, month)
 );
+
+CREATE TABLE public.workshop_consumable_requests (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  item_name text NOT NULL,
+  quantity integer NOT NULL DEFAULT 0,
+  requested_by integer REFERENCES public.users(user_id),
+  requested_by_name text,
+  requested_at timestamp with time zone NOT NULL DEFAULT now(),
+  status text NOT NULL DEFAULT 'pending',
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  PRIMARY KEY (id)
+);

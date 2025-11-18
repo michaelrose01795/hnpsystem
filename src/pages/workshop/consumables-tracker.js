@@ -85,7 +85,7 @@ const orderHistoryContainerStyle = {
 };
 
 const scheduledTableBodyStyle = {
-  maxHeight: "320px",
+  maxHeight: "calc(5 * 62px)",
   overflowY: "auto",
 };
 
@@ -332,6 +332,10 @@ function ConsumablesTrackerPage() {
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [loadingConsumables, setLoadingConsumables] = useState(false);
   const [consumablesError, setConsumablesError] = useState("");
+  const [techRequests, setTechRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestsError, setRequestsError] = useState("");
+  const [orderingRequestId, setOrderingRequestId] = useState(null);
   const isMountedRef = useRef(true);
   const [orderModalConsumable, setOrderModalConsumable] = useState(null);
   const [orderModalError, setOrderModalError] = useState("");
@@ -398,6 +402,74 @@ function compactConsumableKey(value) {
       isMountedRef.current = false;
     };
   }, [isWorkshopManager, refreshConsumables]);
+
+  const fetchTechRequests = useCallback(async () => {
+    setRequestsLoading(true);
+    setRequestsError("");
+
+    try {
+      const response = await fetch("/api/workshop/consumables/requests");
+      if (!response.ok) {
+        const body = await response
+          .json()
+          .catch(() => ({ message: "Unable to load requests." }));
+        throw new Error(body.message || "Unable to load requests.");
+      }
+
+      const payload = await response.json();
+      if (!payload.success) {
+        throw new Error(payload.message || "Unable to load requests.");
+      }
+
+      setTechRequests(payload.data || []);
+    } catch (error) {
+      console.error("❌ Failed to load consumable requests", error);
+      setRequestsError(error?.message || "Unable to load requests.");
+    } finally {
+      setRequestsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTechRequests();
+  }, [fetchTechRequests]);
+
+  const handleRequestOrdered = useCallback(
+    async (requestId) => {
+      if (!requestId) {
+        return;
+      }
+
+      setOrderingRequestId(requestId);
+      try {
+        const response = await fetch("/api/workshop/consumables/requests", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: requestId, status: "ordered" }),
+        });
+
+        if (!response.ok) {
+          const body = await response
+            .json()
+            .catch(() => ({ message: "Unable to update request." }));
+          throw new Error(body.message || "Unable to update request.");
+        }
+
+        const payload = await response.json();
+        if (!payload.success) {
+          throw new Error(payload.message || "Unable to update request.");
+        }
+
+        setTechRequests(payload.data || []);
+      } catch (error) {
+        console.error("❌ Failed to update consumable request", error);
+        setRequestsError(error?.message || "Unable to update request.");
+      } finally {
+        setOrderingRequestId(null);
+      }
+    },
+    []
+  );
 
   const currentMonthNumber = useMemo(() => new Date().getMonth() + 1, []);
   const currentYearNumber = useMemo(() => new Date().getFullYear(), []);
@@ -1473,11 +1545,11 @@ function compactConsumableKey(value) {
                   <table
                     style={{
                       width: "100%",
-                    borderCollapse: "separate",
-                    borderSpacing: "0 12px",
-                  }}
-                >
-                  <thead>
+                      borderCollapse: "separate",
+                      borderSpacing: "0 12px",
+                    }}
+                  >
+                    <thead>
                     <tr
                       style={{
                         textAlign: "left",
@@ -1656,6 +1728,139 @@ function compactConsumableKey(value) {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+
+          <div style={{ ...cardStyle, marginTop: "20px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "12px",
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: "1.3rem", color: "#b10000" }}>
+                Technician Requests
+              </h2>
+              <span style={{ color: "#666", fontSize: "0.9rem" }}>
+                {requestsLoading ? "Loading…" : `${techRequests.length} requests`}
+              </span>
+            </div>
+            {requestsError && (
+              <p style={{ margin: "0 0 12px", color: "#a00000" }}>
+                {requestsError}
+              </p>
+            )}
+            <div style={{ overflowX: "auto" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "separate",
+                  borderSpacing: "0 12px",
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      textAlign: "left",
+                      color: "#a00000",
+                      fontSize: "0.8rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    <th style={{ padding: "8px" }}>Item</th>
+                    <th style={{ padding: "8px" }}>Quantity</th>
+                    <th style={{ padding: "8px" }}>Technician</th>
+                    <th style={{ padding: "8px" }}>Requested</th>
+                    <th style={{ padding: "8px" }}>Status</th>
+                    <th style={{ padding: "8px" }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {techRequests.map((request) => (
+                    <tr
+                      key={`request-${request.id}`}
+                      style={{
+                        background: "#fff7f7",
+                        borderRadius: "12px",
+                      }}
+                    >
+                      <td style={{ padding: "12px", color: "#555" }}>
+                        {request.itemName}
+                      </td>
+                      <td style={{ padding: "12px", color: "#555" }}>
+                        {request.quantity.toLocaleString()}
+                      </td>
+                      <td style={{ padding: "12px", color: "#555" }}>
+                        {request.requestedByName || "—"}
+                      </td>
+                      <td style={{ padding: "12px", color: "#555" }}>
+                        {request.requestedAt
+                          ? new Date(request.requestedAt).toLocaleDateString(
+                              "en-GB",
+                              {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              }
+                            )
+                          : "—"}
+                      </td>
+                      <td style={{ padding: "12px", color: "#555" }}>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            padding: "4px 10px",
+                            borderRadius: "999px",
+                            fontWeight: 600,
+                            fontSize: "0.75rem",
+                            ...(statusBadgeStyles[
+                              request.status === "ordered"
+                                ? "ordered"
+                                : request.status
+                            ] || statusBadgeStyles.pending),
+                          }}
+                        >
+                          {request.status === "ordered"
+                            ? "✅"
+                            : request.status === "urgent"
+                            ? "⏰"
+                            : "📦"}
+                          {request.status.charAt(0).toUpperCase() +
+                            request.status.slice(1)}
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px" }}>
+                        {request.status === "pending" ? (
+                          <button
+                            type="button"
+                            disabled={orderingRequestId === request.id}
+                            onClick={() => handleRequestOrdered(request.id)}
+                            style={{
+                              ...orderModalButtonStyle,
+                              padding: "6px 14px",
+                              fontSize: "0.9rem",
+                              width: "auto",
+                            }}
+                          >
+                            {orderingRequestId === request.id
+                              ? "Ordering…"
+                              : "Order"}
+                          </button>
+                        ) : (
+                          <span style={{ color: "#007a4e", fontWeight: 600 }}>
+                            Ordered
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

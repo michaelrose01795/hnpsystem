@@ -3,7 +3,7 @@
 
 "use client"; // Enable client-side interactivity for the form experience
 
-import React, { useMemo, useState } from "react"; // Import React hooks for stateful UI
+import React, { useCallback, useEffect, useMemo, useState } from "react"; // Import React hooks for stateful UI
 import Layout from "@/components/Layout"; // Import global layout wrapper
 import { useUser } from "@/context/UserContext"; // Import user context for role-based permissions
 import Link from "next/link"; // Import Next.js Link for navigation buttons
@@ -58,10 +58,15 @@ const statusBadgeStyles = {
     color: "#006b44", // Deep green text tone
     border: "1px solid rgba(0,176,112,0.32)", // Green border accent
   },
+  ordered: {
+    backgroundColor: "rgba(0,176,112,0.15)",
+    color: "#006b44",
+    border: "1px solid rgba(0,176,112,0.32)",
+  },
 };
 
-function TechConsumableRequestPage() {
-  const { user } = useUser(); // Access current user information
+const TechConsumableRequestPage = () => {
+  const { user, dbUserId } = useUser(); // Access current user information
   const userRoles = user?.roles?.map((role) => role.toLowerCase()) || []; // Normalise roles to lower case for checks
   const isTechRole = userRoles.includes("techs") || userRoles.includes("mot tester"); // Determine if page access should be granted
 
@@ -70,24 +75,47 @@ function TechConsumableRequestPage() {
     quantity: 1, // Requested quantity
   });
 
-  const [requests, setRequests] = useState([
-    {
-      id: "REQ-1001", // Unique identifier for tracking
-      partName: "Nitrile gloves - medium", // Consumable description
-      quantity: 50, // Requested quantity
-      status: "pending", // Workflow status
-      requestedBy: "Example Tech", // Placeholder requester name
-      requestedOn: "2024-03-04", // Request date
-    },
-  ]); // Example data to populate table immediately
+  const [requests, setRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+  const [requestError, setRequestError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const [searchTerm, setSearchTerm] = useState(""); // Track request search input
+
+  const fetchRequests = useCallback(async () => {
+    setLoadingRequests(true);
+    setRequestError("");
+
+    try {
+      const response = await fetch("/api/workshop/consumables/requests");
+      if (!response.ok) {
+        const body = await response
+          .json()
+          .catch(() => ({ message: "Unable to load requests." }));
+        throw new Error(body.message || "Unable to load requests.");
+      }
+      const payload = await response.json();
+      if (!payload.success) {
+        throw new Error(payload.message || "Unable to load requests.");
+      }
+      setRequests(payload.data || []);
+    } catch (error) {
+      console.error("❌ Failed to load consumable requests", error);
+      setRequestError(error?.message || "Unable to load requests.");
+    } finally {
+      setLoadingRequests(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
   const filteredRequests = useMemo(() => {
     const needle = searchTerm.trim().toLowerCase(); // Normalise search term
     if (!needle) return requests; // Return all requests when search is empty
     return requests.filter((request) =>
-      [request.partName, request.status, request.requestedBy]
+      [request.itemName, request.status, request.requestedByName]
         .filter(Boolean)
         .some((field) => field.toLowerCase().includes(needle))
     ); // Perform case-insensitive search across key fields
@@ -99,28 +127,45 @@ function TechConsumableRequestPage() {
   };
 
   const handleSubmit = (event) => {
-    event.preventDefault(); // Prevent page reload
+    event.preventDefault();
 
     if (!requestForm.partName.trim()) {
-      alert("Please provide the name of the consumable you need."); // Validate key fields
-      return; // Abort submission on validation failure
+      alert("Please provide the name of the consumable you need.");
+      return;
     }
 
-    const newRequest = {
-      id: `REQ-${Date.now()}`, // Generate simple unique identifier
-      partName: requestForm.partName.trim(), // Clean part name
-      quantity: Number(requestForm.quantity) || 1, // Parse quantity to number
-      status: "pending", // Default new requests to pending
-      requestedBy: user?.username || "Technician", // Use logged-in username
-      requestedOn: new Date().toISOString().split("T")[0], // Store request date as ISO string
-    }; // Construct the request payload
-
-    setRequests((previous) => [newRequest, ...previous]); // Prepend new request to list
-
-    setRequestForm({
-      partName: "", // Reset form fields for next entry
-      quantity: 1,
-    }); // Clear the form state
+    setSuccessMessage("");
+    fetch("/api/workshop/consumables/requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        itemName: requestForm.partName.trim(),
+        quantity: Number(requestForm.quantity) || 1,
+        requestedById: dbUserId,
+        requestedByName: user?.username || null,
+      }),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          const body = await response
+            .json()
+            .catch(() => ({ message: "Unable to submit request." }));
+          throw new Error(body.message || "Unable to submit request.");
+        }
+        return response.json();
+      })
+      .then((payload) => {
+        if (!payload.success) {
+          throw new Error(payload.message || "Unable to submit request.");
+        }
+        setRequestForm({ partName: "", quantity: 1 });
+        setSuccessMessage("Request submitted.");
+        fetchRequests();
+      })
+      .catch((error) => {
+        console.error("❌ Failed to submit consumable request", error);
+        alert(error?.message || "Unable to submit request.");
+      });
   };
 
   if (!isTechRole) {
@@ -237,6 +282,12 @@ function TechConsumableRequestPage() {
               style={{ ...inputStyle, maxWidth: "240px" }}
             />
           </div>
+          {successMessage && (
+            <p style={{ margin: "0 0 12px", color: "#007a4e" }}>{successMessage}</p>
+          )}
+          {requestError && (
+            <p style={{ margin: "0 0 12px", color: "#a00000" }}>{requestError}</p>
+          )}
 
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 12px" }}>
@@ -269,10 +320,18 @@ function TechConsumableRequestPage() {
                         {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                       </span>
                     </td>
-                    <td style={{ padding: "12px", fontWeight: 600, color: "#333" }}>{request.partName}</td>
+                    <td style={{ padding: "12px", fontWeight: 600, color: "#333" }}>{request.itemName}</td>
                     <td style={{ padding: "12px", color: "#555" }}>{request.quantity}</td>
-                    <td style={{ padding: "12px", color: "#555" }}>{request.requestedOn}</td>
-                    <td style={{ padding: "12px", color: "#555" }}>{request.requestedBy || "—"}</td>
+                    <td style={{ padding: "12px", color: "#555" }}>
+                      {request.requestedAt
+                        ? new Date(request.requestedAt).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        : "—"}
+                    </td>
+                    <td style={{ padding: "12px", color: "#555" }}>{request.requestedByName || "—"}</td>
                   </tr>
                 ))}
               </tbody>
