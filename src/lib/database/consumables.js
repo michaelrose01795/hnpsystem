@@ -21,6 +21,76 @@ const parseDate = (value) => {
 
 const normalizeName = (value) => (value || "").trim().toLowerCase();
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+function computeForecastFromHistory(history = []) {
+  const sanitized = history
+    .map((entry) => {
+      const parsedDate = parseDate(entry.date);
+      return parsedDate
+        ? {
+            ...entry,
+            parsedDate,
+            numericQuantity: toNumber(entry.quantity),
+          }
+        : null;
+    })
+    .filter(Boolean);
+
+  if (!sanitized.length) {
+    return {
+      nextEstimatedOrderDate: null,
+      estimatedQuantity: null,
+    };
+  }
+
+  sanitized.sort((a, b) => b.parsedDate - a.parsedDate);
+  const recentLogs = sanitized.slice(0, 6);
+  const intervalDays = [];
+
+  for (let i = 0; i < recentLogs.length - 1; i += 1) {
+    const current = recentLogs[i];
+    const next = recentLogs[i + 1];
+    if (!current || !next) {
+      continue;
+    }
+    const diff = (current.parsedDate - next.parsedDate) / MS_PER_DAY;
+    if (diff > 0) {
+      intervalDays.push(diff);
+    }
+  }
+
+  let nextEstimatedOrderDate = null;
+  if (intervalDays.length && recentLogs[0]) {
+    const averageInterval =
+      intervalDays.reduce((sum, days) => sum + days, 0) / intervalDays.length;
+    const leadDays = Math.max(1, Math.ceil(averageInterval));
+    const referenceDate = new Date(recentLogs[0].parsedDate);
+    referenceDate.setDate(referenceDate.getDate() + leadDays);
+    nextEstimatedOrderDate = referenceDate.toISOString().split("T")[0];
+  }
+
+  const quantities = recentLogs
+    .map((log) => log.numericQuantity)
+    .filter((value) => value > 0);
+
+  const estimatedQuantity =
+    quantities.length > 0
+      ? Math.max(
+          1,
+          Math.round(
+            quantities.reduce((total, value) => total + value, 0) /
+              quantities.length
+          )
+        )
+      : null;
+
+  return {
+    nextEstimatedOrderDate,
+    estimatedQuantity,
+  };
+}
+
 export async function listConsumablesForTracker() {
   const { data, error } = await supabase
     .from("workshop_consumables")
@@ -165,7 +235,9 @@ export async function listConsumablesForTracker() {
   });
 
   const consumableItems = Array.from(grouped.values()).map((entry) => {
-    const lastOrderDate = entry.latestOrder ? entry.latestOrder.date.toISOString().split("T")[0] : null;
+    const lastOrderDate = entry.latestOrder
+      ? entry.latestOrder.date.toISOString().split("T")[0]
+      : null;
     const lastOrderQuantity = entry.latestOrder ? entry.latestOrder.quantity : null;
     const lastOrderTotalValue = entry.latestOrder ? entry.latestOrder.totalValue : null;
     const orderHistory = entry.orderHistory
@@ -174,17 +246,23 @@ export async function listConsumablesForTracker() {
         (a, b) =>
           new Date(b.date).getTime() - new Date(a.date).getTime()
       );
+    const historyForecast = computeForecastFromHistory(orderHistory);
+    const storedNextDate = entry.nextEstimatedOrderDate
+      ? entry.nextEstimatedOrderDate.toISOString().split("T")[0]
+      : null;
+    const nextEstimatedOrderDate =
+      historyForecast.nextEstimatedOrderDate || storedNextDate;
+    const estimatedQuantity =
+      historyForecast.estimatedQuantity ?? entry.estimatedQuantity;
 
     return {
       id: entry.id,
       name: entry.name,
       supplier: entry.supplier,
       unitCost: entry.unitCost,
-      estimatedQuantity: entry.estimatedQuantity,
+      estimatedQuantity,
       lastOrderDate,
-      nextEstimatedOrderDate: entry.nextEstimatedOrderDate
-        ? entry.nextEstimatedOrderDate.toISOString().split("T")[0]
-        : null,
+      nextEstimatedOrderDate,
       lastOrderQuantity,
       lastOrderTotalValue,
       reorderFrequencyDays: entry.reorderFrequencyDays,
