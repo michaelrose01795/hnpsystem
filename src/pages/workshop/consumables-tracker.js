@@ -489,11 +489,6 @@ function ConsumablesTrackerPage() {
                               >
                                 {item.name}
                               </strong>
-                              {item.partNumber && (
-                                <span style={{ fontSize: "0.8rem", color: "#888" }}>
-                                  {item.partNumber}
-                                </span>
-                              )}
                             </td>
                             <td style={{ padding: "12px", color: "#555" }}>
                               {formatDate(item.lastOrderDate)}

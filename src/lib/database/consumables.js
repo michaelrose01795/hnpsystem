@@ -27,7 +27,6 @@ const buildConsumableRecord = (row = {}) => {
   return {
     id: row.id,
     name: row.item_name || row.name || "Consumable",
-    partNumber: row.part_number ?? row.partNumber ?? null,
     supplier: row.supplier ?? null,
     unitCost,
     estimatedQuantity,
@@ -48,7 +47,6 @@ export async function listConsumablesForTracker() {
       `
       id,
       item_name,
-      part_number,
       supplier,
       unit_cost,
       estimated_quantity,
