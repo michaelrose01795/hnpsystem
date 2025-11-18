@@ -98,46 +98,55 @@ const formatRelativeTime = (timestamp) => {
   return `${days}d ago`;
 };
 
-const UpdateRow = ({ entry, context }) => {
-  const badge = context === "car" ? entry.vehicleLocation : entry.keyLocation;
-  const secondary = context === "car" ? entry.status : entry.keyTip;
-  const color = context === "car" ? STATUS_COLORS[entry.status] || "#9ca3af" : "#4338ca";
-
+const CombinedTrackerCard = ({ entry }) => {
   return (
     <div
       style={{
         padding: "16px 18px",
-        borderRadius: "18px",
-        border: "1px solid rgba(226,232,240,0.8)",
-        background: "linear-gradient(180deg, #ffffff, #f8fafc)",
+        borderRadius: "16px",
+        border: "1px solid rgba(148,163,184,0.3)",
+        background: "white",
+        boxShadow: "0 8px 16px rgba(148,163,184,0.15)",
         display: "flex",
         flexDirection: "column",
-        gap: "10px",
+        gap: "8px",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
         <div>
-          <strong style={{ fontSize: "1.1rem", color: "#0f172a" }}>
-            {entry.reg} • {entry.jobNumber}
-          </strong>
-          <p style={{ margin: "4px 0 0", color: "#64748b" }}>{entry.customer}</p>
+          <strong style={{ fontSize: "1.05rem", color: "#0f172a" }}>{entry.jobNumber || "Unknown job"}</strong>
+          <p style={{ margin: "2px 0 0", color: "#475569" }}>{entry.customer || "Customer pending"}</p>
         </div>
-        <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>Updated {formatRelativeTime(entry.updatedAt)}</span>
+        <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>Updated {formatRelativeTime(entry.updatedAt)}</span>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+          gap: "12px",
+          alignItems: "center",
+        }}
+      >
         <div>
-          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "#94a3b8" }}>
-            {context === "car" ? "Current Bay" : "Key Location"}
-          </p>
-          <strong style={{ color: color }}>{badge}</strong>
-          <p style={{ margin: "2px 0 0", color: context === "car" ? color : "#2563eb", fontSize: "0.85rem" }}>{secondary}</p>
+          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "#94a3b8" }}>Vehicle</p>
+          <strong style={{ color: "#111827" }}>{entry.reg || "Unknown reg"}</strong>
         </div>
         <div>
-          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "#94a3b8" }}>Notes</p>
-          <p style={{ margin: "2px 0 0", color: "#475569", maxWidth: "320px" }}>{entry.notes || "No notes"}</p>
+          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "#94a3b8" }}>Car location</p>
+          <strong style={{ color: "#15803d" }}>{entry.vehicleLocation || "Unallocated"}</strong>
+        </div>
+        <div>
+          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "#94a3b8" }}>Key location</p>
+          <strong style={{ color: "#4338ca" }}>{entry.keyLocation || "Pending"}</strong>
+        </div>
+        <div>
+          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "#94a3b8" }}>Last move</p>
+          <strong style={{ color: "#0f172a" }}>{formatRelativeTime(entry.updatedAt)}</strong>
         </div>
       </div>
+
+      <p style={{ margin: 0, color: "#475569" }}>{entry.notes || "No additional notes"}</p>
     </div>
   );
 };
@@ -530,6 +539,16 @@ export default function TrackingDashboard() {
   }, [handleAutoMovement]);
 
   const recentEntries = useMemo(() => entries.slice(0, 3), [entries]);
+  const activeEntries = useMemo(
+    () =>
+      entries
+        .filter((entry) => entry.jobId)
+        .sort(
+          (a, b) =>
+            new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime()
+        ),
+    [entries]
+  );
 
   const openSearchModal = (type) => setSearchModal({ open: true, type });
   const closeSearchModal = () => setSearchModal({ open: false, type: null });
@@ -718,34 +737,19 @@ export default function TrackingDashboard() {
             padding: "24px",
             borderRadius: "24px",
             background: "white",
-            border: "1px solid #ffe4e6",
-            boxShadow: "0 18px 40px rgba(209,0,0,0.08)",
+            border: "1px solid rgba(148,163,184,0.35)",
+            boxShadow: "0 20px 40px rgba(15,23,42,0.04)",
             display: "flex",
             flexDirection: "column",
-            gap: "16px",
+            gap: "18px",
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
             <div>
-              <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.1em", color: "#9ca3af" }}>Parking Tracker</p>
-              <h1 style={{ margin: "6px 0 0", fontSize: "1.4rem", color: "#0f172a" }}>Latest 3 vehicle updates</h1>
+              <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.12em", color: "#475569" }}>Live tracker</p>
+              <h1 style={{ margin: "6px 0 0", fontSize: "1.5rem", color: "#0f172a" }}>Active jobs</h1>
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                type="button"
-                onClick={() => openSearchModal("car")}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: "10px",
-                  border: "1px solid rgba(209,0,0,0.25)",
-                  backgroundColor: "white",
-                  color: "#a00000",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                Search location
-              </button>
               <button
                 type="button"
                 onClick={() => openEntryModal("car")}
@@ -763,64 +767,48 @@ export default function TrackingDashboard() {
               </button>
             </div>
           </div>
-          {recentEntries.map((entry) => (
-            <UpdateRow key={`${entry.id}-car`} entry={entry} context="car" />
-          ))}
-        </section>
-
-        <section
-          style={{
-            padding: "24px",
-            borderRadius: "24px",
-            background: "white",
-            border: "1px solid #e0e7ff",
-            boxShadow: "0 18px 40px rgba(79,70,229,0.08)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-            <div>
-              <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.1em", color: "#94a3b8" }}>Key Tracker</p>
-              <h1 style={{ margin: "6px 0 0", fontSize: "1.4rem", color: "#0f172a" }}>Latest 3 key updates</h1>
-            </div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                type="button"
-                onClick={() => openSearchModal("key")}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "12px",
+            }}
+          >
+            {entries.length === 0 && (
+              <div
                 style={{
-                  padding: "8px 12px",
-                  borderRadius: "10px",
-                  border: "1px solid rgba(99,102,241,0.35)",
-                  backgroundColor: "white",
-                  color: "#4338ca",
-                  fontWeight: 600,
-                  cursor: "pointer",
+                  gridColumn: "1 / -1",
+                  padding: "12px",
+                  borderRadius: "12px",
+                  border: "1px dashed rgba(148,163,184,0.6)",
+                  textAlign: "center",
+                  color: "#475569",
                 }}
               >
-                Search location
-              </button>
-              <button
-                type="button"
-                onClick={() => openEntryModal("key")}
+                No active job tracking data yet.
+              </div>
+            )}
+            {activeEntries.length === 0 && entries.length > 0 && (
+              <div
                 style={{
-                  padding: "8px 12px",
-                  borderRadius: "10px",
-                  border: "none",
-                  background: "linear-gradient(120deg, #6366f1, #4338ca)",
-                  color: "white",
-                  fontWeight: 600,
-                  cursor: "pointer",
+                  gridColumn: "1 / -1",
+                  padding: "12px",
+                  borderRadius: "12px",
+                  border: "1px dashed rgba(148,163,184,0.6)",
+                  textAlign: "center",
+                  color: "#475569",
                 }}
               >
-                Add location
-              </button>
-            </div>
+                Waiting for job-mapped tracking entries.
+              </div>
+            )}
+            {activeEntries.map((entry) => (
+              <CombinedTrackerCard
+                key={entry.jobId || entry.id || `${entry.jobNumber}-${entry.updatedAt}`}
+                entry={entry}
+              />
+            ))}
           </div>
-          {recentEntries.map((entry) => (
-            <UpdateRow key={`${entry.id}-key`} entry={entry} context="key" />
-          ))}
         </section>
       </div>
 
