@@ -514,6 +514,44 @@ export default function TrackingDashboard() {
     loadEntries();
   }, [loadEntries]);
 
+  const handleAutoMovement = useCallback(
+    async (job, rule, newStatus) => {
+      try {
+        const payload = {
+          actionType: "job_status_change",
+          jobId: job.id || job.job_id || null,
+          jobNumber: (job.job_number || job.jobNumber || "").toString().trim().toUpperCase(),
+          vehicleId: job.vehicle_id || job.vehicleId || null,
+          vehicleReg: (job.vehicle_reg || job.reg || "").toString().trim().toUpperCase(),
+          keyLocation: rule.keyLocation,
+          vehicleLocation: rule.vehicleLocation,
+          vehicleStatus: rule.vehicleStatus,
+          notes: `Auto-sync from status "${newStatus}"`,
+          performedBy: dbUserId || null,
+        };
+
+        const response = await fetch(buildApiUrl(NEXT_ACTION_ENDPOINT), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorPayload = await response
+            .json()
+            .catch(() => ({ message: "Failed to auto-sync locations" }));
+          console.error("Auto movement failed", errorPayload?.message || response.statusText);
+          return;
+        }
+
+        await loadEntries();
+      } catch (autoError) {
+        console.error("Auto movement error", autoError);
+      }
+    },
+    [dbUserId, loadEntries]
+  );
+
   useEffect(() => {
     const channel = supabaseClient
       .channel("tracking-job-status")
@@ -564,42 +602,6 @@ export default function TrackingDashboard() {
       keyLocation: searchModal.type === "key" ? option.label : KEY_LOCATIONS[0].label,
     });
   };
-
-  const handleAutoMovement = useCallback(
-    async (job, rule, newStatus) => {
-      try {
-        const payload = {
-          actionType: "job_status_change",
-          jobId: job.id || job.job_id || null,
-          jobNumber: (job.job_number || job.jobNumber || "").toString().trim().toUpperCase(),
-          vehicleId: job.vehicle_id || job.vehicleId || null,
-          vehicleReg: (job.vehicle_reg || job.reg || "").toString().trim().toUpperCase(),
-          keyLocation: rule.keyLocation,
-          vehicleLocation: rule.vehicleLocation,
-          vehicleStatus: rule.vehicleStatus,
-          notes: `Auto-sync from status "${newStatus}"`,
-          performedBy: dbUserId || null,
-        };
-
-        const response = await fetch(buildApiUrl(NEXT_ACTION_ENDPOINT), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          const errorPayload = await response.json().catch(() => ({ message: "Failed to auto-sync locations" }));
-          console.error("Auto movement failed", errorPayload?.message || response.statusText);
-          return;
-        }
-
-        await loadEntries();
-      } catch (autoError) {
-        console.error("Auto movement error", autoError);
-      }
-    },
-    [dbUserId, loadEntries]
-  );
 
   const handleSave = async (form) => {
     try {

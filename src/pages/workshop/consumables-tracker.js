@@ -157,12 +157,35 @@ function toneToStyles(tone) {
   };
 }
 
+const duplicateOverlayStyle = {
+  position: "fixed",
+  inset: 0,
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "rgba(0,0,0,0.45)",
+  zIndex: 10,
+  padding: "16px",
+};
+
+const duplicateModalStyle = {
+  background: "#ffffff",
+  borderRadius: "18px",
+  padding: "24px",
+  maxWidth: "540px",
+  width: "100%",
+  boxShadow: "0 20px 45px rgba(0,0,0,0.25)",
+  border: "1px solid #ffdede",
+};
+
 function ConsumablesTrackerPage() {
   const { user } = useUser();
   const userRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
   const isWorkshopManager = userRoles.includes("workshop manager");
   const [monthlyBudget, setMonthlyBudget] = useState(2500);
   const [consumables, setConsumables] = useState([]);
+  const [potentialDuplicates, setPotentialDuplicates] = useState([]);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [loadingConsumables, setLoadingConsumables] = useState(false);
   const [consumablesError, setConsumablesError] = useState("");
 
@@ -177,12 +200,14 @@ function ConsumablesTrackerPage() {
       setLoadingConsumables(true);
 
       try {
-        const rows = await listConsumablesForTracker();
+        const { items, potentialDuplicates: duplicates } = await listConsumablesForTracker();
         if (!isMounted) {
           return;
         }
 
-        setConsumables(rows);
+        setConsumables(items);
+        setPotentialDuplicates(duplicates);
+        setShowDuplicateModal(duplicates.length > 0);
         setConsumablesError("");
       } catch (error) {
         if (!isMounted) {
@@ -275,6 +300,46 @@ function ConsumablesTrackerPage() {
     <Layout>
       <div style={containerStyle}>
         <div style={workspaceShellStyle}>
+          {showDuplicateModal && potentialDuplicates.length > 0 && (
+            <div style={duplicateOverlayStyle}>
+              <div style={duplicateModalStyle}>
+                <h3 style={{ margin: 0, color: "#b10000" }}>
+                  Potential Duplicate Consumables
+                </h3>
+                <p style={{ color: "#444", marginTop: "8px" }}>
+                  We detected items that resolve to the same name when
+                  normalised. They have been grouped into a single record for
+                  this view; please tidy the source data if these should remain
+                  separate.
+                </p>
+                <ul style={{ paddingLeft: "20px", color: "#4a4a4a" }}>
+                  {potentialDuplicates.map((entry) => (
+                    <li key={entry.normalized} style={{ marginBottom: "6px" }}>
+                      {entry.names.join(" / ")}
+                    </li>
+                  ))}
+                </ul>
+                <div style={{ textAlign: "right" }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowDuplicateModal(false)}
+                    style={{
+                      padding: "10px 16px",
+                      borderRadius: "10px",
+                      border: "none",
+                      background: "linear-gradient(135deg, #d10000, #940000)",
+                      color: "#ffffff",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      boxShadow: "0 12px 22px rgba(209,0,0,0.2)",
+                    }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           <div style={mainColumnStyle}>
             <div style={{ ...cardStyle }}>
               <div

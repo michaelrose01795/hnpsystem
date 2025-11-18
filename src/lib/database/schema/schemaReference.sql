@@ -5,6 +5,9 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
 CREATE TABLE public.activity_logs (
   log_id integer NOT NULL DEFAULT nextval('activity_logs_log_id_seq'::regclass),
   user_id integer,
@@ -863,4 +866,34 @@ CREATE TABLE public.vhc_send_history (
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT vhc_send_history_pkey PRIMARY KEY (id),
   CONSTRAINT vhc_send_history_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
+);
+CREATE TABLE public.workshop_consumable_orders (
+  order_id bigint NOT NULL DEFAULT nextval('workshop_consumable_orders_order_id_seq'::regclass),
+  consumable_id uuid NOT NULL,
+  order_date date NOT NULL DEFAULT now(),
+  quantity integer NOT NULL DEFAULT 0,
+  unit_cost numeric NOT NULL DEFAULT 0,
+  total_value numeric DEFAULT ((quantity)::numeric * unit_cost),
+  supplier text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT workshop_consumable_orders_pkey PRIMARY KEY (order_id),
+  CONSTRAINT workshop_consumable_orders_consumable_id_fkey FOREIGN KEY (consumable_id) REFERENCES public.workshop_consumables(id)
+);
+CREATE TABLE public.workshop_consumables (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  item_name text NOT NULL,
+  part_number text,
+  supplier text,
+  unit_cost numeric NOT NULL DEFAULT 0,
+  estimated_quantity integer NOT NULL DEFAULT 0,
+  last_order_date date,
+  next_estimated_order_date date,
+  last_order_quantity integer NOT NULL DEFAULT 0,
+  last_order_total_value numeric,
+  reorder_frequency_days integer DEFAULT 30,
+  is_required boolean NOT NULL DEFAULT true,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT workshop_consumables_pkey PRIMARY KEY (id)
 );
