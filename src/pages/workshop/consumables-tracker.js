@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import Link from "next/link";
+import { supabase } from "@/lib/supabaseClient";
 import { addConsumableOrder, listConsumablesForTracker } from "@/lib/database/consumables";
 
 const containerStyle = {
@@ -589,6 +590,46 @@ function namesMatch(valueA, valueB) {
     fetchFinancialSummary();
   }, [fetchFinancialSummary]);
 
+  useEffect(() => {
+    if (!isWorkshopManager) {
+      return () => {};
+    }
+
+    const channel = supabase.channel("consumables-tracker");
+    const tables = [
+      "workshop_consumables",
+      "workshop_consumable_orders",
+      "workshop_consumable_requests",
+      "workshop_consumable_budgets",
+    ];
+    const handleRealtime = () => {
+      refreshConsumables();
+      fetchTechRequests();
+      fetchFinancialSummary();
+      fetchMonthlyLogs();
+    };
+
+    tables.forEach((table) => {
+      channel.on(
+        "postgres_changes",
+        { event: "*", schema: "public", table },
+        handleRealtime
+      );
+    });
+
+    void channel.subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [
+    fetchFinancialSummary,
+    fetchMonthlyLogs,
+    fetchTechRequests,
+    isWorkshopManager,
+    refreshConsumables,
+  ]);
+
   const fetchMonthlyLogs = useCallback(async () => {
     setLogsLoading(true);
     setLogsError("");
@@ -617,7 +658,7 @@ function namesMatch(valueA, valueB) {
     } finally {
       setLogsLoading(false);
     }
-  }, [viewMonth, viewYear, logsSummary]);
+  }, [viewMonth, viewYear]);
 
   useEffect(() => {
     fetchMonthlyLogs();
