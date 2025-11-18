@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import Link from "next/link";
-import { listConsumablesForTracker } from "@/lib/database/consumables";
+import { addConsumableOrder, listConsumablesForTracker } from "@/lib/database/consumables";
 
 const containerStyle = {
   flex: 1,
@@ -72,6 +72,115 @@ const budgetInputStyle = {
   fontSize: "0.95rem",
 };
 
+const orderHistoryGridTemplate = "minmax(150px, 2fr) repeat(5, minmax(90px, 1fr))";
+
+const orderHistoryContainerStyle = {
+  marginTop: "12px",
+  borderRadius: "12px",
+  border: "1px solid #ffe0e0",
+  background: "#fff",
+  padding: "12px",
+  maxHeight: "190px",
+  overflowY: "auto",
+};
+
+const orderHistoryHeaderStyle = {
+  display: "grid",
+  gridTemplateColumns: orderHistoryGridTemplate,
+  gap: "12px",
+  fontSize: "0.7rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.1em",
+  color: "#a00000",
+  marginBottom: "8px",
+};
+
+const orderHistoryRowBorder = "1px solid rgba(209,0,0,0.1)";
+
+const orderHistoryRowStyle = {
+  display: "grid",
+  gridTemplateColumns: orderHistoryGridTemplate,
+  gap: "12px",
+  alignItems: "center",
+  fontSize: "0.9rem",
+  color: "#444",
+  padding: "8px 0",
+  borderBottom: orderHistoryRowBorder,
+};
+
+const orderModalOverlayStyle = {
+  position: "fixed",
+  inset: 0,
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: "16px",
+  backgroundColor: "rgba(0,0,0,0.55)",
+  zIndex: 20,
+};
+
+const orderModalStyle = {
+  background: "#ffffff",
+  borderRadius: "18px",
+  padding: "24px",
+  width: "100%",
+  maxWidth: "520px",
+  boxShadow: "0 20px 45px rgba(0,0,0,0.25)",
+  border: "1px solid #ffdede",
+  position: "relative",
+};
+
+const orderModalCloseButtonStyle = {
+  position: "absolute",
+  top: "12px",
+  right: "12px",
+  background: "transparent",
+  border: "none",
+  fontSize: "1rem",
+  color: "#a00000",
+  cursor: "pointer",
+};
+
+const orderModalButtonStyle = {
+  padding: "10px 20px",
+  borderRadius: "10px",
+  border: "none",
+  cursor: "pointer",
+  fontWeight: 600,
+  boxShadow: "0 10px 20px rgba(209,0,0,0.15)",
+};
+
+const orderModalSecondaryButtonStyle = {
+  ...orderModalButtonStyle,
+  background: "#ffffff",
+  border: "1px solid #ffdede",
+  color: "#a00000",
+  boxShadow: "none",
+};
+
+const orderModalFormGroupStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "6px",
+  marginBottom: "12px",
+};
+
+const orderModalInputStyle = {
+  padding: "10px 14px",
+  borderRadius: "8px",
+  border: "1px solid #ffdede",
+};
+
+const orderButtonStyle = {
+  padding: "8px 16px",
+  borderRadius: "10px",
+  border: "none",
+  background: "linear-gradient(135deg, #d10000, #940000)",
+  color: "#ffffff",
+  fontWeight: 600,
+  cursor: "pointer",
+  boxShadow: "0 10px 18px rgba(209,0,0,0.18)",
+};
 const orderHistoryGridTemplate = "minmax(150px, 2fr) repeat(5, minmax(90px, 1fr))";
 
 const orderHistoryContainerStyle = {
@@ -217,54 +326,69 @@ function ConsumablesTrackerPage() {
   const { user } = useUser();
   const userRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
   const isWorkshopManager = userRoles.includes("workshop manager");
+  const todayIso = useMemo(() => new Date().toISOString().split("T")[0], []);
   const [monthlyBudget, setMonthlyBudget] = useState(2500);
   const [consumables, setConsumables] = useState([]);
   const [potentialDuplicates, setPotentialDuplicates] = useState([]);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [loadingConsumables, setLoadingConsumables] = useState(false);
   const [consumablesError, setConsumablesError] = useState("");
+  const isMountedRef = useRef(true);
+  const [orderModalConsumable, setOrderModalConsumable] = useState(null);
+  const [orderModalError, setOrderModalError] = useState("");
+  const [orderModalLoading, setOrderModalLoading] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [orderForm, setOrderForm] = useState({
+    quantity: "",
+    unitCost: "",
+    supplier: "",
+    orderDate: todayIso,
+  });
 
-  useEffect(() => {
+  const refreshConsumables = useCallback(async () => {
     if (!isWorkshopManager) {
+      setConsumables([]);
+      setPotentialDuplicates([]);
+      setShowDuplicateModal(false);
       return;
     }
 
-    let isMounted = true;
+    setLoadingConsumables(true);
 
-    const fetchConsumables = async () => {
-      setLoadingConsumables(true);
-
-      try {
-        const { items, potentialDuplicates: duplicates } = await listConsumablesForTracker();
-        if (!isMounted) {
-          return;
-        }
-
-        setConsumables(items);
-        setPotentialDuplicates(duplicates);
-        setShowDuplicateModal(duplicates.length > 0);
-        setConsumablesError("");
-      } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-
-        console.error("❌ Failed to load consumables", error);
-        setConsumables([]);
-        setConsumablesError(error?.message || "Unable to load consumables.");
-      } finally {
-        if (isMounted) {
-          setLoadingConsumables(false);
-        }
+    try {
+      const { items, potentialDuplicates: duplicates } = await listConsumablesForTracker();
+      if (!isMountedRef.current) {
+        return;
       }
-    };
 
-    fetchConsumables();
+      setConsumables(items);
+      setPotentialDuplicates(duplicates);
+      setShowDuplicateModal(duplicates.length > 0);
+      setConsumablesError("");
+    } catch (error) {
+      if (!isMountedRef.current) {
+        return;
+      }
 
-    return () => {
-      isMounted = false;
-    };
+      console.error("❌ Failed to load consumables", error);
+      setConsumables([]);
+      setPotentialDuplicates([]);
+      setShowDuplicateModal(false);
+      setConsumablesError(error?.message || "Unable to load consumables.");
+    } finally {
+      if (isMountedRef.current) {
+        setLoadingConsumables(false);
+      }
+    }
   }, [isWorkshopManager]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    refreshConsumables();
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [isWorkshopManager, refreshConsumables]);
 
   const handleBudgetChange = (event) => {
     setMonthlyBudget(Number(event.target.value) || 0);
@@ -297,6 +421,115 @@ function ConsumablesTrackerPage() {
 
     return { monthSpend, projectedSpend };
   }, [consumables]);
+
+  const closeOrderModal = useCallback(() => {
+    setOrderModalConsumable(null);
+    setShowEditForm(false);
+    setOrderModalError("");
+  }, []);
+
+  const openOrderModal = useCallback(
+    (item) => {
+      if (!item) {
+        return;
+      }
+      const lastLog = item.orderHistory?.[0];
+      const baseQuantity =
+        lastLog?.quantity ?? item.lastOrderQuantity ?? item.estimatedQuantity ?? "";
+      const baseUnitCost =
+        lastLog?.unitCost ??
+        (item.unitCost !== undefined && item.unitCost !== null
+          ? item.unitCost
+          : "");
+
+      setOrderModalConsumable(item);
+      setOrderForm({
+        quantity: baseQuantity !== "" ? String(baseQuantity) : "",
+        unitCost:
+          baseUnitCost !== "" && baseUnitCost !== null && baseUnitCost !== undefined
+            ? Number(baseUnitCost).toFixed(2)
+            : "",
+        supplier: lastLog?.supplier ?? item.supplier ?? "",
+        orderDate: todayIso,
+      });
+      setShowEditForm(false);
+      setOrderModalError("");
+    },
+    [todayIso]
+  );
+
+  const handleOrderFormChange = useCallback((field) => (event) => {
+    setOrderForm((previous) => ({ ...previous, [field]: event.target.value }));
+  }, []);
+
+  const handleSameDetails = useCallback(async () => {
+    if (!orderModalConsumable) {
+      return;
+    }
+
+    setOrderModalLoading(true);
+    setOrderModalError("");
+
+    const lastLog = orderModalConsumable.orderHistory?.[0];
+    const payload = {
+      quantity:
+        lastLog?.quantity ??
+        orderModalConsumable.lastOrderQuantity ??
+        orderModalConsumable.estimatedQuantity ??
+        0,
+      unitCost: lastLog?.unitCost ?? orderModalConsumable.unitCost ?? 0,
+      supplier: lastLog?.supplier ?? orderModalConsumable.supplier ?? "",
+      orderDate: todayIso,
+    };
+
+    try {
+      await addConsumableOrder(orderModalConsumable.id, payload);
+      await refreshConsumables();
+      closeOrderModal();
+    } catch (error) {
+      setOrderModalError(error?.message || "Failed to place order.");
+    } finally {
+      setOrderModalLoading(false);
+    }
+  }, [closeOrderModal, orderModalConsumable, refreshConsumables, todayIso]);
+
+  const handleEditedOrder = useCallback(
+    async (event) => {
+      event.preventDefault();
+      if (!orderModalConsumable) {
+        return;
+      }
+
+      setOrderModalLoading(true);
+      setOrderModalError("");
+
+      const payload = {
+        quantity: Number(orderForm.quantity) || 0,
+        unitCost: Number(orderForm.unitCost) || 0,
+        supplier: orderForm.supplier?.trim() || "",
+        orderDate: orderForm.orderDate || todayIso,
+      };
+
+      try {
+        await addConsumableOrder(orderModalConsumable.id, payload);
+        await refreshConsumables();
+        closeOrderModal();
+      } catch (error) {
+        setOrderModalError(error?.message || "Failed to place order.");
+      } finally {
+        setOrderModalLoading(false);
+      }
+    },
+    [
+      closeOrderModal,
+      orderForm,
+      orderModalConsumable,
+      refreshConsumables,
+      todayIso,
+    ]
+  );
+
+  const previewLogs = orderModalConsumable?.orderHistory?.slice(0, 3) ?? [];
 
   if (!isWorkshopManager) {
     return (
@@ -335,7 +568,7 @@ function ConsumablesTrackerPage() {
     <Layout>
       <div style={containerStyle}>
         <div style={workspaceShellStyle}>
-          {showDuplicateModal && potentialDuplicates.length > 0 && (
+          {!orderModalConsumable && showDuplicateModal && potentialDuplicates.length > 0 && (
             <div style={duplicateOverlayStyle}>
               <div style={duplicateModalStyle}>
                 <h3 style={{ margin: 0, color: "#b10000" }}>
@@ -372,6 +605,170 @@ function ConsumablesTrackerPage() {
                     Dismiss
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+          {orderModalConsumable && (
+            <div style={orderModalOverlayStyle}>
+              <div style={orderModalStyle} role="dialog" aria-modal="true">
+                <button
+                  type="button"
+                  onClick={closeOrderModal}
+                  style={orderModalCloseButtonStyle}
+                  aria-label="Close order modal"
+                >
+                  ✕
+                </button>
+                <h3 style={{ margin: "0 0 6px", color: "#b10000" }}>
+                  Order {orderModalConsumable.name}
+                </h3>
+                <p style={{ margin: "0 8px 16px", color: "#444" }}>
+                  Previous orders (latest three). "Same Details" will reuse the
+                  most recent order, while "Edit Details" lets you adjust the
+                  quantity, unit cost, supplier, or date before logging a new entry.
+                </p>
+                <div style={orderHistoryContainerStyle}>
+                  <div style={orderHistoryHeaderStyle}>
+                    <span>Item</span>
+                    <span>Qty</span>
+                    <span>Unit</span>
+                    <span>Total</span>
+                    <span>Supplier</span>
+                    <span>Date</span>
+                  </div>
+                  {previewLogs.length === 0 ? (
+                    <p style={{ margin: 0, color: "#6b7280" }}>
+                      No previous orders logged.
+                    </p>
+                  ) : (
+                    previewLogs.map((log, index) => {
+                      const isLastLog = index === previewLogs.length - 1;
+                      return (
+                        <div
+                          key={`modal-log-${index}`}
+                          style={{
+                            ...orderHistoryRowStyle,
+                            borderBottom: isLastLog
+                              ? "none"
+                              : orderHistoryRowBorder,
+                          }}
+                        >
+                          <span>{log.itemName || orderModalConsumable.name}</span>
+                          <span>
+                            {log.quantity ? log.quantity.toLocaleString() : "—"}
+                          </span>
+                          <span>{formatCurrency(log.unitCost)}</span>
+                          <span>{formatCurrency(log.totalCost)}</span>
+                          <span>{log.supplier || "—"}</span>
+                          <span>{formatDate(log.date)}</span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "12px",
+                    marginTop: "20px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={handleSameDetails}
+                    disabled={orderModalLoading}
+                    style={{
+                      ...orderModalButtonStyle,
+                      background: orderModalLoading
+                        ? "rgba(209,0,0,0.4)"
+                        : "linear-gradient(135deg, #d10000, #940000)",
+                      color: "#ffffff",
+                    }}
+                  >
+                    {orderModalLoading ? "Ordering…" : "Same Details"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowEditForm((previous) => !previous)}
+                    style={orderModalSecondaryButtonStyle}
+                  >
+                    {showEditForm ? "Hide Form" : "Edit Details"}
+                  </button>
+                </div>
+                {orderModalError && (
+                  <p style={{ color: "#a00000", marginTop: "12px" }}>
+                    {orderModalError}
+                  </p>
+                )}
+                {showEditForm && (
+                  <form onSubmit={handleEditedOrder} style={{ marginTop: "16px" }}>
+                    <div style={orderModalFormGroupStyle}>
+                      <label style={{ fontWeight: 600, color: "#b10000" }}>
+                        Quantity
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={orderForm.quantity}
+                        onChange={handleOrderFormChange("quantity")}
+                        style={orderModalInputStyle}
+                        required
+                      />
+                    </div>
+                    <div style={orderModalFormGroupStyle}>
+                      <label style={{ fontWeight: 600, color: "#b10000" }}>
+                        Unit Cost (£)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={orderForm.unitCost}
+                        onChange={handleOrderFormChange("unitCost")}
+                        style={orderModalInputStyle}
+                        required
+                      />
+                    </div>
+                    <div style={orderModalFormGroupStyle}>
+                      <label style={{ fontWeight: 600, color: "#b10000" }}>
+                        Supplier
+                      </label>
+                      <input
+                        type="text"
+                        value={orderForm.supplier}
+                        onChange={handleOrderFormChange("supplier")}
+                        style={orderModalInputStyle}
+                      />
+                    </div>
+                    <div style={orderModalFormGroupStyle}>
+                      <label style={{ fontWeight: 600, color: "#b10000" }}>
+                        Order Date
+                      </label>
+                      <input
+                        type="date"
+                        value={orderForm.orderDate}
+                        onChange={handleOrderFormChange("orderDate")}
+                        style={orderModalInputStyle}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={orderModalLoading}
+                      style={{
+                        ...orderModalButtonStyle,
+                        width: "100%",
+                        background: orderModalLoading
+                          ? "rgba(209,0,0,0.4)"
+                          : "linear-gradient(135deg, #d10000, #940000)",
+                        color: "#ffffff",
+                      }}
+                    >
+                      {orderModalLoading ? "Submitting…" : "Save Details"}
+                    </button>
+                  </form>
+                )}
               </div>
             </div>
           )}
@@ -535,6 +932,7 @@ function ConsumablesTrackerPage() {
                       <th style={{ padding: "8px" }}>Supplier</th>
                       <th style={{ padding: "8px" }}>Unit Cost</th>
                       <th style={{ padding: "8px" }}>Last Order Value</th>
+                      <th style={{ padding: "8px" }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -610,13 +1008,22 @@ function ConsumablesTrackerPage() {
                               <td style={{ padding: "12px", color: "#555" }}>
                                 {formatCurrency(item.unitCost)}
                               </td>
-                              <td style={{ padding: "12px", color: "#555" }}>
-                                {formatCurrency(item.lastOrderTotalValue)}
-                              </td>
+                            <td style={{ padding: "12px", color: "#555" }}>
+                              {formatCurrency(item.lastOrderTotalValue)}
+                            </td>
+                            <td style={{ padding: "12px", color: "#555" }}>
+                              <button
+                                type="button"
+                                onClick={() => openOrderModal(item)}
+                                style={orderButtonStyle}
+                              >
+                                Order
+                              </button>
+                            </td>
                             </tr>
                             <tr>
                               <td
-                                colSpan={8}
+                                colSpan={9}
                                 style={{ padding: "0 12px 12px" }}
                               >
                                 <div style={orderHistoryContainerStyle}>

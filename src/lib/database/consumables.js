@@ -212,3 +212,65 @@ export async function listConsumablesForTracker() {
     potentialDuplicates,
   };
 }
+
+const addDays = (dateString, days) => {
+  if (!dateString) {
+    return null;
+  }
+  const candidate = new Date(dateString);
+  if (Number.isNaN(candidate.getTime())) {
+    return null;
+  }
+  candidate.setDate(candidate.getDate() + (days || 0));
+  return candidate.toISOString().split("T")[0];
+};
+
+export async function addConsumableOrder(consumableId, { quantity, unitCost, supplier, orderDate }) {
+  const payloadDate = orderDate || new Date().toISOString().split("T")[0];
+  const numericQuantity = Number(quantity) || 0;
+  const numericUnitCost = Number(unitCost) || 0;
+
+  const { error: insertError } = await supabase.from("workshop_consumable_orders").insert({
+    consumable_id: consumableId,
+    order_date: payloadDate,
+    quantity: numericQuantity,
+    unit_cost: numericUnitCost,
+    supplier: supplier || null,
+  });
+
+  if (insertError) {
+    throw insertError;
+  }
+
+  const { data: existing, error: lookupError } = await supabase
+    .from("workshop_consumables")
+    .select("reorder_frequency_days")
+    .eq("id", consumableId)
+    .single();
+
+  if (lookupError) {
+    throw lookupError;
+  }
+
+  const nextEstimatedOrderDate = addDays(
+    payloadDate,
+    existing?.reorder_frequency_days ?? 30
+  );
+
+  const { error: updateError } = await supabase
+    .from("workshop_consumables")
+    .update({
+      last_order_date: payloadDate,
+      last_order_quantity: numericQuantity,
+      last_order_total_value: numericQuantity * numericUnitCost,
+      next_estimated_order_date: nextEstimatedOrderDate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", consumableId);
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  return { orderDate: payloadDate };
+}
