@@ -45,7 +45,7 @@ function computeForecastFromHistory(history = []) {
   }
 
   sanitized.sort((a, b) => b.parsedDate - a.parsedDate);
-  const recentLogs = sanitized.slice(0, 6);
+  const recentLogs = sanitized.slice(0, 3);
   const intervalDays = [];
 
   for (let i = 0; i < recentLogs.length - 1; i += 1) {
@@ -139,7 +139,7 @@ export async function listConsumablesForTracker() {
       name: rawName || `Consumable ${row.id}`,
       supplier: row.supplier || null,
       unitCost: toNumber(row.unit_cost ?? row.unitCost),
-      estimatedQuantity: 0,
+      manualEstimatedQuantity: null,
       nextEstimatedOrderDate: null,
       reorderFrequencyDays: row.reorder_frequency_days ?? row.reorderFrequencyDays ?? null,
       isRequired: row.is_required !== false,
@@ -154,7 +154,10 @@ export async function listConsumablesForTracker() {
 
     existing.supplier = existing.supplier || row.supplier || null;
     existing.unitCost = existing.unitCost || toNumber(row.unit_cost ?? row.unitCost);
-    existing.estimatedQuantity += toNumber(row.estimated_quantity ?? row.estimatedQuantity);
+    const manualEstimate = toNumber(row.estimated_quantity ?? row.estimatedQuantity);
+    if (manualEstimate > 0) {
+      existing.manualEstimatedQuantity = manualEstimate;
+    }
     existing.reorderFrequencyDays =
       existing.reorderFrequencyDays ||
       (row.reorder_frequency_days ?? row.reorderFrequencyDays ?? null);
@@ -253,7 +256,7 @@ export async function listConsumablesForTracker() {
     const nextEstimatedOrderDate =
       historyForecast.nextEstimatedOrderDate || storedNextDate;
     const estimatedQuantity =
-      historyForecast.estimatedQuantity ?? entry.estimatedQuantity;
+      entry.manualEstimatedQuantity ?? historyForecast.estimatedQuantity;
 
     return {
       id: entry.id,
@@ -303,7 +306,10 @@ const addDays = (dateString, days) => {
   return candidate.toISOString().split("T")[0];
 };
 
-export async function addConsumableOrder(consumableId, { quantity, unitCost, supplier, orderDate }) {
+export async function addConsumableOrder(
+  consumableId,
+  { quantity, unitCost, supplier, orderDate, estimatedQuantityOverride } = {}
+) {
   const payloadDate = orderDate || new Date().toISOString().split("T")[0];
   const numericQuantity = Number(quantity) || 0;
   const numericUnitCost = Number(unitCost) || 0;
@@ -335,15 +341,27 @@ export async function addConsumableOrder(consumableId, { quantity, unitCost, sup
     existing?.reorder_frequency_days ?? 30
   );
 
+  const updatePayload = {
+    last_order_date: payloadDate,
+    last_order_quantity: numericQuantity,
+    last_order_total_value: numericQuantity * numericUnitCost,
+    next_estimated_order_date: nextEstimatedOrderDate,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (
+    estimatedQuantityOverride !== null &&
+    estimatedQuantityOverride !== undefined
+  ) {
+    updatePayload.estimated_quantity = Math.max(
+      0,
+      Math.round(estimatedQuantityOverride)
+    );
+  }
+
   const { error: updateError } = await supabase
     .from("workshop_consumables")
-    .update({
-      last_order_date: payloadDate,
-      last_order_quantity: numericQuantity,
-      last_order_total_value: numericQuantity * numericUnitCost,
-      next_estimated_order_date: nextEstimatedOrderDate,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq("id", consumableId);
 
   if (updateError) {

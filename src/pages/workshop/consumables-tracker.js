@@ -476,7 +476,10 @@ function ConsumablesTrackerPage() {
       };
 
       try {
-        await addConsumableOrder(orderModalConsumable.id, payload);
+        await addConsumableOrder(orderModalConsumable.id, {
+          ...payload,
+          estimatedQuantityOverride: payload.quantity,
+        });
         await refreshConsumables();
         closeOrderModal();
       } catch (error) {
