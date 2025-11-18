@@ -488,7 +488,7 @@ export default function ViewJobCards() {
                 transition: "all 0.2s",
               }}
             >
-              Today's Workload
+              Today&apos;s Workload
             </button>
             <button
               onClick={() => setActiveTab("carryOver")}

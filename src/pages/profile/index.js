@@ -135,7 +135,7 @@ export function ProfilePage({
               fontWeight: 600,
             }}
           >
-            Admin previewing {profile.name}'s profile
+            Admin previewing {profile.name}&#39;s profile
           </div>
         )}
       </header>

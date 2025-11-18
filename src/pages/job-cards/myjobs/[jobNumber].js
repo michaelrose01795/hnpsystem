@@ -933,7 +933,7 @@ export default function TechJobDetailPage() {
                       <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
                       <p style={{ fontSize: "16px", fontWeight: "600" }}>No VHC Checks Added Yet</p>
                       <p style={{ fontSize: "14px", color: "#6b7280", marginTop: "8px" }}>
-                        Click "Start VHC" above to begin the vehicle health check.
+                        Click &quot;Start VHC&quot; above to begin the vehicle health check.
                       </p>
                     </div>
                   ) : (
