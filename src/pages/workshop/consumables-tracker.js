@@ -1990,7 +1990,8 @@ function ConsumablesTrackerPage() {
                                 colSpan={9}
                                 style={{ padding: "0 12px 12px" }}
                               >
-                                <div style={orderHistoryContainerStyle}>
+                                <div style={{ display: "block" }}>
+                                  <div style={orderHistoryContainerStyle}>
                                   <div style={orderHistoryHeaderStyle}>
                                     <span>Item</span>
                                     <span>Qty</span>
@@ -2047,6 +2048,7 @@ function ConsumablesTrackerPage() {
                                       );
                                     })
                                   )}
+                                  </div>
                                 </div>
                               </td>
                             </tr>
