@@ -155,14 +155,6 @@ export default function TechJobDetailPage() {
   const isTech =
     (username && allowedTechNames.has(username)) || hasRoleAccess;
 
-  if (rosterLoading) {
-    return (
-      <Layout>
-        <div style={{ padding: "24px", color: "#6B7280" }}>Loading roster…</div>
-      </Layout>
-    );
-  }
-
   // ✅ Fetch job data on component mount
   useEffect(() => {
     if (!jobNumber) return;
@@ -440,6 +432,14 @@ export default function TechJobDetailPage() {
   };
 
   const additionalAvailable = hasAdditionalContents();
+
+  if (rosterLoading) {
+    return (
+      <Layout>
+        <div style={{ padding: "24px", color: "#6B7280" }}>Loading roster…</div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

@@ -112,14 +112,6 @@ export default function WriteUpPage() {
   // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
   const isTech = techsList.includes(username);
 
-  if (rosterLoading) {
-    return (
-      <Layout>
-        <div style={{ padding: "24px", color: "#6B7280" }}>Loading roster…</div>
-      </Layout>
-    );
-  }
-
   // ✅ Fetch job + write-up data whenever the job number changes
   useEffect(() => {
     if (!jobNumber) {
@@ -326,6 +318,14 @@ export default function WriteUpPage() {
             }
           `}</style>
         </div>
+      </Layout>
+    );
+  }
+
+  if (rosterLoading) {
+    return (
+      <Layout>
+        <div style={{ padding: "24px", color: "#6B7280" }}>Loading roster…</div>
       </Layout>
     );
   }

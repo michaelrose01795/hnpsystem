@@ -1148,8 +1148,8 @@ function ConsumablesTrackerPage() {
                   Order {orderModalConsumable.name}
                 </h3>
                 <p style={{ margin: "0 8px 16px", color: "#444" }}>
-                  Previous orders (latest three). "Same Details" will reuse the
-                  most recent order, while "Edit Details" lets you adjust the
+                Previous orders (latest three). &ldquo;Same Details&rdquo; will reuse the
+                most recent order, while &ldquo;Edit Details&rdquo; lets you adjust the
                   quantity, unit cost, supplier, or date before logging a new entry.
                 </p>
                 <div style={orderHistoryContainerStyle}>
@@ -1684,7 +1684,7 @@ function ConsumablesTrackerPage() {
                   <p
                     style={{ margin: 0, color: "#888", fontSize: "0.85rem" }}
                   >
-                    This Month's Spend
+                    This Month&apos;s Spend
                   </p>
                   <h2
                     style={{
