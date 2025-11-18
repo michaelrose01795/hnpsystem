@@ -84,6 +84,11 @@ const orderHistoryContainerStyle = {
   overflowY: "auto",
 };
 
+const scheduledTableBodyStyle = {
+  maxHeight: "320px",
+  overflowY: "auto",
+};
+
 const orderHistoryHeaderStyle = {
   display: "grid",
   gridTemplateColumns: orderHistoryGridTemplate,
@@ -301,6 +306,7 @@ function ConsumablesTrackerPage() {
   const [viewMonth, setViewMonth] = useState(
     () => new Date().getMonth() + 1
   );
+  const [searchQuery, setSearchQuery] = useState("");
   const [financialSummary, setFinancialSummary] = useState({
     monthSpend: 0,
     projectedSpend: 0,
@@ -699,6 +705,27 @@ function compactConsumableKey(value) {
       budgetRemaining: monthlyBudget - monthSpend,
     };
   }, [financialSummary]);
+
+  const filteredConsumables = useMemo(() => {
+    const term = (searchQuery || "").trim().toLowerCase();
+    if (!term) {
+      return consumables;
+    }
+    return consumables.filter((item) => {
+      const candidateValues = [
+        item.name,
+        formatDate(item.lastOrderDate),
+        formatDate(item.nextEstimatedOrderDate),
+        item.supplier,
+        item.unitCost,
+        item.lastOrderTotalValue,
+      ]
+        .filter(Boolean)
+        .map((value) => String(value).toLowerCase());
+
+      return candidateValues.some((value) => value.includes(term));
+    });
+  }, [consumables, searchQuery]);
 
   const closeOrderModal = useCallback(() => {
     setOrderModalConsumable(null);
@@ -1407,11 +1434,45 @@ function compactConsumableKey(value) {
             </div>
 
             <div style={{ ...cardStyle }}>
-              <h2 style={sectionTitleStyle}>Scheduled Consumables</h2>
-              <div style={{ overflowX: "auto" }}>
-                <table
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                  alignItems: "center",
+                }}
+              >
+                <h2 style={sectionTitleStyle}>Scheduled Consumables</h2>
+                <div
                   style={{
-                    width: "100%",
+                    minWidth: "220px",
+                    flex: "1 1 auto",
+                    maxWidth: "360px",
+                  }}
+                >
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search by item, date, cost, supplier…"
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      borderRadius: "10px",
+                      border: "1px solid #ffdede",
+                      background: "#fff",
+                      fontSize: "0.9rem",
+                      outline: "none",
+                    }}
+                  />
+                </div>
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <div style={scheduledTableBodyStyle}>
+                  <table
+                    style={{
+                      width: "100%",
                     borderCollapse: "separate",
                     borderSpacing: "0 12px",
                   }}
@@ -1460,7 +1521,7 @@ function compactConsumableKey(value) {
                         </td>
                       </tr>
                     ) : (
-                      consumables.map((item) => {
+                      filteredConsumables.map((item) => {
                         const status = getConsumableStatus(item);
                         const icon =
                           status.label === "Overdue"
