@@ -72,6 +72,41 @@ const budgetInputStyle = {
   fontSize: "0.95rem",
 };
 
+const orderHistoryGridTemplate = "minmax(150px, 2fr) repeat(5, minmax(90px, 1fr))";
+
+const orderHistoryContainerStyle = {
+  marginTop: "12px",
+  borderRadius: "12px",
+  border: "1px solid #ffe0e0",
+  background: "#fff",
+  padding: "12px",
+  maxHeight: "190px",
+  overflowY: "auto",
+};
+
+const orderHistoryHeaderStyle = {
+  display: "grid",
+  gridTemplateColumns: orderHistoryGridTemplate,
+  gap: "12px",
+  fontSize: "0.7rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.1em",
+  color: "#a00000",
+  marginBottom: "8px",
+};
+
+const orderHistoryRowBorder = "1px solid rgba(209,0,0,0.1)";
+
+const orderHistoryRowStyle = {
+  display: "grid",
+  gridTemplateColumns: orderHistoryGridTemplate,
+  gap: "12px",
+  alignItems: "center",
+  fontSize: "0.9rem",
+  color: "#444",
+  padding: "8px 0",
+  borderBottom: orderHistoryRowBorder,
+};
 function formatCurrency(value) {
   if (value === null || value === undefined) {
     return "—";
@@ -534,48 +569,117 @@ function ConsumablesTrackerPage() {
                             ? "ℹ️"
                             : "⏰";
 
+                        const logEntries = item.orderHistory || [];
+
                         return (
-                          <tr
-                            key={item.id}
-                            style={{
-                              background: "#fff7f7",
-                              borderRadius: "12px",
-                            }}
-                          >
-                            <td style={{ padding: "12px" }}>
-                              <span style={toneToStyles(status.tone)}>
-                                {icon}
-                                {status.label}
-                              </span>
-                            </td>
-                            <td style={{ padding: "12px" }}>
-                              <strong
-                                style={{ display: "block", color: "#b10000" }}
+                          <React.Fragment key={`consumable-${item.id}`}>
+                            <tr
+                              key={`${item.id}-row`}
+                              style={{
+                                background: "#fff7f7",
+                                borderRadius: "12px",
+                              }}
+                            >
+                              <td style={{ padding: "12px" }}>
+                                <span style={toneToStyles(status.tone)}>
+                                  {icon}
+                                  {status.label}
+                                </span>
+                              </td>
+                              <td style={{ padding: "12px" }}>
+                                <strong
+                                  style={{ display: "block", color: "#b10000" }}
+                                >
+                                  {item.name}
+                                </strong>
+                              </td>
+                              <td style={{ padding: "12px", color: "#555" }}>
+                                {formatDate(item.lastOrderDate)}
+                              </td>
+                              <td style={{ padding: "12px", color: "#555" }}>
+                                {formatDate(item.nextEstimatedOrderDate)}
+                              </td>
+                              <td style={{ padding: "12px", color: "#555" }}>
+                                {item.estimatedQuantity
+                                  ? item.estimatedQuantity.toLocaleString()
+                                  : "—"}
+                              </td>
+                              <td style={{ padding: "12px", color: "#555" }}>
+                                {item.supplier || "—"}
+                              </td>
+                              <td style={{ padding: "12px", color: "#555" }}>
+                                {formatCurrency(item.unitCost)}
+                              </td>
+                              <td style={{ padding: "12px", color: "#555" }}>
+                                {formatCurrency(item.lastOrderTotalValue)}
+                              </td>
+                            </tr>
+                            <tr>
+                              <td
+                                colSpan={8}
+                                style={{ padding: "0 12px 12px" }}
                               >
-                                {item.name}
-                              </strong>
-                            </td>
-                            <td style={{ padding: "12px", color: "#555" }}>
-                              {formatDate(item.lastOrderDate)}
-                            </td>
-                            <td style={{ padding: "12px", color: "#555" }}>
-                              {formatDate(item.nextEstimatedOrderDate)}
-                            </td>
-                            <td style={{ padding: "12px", color: "#555" }}>
-                              {item.estimatedQuantity
-                                ? item.estimatedQuantity.toLocaleString()
-                                : "—"}
-                            </td>
-                            <td style={{ padding: "12px", color: "#555" }}>
-                              {item.supplier || "—"}
-                            </td>
-                            <td style={{ padding: "12px", color: "#555" }}>
-                              {formatCurrency(item.unitCost)}
-                            </td>
-                            <td style={{ padding: "12px", color: "#555" }}>
-                              {formatCurrency(item.lastOrderTotalValue)}
-                            </td>
-                          </tr>
+                                <div style={orderHistoryContainerStyle}>
+                                  <div style={orderHistoryHeaderStyle}>
+                                    <span>Item</span>
+                                    <span>Qty</span>
+                                    <span>Unit</span>
+                                    <span>Total</span>
+                                    <span>Supplier</span>
+                                    <span>Date</span>
+                                  </div>
+                                  {logEntries.length === 0 ? (
+                                    <p
+                                      style={{
+                                        margin: 0,
+                                        color: "#6b7280",
+                                        fontSize: "0.9rem",
+                                      }}
+                                    >
+                                      No order logs recorded yet.
+                                    </p>
+                                  ) : (
+                                    logEntries.map((log, logIndex) => {
+                                      const isLastLog =
+                                        logIndex === logEntries.length - 1;
+                                      return (
+                                        <div
+                                          key={`${item.id}-log-${logIndex}`}
+                                          style={{
+                                            ...orderHistoryRowStyle,
+                                            borderBottom: isLastLog
+                                              ? "none"
+                                              : orderHistoryRowBorder,
+                                          }}
+                                        >
+                                          <span>
+                                            {log.itemName || item.name}
+                                          </span>
+                                          <span>
+                                            {log.quantity
+                                              ? log.quantity.toLocaleString()
+                                              : "—"}
+                                          </span>
+                                          <span>
+                                            {formatCurrency(log.unitCost)}
+                                          </span>
+                                          <span>
+                                            {formatCurrency(log.totalCost)}
+                                          </span>
+                                          <span>
+                                            {log.supplier || "—"}
+                                          </span>
+                                          <span>
+                                            {formatDate(log.date)}
+                                          </span>
+                                        </div>
+                                      );
+                                    })
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          </React.Fragment>
                         );
                       })
                     )}

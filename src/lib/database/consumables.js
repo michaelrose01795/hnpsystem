@@ -42,7 +42,8 @@ export async function listConsumablesForTracker() {
         order_date,
         quantity,
         unit_cost,
-        total_value
+        total_cost,
+        supplier
       )
     `
     );
@@ -74,13 +75,19 @@ export async function listConsumablesForTracker() {
       isRequired: row.is_required !== false,
       notes: row.notes ?? null,
       latestOrder: null,
+      orderHistory: [],
     };
+
+    if (rawName) {
+      existing.name = rawName;
+    }
 
     existing.supplier = existing.supplier || row.supplier || null;
     existing.unitCost = existing.unitCost || toNumber(row.unit_cost ?? row.unitCost);
     existing.estimatedQuantity += toNumber(row.estimated_quantity ?? row.estimatedQuantity);
     existing.reorderFrequencyDays =
-      existing.reorderFrequencyDays || row.reorder_frequency_days ?? row.reorderFrequencyDays ?? null;
+      existing.reorderFrequencyDays ||
+      (row.reorder_frequency_days ?? row.reorderFrequencyDays ?? null);
     existing.isRequired = existing.isRequired && row.is_required !== false;
     existing.notes = existing.notes || row.notes || null;
 
@@ -89,20 +96,48 @@ export async function listConsumablesForTracker() {
       existing.nextEstimatedOrderDate = candidateNext;
     }
 
+    const trackOrder = ({ date, quantity, unitCost, totalCost, supplier }) => {
+      if (!date) {
+        return;
+      }
+      const formattedDate = date.toISOString().split("T")[0];
+      existing.orderHistory.push({
+        itemName: existing.name,
+        date: formattedDate,
+        quantity,
+        unitCost,
+        totalCost,
+        supplier,
+      });
+
+      if (!existing.latestOrder || date > existing.latestOrder.date) {
+        existing.latestOrder = {
+          date,
+          quantity,
+          totalValue: totalCost,
+        };
+      }
+    };
+
     const addOrderCandidate = (order) => {
       const orderDate = parseDate(order.order_date);
       if (!orderDate) {
         return;
       }
+      const quantity = toNumber(order.quantity);
+      const unitCost = toNumber(order.unit_cost ?? order.unitCost);
       const totalValue =
-        order.total_value ?? order.totalValue ?? toNumber(order.quantity) * toNumber(order.unit_cost);
-      if (!existing.latestOrder || orderDate > existing.latestOrder.date) {
-        existing.latestOrder = {
-          date: orderDate,
-          quantity: toNumber(order.quantity),
-          totalValue,
-        };
-      }
+        order.total_cost ??
+        order.totalValue ??
+        order.total_value ??
+        toNumber(order.quantity) * unitCost;
+      trackOrder({
+        date: orderDate,
+        quantity,
+        unitCost,
+        totalCost: totalValue,
+        supplier: order.supplier ?? row.supplier ?? null,
+      });
     };
 
     if (row.workshop_consumable_orders && Array.isArray(row.workshop_consumable_orders)) {
@@ -111,17 +146,19 @@ export async function listConsumablesForTracker() {
 
     const lastOrderDate = parseDate(row.last_order_date);
     if (lastOrderDate) {
+      const quantity = toNumber(row.last_order_quantity ?? row.lastOrderQuantity);
+      const unitCost = toNumber(row.unit_cost ?? row.unitCost);
       const totalValue =
         row.last_order_total_value ??
         row.lastOrderTotalValue ??
-        toNumber(row.last_order_quantity) * toNumber(row.unit_cost ?? row.unitCost);
-      if (!existing.latestOrder || lastOrderDate > existing.latestOrder.date) {
-        existing.latestOrder = {
-          date: lastOrderDate,
-          quantity: toNumber(row.last_order_quantity ?? row.lastOrderQuantity),
-          totalValue,
-        };
-      }
+        quantity * unitCost;
+      trackOrder({
+        date: lastOrderDate,
+        quantity,
+        unitCost,
+        totalCost: totalValue,
+        supplier: row.supplier ?? null,
+      });
     }
 
     grouped.set(groupKey, existing);
@@ -131,6 +168,12 @@ export async function listConsumablesForTracker() {
     const lastOrderDate = entry.latestOrder ? entry.latestOrder.date.toISOString().split("T")[0] : null;
     const lastOrderQuantity = entry.latestOrder ? entry.latestOrder.quantity : null;
     const lastOrderTotalValue = entry.latestOrder ? entry.latestOrder.totalValue : null;
+    const orderHistory = entry.orderHistory
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
 
     return {
       id: entry.id,
@@ -147,6 +190,7 @@ export async function listConsumablesForTracker() {
       reorderFrequencyDays: entry.reorderFrequencyDays,
       isRequired: entry.isRequired,
       notes: entry.notes,
+      orderHistory,
     };
   });
 
