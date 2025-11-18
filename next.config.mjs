@@ -1,4 +1,5 @@
 // file location: next.config.mjs // Document file path for clarity
+import path from "path"; // Node.js path utilities for building aliases
 // Added per instruction to keep comment coverage
 const nextConfig = { // Exported Next.js configuration object
   reactStrictMode: true, // Enable React strict mode for highlighting potential issues
@@ -28,6 +29,14 @@ const nextConfig = { // Exported Next.js configuration object
       }, // Close redirect rule
     ]; // Close redirects array
   }, // Close redirects function
+  // Added alias merging to avoid overwriting Next.js defaults
+  webpack(config) { // Custom webpack tweaks for alias support
+    config.resolve.alias = { // Keep Next's defaults while adding our own
+      ...config.resolve.alias,
+      "@": path.resolve(process.cwd(), "src"), // Map @ to src for cleaner imports
+    };
+    return config; // Return the modified config back to Next.js
+  }, // Close webpack override
 }; // Close configuration object
 // Added per instruction to keep comment coverage
 export default nextConfig; // Export configuration as default for Next.js

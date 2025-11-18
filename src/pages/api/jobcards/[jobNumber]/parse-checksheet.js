@@ -3,7 +3,8 @@ export const runtime = "nodejs"; // Ensure Vercel uses the Node.js runtime for f
 
 import fs from "fs"; // Node.js file system utilities to manage uploaded files
 import path from "path"; // Path helper to build cross-platform temporary paths
-import pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs"; // PDF.js utilities for extracting structured text with ESM support
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.js"; // PDF.js utilities for extracting structured text with ESM support
+import "pdfjs-dist/legacy/build/pdf.worker.js"; // Ensure the PDF.js worker is registered in Node.js
 import { getJobByNumberOrReg } from "@/lib/database/jobs"; // Database helper to find jobs by number or registration
 import { createVHCCheck } from "@/lib/database/vhc"; // Database helper to store Vehicle Health Check details
 
@@ -13,7 +14,7 @@ export const config = {
   },
 };
 
-const { getDocument, GlobalWorkerOptions } = pdfjsLib; // Destructure helpers from the PDF.js module
+const { getDocument, GlobalWorkerOptions } = pdfjs; // Destructure helpers from the PDF.js module
 
 GlobalWorkerOptions.workerSrc = undefined; // Disable worker loading in the Node.js environment
 
