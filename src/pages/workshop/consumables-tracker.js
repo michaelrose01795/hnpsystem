@@ -337,6 +337,15 @@ function ConsumablesTrackerPage() {
   const [requestsError, setRequestsError] = useState("");
   const [orderingRequestId, setOrderingRequestId] = useState(null);
   const [pendingRequestOrderId, setPendingRequestOrderId] = useState(null);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsError, setLogsError] = useState("");
+  const [logsSummary, setLogsSummary] = useState({
+    spend: 0,
+    quantity: 0,
+    orders: 0,
+    suppliers: 0,
+  });
+  const [monthlyLogs, setMonthlyLogs] = useState([]);
   const isMountedRef = useRef(true);
   const [orderModalConsumable, setOrderModalConsumable] = useState(null);
   const [orderModalError, setOrderModalError] = useState("");
@@ -579,6 +588,40 @@ function namesMatch(valueA, valueB) {
   useEffect(() => {
     fetchFinancialSummary();
   }, [fetchFinancialSummary]);
+
+  const fetchMonthlyLogs = useCallback(async () => {
+    setLogsLoading(true);
+    setLogsError("");
+
+    try {
+      const response = await fetch(
+        `/api/workshop/consumables/logs?year=${viewYear}&month=${viewMonth}`
+      );
+      if (!response.ok) {
+        const body = await response
+          .json()
+          .catch(() => ({ message: "Unable to load logs." }));
+        throw new Error(body.message || "Unable to load logs.");
+      }
+
+      const payload = await response.json();
+      if (!payload.success) {
+        throw new Error(payload.message || "Unable to load logs.");
+      }
+
+      setMonthlyLogs(payload.data.orders || []);
+      setLogsSummary(payload.data.summary || { spend: 0, quantity: 0, orders: 0, suppliers: 0 });
+    } catch (error) {
+      console.error("❌ Failed to load monthly logs", error);
+      setLogsError(error?.message || "Unable to load monthly logs.");
+    } finally {
+      setLogsLoading(false);
+    }
+  }, [viewMonth, viewYear, logsSummary]);
+
+  useEffect(() => {
+    fetchMonthlyLogs();
+  }, [fetchMonthlyLogs]);
 
   useEffect(() => {
     if (
@@ -905,6 +948,7 @@ function namesMatch(valueA, valueB) {
         setPendingRequestOrderId(null);
       }
       await refreshConsumables();
+      await fetchMonthlyLogs();
       closeOrderModal();
     } catch (error) {
       setOrderModalError(error?.message || "Failed to place order.");
@@ -913,6 +957,7 @@ function namesMatch(valueA, valueB) {
     }
   }, [
     closeOrderModal,
+    fetchMonthlyLogs,
     handleRequestOrdered,
     orderModalConsumable,
     pendingRequestOrderId,
@@ -947,6 +992,7 @@ function namesMatch(valueA, valueB) {
         setPendingRequestOrderId(null);
       }
       await refreshConsumables();
+      await fetchMonthlyLogs();
       closeOrderModal();
       } catch (error) {
         setOrderModalError(error?.message || "Failed to place order.");
@@ -956,8 +1002,11 @@ function namesMatch(valueA, valueB) {
     },
     [
       closeOrderModal,
+      fetchMonthlyLogs,
+      handleRequestOrdered,
       orderForm,
       orderModalConsumable,
+      pendingRequestOrderId,
       refreshConsumables,
       todayIso,
     ] // previous dependencies
@@ -1297,6 +1346,174 @@ function namesMatch(valueA, valueB) {
                 {financialError && (
                   <p style={{ margin: 0, color: "#a00000" }}>{financialError}</p>
                 )}
+              </div>
+            </div>
+
+            <div style={{ ...cardStyle, marginTop: "20px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "12px",
+                }}
+              >
+                <h2 style={{ margin: 0, fontSize: "1.3rem", color: "#b10000" }}>
+                  Monthly Logs
+                </h2>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleMonthChange(-1)}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: "10px",
+                      border: "1px solid #d10000",
+                      background: "#fff",
+                      color: "#b10000",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ← Previous
+                  </button>
+                  <span style={{ fontWeight: 600, color: "#a00000" }}>
+                    {monthLabel}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleMonthChange(1)}
+                    disabled={!canAdvanceToNextMonth}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: "10px",
+                      border: "1px solid #d10000",
+                      background: canAdvanceToNextMonth ? "#fff" : "rgba(209,0,0,0.2)",
+                      color: canAdvanceToNextMonth ? "#b10000" : "#a00000",
+                      fontWeight: 600,
+                      cursor: canAdvanceToNextMonth ? "pointer" : "not-allowed",
+                    }}
+                  >
+                    Next →
+                  </button>
+                </div>
+              </div>
+              <div
+                style={{
+                  marginTop: "12px",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                  gap: "12px",
+                }}
+              >
+                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: "1px dashed #ffdede" }}>
+                  <p style={{ margin: 0, color: "#888", fontSize: "0.8rem" }}>Spend</p>
+                  <strong style={{ fontSize: "1.2rem" }}>
+                    {logsLoading ? "Loading…" : formatCurrency(logsSummary.spend)}
+                  </strong>
+                </div>
+                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: "1px dashed #ffdede" }}>
+                  <p style={{ margin: 0, color: "#888", fontSize: "0.8rem" }}>Quantity</p>
+                  <strong style={{ fontSize: "1.2rem" }}>
+                    {logsLoading ? "Loading…" : logsSummary.quantity.toLocaleString()}
+                  </strong>
+                </div>
+                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: "1px dashed #ffdede" }}>
+                  <p style={{ margin: 0, color: "#888", fontSize: "0.8rem" }}>Orders</p>
+                  <strong style={{ fontSize: "1.2rem" }}>
+                    {logsLoading ? "Loading…" : logsSummary.orders}
+                  </strong>
+                </div>
+                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: "1px dashed #ffdede" }}>
+                  <p style={{ margin: 0, color: "#888", fontSize: "0.8rem" }}>Suppliers</p>
+                  <strong style={{ fontSize: "1.2rem" }}>
+                    {logsLoading ? "Loading…" : logsSummary.suppliers}
+                  </strong>
+                </div>
+              </div>
+              {logsError && (
+                <p style={{ margin: "12px 0 0", color: "#a00000" }}>{logsError}</p>
+              )}
+              <div style={{ overflowX: "auto", marginTop: "16px" }}>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "separate",
+                    borderSpacing: "0 12px",
+                  }}
+                >
+                  <thead>
+                    <tr
+                      style={{
+                        textAlign: "left",
+                        color: "#a00000",
+                        fontSize: "0.8rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      <th style={{ padding: "8px" }}>Date</th>
+                      <th style={{ padding: "8px" }}>Item</th>
+                      <th style={{ padding: "8px" }}>Quantity</th>
+                      <th style={{ padding: "8px" }}>Supplier</th>
+                      <th style={{ padding: "8px" }}>Total (£)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {logsLoading ? (
+                      <tr>
+                        <td colSpan={5} style={{ padding: "12px", color: "#6b7280" }}>
+                          Loading logs…
+                        </td>
+                      </tr>
+                    ) : monthlyLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} style={{ padding: "12px", color: "#6b7280" }}>
+                          No log entries recorded for {monthLabel}.
+                        </td>
+                      </tr>
+                    ) : (
+                      monthlyLogs.map((log) => (
+                        <tr
+                          key={`log-${log.id || log.date}-${log.itemName}`}
+                          style={{
+                            background: "#fff7f7",
+                            borderRadius: "12px",
+                          }}
+                        >
+                          <td style={{ padding: "12px", color: "#555" }}>
+                            {log.date
+                              ? new Date(log.date).toLocaleDateString("en-GB", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "—"}
+                          </td>
+                          <td style={{ padding: "12px", fontWeight: 600, color: "#333" }}>
+                            {log.itemName || "—"}
+                          </td>
+                          <td style={{ padding: "12px", color: "#555" }}>
+                            {Number(log.quantity || 0).toLocaleString()}
+                          </td>
+                          <td style={{ padding: "12px", color: "#555" }}>
+                            {log.supplier || "—"}
+                          </td>
+                          <td style={{ padding: "12px", color: "#555" }}>
+                            {formatCurrency(log.totalValue)}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
 
