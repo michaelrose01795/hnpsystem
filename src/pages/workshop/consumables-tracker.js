@@ -454,6 +454,23 @@ function namesMatch(valueA, valueB) {
     [consumables]
   );
 
+  const handleRequestOrder = useCallback(
+    (request) => {
+      if (!request) {
+        return;
+      }
+      const consumable = findConsumableByName(request.itemName);
+      if (!consumable) {
+        setRequestsError(
+          `Consumable "${request.itemName}" not tracked. Add it before ordering.`
+        );
+        return;
+      }
+      openOrderModal(consumable, { requestId: request.id });
+    },
+    [findConsumableByName, openOrderModal]
+  );
+
   const handleRequestOrdered = useCallback(
     async (requestId) => {
       if (!requestId) {
@@ -1876,7 +1893,7 @@ function namesMatch(valueA, valueB) {
                           <button
                             type="button"
                             disabled={orderingRequestId === request.id}
-                            onClick={() => handleRequestOrdered(request.id)}
+                            onClick={() => handleRequestOrder(request)}
                             style={{
                               ...orderModalButtonStyle,
                               padding: "6px 14px",
