@@ -313,6 +313,14 @@ function ConsumablesTrackerPage() {
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [budgetSaveError, setBudgetSaveError] = useState("");
   const [budgetSaveMessage, setBudgetSaveMessage] = useState("");
+  const [newItemForm, setNewItemForm] = useState({
+    name: "",
+    supplier: "",
+    unitCost: "",
+  });
+  const [newItemLoading, setNewItemLoading] = useState(false);
+  const [newItemError, setNewItemError] = useState("");
+  const [newItemSuccess, setNewItemSuccess] = useState("");
   const [consumables, setConsumables] = useState([]);
   const [potentialDuplicates, setPotentialDuplicates] = useState([]);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
@@ -365,8 +373,16 @@ function ConsumablesTrackerPage() {
     } finally {
       if (isMountedRef.current) {
         setLoadingConsumables(false);
-      }
-    }
+  }
+}
+
+function normalizeConsumableName(value) {
+  return (value || "").trim().toLowerCase();
+}
+
+function compactConsumableKey(value) {
+  return normalizeConsumableName(value).replace(/\s+/g, "");
+}
   }, [isWorkshopManager]);
 
   useEffect(() => {
@@ -528,6 +544,92 @@ function ConsumablesTrackerPage() {
       setBudgetSaving(false);
     }
   }, [budgetInput, viewMonth, viewYear, dbUserId]);
+
+  const similarConsumableNames = useMemo(() => {
+    const rawName = newItemForm.name || "";
+    const normalizedCandidate = normalizeConsumableName(rawName);
+    if (!normalizedCandidate) {
+      return [];
+    }
+    const candidateKey = compactConsumableKey(normalizedCandidate);
+    if (!candidateKey) {
+      return [];
+    }
+
+    return consumables
+      .map((item) => item.name)
+      .filter((existing) => {
+        if (!existing) {
+          return false;
+        }
+        const existingKey = compactConsumableKey(existing);
+        if (!existingKey) {
+          return false;
+        }
+        if (existingKey === candidateKey) {
+          return true;
+        }
+        if (candidateKey.length >= 3 && existingKey.includes(candidateKey)) {
+          return true;
+        }
+        if (existingKey.length >= 3 && candidateKey.includes(existingKey)) {
+          return true;
+        }
+        return false;
+      });
+  }, [newItemForm.name, consumables]);
+
+  const hasSimilarConsumables = similarConsumableNames.length > 0;
+
+  const handleNewItemChange = useCallback((field) => (event) => {
+    setNewItemForm((previous) => ({ ...previous, [field]: event.target.value }));
+    setNewItemError("");
+    setNewItemSuccess("");
+  }, []);
+
+  const handleNewItemSubmit = useCallback(
+    async (event) => {
+      event.preventDefault();
+      const itemName = (newItemForm.name || "").trim();
+      if (!itemName) {
+        setNewItemError("Item name is required.");
+        return;
+      }
+      const unitCost = Number(newItemForm.unitCost) || 0;
+      setNewItemLoading(true);
+      setNewItemError("");
+      setNewItemSuccess("");
+
+      try {
+        const response = await fetch("/api/workshop/consumables/items", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: itemName,
+            supplier: (newItemForm.supplier || "").trim() || null,
+            unitCost,
+          }),
+        });
+
+        if (!response.ok) {
+          const body = await response
+            .json()
+            .catch(() => ({ message: "Unable to add consumable." }));
+          throw new Error(body.message || "Unable to add consumable.");
+        }
+
+        setNewItemForm({ name: "", supplier: "", unitCost: "" });
+        setNewItemSuccess("Consumable added.");
+        await refreshConsumables();
+      } catch (error) {
+        console.error("❌ Failed to add consumable", error);
+        setNewItemError(error?.message || "Unable to add consumable.");
+      } finally {
+        setNewItemLoading(false);
+      }
+    },
+    [newItemForm, refreshConsumables]
+  );
 
   const sendConsumableStatusNotification = useCallback(
     async (item, statusLabel) => {
@@ -1043,6 +1145,113 @@ function ConsumablesTrackerPage() {
                   <p style={{ margin: 0, color: "#a00000" }}>{financialError}</p>
                 )}
               </div>
+            </div>
+
+            <div style={{ ...cardStyle, marginTop: "20px" }}>
+              <h2 style={sectionTitleStyle}>Add New Consumable</h2>
+              <p style={{ marginTop: "0", color: "#666" }}>
+                Add a consumable to the tracker so you can schedule future orders.
+              </p>
+              <form
+                onSubmit={handleNewItemSubmit}
+                style={{
+                  marginTop: "12px",
+                  display: "grid",
+                  gap: "12px",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                }}
+              >
+                <label style={{ fontWeight: 600, color: "#b10000" }}>
+                  Item Name
+                  <input
+                    type="text"
+                    value={newItemForm.name}
+                    onChange={handleNewItemChange("name")}
+                    style={{
+                      ...budgetInputStyle,
+                      marginTop: "6px",
+                      padding: "8px 10px",
+                    }}
+                    required
+                  />
+                </label>
+                <label style={{ fontWeight: 600, color: "#b10000" }}>
+                  Default Supplier
+                  <input
+                    type="text"
+                    value={newItemForm.supplier}
+                    onChange={handleNewItemChange("supplier")}
+                    style={{
+                      ...budgetInputStyle,
+                      marginTop: "6px",
+                      padding: "8px 10px",
+                    }}
+                  />
+                </label>
+                <label style={{ fontWeight: 600, color: "#b10000" }}>
+                  Default Unit Cost (£)
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newItemForm.unitCost}
+                    onChange={handleNewItemChange("unitCost")}
+                    style={{
+                      ...budgetInputStyle,
+                      marginTop: "6px",
+                      padding: "8px 10px",
+                    }}
+                  />
+                </label>
+                <div
+                  style={{
+                    gridColumn: "1 / -1",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "12px",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <button
+                    type="submit"
+                    disabled={newItemLoading}
+                    style={{
+                      ...orderModalButtonStyle,
+                      width: "auto",
+                      background: newItemLoading
+                        ? "rgba(209,0,0,0.4)"
+                        : "linear-gradient(135deg, #d10000, #940000)",
+                      color: "#ffffff",
+                    }}
+                  >
+                    {newItemLoading ? "Adding…" : "Add Consumable"}
+                  </button>
+                  {hasSimilarConsumables && (
+                    <p
+                      style={{
+                        margin: 0,
+                        color: "#a00000",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      Similar item(s) already exist:{" "}
+                      {similarConsumableNames.join(", ")}.
+                    </p>
+                  )}
+                </div>
+              </form>
+              {newItemError && (
+                <p style={{ margin: "8px 0 0", color: "#a00000" }}>
+                  {newItemError}
+                </p>
+              )}
+              {newItemSuccess && (
+                <p style={{ margin: "8px 0 0", color: "#007a4e" }}>
+                  {newItemSuccess}
+                </p>
+              )}
+            </div>
 
               <div
                 style={{
