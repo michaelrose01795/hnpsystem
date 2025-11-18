@@ -181,41 +181,6 @@ const orderButtonStyle = {
   cursor: "pointer",
   boxShadow: "0 10px 18px rgba(209,0,0,0.18)",
 };
-const orderHistoryGridTemplate = "minmax(150px, 2fr) repeat(5, minmax(90px, 1fr))";
-
-const orderHistoryContainerStyle = {
-  marginTop: "12px",
-  borderRadius: "12px",
-  border: "1px solid #ffe0e0",
-  background: "#fff",
-  padding: "12px",
-  maxHeight: "190px",
-  overflowY: "auto",
-};
-
-const orderHistoryHeaderStyle = {
-  display: "grid",
-  gridTemplateColumns: orderHistoryGridTemplate,
-  gap: "12px",
-  fontSize: "0.7rem",
-  textTransform: "uppercase",
-  letterSpacing: "0.1em",
-  color: "#a00000",
-  marginBottom: "8px",
-};
-
-const orderHistoryRowBorder = "1px solid rgba(209,0,0,0.1)";
-
-const orderHistoryRowStyle = {
-  display: "grid",
-  gridTemplateColumns: orderHistoryGridTemplate,
-  gap: "12px",
-  alignItems: "center",
-  fontSize: "0.9rem",
-  color: "#444",
-  padding: "8px 0",
-  borderBottom: orderHistoryRowBorder,
-};
 function formatCurrency(value) {
   if (value === null || value === undefined) {
     return "—";
