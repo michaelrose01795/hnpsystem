@@ -314,6 +314,8 @@ function ConsumablesTrackerPage() {
     supplier: "",
     orderDate: todayIso,
   });
+  const statusNotificationCacheRef = useRef(new Map());
+  const statusNotificationPendingRef = useRef(new Map());
 
   const refreshConsumables = useCallback(async () => {
     if (!isWorkshopManager) {
@@ -359,6 +361,63 @@ function ConsumablesTrackerPage() {
       isMountedRef.current = false;
     };
   }, [isWorkshopManager, refreshConsumables]);
+
+  const sendConsumableStatusNotification = useCallback(
+    async (item, statusLabel) => {
+      try {
+        const response = await fetch("/api/messages/system-notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            consumableId: item.id,
+            name: item.name,
+            status: statusLabel,
+            nextEstimatedOrderDate: item.nextEstimatedOrderDate,
+            estimatedQuantity: item.estimatedQuantity,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorBody = await response
+            .json()
+            .catch(() => ({ message: "Unable to report status." }));
+          throw new Error(errorBody.message || "Failed to notify the Message Centre.");
+        }
+      } catch (error) {
+        console.error("❌ Unable to send consumable status notification:", error);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (loadingConsumables) {
+      return;
+    }
+    consumables.forEach((item) => {
+      const status = getConsumableStatus(item);
+      const currentStatus = statusNotificationCacheRef.current.get(item.id);
+      const pendingStatus = statusNotificationPendingRef.current.get(item.id);
+
+      if (status.label === "Overdue" || status.label === "Coming Up") {
+        if (currentStatus === status.label || pendingStatus === status.label) {
+          return;
+        }
+
+        statusNotificationPendingRef.current.set(item.id, status.label);
+        sendConsumableStatusNotification(item, status.label)
+          .then(() => {
+            statusNotificationCacheRef.current.set(item.id, status.label);
+          })
+          .finally(() => {
+            statusNotificationPendingRef.current.delete(item.id);
+          });
+        return;
+      }
+
+      statusNotificationCacheRef.current.delete(item.id);
+    });
+  }, [consumables, loadingConsumables, sendConsumableStatusNotification]);
 
   const handleBudgetChange = (event) => {
     setMonthlyBudget(Number(event.target.value) || 0);
