@@ -14,13 +14,32 @@ const CAR_LOCATIONS = [
   { id: "staff-parking", label: "Staff parking" },
 ];
 
-const KEY_LOCATIONS = [
-  { id: "safe-a", label: "Key Safe A – Hooks 1-10" },
-  { id: "safe-b", label: "Key Safe B – Hooks 11-20" },
-  { id: "valet-pouch", label: "Valet Pouch Rack" },
-  { id: "service-desk", label: "Service Desk Drawer" },
-  { id: "afterhours-box", label: "After Hours Drop" },
+const KEY_LOCATION_GROUPS = [
+  {
+    title: "Showroom Cupboard",
+    options: [
+      { id: "showroom-main", label: "Main" },
+    ],
+  },
+  {
+    title: "Workshop Cupboard",
+    options: [
+      { id: "workshop-jobs-to-start", label: "Jobs to be Started" },
+      { id: "workshop-jobs-in-progress", label: "Jobs in Progress" },
+      { id: "workshop-mot", label: "MOT" },
+      { id: "workshop-wash", label: "Wash" },
+      { id: "workshop-complete", label: "Complete" },
+    ],
+  },
 ];
+
+const KEY_LOCATIONS = KEY_LOCATION_GROUPS.flatMap((group) =>
+  group.options.map((option) => ({
+    id: option.id,
+    label: `${group.title} – ${option.label}`,
+    group: group.title,
+  }))
+);
 
 const STATUS_COLORS = {
   "Awaiting Authorization": "#f97316",
@@ -337,14 +356,22 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
           <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600 }}>
             <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>Key Location</span>
             <select
+              required
               value={form.keyLocation}
               onChange={(event) => handleChange("keyLocation", event.target.value)}
               style={{ padding: "10px", borderRadius: "12px", border: "1px solid #e5e7eb" }}
             >
-              {KEY_LOCATIONS.map((loc) => (
-                <option key={loc.id} value={loc.label}>
-                  {loc.label}
-                </option>
+              {KEY_LOCATION_GROUPS.map((group) => (
+                <optgroup key={group.title} label={group.title}>
+                  {group.options.map((option) => {
+                    const label = `${group.title} – ${option.label}`;
+                    return (
+                      <option key={option.id} value={label}>
+                        {option.label}
+                      </option>
+                    );
+                  })}
+                </optgroup>
               ))}
             </select>
           </label>
