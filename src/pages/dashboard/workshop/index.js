@@ -1,149 +1,158 @@
-// ✅ Imports converted to use absolute alias "@/"
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
-import { getAllJobs } from "@/lib/database/jobs";
 import { supabase } from "@/lib/supabaseClient";
 
-const Section = ({ title, children, subtitle }) => (
-  <section
+const MetricCard = ({ label, value, helper }) => (
+  <div
     style={{
       background: "#fff",
       borderRadius: "16px",
-      padding: "20px",
+      padding: "16px",
       border: "1px solid #ffe0e0",
-      boxShadow: "0 12px 30px rgba(209,0,0,0.08)",
+      boxShadow: "0 10px 24px rgba(0,0,0,0.04)",
+      minWidth: 160,
+    }}
+  >
+    <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "#a00000" }}>{label}</p>
+    <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
+    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "#6b7280" }}>{helper}</p>}
+  </div>
+);
+
+const Section = ({ title, subtitle, children }) => (
+  <section
+    style={{
+      background: "#fff",
+      borderRadius: "18px",
+      padding: "24px",
+      border: "1px solid #ffe0e0",
+      boxShadow: "0 16px 30px rgba(209,0,0,0.08)",
       display: "flex",
       flexDirection: "column",
       gap: "12px",
     }}
   >
     <div>
-      <h2 style={{ margin: 0, fontSize: "1.1rem", color: "#a00000" }}>{title}</h2>
-      {subtitle && <p style={{ margin: "4px 0 0", color: "#6b7280" }}>{subtitle}</p>}
+      <h2 style={{ margin: 0, fontSize: "1.2rem", color: "#a00000" }}>{title}</h2>
+      {subtitle && <p style={{ margin: "6px 0 0", color: "#6b7280" }}>{subtitle}</p>}
     </div>
     {children}
   </section>
 );
 
-const normalizeName = (value = "") => String(value).trim().toLowerCase();
-
-const mapTasksFromJob = (job) => {
-  if (!job) return [];
-  const source = Array.isArray(job.requests)
-    ? job.requests
-    : typeof job.requests === "string"
-    ? job.requests.split(/\r?\n+/)
-    : job.description
-    ? job.description.split(",")
-    : [];
-
-  return source
-    .map((entry) => {
-      if (!entry) return null;
-      const label = typeof entry === "string" ? entry.trim() : entry?.label || entry?.description;
-      if (!label) return null;
-      return {
-        label,
-        duration: entry?.duration || "—",
-      };
-    })
-    .filter(Boolean);
-};
-
-const mapConsumables = (parts = []) =>
-  parts.map((part) => {
-    const maxQty = Math.max(part.qty_in_stock || 0, (part.qty_on_order || 0) + 5, 20);
-    const level = Math.min(100, Math.round(((part.qty_in_stock || 0) / maxQty) * 100));
-    const status = level < 25 ? "Low" : level < 50 ? "Monitor" : "Healthy";
-    return {
-      id: part.id,
-      name: part.name || part.part_number || "Part",
-      level,
-      status,
-    };
-  });
+const formatTime = (value) => (value ? dayjs(value).format("HH:mm") : "—");
 
 export default function WorkshopDashboard() {
-  const today = dayjs().format("dddd D MMM");
+  const todayLabel = dayjs().format("dddd D MMMM");
   const { user } = useUser();
-  const [jobs, setJobs] = useState([]);
-  const [assignedJobs, setAssignedJobs] = useState([]);
-  const [currentJob, setCurrentJob] = useState(null);
-  const [partsStock, setPartsStock] = useState([]);
+  const [metrics, setMetrics] = useState({
+    inProgressCount: 0,
+    checkedInToday: 0,
+    completedToday: 0,
+    totalTechnicians: 0,
+    techniciansOnJobs: 0,
+    queue: [],
+    outstandingVhc: [],
+  });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const loadJobs = async () => {
-      if (!user?.username) return;
+    const runQuery = async (fetcher) => {
+      const { data, error: queryError } = await fetcher();
+      if (queryError) {
+        throw queryError;
+      }
+      return data || [];
+    };
+
+    const fetchMetrics = async () => {
       setLoading(true);
+      setError(null);
+
+      const todayStart = dayjs().startOf("day").toISOString();
+      const todayEnd = dayjs().endOf("day").toISOString();
+
       try {
-        const allJobs = await getAllJobs();
-        setJobs(allJobs);
-        const normalizedUsername = normalizeName(user.username);
-        const assigned = allJobs.filter((job) => {
-          const assignedName =
-            job.assignedTech?.name || job.technician || job.assignedTo || job.assigned_to || "";
-          return normalizeName(assignedName) === normalizedUsername;
+        const [
+          inProgressJobs,
+          checkedInTodayJobs,
+          completedTodayJobs,
+          technicianUsers,
+          clockedInEntries,
+          queueJobs,
+          outstandingVhc,
+        ] = await Promise.all([
+          runQuery(() =>
+            supabase
+              .from("jobs")
+              .select("job_number,vehicle_reg,status,checked_in_at")
+              .is("completed_at", null)
+              .not("checked_in_at", "is", null)
+          ),
+          runQuery(() =>
+            supabase
+              .from("jobs")
+              .select("id")
+              .gte("checked_in_at", todayStart)
+              .lt("checked_in_at", todayEnd)
+          ),
+          runQuery(() =>
+            supabase
+              .from("jobs")
+              .select("id")
+              .gte("completed_at", todayStart)
+              .lt("completed_at", todayEnd)
+          ),
+          runQuery(() => supabase.from("users").select("user_id,first_name,last_name,role").ilike("role", "%tech%")),
+          runQuery(() => supabase.from("job_clocking").select("user_id").is("clock_out", null)),
+          runQuery(() =>
+            supabase
+              .from("jobs")
+              .select("id,job_number,vehicle_reg,status,waiting_status,checked_in_at")
+              .is("completed_at", null)
+              .order("checked_in_at", { ascending: true, nullsFirst: true })
+              .limit(6)
+          ),
+          runQuery(() =>
+            supabase
+              .from("jobs")
+              .select("id,job_number,vehicle_reg,waiting_status,vhc_required,checked_in_at")
+              .eq("vhc_required", true)
+              .is("vhc_completed_at", null)
+              .order("checked_in_at", { ascending: true, nullsFirst: true })
+              .limit(5)
+          ),
+        ]);
+
+        setMetrics({
+          inProgressCount: inProgressJobs.length,
+          checkedInToday: checkedInTodayJobs.length,
+          completedToday: completedTodayJobs.length,
+          totalTechnicians: technicianUsers.length,
+          techniciansOnJobs: clockedInEntries.length,
+          queue: queueJobs,
+          outstandingVhc,
         });
-        setAssignedJobs(assigned);
-        setCurrentJob(assigned[0] || null);
-      } catch (error) {
-        console.error("❌ Failed to load technician jobs", error);
-        setJobs([]);
-        setAssignedJobs([]);
-        setCurrentJob(null);
+      } catch (fetchError) {
+        console.error("Failed to load workshop metrics", fetchError);
+        setError(fetchError.message || "Unable to load metrics");
       } finally {
         setLoading(false);
       }
     };
 
-    loadJobs();
-  }, [user?.username]);
-
-  useEffect(() => {
-    const loadConsumables = async () => {
-      const { data, error } = await supabase
-        .from("parts_catalog")
-        .select("id, name, part_number, qty_in_stock, qty_on_order")
-        .order("updated_at", { ascending: false })
-        .limit(4);
-
-      if (error) {
-        console.error("❌ Failed to load consumables", error);
-        setPartsStock([]);
-        return;
-      }
-      setPartsStock(data || []);
-    };
-
-    loadConsumables();
+    fetchMetrics();
   }, []);
 
-  const kpiSummary = useMemo(() => {
-    const completed = jobs.filter((job) => ["Complete", "Completed"].includes(job.status)).length;
-    const assigned = assignedJobs.length || 1;
-    return [
-      { label: "Jobs completed", value: completed, helper: `of ${assignedJobs.length} assigned` },
-      { label: "Hours booked", value: `${(assignedJobs.length * 1.5).toFixed(1)}h`, helper: "estimate" },
-      {
-        label: "Efficiency",
-        value: `${Math.min(100, Math.round((completed / assigned) * 100))}%`,
-        helper: "vs target",
-      },
-      { label: "VHC upsell", value: `£${(completed * 120).toFixed(0)}`, helper: "Authorised" },
-    ];
-  }, [jobs, assignedJobs.length]);
-
-  const outstandingTasks = useMemo(() => mapTasksFromJob(currentJob), [currentJob]);
-  const queueJobs = assignedJobs.slice(0, 4);
-  const consumables = useMemo(() => mapConsumables(partsStock), [partsStock]);
-  const waitingForParts = jobs
-    .filter((job) => (job.waitingStatus || job.waiting_status || "").toLowerCase().includes("part"))
-    .slice(0, 4);
+  const availableTechnicians = useMemo(
+    () => Math.max(metrics.totalTechnicians - metrics.techniciansOnJobs, 0),
+    [metrics.totalTechnicians, metrics.techniciansOnJobs]
+  );
 
   return (
     <Layout>
@@ -158,214 +167,107 @@ export default function WorkshopDashboard() {
           }}
         >
           <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "#a00000" }}>
-            Workshop workspace · {today}
+            Workshop workspace · {todayLabel}
           </p>
           <h1 style={{ margin: "6px 0 0", color: "#a00000" }}>
-            {user?.username ? `Hi ${user.username}, ready for your next job?` : "Workshop workspace"}
+            {user?.username ? `Hi ${user.username}, workshop view` : "Workshop workspace"}
           </h1>
           <p style={{ margin: "6px 0 0", color: "#6b7280" }}>
-            Track technician assignments, consumables, and upcoming jobs in one place.
+            Live view of technician assignments, queue, and VHC throughput.
           </p>
         </header>
 
-        {loading ? (
-          <Section title="Loading assignments" subtitle="Fetching latest workshop jobs">
-            <span style={{ color: "#6b7280" }}>Loading job data…</span>
-          </Section>
-        ) : null}
-
-        <Section
-          title={currentJob ? `Current job · ${currentJob.jobNumber}` : "No active job"}
-          subtitle={currentJob ? `${currentJob.makeModel || currentJob.reg}` : "Clock onto a job to see details"}
-        >
-          {currentJob ? (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-              <div style={{ flex: "1 1 220px" }}>
-                <p style={{ margin: 0, color: "#374151" }}>
-                  <strong>Vehicle</strong> {currentJob.make} {currentJob.model} ({currentJob.reg})
-                </p>
-                <p style={{ margin: "4px 0 0", color: "#6b7280" }}>Status: {currentJob.status}</p>
-                <p style={{ margin: "4px 0 0", color: "#6b7280" }}>
-                  Waiting: {currentJob.waitingStatus || "In progress"}
-                </p>
-                <p style={{ margin: "4px 0 0", color: "#6b7280" }}>
-                  Last update: {dayjs(currentJob.updatedAt || currentJob.updated_at).format("DD MMM HH:mm")}
-                </p>
-              </div>
-              <div style={{ flex: "1 1 280px" }}>
-                <p style={{ margin: 0, color: "#374151", fontWeight: 600 }}>Tasks</p>
-                {outstandingTasks.length ? (
-                  <ul
-                    style={{
-                      listStyle: "none",
-                      margin: "8px 0 0",
-                      padding: 0,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "8px",
-                    }}
-                  >
-                    {outstandingTasks.map((task) => (
-                      <li
-                        key={task.label}
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "10px 14px",
-                          borderRadius: "12px",
-                          background: "#fff7f7",
-                          border: "1px solid #ffe0e0",
-                        }}
-                      >
-                        <span style={{ color: "#374151" }}>{task.label}</span>
-                        <small style={{ color: "#6b7280" }}>{task.duration}</small>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p style={{ color: "#6b7280", marginTop: "8px" }}>No outstanding tasks logged.</p>
-                )}
-              </div>
-            </div>
+        <Section title="Daily checkpoints">
+          {loading ? (
+            <p style={{ color: "#6b7280" }}>Loading today&apos;s workshop metrics…</p>
+          ) : error ? (
+            <p style={{ color: "#ff4040" }}>{error}</p>
           ) : (
-            <div style={{ color: "#6b7280" }}>No job currently assigned.</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+              <MetricCard label="Jobs in progress" value={metrics.inProgressCount} helper="Vehicles currently on bay" />
+              <MetricCard label="Checked in today" value={metrics.checkedInToday} helper="Arrivals since midnight" />
+              <MetricCard label="Jobs completed" value={metrics.completedToday} helper="Finished today" />
+              <MetricCard
+                label="Technician availability"
+                value={`${availableTechnicians} / ${metrics.totalTechnicians}`}
+                helper={`${metrics.techniciansOnJobs} techs on jobs`}
+              />
+            </div>
           )}
         </Section>
 
-        <Section title="Today's KPIs" subtitle="Auto-calculated from your queue">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
-            {kpiSummary.map((kpi) => (
-              <div
-                key={kpi.label}
-                style={{
-                  borderRadius: "14px",
-                  border: "1px solid #ffdede",
-                  background: "#fff",
-                  padding: "14px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "4px",
-                }}
-              >
-                <span style={{ fontSize: "0.8rem", textTransform: "uppercase", color: "#9ca3af" }}>{kpi.label}</span>
-                <strong style={{ fontSize: "1.4rem", color: "#a00000" }}>{kpi.value}</strong>
-                <span style={{ color: "#6b7280" }}>{kpi.helper}</span>
-              </div>
-            ))}
-          </div>
-        </Section>
-
-        <Section title="Upcoming queue" subtitle="Next promised jobs">
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {queueJobs.length === 0 && <span style={{ color: "#6b7280" }}>No jobs assigned yet.</span>}
-            {queueJobs.map((job) => (
-              <div
-                key={job.id}
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  justifyContent: "space-between",
-                  gap: "10px",
-                  padding: "12px 16px",
-                  borderRadius: "12px",
-                  border: "1px solid #ffe0e0",
-                  background: "#fff7f7",
-                }}
-              >
-                <div>
-                  <strong style={{ color: "#a00000" }}>{job.jobNumber}</strong>
-                  <p style={{ margin: "4px 0 0", color: "#374151" }}>{job.reg}</p>
-                </div>
-                <div>
-                  <p style={{ margin: 0, color: "#374151" }}>{job.description || "No concern logged"}</p>
-                  <small style={{ color: "#6b7280" }}>Status: {job.status}</small>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ margin: 0, color: "#374151" }}>
-                    Updated {dayjs(job.updatedAt || job.updated_at).format("HH:mm")}
-                  </p>
-                  <span style={{ color: "#6b7280" }}>Bay: {job.jobCategories?.[0] || "—"}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Section>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "18px" }}>
-          <Section title="Open tasks" subtitle="Finish before handover">
-            <ul
-              style={{
-                listStyle: "disc",
-                paddingLeft: "18px",
-                margin: 0,
-                color: "#374151",
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-              }}
-            >
-              {outstandingTasks.length === 0 && <li>No outstanding tasks logged.</li>}
-              {outstandingTasks.map((task) => (
-                <li key={task.label}>
-                  {task.label} · {task.duration}
-                </li>
-              ))}
-            </ul>
-          </Section>
-
-          <Section title="Consumables" subtitle="Workshop stock near your bay">
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {consumables.length === 0 && <span style={{ color: "#6b7280" }}>No consumable data.</span>}
-              {consumables.map((item) => (
-                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <strong style={{ color: "#374151" }}>{item.name}</strong>
-                    <p style={{ margin: 0, color: "#6b7280" }}>{item.status}</p>
-                  </div>
-                  <div style={{ minWidth: "120px" }}>
-                    <div style={{ height: "10px", borderRadius: "999px", background: "#ffe0e0" }}>
-                      <div
-                        style={{
-                          width: `${item.level}%`,
-                          height: "10px",
-                          borderRadius: "999px",
-                          background: item.level < 25 ? "#f97316" : "#d10000",
-                        }}
-                      />
+        <Section title="Next jobs queue" subtitle="Assigned jobs with no completion timestamp">
+          {loading ? (
+            <p style={{ color: "#6b7280" }}>Loading queue…</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {metrics.queue.length === 0 ? (
+                <p style={{ margin: 0, color: "#6b7280" }}>No outstanding jobs in the queue.</p>
+              ) : (
+                metrics.queue.map((job) => (
+                  <div
+                    key={job.job_number}
+                    style={{
+                      padding: "14px",
+                      borderRadius: "10px",
+                      background: "#fef6f6",
+                      border: "1px solid #ffe0e0",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div>
+                      <strong style={{ color: "#a00000" }}>
+                        {job.job_number || "—"} · {job.vehicle_reg || "TBC"}
+                      </strong>
+                      <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                        {job.status || "Status unknown"}
+                      </div>
                     </div>
+                    <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                      Checked in {formatTime(job.checked_in_at)}
+                    </span>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
-          </Section>
+          )}
+        </Section>
 
-          <Section title="Parts on the way" subtitle="Check before booking road test">
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {waitingForParts.length === 0 && <span style={{ color: "#6b7280" }}>No parts awaited.</span>}
-              {waitingForParts.map((job) => (
+        <Section title="Outstanding VHCs" subtitle="Jobs requiring further inspection">
+          {loading ? (
+            <p style={{ color: "#6b7280" }}>Pulling VHC backlog…</p>
+          ) : metrics.outstandingVhc.length === 0 ? (
+            <p style={{ margin: 0, color: "#6b7280" }}>No VHCs awaiting completion.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {metrics.outstandingVhc.map((job) => (
                 <div
-                  key={job.id}
+                  key={job.job_number}
                   style={{
-                    border: "1px solid #ffe0e0",
-                    borderRadius: "10px",
-                    padding: "10px 12px",
-                    background: "#fff",
                     display: "flex",
-                    flexDirection: "column",
-                    gap: "4px",
+                    justifyContent: "space-between",
+                    background: "#fff",
+                    borderRadius: "10px",
+                    border: "1px solid #ffe0e0",
+                    padding: "12px 14px",
                   }}
                 >
-                  <strong style={{ color: "#a00000" }}>{job.jobNumber}</strong>
-                  <span style={{ color: "#374151" }}>{job.waitingStatus || "Awaiting parts"}</span>
-                  <small style={{ color: "#6b7280" }}>
-                    Updated {dayjs(job.updatedAt || job.updated_at).format("HH:mm")}
-                  </small>
+                  <div>
+                    <strong>{job.job_number || "—"}</strong>
+                    <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "0.85rem" }}>
+                      {job.vehicle_reg || "Registration missing"}
+                    </p>
+                  </div>
+                  <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                    Checked in {formatTime(job.checked_in_at)}
+                  </span>
                 </div>
               ))}
             </div>
-          </Section>
-        </div>
+          )}
+        </Section>
       </div>
     </Layout>
   );
