@@ -92,6 +92,8 @@ export default function CustomerMessagesPage() {
   const [systemNotifications, setSystemNotifications] = useState([]);
   const [systemLoading, setSystemLoading] = useState(false);
   const [systemError, setSystemError] = useState("");
+  const [isSystemThreadActive, setIsSystemThreadActive] = useState(false);
+  const [lastSystemViewedAt, setLastSystemViewedAt] = useState(null);
 
   // Threads state
   const [threads, setThreads] = useState([]);
@@ -156,6 +158,7 @@ export default function CustomerMessagesPage() {
   const openThread = useCallback(
     async (thread) => {
       if (!dbUserId || !thread?.id) return;
+      setIsSystemThreadActive(false);
       setActiveThread(thread);
       setMessagesLoading(true);
       setMessagesError("");
@@ -178,6 +181,15 @@ export default function CustomerMessagesPage() {
     },
     [dbUserId, fetchThreads]
   );
+
+  const openSystemNotificationsThread = useCallback(() => {
+    setIsSystemThreadActive(true);
+    setActiveThread(null);
+    setThreadMessages([]);
+    setMessagesLoading(false);
+    setMessagesError("");
+    setLastSystemViewedAt(new Date().toISOString());
+  }, []);
 
   // Toggle composer user selection
   const toggleComposerUser = useCallback((user) => {
@@ -315,8 +327,17 @@ export default function CustomerMessagesPage() {
   useEffect(() => {
     if (!composerOpen || !dbUserId) {
       setComposerResults([]);
+      setComposerLoading(false);
       return;
     }
+    const searchTerm = composerSearch.trim();
+    if (!searchTerm) {
+      setComposerResults([]);
+      setComposerError("");
+      setComposerLoading(false);
+      return;
+    }
+
     let cancelled = false;
     const controller = new AbortController();
     setComposerLoading(true);
@@ -326,7 +347,7 @@ export default function CustomerMessagesPage() {
       try {
         const response = await fetch(
           `/api/messages/users${buildQuery({
-            q: composerSearch,
+            q: searchTerm,
             limit: 20,
             exclude: dbUserId,
           })}`,
@@ -375,7 +396,7 @@ export default function CustomerMessagesPage() {
       try {
         const { data, error } = await supabase
           .from("notifications")
-          .select("notification_id, message, created_at")
+          .select("notification_id, message, created_at, target_role")
           .or("target_role.ilike.%customer%,target_role.is.null")
           .order("created_at", { ascending: false })
           .limit(5);
@@ -398,8 +419,27 @@ export default function CustomerMessagesPage() {
     };
 
     loadSystemNotifications();
+    const channel = supabase
+      .channel("customer-system-notifications")
+      .on(
+        "postgres_changes",
+        { schema: "public", table: "notifications", event: "INSERT" },
+        (payload) => {
+          const entry = payload?.new;
+          if (!entry) return;
+          const targetRole = (entry.target_role || "").toLowerCase();
+          if (targetRole && !targetRole.includes("customer")) return;
+          setSystemNotifications((prev) => {
+            const next = [entry, ...prev];
+            return next.slice(0, 5);
+          });
+        }
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
+      supabase.removeChannel(channel);
     };
   }, []);
 

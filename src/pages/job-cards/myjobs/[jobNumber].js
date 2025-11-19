@@ -1,5 +1,5 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/job-cards/myjobs/[jobNumber].js
+
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
@@ -13,7 +13,7 @@ import { getVHCChecksByJob } from "@/lib/database/vhc";
 import { getClockingStatus } from "@/lib/database/clocking";
 import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
 
-// ✅ Status color mapping for consistency
+// Status color mapping for consistency
 const STATUS_COLORS = {
   "Outstanding": "#9ca3af",
   "Accepted": "#d10000",
@@ -35,7 +35,7 @@ const PAUSE_ON_CLOCK_OUT_STATUSES = new Set([
   STARTED_STATUS.toLowerCase(),
 ]);
 
-// ✅ Format date and time helper
+// Format date and time helper
 const formatDateTime = (date) => {
   if (!date) return "N/A";
   try {
@@ -50,7 +50,7 @@ const formatDateTime = (date) => {
   }
 };
 
-// ✅ Calculate hours worked helper
+// Calculate hours worked helper
 function calculateHoursWorked(clockInTime) {
   if (!clockInTime) return "0.0";
   const now = new Date();
@@ -59,6 +59,16 @@ function calculateHoursWorked(clockInTime) {
   return hours.toFixed(1);
 }
 
+// Helper to get status after clock out
+const getStatusAfterClockOut = (currentStatus) => {
+  if (!currentStatus) return null;
+  const normalized = currentStatus.trim().toLowerCase();
+  if (PAUSE_ON_CLOCK_OUT_STATUSES.has(normalized)) {
+    return WAITING_STATUS;
+  }
+  return null;
+};
+
 export default function TechJobDetailPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
@@ -66,7 +76,7 @@ export default function TechJobDetailPage() {
   const { usersByRole, isLoading: rosterLoading } = useRoster();
   const { triggerNextAction } = useNextAction();
 
-  // ✅ State management
+  // State management
   const [jobData, setJobData] = useState(null);
   const [vhcChecks, setVhcChecks] = useState([]);
   const [clockingStatus, setClockingStatus] = useState(null);
@@ -83,6 +93,9 @@ export default function TechJobDetailPage() {
   const jobCardNumber = jobData?.jobCard?.jobNumber ?? jobNumber;
   const username = user?.username?.trim();
 
+  // ✅ FIXED: Define all useCallback hooks FIRST before any useEffect that uses them
+
+  // Callback: Refresh clocking status
   const refreshClockingStatus = useCallback(async () => {
     if (!username) {
       setClockingStatus(null);
@@ -102,6 +115,39 @@ export default function TechJobDetailPage() {
     }
   }, [username]);
 
+  // Callback: Sync job status
+  const syncJobStatus = useCallback(
+    async (targetStatus, currentStatus) => {
+      if (!targetStatus || !jobCardId) return null;
+
+      const normalizedCurrent = (currentStatus || "").trim();
+      if (!normalizedCurrent || normalizedCurrent === targetStatus) return null;
+
+      try {
+        const response = await updateJobStatus(jobCardId, targetStatus);
+        if (response?.success && response.data) {
+          setJobData((prev) => {
+            if (!prev?.jobCard) return prev;
+            return {
+              ...prev,
+              jobCard: {
+                ...prev.jobCard,
+                ...response.data,
+              },
+            };
+          });
+          return response.data;
+        }
+      } catch (error) {
+        console.error("❌ syncJobStatus error:", error);
+      }
+
+      return null;
+    },
+    [jobCardId]
+  );
+
+  // Callback: Refresh job clocking
   const refreshJobClocking = useCallback(async () => {
     const workshopUserId = dbUserId ?? user?.id;
     if (!workshopUserId || !jobCardId) {
@@ -125,20 +171,8 @@ export default function TechJobDetailPage() {
     }
   }, [dbUserId, user?.id, jobCardId]);
 
-  useEffect(() => {
-    refreshJobClocking();
-  }, [refreshJobClocking]);
-
-  useEffect(() => {
-    if (!jobClocking || !jobCardId) return;
-    const currentStatus = jobData?.jobCard?.status;
-    if ((currentStatus || "").trim() === IN_PROGRESS_STATUS) {
-      return;
-    }
-    void syncJobStatus(IN_PROGRESS_STATUS, currentStatus);
-  }, [jobClocking, jobCardId, jobData?.jobCard?.status, syncJobStatus]);
-
-  const handleJobClockOut = async () => {
+  // Callback: Handle job clock out
+  const handleJobClockOut = useCallback(async () => {
     const workshopUserId = dbUserId ?? user?.id;
     if (!workshopUserId) {
       alert("Unable to clock out because your workshop profile is not linked.");
@@ -178,49 +212,23 @@ export default function TechJobDetailPage() {
     } finally {
       setClockOutLoading(false);
     }
-  };
+  }, [
+    dbUserId,
+    user?.id,
+    jobClocking,
+    jobCardId,
+    jobCardNumber,
+    setCurrentJob,
+    refreshCurrentJob,
+    setStatus,
+    refreshJobClocking,
+    refreshClockingStatus,
+    syncJobStatus,
+    jobData?.jobCard?.status,
+  ]);
 
-  const syncJobStatus = useCallback(
-    async (targetStatus, currentStatus) => {
-      if (!targetStatus || !jobCardId) return null;
-
-      const normalizedCurrent = (currentStatus || "").trim();
-      if (!normalizedCurrent || normalizedCurrent === targetStatus) return null;
-
-      try {
-        const response = await updateJobStatus(jobCardId, targetStatus);
-        if (response?.success && response.data) {
-          setJobData((prev) => {
-            if (!prev?.jobCard) return prev;
-            return {
-              ...prev,
-              jobCard: {
-                ...prev.jobCard,
-                ...response.data,
-              },
-            };
-          });
-          return response.data;
-        }
-      } catch (error) {
-        console.error("❌ syncJobStatus error:", error);
-      }
-
-      return null;
-    },
-    [jobCardId]
-  );
-
-  const getStatusAfterClockOut = (currentStatus) => {
-    if (!currentStatus) return null;
-    const normalized = currentStatus.trim().toLowerCase();
-    if (PAUSE_ON_CLOCK_OUT_STATUSES.has(normalized)) {
-      return WAITING_STATUS;
-    }
-    return null;
-  };
-
-  const handleJobClockIn = async () => {
+  // Callback: Handle job clock in
+  const handleJobClockIn = useCallback(async () => {
     const workshopUserId = dbUserId ?? user?.id;
     if (!workshopUserId) {
       alert("Unable to clock in because your workshop profile is not linked.");
@@ -262,26 +270,39 @@ export default function TechJobDetailPage() {
     } finally {
       setClockInLoading(false);
     }
-  };
+  }, [
+    dbUserId,
+    user?.id,
+    jobCardId,
+    jobCardNumber,
+    jobClocking,
+    setStatus,
+    setCurrentJob,
+    refreshCurrentJob,
+    refreshJobClocking,
+    refreshClockingStatus,
+    syncJobStatus,
+    jobData?.jobCard?.status,
+  ]);
 
-  const techsList = usersByRole?.["Techs"] || [];
-  const motTestersList = usersByRole?.["MOT Tester"] || [];
-  // ⚠️ Mock data found — replacing with Supabase query
-  // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
-  const allowedTechNames = new Set([...techsList, ...motTestersList]);
-  const userRoles = Array.isArray(user?.roles)
-    ? user.roles
-    : user?.role
-      ? [user.role]
-      : [];
-  const hasRoleAccess = userRoles.some((roleName) => {
-    const normalized = String(roleName).toLowerCase();
-    return normalized.includes("tech") || normalized.includes("mot");
-  });
-  const isTech =
-    (username && allowedTechNames.has(username)) || hasRoleAccess;
+  // ✅ NOW all useEffects come AFTER all callbacks are defined
 
-  // ✅ Fetch job data on component mount
+  // Effect: Refresh job clocking when jobCardId changes
+  useEffect(() => {
+    refreshJobClocking();
+  }, [refreshJobClocking]);
+
+  // Effect: Sync job status to "In Progress" when clocked in
+  useEffect(() => {
+    if (!jobClocking || !jobCardId) return;
+    const currentStatus = jobData?.jobCard?.status;
+    if ((currentStatus || "").trim() === IN_PROGRESS_STATUS) {
+      return;
+    }
+    void syncJobStatus(IN_PROGRESS_STATUS, currentStatus);
+  }, [jobClocking, jobCardId, jobData?.jobCard?.status, syncJobStatus]);
+
+  // Effect: Fetch job data on component mount
   useEffect(() => {
     if (!jobNumber) return;
 
@@ -322,6 +343,7 @@ export default function TechJobDetailPage() {
     fetchData();
   }, [jobNumber, router, refreshClockingStatus]);
 
+  // Helper: Resolve next action type from status
   const resolveNextActionType = (status) => {
     if (!status) return null;
     const normalized = String(status).toLowerCase();
@@ -330,7 +352,7 @@ export default function TechJobDetailPage() {
     return null;
   };
 
-  // ✅ Handle status update
+  // Handler: Update status
   const handleUpdateStatus = async (newStatus) => {
     const jobCardId = jobData?.jobCard?.id;
     if (!jobCardId) return;
@@ -374,7 +396,7 @@ export default function TechJobDetailPage() {
     }
   };
 
-  // ✅ Handle add note
+  // Handler: Add note
   const handleAddNote = async () => {
     if (!newNote.trim()) {
       alert("Please enter a note");
@@ -387,7 +409,7 @@ export default function TechJobDetailPage() {
     setShowAddNote(false);
   };
 
-  // ✅ NEW: Handle VHC button click - only navigate if VHC is required
+  // Handler: VHC button click - only navigate if VHC is required
   const handleVhcClick = () => {
     if (!jobData?.jobCard?.vhcRequired) {
       alert("VHC is not required for this job.");
@@ -398,7 +420,7 @@ export default function TechJobDetailPage() {
     router.push(`/job-cards/${targetJobNumber}/vhc`);
   };
 
-  // ✅ NEW: Get dynamic VHC button text based on job status
+  // Helper: Get dynamic VHC button text based on job status
   const getVhcButtonText = () => {
     const jobCardStatus = jobData?.jobCard?.status;
     if (!jobData?.jobCard?.vhcRequired) return "VHC Not Required";
@@ -407,6 +429,7 @@ export default function TechJobDetailPage() {
     return "📋 Continue VHC";
   };
 
+  // Helper: Get VHC status message
   const getVhcStatusMessage = () => {
     const jobCardStatus = jobData?.jobCard?.status;
     if (!jobData?.jobCard?.vhcRequired) return "This job does not require a Vehicle Health Check.";
@@ -417,7 +440,7 @@ export default function TechJobDetailPage() {
     return "Continue working through the outstanding VHC items.";
   };
 
-  // ✅ NEW: Calculate VHC summary (red and amber items)
+  // Helper: Calculate VHC summary (red and amber items)
   const getVhcSummary = () => {
     const redItems = vhcChecks.filter(c => 
       c.section === "Brakes" || c.severity === "Red"
@@ -431,7 +454,22 @@ export default function TechJobDetailPage() {
 
   const vhcSummary = getVhcSummary();
 
-  // ✅ Access check - only technicians can view this page
+  const techsList = usersByRole?.["Techs"] || [];
+  const motTestersList = usersByRole?.["MOT Tester"] || [];
+  const allowedTechNames = new Set([...techsList, ...motTestersList]);
+  const userRoles = Array.isArray(user?.roles)
+    ? user.roles
+    : user?.role
+      ? [user.role]
+      : [];
+  const hasRoleAccess = userRoles.some((roleName) => {
+    const normalized = String(roleName).toLowerCase();
+    return normalized.includes("tech") || normalized.includes("mot");
+  });
+  const isTech =
+    (username && allowedTechNames.has(username)) || hasRoleAccess;
+
+  // Access check - only technicians can view this page
   if (!isTech) {
     return (
       <Layout>
@@ -443,7 +481,7 @@ export default function TechJobDetailPage() {
     );
   }
 
-  // ✅ Loading state with spinner animation
+  // Loading state with spinner animation
   if (loading) {
     return (
       <Layout>
@@ -475,7 +513,7 @@ export default function TechJobDetailPage() {
     );
   }
 
-  // ✅ Handle case where job is not found
+  // Handle case where job is not found
   if (!jobData?.jobCard) {
     return (
       <Layout>
@@ -500,7 +538,7 @@ export default function TechJobDetailPage() {
     );
   }
 
-  // ✅ Extract job data
+  // Extract job data
   const { jobCard, customer, vehicle } = jobData;
   const jobRequiresVhc = jobCard?.vhcRequired === true;
   const jobCardStatus = jobCard?.status || "Unknown";
@@ -510,7 +548,7 @@ export default function TechJobDetailPage() {
     ? `${calculateHoursWorked(clockingStatus.clock_in)}h`
     : "0.0h";
 
-  // ✅ Quick stats data for display
+  // Quick stats data for display
   const quickStats = [
     {
       label: "Status",
@@ -544,7 +582,7 @@ export default function TechJobDetailPage() {
     },
   ];
 
-  // ✅ Check if additional contents are available
+  // Check if additional contents are available
   const hasAdditionalContents = () => {
     const filesCount = jobCard.files?.length || 0;
     const notesCount = jobCard.notes?.length || 0;
@@ -576,7 +614,7 @@ export default function TechJobDetailPage() {
         }}
       >
         
-        {/* ✅ Header Section */}
+        {/* Header Section */}
         <div style={{
           display: "flex",
           gap: "12px",
@@ -647,7 +685,7 @@ export default function TechJobDetailPage() {
           </div>
         </div>
 
-        {/* ✅ Job Summary Card */}
+        {/* Job Summary Card */}
         <div style={{
           display: "flex",
           justifyContent: "space-between",
@@ -700,7 +738,7 @@ export default function TechJobDetailPage() {
           </div>
         </div>
 
-        {/* ✅ Quick Stats Grid */}
+        {/* Quick Stats Grid */}
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
@@ -744,7 +782,7 @@ export default function TechJobDetailPage() {
           ))}
         </div>
 
-        {/* ✅ Tabs Navigation */}
+        {/* Tabs Navigation */}
         <div style={{
           display: "flex",
           gap: "12px",
@@ -776,7 +814,7 @@ export default function TechJobDetailPage() {
           ))}
         </div>
 
-        {/* ✅ Main Content Area with Scrolling */}
+        {/* Main Content Area with Scrolling */}
         <div
           style={{
             flex: 1,
@@ -794,7 +832,7 @@ export default function TechJobDetailPage() {
           
           <div style={{ flex: 1, overflowY: "auto", paddingRight: "8px", minHeight: 0 }}>
           
-          {/* ✅ OVERVIEW TAB */}
+          {/* OVERVIEW TAB */}
           {activeTab === "overview" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {/* Job Details */}
@@ -915,7 +953,7 @@ export default function TechJobDetailPage() {
             </div>
           )}
 
-          {/* ✅ VHC TAB - UPDATED WITH START VHC BUTTON */}
+          {/* VHC TAB */}
           {activeTab === "vhc" && (
             <div style={{
               backgroundColor: "white",
@@ -932,7 +970,7 @@ export default function TechJobDetailPage() {
                   Vehicle Health Check
                 </h3>
                 
-                {/* ✅ NEW: Start/Continue VHC Button */}
+                {/* Start/Continue VHC Button */}
                 <button
                   onClick={handleVhcClick}
                   disabled={!jobRequiresVhc}
@@ -968,7 +1006,7 @@ export default function TechJobDetailPage() {
                 {getVhcStatusMessage()}
               </div>
 
-              {/* ✅ VHC Not Required Message */}
+              {/* VHC Not Required Message */}
               {!jobRequiresVhc && (
                 <div style={{
                   textAlign: "center",
@@ -988,7 +1026,7 @@ export default function TechJobDetailPage() {
                 </div>
               )}
 
-              {/* ✅ VHC Required - Show Summary */}
+              {/* VHC Required - Show Summary */}
               {jobRequiresVhc && (
                 <>
                   {/* VHC Summary Stats */}
@@ -1141,7 +1179,7 @@ export default function TechJobDetailPage() {
             </div>
           )}
 
-          {/* ✅ PARTS TAB */}
+          {/* PARTS TAB */}
           {activeTab === "parts" && (
             <div style={{
               backgroundColor: "white",
@@ -1191,7 +1229,7 @@ export default function TechJobDetailPage() {
             </div>
           )}
 
-          {/* ✅ NOTES TAB */}
+          {/* NOTES TAB */}
           {activeTab === "notes" && (
             <div style={{
               backgroundColor: "white",
@@ -1300,7 +1338,7 @@ export default function TechJobDetailPage() {
             </div>
           )}
 
-          {/* ✅ WRITE-UP TAB */}
+          {/* WRITE-UP TAB */}
           {activeTab === "write-up" && (
             <div style={{
               backgroundColor: "white",
@@ -1342,7 +1380,7 @@ export default function TechJobDetailPage() {
         </div>
         </div>
 
-        {/* ✅ Bottom Action Bar */}
+        {/* Bottom Action Bar */}
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
