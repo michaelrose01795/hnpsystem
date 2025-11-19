@@ -81,6 +81,7 @@ export default function CustomerMessagesPage() {
   const [messagesError, setMessagesError] = useState("");
   const [messageDraft, setMessageDraft] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [savingMessageId, setSavingMessageId] = useState(null);
 
   useEffect(() => {
     const trimmedSearch = searchTerm.trim();
@@ -265,6 +266,40 @@ export default function CustomerMessagesPage() {
     if (!dbUserId) return;
     fetchThreads();
   }, [dbUserId, fetchThreads]);
+
+  const handleSaveMessage = useCallback(
+    async (message) => {
+      if (!message?.id || typeof window === "undefined") return;
+      const confirmed = window.confirm(
+        "Save this message forever? It will be excluded from auto cleanup."
+      );
+      if (!confirmed) return;
+      setSavingMessageId(message.id);
+      setMessagesError("");
+      try {
+        const response = await fetch(`/api/messages/messages/${message.id}/save`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ saved: true }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.message || "Unable to save message.");
+        }
+        const updated = payload.data;
+        setThreadMessages((prev) =>
+          (prev || []).map((entry) => (entry.id === updated.id ? updated : entry))
+        );
+        await fetchThreads();
+      } catch (error) {
+        console.error("❌ Failed to mark message as saved:", error);
+        setMessagesError(error.message || "Unable to save message.");
+      } finally {
+        setSavingMessageId(null);
+      }
+    },
+    [fetchThreads]
+  );
 
   useEffect(() => {
     if (!threads.length || activeThread) return;
@@ -619,6 +654,22 @@ export default function CustomerMessagesPage() {
                                 "(vehicle data)"}
                             </p>
                           )}
+                          <div className="flex flex-wrap items-center gap-2">
+                            {message.savedForever ? (
+                              <span className="rounded-full border border-[#ffe5e5] px-3 py-1 text-[0.65rem] font-semibold text-[#d10000]">
+                                Saved forever
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleSaveMessage(message)}
+                                disabled={savingMessageId === message.id}
+                                className="rounded-full border border-[#ffe5e5] px-3 py-1 text-[0.65rem] font-semibold text-[#d10000] hover:border-[#d10000] disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {savingMessageId === message.id ? "Saving…" : "Save forever"}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       );
                     })}

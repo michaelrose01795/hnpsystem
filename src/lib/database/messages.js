@@ -51,6 +51,7 @@ const formatMessageRow = (row) => ({
   receiverId: row.receiver_id,
   sender: formatUserProfile(row.sender),
   metadata: row.metadata || null,
+  savedForever: Boolean(row.saved_forever),
 });
 
 const DIRECT_HASH_PREFIX = "direct";
@@ -161,7 +162,8 @@ export const getThreadsForUser = async (userId) => {
         sender_id,
         receiver_id,
         sender:sender_id(user_id, first_name, last_name, email, role),
-        metadata
+        metadata,
+        saved_forever
       )
     `
     )
@@ -205,7 +207,8 @@ const fetchThreadRecord = async (threadId) => {
         sender_id,
         receiver_id,
         sender:sender_id(user_id, first_name, last_name, email, role),
-        metadata
+        metadata,
+        saved_forever
       )
     `
     )
@@ -632,7 +635,8 @@ export const sendThreadMessage = async ({
       sender_id,
       receiver_id,
       sender:sender_id(user_id, first_name, last_name, email, role),
-      metadata
+      metadata,
+      saved_forever
     `
     )
     .single();
@@ -648,5 +652,35 @@ export const sendThreadMessage = async ({
 
   await markThreadRead({ threadId: threadIdNum, userId: senderUserId });
 
+  return formatMessageRow(data);
+};
+
+export const markMessageSaved = async ({ messageId, saved = true }) => {
+  assertMessagingWriteAccess();
+  const msgId = Number(messageId);
+  if (!msgId) {
+    throw new Error("messageId is required to save a message.");
+  }
+
+  const { data, error } = await dbClient
+    .from("messages")
+    .update({ saved_forever: saved })
+    .eq("message_id", msgId)
+    .select(
+      `
+      message_id,
+      thread_id,
+      content,
+      created_at,
+      sender_id,
+      receiver_id,
+      metadata,
+      saved_forever,
+      sender:sender_id(user_id, first_name, last_name, email, role)
+    `
+    )
+    .maybeSingle();
+
+  if (error) throw error;
   return formatMessageRow(data);
 };
