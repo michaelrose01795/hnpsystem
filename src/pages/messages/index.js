@@ -1,5 +1,5 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/messages/index.js
+
 "use client";
 
 import React, {
@@ -114,19 +114,6 @@ const Chip = ({ label, onRemove, disabled = false }) => (
 
 const AvatarBadge = ({ name }) => {
   const initial = (name || "?").trim().charAt(0)?.toUpperCase() || "?";
-  const latestSystemNotification = systemNotifications?.[0];
-  const latestSystemMessage = latestSystemNotification?.message || "No system updates yet.";
-  const latestSystemTimestamp = latestSystemNotification?.created_at || null;
-  const latestSystemTime = latestSystemTimestamp ? new Date(latestSystemTimestamp).getTime() : 0;
-  const lastSystemTime = lastSystemViewedAt ? new Date(lastSystemViewedAt).getTime() : 0;
-  const hasSystemUnread =
-    Boolean(systemNotifications.length) && latestSystemTime > lastSystemTime;
-  const systemPreview =
-    latestSystemMessage.length > 80 ? `${latestSystemMessage.slice(0, 80)}…` : latestSystemMessage;
-  const systemTimestampLabel = latestSystemTimestamp
-    ? formatNotificationTimestamp(latestSystemTimestamp)
-    : "No updates yet";
-  const isSystemThreadActive = activeSystemView;
 
   return (
     <div
@@ -221,11 +208,11 @@ const buildQuery = (params = {}) => {
 const parseSlashCommandMetadata = (text = "", thread = null) => {
   if (!text) return null;
   const metadata = {};
-  const tokens = text.match(/\/[^\\s]+/g) || [];
+  const tokens = text.match(/\/[^\s]+/g) || [];
   for (const raw of tokens) {
     const token = raw.replace("/", "").trim();
     if (!token) continue;
-    if (/^\\d+$/.test(token) && !metadata.jobNumber) {
+    if (/^\d+$/.test(token) && !metadata.jobNumber) {
       metadata.jobNumber = token;
       continue;
     }
@@ -303,7 +290,22 @@ function MessagesPage() {
       (member) => member.userId === dbUserId && member.role === "leader"
     );
   }, [activeThread, dbUserId]);
+
   const directoryHasSearch = Boolean(directorySearch.trim());
+
+  const latestSystemNotification = systemNotifications?.[0];
+  const latestSystemMessage = latestSystemNotification?.message || "No system updates yet.";
+  const latestSystemTimestamp = latestSystemNotification?.created_at || null;
+  const latestSystemTime = latestSystemTimestamp ? new Date(latestSystemTimestamp).getTime() : 0;
+  const lastSystemTime = lastSystemViewedAt ? new Date(lastSystemViewedAt).getTime() : 0;
+  const hasSystemUnread =
+    Boolean(systemNotifications.length) && latestSystemTime > lastSystemTime;
+  const systemPreview =
+    latestSystemMessage.length > 80 ? `${latestSystemMessage.slice(0, 80)}…` : latestSystemMessage;
+  const systemTimestampLabel = latestSystemTimestamp
+    ? formatNotificationTimestamp(latestSystemTimestamp)
+    : "No updates yet";
+  const isSystemThreadActive = activeSystemView;
 
   const mergeThread = useCallback((nextThread) => {
     if (!nextThread) return;
@@ -507,7 +509,7 @@ function MessagesPage() {
         setSending(false);
       }
     },
-    [activeThreadId, dbUserId, fetchThreads, messageDraft, openThread]
+    [activeThreadId, dbUserId, fetchThreads, messageDraft, openThread, activeThread]
   );
 
   useEffect(() => {
@@ -590,7 +592,7 @@ function MessagesPage() {
         if (!payload?.new) return;
         fetchThreads();
         if (activeThread && activeThread.id === payload.new.thread_id && payload.new.sender_id !== dbUserId) {
-          openThread(activeThread);
+          openThread(activeThread.id);
         }
       })
       .on(
@@ -1003,7 +1005,7 @@ function MessagesPage() {
             <div style={{ ...cardStyle, flex: 1, minHeight: 0 }}>
               <SectionTitle
                 title="Threads"
-                subtitle="Open conversations you’re part of."
+                subtitle="Open conversations you're part of."
                 action={
                   <span style={{ fontSize: "0.8rem", color: palette.textMuted }}>
                     {threads.length} active
@@ -1085,7 +1087,7 @@ function MessagesPage() {
                       </div>
                     </button>
                     {threads.length ? (
-                      <div className="space-y-3">
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                         {threads.map((thread) => (
                           <button
                             key={thread.id}
@@ -1155,79 +1157,81 @@ function MessagesPage() {
             </div>
           </div>
 
-          <div style={ ...cardStyle, flex: 1, minHeight: 0 }>
+          <div style={{ ...cardStyle, flex: 1, minHeight: 0 }}>
             {activeSystemView ? (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "12px",
-              }}
-            >
-              <div>
-                <h3 style={{ margin: 0, color: palette.accent }}>System notifications</h3>
-                <p style={{ margin: "4px 0 0", color: palette.textMuted }}>
-                  {systemLoading ? "Loading updates…" : systemPreview}
-                </p>
-              </div>
-              <span
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: radii.pill,
-                  backgroundColor: "#fee2e2",
-                  color: "#b91c1c",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                }}
-              >
-                Read only
-              </span>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                maxHeight: "360px",
-                overflowY: "auto",
-                paddingRight: "4px",
-              }}
-            >
-              {systemLoading && (
-                <p style={{ color: palette.textMuted, margin: 0 }}>Loading system updates…</p>
-              )}
-              {!systemLoading && systemError && (
-                <p style={{ color: "#b91c1c", margin: 0 }}>{systemError}</p>
-              )}
-              {!systemLoading && !systemError && systemNotifications.length === 0 && (
-                <p style={{ color: palette.textMuted, margin: 0 }}>No system notifications yet.</p>
-              )}
-              {!systemLoading && !systemError && systemNotifications.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {systemNotifications.map((note) => (
-                    <article
-                      key={`system-${note.notification_id}`}
-                      style={{
-                        borderRadius: "14px",
-                        border: `1px solid ${palette.border}`,
-                        padding: "12px",
-                        backgroundColor: "#ffffff",
-                        boxShadow: shadows.sm,
-                      }}
-                    >
-                      <p style={{ margin: 0, color: palette.textPrimary }}>{note.message || "System update"}</p>
-                      <p style={{ margin: "6px 0 0", fontSize: "0.75rem", color: palette.textMuted }}>
-                        {formatNotificationTimestamp(note.created_at)}
-                      </p>
-                    </article>
-                  ))}
+              <>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "12px",
+                  }}
+                >
+                  <div>
+                    <h3 style={{ margin: 0, color: palette.accent }}>System notifications</h3>
+                    <p style={{ margin: "4px 0 0", color: palette.textMuted }}>
+                      {systemLoading ? "Loading updates…" : systemPreview}
+                    </p>
+                  </div>
+                  <span
+                    style={{
+                      padding: "4px 10px",
+                      borderRadius: radii.pill,
+                      backgroundColor: "#fee2e2",
+                      color: "#b91c1c",
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Read only
+                  </span>
                 </div>
-              )}
-            </div>
-            <p style={{ fontSize: "0.75rem", color: palette.textMuted, margin: 0 }}>
-              Only the system posts here; this thread cannot be deleted or renamed.
-            </p>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                    maxHeight: "360px",
+                    overflowY: "auto",
+                    paddingRight: "4px",
+                  }}
+                >
+                  {systemLoading && (
+                    <p style={{ color: palette.textMuted, margin: 0 }}>Loading system updates…</p>
+                  )}
+                  {!systemLoading && systemError && (
+                    <p style={{ color: "#b91c1c", margin: 0 }}>{systemError}</p>
+                  )}
+                  {!systemLoading && !systemError && systemNotifications.length === 0 && (
+                    <p style={{ color: palette.textMuted, margin: 0 }}>No system notifications yet.</p>
+                  )}
+                  {!systemLoading && !systemError && systemNotifications.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      {systemNotifications.map((note) => (
+                        <article
+                          key={`system-${note.notification_id}`}
+                          style={{
+                            borderRadius: "14px",
+                            border: `1px solid ${palette.border}`,
+                            padding: "12px",
+                            backgroundColor: "#ffffff",
+                            boxShadow: shadows.sm,
+                          }}
+                        >
+                          <p style={{ margin: 0, color: palette.textPrimary }}>{note.message || "System update"}</p>
+                          <p style={{ margin: "6px 0 0", fontSize: "0.75rem", color: palette.textMuted }}>
+                            {formatNotificationTimestamp(note.created_at)}
+                          </p>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p style={{ fontSize: "0.75rem", color: palette.textMuted, margin: 0 }}>
+                  Only the system posts here; this thread cannot be deleted or renamed.
+                </p>
+              </>
             ) : activeThread ? (
               <>
                 <div
@@ -1476,9 +1480,7 @@ function MessagesPage() {
                   )}
                 </form>
               </>
-</>
             ) : (
-
               <div
                 style={{
                   flex: 1,
@@ -1492,9 +1494,7 @@ function MessagesPage() {
                 Select or start a conversation to begin messaging.
               </div>
             )}
-
-            )}
-          </div>          </div>
+          </div>
         </div>
       </div>
     </Layout>
