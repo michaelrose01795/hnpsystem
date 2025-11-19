@@ -11,6 +11,7 @@ import React, {
 } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
+import { supabase } from "@/lib/supabaseClient";
 import { appShellTheme } from "@/styles/appTheme";
 
 const palette = appShellTheme.palette;
@@ -113,6 +114,20 @@ const Chip = ({ label, onRemove, disabled = false }) => (
 
 const AvatarBadge = ({ name }) => {
   const initial = (name || "?").trim().charAt(0)?.toUpperCase() || "?";
+  const latestSystemNotification = systemNotifications?.[0];
+  const latestSystemMessage = latestSystemNotification?.message || "No system updates yet.";
+  const latestSystemTimestamp = latestSystemNotification?.created_at || null;
+  const latestSystemTime = latestSystemTimestamp ? new Date(latestSystemTimestamp).getTime() : 0;
+  const lastSystemTime = lastSystemViewedAt ? new Date(lastSystemViewedAt).getTime() : 0;
+  const hasSystemUnread =
+    Boolean(systemNotifications.length) && latestSystemTime > lastSystemTime;
+  const systemPreview =
+    latestSystemMessage.length > 80 ? `${latestSystemMessage.slice(0, 80)}…` : latestSystemMessage;
+  const systemTimestampLabel = latestSystemTimestamp
+    ? formatNotificationTimestamp(latestSystemTimestamp)
+    : "No updates yet";
+  const isSystemThreadActive = activeSystemView;
+
   return (
     <div
       style={{
@@ -203,6 +218,46 @@ const buildQuery = (params = {}) => {
   return query.toString() ? `?${query.toString()}` : "";
 };
 
+const parseSlashCommandMetadata = (text = "", thread = null) => {
+  if (!text) return null;
+  const metadata = {};
+  const tokens = text.match(/\/[^\\s]+/g) || [];
+  for (const raw of tokens) {
+    const token = raw.replace("/", "").trim();
+    if (!token) continue;
+    if (/^\\d+$/.test(token) && !metadata.jobNumber) {
+      metadata.jobNumber = token;
+      continue;
+    }
+    if (token.toLowerCase() === "customer" && !metadata.customerId) {
+      const customerMember = (thread?.members || []).find((member) =>
+        member.profile?.role?.toLowerCase().includes("customer")
+      );
+      if (customerMember) {
+        metadata.customerId = customerMember.userId;
+      }
+    }
+    if (token.toLowerCase() === "vehicle" && !metadata.vehicleId) {
+      const vehicleReference = thread?.lastMessage?.metadata?.vehicleId;
+      if (vehicleReference) {
+        metadata.vehicleId = vehicleReference;
+      }
+    }
+  }
+  return Object.keys(metadata).length ? metadata : null;
+};
+
+const formatNotificationTimestamp = (value) => {
+  if (!value) return "Unknown time";
+  return new Date(value).toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 function MessagesPage() {
   const { dbUserId, user } = useUser();
 
@@ -217,6 +272,11 @@ function MessagesPage() {
   const [directory, setDirectory] = useState([]);
   const [directorySearch, setDirectorySearch] = useState("");
   const [directoryLoading, setDirectoryLoading] = useState(false);
+  const [systemNotifications, setSystemNotifications] = useState([]);
+  const [systemLoading, setSystemLoading] = useState(false);
+  const [systemError, setSystemError] = useState("");
+  const [activeSystemView, setActiveSystemView] = useState(false);
+  const [lastSystemViewedAt, setLastSystemViewedAt] = useState(null);
 
   const [composeMode, setComposeMode] = useState("direct");
   const [selectedRecipients, setSelectedRecipients] = useState([]);
@@ -243,6 +303,7 @@ function MessagesPage() {
       (member) => member.userId === dbUserId && member.role === "leader"
     );
   }, [activeThread, dbUserId]);
+  const directoryHasSearch = Boolean(directorySearch.trim());
 
   const mergeThread = useCallback((nextThread) => {
     if (!nextThread) return;
@@ -281,11 +342,17 @@ function MessagesPage() {
   const fetchDirectory = useCallback(
     async (searchTerm = "") => {
       if (!dbUserId) return;
+      const trimmedTerm = searchTerm.trim();
+      if (!trimmedTerm) {
+        setDirectory([]);
+        setDirectoryLoading(false);
+        return;
+      }
       setDirectoryLoading(true);
       try {
         const response = await fetch(
           `/api/messages/users${buildQuery({
-            q: searchTerm,
+            q: trimmedTerm,
             exclude: dbUserId,
           })}`
         );
@@ -304,9 +371,10 @@ function MessagesPage() {
   const openThread = useCallback(
     async (threadId) => {
       if (!threadId || !dbUserId) return;
+      setActiveSystemView(false);
       setActiveThreadId(threadId);
       setLoadingMessages(true);
-       setConversationError("");
+      setConversationError("");
       try {
         const response = await fetch(
           `/api/messages/threads/${threadId}/messages${buildQuery({
@@ -326,6 +394,15 @@ function MessagesPage() {
     },
     [dbUserId]
   );
+
+  const openSystemNotificationsThread = useCallback(() => {
+    setActiveSystemView(true);
+    setActiveThreadId(null);
+    setMessages([]);
+    setLoadingMessages(false);
+    setConversationError("");
+    setLastSystemViewedAt(new Date().toISOString());
+  }, []);
 
   const startDirectThread = useCallback(
     async (targetUserId) => {
@@ -405,12 +482,14 @@ function MessagesPage() {
       setSending(true);
       setConversationError("");
       try {
+        const metadata = parseSlashCommandMetadata(messageDraft, activeThread);
         const response = await fetch(`/api/messages/threads/${activeThreadId}/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             senderId: dbUserId,
             content: messageDraft.trim(),
+            metadata,
           }),
         });
         const payload = await response.json();
@@ -438,11 +517,100 @@ function MessagesPage() {
 
   useEffect(() => {
     if (!dbUserId) return;
+    const trimmed = directorySearch.trim();
+    if (!trimmed) {
+      setDirectory([]);
+      return;
+    }
     const handle = setTimeout(() => {
-      fetchDirectory(directorySearch);
+      fetchDirectory(trimmed);
     }, 350);
     return () => clearTimeout(handle);
   }, [dbUserId, directorySearch, fetchDirectory]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadSystemNotifications = async () => {
+      setSystemLoading(true);
+      setSystemError("");
+      try {
+        const { data, error } = await supabase
+          .from("notifications")
+          .select("notification_id, message, created_at, target_role")
+          .or("target_role.ilike.%customer%,target_role.is.null")
+          .order("created_at", { ascending: false })
+          .limit(5);
+        if (error) throw error;
+        if (!cancelled) {
+          setSystemNotifications(data || []);
+        }
+      } catch (fetchError) {
+        if (!cancelled) {
+          setSystemError(fetchError?.message || "Unable to load system notifications.");
+          setSystemNotifications([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setSystemLoading(false);
+        }
+      }
+    };
+
+    loadSystemNotifications();
+    const channel = supabase
+      .channel("admin-system-notifications")
+      .on(
+        "postgres_changes",
+        { schema: "public", table: "notifications", event: "INSERT" },
+        (payload) => {
+          const entry = payload?.new;
+          if (!entry) return;
+          const targetRole = (entry.target_role || "").toLowerCase();
+          if (targetRole && !targetRole.includes("customer")) return;
+          setSystemNotifications((prev) => {
+            const next = [entry, ...prev];
+            return next.slice(0, 5);
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!dbUserId || typeof window === "undefined") return undefined;
+
+    const channel = supabase
+      .channel(`messages-refresh-${dbUserId}`)
+      .on("postgres_changes", { schema: "public", table: "messages", event: "INSERT" }, (payload) => {
+        if (!payload?.new) return;
+        fetchThreads();
+        if (activeThread && activeThread.id === payload.new.thread_id && payload.new.sender_id !== dbUserId) {
+          openThread(activeThread);
+        }
+      })
+      .on(
+        "postgres_changes",
+        {
+          schema: "public",
+          table: "message_thread_members",
+          event: "UPDATE",
+          filter: `user_id=eq.${dbUserId}`,
+        },
+        () => {
+          fetchThreads();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [dbUserId, fetchThreads, activeThread, openThread]);
 
   useEffect(() => {
     if (!threads.length) {
@@ -712,9 +880,19 @@ function MessagesPage() {
                 {directoryLoading && (
                   <p style={{ color: palette.textMuted, margin: 0 }}>Loading colleagues…</p>
                 )}
-                {!directoryLoading &&
-                  (directory.length ? (
-                    directory.map((entry) => (
+                {!directoryLoading && !directoryHasSearch && (
+                  <p style={{ margin: 0, color: palette.textMuted }}>
+                    Search to reveal colleagues.
+                  </p>
+                )}
+                {!directoryLoading && directoryHasSearch && directory.length === 0 && (
+                  <p style={{ margin: 0, color: palette.textMuted }}>
+                    No colleagues found.
+                  </p>
+                )}
+                {!directoryLoading && directoryHasSearch && directory.length > 0 && (
+                  <>
+                    {directory.map((entry) => (
                       <button
                         key={entry.id}
                         type="button"
@@ -755,12 +933,9 @@ function MessagesPage() {
                           {composeMode === "direct" ? "Start chat" : "Toggle in group"}
                         </span>
                       </button>
-                    ))
-                  ) : (
-                    <p style={{ margin: 0, color: palette.textMuted }}>
-                      No colleagues found.
-                    </p>
-                  ))}
+                    ))}
+                  </>
+                )}
               </div>
 
               {composeMode === "group" && (
@@ -849,74 +1024,211 @@ function MessagesPage() {
                 {loadingThreads && (
                   <p style={{ color: palette.textMuted }}>Loading threads…</p>
                 )}
-                {!loadingThreads && !threads.length && (
-                  <p style={{ color: palette.textMuted, margin: 0 }}>
-                    No conversations yet. Start one above.
-                  </p>
-                )}
-                {threads.map((thread) => (
-                  <button
-                    key={thread.id}
-                    type="button"
-                    onClick={() => openThread(thread.id)}
-                    style={{
-                      borderRadius: "18px",
-                      border: `1px solid ${
-                        activeThreadId === thread.id ? palette.accent : palette.border
-                      }`,
-                      backgroundColor:
-                        activeThreadId === thread.id ? palette.accentSurface : "#ffffff",
-                      padding: "14px 16px",
-                      textAlign: "left",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <strong style={{ display: "block", fontSize: "0.95rem" }}>
-                      {thread.title}
-                    </strong>
-                    {thread.lastMessage ? (
-                      <span
-                        style={{
-                          display: "block",
-                          marginTop: "4px",
-                          fontSize: "0.85rem",
-                          color: palette.textMuted,
-                        }}
-                      >
-                        {thread.lastMessage.sender?.name || "Someone"}:{" "}
-                        {thread.lastMessage.content.length > 64
-                          ? `${thread.lastMessage.content.slice(0, 64)}…`
-                          : thread.lastMessage.content}
+                {!loadingThreads && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={openSystemNotificationsThread}
+                      style={{
+                        borderRadius: "18px",
+                        border: `1px solid ${
+                          isSystemThreadActive ? palette.accent : palette.border
+                        }`,
+                        backgroundColor:
+                          isSystemThreadActive ? palette.accentSurface : "#ffffff",
+                        padding: "14px 16px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <strong style={{ display: "block", fontSize: "0.95rem" }}>
+                        System notifications
+                      </strong>
+                      <span style={{ fontSize: "0.85rem", color: palette.textMuted }}>
+                        {systemLoading ? "Loading updates…" : systemPreview}
                       </span>
+                      <span style={{ fontSize: "0.75rem", color: palette.textMuted }}>
+                        Latest {systemTimestampLabel}
+                      </span>
+                      <div style={{ marginTop: "6px", display: "flex", gap: "8px" }}>
+                        {hasSystemUnread && (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              padding: "4px 10px",
+                              borderRadius: radii.pill,
+                              backgroundColor: palette.accent,
+                              color: "#ffffff",
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                            }}
+                          >
+                            Unread
+                          </span>
+                        )}
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "4px 10px",
+                            borderRadius: radii.pill,
+                            border: `1px solid ${palette.border}`,
+                            fontSize: "0.75rem",
+                            color: palette.textMuted,
+                          }}
+                        >
+                          Read only
+                        </span>
+                      </div>
+                    </button>
+                    {threads.length ? (
+                      <div className="space-y-3">
+                        {threads.map((thread) => (
+                          <button
+                            key={thread.id}
+                            type="button"
+                            onClick={() => openThread(thread.id)}
+                            style={{
+                              borderRadius: "18px",
+                              border: `1px solid ${
+                                activeThreadId === thread.id ? palette.accent : palette.border
+                              }`,
+                              backgroundColor:
+                                activeThreadId === thread.id ? palette.accentSurface : "#ffffff",
+                              padding: "14px 16px",
+                              textAlign: "left",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <strong style={{ display: "block", fontSize: "0.95rem" }}>
+                              {thread.title}
+                            </strong>
+                            {thread.lastMessage ? (
+                              <span
+                                style={{
+                                  display: "block",
+                                  marginTop: "4px",
+                                  fontSize: "0.85rem",
+                                  color: palette.textMuted,
+                                }}
+                              >
+                                {thread.lastMessage.sender?.name || "Someone"}: {" "}
+                                {thread.lastMessage.content.length > 64
+                                  ? `${thread.lastMessage.content.slice(0, 64)}…`
+                                  : thread.lastMessage.content}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: "0.8rem", color: palette.textMuted }}>
+                                No messages yet
+                              </span>
+                            )}
+                            {thread.hasUnread && (
+                              <span
+                                style={{
+                                  marginTop: "6px",
+                                  display: "inline-flex",
+                                  padding: "4px 10px",
+                                  borderRadius: radii.pill,
+                                  backgroundColor: palette.accent,
+                                  color: "#ffffff",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                Unread
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
                     ) : (
-                      <span style={{ fontSize: "0.8rem", color: palette.textMuted }}>
-                        No messages yet
-                      </span>
+                      <p style={{ color: palette.textMuted, margin: 0 }}>
+                        No conversations yet. Start one above.
+                      </p>
                     )}
-                    {thread.hasUnread && (
-                      <span
-                        style={{
-                          marginTop: "6px",
-                          display: "inline-flex",
-                          padding: "4px 10px",
-                          borderRadius: radii.pill,
-                          backgroundColor: palette.accent,
-                          color: "#ffffff",
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                        }}
-                      >
-                        Unread
-                      </span>
-                    )}
-                  </button>
-                ))}
+                  </>
+                )}
               </div>
             </div>
           </div>
 
-          <div style={{ ...cardStyle, flex: 1, minHeight: 0 }}>
-            {activeThread ? (
+          <div style={ ...cardStyle, flex: 1, minHeight: 0 }>
+            {activeSystemView ? (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "12px",
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, color: palette.accent }}>System notifications</h3>
+                <p style={{ margin: "4px 0 0", color: palette.textMuted }}>
+                  {systemLoading ? "Loading updates…" : systemPreview}
+                </p>
+              </div>
+              <span
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: radii.pill,
+                  backgroundColor: "#fee2e2",
+                  color: "#b91c1c",
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                }}
+              >
+                Read only
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                maxHeight: "360px",
+                overflowY: "auto",
+                paddingRight: "4px",
+              }}
+            >
+              {systemLoading && (
+                <p style={{ color: palette.textMuted, margin: 0 }}>Loading system updates…</p>
+              )}
+              {!systemLoading && systemError && (
+                <p style={{ color: "#b91c1c", margin: 0 }}>{systemError}</p>
+              )}
+              {!systemLoading && !systemError && systemNotifications.length === 0 && (
+                <p style={{ color: palette.textMuted, margin: 0 }}>No system notifications yet.</p>
+              )}
+              {!systemLoading && !systemError && systemNotifications.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {systemNotifications.map((note) => (
+                    <article
+                      key={`system-${note.notification_id}`}
+                      style={{
+                        borderRadius: "14px",
+                        border: `1px solid ${palette.border}`,
+                        padding: "12px",
+                        backgroundColor: "#ffffff",
+                        boxShadow: shadows.sm,
+                      }}
+                    >
+                      <p style={{ margin: 0, color: palette.textPrimary }}>{note.message || "System update"}</p>
+                      <p style={{ margin: "6px 0 0", fontSize: "0.75rem", color: palette.textMuted }}>
+                        {formatNotificationTimestamp(note.created_at)}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p style={{ fontSize: "0.75rem", color: palette.textMuted, margin: 0 }}>
+              Only the system posts here; this thread cannot be deleted or renamed.
+            </p>
+            ) : activeThread ? (
               <>
                 <div
                   style={{
@@ -1164,7 +1476,9 @@ function MessagesPage() {
                   )}
                 </form>
               </>
+</>
             ) : (
+
               <div
                 style={{
                   flex: 1,
@@ -1178,7 +1492,9 @@ function MessagesPage() {
                 Select or start a conversation to begin messaging.
               </div>
             )}
-          </div>
+
+            )}
+          </div>          </div>
         </div>
       </div>
     </Layout>

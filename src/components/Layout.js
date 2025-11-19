@@ -17,6 +17,7 @@ import { useRoster } from "@/context/RosterContext";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import { workshopTabs, workshopQuickActions } from "@/components/Workshop/WorkshopTabsBar";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
+import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 
 const WORKSHOP_ACCESS_ROLES = [
   "workshop manager",
@@ -79,7 +80,7 @@ const SERVICE_ACTION_LINKS = [
 ];
 
 export default function Layout({ children, jobNumber }) {
-  const { user, status, setStatus, currentJob } = useUser(); // get user context data
+  const { user, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
   const { usersByRole } = useRoster();
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
@@ -93,6 +94,7 @@ export default function Layout({ children, jobNumber }) {
     typeof window !== "undefined" && window.innerWidth ? window.innerWidth : 1440;
 
   const [viewportWidth, setViewportWidth] = useState(getViewportWidth());
+  const { unreadCount: messagesUnread } = useMessagesBadge(dbUserId);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false);
@@ -775,6 +777,47 @@ export default function Layout({ children, jobNumber }) {
                 >
                   <NextActionPrompt />
                 </div>
+
+                <Link
+                  href="/messages"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "8px 14px",
+                    borderRadius: "14px",
+                    border: "1px solid #ffe0e0",
+                    background: "#fff5f5",
+                    color: "#720000",
+                    fontWeight: 600,
+                    textDecoration: "none",
+                    boxShadow: "0 6px 16px rgba(209,0,0,0.12)",
+                  }}
+                >
+                  <span role="img" aria-label="messages">
+                    📨
+                  </span>
+                  Messages
+                  {messagesUnread > 0 && (
+                    <span
+                      style={{
+                        minWidth: 24,
+                        minHeight: 24,
+                        padding: "0 6px",
+                        borderRadius: 999,
+                        background: "#d10000",
+                        color: "#ffffff",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {messagesUnread > 99 ? "99+" : messagesUnread}
+                    </span>
+                  )}
+                </Link>
 
                 {userRoles.includes("admin manager") &&
                   ( // quick access for administrators to add new users

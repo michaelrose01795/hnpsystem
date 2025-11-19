@@ -487,6 +487,20 @@ export default function CustomerMessagesPage() {
     };
   }, [dbUserId, fetchThreads, activeThread, openThread]);
 
+  const latestSystemNotification = systemNotifications?.[0];
+  const latestSystemMessage = latestSystemNotification?.message || "No system updates yet.";
+  const latestSystemTimestamp = latestSystemNotification?.created_at || null;
+  const latestSystemTime = latestSystemTimestamp ? new Date(latestSystemTimestamp).getTime() : 0;
+  const lastViewedTime = lastSystemViewedAt ? new Date(lastSystemViewedAt).getTime() : 0;
+  const hasSystemUnread =
+    Boolean(systemNotifications.length) && latestSystemTime > lastViewedTime;
+  const systemPreview =
+    latestSystemMessage.length > 80 ? `${latestSystemMessage.slice(0, 80)}…` : latestSystemMessage;
+  const systemTimestampLabel = latestSystemTimestamp
+    ? formatNotificationTimestamp(latestSystemTimestamp)
+    : "No updates yet";
+  const composerHasSearch = Boolean(composerSearch.trim());
+
   return (
     <CustomerLayout pageTitle="Messages">
       {error && (
@@ -514,72 +528,35 @@ export default function CustomerMessagesPage() {
           </header>
 
           <div className="mt-4 space-y-6">
-            <div className="rounded-2xl border border-dashed border-[#ffe5e5] bg-[#fffafa] p-4 shadow-[0_6px_16px_rgba(209,0,0,0.1)]">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">
-                    Pinned thread
-                  </p>
-                  <h4 className="text-lg font-semibold text-slate-900">System notifications</h4>
-                  <p className="text-xs text-slate-500">
-                    Stock updates, approved work, VHC progress, and consumables alerts.
-                  </p>
-                </div>
-                <span className="rounded-full bg-[#fee2e2] px-3 py-1 text-xs font-semibold text-[#b91c1c]">
-                  Read only
-                </span>
-              </div>
-              <div className="mt-3 space-y-3">
-                {systemLoading && (
-                  <p className="text-sm text-slate-500">Fetching system updates…</p>
-                )}
-                {!systemLoading && systemError && (
-                  <p className="text-sm text-red-600">{systemError}</p>
-                )}
-                {!systemLoading && !systemError && systemNotifications.length === 0 && (
-                  <p className="text-sm text-slate-500">No system notifications yet.</p>
-                )}
-                {!systemLoading && !systemError && systemNotifications.length > 0 && (
-                  <div className="space-y-3">
-                    {systemNotifications.map((note) => (
-                      <article
-                        key={`system-${note.notification_id}`}
-                        className="space-y-1 rounded-2xl border border-[#ffe5e5] bg-white/70 px-4 py-3 text-sm"
-                      >
-                        <p className="text-sm text-slate-900">{note.message || "System update"}</p>
-                        <p className="text-xs text-slate-500">
-                          {formatNotificationTimestamp(note.created_at)}
-                        </p>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <p className="mt-4 text-xs text-slate-500">
-                Only the system posts here; this thread cannot be deleted or renamed.
-              </p>
-            </div>
-
-            <div className="space-y-4">
+            <div className="space-y-3 rounded-2xl border border-[#ffe5e5] bg-[#fff7f7] p-4 shadow-[0_6px_16px_rgba(209,0,0,0.08)]">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">
-                    Start a new conversation
+                    Live conversations
                   </p>
-                  <h4 className="text-lg font-semibold text-slate-900">Group chats</h4>
+                  <h4 className="text-lg font-semibold text-slate-900">Your messages</h4>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setComposerOpen(true)}
-                  disabled={composerCreating}
-                  className="flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-[#d10000] bg-white text-3xl font-semibold text-[#d10000] shadow hover:border-solid hover:border-[#d10000] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  +
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setComposerOpen(true)}
+                    disabled={composerCreating}
+                    className="rounded-full border border-dashed border-[#d10000] bg-white px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#d10000] shadow disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    + New conversation
+                  </button>
+                  <button
+                    type="button"
+                    onClick={fetchThreads}
+                    disabled={threadsLoading}
+                    className="rounded-full border border-[#ffe5e5] bg-white px-3 py-1 text-xs font-semibold text-[#d10000] shadow hover:border-[#d10000] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {threadsLoading ? "Refreshing…" : "Refresh"}
+                  </button>
+                </div>
               </div>
               <p className="text-sm text-slate-500">
-                Open the composer to search by name, select colleagues with tickboxes, and keep
-                every job conversation inside H&P.
+                System alerts stay pinned above your chats so you never miss a stock or VHC update.
               </p>
               {conversationFeedback && (
                 <p className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
@@ -591,42 +568,38 @@ export default function CustomerMessagesPage() {
                   {conversationError}
                 </p>
               )}
-            </div>
-
-            <div className="space-y-3 rounded-2xl border border-[#ffe5e5] bg-[#fff7f7] p-4 shadow-[0_6px_16px_rgba(209,0,0,0.08)]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">
-                    Live conversations
-                  </p>
-                  <h4 className="text-lg font-semibold text-slate-900">Your messages</h4>
-                </div>
+              <div className="space-y-3">
                 <button
                   type="button"
-                  onClick={fetchThreads}
-                  disabled={threadsLoading}
-                  className="rounded-full border border-[#ffe5e5] bg-white px-3 py-1 text-xs font-semibold text-[#d10000] shadow hover:border-[#d10000] disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={openSystemNotificationsThread}
+                  className={`w-full text-left rounded-2xl border px-4 py-3 text-sm shadow-[0_6px_20px_rgba(209,0,0,0.06)] transition ${
+                    isSystemThreadActive
+                      ? "border-[#d10000] bg-[#fff2f2]"
+                      : "border-[#ffe5e5] bg-[#fffafa]"
+                  }`}
                 >
-                  {threadsLoading ? "Refreshing…" : "Refresh"}
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-900">System notifications</p>
+                      <p className="text-xs text-slate-500">{systemPreview}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {hasSystemUnread && (
+                        <span className="rounded-full bg-[#d10000] px-3 py-1 text-[0.65rem] font-semibold text-white">
+                          Unread
+                        </span>
+                      )}
+                      <span className="rounded-full border border-[#ffe5e5] px-3 py-1 text-[0.65rem] font-semibold text-[#b91c1c]">
+                        Read only
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[0.65rem] text-slate-500">Latest {systemTimestampLabel}</p>
                 </button>
-              </div>
-              <div className="space-y-3">
-                {threadsLoading && (
-                  <p className="text-sm text-slate-500">Loading conversations…</p>
-                )}
-                {!threadsLoading && threadsError && (
-                  <p className="text-sm text-red-600">{threadsError}</p>
-                )}
-                {!threadsLoading && !threadsError && threads.length === 0 && (
-                  <p className="text-sm text-slate-500">
-                    Start a conversation to see it here. Conversations automatically bump when new
-                    updates arrive.
-                  </p>
-                )}
-                {!threadsLoading && !threadsError && threads.length > 0 && (
+                {threads.length ? (
                   <div className="space-y-3">
                     {threads.map((thread) => {
-                      const isActiveThread = activeThread?.id === thread.id;
+                      const isActiveThread = activeThread?.id === thread.id && !isSystemThreadActive;
                       const preview = thread.lastMessage?.content || "No messages yet.";
                       return (
                         <button
@@ -656,11 +629,56 @@ export default function CustomerMessagesPage() {
                       );
                     })}
                   </div>
+                ) : (
+                  <p className="text-sm text-slate-500">
+                    No open conversations yet. Start one with the button above.
+                  </p>
                 )}
               </div>
             </div>
 
-            {activeThread && (
+            {isSystemThreadActive ? (
+              <div className="space-y-4 rounded-2xl border border-[#ffe5e5] bg-[#fffafa] p-4 shadow-[0_6px_16px_rgba(209,0,0,0.08)]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">System thread</p>
+                    <h4 className="text-lg font-semibold text-slate-900">System notifications</h4>
+                  </div>
+                  <span className="rounded-full bg-[#fee2e2] px-3 py-1 text-xs font-semibold text-[#b91c1c]">
+                    Read only
+                  </span>
+                </div>
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {systemLoading && (
+                    <p className="text-sm text-slate-500">Loading notifications…</p>
+                  )}
+                  {!systemLoading && systemError && (
+                    <p className="text-sm text-red-600">{systemError}</p>
+                  )}
+                  {!systemLoading && !systemError && systemNotifications.length === 0 && (
+                    <p className="text-sm text-slate-500">No system notifications yet.</p>
+                  )}
+                  {!systemLoading && !systemError && systemNotifications.length > 0 && (
+                    <div className="space-y-3">
+                      {systemNotifications.map((note) => (
+                        <article
+                          key={`system-${note.notification_id}`}
+                          className="space-y-1 rounded-2xl border border-[#ffe5e5] bg-white/70 px-4 py-3 text-sm"
+                        >
+                          <p className="text-sm text-slate-900">{note.message || "System update"}</p>
+                          <p className="text-[0.65rem] text-slate-500">
+                            {formatNotificationTimestamp(note.created_at)}
+                          </p>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500">
+                  Only the system posts here; this thread cannot be deleted or renamed.
+                </p>
+              </div>
+            ) : activeThread ? (
               <div className="space-y-4 rounded-2xl border border-[#ffe5e5] bg-[#ffffff] p-4 shadow-[0_6px_16px_rgba(209,0,0,0.08)]">
                 <div className="flex items-center justify-between">
                   <div>
@@ -679,67 +697,64 @@ export default function CustomerMessagesPage() {
                     <p className="text-sm text-red-600">{messagesError}</p>
                   )}
                   {!messagesLoading && !messagesError && threadMessages.length === 0 && (
-                    <p className="text-sm text-slate-500">
-                      No messages yet. Once you send or receive one it will appear here.
-                    </p>
+                    <p className="text-sm text-slate-500">No messages yet. Start the conversation below.</p>
                   )}
-                  {!messagesLoading &&
-                    !messagesError &&
-                    threadMessages.map((message) => {
-                      const senderName =
-                        message.sender?.name ||
-                        (message.senderId === dbUserId ? "You" : "Team member");
-                      const isMine = message.senderId === dbUserId;
-                      return (
-                        <div
-                          key={message.id || `${message.senderId}-${message.createdAt}`}
-                          className={`space-y-1 rounded-2xl border px-4 py-3 text-sm ${
-                            isMine ? "border-[#ffd3d3] bg-[#fff2f2]" : "border-[#ffe5e5] bg-[#fffafa]"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-900">{senderName}</span>
-                            <span className="text-[0.65rem] uppercase tracking-[0.2em] text-slate-400">
-                              {formatMessageTimestamp(message.createdAt)}
-                            </span>
-                          </div>
-                          <p className="text-slate-700">{message.content}</p>
-                          {message.metadata?.jobNumber && (
-                            <p className="text-[0.65rem] text-slate-500">
-                              Linked job #{message.metadata.jobNumber}
-                            </p>
-                          )}
-                          {message.metadata?.customerId && (
-                            <p className="text-[0.65rem] text-slate-500">
-                              Linked customer profile
-                            </p>
-                          )}
-                          {message.metadata?.vehicleId && (
-                            <p className="text-[0.65rem] text-slate-500">
-                              Linked vehicle{" "}
-                              {vehicles?.find((v) => v.id === message.metadata.vehicleId)?.reg ||
-                                "(vehicle data)"}
-                            </p>
-                          )}
-                          <div className="flex flex-wrap items-center gap-2">
-                            {message.savedForever ? (
-                              <span className="rounded-full border border-[#ffe5e5] px-3 py-1 text-[0.65rem] font-semibold text-[#d10000]">
-                                Saved forever
+                  {!messagesLoading && !messagesError && (
+                    <div className="space-y-3">
+                      {threadMessages.map((message) => {
+                        const senderName =
+                          message.sender?.name || (message.senderId === dbUserId ? "You" : "Team member");
+                        const isMine = message.senderId === dbUserId;
+                        return (
+                          <div
+                            key={message.id || `${message.senderId}-${message.createdAt}`}
+                            className={`space-y-1 rounded-2xl border px-4 py-3 text-sm ${
+                              isMine ? "border-[#ffd3d3] bg-[#fff2f2]" : "border-[#ffe5e5] bg-[#fffafa]"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-slate-900">{senderName}</span>
+                              <span className="text-[0.65rem] uppercase tracking-[0.2em] text-slate-400">
+                                {formatMessageTimestamp(message.createdAt)}
                               </span>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => handleSaveMessage(message)}
-                                disabled={savingMessageId === message.id}
-                                className="rounded-full border border-[#ffe5e5] px-3 py-1 text-[0.65rem] font-semibold text-[#d10000] hover:border-[#d10000] disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                {savingMessageId === message.id ? "Saving…" : "Save forever"}
-                              </button>
+                            </div>
+                            <p className="text-slate-700">{message.content}</p>
+                            {message.metadata?.jobNumber && (
+                              <p className="text-[0.65rem] text-slate-500">
+                                Linked job #{message.metadata.jobNumber}
+                              </p>
                             )}
+                            {message.metadata?.customerId && (
+                              <p className="text-[0.65rem] text-slate-500">
+                                Linked customer profile
+                              </p>
+                            )}
+                            {message.metadata?.vehicleId && (
+                              <p className="text-[0.65rem] text-slate-500">
+                                Linked vehicle {vehicles?.find((v) => v.id === message.metadata.vehicleId)?.reg || "(vehicle data)"}
+                              </p>
+                            )}
+                            <div className="flex flex-wrap items-center gap-2">
+                              {message.savedForever ? (
+                                <span className="rounded-full border border-[#ffe5e5] px-3 py-1 text-[0.65rem] font-semibold text-[#d10000]">
+                                  Saved forever
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveMessage(message)}
+                                  disabled={savingMessageId === message.id}
+                                  className="rounded-full border border-[#ffe5e5] px-3 py-1 text-[0.65rem] font-semibold text-[#d10000] hover:border-[#d10000] disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {savingMessageId === message.id ? "Saving…" : "Save forever"}
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 <form onSubmit={handleSendMessage} className="space-y-3">
                   <label htmlFor="message-draft" className="sr-only">
@@ -764,9 +779,12 @@ export default function CustomerMessagesPage() {
                   </div>
                 </form>
               </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-[#ffe5e5] bg-[#fffafa] p-6 text-sm text-slate-500">
+                Select a conversation to view messages and replies.
+              </div>
             )}
           </div>
-
           {composerOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
               <div className="w-full max-w-2xl rounded-3xl border border-[#ffe5e5] bg-white p-6 shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
@@ -802,7 +820,10 @@ export default function CustomerMessagesPage() {
                     {!composerLoading && composerError && (
                       <p className="text-sm text-red-600">{composerError}</p>
                     )}
-                    {!composerLoading && !composerError && composerResults.length === 0 && (
+                    {!composerLoading && !composerError && !composerHasSearch && (
+                      <p className="text-sm text-slate-500">Type a name to see matching users.</p>
+                    )}
+                    {!composerLoading && !composerError && composerHasSearch && composerResults.length === 0 && (
                       <p className="text-sm text-slate-500">No users match that search.</p>
                     )}
                     {!composerLoading && !composerError && composerResults.length > 0 && (
