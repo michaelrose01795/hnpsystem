@@ -62,13 +62,15 @@ export default function CustomerMessagesPage() {
   const { timeline, customer, vehicles, isLoading, error } = useCustomerPortalData();
   const { dbUserId } = useUser();
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [directoryResults, setDirectoryResults] = useState([]);
-  const [directoryLoading, setDirectoryLoading] = useState(false);
-  const [directoryError, setDirectoryError] = useState("");
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [composerSearch, setComposerSearch] = useState("");
+  const [composerResults, setComposerResults] = useState([]);
+  const [composerLoading, setComposerLoading] = useState(false);
+  const [composerError, setComposerError] = useState("");
+  const [composerSelection, setComposerSelection] = useState([]);
   const [conversationFeedback, setConversationFeedback] = useState("");
   const [conversationError, setConversationError] = useState("");
-  const [startingConversationId, setStartingConversationId] = useState(null);
+  const [composerCreating, setComposerCreating] = useState(false);
   const [systemNotifications, setSystemNotifications] = useState([]);
   const [systemLoading, setSystemLoading] = useState(false);
   const [systemError, setSystemError] = useState("");
@@ -84,43 +86,40 @@ export default function CustomerMessagesPage() {
   const [savingMessageId, setSavingMessageId] = useState(null);
 
   useEffect(() => {
-    const trimmedSearch = searchTerm.trim();
-    if (!trimmedSearch) {
-      setDirectoryResults([]);
-      setDirectoryError("");
-      setDirectoryLoading(false);
+    if (!composerOpen || !dbUserId) {
+      setComposerResults([]);
       return;
     }
-
     let cancelled = false;
     const controller = new AbortController();
-
-    setDirectoryLoading(true);
-    setDirectoryError("");
+    setComposerLoading(true);
+    setComposerError("");
 
     (async () => {
       try {
         const response = await fetch(
-          `/api/messages/users${buildQuery({ q: trimmedSearch, limit: 8 })}`,
+          `/api/messages/users${buildQuery({
+            q: composerSearch,
+            limit: 20,
+            exclude: dbUserId,
+          })}`,
           { signal: controller.signal }
         );
         const payload = await response.json();
         if (!response.ok) {
-          throw new Error(payload.message || "Unable to load team matching that name.");
+          throw new Error(payload.message || "Unable to load users.");
         }
         if (!cancelled) {
-          setDirectoryResults(payload.data || []);
+          setComposerResults(payload.data || []);
         }
       } catch (fetchError) {
-        if (cancelled || fetchError.name === "AbortError") {
-          return;
-        }
-        console.error("❌ Customer message search failed:", fetchError);
-        setDirectoryError(fetchError.message || "Failed to load team members.");
-        setDirectoryResults([]);
+        if (cancelled || fetchError.name === "AbortError") return;
+        console.error("❌ Composer search failed:", fetchError);
+        setComposerError(fetchError.message || "Unable to load users.");
+        setComposerResults([]);
       } finally {
         if (!cancelled) {
-          setDirectoryLoading(false);
+          setComposerLoading(false);
         }
       }
     })();
@@ -129,7 +128,63 @@ export default function CustomerMessagesPage() {
       cancelled = true;
       controller.abort();
     };
-  }, [searchTerm]);
+  }, [composerOpen, composerSearch, dbUserId]);
+
+  useEffect(() => {
+    if (!composerOpen) {
+      setComposerSearch("");
+      setComposerSelection([]);
+    }
+  }, [composerOpen]);
+
+  const toggleComposerUser = useCallback((user) => {
+    setComposerSelection((prev) => {
+      if (prev.some((entry) => entry.id === user.id)) {
+        return prev.filter((entry) => entry.id !== user.id);
+      }
+      return [...prev, user];
+    });
+  }, []);
+
+  const handleCreateGroup = useCallback(async () => {
+    if (!dbUserId) return;
+    if (!composerSelection.length) {
+      setConversationError("Select at least one colleague to start a group chat.");
+      return;
+    }
+    setComposerCreating(true);
+    setConversationError("");
+    setConversationFeedback("");
+    try {
+      const response = await fetch("/api/messages/threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "group",
+          createdBy: dbUserId,
+          memberIds: composerSelection.map((user) => user.id),
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.message || "Unable to create group conversation.");
+      }
+      const thread = payload.data;
+      setComposerOpen(false);
+      setComposerSelection([]);
+      setComposerSearch("");
+      setConversationFeedback("Group conversation created.");
+      await fetchThreads();
+      if (thread?.id) {
+        openThread(thread);
+      }
+    } catch (error) {
+      console.error("❌ Failed to create group conversation:", error);
+      setConversationError(error.message || "Unable to create group conversation.");
+    } finally {
+      setComposerCreating(false);
+    }
+  }, [composerSelection, dbUserId, fetchThreads, openThread]);
 
   useEffect(() => {
     let cancelled = false;
@@ -337,42 +392,6 @@ export default function CustomerMessagesPage() {
     };
   }, [dbUserId, fetchThreads, activeThread, openThread]);
 
-  const handleStartConversation = useCallback(
-    async (targetUser) => {
-      if (!dbUserId || !targetUser?.id) return;
-      setConversationError("");
-      setConversationFeedback("");
-      setStartingConversationId(targetUser.id);
-      try {
-        const response = await fetch("/api/messages/threads", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: "direct",
-            createdBy: dbUserId,
-            targetUserId: targetUser.id,
-          }),
-        });
-        const payload = await response.json();
-        if (!response.ok) {
-          throw new Error(payload.message || "Unable to start conversation right now.");
-        }
-        setConversationFeedback(
-          `Conversation opened with ${targetUser.name || targetUser.email || "that team member"}.`
-        );
-        await fetchThreads();
-      } catch (startError) {
-        console.error("❌ Failed to start customer conversation:", startError);
-        setConversationError(startError.message || "Unable to start conversation.");
-      } finally {
-        setStartingConversationId(null);
-      }
-    },
-    [dbUserId, fetchThreads]
-  );
-
-  const hasSearchTerm = Boolean(searchTerm.trim());
-
   return (
     <CustomerLayout pageTitle="Messages">
       {error && (
@@ -447,68 +466,26 @@ export default function CustomerMessagesPage() {
             </div>
 
             <div className="space-y-4">
-              <div className="space-y-1">
-                <label
-                  htmlFor="message-search"
-                  className="text-xs font-semibold uppercase text-slate-500"
-                >
-                  Search by name or email
-                </label>
-                <input
-                  id="message-search"
-                  type="search"
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Start typing to find someone to message…"
-                  className="w-full rounded-2xl border border-[#ffe5e5] bg-[#fffafa] px-4 py-3 text-sm text-slate-900 focus:border-[#d10000] focus:outline-none"
-                />
-              </div>
-
-              {hasSearchTerm ? (
-                <div className="space-y-3">
-                  {directoryLoading && (
-                    <p className="text-sm text-slate-500">Searching your team…</p>
-                  )}
-                  {!directoryLoading && directoryError && (
-                    <p className="text-sm text-red-600">{directoryError}</p>
-                  )}
-                  {!directoryLoading && !directoryError && directoryResults.length === 0 && (
-                    <p className="text-sm text-slate-500">
-                      No team members match that search.
-                    </p>
-                  )}
-                  {!directoryLoading && !directoryError && directoryResults.length > 0 && (
-                    <div className="space-y-3">
-                      {directoryResults.map((result) => (
-                        <div
-                          key={result.id}
-                          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#ffe5e5] bg-[#fffafa] px-4 py-4 text-sm shadow-[0_6px_20px_rgba(209,0,0,0.06)]"
-                        >
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">{result.name}</p>
-                            <p className="text-xs text-slate-500">
-                              {result.role || "Team member"} &middot; {result.email || "No email"}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleStartConversation(result)}
-                            disabled={!dbUserId || startingConversationId === result.id}
-                            className="rounded-full bg-[#d10000] px-4 py-2 text-xs font-semibold text-white shadow hover:bg-[#b50d0d] disabled:cursor-not-allowed disabled:bg-[#f0a8a8]"
-                          >
-                            {startingConversationId === result.id ? "Starting…" : "Start conversation"}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">
+                    Start a new conversation
+                  </p>
+                  <h4 className="text-lg font-semibold text-slate-900">Group chats</h4>
                 </div>
-              ) : (
-                <p className="text-sm text-slate-500">
-                  Search for a team member before you start a new conversation.
-                </p>
-              )}
-
+                <button
+                  type="button"
+                  onClick={() => setComposerOpen(true)}
+                  disabled={composerCreating}
+                  className="flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-[#d10000] bg-white text-3xl font-semibold text-[#d10000] shadow hover:border-solid hover:border-[#d10000] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-sm text-slate-500">
+                Open the composer to search by name, select colleagues with tickboxes, and keep
+                every job conversation inside H&P.
+              </p>
               {conversationFeedback && (
                 <p className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                   {conversationFeedback}
@@ -517,11 +494,6 @@ export default function CustomerMessagesPage() {
               {conversationError && (
                 <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   {conversationError}
-                </p>
-              )}
-              {hasSearchTerm && !dbUserId && !conversationFeedback && !conversationError && (
-                <p className="text-xs text-slate-500">
-                  We are linking your account so you can start conversations—give us a moment.
                 </p>
               )}
             </div>
@@ -699,6 +671,93 @@ export default function CustomerMessagesPage() {
               </div>
             )}
           </div>
+
+          {composerOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+              <div className="w-full max-w-2xl rounded-3xl border border-[#ffe5e5] bg-white p-6 shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">Compose</p>
+                    <h3 className="text-xl font-semibold text-slate-900">Create a group chat</h3>
+                    <p className="text-sm text-slate-500">
+                      Search by name, check the people you need, and create a new thread.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setComposerOpen(false)}
+                    className="rounded-full border border-[#ffe5e5] px-3 py-1 text-xs font-semibold text-[#d10000]"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="mt-4 space-y-3">
+                  <label className="text-xs font-semibold uppercase text-slate-500">Search users</label>
+                  <input
+                    type="search"
+                    value={composerSearch}
+                    onChange={(event) => setComposerSearch(event.target.value)}
+                    placeholder="Find teammates by name or email"
+                    className="w-full rounded-2xl border border-[#ffe5e5] bg-[#fffafa] px-4 py-3 text-sm text-slate-900 focus:border-[#d10000] focus:outline-none"
+                  />
+                  <div className="max-h-60 overflow-y-auto space-y-2 rounded-2xl border border-[#ffe5e5] bg-white p-3">
+                    {composerLoading && (
+                      <p className="text-sm text-slate-500">Searching your roster…</p>
+                    )}
+                    {!composerLoading && composerError && (
+                      <p className="text-sm text-red-600">{composerError}</p>
+                    )}
+                    {!composerLoading && !composerError && composerResults.length === 0 && (
+                      <p className="text-sm text-slate-500">No users match that search.</p>
+                    )}
+                    {!composerLoading && !composerError && composerResults.length > 0 && (
+                      <div className="space-y-2">
+                        {composerResults.map((user) => {
+                          const isSelected = composerSelection.some((entry) => entry.id === user.id);
+                          return (
+                            <label
+                              key={user.id}
+                              className="flex cursor-pointer items-center justify-between rounded-2xl border border-[#f6d6d6] bg-[#fffafa] px-3 py-2 text-sm transition hover:border-[#d10000]"
+                            >
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => toggleComposerUser(user)}
+                                  className="h-4 w-4 rounded border-[#d10000]"
+                                />
+                                <div>
+                                  <p className="font-semibold text-slate-900">{user.name}</p>
+                                  <p className="text-[0.65rem] uppercase tracking-[0.2em] text-slate-500">
+                                    {user.role || "Team member"}
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="text-xs text-slate-500">{user.email}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="text-sm text-slate-500">
+                    Selected {composerSelection.length} colleague
+                    {composerSelection.length === 1 ? "" : "s"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCreateGroup}
+                    disabled={composerCreating || composerSelection.length === 0}
+                    className="rounded-full bg-[#d10000] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow hover:bg-[#b50d0d] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {composerCreating ? "Creating…" : "Create chat"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
         <AppointmentTimeline events={timeline} />
       </div>
