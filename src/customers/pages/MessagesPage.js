@@ -1,6 +1,6 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/customers/pages/MessagesPage.js
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import CustomerLayout from "@/customers/components/CustomerLayout";
 import AppointmentTimeline from "@/customers/components/AppointmentTimeline";
 import { useCustomerPortalData } from "@/customers/hooks/useCustomerPortalData";
@@ -28,6 +28,16 @@ const formatNotificationTimestamp = (value) => {
   });
 };
 
+const formatMessageTimestamp = (value) => {
+  if (!value) return "Unknown time";
+  return new Date(value).toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 export default function CustomerMessagesPage() {
   const { timeline, isLoading, error } = useCustomerPortalData();
   const { dbUserId } = useUser();
@@ -42,6 +52,15 @@ export default function CustomerMessagesPage() {
   const [systemNotifications, setSystemNotifications] = useState([]);
   const [systemLoading, setSystemLoading] = useState(false);
   const [systemError, setSystemError] = useState("");
+  const [threads, setThreads] = useState([]);
+  const [threadsLoading, setThreadsLoading] = useState(false);
+  const [threadsError, setThreadsError] = useState("");
+  const [activeThread, setActiveThread] = useState(null);
+  const [threadMessages, setThreadMessages] = useState([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState("");
+  const [messageDraft, setMessageDraft] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
     const trimmedSearch = searchTerm.trim();
@@ -128,35 +147,167 @@ export default function CustomerMessagesPage() {
     };
   }, []);
 
-  const handleStartConversation = async (targetUser) => {
-    if (!dbUserId || !targetUser?.id) return;
-    setConversationError("");
-    setConversationFeedback("");
-    setStartingConversationId(targetUser.id);
+  const fetchThreads = useCallback(async () => {
+    if (!dbUserId) return;
+    setThreadsLoading(true);
+    setThreadsError("");
     try {
-      const response = await fetch("/api/messages/threads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "direct",
-          createdBy: dbUserId,
-          targetUserId: targetUser.id,
-        }),
-      });
+      const response = await fetch(`/api/messages/threads${buildQuery({ userId: dbUserId })}`);
       const payload = await response.json();
       if (!response.ok) {
-        throw new Error(payload.message || "Unable to start conversation right now.");
+        throw new Error(payload.message || "Unable to load conversations.");
       }
-      setConversationFeedback(
-        `Conversation opened with ${targetUser.name || targetUser.email || "that team member"}.`
+      const threadRows = Array.isArray(payload.data) ? payload.data : [];
+      const sorted = [...threadRows].sort(
+        (a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
       );
-    } catch (startError) {
-      console.error("❌ Failed to start customer conversation:", startError);
-      setConversationError(startError.message || "Unable to start conversation.");
+      setThreads(sorted);
+    } catch (fetchError) {
+      console.error("❌ Failed to load customer threads:", fetchError);
+      setThreadsError(fetchError.message || "Unable to load conversations.");
     } finally {
-      setStartingConversationId(null);
+      setThreadsLoading(false);
     }
-  };
+  }, [dbUserId]);
+
+  const openThread = useCallback(
+    async (thread) => {
+      if (!dbUserId || !thread?.id) return;
+      setActiveThread(thread);
+      setMessagesLoading(true);
+      setMessagesError("");
+      try {
+        const response = await fetch(
+          `/api/messages/threads/${thread.id}/messages${buildQuery({ userId: dbUserId })}`
+        );
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.message || "Unable to load conversation.");
+        }
+        setThreadMessages(payload.data || []);
+        await fetchThreads();
+      } catch (fetchError) {
+        console.error("❌ Failed to load conversation:", fetchError);
+        setMessagesError(fetchError.message || "Unable to load conversation.");
+      } finally {
+        setMessagesLoading(false);
+      }
+    },
+    [dbUserId]
+  );
+
+  const handleSendMessage = useCallback(
+    async (event) => {
+      event?.preventDefault();
+      if (!activeThread?.id || !dbUserId || !messageDraft.trim()) return;
+      setSendingMessage(true);
+      setMessagesError("");
+      try {
+        const response = await fetch(`/api/messages/threads/${activeThread.id}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            senderId: dbUserId,
+            content: messageDraft.trim(),
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.message || "Unable to send message.");
+        }
+        const newMessage = payload.data;
+        setThreadMessages((prev) => [...prev, newMessage]);
+        setMessageDraft("");
+        setActiveThread((prev) =>
+          prev
+            ? {
+                ...prev,
+                lastMessage: newMessage,
+                updatedAt: newMessage.createdAt,
+                hasUnread: false,
+              }
+            : prev
+        );
+        await fetchThreads();
+      } catch (sendError) {
+        console.error("❌ Failed to send customer message:", sendError);
+        setMessagesError(sendError.message || "Unable to send message.");
+      } finally {
+        setSendingMessage(false);
+      }
+    },
+    [activeThread, dbUserId, messageDraft, fetchThreads]
+  );
+
+  useEffect(() => {
+    if (!dbUserId) return;
+    fetchThreads();
+  }, [dbUserId, fetchThreads]);
+
+  useEffect(() => {
+    if (!dbUserId) return undefined;
+
+    const channel = supabase
+      .channel(`customer-messaging-${dbUserId}`)
+      .on("postgres_changes", { schema: "public", table: "messages", event: "INSERT" }, (payload) => {
+        if (!payload?.new) return;
+        fetchThreads();
+        if (activeThread?.id === payload.new.thread_id && payload.new.sender_id !== dbUserId) {
+          openThread(activeThread);
+        }
+      })
+      .on(
+        "postgres_changes",
+        {
+          schema: "public",
+          table: "message_thread_members",
+          event: "UPDATE",
+          filter: `user_id=eq.${dbUserId}`,
+        },
+        () => {
+          fetchThreads();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [dbUserId, fetchThreads, activeThread, openThread]);
+
+  const handleStartConversation = useCallback(
+    async (targetUser) => {
+      if (!dbUserId || !targetUser?.id) return;
+      setConversationError("");
+      setConversationFeedback("");
+      setStartingConversationId(targetUser.id);
+      try {
+        const response = await fetch("/api/messages/threads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "direct",
+            createdBy: dbUserId,
+            targetUserId: targetUser.id,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.message || "Unable to start conversation right now.");
+        }
+        setConversationFeedback(
+          `Conversation opened with ${targetUser.name || targetUser.email || "that team member"}.`
+        );
+        await fetchThreads();
+      } catch (startError) {
+        console.error("❌ Failed to start customer conversation:", startError);
+        setConversationError(startError.message || "Unable to start conversation.");
+      } finally {
+        setStartingConversationId(null);
+      }
+    },
+    [dbUserId, fetchThreads]
+  );
 
   const hasSearchTerm = Boolean(searchTerm.trim());
 
@@ -210,9 +361,7 @@ export default function CustomerMessagesPage() {
                   <p className="text-sm text-red-600">{systemError}</p>
                 )}
                 {!systemLoading && !systemError && systemNotifications.length === 0 && (
-                  <p className="text-sm text-slate-500">
-                    No system notifications yet.
-                  </p>
+                  <p className="text-sm text-slate-500">No system notifications yet.</p>
                 )}
                 {!systemLoading && !systemError && systemNotifications.length > 0 && (
                   <div className="space-y-3">
@@ -314,6 +463,146 @@ export default function CustomerMessagesPage() {
                 </p>
               )}
             </div>
+
+            <div className="space-y-3 rounded-2xl border border-[#ffe5e5] bg-[#fff7f7] p-4 shadow-[0_6px_16px_rgba(209,0,0,0.08)]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">
+                    Live conversations
+                  </p>
+                  <h4 className="text-lg font-semibold text-slate-900">Your messages</h4>
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchThreads}
+                  disabled={threadsLoading}
+                  className="rounded-full border border-[#ffe5e5] bg-white px-3 py-1 text-xs font-semibold text-[#d10000] shadow hover:border-[#d10000] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {threadsLoading ? "Refreshing…" : "Refresh"}
+                </button>
+              </div>
+              <div className="space-y-3">
+                {threadsLoading && (
+                  <p className="text-sm text-slate-500">Loading conversations…</p>
+                )}
+                {!threadsLoading && threadsError && (
+                  <p className="text-sm text-red-600">{threadsError}</p>
+                )}
+                {!threadsLoading && !threadsError && threads.length === 0 && (
+                  <p className="text-sm text-slate-500">
+                    Start a conversation to see it here. Conversations automatically bump when new
+                    updates arrive.
+                  </p>
+                )}
+                {!threadsLoading && !threadsError && threads.length > 0 && (
+                  <div className="space-y-3">
+                    {threads.map((thread) => {
+                      const isActiveThread = activeThread?.id === thread.id;
+                      const preview = thread.lastMessage?.content || "No messages yet.";
+                      return (
+                        <button
+                          key={thread.id}
+                          type="button"
+                          onClick={() => openThread(thread)}
+                          className={`w-full text-left rounded-2xl border px-4 py-3 shadow-[0_6px_20px_rgba(209,0,0,0.06)] transition ${
+                            isActiveThread
+                              ? "border-[#d10000] bg-[#fff2f2]"
+                              : "border-[#ffe5e5] bg-[#fffafa]"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-sm font-semibold text-slate-900">
+                              {thread.title || "Conversation"}
+                            </p>
+                            {thread.hasUnread && (
+                              <span className="rounded-full bg-[#d10000] px-3 py-1 text-xs font-semibold text-white">
+                                Unread
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500">
+                            {thread.lastMessage?.sender?.name || "Team"} · {preview.length > 80 ? `${preview.slice(0, 80)}…` : preview}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {activeThread && (
+              <div className="space-y-4 rounded-2xl border border-[#ffe5e5] bg-[#ffffff] p-4 shadow-[0_6px_16px_rgba(209,0,0,0.08)]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">Active thread</p>
+                    <h4 className="text-lg font-semibold text-slate-900">{activeThread.title}</h4>
+                  </div>
+                  <span className="text-xs text-slate-500">
+                    {formatMessageTimestamp(threadMessages[threadMessages.length - 1]?.createdAt)}
+                  </span>
+                </div>
+                <div className="space-y-3 max-h-60 overflow-y-auto pb-2">
+                  {messagesLoading && (
+                    <p className="text-sm text-slate-500">Loading conversation…</p>
+                  )}
+                  {!messagesLoading && messagesError && (
+                    <p className="text-sm text-red-600">{messagesError}</p>
+                  )}
+                  {!messagesLoading && !messagesError && threadMessages.length === 0 && (
+                    <p className="text-sm text-slate-500">
+                      No messages yet. Once you send or receive one it will appear here.
+                    </p>
+                  )}
+                  {!messagesLoading &&
+                    !messagesError &&
+                    threadMessages.map((message) => {
+                      const senderName =
+                        message.sender?.name ||
+                        (message.senderId === dbUserId ? "You" : "Team member");
+                      const isMine = message.senderId === dbUserId;
+                      return (
+                        <div
+                          key={message.id || `${message.senderId}-${message.createdAt}`}
+                          className={`space-y-1 rounded-2xl border px-4 py-3 text-sm ${
+                            isMine ? "border-[#ffd3d3] bg-[#fff2f2]" : "border-[#ffe5e5] bg-[#fffafa]"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-900">{senderName}</span>
+                            <span className="text-[0.65rem] uppercase tracking-[0.2em] text-slate-400">
+                              {formatMessageTimestamp(message.createdAt)}
+                            </span>
+                          </div>
+                          <p className="text-slate-700">{message.content}</p>
+                        </div>
+                      );
+                    })}
+                </div>
+                <form onSubmit={handleSendMessage} className="space-y-3">
+                  <label htmlFor="message-draft" className="sr-only">
+                    Message
+                  </label>
+                  <textarea
+                    id="message-draft"
+                    rows={3}
+                    value={messageDraft}
+                    onChange={(event) => setMessageDraft(event.target.value)}
+                    placeholder="Type your message…"
+                    className="w-full rounded-2xl border border-[#ffe5e5] bg-[#fffafa] px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#d10000] focus:outline-none"
+                  />
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={!dbUserId || sendingMessage || !messageDraft.trim()}
+                      className="rounded-full bg-[#d10000] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow hover:bg-[#b50d0d] disabled:cursor-not-allowed disabled:bg-[#f0a8a8]"
+                    >
+                      {sendingMessage ? "Sending…" : "Send"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
         </section>
         <AppointmentTimeline events={timeline} />
