@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 import { useUser } from "@/context/UserContext";
+import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { sidebarSections } from "@/config/navigation";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 
@@ -24,7 +25,8 @@ const hiddenHrRoutes = new Set([
 
 export default function Sidebar({ onToggle, isCondensed = false, extraSections = [] }) {
   const pathname = usePathname();
-  const { user, logout } = useUser();
+  const { user, logout, dbUserId } = useUser();
+  const { unreadCount } = useMessagesBadge(dbUserId);
   const userRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
   const dashboardShortcuts = departmentDashboardShortcuts.filter((shortcut) => {
     if (!shortcut.roles || shortcut.roles.length === 0) return true;
@@ -67,6 +69,44 @@ export default function Sidebar({ onToggle, isCondensed = false, extraSections =
     if (typeof window !== "undefined") {
       window.location.assign("/login");
     }
+  };
+
+  const renderLinkLabel = (label, href) => {
+    const isMessagesItem = href === "/messages";
+    if (!href) {
+      return <span>{label}</span>;
+    }
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "8px",
+        }}
+      >
+        <span>{label}</span>
+        {isMessagesItem && unreadCount > 0 && (
+          <span
+            style={{
+              minWidth: 24,
+              minHeight: 24,
+              padding: "0 6px",
+              borderRadius: 999,
+              background: "#d10000",
+              color: "#ffffff",
+              fontSize: "0.75rem",
+              fontWeight: 700,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -236,7 +276,7 @@ export default function Sidebar({ onToggle, isCondensed = false, extraSections =
                     textDecoration: "none",
                   }}
                 >
-                  {item.label}
+                  {renderLinkLabel(item.label, item.href)}
                 </Link>
               );
             })}
@@ -285,7 +325,7 @@ export default function Sidebar({ onToggle, isCondensed = false, extraSections =
                     textDecoration: "none",
                   }}
                 >
-                  {item.label}
+                  {renderLinkLabel(item.label, item.href)}
                 </Link>
               );
             })}
@@ -356,9 +396,9 @@ export default function Sidebar({ onToggle, isCondensed = false, extraSections =
                         : "0 4px 12px rgba(0, 0, 0, 0.05)",
                       textDecoration: "none",
                     }}
-                  >
-                    {item.label}
-                  </Link>
+                >
+                  {renderLinkLabel(item.label, item.href)}
+                </Link>
                 );
               }
 

@@ -2,6 +2,8 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useUser } from "@/context/UserContext";
+import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 
 const NAV_LINKS = [
   { href: "/customer", label: "Overview" },
@@ -14,6 +16,8 @@ const NAV_LINKS = [
 export default function CustomerSidebar() {
   const router = useRouter();
   const pathname = router.pathname;
+  const { dbUserId } = useUser();
+  const { unreadCount } = useMessagesBadge(dbUserId);
 
   return (
     <aside
@@ -56,6 +60,7 @@ export default function CustomerSidebar() {
       <div style={{ padding: "20px", flex: 1, overflowY: "auto" }}>
         {NAV_LINKS.map((link) => {
           const isActive = pathname === link.href;
+          const isMessagesLink = link.href === "/customer/messages";
           return (
             <Link key={link.href} href={link.href} style={{ textDecoration: "none" }}>
               <div
@@ -73,7 +78,28 @@ export default function CustomerSidebar() {
                     : "0 4px 12px rgba(0, 0, 0, 0.05)",
                 }}
               >
-                {link.label}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                  <span>{link.label}</span>
+                  {isMessagesLink && unreadCount > 0 && (
+                    <span
+                      style={{
+                        minWidth: 24,
+                        minHeight: 24,
+                        padding: "0 6px",
+                        borderRadius: 999,
+                        background: "#d10000",
+                        color: "#ffffff",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                </div>
               </div>
             </Link>
           );
