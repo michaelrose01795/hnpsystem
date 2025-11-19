@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import dayjs from "dayjs";
 import Layout from "@/components/Layout";
-import { supabase } from "@/lib/supabaseClient";
+import { getPaintingDashboardData } from "@/lib/database/dashboard/painting";
 
 const Section = ({ title, subtitle, children }) => (
   <section
@@ -34,7 +33,7 @@ const MetricCard = ({ label, value, helper }) => (
       padding: "16px",
       minWidth: 180,
       background: "#fff",
-      boxShadow: "0 10px 20px rgba(0,0,0,0.04)",
+      boxShadow: "0 10px 20px rgba(0,0,0,0.05)",
     }}
   >
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "#a00000" }}>{label}</p>
@@ -43,47 +42,93 @@ const MetricCard = ({ label, value, helper }) => (
   </div>
 );
 
-const estimateFinish = (job) => {
-  const base = job.workshop_started_at || job.checked_in_at || job.updated_at;
-  if (!base) return "TBC";
-  return dayjs(base).add(3, "hour").format("HH:mm");
+const TrendBlock = ({ data }) => {
+  const max = Math.max(1, ...(data || []).map((point) => point.count));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {(data || []).map((point) => (
+        <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ width: 35, fontSize: "0.85rem", color: "#6b7280" }}>{point.label}</span>
+          <div style={{ flex: 1, height: 8, background: "#f5f5f5", borderRadius: 4 }}>
+            <div
+              style={{
+                width: `${Math.round((point.count / max) * 100)}%`,
+                height: "100%",
+                background: "#f97316",
+                borderRadius: 4,
+              }}
+            />
+          </div>
+          <strong style={{ color: "#a00000" }}>{point.count}</strong>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const QueueList = ({ queue }) => (
+  <div
+    style={{
+      border: "1px solid #ffe0e0",
+      borderRadius: "12px",
+      padding: "12px",
+      background: "#fff",
+      display: "flex",
+      flexDirection: "column",
+      gap: "10px",
+    }}
+  >
+    {queue.length === 0 ? (
+      <p style={{ margin: 0, color: "#6b7280" }}>No painting jobs in queue.</p>
+    ) : (
+      queue.map((job) => (
+        <div
+          key={job.id}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            color: "#374151",
+          }}
+        >
+          <div>
+            <strong style={{ color: "#a00000" }}>{job.job_number || "—"}</strong>
+            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "#6b7280" }}>{job.vehicle_reg || "Plate"}</p>
+          </div>
+          <span style={{ color: "#6b7280" }}>{job.status || "In progress"}</span>
+        </div>
+      ))}
+    )}
+  </div>
+);
+
+const defaultData = {
+  bodyshopCount: 0,
+  queue: [],
+  trends: [],
 };
 
 export default function PaintingDashboard() {
+  const [data, setData] = useState(defaultData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [bodyshopCount, setBodyshopCount] = useState(0);
-  const [queue, setQueue] = useState([]);
 
   useEffect(() => {
-    const fetchPaintingJobs = async () => {
+    const loadData = async () => {
       setLoading(true);
       setError(null);
-
       try {
-        const { data } = await supabase
-          .from("jobs")
-          .select(
-            "id,job_number,vehicle_reg,status,checked_in_at,workshop_started_at,completed_at,updated_at,type"
-          )
-          .or("type.ilike.%paint%,job_categories.cs.{bodyshop}")
-          .order("checked_in_at", { ascending: true })
-          .limit(30);
-
-        const paintJobs = data || [];
-        const activeQueue = paintJobs.filter((job) => !job.completed_at).slice(0, 6);
-
-        setBodyshopCount(paintJobs.length);
-        setQueue(activeQueue);
+        const payload = await getPaintingDashboardData();
+        setData(payload);
       } catch (fetchError) {
         console.error("Failed to load painting dashboard", fetchError);
-        setError(fetchError.message || "Unable to load painting jobs");
+        setError(fetchError.message || "Unable to load painting data");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPaintingJobs();
+    loadData();
   }, []);
 
   return (
@@ -103,7 +148,7 @@ export default function PaintingDashboard() {
           </p>
           <h1 style={{ margin: "6px 0 0", color: "#a00000" }}>Bodyshop queue</h1>
           <p style={{ margin: "6px 0 0", color: "#6b7280" }}>
-            Track paint jobs waiting on the bay and pull estimated finish times directly from the job timestamps.
+            Track paint jobs waiting on the bay and pull estimated finish times directly from job timestamps.
           </p>
         </header>
 
@@ -113,44 +158,22 @@ export default function PaintingDashboard() {
           ) : error ? (
             <p style={{ color: "#ff4040" }}>{error}</p>
           ) : (
-            <MetricCard label="Bodyshop jobs" value={bodyshopCount} helper="Jobs matching paint or bodyshop" />
+            <MetricCard label="Bodyshop jobs" value={data.bodyshopCount} helper="Jobs requiring bodywork" />
           )}
         </Section>
 
         <Section title="Paint queue" subtitle="Jobs still in progress">
-          {queue.length === 0 ? (
-            <p style={{ margin: 0, color: "#6b7280" }}>No painting jobs waiting right now.</p>
+          {loading ? (
+            <p style={{ color: "#6b7280" }}>Loading queue…</p>
+          ) : error ? (
+            <p style={{ color: "#ff4040" }}>{error}</p>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {queue.map((job) => (
-                <div
-                  key={job.id}
-                  style={{
-                    border: "1px solid #ffe0e0",
-                    borderRadius: "12px",
-                    padding: "12px 14px",
-                    background: "#fff",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <div>
-                    <strong style={{ color: "#a00000" }}>{job.job_number || "—"}</strong>
-                    <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "0.85rem" }}>
-                      {job.vehicle_reg || "Plate pending"}
-                    </p>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <p style={{ margin: 0, color: "#374151" }}>{job.status || "In progress"}</p>
-                    <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "#6b7280" }}>
-                      Est. finish {estimateFinish(job)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <QueueList queue={data.queue} />
           )}
+        </Section>
+
+        <Section title="Queue trend" subtitle="Recent workshop starts">
+          <TrendBlock data={data.trends} />
         </Section>
       </div>
     </Layout>

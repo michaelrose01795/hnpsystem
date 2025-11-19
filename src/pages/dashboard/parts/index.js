@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
-import { supabase } from "@/lib/supabaseClient";
+import { getPartsDashboardData } from "@/lib/database/dashboard/parts";
 
 const Section = ({ title, subtitle, children }) => (
   <section
@@ -43,6 +43,68 @@ const MetricCard = ({ label, value, helper }) => (
   </div>
 );
 
+const TrendBlock = ({ data }) => {
+  const max = Math.max(1, ...(data || []).map((item) => item.count));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {(data || []).map((point) => (
+        <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ width: 35, fontSize: "0.8rem", color: "#6b7280" }}>{point.label}</span>
+          <div style={{ flex: 1, height: 8, background: "#f5f5f5", borderRadius: 4 }}>
+            <div
+              style={{
+                width: `${Math.round((point.count / max) * 100)}%`,
+                height: "100%",
+                background: "#2563eb",
+                borderRadius: 4,
+              }}
+            />
+          </div>
+          <strong style={{ color: "#a00000" }}>{point.count}</strong>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const ListBlock = ({ title, items }) => (
+  <div
+    style={{
+      border: "1px solid #ffe0e0",
+      borderRadius: "12px",
+      padding: "12px",
+      background: "#fff",
+      display: "flex",
+      flexDirection: "column",
+      gap: "8px",
+    }}
+  >
+    <p style={{ margin: 0, fontWeight: 600, color: "#a00000" }}>{title}</p>
+    {(items || []).length === 0 ? (
+      <p style={{ margin: 0, color: "#6b7280" }}>No records yet.</p>
+    ) : (
+      items.map((entry) => (
+        <div key={entry.request_id} style={{ fontSize: "0.85rem", color: "#374151" }}>
+          Request <strong>{entry.request_id}</strong> · {entry.status}
+        </div>
+      ))
+    )}
+  </div>
+);
+
+const defaultData = {
+  requestSummary: {
+    totalRequests: 0,
+    partsOnOrder: 0,
+    prePicked: 0,
+    delayedOrders: 0,
+  },
+  stockAlerts: [],
+  requestsByStatus: [],
+  recentRequests: [],
+  trend: [],
+};
+
 export default function PartsDashboard() {
   const { user } = useUser();
   const roleLabels = (user?.roles || []).map((role) => String(role).toLowerCase());
@@ -57,78 +119,26 @@ export default function PartsDashboard() {
       </Layout>
     );
   }
-
+  const [data, setData] = useState(defaultData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [partsRequests, setPartsRequests] = useState(0);
-  const [prePicked, setPrePicked] = useState(0);
-  const [partsOnOrder, setPartsOnOrder] = useState(0);
-  const [delayedOrders, setDelayedOrders] = useState(0);
-  const [stockAlerts, setStockAlerts] = useState([]);
-  const [requestsByStatus, setRequestsByStatus] = useState({});
 
   useEffect(() => {
-    const fetchMetrics = async () => {
+    const loadData = async () => {
       setLoading(true);
       setError(null);
       try {
-        const [requestsData, deliveryItems, catalogData] = await Promise.all([
-          supabase
-            .from("parts_requests")
-            .select("request_id,status,pre_pick_location,created_at")
-            .order("created_at", { ascending: true }),
-          supabase
-            .from("parts_delivery_items")
-            .select("id,delivery_id,status,quantity_ordered,quantity_received")
-            .neq("status", "cancelled"),
-          supabase
-            .from("parts_catalog")
-            .select("id,name,part_number,qty_in_stock,reorder_level,qty_on_order")
-            .order("qty_in_stock", { ascending: true })
-            .limit(8),
-        ]);
-
-        const requestStatusMap = (requestsData || []).reduce((acc, request) => {
-          const status = (request.status || "pending").trim() || "pending";
-          acc[status] = (acc[status] || 0) + 1;
-          return acc;
-        }, {});
-
-        const onOrderQuantity = (catalogData || []).reduce(
-          (total, part) => total + (Number(part.qty_on_order) || 0),
-          0
-        );
-
-        const prePickedCount = (requestsData || []).filter((request) => Boolean(request.pre_pick_location)).length;
-        const delayedCount = (deliveryItems || []).filter(
-          (item) => (Number(item.quantity_received) || 0) < (Number(item.quantity_ordered) || 0)
-        ).length;
-
-        const stockAlertRows = (catalogData || [])
-          .map((part) => ({
-            id: part.id,
-            label: part.name || part.part_number || "Part",
-            qty: Number(part.qty_in_stock) || 0,
-            reorder: Number(part.reorder_level) || 0,
-          }))
-          .sort((a, b) => (a.qty - a.reorder) - (b.qty - b.reorder))
-          .slice(0, 5);
-
-        setPartsRequests(requestsData?.length || 0);
-        setPrePicked(prePickedCount);
-        setPartsOnOrder(onOrderQuantity);
-        setDelayedOrders(delayedCount);
-        setStockAlerts(stockAlertRows);
-        setRequestsByStatus(requestStatusMap);
+        const payload = await getPartsDashboardData();
+        setData(payload);
       } catch (fetchError) {
         console.error("Failed to load parts dashboard", fetchError);
-        setError(fetchError.message || "Unable to load parts metrics");
+        setError(fetchError.message || "Unable to load parts data");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMetrics();
+    loadData();
   }, []);
 
   return (
@@ -144,7 +154,7 @@ export default function PartsDashboard() {
           }}
         >
           <p style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.1em", color: "#a00000" }}>Parts desk</p>
-          <h1 style={{ margin: "6px 0 0", color: "#a00000" }}>Parts operations</h1>
+          <h1 style={{ margin: "6px 0 0", color: "#a00000" }}>Operations overview</h1>
           <p style={{ margin: "6px 0 0", color: "#6b7280" }}>
             Live stock, inbound, and request telemetry from the parts catalogue.
           </p>
@@ -157,20 +167,24 @@ export default function PartsDashboard() {
             <p style={{ color: "#ff4040" }}>{error}</p>
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-              <MetricCard label="Parts requests" value={partsRequests} helper="Open request queue" />
-              <MetricCard label="Parts on order" value={partsOnOrder} helper="Units currently on order" />
-              <MetricCard label="Pre picked" value={prePicked} helper="Assigned to service racks" />
-              <MetricCard label="Delayed orders" value={delayedOrders} helper="Deliveries missing quantities" />
+              <MetricCard label="Parts requests" value={data.requestSummary.totalRequests} helper="Open requests" />
+              <MetricCard label="Parts on order" value={data.requestSummary.partsOnOrder} helper="Units on order" />
+              <MetricCard label="Pre picked" value={data.requestSummary.prePicked} helper="Assigned to racks" />
+              <MetricCard label="Delayed orders" value={data.requestSummary.delayedOrders} helper="Missing qty" />
             </div>
           )}
         </Section>
 
+        <Section title="Requests trend" subtitle="Last 7 days">
+          <TrendBlock data={data.trend} />
+        </Section>
+
         <Section title="Stock levels" subtitle="Lowest availability items">
-          {stockAlerts.length === 0 ? (
-            <p style={{ margin: 0, color: "#6b7280" }}>Book no low stock alerts yet.</p>
+          {data.stockAlerts.length === 0 ? (
+            <p style={{ margin: 0, color: "#6b7280" }}>No low stock alerts yet.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {stockAlerts.map((part) => (
+              {data.stockAlerts.map((part) => (
                 <div
                   key={part.id}
                   style={{
@@ -185,11 +199,11 @@ export default function PartsDashboard() {
                   <div>
                     <strong>{part.label}</strong>
                     <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "0.85rem" }}>
-                      Reorder threshold {part.reorder}
+                      Reorder at {part.reorderLevel}
                     </p>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <p style={{ margin: 0, color: "#a00000" }}>{part.qty}</p>
+                    <p style={{ margin: 0, color: "#a00000" }}>{part.inStock}</p>
                     <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "#6b7280" }}>In stock</p>
                   </div>
                 </div>
@@ -198,14 +212,14 @@ export default function PartsDashboard() {
           )}
         </Section>
 
-        <Section title="Requests by status" subtitle="Provides a quick glance at queue health">
-          {Object.keys(requestsByStatus).length === 0 ? (
-            <p style={{ margin: 0, color: "#6b7280" }}>No requests to show yet.</p>
+        <Section title="Requests by status">
+          {data.requestsByStatus.length === 0 ? (
+            <p style={{ margin: 0, color: "#6b7280" }}>Waiting for request data.</p>
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
-              {Object.entries(requestsByStatus).map(([status, count]) => (
+              {data.requestsByStatus.map((row) => (
                 <div
-                  key={status}
+                  key={row.status}
                   style={{
                     padding: "10px 14px",
                     borderRadius: "12px",
@@ -214,12 +228,16 @@ export default function PartsDashboard() {
                     minWidth: 150,
                   }}
                 >
-                  <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>{status}</p>
-                  <strong style={{ color: "#a00000" }}>{count}</strong>
+                  <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>{row.status}</p>
+                  <strong style={{ color: "#a00000" }}>{row.count}</strong>
                 </div>
               ))}
             </div>
           )}
+        </Section>
+
+        <Section title="Recent requests" subtitle="Most recent entries">
+          <ListBlock title="Recent requests" items={data.recentRequests} />
         </Section>
       </div>
     </Layout>

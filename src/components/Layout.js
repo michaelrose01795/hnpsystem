@@ -536,7 +536,9 @@ export default function Layout({ children, jobNumber }) {
           padding: hideSidebar ? "0" : isTablet ? "16px 12px" : "24px 16px",
           background: colors.mainBg,
           height: "100%",
-          overflow: "hidden",
+          maxHeight: "100vh",
+          overflowY: "auto",
+          overflowX: "hidden",
           position: "relative",
         }}
       >

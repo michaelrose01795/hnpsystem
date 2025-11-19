@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
-import { supabase } from "@/lib/supabaseClient";
+import { getWorkshopDashboardData } from "@/lib/database/dashboard/workshop";
 
 const MetricCard = ({ label, value, helper }) => (
   <div
@@ -44,114 +44,139 @@ const Section = ({ title, subtitle, children }) => (
   </section>
 );
 
+const TrendBlock = ({ title, data }) => {
+  const maxValue = Math.max(1, ...(data || []).map((item) => item.count));
+  return (
+    <div
+      style={{
+        border: "1px solid #efe5e5",
+        borderRadius: "12px",
+        padding: "16px",
+        background: "#fff",
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+      }}
+    >
+      <p style={{ margin: 0, textTransform: "uppercase", color: "#a00000", fontSize: "0.75rem" }}>{title}</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        {(data || []).map((point) => (
+          <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ width: 35, fontSize: "0.8rem", color: "#6b7280" }}>{point.label}</span>
+            <div
+              style={{
+                flex: 1,
+                height: 8,
+                background: "#f5f5f5",
+                borderRadius: 4,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  width: `${Math.round((point.count / maxValue) * 100)}%`,
+                  background: "#f97316",
+                }}
+              />
+            </div>
+            <strong style={{ width: 30, fontSize: "0.85rem", color: "#a00000" }}>{point.count}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const ProgressBar = ({ completed, target }) => {
+  const percentage = Math.min(100, Math.round((completed / target) * 100));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "#6b7280" }}>
+        <span>Completed</span>
+        <span>{percentage}%</span>
+      </div>
+      <div style={{ width: "100%", height: 10, background: "#f5f5f5", borderRadius: 5 }}>
+        <div
+          style={{
+            width: `${percentage}%`,
+            height: "100%",
+            background: "#0ea5e9",
+            borderRadius: 5,
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
+const StatusList = ({ title, titleSuffix, items }) => (
+  <div
+    style={{
+      background: "#fff",
+      borderRadius: "12px",
+      border: "1px solid #ffe0e0",
+      padding: "12px",
+      display: "flex",
+      flexDirection: "column",
+      gap: "10px",
+    }}
+  >
+    <p style={{ margin: 0, fontWeight: 600, color: "#a00000" }}>
+      {title} <span style={{ fontSize: "0.85rem", fontWeight: 400, color: "#6b7280" }}>{titleSuffix}</span>
+    </p>
+    {(items || []).length === 0 ? (
+      <p style={{ margin: 0, color: "#6b7280" }}>No updates yet.</p>
+    ) : (
+      items.map((item) => (
+        <div key={item.id || item.job_id} style={{ fontSize: "0.85rem", color: "#374151" }}>
+          <strong style={{ color: "#a00000" }}>{item.job?.job_number || item.job_number || "Job"}</strong> – {item.to_status || item.status}
+        </div>
+      ))
+    )}
+  </div>
+);
+
 const formatTime = (value) => (value ? dayjs(value).format("HH:mm") : "—");
+
+const defaultData = {
+  dailySummary: { inProgress: 0, checkedInToday: 0, completedToday: 0 },
+  technicianAvailability: { totalTechnicians: 0, onJobs: 0, available: 0 },
+  progress: { completed: 0, scheduled: 1 },
+  queue: [],
+  outstandingVhc: [],
+  trends: { checkInsLast7: [] },
+  latestStatusUpdates: [],
+};
 
 export default function WorkshopDashboard() {
   const todayLabel = dayjs().format("dddd D MMMM");
   const { user } = useUser();
-  const [metrics, setMetrics] = useState({
-    inProgressCount: 0,
-    checkedInToday: 0,
-    completedToday: 0,
-    totalTechnicians: 0,
-    techniciansOnJobs: 0,
-    queue: [],
-    outstandingVhc: [],
-  });
+  const [dashboardData, setDashboardData] = useState(defaultData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const runQuery = async (fetcher) => {
-      const { data, error: queryError } = await fetcher();
-      if (queryError) {
-        throw queryError;
-      }
-      return data || [];
-    };
-
-    const fetchMetrics = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setError(null);
-
-      const todayStart = dayjs().startOf("day").toISOString();
-      const todayEnd = dayjs().endOf("day").toISOString();
-
       try {
-        const [
-          inProgressJobs,
-          checkedInTodayJobs,
-          completedTodayJobs,
-          technicianUsers,
-          clockedInEntries,
-          queueJobs,
-          outstandingVhc,
-        ] = await Promise.all([
-          runQuery(() =>
-            supabase
-              .from("jobs")
-              .select("job_number,vehicle_reg,status,checked_in_at")
-              .is("completed_at", null)
-              .not("checked_in_at", "is", null)
-          ),
-          runQuery(() =>
-            supabase
-              .from("jobs")
-              .select("id")
-              .gte("checked_in_at", todayStart)
-              .lt("checked_in_at", todayEnd)
-          ),
-          runQuery(() =>
-            supabase
-              .from("jobs")
-              .select("id")
-              .gte("completed_at", todayStart)
-              .lt("completed_at", todayEnd)
-          ),
-          runQuery(() => supabase.from("users").select("user_id,first_name,last_name,role").ilike("role", "%tech%")),
-          runQuery(() => supabase.from("job_clocking").select("user_id").is("clock_out", null)),
-          runQuery(() =>
-            supabase
-              .from("jobs")
-              .select("id,job_number,vehicle_reg,status,waiting_status,checked_in_at")
-              .is("completed_at", null)
-              .order("checked_in_at", { ascending: true, nullsFirst: true })
-              .limit(6)
-          ),
-          runQuery(() =>
-            supabase
-              .from("jobs")
-              .select("id,job_number,vehicle_reg,waiting_status,vhc_required,checked_in_at")
-              .eq("vhc_required", true)
-              .is("vhc_completed_at", null)
-              .order("checked_in_at", { ascending: true, nullsFirst: true })
-              .limit(5)
-          ),
-        ]);
-
-        setMetrics({
-          inProgressCount: inProgressJobs.length,
-          checkedInToday: checkedInTodayJobs.length,
-          completedToday: completedTodayJobs.length,
-          totalTechnicians: technicianUsers.length,
-          techniciansOnJobs: clockedInEntries.length,
-          queue: queueJobs,
-          outstandingVhc,
-        });
+        const data = await getWorkshopDashboardData();
+        setDashboardData(data);
       } catch (fetchError) {
-        console.error("Failed to load workshop metrics", fetchError);
-        setError(fetchError.message || "Unable to load metrics");
+        console.error("Failed to load workshop dashboard", fetchError);
+        setError(fetchError.message || "Unable to load dashboard");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMetrics();
+    fetchData();
   }, []);
 
   const availableTechnicians = useMemo(
-    () => Math.max(metrics.totalTechnicians - metrics.techniciansOnJobs, 0),
-    [metrics.totalTechnicians, metrics.techniciansOnJobs]
+    () => dashboardData.technicianAvailability.available,
+    [dashboardData]
   );
 
   return (
@@ -179,32 +204,51 @@ export default function WorkshopDashboard() {
 
         <Section title="Daily checkpoints">
           {loading ? (
-            <p style={{ color: "#6b7280" }}>Loading today&apos;s workshop metrics…</p>
+            <p style={{ color: "#6b7280" }}>Loading today&apos;s metrics…</p>
           ) : error ? (
             <p style={{ color: "#ff4040" }}>{error}</p>
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-              <MetricCard label="Jobs in progress" value={metrics.inProgressCount} helper="Vehicles currently on bay" />
-              <MetricCard label="Checked in today" value={metrics.checkedInToday} helper="Arrivals since midnight" />
-              <MetricCard label="Jobs completed" value={metrics.completedToday} helper="Finished today" />
+              <MetricCard
+                label="Jobs in progress"
+                value={dashboardData.dailySummary.inProgress}
+                helper="Vehicles currently on the bay"
+              />
+              <MetricCard
+                label="Checked in today"
+                value={dashboardData.dailySummary.checkedInToday}
+                helper="Arrivals since midnight"
+              />
+              <MetricCard label="Jobs completed" value={dashboardData.dailySummary.completedToday} helper="Finished today" />
               <MetricCard
                 label="Technician availability"
-                value={`${availableTechnicians} / ${metrics.totalTechnicians}`}
-                helper={`${metrics.techniciansOnJobs} techs on jobs`}
+                value={`${availableTechnicians} / ${dashboardData.technicianAvailability.totalTechnicians}`}
+                helper={`${dashboardData.technicianAvailability.onJobs} techs on jobs`}
               />
             </div>
           )}
         </Section>
 
-        <Section title="Next jobs queue" subtitle="Assigned jobs with no completion timestamp">
+        <Section title="Progress" subtitle="Completed vs scheduled">
+          <ProgressBar
+            completed={dashboardData.progress.completed}
+            target={dashboardData.progress.scheduled}
+          />
+        </Section>
+
+        <Section title="Check-in trends" subtitle="Last 7 days">
+          <TrendBlock title="Daily check-ins" data={dashboardData.trends.checkInsLast7} />
+        </Section>
+
+        <Section title="Next jobs queue">
           {loading ? (
             <p style={{ color: "#6b7280" }}>Loading queue…</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {metrics.queue.length === 0 ? (
+              {dashboardData.queue.length === 0 ? (
                 <p style={{ margin: 0, color: "#6b7280" }}>No outstanding jobs in the queue.</p>
               ) : (
-                metrics.queue.map((job) => (
+                dashboardData.queue.map((job) => (
                   <div
                     key={job.job_number}
                     style={{
@@ -221,9 +265,7 @@ export default function WorkshopDashboard() {
                       <strong style={{ color: "#a00000" }}>
                         {job.job_number || "—"} · {job.vehicle_reg || "TBC"}
                       </strong>
-                      <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
-                        {job.status || "Status unknown"}
-                      </div>
+                      <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>{job.status || "Status unknown"}</div>
                     </div>
                     <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>
                       Checked in {formatTime(job.checked_in_at)}
@@ -235,14 +277,14 @@ export default function WorkshopDashboard() {
           )}
         </Section>
 
-        <Section title="Outstanding VHCs" subtitle="Jobs requiring further inspection">
+        <Section title="Outstanding VHCs" subtitle="Jobs requiring follow-up">
           {loading ? (
-            <p style={{ color: "#6b7280" }}>Pulling VHC backlog…</p>
-          ) : metrics.outstandingVhc.length === 0 ? (
+            <p style={{ color: "#6b7280" }}>Loading VHC backlog…</p>
+          ) : dashboardData.outstandingVhc.length === 0 ? (
             <p style={{ margin: 0, color: "#6b7280" }}>No VHCs awaiting completion.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {metrics.outstandingVhc.map((job) => (
+              {dashboardData.outstandingVhc.map((job) => (
                 <div
                   key={job.job_number}
                   style={{
@@ -268,6 +310,12 @@ export default function WorkshopDashboard() {
             </div>
           )}
         </Section>
+
+        <StatusList
+          title="Status updates"
+          titleSuffix="Latest changes"
+          items={dashboardData.latestStatusUpdates}
+        />
       </div>
     </Layout>
   );

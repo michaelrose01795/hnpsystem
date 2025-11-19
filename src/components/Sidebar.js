@@ -77,6 +77,7 @@ export default function Sidebar({ onToggle, isCondensed = false, extraSections =
         width: isCondensed ? "100%" : "260px",
         minWidth: isCondensed ? "auto" : "220px",
         height: isCondensed ? "auto" : "calc(100vh - 20px)",
+        maxHeight: isCondensed ? "100%" : "calc(100vh - 20px)",
         display: "flex",
         flexDirection: "column",
         borderRadius: "16px",
@@ -86,7 +87,8 @@ export default function Sidebar({ onToggle, isCondensed = false, extraSections =
         border: "1px solid #ffe0e0",
         position: isCondensed ? "relative" : "sticky",
         top: isCondensed ? "auto" : "10px",
-        overflow: "hidden",
+        overflowX: "hidden",
+        overflowY: isCondensed ? "visible" : "auto",
         flexShrink: 0,
       }}
     >

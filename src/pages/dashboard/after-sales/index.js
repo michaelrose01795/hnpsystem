@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import dayjs from "dayjs";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
-import { supabase } from "@/lib/supabaseClient";
+import { getAfterSalesDashboardData } from "@/lib/database/dashboard/after-sales";
 
 const ALLOWED_ROLES = ["after sales manager", "after sales director", "aftersales manager"];
 
@@ -46,163 +45,113 @@ const MetricCard = ({ label, value, helper }) => (
   </div>
 );
 
-export const useCombinedPerformanceMetrics = () => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [jobsCompleted, setJobsCompleted] = useState(0);
-  const [vhcCompleted, setVhcCompleted] = useState(0);
-  const [followUps, setFollowUps] = useState([]);
-  const [pendingParts, setPendingParts] = useState(0);
-  const [pendingVhc, setPendingVhc] = useState(0);
-
-  useEffect(() => {
-    const fetchMetrics = async () => {
-      setLoading(true);
-      setError(null);
-      const weekStart = dayjs().startOf("week").toISOString();
-      const weekEnd = dayjs().endOf("week").toISOString();
-
-      try {
-        const [completedJobs, completedVhc, followUpData, partsRequests, vhcPending] = await Promise.all([
-          supabase
-            .from("jobs")
-            .select("id")
-            .gte("completed_at", weekStart)
-            .lt("completed_at", weekEnd),
-          supabase
-            .from("jobs")
-            .select("id")
-            .eq("vhc_required", true)
-            .gte("vhc_completed_at", weekStart)
-            .lt("vhc_completed_at", weekEnd),
-          supabase
-            .from("job_customer_statuses")
-            .select("id,status,job_id,job:job_id(job_number,vehicle_reg)")
-            .order("created_at", { ascending: false })
-            .limit(8),
-          supabase.from("parts_requests").select("request_id").eq("status", "pending"),
-          supabase
-            .from("jobs")
-            .select("id,job_number,vehicle_reg,checked_in_at,vhc_authorizations(id)")
-            .eq("vhc_required", true)
-            .is("vhc_completed_at", null)
-            .limit(6),
-        ]);
-
-        const filteredFollowUps = (followUpData || []).filter((row) => {
-          const normalized = (row.status || "").toLowerCase();
-          return normalized.includes("follow") || normalized.includes("call");
-        });
-
-        const waitingVhcJobs = (vhcPending || []).filter(
-          (job) => !Array.isArray(job.vhc_authorizations) || job.vhc_authorizations.length === 0
-        );
-
-        setJobsCompleted(completedJobs?.length || 0);
-        setVhcCompleted(completedVhc?.length || 0);
-        setFollowUps(filteredFollowUps);
-        setPendingParts(partsRequests?.length || 0);
-        setPendingVhc(waitingVhcJobs.length);
-      } catch (fetchError) {
-        console.error("Failed to load after sales metrics", fetchError);
-        setError(fetchError.message || "Unable to load after sales metrics");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMetrics();
-  }, []);
-
-  return { loading, error, jobsCompleted, vhcCompleted, followUps, pendingParts, pendingVhc };
+const ProgressBar = ({ completed, target }) => {
+  const percentage = Math.min(100, Math.round((completed / target) * 100));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "#6b7280" }}>
+        <span>Completed</span>
+        <span>{percentage}%</span>
+      </div>
+      <div style={{ width: "100%", height: 10, background: "#f5f5f5", borderRadius: 5 }}>
+        <div
+          style={{
+            width: `${percentage}%`,
+            height: "100%",
+            background: "#0ea5e9",
+            borderRadius: 5,
+          }}
+        />
+      </div>
+    </div>
+  );
 };
 
-export const CombinedPerformanceView = ({
-  loading,
-  error,
-  jobsCompleted,
-  vhcCompleted,
-  followUps,
-  pendingParts,
-  pendingVhc,
-  title = "After Sales performance",
-  heading = "Combined workshop + VHC view",
-  description = "Keep the customer journey humming — view job completion, VHC throughput, and outstanding follow-ups.",
-}) => (
-  <div style={{ display: "flex", flexDirection: "column", gap: "20px", padding: "24px" }}>
-    <header
-      style={{
-        background: "linear-gradient(120deg, #f8fafc, #fff5f5)",
-        borderRadius: "18px",
-        padding: "24px",
-        border: "1px solid #ffd6d6",
-        boxShadow: "0 18px 30px rgba(0,0,0,0.05)",
-      }}
-    >
-      <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "#a00000" }}>{title}</p>
-      <h1 style={{ margin: "6px 0 0", color: "#a00000" }}>{heading}</h1>
-      <p style={{ margin: "6px 0 0", color: "#6b7280" }}>{description}</p>
-    </header>
-
-    <Section title="Combined performance">
-      {loading ? (
-        <p style={{ color: "#6b7280" }}>Gathering completion statistics…</p>
-      ) : error ? (
-        <p style={{ color: "#ff4040" }}>{error}</p>
-      ) : (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-          <MetricCard label="Jobs completed" value={jobsCompleted} helper="This week" />
-          <MetricCard label="VHCs completed" value={vhcCompleted} helper="This week" />
-        </div>
-      )}
-    </Section>
-
-    <Section title="Follow-up calls needed" subtitle="Statuses containing follow or call">
-      {followUps.length === 0 ? (
-        <p style={{ margin: 0, color: "#6b7280" }}>No follow-ups logged in the last few entries.</p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          {followUps.map((entry) => (
+const TrendBlock = ({ data }) => {
+  const max = Math.max(1, ...(data || []).map((point) => point.count));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {(data || []).map((point) => (
+        <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ width: 35, fontSize: "0.85rem", color: "#6b7280" }}>{point.label}</span>
+          <div style={{ flex: 1, height: 8, background: "#f5f5f5", borderRadius: 4 }}>
             <div
-              key={entry.id}
               style={{
-                border: "1px solid #ffe0e0",
-                borderRadius: "12px",
-                padding: "12px 14px",
-                background: "#fff",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                width: `${Math.round((point.count / max) * 100)}%`,
+                height: "100%",
+                background: "#14b8a6",
+                borderRadius: 4,
               }}
-            >
-              <div>
-                <strong style={{ color: "#a00000" }}>{entry.job?.job_number || "Job"}</strong>
-                <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "0.85rem" }}>{entry.status}</p>
-              </div>
-              <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>
-                {entry.job?.vehicle_reg || "Vehicle pending"}
-              </span>
-            </div>
-          ))}
+            />
+          </div>
+          <strong style={{ color: "#a00000" }}>{point.count}</strong>
         </div>
-      )}
-    </Section>
+      ))}
+    </div>
+  );
+};
 
-    <Section title="Approvals needed" subtitle="Parts and VHC sign-offs awaiting action">
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-        <MetricCard label="Parts approvals" value={pendingParts} helper="Pending requests" />
-        <MetricCard label="VHC sign-off" value={pendingVhc} helper="Awaiting auth" />
-      </div>
-    </Section>
+const FollowUpList = ({ items }) => (
+  <div
+    style={{
+      border: "1px solid #ffe0e0",
+      borderRadius: "12px",
+      padding: "12px",
+      background: "#fff",
+      display: "flex",
+      flexDirection: "column",
+      gap: "10px",
+    }}
+  >
+    {items.length === 0 ? (
+      <p style={{ margin: 0, color: "#6b7280" }}>No follow-ups recorded.</p>
+    ) : (
+      items.map((entry) => (
+        <div key={entry.id} style={{ display: "flex", justifyContent: "space-between", color: "#374151" }}>
+          <div>
+            <strong style={{ color: "#a00000" }}>{entry.job?.job_number || "Job"}</strong>
+            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "#6b7280" }}>{entry.status}</p>
+          </div>
+          <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>{entry.job?.vehicle_reg || "Vehicle"}</span>
+        </div>
+      ))
+    )}
   </div>
 );
+
+const defaultData = {
+  counts: { jobsCompleted: 0, vhcsCompleted: 0, pendingParts: 0, pendingVhc: 0 },
+  followUps: [],
+  progress: { completed: 0, scheduled: 1 },
+  trend: { jobsCompletedLast7: [] },
+};
 
 export default function AfterSalesDashboard() {
   const { user } = useUser();
   const userRoles = (user?.roles || []).map((role) => String(role).toLowerCase());
   const hasAccess = ALLOWED_ROLES.some((role) => userRoles.includes(role));
+  const [data, setData] = useState(defaultData);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const metrics = useCombinedPerformanceMetrics();
+  useEffect(() => {
+    if (!hasAccess) return;
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const payload = await getAfterSalesDashboardData();
+        setData(payload);
+      } catch (fetchError) {
+        console.error("Failed to load after sales dashboard", fetchError);
+        setError(fetchError.message || "Unable to load after sales data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [hasAccess]);
 
   if (!hasAccess) {
     return (
@@ -216,7 +165,63 @@ export default function AfterSalesDashboard() {
 
   return (
     <Layout>
-      <CombinedPerformanceView {...metrics} />
+      <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+        <header
+          style={{
+            background: "linear-gradient(120deg, #f8fafc, #fff5f5)",
+            borderRadius: "18px",
+            padding: "24px",
+            border: "1px solid #ffd6d6",
+            boxShadow: "0 18px 30px rgba(0,0,0,0.05)",
+          }}
+        >
+          <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "#a00000" }}>
+            After sales performance
+          </p>
+          <h1 style={{ margin: "6px 0 0", color: "#a00000" }}>Combined workshop + VHC view</h1>
+          <p style={{ margin: "6px 0 0", color: "#6b7280" }}>
+            Keep the customer journey humming — jobs, VHCs, and approvals in one pane.
+          </p>
+        </header>
+
+        <Section title="Combined performance">
+          {loading ? (
+            <p style={{ color: "#6b7280" }}>Gathering completion statistics…</p>
+          ) : error ? (
+            <p style={{ color: "#ff4040" }}>{error}</p>
+          ) : (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+              <MetricCard label="Jobs completed" value={data.counts.jobsCompleted} helper="This week" />
+              <MetricCard label="VHCs completed" value={data.counts.vhcsCompleted} helper="This week" />
+            </div>
+          )}
+        </Section>
+
+        <Section title="Follow-up calls needed" subtitle="Statuses containing follow or call">
+          {loading ? (
+            <p style={{ color: "#6b7280" }}>Loading follow-ups…</p>
+          ) : error ? (
+            <p style={{ color: "#ff4040" }}>{error}</p>
+          ) : (
+            <FollowUpList items={data.followUps} />
+          )}
+        </Section>
+
+        <Section title="Approvals needed">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+            <MetricCard label="Parts approvals" value={data.counts.pendingParts} helper="Pending requests" />
+            <MetricCard label="VHC sign-off" value={data.counts.pendingVhc} helper="Awaiting auth" />
+          </div>
+        </Section>
+
+        <Section title="Completion trend" subtitle="Jobs completed last 7 days">
+          <TrendBlock data={data.trend.jobsCompletedLast7} />
+        </Section>
+
+        <Section title="Progress" subtitle="Jobs completed vs started">
+          <ProgressBar completed={data.progress.completed} target={data.progress.scheduled} />
+        </Section>
+      </div>
     </Layout>
   );
 }
