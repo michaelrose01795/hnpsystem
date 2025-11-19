@@ -1,5 +1,7 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/customers/pages/MessagesPage.js
+
+"use client";
+
 import React, { useCallback, useEffect, useState } from "react";
 import CustomerLayout from "@/customers/components/CustomerLayout";
 import AppointmentTimeline from "@/customers/components/AppointmentTimeline";
@@ -14,6 +16,7 @@ const STAFF_ROLE_ALLOWLIST = new Set([
   "service advisor",
 ]);
 
+// Helper function to build query strings
 const buildQuery = (params = {}) => {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -24,6 +27,7 @@ const buildQuery = (params = {}) => {
   return stringified ? `?${stringified}` : "";
 };
 
+// Helper function to format notification timestamps
 const formatNotificationTimestamp = (value) => {
   if (!value) return "Unknown time";
   return new Date(value).toLocaleString("en-GB", {
@@ -35,6 +39,7 @@ const formatNotificationTimestamp = (value) => {
   });
 };
 
+// Helper function to format message timestamps
 const formatMessageTimestamp = (value) => {
   if (!value) return "Unknown time";
   return new Date(value).toLocaleString("en-GB", {
@@ -45,6 +50,7 @@ const formatMessageTimestamp = (value) => {
   });
 };
 
+// Helper function to parse slash command metadata
 const parseSlashCommandMetadata = (text = "", customer, vehicles = []) => {
   if (!text) return null;
   const metadata = {};
@@ -69,21 +75,30 @@ export default function CustomerMessagesPage() {
   const { timeline, customer, vehicles, isLoading, error } = useCustomerPortalData();
   const { dbUserId } = useUser();
 
+  // Composer state
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerSearch, setComposerSearch] = useState("");
   const [composerResults, setComposerResults] = useState([]);
   const [composerLoading, setComposerLoading] = useState(false);
   const [composerError, setComposerError] = useState("");
   const [composerSelection, setComposerSelection] = useState([]);
+  const [composerCreating, setComposerCreating] = useState(false);
+
+  // Conversation state
   const [conversationFeedback, setConversationFeedback] = useState("");
   const [conversationError, setConversationError] = useState("");
-  const [composerCreating, setComposerCreating] = useState(false);
+
+  // System notifications state
   const [systemNotifications, setSystemNotifications] = useState([]);
   const [systemLoading, setSystemLoading] = useState(false);
   const [systemError, setSystemError] = useState("");
+
+  // Threads state
   const [threads, setThreads] = useState([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
   const [threadsError, setThreadsError] = useState("");
+
+  // Active thread and messages state
   const [activeThread, setActiveThread] = useState(null);
   const [threadMessages, setThreadMessages] = useState([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
@@ -92,11 +107,13 @@ export default function CustomerMessagesPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [savingMessageId, setSavingMessageId] = useState(null);
 
+  // Helper function to check if a role matches allowlist
   const matchesAllowedRole = (role) => {
     if (!role) return false;
     return STAFF_ROLE_ALLOWLIST.has(role.toLowerCase());
   };
 
+  // Helper function to filter threads for customer view
   const filterThreadsForCustomer = (threadRows = []) => {
     return threadRows.filter((thread) => {
       if (!thread?.members?.length) return false;
@@ -106,62 +123,63 @@ export default function CustomerMessagesPage() {
     });
   };
 
+  // Helper function to filter composer users
   const filterComposerUsers = (users = []) => {
     return users.filter((user) => matchesAllowedRole(user.role));
   };
 
-  useEffect(() => {
-    if (!composerOpen || !dbUserId) {
-      setComposerResults([]);
-      return;
+  // Fetch threads function - defined first as it's used by other callbacks
+  const fetchThreads = useCallback(async () => {
+    if (!dbUserId) return;
+    setThreadsLoading(true);
+    setThreadsError("");
+    try {
+      const response = await fetch(`/api/messages/threads${buildQuery({ userId: dbUserId })}`);
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.message || "Unable to load conversations.");
+      }
+      const threadRows = Array.isArray(payload.data) ? payload.data : [];
+      const sorted = [...threadRows].sort(
+        (a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
+      );
+      setThreads(filterThreadsForCustomer(sorted));
+    } catch (fetchError) {
+      console.error("❌ Failed to load customer threads:", fetchError);
+      setThreadsError(fetchError.message || "Unable to load conversations.");
+    } finally {
+      setThreadsLoading(false);
     }
-    let cancelled = false;
-    const controller = new AbortController();
-    setComposerLoading(true);
-    setComposerError("");
+  }, [dbUserId, customer?.id]); // Added customer.id as dependency
 
-    (async () => {
+  // Open thread function - now fetchThreads is defined
+  const openThread = useCallback(
+    async (thread) => {
+      if (!dbUserId || !thread?.id) return;
+      setActiveThread(thread);
+      setMessagesLoading(true);
+      setMessagesError("");
       try {
         const response = await fetch(
-          `/api/messages/users${buildQuery({
-            q: composerSearch,
-            limit: 20,
-            exclude: dbUserId,
-          })}`,
-          { signal: controller.signal }
+          `/api/messages/threads/${thread.id}/messages${buildQuery({ userId: dbUserId })}`
         );
         const payload = await response.json();
         if (!response.ok) {
-          throw new Error(payload.message || "Unable to load users.");
+          throw new Error(payload.message || "Unable to load conversation.");
         }
-        if (!cancelled) {
-          setComposerResults(filterComposerUsers(payload.data || []));
-        }
+        setThreadMessages(payload.data || []);
+        await fetchThreads();
       } catch (fetchError) {
-        if (cancelled || fetchError.name === "AbortError") return;
-        console.error("❌ Composer search failed:", fetchError);
-        setComposerError(fetchError.message || "Unable to load users.");
-        setComposerResults([]);
+        console.error("❌ Failed to load conversation:", fetchError);
+        setMessagesError(fetchError.message || "Unable to load conversation.");
       } finally {
-        if (!cancelled) {
-          setComposerLoading(false);
-        }
+        setMessagesLoading(false);
       }
-    })();
+    },
+    [dbUserId, fetchThreads]
+  );
 
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [composerOpen, composerSearch, dbUserId]);
-
-  useEffect(() => {
-    if (!composerOpen) {
-      setComposerSearch("");
-      setComposerSelection([]);
-    }
-  }, [composerOpen]);
-
+  // Toggle composer user selection
   const toggleComposerUser = useCallback((user) => {
     setComposerSelection((prev) => {
       if (prev.some((entry) => entry.id === user.id)) {
@@ -171,6 +189,7 @@ export default function CustomerMessagesPage() {
     });
   }, []);
 
+  // Handle create group - now fetchThreads and openThread are defined
   const handleCreateGroup = useCallback(async () => {
     if (!dbUserId) return;
     if (!composerSelection.length) {
@@ -211,92 +230,7 @@ export default function CustomerMessagesPage() {
     }
   }, [composerSelection, dbUserId, fetchThreads, openThread]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadSystemNotifications = async () => {
-      setSystemLoading(true);
-      setSystemError("");
-      try {
-        const { data, error } = await supabase
-          .from("notifications")
-          .select("notification_id, message, created_at")
-          .or("target_role.ilike.%customer%,target_role.is.null")
-          .order("created_at", { ascending: false })
-          .limit(5);
-        if (error) throw error;
-        if (!cancelled) {
-          setSystemNotifications(data || []);
-        }
-      } catch (fetchError) {
-        if (!cancelled) {
-          setSystemError(
-            fetchError?.message || "Unable to load system notifications."
-          );
-          setSystemNotifications([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setSystemLoading(false);
-        }
-      }
-    };
-
-    loadSystemNotifications();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const fetchThreads = useCallback(async () => {
-    if (!dbUserId) return;
-    setThreadsLoading(true);
-    setThreadsError("");
-    try {
-      const response = await fetch(`/api/messages/threads${buildQuery({ userId: dbUserId })}`);
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.message || "Unable to load conversations.");
-      }
-      const threadRows = Array.isArray(payload.data) ? payload.data : [];
-      const sorted = [...threadRows].sort(
-        (a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
-      );
-      setThreads(filterThreadsForCustomer(sorted));
-    } catch (fetchError) {
-      console.error("❌ Failed to load customer threads:", fetchError);
-      setThreadsError(fetchError.message || "Unable to load conversations.");
-    } finally {
-      setThreadsLoading(false);
-    }
-  }, [dbUserId]);
-
-  const openThread = useCallback(
-    async (thread) => {
-      if (!dbUserId || !thread?.id) return;
-      setActiveThread(thread);
-      setMessagesLoading(true);
-      setMessagesError("");
-      try {
-        const response = await fetch(
-          `/api/messages/threads/${thread.id}/messages${buildQuery({ userId: dbUserId })}`
-        );
-        const payload = await response.json();
-        if (!response.ok) {
-          throw new Error(payload.message || "Unable to load conversation.");
-        }
-        setThreadMessages(payload.data || []);
-        await fetchThreads();
-      } catch (fetchError) {
-        console.error("❌ Failed to load conversation:", fetchError);
-        setMessagesError(fetchError.message || "Unable to load conversation.");
-      } finally {
-        setMessagesLoading(false);
-      }
-    },
-    [dbUserId, fetchThreads]
-  );
-
+  // Handle send message
   const handleSendMessage = useCallback(
     async (event) => {
       event?.preventDefault();
@@ -342,11 +276,7 @@ export default function CustomerMessagesPage() {
     [activeThread, dbUserId, messageDraft, fetchThreads, customer, vehicles]
   );
 
-  useEffect(() => {
-    if (!dbUserId) return;
-    fetchThreads();
-  }, [dbUserId, fetchThreads]);
-
+  // Handle save message
   const handleSaveMessage = useCallback(
     async (message) => {
       if (!message?.id || typeof window === "undefined") return;
@@ -381,13 +311,113 @@ export default function CustomerMessagesPage() {
     [fetchThreads]
   );
 
+  // Effect: Load composer users when composer opens
+  useEffect(() => {
+    if (!composerOpen || !dbUserId) {
+      setComposerResults([]);
+      return;
+    }
+    let cancelled = false;
+    const controller = new AbortController();
+    setComposerLoading(true);
+    setComposerError("");
+
+    (async () => {
+      try {
+        const response = await fetch(
+          `/api/messages/users${buildQuery({
+            q: composerSearch,
+            limit: 20,
+            exclude: dbUserId,
+          })}`,
+          { signal: controller.signal }
+        );
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.message || "Unable to load users.");
+        }
+        if (!cancelled) {
+          setComposerResults(filterComposerUsers(payload.data || []));
+        }
+      } catch (fetchError) {
+        if (cancelled || fetchError.name === "AbortError") return;
+        console.error("❌ Composer search failed:", fetchError);
+        setComposerError(fetchError.message || "Unable to load users.");
+        setComposerResults([]);
+      } finally {
+        if (!cancelled) {
+          setComposerLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [composerOpen, composerSearch, dbUserId]);
+
+  // Effect: Reset composer state when closed
+  useEffect(() => {
+    if (!composerOpen) {
+      setComposerSearch("");
+      setComposerSelection([]);
+    }
+  }, [composerOpen]);
+
+  // Effect: Load system notifications
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSystemNotifications = async () => {
+      setSystemLoading(true);
+      setSystemError("");
+      try {
+        const { data, error } = await supabase
+          .from("notifications")
+          .select("notification_id, message, created_at")
+          .or("target_role.ilike.%customer%,target_role.is.null")
+          .order("created_at", { ascending: false })
+          .limit(5);
+        if (error) throw error;
+        if (!cancelled) {
+          setSystemNotifications(data || []);
+        }
+      } catch (fetchError) {
+        if (!cancelled) {
+          setSystemError(
+            fetchError?.message || "Unable to load system notifications."
+          );
+          setSystemNotifications([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setSystemLoading(false);
+        }
+      }
+    };
+
+    loadSystemNotifications();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Effect: Load threads on mount
+  useEffect(() => {
+    if (!dbUserId) return;
+    fetchThreads();
+  }, [dbUserId, fetchThreads]);
+
+  // Effect: Open first thread when threads load
   useEffect(() => {
     if (!threads.length || activeThread) return;
     openThread(threads[0]);
   }, [threads, activeThread, openThread]);
 
+  // Effect: Subscribe to real-time updates (CLIENT-SIDE ONLY)
   useEffect(() => {
-    if (!dbUserId) return undefined;
+    if (!dbUserId || typeof window === "undefined") return undefined;
 
     const channel = supabase
       .channel(`customer-messaging-${dbUserId}`)
