@@ -151,7 +151,7 @@ export default function Sidebar({ onToggle, isCondensed = false, extraSections =
                 marginBottom: "10px",
               }}
             >
-              My Dashboards
+              My Dashboard
             </div>
             {dashboardShortcuts.map((shortcut) => {
               const isActive =

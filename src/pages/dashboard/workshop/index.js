@@ -67,7 +67,7 @@ const mapConsumables = (parts = []) =>
     };
   });
 
-export default function TechsDashboard() {
+export default function WorkshopDashboard() {
   const today = dayjs().format("dddd D MMM");
   const { user } = useUser();
   const [jobs, setJobs] = useState([]);
@@ -158,13 +158,13 @@ export default function TechsDashboard() {
           }}
         >
           <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "#a00000" }}>
-            Technician workspace · {today}
+            Workshop workspace · {today}
           </p>
           <h1 style={{ margin: "6px 0 0", color: "#a00000" }}>
-            {user?.username ? `Hi ${user.username}, ready for your next job?` : "Technician workspace"}
+            {user?.username ? `Hi ${user.username}, ready for your next job?` : "Workshop workspace"}
           </h1>
           <p style={{ margin: "6px 0 0", color: "#6b7280" }}>
-            View your assignments, parts status, and consumables at a glance.
+            Track technician assignments, consumables, and upcoming jobs in one place.
           </p>
         </header>
 

@@ -1,4 +1,4 @@
-// file location: src/pages/dashboard/aftersales.js
+// file location: src/pages/dashboard/after-sales/index.js
 import React from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
@@ -6,7 +6,7 @@ import AfterSalesManagerDashboard from "@/components/dashboards/AfterSalesManage
 
 const ALLOWED_ROLES = ["after sales manager", "after sales director", "aftersales manager"];
 
-export default function AfterSalesDashboardPage() {
+export default function AfterSalesDashboard() {
   const { user } = useUser();
   const userRoles = (user?.roles || []).map((role) => String(role).toLowerCase());
   const hasAccess = ALLOWED_ROLES.some((role) => userRoles.includes(role));

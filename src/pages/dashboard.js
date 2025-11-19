@@ -46,12 +46,12 @@ export default function Dashboard() {
     }
 
     if (hasRole("techs", "technician", "workshop")) {
-      redirectTo("/dashboard/techs");
+      redirectTo("/dashboard/workshop");
       return;
     }
 
     if (hasRole("manager")) {
-      redirectTo("/dashboard/manager");
+      redirectTo("/dashboard/managers");
       return;
     }
 

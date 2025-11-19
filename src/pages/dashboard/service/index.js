@@ -7,7 +7,10 @@ export default function ServiceDashboard() {
     <Layout>
       <div style={{ padding: "24px" }}>
         <h1 style={{ color: "#FF4040" }}>Service Dashboard</h1>
-        <p>Placeholder content for the Service department dashboard.</p>
+        <p>
+          Arrival trends, advisor performance signals, and customer touchpoints will populate here once the service
+          telemetry is wired.
+        </p>
       </div>
     </Layout>
   );

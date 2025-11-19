@@ -12,8 +12,8 @@ export const sidebarSections = [
         roles: ["service manager", "workshop manager", "after sales director"],
       },
       {
-        label: "🛠️ Tech Dashboard",
-        href: "/dashboard/techs",
+        label: "🛠️ Workshop Dashboard",
+        href: "/dashboard/workshop",
         roles: ["techs", "mot tester"],
       },
       { label: "Messages", href: "/messages", roles: [] },

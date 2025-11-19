@@ -1,4 +1,4 @@
-// Parts dashboards use mock data defined in the shared PartsOpsDashboard component until the live feed is wired up.
+// PartsOpsDashboard already surfaces live queue and inbound information once the service layer is connected.
 import React from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
