@@ -3,10 +3,6 @@ export const runtime = "nodejs"; // Ensure Vercel uses the Node.js runtime for f
 
 import fs from "fs"; // Node.js file system utilities to manage uploaded files
 import path from "path"; // Path helper to build cross-platform temporary paths
-import * as pdfjs from "pdfjs-dist/legacy/build/pdf.js"; // PDF.js utilities for extracting structured text with ESM support
-import "pdfjs-dist/legacy/build/pdf.worker.js"; // Ensure the PDF.js worker is registered in Node.js
-import { getJobByNumberOrReg } from "@/lib/database/jobs"; // Database helper to find jobs by number or registration
-import { createVHCCheck } from "@/lib/database/vhc"; // Database helper to store Vehicle Health Check details
 
 export const config = {
   api: {
@@ -14,10 +10,9 @@ export const config = {
   },
 };
 
-const { getDocument, GlobalWorkerOptions } = pdfjs; // Destructure helpers from the PDF.js module
-
-GlobalWorkerOptions.workerSrc = undefined; // Disable worker loading in the Node.js environment
-
+// Import PDF.js dynamically to avoid Turbopack build issues
+let pdfjs = null; // Will hold the PDF.js module once loaded
+let getDocument = null; // Will hold the getDocument function
 
 // Helper to persist uploaded browser File objects onto disk so PDF.js can process them
 async function parseMultipartForm(req) {
@@ -84,6 +79,23 @@ export default async function handler(req, res) {
 
   try {
     console.log("📄 Parsing checksheet for job:", jobNumber); // Helpful debug logging for tracing requests
+
+    // ✅ Lazy load PDF.js only when needed (avoids Turbopack build issues)
+    if (!pdfjs) {
+      // Dynamic import to avoid build-time resolution issues
+      const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.js");
+      pdfjs = pdfjsLib.default || pdfjsLib; // Handle different module formats
+      getDocument = pdfjs.getDocument; // Extract the getDocument function
+      
+      // Disable worker in Node.js environment (workers are for browsers only)
+      if (pdfjs.GlobalWorkerOptions) {
+        pdfjs.GlobalWorkerOptions.workerSrc = ""; // Empty string disables worker loading
+      }
+    }
+
+    // ✅ Import database helpers dynamically to avoid circular dependencies
+    const { getJobByNumberOrReg } = await import("@/lib/database/jobs"); // Database helper to find jobs by number or registration
+    const { createVHCCheck } = await import("@/lib/database/vhc"); // Database helper to store Vehicle Health Check details
 
     // ✅ Verify job exists
     const job = await getJobByNumberOrReg(jobNumber); // Fetch job details from Supabase
