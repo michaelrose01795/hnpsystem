@@ -7,6 +7,13 @@ import { useCustomerPortalData } from "@/customers/hooks/useCustomerPortalData";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 
+const STAFF_ROLE_ALLOWLIST = new Set([
+  "workshop manager",
+  "service manager",
+  "after sales manager",
+  "service advisor",
+]);
+
 const buildQuery = (params = {}) => {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -85,6 +92,24 @@ export default function CustomerMessagesPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [savingMessageId, setSavingMessageId] = useState(null);
 
+  const matchesAllowedRole = (role) => {
+    if (!role) return false;
+    return STAFF_ROLE_ALLOWLIST.has(role.toLowerCase());
+  };
+
+  const filterThreadsForCustomer = (threadRows = []) => {
+    return threadRows.filter((thread) => {
+      if (!thread?.members?.length) return false;
+      return thread.members.some(
+        (member) => matchesAllowedRole(member.profile?.role) || member.userId === customer?.id
+      );
+    });
+  };
+
+  const filterComposerUsers = (users = []) => {
+    return users.filter((user) => matchesAllowedRole(user.role));
+  };
+
   useEffect(() => {
     if (!composerOpen || !dbUserId) {
       setComposerResults([]);
@@ -110,7 +135,7 @@ export default function CustomerMessagesPage() {
           throw new Error(payload.message || "Unable to load users.");
         }
         if (!cancelled) {
-          setComposerResults(payload.data || []);
+          setComposerResults(filterComposerUsers(payload.data || []));
         }
       } catch (fetchError) {
         if (cancelled || fetchError.name === "AbortError") return;
@@ -237,7 +262,7 @@ export default function CustomerMessagesPage() {
       const sorted = [...threadRows].sort(
         (a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
       );
-      setThreads(sorted);
+      setThreads(filterThreadsForCustomer(sorted));
     } catch (fetchError) {
       console.error("❌ Failed to load customer threads:", fetchError);
       setThreadsError(fetchError.message || "Unable to load conversations.");
