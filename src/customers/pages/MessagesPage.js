@@ -38,8 +38,28 @@ const formatMessageTimestamp = (value) => {
   });
 };
 
+const parseSlashCommandMetadata = (text = "", customer, vehicles = []) => {
+  if (!text) return null;
+  const metadata = {};
+  const regex = /\/([^\s]+)/gi;
+  let match = null;
+  while ((match = regex.exec(text)) !== null) {
+    const token = (match[1] || "").toLowerCase();
+    if (/^\d+$/.test(token) && !metadata.jobNumber) {
+      metadata.jobNumber = token;
+    }
+    if (token === "customer" && customer?.id) {
+      metadata.customerId = customer.id;
+    }
+    if (token === "vehicle" && vehicles?.[0]?.id) {
+      metadata.vehicleId = vehicles[0].id;
+    }
+  }
+  return Object.keys(metadata).length ? metadata : null;
+};
+
 export default function CustomerMessagesPage() {
-  const { timeline, isLoading, error } = useCustomerPortalData();
+  const { timeline, customer, vehicles, isLoading, error } = useCustomerPortalData();
   const { dbUserId } = useUser();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -193,7 +213,7 @@ export default function CustomerMessagesPage() {
         setMessagesLoading(false);
       }
     },
-    [dbUserId]
+    [dbUserId, fetchThreads]
   );
 
   const handleSendMessage = useCallback(
@@ -203,12 +223,14 @@ export default function CustomerMessagesPage() {
       setSendingMessage(true);
       setMessagesError("");
       try {
+        const metadata = parseSlashCommandMetadata(messageDraft, customer, vehicles);
         const response = await fetch(`/api/messages/threads/${activeThread.id}/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             senderId: dbUserId,
             content: messageDraft.trim(),
+            metadata,
           }),
         });
         const payload = await response.json();
@@ -236,13 +258,18 @@ export default function CustomerMessagesPage() {
         setSendingMessage(false);
       }
     },
-    [activeThread, dbUserId, messageDraft, fetchThreads]
+    [activeThread, dbUserId, messageDraft, fetchThreads, customer, vehicles]
   );
 
   useEffect(() => {
     if (!dbUserId) return;
     fetchThreads();
   }, [dbUserId, fetchThreads]);
+
+  useEffect(() => {
+    if (!threads.length || activeThread) return;
+    openThread(threads[0]);
+  }, [threads, activeThread, openThread]);
 
   useEffect(() => {
     if (!dbUserId) return undefined;
@@ -575,6 +602,23 @@ export default function CustomerMessagesPage() {
                             </span>
                           </div>
                           <p className="text-slate-700">{message.content}</p>
+                          {message.metadata?.jobNumber && (
+                            <p className="text-[0.65rem] text-slate-500">
+                              Linked job #{message.metadata.jobNumber}
+                            </p>
+                          )}
+                          {message.metadata?.customerId && (
+                            <p className="text-[0.65rem] text-slate-500">
+                              Linked customer profile
+                            </p>
+                          )}
+                          {message.metadata?.vehicleId && (
+                            <p className="text-[0.65rem] text-slate-500">
+                              Linked vehicle{" "}
+                              {vehicles?.find((v) => v.id === message.metadata.vehicleId)?.reg ||
+                                "(vehicle data)"}
+                            </p>
+                          )}
                         </div>
                       );
                     })}

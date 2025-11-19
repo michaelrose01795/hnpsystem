@@ -50,6 +50,7 @@ const formatMessageRow = (row) => ({
   senderId: row.sender_id,
   receiverId: row.receiver_id,
   sender: formatUserProfile(row.sender),
+  metadata: row.metadata || null,
 });
 
 const DIRECT_HASH_PREFIX = "direct";
@@ -159,7 +160,8 @@ export const getThreadsForUser = async (userId) => {
         created_at,
         sender_id,
         receiver_id,
-        sender:sender_id(user_id, first_name, last_name, email, role)
+        sender:sender_id(user_id, first_name, last_name, email, role),
+        metadata
       )
     `
     )
@@ -202,7 +204,8 @@ const fetchThreadRecord = async (threadId) => {
         created_at,
         sender_id,
         receiver_id,
-        sender:sender_id(user_id, first_name, last_name, email, role)
+        sender:sender_id(user_id, first_name, last_name, email, role),
+        metadata
       )
     `
     )
@@ -582,6 +585,7 @@ export const sendThreadMessage = async ({
   senderId,
   content,
   receiverId = null,
+  metadata = null,
 }) => {
   assertMessagingWriteAccess();
   const senderUserId = normalizeUserId(senderId);
@@ -608,12 +612,13 @@ export const sendThreadMessage = async ({
     }
   }
 
-  const payload = {
-    content: content.trim(),
-    sender_id: senderUserId,
-    receiver_id: receiverId,
-    thread_id: threadIdNum || null,
-  };
+    const payload = {
+      content: content.trim(),
+      sender_id: senderUserId,
+      receiver_id: receiverId,
+      thread_id: threadIdNum || null,
+      metadata: metadata || null,
+    };
 
   const { data, error } = await dbClient
     .from("messages")
@@ -626,7 +631,8 @@ export const sendThreadMessage = async ({
       created_at,
       sender_id,
       receiver_id,
-      sender:sender_id(user_id, first_name, last_name, email, role)
+      sender:sender_id(user_id, first_name, last_name, email, role),
+      metadata
     `
     )
     .single();

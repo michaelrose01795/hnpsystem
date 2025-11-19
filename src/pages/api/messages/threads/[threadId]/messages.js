@@ -45,7 +45,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    const { senderId, content } = req.body || {};
+    const { senderId, content, metadata } = req.body || {};
     if (!senderId || !content) {
       return res.status(400).json({
         success: false,
@@ -58,6 +58,7 @@ export default async function handler(req, res) {
         threadId,
         senderId,
         content,
+        metadata,
       });
       return res.status(201).json({ success: true, data: message });
     } catch (error) {
