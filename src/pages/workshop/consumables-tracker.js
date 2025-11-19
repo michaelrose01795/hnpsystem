@@ -645,6 +645,41 @@ function ConsumablesTrackerPage() {
     fetchFinancialSummary();
   }, [fetchFinancialSummary]);
 
+  // CRITICAL FIX: Move fetchMonthlyLogs BEFORE the useEffect that uses it
+  const fetchMonthlyLogs = useCallback(async () => {
+    setLogsLoading(true);
+    setLogsError("");
+
+    try {
+      const response = await fetch(
+        `/api/workshop/consumables/logs?year=${viewYear}&month=${viewMonth}`
+      );
+      if (!response.ok) {
+        const body = await response
+          .json()
+          .catch(() => ({ message: "Unable to load logs." }));
+        throw new Error(body.message || "Unable to load logs.");
+      }
+
+      const payload = await response.json();
+      if (!payload.success) {
+        throw new Error(payload.message || "Unable to load logs.");
+      }
+
+      setMonthlyLogs(payload.data.orders || []);
+      setLogsSummary(payload.data.summary || { spend: 0, quantity: 0, orders: 0, suppliers: 0 });
+    } catch (error) {
+      console.error("❌ Failed to load monthly logs", error);
+      setLogsError(error?.message || "Unable to load monthly logs.");
+    } finally {
+      setLogsLoading(false);
+    }
+  }, [viewMonth, viewYear]);
+
+  useEffect(() => {
+    fetchMonthlyLogs();
+  }, [fetchMonthlyLogs]);
+
   useEffect(() => {
     if (!isWorkshopManager) {
       return () => {};
@@ -684,40 +719,6 @@ function ConsumablesTrackerPage() {
     isWorkshopManager,
     refreshConsumables,
   ]);
-
-  const fetchMonthlyLogs = useCallback(async () => {
-    setLogsLoading(true);
-    setLogsError("");
-
-    try {
-      const response = await fetch(
-        `/api/workshop/consumables/logs?year=${viewYear}&month=${viewMonth}`
-      );
-      if (!response.ok) {
-        const body = await response
-          .json()
-          .catch(() => ({ message: "Unable to load logs." }));
-        throw new Error(body.message || "Unable to load logs.");
-      }
-
-      const payload = await response.json();
-      if (!payload.success) {
-        throw new Error(payload.message || "Unable to load logs.");
-      }
-
-      setMonthlyLogs(payload.data.orders || []);
-      setLogsSummary(payload.data.summary || { spend: 0, quantity: 0, orders: 0, suppliers: 0 });
-    } catch (error) {
-      console.error("❌ Failed to load monthly logs", error);
-      setLogsError(error?.message || "Unable to load monthly logs.");
-    } finally {
-      setLogsLoading(false);
-    }
-  }, [viewMonth, viewYear]);
-
-  useEffect(() => {
-    fetchMonthlyLogs();
-  }, [fetchMonthlyLogs]);
 
   useEffect(() => {
     if (
@@ -1067,7 +1068,7 @@ function ConsumablesTrackerPage() {
       pendingRequestOrderId,
       refreshConsumables,
       todayIso,
-    ] // previous dependencies
+    ]
   );
 
   const previewLogs = orderModalConsumable?.orderHistory?.slice(0, 3) ?? [];
