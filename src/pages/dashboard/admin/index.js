@@ -1,3 +1,5 @@
+// file location: src/pages/dashboard/admin/index.js
+
 "use client";
 
 import dayjs from "dayjs";
@@ -98,7 +100,7 @@ const NoticeList = ({ notices }) => (
             {notice.target_role ? `For ${notice.target_role}` : "General"}
           </p>
         </div>
-      ))}
+      ))
     )}
   </div>
 );

@@ -1,3 +1,5 @@
+// file location: src/pages/dashboard/painting/index.js
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -97,7 +99,7 @@ const QueueList = ({ queue }) => (
           </div>
           <span style={{ color: "#6b7280" }}>{job.status || "In progress"}</span>
         </div>
-      ))}
+      ))
     )}
   </div>
 );

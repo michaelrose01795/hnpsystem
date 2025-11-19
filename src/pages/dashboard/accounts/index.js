@@ -1,3 +1,5 @@
+// file location: src/pages/dashboard/accounts/index.js
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -97,7 +99,7 @@ const JobList = ({ jobs }) => (
           </div>
           <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>{job.status}</span>
         </div>
-      ))}
+      ))
     )}
   </div>
 );

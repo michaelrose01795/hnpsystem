@@ -1,3 +1,5 @@
+// file location: src/pages/dashboard/managers/index.js
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -121,7 +123,8 @@ const EscalationList = ({ items }) => (
             For {notice.target_role || "everyone"}
           </p>
         </div>
-      ))}
+      ))
+    )}
   </div>
 );
 
