@@ -1,4 +1,5 @@
 // ✅ Imports converted to use absolute alias "@/"
+// file location: src/pages/messages/index.js
 "use client";
 
 import React, {

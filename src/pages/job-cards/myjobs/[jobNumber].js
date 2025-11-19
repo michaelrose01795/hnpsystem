@@ -11,7 +11,7 @@ import { useRoster } from "@/context/RosterContext";
 import { getJobByNumber, updateJobStatus } from "@/lib/database/jobs";
 import { getVHCChecksByJob } from "@/lib/database/vhc";
 import { getClockingStatus } from "@/lib/database/clocking";
-import { clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
+import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
 
 // ✅ Status color mapping for consistency
 const STATUS_COLORS = {
@@ -26,6 +26,14 @@ const STATUS_COLORS = {
   "Sent": "#8b5cf6",
   "Viewed": "#06b6d4",
 };
+
+const IN_PROGRESS_STATUS = "In Progress";
+const WAITING_STATUS = "Waiting";
+const STARTED_STATUS = "Started";
+const PAUSE_ON_CLOCK_OUT_STATUSES = new Set([
+  IN_PROGRESS_STATUS.toLowerCase(),
+  STARTED_STATUS.toLowerCase(),
+]);
 
 // ✅ Format date and time helper
 const formatDateTime = (date) => {
@@ -69,9 +77,30 @@ export default function TechJobDetailPage() {
   const [showAdditionalContents, setShowAdditionalContents] = useState(false);
   const [jobClocking, setJobClocking] = useState(null);
   const [clockOutLoading, setClockOutLoading] = useState(false);
+  const [clockInLoading, setClockInLoading] = useState(false);
 
   const jobCardId = jobData?.jobCard?.id ?? null;
   const jobCardNumber = jobData?.jobCard?.jobNumber ?? jobNumber;
+  const username = user?.username?.trim();
+
+  const refreshClockingStatus = useCallback(async () => {
+    if (!username) {
+      setClockingStatus(null);
+      return;
+    }
+
+    try {
+      const { success, data } = await getClockingStatus(username);
+      if (success) {
+        setClockingStatus(data);
+      } else {
+        setClockingStatus(null);
+      }
+    } catch (error) {
+      console.error("❌ Error refreshing clocking status:", error);
+      setClockingStatus(null);
+    }
+  }, [username]);
 
   const refreshJobClocking = useCallback(async () => {
     const workshopUserId = dbUserId ?? user?.id;
@@ -100,6 +129,15 @@ export default function TechJobDetailPage() {
     refreshJobClocking();
   }, [refreshJobClocking]);
 
+  useEffect(() => {
+    if (!jobClocking || !jobCardId) return;
+    const currentStatus = jobData?.jobCard?.status;
+    if ((currentStatus || "").trim() === IN_PROGRESS_STATUS) {
+      return;
+    }
+    void syncJobStatus(IN_PROGRESS_STATUS, currentStatus);
+  }, [jobClocking, jobCardId, jobData?.jobCard?.status, syncJobStatus]);
+
   const handleJobClockOut = async () => {
     const workshopUserId = dbUserId ?? user?.id;
     if (!workshopUserId) {
@@ -126,6 +164,11 @@ export default function TechJobDetailPage() {
         }
         setJobClocking(null);
         await refreshJobClocking();
+        await refreshClockingStatus();
+        const pausedStatus = getStatusAfterClockOut(jobData?.jobCard?.status);
+        if (pausedStatus) {
+          await syncJobStatus(pausedStatus, jobData?.jobCard?.status);
+        }
       } else {
         alert(result.error || "Failed to clock out of this job.");
       }
@@ -137,7 +180,90 @@ export default function TechJobDetailPage() {
     }
   };
 
-  const username = user?.username?.trim();
+  const syncJobStatus = useCallback(
+    async (targetStatus, currentStatus) => {
+      if (!targetStatus || !jobCardId) return null;
+
+      const normalizedCurrent = (currentStatus || "").trim();
+      if (!normalizedCurrent || normalizedCurrent === targetStatus) return null;
+
+      try {
+        const response = await updateJobStatus(jobCardId, targetStatus);
+        if (response?.success && response.data) {
+          setJobData((prev) => {
+            if (!prev?.jobCard) return prev;
+            return {
+              ...prev,
+              jobCard: {
+                ...prev.jobCard,
+                ...response.data,
+              },
+            };
+          });
+          return response.data;
+        }
+      } catch (error) {
+        console.error("❌ syncJobStatus error:", error);
+      }
+
+      return null;
+    },
+    [jobCardId]
+  );
+
+  const getStatusAfterClockOut = (currentStatus) => {
+    if (!currentStatus) return null;
+    const normalized = currentStatus.trim().toLowerCase();
+    if (PAUSE_ON_CLOCK_OUT_STATUSES.has(normalized)) {
+      return WAITING_STATUS;
+    }
+    return null;
+  };
+
+  const handleJobClockIn = async () => {
+    const workshopUserId = dbUserId ?? user?.id;
+    if (!workshopUserId) {
+      alert("Unable to clock in because your workshop profile is not linked.");
+      return;
+    }
+    if (!jobCardId) {
+      alert("Unable to find job reference.");
+      return;
+    }
+    if (jobClocking) {
+      alert("You are already clocked onto this job.");
+      return;
+    }
+
+    setClockInLoading(true);
+    try {
+      const result = await clockInToJob(
+        workshopUserId,
+        jobCardId,
+        jobCardNumber,
+        "initial"
+      );
+
+      if (result.success) {
+        alert(`✅ Clocked in to Job ${jobCardNumber}`);
+        setStatus("In Progress");
+        setCurrentJob(result.data);
+        await refreshCurrentJob();
+        setJobClocking(result.data);
+        await refreshJobClocking();
+        await refreshClockingStatus();
+        await syncJobStatus(IN_PROGRESS_STATUS, jobData?.jobCard?.status);
+      } else {
+        alert(result.error || "Failed to clock in to this job.");
+      }
+    } catch (clockInError) {
+      console.error("❌ Error clocking in to job:", clockInError);
+      alert(clockInError.message || "Error clocking in. Please try again.");
+    } finally {
+      setClockInLoading(false);
+    }
+  };
+
   const techsList = usersByRole?.["Techs"] || [];
   const motTestersList = usersByRole?.["MOT Tester"] || [];
   // ⚠️ Mock data found — replacing with Supabase query
@@ -183,11 +309,7 @@ export default function TechJobDetailPage() {
           setVhcChecks([]);
         }
 
-        // Get clocking status for current user
-        if (username) {
-          const { data: clockData } = await getClockingStatus(username);
-          setClockingStatus(clockData);
-        }
+        await refreshClockingStatus();
 
       } catch (fetchError) {
         console.error("❌ Error fetching job:", fetchError);
@@ -198,7 +320,7 @@ export default function TechJobDetailPage() {
     };
 
     fetchData();
-  }, [jobNumber, username, router]);
+  }, [jobNumber, router, refreshClockingStatus]);
 
   const resolveNextActionType = (status) => {
     if (!status) return null;
@@ -1248,26 +1370,48 @@ export default function TechJobDetailPage() {
             ← Back to My Jobs
           </button>
 
-          {/* Clock Out Button */}
-          <button
-            onClick={handleJobClockOut}
-            disabled={!jobClocking || clockOutLoading}
-            style={{
-              padding: "14px",
-              backgroundColor: jobClocking ? "#ef4444" : "#f3f4f6",
-              color: jobClocking ? "white" : "#9ca3af",
-              border: "none",
-              borderRadius: "8px",
-              cursor: jobClocking ? "pointer" : "not-allowed",
-              fontSize: "14px",
-              fontWeight: "600",
-              boxShadow: jobClocking ? "0 2px 8px rgba(239,68,68,0.18)" : "none",
-              opacity: clockOutLoading ? 0.8 : 1,
-              transition: "background-color 0.2s ease"
-            }}
-          >
-            {clockOutLoading ? "Clocking Out..." : "⏸️ Clock Out"}
-          </button>
+          {/* Clock Action Button */}
+          {jobClocking ? (
+            <button
+              onClick={handleJobClockOut}
+              disabled={clockOutLoading || clockInLoading}
+              style={{
+                padding: "14px",
+                backgroundColor: "#ef4444",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: clockOutLoading || clockInLoading ? "not-allowed" : "pointer",
+                fontSize: "14px",
+                fontWeight: "600",
+                boxShadow: "0 2px 8px rgba(239,68,68,0.18)",
+                opacity: clockOutLoading ? 0.8 : 1,
+                transition: "background-color 0.2s ease"
+              }}
+            >
+              {clockOutLoading ? "Clocking Out..." : "⏸️ Clock Out"}
+            </button>
+          ) : (
+            <button
+              onClick={handleJobClockIn}
+              disabled={clockInLoading || clockOutLoading}
+              style={{
+                padding: "14px",
+                backgroundColor: "#10b981",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: clockInLoading || clockOutLoading ? "not-allowed" : "pointer",
+                fontSize: "14px",
+                fontWeight: "600",
+                boxShadow: "0 2px 8px rgba(16,185,129,0.18)",
+                opacity: clockInLoading ? 0.8 : 1,
+                transition: "background-color 0.2s ease"
+              }}
+            >
+              {clockInLoading ? "Clocking In..." : "▶️ Clock In"}
+            </button>
+          )}
 
           {/* Write-Up Button */}
           <button

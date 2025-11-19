@@ -2,7 +2,7 @@
 // file location: src/pages/job-cards/myjobs/index.js
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
@@ -46,7 +46,7 @@ const formatCreatedAt = (value) => {
 
 export default function MyJobsPage() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, status: techStatus, currentJob } = useUser();
   const { usersByRole, isLoading: rosterLoading } = useRoster();
   
   const [jobs, setJobs] = useState([]);
@@ -60,12 +60,15 @@ export default function MyJobsPage() {
   const [showStartJobModal, setShowStartJobModal] = useState(false); // Control Start Job modal visibility
   const [prefilledJobNumber, setPrefilledJobNumber] = useState(""); // Prefill job number in modal
 
-  const username = user?.username;
+  const username = user?.username?.trim();
   const techsList = usersByRole?.["Techs"] || [];
   const motTestersList = usersByRole?.["MOT Tester"] || [];
   // ⚠️ Mock data found — replacing with Supabase query
   // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
-  const allowedTechNames = new Set([...techsList, ...motTestersList]);
+  const allowedTechNames = useMemo(
+    () => new Set([...techsList, ...motTestersList]),
+    [techsList, motTestersList]
+  );
 
   // Some contexts store a single `role`, others expose an array of `roles`
   const userRoles = Array.isArray(user?.roles)
@@ -81,55 +84,88 @@ export default function MyJobsPage() {
   const hasTechnicianAccess =
     (username && allowedTechNames.has(username)) || hasRoleAccess;
 
-  // Fetch jobs from database
-  useEffect(() => {
+  const fetchJobsForTechnician = useCallback(async () => {
     if (!hasTechnicianAccess || !username) return;
 
-    const fetchJobs = async () => {
-      setLoading(true);
+    setLoading(true);
 
-      try {
-        const normalizedUsername = normalizeDisplayName(username);
-        // Fetch all jobs
-        const fetchedJobs = await getAllJobs();
-        console.log("[MyJobs] fetched jobs:", fetchedJobs); // Debug log
-        setJobs(fetchedJobs);
+    try {
+      const normalizedUsername = normalizeDisplayName(username);
+      const fetchedJobs = await getAllJobs();
+      console.log("[MyJobs] fetched jobs:", fetchedJobs); // Debug log
+      setJobs(fetchedJobs);
 
-        // Filter jobs assigned to this technician
-        const assignedJobs = fetchedJobs.filter((job) => {
-          const assignedNameRaw =
-            job.assignedTech?.name ||
-            job.technician ||
-            (typeof job.assignedTo === "string" ? job.assignedTo : "");
+      const assignedJobs = fetchedJobs.filter((job) => {
+        const assignedNameRaw =
+          job.assignedTech?.name ||
+          job.technician ||
+          (typeof job.assignedTo === "string" ? job.assignedTo : "");
 
-          if (!assignedNameRaw || !normalizedUsername) return false;
+        if (!assignedNameRaw || !normalizedUsername) return false;
 
-          return normalizeDisplayName(assignedNameRaw) === normalizedUsername;
-        });
+        return normalizeDisplayName(assignedNameRaw) === normalizedUsername;
+      });
 
-        // Sort by created date (newest first)
-        const sortedJobs = assignedJobs.sort((a, b) => {
-          if (a.createdAt && b.createdAt) {
-            return new Date(b.createdAt) - new Date(a.createdAt);
-          }
-          return 0;
-        });
+      const sortedJobs = assignedJobs.sort((a, b) => {
+        if (a.createdAt && b.createdAt) {
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        }
+        return 0;
+      });
 
-        setMyJobs(sortedJobs);
-        setFilteredJobs(sortedJobs);
+      setMyJobs(sortedJobs);
+      setFilteredJobs(sortedJobs);
+    } catch (error) {
+      console.error("[MyJobs] error fetching jobs:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [hasTechnicianAccess, username]);
 
-        // Get clocking status
-        const { data: clockData } = await getClockingStatus(username);
-        setClockingStatus(clockData);
-      } catch (error) {
-        console.error("[MyJobs] error fetching jobs:", error);
-      } finally {
-        setLoading(false);
+  useEffect(() => {
+    if (!hasTechnicianAccess || !username) return;
+    fetchJobsForTechnician();
+  }, [hasTechnicianAccess, username, fetchJobsForTechnician]);
+
+  const statusRefetchGuard = useRef(false);
+  const previousFetchRef = useRef(fetchJobsForTechnician);
+
+  useEffect(() => {
+    if (previousFetchRef.current !== fetchJobsForTechnician) {
+      statusRefetchGuard.current = false;
+      previousFetchRef.current = fetchJobsForTechnician;
+    }
+
+    if (!statusRefetchGuard.current) {
+      statusRefetchGuard.current = true;
+      return;
+    }
+
+    fetchJobsForTechnician();
+  }, [techStatus, currentJob?.jobNumber, fetchJobsForTechnician]);
+
+  const refreshClockingStatus = useCallback(async () => {
+    if (!username) {
+      setClockingStatus(null);
+      return;
+    }
+
+    try {
+      const { success, data } = await getClockingStatus(username);
+      if (success) {
+        setClockingStatus(data);
+      } else {
+        setClockingStatus(null);
       }
-    };
+    } catch (error) {
+      console.error("❌ Error refreshing clocking status:", error);
+      setClockingStatus(null);
+    }
+  }, [username]);
 
-    fetchJobs();
-  }, [username, hasTechnicianAccess]);
+  useEffect(() => {
+    refreshClockingStatus();
+  }, [refreshClockingStatus, techStatus, currentJob?.jobNumber]);
 
   // Apply filters when filter or search changes
   useEffect(() => {
