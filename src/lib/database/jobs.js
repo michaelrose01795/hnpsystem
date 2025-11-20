@@ -151,6 +151,24 @@ const buildRectificationSummary = (items = []) => {
   return formatBulletText(lines.join("\n"));
 };
 
+const normaliseCauseEntries = (entries = [], requestItems = []) => {
+  const normalized = (Array.isArray(entries) ? entries : [])
+    .map((entry, index) => ({
+      requestKey: entry?.requestKey || requestItems[index]?.sourceKey || "",
+      text: entry?.text || entry?.notes || "",
+    }))
+    .filter((entry) => entry.requestKey);
+
+  if (normalized.length > 0) {
+    return normalized;
+  }
+
+  return (requestItems || []).map((request) => ({
+    requestKey: request.sourceKey,
+    text: "",
+  }));
+};
+
 const syncWriteUpRectificationItems = async ({
   jobId,
   jobNumber,
@@ -1925,6 +1943,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       rectificationItems,
       jobRequests: job.requests || [],
       vhcAuthorizationId: latestAuthorizationId,
+      causeEntries: normaliseCauseEntries(writeUp?.cause_entries, requestItems),
     };
 
     if (!writeUp) {
@@ -1974,6 +1993,14 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
 ============================================ */
 export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
   console.log("💾 saveWriteUpToDatabase:", jobNumber);
+
+  const sanitizeCauseEntriesForUpload = (entries = []) =>
+    (Array.isArray(entries) ? entries : [])
+      .map((entry) => ({
+        requestKey: entry?.requestKey || "",
+        text: entry?.text || entry?.notes || "",
+      }))
+      .filter((entry) => entry.requestKey);
 
   try {
     const { data: job, error: jobError } = await supabase
@@ -2121,6 +2148,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       parts_used: formattedAdditionalParts || null,
       recommendations: formattedCaused || null,
       ratification: rectificationSummary || null,
+      cause_entries: sanitizeCauseEntriesForUpload(writeUpData?.causeEntries),
       warranty_claim: writeUpData?.warrantyClaim || null,
       tsr_number: writeUpData?.tsrNumber || null,
       pwa_number: writeUpData?.pwaNumber || null,

@@ -77,6 +77,57 @@ const composeTaskKey = (task) => `${task.source}:${task.sourceKey}`;
 // ✅ Generate a reusable empty checkbox array
 const createCheckboxArray = () => Array(10).fill(false);
 
+const createCauseEntry = (requestKey = "") => ({
+  id: `${requestKey || "cause"}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  requestKey,
+  text: "",
+});
+
+const normalizeCauseEntriesForSave = (entries = []) =>
+  (Array.isArray(entries) ? entries : [])
+    .map((entry, index) => ({
+      requestKey: entry?.requestKey || "",
+      text: (entry?.text || "").toString(),
+      id: entry?.id ?? `${entry?.requestKey || "cause"}-${index}`,
+    }))
+    .filter((entry) => entry.requestKey)
+    .map((entry) => ({
+      requestKey: entry.requestKey,
+      text: entry.text,
+    }));
+
+const buildCauseSignature = (entries = []) =>
+  JSON.stringify(
+    (Array.isArray(entries) ? entries : []).map((entry) => ({
+      requestKey: entry?.requestKey || "",
+      text: (entry?.text || "").toString(),
+    }))
+  );
+
+const hydrateCauseEntries = (entries, fallbackRequests = []) => {
+  const normalized = (Array.isArray(entries) ? entries : [])
+    .map((entry, index) => ({
+      id:
+        entry?.id ||
+        `${entry?.requestKey || fallbackRequests[index]?.sourceKey || "cause"}-${index}-${Math.random()
+          .toString(36)
+          .slice(2)}`,
+      requestKey: entry?.requestKey || fallbackRequests[index]?.sourceKey || "",
+      text: entry?.text || entry?.notes || "",
+    }))
+    .filter((entry) => entry.requestKey);
+
+  if (normalized.length > 0) {
+    return normalized;
+  }
+
+  return (fallbackRequests || []).map((request) => ({
+    id: `cause-${request.sourceKey}`,
+    requestKey: request.sourceKey,
+    text: "",
+  }));
+};
+
 export default function WriteUpPage() {
   const router = useRouter(); // initialise router for navigation actions
   const { jobNumber } = router.query; // read job number from URL parameters
@@ -103,6 +154,7 @@ export default function WriteUpPage() {
     tasks: [],
     completionStatus: "additional_work",
     jobDescription: "",
+    causeEntries: [],
     vhcAuthorizationId: null,
   });
 
@@ -111,6 +163,7 @@ export default function WriteUpPage() {
     fault: "",
     caused: "",
     rectification: "",
+    causeSignature: "",
   });
   const [writeUpMeta, setWriteUpMeta] = useState({ jobId: null, writeupId: null });
   const markFieldsSynced = useCallback((fields) => {
@@ -118,6 +171,7 @@ export default function WriteUpPage() {
       fault: fields.fault || "",
       caused: fields.caused || "",
       rectification: fields.rectification || "",
+      causeSignature: fields.causeSignature || "",
     };
   }, []);
 
@@ -144,8 +198,14 @@ export default function WriteUpPage() {
         }
 
         const writeUpResponse = await getWriteUpByJobNumber(jobNumber);
+        const fallbackRequests = buildRequestList(jobPayload?.jobCard?.requests);
 
         if (writeUpResponse) {
+          const resolvedRequests = writeUpResponse.requests || fallbackRequests;
+          const incomingCauseEntries = hydrateCauseEntries(
+            writeUpResponse.causeEntries,
+            resolvedRequests
+          );
           setAuthorizedItems(writeUpResponse.authorisedItems || []);
           setWriteUpData((prev) => ({
             ...prev,
@@ -165,15 +225,17 @@ export default function WriteUpPage() {
             completionStatus: writeUpResponse.completionStatus || "additional_work",
             jobDescription: writeUpResponse.jobDescription || writeUpResponse.fault || "",
             vhcAuthorizationId: writeUpResponse.vhcAuthorizationId || null,
+            causeEntries: incomingCauseEntries,
           }));
           markFieldsSynced({
             fault: writeUpResponse.fault || "",
             caused: writeUpResponse.caused || "",
             rectification: writeUpResponse.rectification || "",
+            causeSignature: buildCauseSignature(incomingCauseEntries),
           });
         } else {
-          const fallbackRequests = buildRequestList(jobPayload?.jobCard?.requests);
           const fallbackDescription = formatNoteValue(jobPayload?.jobCard?.description || "");
+          const fallbackCauseEntries = hydrateCauseEntries([], fallbackRequests);
           setAuthorizedItems([]);
           setWriteUpData((prev) => ({
             ...prev,
@@ -199,11 +261,13 @@ export default function WriteUpPage() {
             completionStatus: "additional_work",
             jobDescription: fallbackDescription,
             vhcAuthorizationId: null,
+            causeEntries: fallbackCauseEntries,
           }));
           markFieldsSynced({
             fault: fallbackDescription,
             caused: "",
             rectification: "",
+            causeSignature: buildCauseSignature(fallbackCauseEntries),
           });
         }
       } catch (error) {
@@ -269,8 +333,46 @@ export default function WriteUpPage() {
     }));
   };
 
+  const handleCauseRequestChange = (entryId) => (event) => {
+    const value = event.target.value;
+    setWriteUpData((prev) => ({
+      ...prev,
+      causeEntries: prev.causeEntries.map((entry) => {
+        if (entry.id !== entryId) return entry;
+        return { ...entry, requestKey: value };
+      }),
+    }));
+  };
+
+  const handleCauseTextChange = (entryId) => (event) => {
+    const value = event.target.value;
+    setWriteUpData((prev) => ({
+      ...prev,
+      causeEntries: prev.causeEntries.map((entry) => {
+        if (entry.id !== entryId) return entry;
+        return { ...entry, text: value };
+      }),
+    }));
+  };
+
+  const addCauseRow = () => {
+    const defaultRequest = writeUpData.tasks.find((task) => task.source === "request");
+    const newEntry = createCauseEntry(defaultRequest?.sourceKey || "");
+    setWriteUpData((prev) => ({
+      ...prev,
+      causeEntries: [...prev.causeEntries, newEntry],
+    }));
+  };
+
+  const removeCauseRow = (entryId) => {
+    setWriteUpData((prev) => ({
+      ...prev,
+      causeEntries: prev.causeEntries.filter((entry) => entry.id !== entryId),
+    }));
+  };
+
   const persistLiveNotes = useCallback(
-    async ({ fault, caused, rectification }) => {
+    async ({ fault, caused, rectification, causeEntries }) => {
       const jobId = writeUpMeta.jobId;
       if (!jobId) {
         return;
@@ -282,10 +384,12 @@ export default function WriteUpPage() {
         rectification: rectification || "",
       };
 
+      const normalizedCauseEntries = normalizeCauseEntriesForSave(causeEntries);
       const payload = {
         work_performed: sanitizedFields.fault || null,
         recommendations: sanitizedFields.caused || null,
         ratification: sanitizedFields.rectification || null,
+        cause_entries: normalizedCauseEntries,
         updated_at: new Date().toISOString(),
       };
 
@@ -334,7 +438,10 @@ export default function WriteUpPage() {
           }));
         }
 
-        markFieldsSynced(sanitizedFields);
+        markFieldsSynced({
+          ...sanitizedFields,
+          causeSignature: buildCauseSignature(normalizedCauseEntries),
+        });
       } catch (error) {
         console.error("❌ Live write-up sync failed:", error);
       }
@@ -370,11 +477,13 @@ export default function WriteUpPage() {
       caused: writeUpData.caused,
       rectification: writeUpData.rectification,
     };
+    const causeSignature = buildCauseSignature(writeUpData.causeEntries);
 
     const hasChanges =
       snapshot.fault !== lastSyncedFieldsRef.current.fault ||
       snapshot.caused !== lastSyncedFieldsRef.current.caused ||
-      snapshot.rectification !== lastSyncedFieldsRef.current.rectification;
+      snapshot.rectification !== lastSyncedFieldsRef.current.rectification ||
+      causeSignature !== lastSyncedFieldsRef.current.causeSignature;
 
     if (!hasChanges || saving) {
       return;
@@ -384,10 +493,13 @@ export default function WriteUpPage() {
       clearTimeout(liveSyncTimeoutRef.current);
     }
 
-    liveSyncTimeoutRef.current = setTimeout(() => {
-      liveSyncTimeoutRef.current = null;
-      persistLiveNotes(snapshot);
-    }, 600);
+      liveSyncTimeoutRef.current = setTimeout(() => {
+        liveSyncTimeoutRef.current = null;
+        persistLiveNotes({
+          ...snapshot,
+          causeEntries: writeUpData.causeEntries,
+        });
+      }, 600);
 
     return () => {
       if (liveSyncTimeoutRef.current) {
@@ -399,6 +511,7 @@ export default function WriteUpPage() {
     writeUpData.fault,
     writeUpData.caused,
     writeUpData.rectification,
+    writeUpData.causeEntries,
     writeUpMeta.jobId,
     persistLiveNotes,
     saving,
@@ -427,7 +540,6 @@ export default function WriteUpPage() {
       const normalizedFault = incoming.work_performed ?? "";
       const normalizedCause = incoming.recommendations ?? "";
       const normalizedRectification = incoming.ratification ?? "";
-
       setWriteUpData((prev) => {
         const nextState = { ...prev };
         let changed = false;
@@ -448,6 +560,17 @@ export default function WriteUpPage() {
           changed = true;
         }
 
+        const prevCauseSignature = buildCauseSignature(prev.causeEntries);
+        const incomingCauseEntries = hydrateCauseEntries(
+          incoming.cause_entries,
+          prev.tasks.filter((task) => task.source === "request")
+        );
+        const causeSignature = buildCauseSignature(incomingCauseEntries);
+        if (causeSignature !== prevCauseSignature) {
+          nextState.causeEntries = incomingCauseEntries;
+          changed = true;
+        }
+
         if (!changed) {
           return prev;
         }
@@ -456,6 +579,7 @@ export default function WriteUpPage() {
           fault: nextState.fault,
           caused: nextState.caused,
           rectification: nextState.rectification,
+          causeSignature,
         });
 
         return nextState;
@@ -795,35 +919,139 @@ export default function WriteUpPage() {
                   flex: 1,
                   minHeight: 0
                 }}>
-                  <h3 style={{
-                    marginTop: 0,
-                    marginBottom: "12px",
-                    color: "#d10000",
-                    fontSize: "18px",
-                    fontWeight: "600"
-                  }}>
-                    Cause
-                  </h3>
-                  <textarea
-                    placeholder="Enter cause details..."
-                    value={writeUpData.caused}
-                    onChange={handleNoteChange("caused")}
-                    style={{
-                      flex: 1,
-                      padding: "12px",
-                      width: "100%",
-                      resize: "none",
-                      border: "1px solid #e0e0e0",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      fontFamily: "inherit",
-                      outline: "none",
-                      transition: "border-color 0.2s",
-                      minHeight: 0
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = "#d10000"}
-                    onBlur={(e) => e.currentTarget.style.borderColor = "#e0e0e0"}
-                  />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <h3 style={{
+                      margin: 0,
+                      color: "#d10000",
+                      fontSize: "18px",
+                      fontWeight: "600"
+                    }}>
+                      Cause
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={addCauseRow}
+                      disabled={requestTasks.length === 0}
+                      style={{
+                        backgroundColor: requestTasks.length === 0 ? "#d1d5db" : "#1d4ed8",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        padding: "8px 14px",
+                        cursor: requestTasks.length === 0 ? "not-allowed" : "pointer",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                      }}
+                    >
+                      + Add Cause
+                    </button>
+                  </div>
+
+                  {writeUpData.causeEntries.length > 0 ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {writeUpData.causeEntries.map((entry) => {
+                        const matchedRequest = requestTasks.find((task) => task.sourceKey === entry.requestKey);
+                        return (
+                          <div
+                            key={entry.id}
+                            style={{
+                              border: "1px solid #e5e7eb",
+                              borderRadius: "8px",
+                              padding: "12px",
+                              backgroundColor: "#f9fafb"
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                                  {matchedRequest ? matchedRequest.label : "Unmapped request"}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                <select
+                                  value={entry.requestKey}
+                                  onChange={handleCauseRequestChange(entry.id)}
+                                  style={{
+                                    padding: "6px 8px",
+                                    borderRadius: "6px",
+                                    border: "1px solid #cbd5f5",
+                                    fontSize: "12px",
+                                  }}
+                                >
+                                  <option value="">
+                                    Select request
+                                  </option>
+                                  {requestTasks.map((task, index) => (
+                                    <option key={`${task.sourceKey}-${index}`} value={task.sourceKey}>
+                                      Request {index + 1}: {task.label}
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => removeCauseRow(entry.id)}
+                                  style={{
+                                    border: "none",
+                                    backgroundColor: "#ef4444",
+                                    color: "white",
+                                    borderRadius: "6px",
+                                    padding: "5px 10px",
+                                    cursor: "pointer",
+                                    fontSize: "12px",
+                                  }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+                            <textarea
+                              placeholder="Describe the cause for this request..."
+                              value={entry.text}
+                              onChange={handleCauseTextChange(entry.id)}
+                              style={{
+                                width: "100%",
+                                minHeight: "80px",
+                                borderRadius: "6px",
+                                border: "1px solid #cbd5f5",
+                                padding: "10px",
+                                fontSize: "14px",
+                                fontFamily: "inherit",
+                                resize: "vertical",
+                                outline: "none",
+                                backgroundColor: "white",
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p style={{ color: "#9ca3af", fontSize: "13px", marginTop: "4px" }}>
+                      Add request-specific causes so each job request has a matching root-cause note.
+                    </p>
+                  )}
+
+                  <div style={{ marginTop: "16px" }}>
+                    <textarea
+                      placeholder="Enter cause details..."
+                      value={writeUpData.caused}
+                      onChange={handleNoteChange("caused")}
+                      style={{
+                        padding: "12px",
+                        width: "100%",
+                        resize: "none",
+                        border: "1px solid #e0e0e0",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                        fontFamily: "inherit",
+                        outline: "none",
+                        transition: "border-color 0.2s",
+                        minHeight: 0,
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = "#d10000"}
+                      onBlur={(e) => e.currentTarget.style.borderColor = "#e0e0e0"}
+                    />
+                  </div>
                 </div>
 
                 <div style={{
