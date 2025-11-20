@@ -10,7 +10,8 @@ import { useRoster } from "@/context/RosterContext";
 import { getAllJobs } from "@/lib/database/jobs";
 import { getClockingStatus } from "@/lib/database/clocking";
 import JobCardModal from "@/components/JobCards/JobCardModal"; // Import Start Job modal
-import { normalizeDisplayName } from "@/utils/nameUtils";
+import { getUserActiveJobs } from "@/lib/database/jobClocking";
+import { supabase } from "@/lib/supabaseClient";
 
 const STATUS_BADGE_STYLES = {
   "In Progress": { background: "#dbeafe", color: "#1e40af" },
@@ -46,7 +47,7 @@ const formatCreatedAt = (value) => {
 
 export default function MyJobsPage() {
   const router = useRouter();
-  const { user, status: techStatus, currentJob } = useUser();
+  const { user, status: techStatus, currentJob, dbUserId } = useUser();
   const { usersByRole, isLoading: rosterLoading } = useRoster();
   
   const [jobs, setJobs] = useState([]);
@@ -59,6 +60,7 @@ export default function MyJobsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showStartJobModal, setShowStartJobModal] = useState(false); // Control Start Job modal visibility
   const [prefilledJobNumber, setPrefilledJobNumber] = useState(""); // Prefill job number in modal
+  const [activeJobIds, setActiveJobIds] = useState(new Set());
 
   const username = user?.username?.trim();
   const techsList = usersByRole?.["Techs"] || [];
@@ -84,27 +86,41 @@ export default function MyJobsPage() {
   const hasTechnicianAccess =
     (username && allowedTechNames.has(username)) || hasRoleAccess;
 
+  const isAssignedToTechnician = useCallback(
+    (job) => {
+      if (!dbUserId || !job) return false;
+
+      const assignedNumeric =
+        typeof job.assignedTo === "number"
+          ? job.assignedTo
+          : typeof job.assignedTo === "string"
+          ? Number(job.assignedTo)
+          : null;
+
+      if (assignedNumeric === dbUserId) {
+        return true;
+      }
+
+      if (job.assignedTech?.id && job.assignedTech.id === dbUserId) {
+        return true;
+      }
+
+      return false;
+    },
+    [dbUserId]
+  );
+
   const fetchJobsForTechnician = useCallback(async () => {
-    if (!hasTechnicianAccess || !username) return;
+    if (!hasTechnicianAccess || !dbUserId) return;
 
     setLoading(true);
 
     try {
-      const normalizedUsername = normalizeDisplayName(username);
       const fetchedJobs = await getAllJobs();
-      console.log("[MyJobs] fetched jobs:", fetchedJobs); // Debug log
+      console.log("[MyJobs] fetched jobs:", fetchedJobs);
       setJobs(fetchedJobs);
 
-      const assignedJobs = fetchedJobs.filter((job) => {
-        const assignedNameRaw =
-          job.assignedTech?.name ||
-          job.technician ||
-          (typeof job.assignedTo === "string" ? job.assignedTo : "");
-
-        if (!assignedNameRaw || !normalizedUsername) return false;
-
-        return normalizeDisplayName(assignedNameRaw) === normalizedUsername;
-      });
+      const assignedJobs = fetchedJobs.filter((job) => isAssignedToTechnician(job));
 
       const sortedJobs = assignedJobs.sort((a, b) => {
         if (a.createdAt && b.createdAt) {
@@ -120,15 +136,131 @@ export default function MyJobsPage() {
     } finally {
       setLoading(false);
     }
-  }, [hasTechnicianAccess, username]);
+  }, [hasTechnicianAccess, dbUserId, isAssignedToTechnician]);
 
   useEffect(() => {
-    if (!hasTechnicianAccess || !username) return;
+    if (!hasTechnicianAccess || !dbUserId) return;
     fetchJobsForTechnician();
-  }, [hasTechnicianAccess, username, fetchJobsForTechnician]);
+  }, [hasTechnicianAccess, dbUserId, fetchJobsForTechnician]);
+
+  const fetchActiveJobs = useCallback(async () => {
+    if (!dbUserId) {
+      setActiveJobIds(new Set());
+      return;
+    }
+
+    try {
+      const result = await getUserActiveJobs(dbUserId);
+      if (result.success) {
+        const ids = new Set(result.data.map((entry) => Number(entry.jobId)));
+        setActiveJobIds(ids);
+      } else {
+        setActiveJobIds(new Set());
+      }
+    } catch (error) {
+      console.error("❌ Failed to fetch active jobs:", error);
+      setActiveJobIds(new Set());
+    }
+  }, [dbUserId]);
+
+  const jobIdsFilterString = useMemo(() => {
+    const ids = myJobs
+      .map((job) => {
+        if (Number.isInteger(job?.id)) return job.id;
+        if (job?.id) return Number(job.id);
+        return null;
+      })
+      .filter((id) => Number.isInteger(id));
+    return ids.length > 0 ? ids.join(",") : "";
+  }, [myJobs]);
 
   const statusRefetchGuard = useRef(false);
   const previousFetchRef = useRef(fetchJobsForTechnician);
+
+  useEffect(() => {
+    fetchActiveJobs();
+  }, [fetchActiveJobs]);
+
+  useEffect(() => {
+    if (!dbUserId) return;
+
+    const channel = supabase
+      .channel(`myjobs-jobs-${dbUserId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "jobs",
+          filter: `assigned_to=eq.${dbUserId}`
+        },
+        () => {
+          fetchJobsForTechnician();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+      if (typeof supabase.removeChannel === "function") {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [dbUserId, fetchJobsForTechnician]);
+
+  useEffect(() => {
+    if (!dbUserId || !jobIdsFilterString) return;
+
+    const channel = supabase
+      .channel(`myjobs-parts-${dbUserId}-${jobIdsFilterString}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "parts_requests",
+          filter: `job_id=in.(${jobIdsFilterString})`
+        },
+        () => {
+          fetchJobsForTechnician();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+      if (typeof supabase.removeChannel === "function") {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [dbUserId, jobIdsFilterString, fetchJobsForTechnician]);
+
+  useEffect(() => {
+    if (!dbUserId) return;
+
+    const channel = supabase
+      .channel(`myjobs-clocking-${dbUserId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "job_clocking",
+          filter: `user_id=eq.${dbUserId}`
+        },
+        () => {
+          fetchActiveJobs();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+      if (typeof supabase.removeChannel === "function") {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [dbUserId, fetchActiveJobs]);
 
   useEffect(() => {
     if (previousFetchRef.current !== fetchJobsForTechnician) {
@@ -521,6 +653,15 @@ export default function MyJobsPage() {
                   }
                 };
 
+                const jobType = job.type || "Service";
+                const isClockedOn = activeJobIds.has(job.id);
+                const partsPending = (job.partsRequests || []).some((request) => {
+                  const status = (request.status || "").toLowerCase();
+                  return !["picked", "fitted", "cancelled"].includes(status);
+                });
+                const clockStateLabel = isClockedOn ? "Clocked On" : "Clocked Off";
+                const partsIndicatorColor = partsPending ? "#dc2626" : "#10b981";
+
                 return (
                   <div
                     key={job.id || job.jobNumber}
@@ -654,17 +795,34 @@ export default function MyJobsPage() {
                           style={{
                             display: "flex",
                             alignItems: "center",
-                            gap: "12px",
+                            gap: "10px",
                             flexWrap: "wrap"
                           }}
                         >
+                          <span style={{ fontSize: "12px", color: "#444" }}>
+                            Customer: {job.customer || "Unknown"}
+                          </span>
+                          <span style={{ fontSize: "12px", color: "#444" }}>
+                            Type: {jobType}
+                          </span>
+                          <span style={{ fontSize: "12px", color: vhcColor }}>
+                            {vhcRequired ? "VHC Required" : "VHC Not Required"}
+                          </span>
+                          <span
+                            style={{ fontSize: "12px", color: isClockedOn ? "#16a34a" : "#6b7280" }}
+                          >
+                            {clockStateLabel}
+                          </span>
                           <span
                             style={{
-                              fontSize: "13px",
-                              color: "#666"
+                              fontSize: "12px",
+                              color: "#fff",
+                              backgroundColor: partsIndicatorColor,
+                              padding: "2px 10px",
+                              borderRadius: "999px"
                             }}
                           >
-                            {job.customer || "Unknown customer"}
+                            {partsPending ? "Parts Pending" : "No Parts Waiting"}
                           </span>
                         </div>
 
