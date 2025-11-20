@@ -84,7 +84,6 @@ export default function WriteUpPage() {
   const { usersByRole, isLoading: rosterLoading } = useRoster();
 
   const [jobData, setJobData] = useState(null);
-  const [requestsSummary, setRequestsSummary] = useState([]);
   const [authorizedItems, setAuthorizedItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -147,7 +146,6 @@ export default function WriteUpPage() {
         const writeUpResponse = await getWriteUpByJobNumber(jobNumber);
 
         if (writeUpResponse) {
-          setRequestsSummary(writeUpResponse.requests || buildRequestList(jobPayload?.jobCard?.requests));
           setAuthorizedItems(writeUpResponse.authorisedItems || []);
           setWriteUpData((prev) => ({
             ...prev,
@@ -176,7 +174,6 @@ export default function WriteUpPage() {
         } else {
           const fallbackRequests = buildRequestList(jobPayload?.jobCard?.requests);
           const fallbackDescription = formatNoteValue(jobPayload?.jobCard?.description || "");
-          setRequestsSummary(fallbackRequests);
           setAuthorizedItems([]);
           setWriteUpData((prev) => ({
             ...prev,
@@ -256,6 +253,19 @@ export default function WriteUpPage() {
       ...prev,
       fault: formatted,
       jobDescription: formatted,
+    }));
+  };
+
+  const handleRequestLabelChange = (taskKey) => (event) => {
+    const value = event.target.value;
+    setWriteUpData((prev) => ({
+      ...prev,
+      tasks: prev.tasks.map((task) => {
+        if (composeTaskKey(task) !== taskKey) {
+          return task;
+        }
+        return { ...task, label: value };
+      }),
     }));
   };
 
@@ -522,6 +532,7 @@ export default function WriteUpPage() {
   const goToCheckSheet = () => router.push(`/job-cards/${jobNumber}/check-box`); // jump to check sheet builder
   const goToVehicleDetails = () => router.push(`/job-cards/${jobNumber}/car-details`); // jump to vehicle detail view
 
+  const requestTasks = writeUpData.tasks.filter((task) => task && task.source === "request");
   const totalTasks = writeUpData.tasks.length;
   const completedTasks = writeUpData.tasks.filter((task) => task.status === "complete").length;
   const completionStatusLabel =
@@ -717,19 +728,57 @@ export default function WriteUpPage() {
                   />
                   <div style={{ marginTop: "16px" }}>
                     <h4 style={{ margin: "0 0 8px 0", color: "#444", fontSize: "15px", fontWeight: "600" }}>
-                      Customer Requests
+                      Job requests (each box auto-loaded from the job card)
                     </h4>
-                    {requestsSummary.length > 0 ? (
-                      <ul style={{ margin: 0, paddingLeft: "18px", color: "#555", fontSize: "14px" }}>
-                        {requestsSummary.map((request) => (
-                          <li key={request.sourceKey}>
-                            {request.label}
-                          </li>
-                        ))}
-                      </ul>
+                    {requestTasks.length > 0 ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        {requestTasks.map((task, index) => {
+                          const taskKey = composeTaskKey(task);
+                          const isComplete = task.status === "complete";
+                          return (
+                            <div
+                              key={taskKey}
+                              style={{
+                                borderRadius: "8px",
+                                border: `1px solid ${isComplete ? "#10b981" : "#f3c1c1"}`,
+                                padding: "12px",
+                                backgroundColor: isComplete ? "#ecfdf5" : "#fff",
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                                <label style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "13px", color: isComplete ? "#047857" : "#b45309" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isComplete}
+                                    onChange={() => toggleTaskStatus(taskKey)}
+                                    style={{ accentColor: "#d10000", cursor: "pointer" }}
+                                  />
+                                  {isComplete ? "Marked complete" : "Mark as complete"}
+                                </label>
+                                <span style={{ fontSize: "12px", color: "#777" }}>Request {index + 1}</span>
+                              </div>
+                              <textarea
+                                value={task.label}
+                                onChange={handleRequestLabelChange(taskKey)}
+                                style={{
+                                  width: "100%",
+                                  minHeight: "80px",
+                                  borderRadius: "6px",
+                                  border: "1px solid #e0e0e0",
+                                  padding: "10px",
+                                  fontSize: "14px",
+                                  fontFamily: "inherit",
+                                  resize: "vertical",
+                                  outline: "none",
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
                     ) : (
                       <p style={{ color: "#999", fontStyle: "italic", margin: 0 }}>
-                        No requests recorded for this job.
+                        No requests recorded for this job card.
                       </p>
                     )}
                   </div>
