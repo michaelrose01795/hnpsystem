@@ -5,7 +5,6 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
-
 CREATE TABLE public.activity_logs (
   log_id integer NOT NULL DEFAULT nextval('activity_logs_log_id_seq'::regclass),
   user_id integer,
@@ -518,6 +517,7 @@ CREATE TABLE public.messages (
   read boolean DEFAULT false,
   created_at timestamp with time zone DEFAULT now(),
   thread_id integer,
+  metadata jsonb,
   CONSTRAINT messages_pkey PRIMARY KEY (message_id),
   CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(user_id),
   CONSTRAINT messages_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES public.users(user_id),
@@ -668,6 +668,7 @@ CREATE TABLE public.parts_requests (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   part_id uuid,
+  description text,
   CONSTRAINT parts_requests_pkey PRIMARY KEY (request_id),
   CONSTRAINT parts_requests_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES public.users(user_id),
   CONSTRAINT parts_requests_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(user_id),
@@ -877,6 +878,18 @@ CREATE TABLE public.workshop_consumable_orders (
   CONSTRAINT workshop_consumable_orders_pkey PRIMARY KEY (order_id),
   CONSTRAINT workshop_consumable_orders_consumable_id_fkey FOREIGN KEY (consumable_id) REFERENCES public.workshop_consumables(id)
 );
+CREATE TABLE public.workshop_consumable_requests (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  item_name text NOT NULL,
+  quantity integer NOT NULL DEFAULT 0,
+  requested_by integer,
+  requested_by_name text,
+  requested_at timestamp with time zone NOT NULL DEFAULT now(),
+  status text NOT NULL DEFAULT 'pending'::text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT workshop_consumable_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT workshop_consumable_requests_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES public.users(user_id)
+);
 CREATE TABLE public.workshop_consumables (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   item_name text NOT NULL,
@@ -894,27 +907,4 @@ CREATE TABLE public.workshop_consumables (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT workshop_consumables_pkey PRIMARY KEY (id)
-);
-
-CREATE TABLE public.workshop_consumable_budgets (
-  id SERIAL PRIMARY KEY,
-  year integer NOT NULL,
-  month integer NOT NULL,
-  monthly_budget numeric NOT NULL DEFAULT 0,
-  updated_by integer REFERENCES public.users(user_id),
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT workshop_consumable_budgets_year_month_key UNIQUE (year, month)
-);
-
-CREATE TABLE public.workshop_consumable_requests (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  item_name text NOT NULL,
-  quantity integer NOT NULL DEFAULT 0,
-  requested_by integer REFERENCES public.users(user_id),
-  requested_by_name text,
-  requested_at timestamp with time zone NOT NULL DEFAULT now(),
-  status text NOT NULL DEFAULT 'pending',
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  PRIMARY KEY (id)
 );

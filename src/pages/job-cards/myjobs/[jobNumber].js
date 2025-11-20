@@ -12,6 +12,7 @@ import { getJobByNumber, updateJobStatus } from "@/lib/database/jobs";
 import { getVHCChecksByJob } from "@/lib/database/vhc";
 import { getClockingStatus } from "@/lib/database/clocking";
 import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
+import { supabase } from "@/lib/supabaseClient";
 
 // Status color mapping for consistency
 const STATUS_COLORS = {
@@ -59,6 +60,20 @@ function calculateHoursWorked(clockInTime) {
   return hours.toFixed(1);
 }
 
+const PARTS_STATUS_STYLES = {
+  pending: { background: "#fef3c7", color: "#92400e" },
+  awaiting_stock: { background: "#fee2e2", color: "#b91c1c" },
+  allocated: { background: "#f0fdf4", color: "#15803d" },
+  picked: { background: "#dcfce7", color: "#15803d" },
+  fitted: { background: "#dbeafe", color: "#1d4ed8" },
+  cancelled: { background: "#f3f4f6", color: "#6b7280" },
+};
+
+const getPartsStatusStyle = (status) => {
+  if (!status) return { background: "#f3f4f6", color: "#4b5563" };
+  return PARTS_STATUS_STYLES[status.toLowerCase()] || { background: "#f3f4f6", color: "#4b5563" };
+};
+
 // Helper to get status after clock out
 const getStatusAfterClockOut = (currentStatus) => {
   if (!currentStatus) return null;
@@ -88,10 +103,60 @@ export default function TechJobDetailPage() {
   const [jobClocking, setJobClocking] = useState(null);
   const [clockOutLoading, setClockOutLoading] = useState(false);
   const [clockInLoading, setClockInLoading] = useState(false);
+  const [partsRequests, setPartsRequests] = useState([]);
+  const [partsRequestsLoading, setPartsRequestsLoading] = useState(false);
+  const [partRequestDescription, setPartRequestDescription] = useState("");
+  const [partRequestQuantity, setPartRequestQuantity] = useState(1);
+  const [partsSubmitting, setPartsSubmitting] = useState(false);
+  const [partsFeedback, setPartsFeedback] = useState("");
 
   const jobCardId = jobData?.jobCard?.id ?? null;
   const jobCardNumber = jobData?.jobCard?.jobNumber ?? jobNumber;
   const username = user?.username?.trim();
+
+  const loadPartsRequests = useCallback(
+    async (overrideJobId = null) => {
+      const targetJobId = overrideJobId ?? jobCardId;
+      if (!targetJobId) {
+        setPartsRequests([]);
+        return;
+      }
+
+      setPartsRequestsLoading(true);
+
+      try {
+        const { data, error } = await supabase
+          .from("parts_requests")
+          .select(`
+            request_id,
+            job_id,
+            quantity,
+            status,
+            description,
+            created_at,
+            part:part_id(
+              id,
+              part_number,
+              name
+            )
+          `)
+          .eq("job_id", targetJobId)
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          throw error;
+        }
+
+        setPartsRequests(data || []);
+      } catch (loadError) {
+        console.error("❌ Failed to load parts requests:", loadError);
+        setPartsRequests([]);
+      } finally {
+        setPartsRequestsLoading(false);
+      }
+    },
+    [jobCardId]
+  );
 
   // ✅ FIXED: Define all useCallback hooks FIRST before any useEffect that uses them
 
@@ -170,6 +235,43 @@ export default function TechJobDetailPage() {
       setJobClocking(null);
     }
   }, [dbUserId, user?.id, jobCardId]);
+
+  const fetchJobData = useCallback(async () => {
+    if (!jobNumber) return;
+
+    setLoading(true);
+    try {
+      const { data: job, error: jobError } = await getJobByNumber(jobNumber);
+
+      if (jobError || !job) {
+        alert("Job not found");
+        router.push("/job-cards/myjobs");
+        return;
+      }
+
+      setJobData(job);
+
+      const jobCardIdForFetch = job?.jobCard?.id;
+      if (jobCardIdForFetch) {
+        const checks = await getVHCChecksByJob(jobCardIdForFetch);
+        setVhcChecks(checks);
+      } else {
+        setVhcChecks([]);
+      }
+
+      await refreshClockingStatus();
+      await loadPartsRequests(jobCardIdForFetch);
+    } catch (fetchError) {
+      console.error("❌ Error fetching job:", fetchError);
+      alert("Failed to load job");
+    } finally {
+      setLoading(false);
+    }
+  }, [jobNumber, router, refreshClockingStatus, loadPartsRequests]);
+
+  useEffect(() => {
+    fetchJobData();
+  }, [fetchJobData]);
 
   // Callback: Handle job clock out
   const handleJobClockOut = useCallback(async () => {
@@ -285,6 +387,61 @@ export default function TechJobDetailPage() {
     jobData?.jobCard?.status,
   ]);
 
+  const handlePartsRequestSubmit = useCallback(async () => {
+    if (!jobCardId) {
+      alert("Unable to submit a part request before the job data is loaded.");
+      return;
+    }
+
+    const requesterId = dbUserId ?? user?.id;
+    if (!requesterId) {
+      alert("Unable to resolve your workshop profile. Try refreshing the page.");
+      return;
+    }
+
+    const trimmedDescription = partRequestDescription.trim();
+    if (!trimmedDescription) {
+      alert("Describe the part you need so the parts team can act on it.");
+      return;
+    }
+
+    setPartsSubmitting(true);
+    setPartsFeedback("");
+
+    try {
+      const { error } = await supabase.from("parts_requests").insert({
+        job_id: jobCardId,
+        requested_by: requesterId,
+        quantity: Math.max(1, Number(partRequestQuantity) || 1),
+        description: trimmedDescription,
+        status: "pending",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setPartRequestDescription("");
+      setPartRequestQuantity(1);
+      setPartsFeedback("Part request submitted. Parts will review it alongside VHC items.");
+      await fetchJobData();
+    } catch (submitError) {
+      console.error("❌ Failed to submit part request:", submitError);
+      alert(submitError.message || "Failed to raise the part request. Try again.");
+    } finally {
+      setPartsSubmitting(false);
+    }
+  }, [
+    jobCardId,
+    dbUserId,
+    user?.id,
+    partRequestDescription,
+    partRequestQuantity,
+    fetchJobData,
+  ]);
+
   // ✅ NOW all useEffects come AFTER all callbacks are defined
 
   // Effect: Refresh job clocking when jobCardId changes
@@ -301,47 +458,6 @@ export default function TechJobDetailPage() {
     }
     void syncJobStatus(IN_PROGRESS_STATUS, currentStatus);
   }, [jobClocking, jobCardId, jobData?.jobCard?.status, syncJobStatus]);
-
-  // Effect: Fetch job data on component mount
-  useEffect(() => {
-    if (!jobNumber) return;
-
-    const fetchData = async () => {
-      setLoading(true);
-
-      try {
-        // Fetch job details
-        const { data: job, error: jobError } = await getJobByNumber(jobNumber);
-
-        if (jobError || !job) {
-          alert("Job not found");
-          router.push("/job-cards/myjobs");
-          return;
-        }
-
-        setJobData(job);
-
-        // Fetch VHC checks for this job
-        const jobCardId = job?.jobCard?.id;
-        if (jobCardId) {
-          const checks = await getVHCChecksByJob(jobCardId);
-          setVhcChecks(checks);
-        } else {
-          setVhcChecks([]);
-        }
-
-        await refreshClockingStatus();
-
-      } catch (fetchError) {
-        console.error("❌ Error fetching job:", fetchError);
-        alert("Failed to load job");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [jobNumber, router, refreshClockingStatus]);
 
   // Helper: Resolve next action type from status
   const resolveNextActionType = (status) => {
@@ -1225,46 +1341,211 @@ export default function TechJobDetailPage() {
               backgroundColor: "white",
               padding: "24px",
               borderRadius: "12px",
-              boxShadow: "0 2px 8px rgba(209,0,0,0.08)",
+              boxShadow: "0 2px 8px rgba(209,0,0,0.1)",
               border: "1px solid #ffe5e5",
-              textAlign: "center",
               display: "flex",
               flexDirection: "column",
               gap: "16px",
-              alignItems: "center"
+              alignItems: "stretch"
             }}>
-              <div style={{ fontSize: "48px", marginBottom: "8px" }}>⚙️</div>
-              <h3 style={{ fontSize: "20px", fontWeight: "700", margin: 0 }}>
-                Parts Requests
-              </h3>
-              <p style={{ color: "#6b7280", margin: 0 }}>
-                Track, raise and monitor parts needed to complete the job.
-              </p>
-              <button
-                onClick={() => alert("Parts request feature coming soon")}
-                style={{
-                  padding: "12px 26px",
-                  backgroundColor: "#d10000",
-                  color: "white",
-                  border: "1px solid #b91c1c",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "15px",
-                  fontWeight: "600",
-                  boxShadow: "0 4px 12px rgba(209,0,0,0.18)"
-                }}
-              >
-                + Request Parts
-              </button>
               <div style={{
-                width: "100%",
-                padding: "24px",
-                backgroundColor: "#fff5f5",
+                backgroundColor: "#fff7ed",
                 borderRadius: "12px",
-                border: "1px solid #ffd6d6",
-                color: "#9ca3af"
+                border: "1px solid #fed7aa",
+                padding: "20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px"
               }}>
-                <p style={{ margin: 0 }}>No parts requested yet</p>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "#b45309" }}>
+                    Request a Part
+                  </h3>
+                  <span style={{ fontSize: "12px", color: "#92400e" }}>
+                    Surfaces in the VHC parts queue
+                  </span>
+                </div>
+                <p style={{ margin: 0, color: "#6b7280", fontSize: "14px" }}>
+                  Describe the specific part you need—the parts team will price, approve, and pre-pick it alongside other VHC requests.
+                </p>
+                <textarea
+                  rows={3}
+                  value={partRequestDescription}
+                  onChange={(e) => {
+                    setPartRequestDescription(e.target.value);
+                    if (partsFeedback) {
+                      setPartsFeedback("");
+                    }
+                  }}
+                  placeholder="e.g. Front right brake pad set (OEM) for MK3 1.6 diesel."
+                  style={{
+                    width: "100%",
+                    borderRadius: "10px",
+                    border: "1px solid #e5e7eb",
+                    padding: "12px",
+                    fontSize: "14px",
+                    resize: "vertical",
+                    minHeight: "88px",
+                    fontFamily: "inherit",
+                    outline: "none"
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#d97706";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#e5e7eb";
+                  }}
+                />
+                <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
+                  <label style={{ display: "flex", flexDirection: "column", fontSize: "12px", color: "#6b7280" }}>
+                    Quantity
+                    <input
+                      type="number"
+                      min={1}
+                      value={partRequestQuantity}
+                      onChange={(e) => {
+                        let next = Number(e.target.value);
+                        if (Number.isNaN(next) || next < 1) next = 1;
+                        setPartRequestQuantity(next);
+                      }}
+                      style={{
+                        marginTop: "4px",
+                        width: "80px",
+                        padding: "6px 10px",
+                        borderRadius: "8px",
+                        border: "1px solid #e5e7eb",
+                        fontSize: "14px"
+                      }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handlePartsRequestSubmit}
+                    disabled={partsSubmitting}
+                    style={{
+                      padding: "10px 22px",
+                      backgroundColor: partsSubmitting ? "#a1a1aa" : "#d97706",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "10px",
+                      cursor: partsSubmitting ? "not-allowed" : "pointer",
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      boxShadow: partsSubmitting ? "none" : "0 4px 10px rgba(217,119,6,0.25)"
+                    }}
+                  >
+                    {partsSubmitting ? "Submitting…" : "Request Part"}
+                  </button>
+                </div>
+                {partsFeedback && (
+                  <div style={{
+                    fontSize: "13px",
+                    color: "#065f46",
+                    backgroundColor: "#ecfdf5",
+                    borderRadius: "8px",
+                    padding: "10px 14px"
+                  }}>
+                    {partsFeedback}
+                  </div>
+                )}
+              </div>
+
+              <div style={{
+                backgroundColor: "white",
+                borderRadius: "12px",
+                border: "1px solid #e5e7eb",
+                padding: "20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px"
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px" }}>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700" }}>Active Requests</h3>
+                  <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                    {partsRequests.length} request{partsRequests.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>
+                  These entries are visible to the parts team in the VHC parts tab for pricing, approval, and pre-picks.
+                </p>
+                {partsRequestsLoading ? (
+                  <p style={{ margin: 0, fontSize: "14px", color: "#6b7280" }}>Loading requests…</p>
+                ) : partsRequests.length === 0 ? (
+                  <p style={{ margin: 0, fontSize: "14px", color: "#9ca3af" }}>
+                    No parts have been requested yet.
+                  </p>
+                ) : (
+                  <div style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                    maxHeight: "340px",
+                    overflowY: "auto",
+                    paddingRight: "4px"
+                  }}>
+                    {partsRequests.map((request) => {
+                      const statusLabel = (request.status || "pending").replace(/_/g, " ").toUpperCase();
+                      const badgeStyle = getPartsStatusStyle(request.status);
+                      const quantity = request.quantity ?? 1;
+                      const partLabel = request.part
+                        ? `${request.part.partNumber || "#"} • ${request.part.name || "Unnamed part"}`
+                        : `Custom request #${request.request_id}`;
+
+                      return (
+                        <div
+                          key={request.request_id}
+                          style={{
+                            padding: "16px",
+                            border: "1px solid #e5e7eb",
+                            borderRadius: "10px",
+                            backgroundColor: "#fafafc",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "6px"
+                          }}
+                        >
+                          <div style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "flex-start",
+                            gap: "12px"
+                          }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: "15px", fontWeight: "600", color: "#111827" }}>
+                                {partLabel}
+                              </div>
+                              <div style={{ fontSize: "13px", color: "#4b5563", marginTop: "2px" }}>
+                                {request.description || "No description provided."}
+                              </div>
+                              <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                                Requested {formatDateTime(request.created_at)}
+                              </div>
+                            </div>
+                            <span style={{
+                              ...badgeStyle,
+                              padding: "4px 14px",
+                              borderRadius: "999px",
+                              fontSize: "11px",
+                              fontWeight: "600"
+                            }}>
+                              {statusLabel}
+                            </span>
+                          </div>
+                          <div style={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            alignItems: "center",
+                            gap: "12px",
+                            fontSize: "13px",
+                            color: "#6b7280"
+                          }}>
+                            <span>Qty: {quantity}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
