@@ -3,7 +3,7 @@
 // file location: src/pages/job-cards/[jobNumber]/write-up.js
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import {
@@ -11,6 +11,7 @@ import {
   saveWriteUpToDatabase,
   getJobByNumber
 } from "@/lib/database/jobs";
+import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 
@@ -106,6 +107,21 @@ export default function WriteUpPage() {
     vhcAuthorizationId: null,
   });
 
+  const liveSyncTimeoutRef = useRef(null);
+  const lastSyncedFieldsRef = useRef({
+    fault: "",
+    caused: "",
+    rectification: "",
+  });
+  const [writeUpMeta, setWriteUpMeta] = useState({ jobId: null, writeupId: null });
+  const markFieldsSynced = useCallback((fields) => {
+    lastSyncedFieldsRef.current = {
+      fault: fields.fault || "",
+      caused: fields.caused || "",
+      rectification: fields.rectification || "",
+    };
+  }, []);
+
   const username = user?.username;
   const techsList = usersByRole?.["Techs"] || [];
   // ⚠️ Mock data found — replacing with Supabase query
@@ -152,6 +168,11 @@ export default function WriteUpPage() {
             jobDescription: writeUpResponse.jobDescription || writeUpResponse.fault || "",
             vhcAuthorizationId: writeUpResponse.vhcAuthorizationId || null,
           }));
+          markFieldsSynced({
+            fault: writeUpResponse.fault || "",
+            caused: writeUpResponse.caused || "",
+            rectification: writeUpResponse.rectification || "",
+          });
         } else {
           const fallbackRequests = buildRequestList(jobPayload?.jobCard?.requests);
           const fallbackDescription = formatNoteValue(jobPayload?.jobCard?.description || "");
@@ -182,6 +203,11 @@ export default function WriteUpPage() {
             jobDescription: fallbackDescription,
             vhcAuthorizationId: null,
           }));
+          markFieldsSynced({
+            fault: fallbackDescription,
+            caused: "",
+            rectification: "",
+          });
         }
       } catch (error) {
         console.error("❌ Error fetching write-up:", error);
@@ -192,6 +218,18 @@ export default function WriteUpPage() {
 
     fetchData();
   }, [jobNumber]);
+
+  useEffect(() => {
+    setWriteUpMeta({ jobId: null, writeupId: null });
+  }, [jobNumber]);
+
+  useEffect(() => {
+    if (!jobData?.jobCard) return;
+    setWriteUpMeta((prev) => ({
+      jobId: jobData.jobCard.id ?? prev.jobId,
+      writeupId: jobData.jobCard.writeUp?.writeup_id ?? prev.writeupId,
+    }));
+  }, [jobData]);
 
   // ✅ Shared handler for plain text fields
   const handleInputChange = (field) => (event) => {
@@ -221,6 +259,79 @@ export default function WriteUpPage() {
     }));
   };
 
+  const persistLiveNotes = useCallback(
+    async ({ fault, caused, rectification }) => {
+      const jobId = writeUpMeta.jobId;
+      if (!jobId) {
+        return;
+      }
+
+      const sanitizedFields = {
+        fault: fault || "",
+        caused: caused || "",
+        rectification: rectification || "",
+      };
+
+      const payload = {
+        work_performed: sanitizedFields.fault || null,
+        recommendations: sanitizedFields.caused || null,
+        ratification: sanitizedFields.rectification || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      try {
+        let savedRecord = null;
+
+        if (writeUpMeta.writeupId) {
+          const { data: updated, error } = await supabase
+            .from("job_writeups")
+            .update(payload)
+            .eq("writeup_id", writeUpMeta.writeupId)
+            .select()
+            .maybeSingle();
+
+          if (error) {
+            throw error;
+          }
+
+          savedRecord = updated;
+        }
+
+        if (!savedRecord) {
+          const { data: inserted, error } = await supabase
+            .from("job_writeups")
+            .insert([
+              {
+                ...payload,
+                job_id: jobId,
+                created_at: new Date().toISOString(),
+              },
+            ])
+            .select()
+            .maybeSingle();
+
+          if (error) {
+            throw error;
+          }
+
+          savedRecord = inserted;
+        }
+
+        if (savedRecord?.writeup_id && savedRecord.writeup_id !== writeUpMeta.writeupId) {
+          setWriteUpMeta((prev) => ({
+            ...prev,
+            writeupId: savedRecord.writeup_id,
+          }));
+        }
+
+        markFieldsSynced(sanitizedFields);
+      } catch (error) {
+        console.error("❌ Live write-up sync failed:", error);
+      }
+    },
+    [writeUpMeta.jobId, writeUpMeta.writeupId, markFieldsSynced]
+  );
+
   // ✅ Toggle checklist status and auto-update completion state
   const toggleTaskStatus = (taskKey) => {
     setWriteUpData((prev) => {
@@ -238,6 +349,133 @@ export default function WriteUpPage() {
       return { ...prev, tasks: updatedTasks, completionStatus };
     });
   };
+
+  useEffect(() => {
+    if (!writeUpMeta.jobId) {
+      return;
+    }
+
+    const snapshot = {
+      fault: writeUpData.fault,
+      caused: writeUpData.caused,
+      rectification: writeUpData.rectification,
+    };
+
+    const hasChanges =
+      snapshot.fault !== lastSyncedFieldsRef.current.fault ||
+      snapshot.caused !== lastSyncedFieldsRef.current.caused ||
+      snapshot.rectification !== lastSyncedFieldsRef.current.rectification;
+
+    if (!hasChanges || saving) {
+      return;
+    }
+
+    if (liveSyncTimeoutRef.current) {
+      clearTimeout(liveSyncTimeoutRef.current);
+    }
+
+    liveSyncTimeoutRef.current = setTimeout(() => {
+      liveSyncTimeoutRef.current = null;
+      persistLiveNotes(snapshot);
+    }, 600);
+
+    return () => {
+      if (liveSyncTimeoutRef.current) {
+        clearTimeout(liveSyncTimeoutRef.current);
+        liveSyncTimeoutRef.current = null;
+      }
+    };
+  }, [
+    writeUpData.fault,
+    writeUpData.caused,
+    writeUpData.rectification,
+    writeUpMeta.jobId,
+    persistLiveNotes,
+    saving,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (liveSyncTimeoutRef.current) {
+        clearTimeout(liveSyncTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!writeUpMeta.jobId) {
+      return;
+    }
+
+    const channel = supabase.channel(`write-up-live-${writeUpMeta.jobId}`);
+    const handleRealtime = (payload) => {
+      const incoming = payload?.new;
+      if (!incoming) {
+        return;
+      }
+
+      const normalizedFault = incoming.work_performed ?? "";
+      const normalizedCause = incoming.recommendations ?? "";
+      const normalizedRectification = incoming.ratification ?? "";
+
+      setWriteUpData((prev) => {
+        const nextState = { ...prev };
+        let changed = false;
+
+        if (normalizedFault !== prev.fault) {
+          nextState.fault = normalizedFault;
+          nextState.jobDescription = normalizedFault;
+          changed = true;
+        }
+
+        if (normalizedCause !== prev.caused) {
+          nextState.caused = normalizedCause;
+          changed = true;
+        }
+
+        if (normalizedRectification !== prev.rectification) {
+          nextState.rectification = normalizedRectification;
+          changed = true;
+        }
+
+        if (!changed) {
+          return prev;
+        }
+
+        markFieldsSynced({
+          fault: nextState.fault,
+          caused: nextState.caused,
+          rectification: nextState.rectification,
+        });
+
+        return nextState;
+      });
+
+      if (incoming.writeup_id) {
+        setWriteUpMeta((prev) => ({
+          ...prev,
+          writeupId: incoming.writeup_id,
+        }));
+      }
+    };
+
+    channel.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "job_writeups",
+        filter: `job_id=eq.${writeUpMeta.jobId}`,
+      },
+      handleRealtime
+    );
+
+    void channel.subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [writeUpMeta.jobId, markFieldsSynced]);
 
   // ✅ Persist write-up back to the database
   const handleSave = async () => {
