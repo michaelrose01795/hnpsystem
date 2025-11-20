@@ -63,6 +63,11 @@ function calculateHoursWorked(clockInTime) {
 const PARTS_STATUS_STYLES = {
   pending: { background: "#fef3c7", color: "#92400e" },
   awaiting_stock: { background: "#fee2e2", color: "#b91c1c" },
+  priced: { background: "#eef2ff", color: "#3730a3" },
+  "pre-pick": { background: "#dcfce7", color: "#15803d" },
+  "pre_pick": { background: "#dcfce7", color: "#15803d" },
+  "on-order": { background: "#fefce8", color: "#d97706" },
+  "on_order": { background: "#fefce8", color: "#d97706" },
   allocated: { background: "#f0fdf4", color: "#15803d" },
   picked: { background: "#dcfce7", color: "#15803d" },
   fitted: { background: "#dbeafe", color: "#1d4ed8" },
@@ -138,6 +143,11 @@ export default function TechJobDetailPage() {
               id,
               part_number,
               name
+            )
+            requester:requested_by(
+              user_id,
+              first_name,
+              last_name
             )
           `)
           .eq("job_id", targetJobId)
@@ -1490,6 +1500,12 @@ export default function TechJobDetailPage() {
                       const partLabel = request.part
                         ? `${request.part.partNumber || "#"} • ${request.part.name || "Unnamed part"}`
                         : `Custom request #${request.request_id}`;
+                      const requesterName = request.requester
+                        ? `${request.requester.first_name || ""} ${request.requester.last_name || ""}`.trim()
+                        : "";
+                      const sourceLabel = request.requested_by
+                        ? `Tech${requesterName ? ` (${requesterName})` : ""}`
+                        : "VHC";
 
                       return (
                         <div
@@ -1516,6 +1532,9 @@ export default function TechJobDetailPage() {
                               </div>
                               <div style={{ fontSize: "13px", color: "#4b5563", marginTop: "2px" }}>
                                 {request.description || "No description provided."}
+                              </div>
+                              <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                                Requested by {sourceLabel}
                               </div>
                               <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
                                 Requested {formatDateTime(request.created_at)}
