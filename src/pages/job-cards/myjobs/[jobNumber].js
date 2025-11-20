@@ -592,6 +592,46 @@ export default function TechJobDetailPage() {
   };
 
   const additionalAvailable = hasAdditionalContents();
+  const writeUp = jobCard?.writeUp || {};
+  const faultText =
+    writeUp.fault ||
+    writeUp.work_performed ||
+    writeUp.job_description_snapshot ||
+    "";
+  const causeText =
+    writeUp.caused ||
+    writeUp.cause ||
+    writeUp.recommendations ||
+    writeUp.recommendation ||
+    "";
+  const rectificationText =
+    writeUp.rectification ||
+    writeUp.rectification_notes ||
+    writeUp.ratification ||
+    "";
+  const writeUpCompletion =
+    typeof writeUp.completion_status === "string"
+      ? writeUp.completion_status.toLowerCase()
+      : "";
+  const rectificationsComplete = writeUpCompletion === "complete";
+  const writeUpComplete =
+    Boolean(faultText?.trim()) &&
+    Boolean(causeText?.trim()) &&
+    Boolean(rectificationText?.trim()) &&
+    rectificationsComplete;
+
+  const isVhcComplete =
+    !jobRequiresVhc ||
+    ["VHC Complete", "VHC Sent", "VHC Approved", "VHC Declined", "Tech Complete"].includes(
+      jobCardStatus
+    );
+
+  const canCompleteJob = writeUpComplete && isVhcComplete;
+
+  const handleCompleteJob = async () => {
+    if (!canCompleteJob) return;
+    await syncJobStatus("Tech Complete", jobCardStatus);
+  };
 
   if (rosterLoading) {
     return (
@@ -1469,27 +1509,29 @@ export default function TechJobDetailPage() {
             ✍️ Write-Up
           </button>
 
-          {/* Complete Job Button - Dynamic based on availability */}
+          {/* Complete Job Button - gated by write-up + VHC completion */}
           <button
-            onClick={() => {
-              if (additionalAvailable) {
-                setShowAdditionalContents(true);
-              }
-            }}
-            disabled={!additionalAvailable}
+            onClick={handleCompleteJob}
+            disabled={!canCompleteJob || clockInLoading || clockOutLoading}
             style={{
               padding: "14px",
-              backgroundColor: additionalAvailable ? "#10b981" : "#d1fae5",
-              color: additionalAvailable ? "white" : "#6b7280",
+              backgroundColor: canCompleteJob ? "#10b981" : "#d1fae5",
+              color: canCompleteJob ? "white" : "#6b7280",
               border: "none",
               borderRadius: "8px",
-              cursor: additionalAvailable ? "pointer" : "not-allowed",
+              cursor: canCompleteJob ? "pointer" : "not-allowed",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: additionalAvailable ? "0 2px 8px rgba(16,185,129,0.18)" : "none"
+              boxShadow: canCompleteJob ? "0 2px 8px rgba(16,185,129,0.18)" : "none",
+              opacity: clockInLoading || clockOutLoading ? 0.8 : 1
             }}
+            title={
+              canCompleteJob
+                ? "Mark job as Tech Complete"
+                : "Complete write-up (fault, cause, rectification) and finish VHC first"
+            }
           >
-            ✓ Complete Job
+            {canCompleteJob ? "✓ Complete Job" : "Complete Job (locked)"}
           </button>
         </div>
       </div>
