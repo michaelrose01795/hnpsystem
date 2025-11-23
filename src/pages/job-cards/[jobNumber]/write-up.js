@@ -15,6 +15,7 @@ import {
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
+import CheckSheetPopup from "@/components/popups/CheckSheetPopup";
 
 // ✅ Helper ensures every paragraph is prefixed with a bullet dash
 const formatNoteValue = (value = "") => {
@@ -180,6 +181,9 @@ export default function WriteUpPage() {
     causeEntries: [],
     vhcAuthorizationId: null,
   });
+
+  const [showCheckSheetPopup, setShowCheckSheetPopup] = useState(false);
+  const [showDocumentsPopup, setShowDocumentsPopup] = useState(false);
 
   const liveSyncTimeoutRef = useRef(null);
   const lastSyncedFieldsRef = useRef({
@@ -696,6 +700,18 @@ export default function WriteUpPage() {
 
   const goToCheckSheet = () => router.push(`/job-cards/${jobNumber}/check-box`); // jump to check sheet builder
   const goToVehicleDetails = () => router.push(`/job-cards/${jobNumber}/car-details`); // jump to vehicle detail view
+  const openCheckSheetPopup = () => setShowCheckSheetPopup(true);
+  const closeCheckSheetPopup = () => setShowCheckSheetPopup(false);
+  const handleAddCheckSheetFromPopup = () => {
+    closeCheckSheetPopup();
+    router.push(`/job-cards/${jobNumber}/check-box`);
+  };
+  const handleAddDealerDetailsFromPopup = () => {
+    closeCheckSheetPopup();
+    router.push(`/job-cards/${jobNumber}/car-details`);
+  };
+  const openDocumentsPopup = () => setShowDocumentsPopup(true);
+  const closeDocumentsPopup = () => setShowDocumentsPopup(false);
 
   const requestTasks = writeUpData.tasks.filter((task) => task && task.source === "request");
   const totalTasks = writeUpData.tasks.length;
@@ -1461,7 +1477,7 @@ export default function WriteUpPage() {
           </button>
 
           <button
-            onClick={goToCheckSheet}
+            onClick={openCheckSheetPopup}
             style={{
               padding: "14px",
               backgroundColor: "#d10000",
@@ -1481,7 +1497,7 @@ export default function WriteUpPage() {
           </button>
 
           <button
-            onClick={goToVehicleDetails}
+            onClick={openDocumentsPopup}
             style={{
               padding: "14px",
               backgroundColor: "#d10000",
@@ -1526,6 +1542,101 @@ export default function WriteUpPage() {
           </button>
         </div>
       </div>
+      {showCheckSheetPopup && (
+        <CheckSheetPopup
+          onClose={closeCheckSheetPopup}
+          onAddCheckSheet={handleAddCheckSheetFromPopup}
+          onAddDealerDetails={handleAddDealerDetailsFromPopup}
+        />
+      )}
+
+      {showDocumentsPopup && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1200,
+          }}
+          onClick={closeDocumentsPopup}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: "480px",
+              maxWidth: "90%",
+              backgroundColor: "white",
+              borderRadius: "18px",
+              padding: "32px",
+              boxShadow: "0 24px 60px rgba(15,23,42,0.35)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "#0f172a" }}>Vehicle Documents</h3>
+                <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#64748b" }}>
+                  View or upload documents tied to this vehicle. Documents generated during job creation appear here.
+                </p>
+              </div>
+              <button
+                onClick={closeDocumentsPopup}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  fontSize: "22px",
+                  cursor: "pointer",
+                  color: "#94a3b8",
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  router.push(`/job-cards/${jobNumber}/car-details`);
+                  closeDocumentsPopup();
+                }}
+                style={{
+                  flex: 1,
+                  border: "none",
+                  borderRadius: "10px",
+                  padding: "12px 16px",
+                  background: "#10b981",
+                  color: "white",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Open vehicle viewer
+              </button>
+              <button
+                type="button"
+                onClick={closeDocumentsPopup}
+                style={{
+                  flex: 1,
+                  border: "1px solid #d1d5db",
+                  borderRadius: "10px",
+                  padding: "12px 16px",
+                  background: "white",
+                  color: "#0f172a",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
