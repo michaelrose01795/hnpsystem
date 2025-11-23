@@ -67,7 +67,7 @@ const formatDuration = (durationMs) => {
   return parts.join(" ");
 };
 
-const deriveStatus = (jobEntry, timeRecord, referenceTime) => {
+const deriveStatus = (jobEntry, timeRecord, referenceTime, hasClocked = false) => {
   if (jobEntry) {
     const jobStatus = (jobEntry.job?.status || "").toString().toLowerCase();
     const categories = Array.isArray(jobEntry.job?.job_categories)
@@ -96,7 +96,7 @@ const deriveStatus = (jobEntry, timeRecord, referenceTime) => {
   }
 
   return {
-    status: "Not Clocked In",
+    status: hasClocked ? "Waiting for Job" : "Not Clocked In",
     duration: 0,
     jobNumber: null,
   };
@@ -147,6 +147,22 @@ function ClockingOverviewTab({ onSummaryChange }) {
 
       if (jobError) throw jobError;
 
+      const userIds = (users || []).map((user) => user.user_id).filter(Boolean);
+      let clockedUserIds = new Set();
+      if (userIds.length > 0) {
+        const { data: historyRecords, error: historyError } = await supabase
+          .from("time_records")
+          .select("user_id")
+          .in("user_id", userIds)
+          .eq("date", today);
+
+        if (historyError) {
+          throw historyError;
+        }
+
+        clockedUserIds = new Set((historyRecords || []).map((record) => record.user_id));
+      }
+
       const timeMap = new Map(
         (timeRecords || []).map((record) => [record.user_id, record])
       );
@@ -165,7 +181,8 @@ function ClockingOverviewTab({ onSummaryChange }) {
         const { status, duration, jobNumber } = deriveStatus(
           jobEntry,
           timeRecord,
-          referenceTime
+          referenceTime,
+          clockedUserIds.has(user.user_id)
         );
 
         return {
