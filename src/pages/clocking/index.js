@@ -16,8 +16,8 @@ const STATUS_STYLES = {
   "In Progress": "bg-emerald-100 border-emerald-300 text-emerald-800",
   "Waiting for Job": "bg-slate-100 border-slate-300 text-slate-700",
   "Tea Break": "bg-amber-100 border-amber-300 text-amber-800",
-  "On MOT": "bg-blue-100 border-blue-300 text-blue-800",
-  "Not Clocked In": "bg-zinc-100 border-zinc-300 text-zinc-600",
+  "On MOT": "bg-sky-100 border-sky-300 text-sky-800",
+  "Not Clocked In": "bg-slate-100 border-slate-300 text-slate-600",
 };
 
 const STATUS_LEGEND_ORDER = [
@@ -333,7 +333,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               No technicians or MOT testers are currently clocked in.
             </div>
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
               {teamStatus.map((tech) => (
                 <Link key={tech.userId} href={`/clocking/${tech.userId}`} className="group block h-full">
                   <article className="flex h-full flex-col rounded-3xl border border-slate-100 bg-white/90 p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-200 hover:shadow-lg">
@@ -366,16 +366,16 @@ function ClockingOverviewTab({ onSummaryChange }) {
                       </div>
                     </div>
 
-                    <div className="mt-auto flex items-center justify-between pt-6">
+                    <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-6">
                       <div className="text-xs uppercase tracking-wide text-slate-400">
                         {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber
                           ? "Active assignment"
                           : "Awaiting assignment"}
                       </div>
-                      <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 transition group-hover:bg-slate-900/10">
-                        Tap for details
+                      <div className="inline-flex items-center gap-2 rounded-full bg-slate-900/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 transition group-hover:bg-slate-900/10">
+                        View details
                         <span aria-hidden="true">&gt;</span>
-                      </span>
+                      </div>
                     </div>
                   </article>
                 </Link>
@@ -732,102 +732,65 @@ export default function ClockingPage() {
   return (
     <Layout>
       <div className="bg-slate-50 py-10">
-        <div className="mx-auto max-w-6xl space-y-6 px-4 sm:px-6 lg:px-8">
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Workshop clocking
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold text-slate-900">
-              Unified clocking workspace
-            </h1>
-            <p className="mt-2 text-sm text-slate-500">
-              Track technicians, MOT testers, and service leaders across live shifts.
-              Use the tabs to jump between the high-level overview, your own clocking,
-              or a controller-style roster summary.
-            </p>
-          </section>
-
-          <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="space-y-6">
-              <div className="rounded-3xl border border-transparent bg-white p-4 shadow-sm">
-                <div className="flex flex-wrap gap-2">
-                  {CLOCKING_TABS.map((tab) => (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      onClick={() => setActiveTab(tab.key)}
-                      className={`flex-1 min-w-[140px] rounded-2xl px-4 py-2 text-sm font-semibold transition md:flex-none ${
-                        activeTab === tab.key
-                          ? "border border-rose-600 bg-rose-600 text-white shadow-lg"
-                          : "border border-slate-100 bg-white text-slate-600 hover:border-slate-200 hover:bg-slate-50"
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {renderedTab}
-            </div>
-
-            <div className="space-y-6">
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Status snapshot
+        <div className="mx-auto w-full max-w-none space-y-6 px-4 sm:px-6 lg:px-10">
+          <section className="rounded-3xl border border-slate-200 bg-white/95 p-8 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-6">
+              <div className="max-w-4xl space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Workshop clocking
                 </p>
-                <h2 className="text-lg font-semibold text-slate-900 mt-2">
-                  {overviewStats?.total ?? 0} technicians tracked
-                </h2>
-                <div className="mt-4 grid gap-3">
-                  {[
-                    { label: "In progress", value: overviewStats?.inProgress ?? 0 },
-                    { label: "On MOT", value: overviewStats?.onMot ?? 0 },
-                    { label: "Tea Breaks", value: overviewStats?.teaBreak ?? 0 },
-                    { label: "Waiting", value: overviewStats?.waiting ?? 0 },
-                    { label: "Offline", value: overviewStats?.notClocked ?? 0 },
-                  ].map((line) => (
-                    <div key={line.label} className="flex items-center justify-between text-sm text-slate-600">
-                      <span>{line.label}</span>
-                      <span className="font-semibold text-slate-900">{line.value}</span>
-                    </div>
-                  ))}
-                </div>
-                {overviewStats?.lastUpdated && (
-                  <p className="mt-4 text-xs text-slate-500">
-                    Last refreshed at{" "}
-                    {new Date(overviewStats.lastUpdated).toLocaleTimeString("en-GB", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                <h1 className="text-3xl font-semibold text-slate-900">
+                  Unified clocking workspace
+                </h1>
+                <p className="text-base text-slate-500">
+                  Monitor every technician and MOT tester from a single dashboard. Switch
+                  tabs to deep dive into personal logs or controller grade records.
+                </p>
+                {overviewStats && (
+                  <p className="text-sm text-slate-500">
+                    Tracking {overviewStats.total} technicians · Last update {overviewStats.lastUpdated
+                      ? new Date(overviewStats.lastUpdated).toLocaleTimeString("en-GB", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "—"}
                   </p>
                 )}
               </div>
-
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Status legend
-                </p>
-                <div className="mt-4 space-y-2">
-                  {legendRows.map((row) => (
-                    <div
-                      key={row.label}
-                      className="flex items-center justify-between rounded-2xl border border-slate-100 px-3 py-2 text-sm font-semibold text-slate-600"
-                    >
-                      <div
-                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[0.65rem] font-semibold tracking-wide ${row.style}`}
-                      >
-                        {row.label}
-                      </div>
-                      <span className="text-xs text-slate-400">Live</span>
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-4 text-xs text-slate-500">
-                  The legend mirrors the overview cards so you can quickly scan statuses across the team.
-                </p>
+              <div className="flex flex-wrap gap-3">
+                {legendRows.map((row) => (
+                  <span
+                    key={row.label}
+                    className={`inline-flex items-center rounded-full border px-4 py-2 text-xs font-semibold tracking-wide ${row.style}`}
+                  >
+                    {row.label}
+                  </span>
+                ))}
               </div>
             </div>
+          </section>
+
+          <section className="space-y-6">
+            <div className="rounded-3xl border border-transparent bg-white p-4 shadow-sm">
+              <div className="flex flex-wrap gap-2">
+                {CLOCKING_TABS.map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`flex-1 min-w-[160px] rounded-2xl px-4 py-2 text-sm font-semibold transition md:flex-none ${
+                      activeTab === tab.key
+                        ? "border border-rose-600 bg-rose-600 text-white shadow-lg"
+                        : "border border-slate-100 bg-white text-slate-600 hover:border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {renderedTab}
           </section>
         </div>
       </div>
