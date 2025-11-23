@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
+import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 
 const STATUS_STATES = ["In Progress", "Tea Break", "Waiting for Job"];
@@ -44,6 +45,16 @@ const deriveStatus = (record) => {
   return "Waiting for Job";
 };
 
+const buildDateFromTime = (timeValue, baseDate = new Date()) => {
+  if (!timeValue) return null;
+  const [hours, minutes] = timeValue.split(":").map((segment) => parseInt(segment, 10));
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+  const date = new Date(baseDate);
+  date.setHours(0, 0, 0, 0);
+  date.setHours(hours, minutes, 0, 0);
+  return date;
+};
+
 export default function UserClockingHistory() {
   const router = useRouter();
   const userIdParam = router.query.userId;
@@ -56,6 +67,32 @@ export default function UserClockingHistory() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { user: currentUser } = useUser();
+  const managerRoles = useMemo(
+    () =>
+      new Set([
+        "workshop manager",
+        "service manager",
+        "after sales manager",
+        "after sales director",
+        "admin manager",
+        "aftersales manager",
+      ]),
+    []
+  );
+  const userRoles = currentUser?.roles?.map((role) => role.toLowerCase()) || [];
+  const isManager = userRoles.some((role) => managerRoles.has(role));
+
+  const [activeJobs, setActiveJobs] = useState([]);
+  const [activeJobsLoading, setActiveJobsLoading] = useState(true);
+  const [formJobNumber, setFormJobNumber] = useState("");
+  const [selectedJobId, setSelectedJobId] = useState(null);
+  const [formStartTime, setFormStartTime] = useState("");
+  const [formFinishTime, setFormFinishTime] = useState("");
+  const [formStatus, setFormStatus] = useState("In Progress");
+  const [formError, setFormError] = useState("");
+  const [formSuccess, setFormSuccess] = useState("");
+  const [formSubmitting, setFormSubmitting] = useState(false);
 
   const fetchEntries = useCallback(async () => {
     if (!numericUserId) return;
@@ -121,6 +158,222 @@ export default function UserClockingHistory() {
       supabase.removeChannel(channel);
     };
   }, [fetchEntries, numericUserId]);
+
+  const fetchActiveJobs = useCallback(async () => {
+    setActiveJobsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("job_clocking")
+        .select("job_id, job_number")
+        .is("clock_out", null);
+
+      if (error) {
+        throw error;
+      }
+
+      const seen = new Set();
+      const unique = [];
+      (data || []).forEach((entry) => {
+        const number = (entry.job_number || "").toString().trim();
+        if (number && !seen.has(number)) {
+          seen.add(number);
+          unique.push({ job_id: entry.job_id, job_number: number });
+        }
+      });
+      unique.sort((a, b) => a.job_number.localeCompare(b.job_number));
+      setActiveJobs(unique);
+    } catch (err) {
+      console.error("Failed to load active jobs", err);
+    } finally {
+      setActiveJobsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchActiveJobs();
+  }, [fetchActiveJobs]);
+
+  useEffect(() => {
+    const channel = supabase.channel("manual-job-clockings");
+    channel
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "job_clocking" },
+        () => fetchActiveJobs()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchActiveJobs]);
+
+  const handleJobNumberChange = (value) => {
+    setFormJobNumber(value);
+    const match =
+      activeJobs.find(
+        (job) => job.job_number?.toLowerCase() === (value || "").trim().toLowerCase()
+      ) || null;
+    setSelectedJobId(match?.job_id ?? null);
+  };
+
+  const resolveJobIdByNumber = useCallback(
+    async (jobNumber) => {
+      const normalized = jobNumber.trim();
+      if (!normalized) return null;
+
+      const existing = activeJobs.find(
+        (job) => job.job_number?.toLowerCase() === normalized.toLowerCase()
+      );
+      if (existing) return existing.job_id;
+
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("id")
+        .ilike("job_number", normalized)
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      return data?.id ?? null;
+    },
+    [activeJobs]
+  );
+
+  const handleManualEntrySubmit = useCallback(
+    async (event) => {
+      event.preventDefault();
+      setFormError("");
+      setFormSuccess("");
+
+      if (!numericUserId) {
+        setFormError("Unable to identify the user.");
+        return;
+      }
+
+      if (!formStartTime || !formFinishTime) {
+        setFormError("Start and finish times are required.");
+        return;
+      }
+
+      const baseDate = new Date();
+      baseDate.setHours(0, 0, 0, 0);
+      const startDate = buildDateFromTime(formStartTime, baseDate);
+      const finishDate = buildDateFromTime(formFinishTime, startDate || baseDate);
+
+      if (!startDate || !finishDate) {
+        setFormError("Please provide valid time values.");
+        return;
+      }
+
+      if (finishDate <= startDate) {
+        finishDate.setDate(finishDate.getDate() + 1);
+      }
+
+      const durationMs = finishDate.getTime() - startDate.getTime();
+      if (durationMs <= 0) {
+        setFormError("Finish time must come after start time.");
+        return;
+      }
+
+      const jobNumberTrimmed = formJobNumber.trim();
+      let jobIdForEntry = selectedJobId;
+
+      if (jobNumberTrimmed && !jobIdForEntry) {
+        try {
+          jobIdForEntry = await resolveJobIdByNumber(jobNumberTrimmed);
+        } catch (err) {
+          setFormError("Unable to resolve job number.");
+          return;
+        }
+        if (!jobIdForEntry) {
+          setFormError("Job number not found in the system.");
+          return;
+        }
+      }
+
+      const dateString = startDate.toISOString().split("T")[0];
+      const hoursWorked = Number((durationMs / (1000 * 60 * 60)).toFixed(2));
+
+      setFormSubmitting(true);
+
+      try {
+        const { error: insertError } = await supabase.from("time_records").insert([
+          {
+            user_id: numericUserId,
+            job_id: jobIdForEntry,
+            job_number: jobNumberTrimmed || null,
+            clock_in: startDate.toISOString(),
+            clock_out: finishDate.toISOString(),
+            date: dateString,
+            hours_worked: hoursWorked,
+            notes: formStatus,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ]);
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        if (jobNumberTrimmed && jobIdForEntry) {
+          const { error: jobClockingError } = await supabase.from("job_clocking").insert([
+            {
+              user_id: numericUserId,
+              job_id: jobIdForEntry,
+              job_number: jobNumberTrimmed,
+              clock_in: startDate.toISOString(),
+              clock_out: finishDate.toISOString(),
+              work_type: "manual",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ]);
+
+          if (jobClockingError) {
+            throw jobClockingError;
+          }
+
+          const { error: jobUpdateError } = await supabase
+            .from("jobs")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", jobIdForEntry);
+
+          if (jobUpdateError) {
+            throw jobUpdateError;
+          }
+        }
+
+        setFormSuccess("Clocking entry saved successfully.");
+        setFormJobNumber("");
+        setSelectedJobId(null);
+        setFormStartTime("");
+        setFormFinishTime("");
+        setFormStatus("In Progress");
+        fetchEntries();
+        fetchActiveJobs();
+      } catch (err) {
+        console.error("Manual entry error:", err);
+        setFormError(err?.message || "Unable to save the entry.");
+      } finally {
+        setFormSubmitting(false);
+      }
+    },
+    [
+      numericUserId,
+      formStartTime,
+      formFinishTime,
+      formJobNumber,
+      formStatus,
+      selectedJobId,
+      fetchEntries,
+      fetchActiveJobs,
+      resolveJobIdByNumber,
+    ]
+  );
 
   const headerName = user
     ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
@@ -207,12 +460,117 @@ export default function UserClockingHistory() {
                       </tr>
                     );
                   })
-                )}
-              </tbody>
-            </table>
-          </div>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
-    </Layout>
-  );
+
+      {isManager && (
+        <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Manager tools
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-900">
+              Add clocking entry
+            </h2>
+            <p className="text-sm text-slate-500">
+              Create manual entries for this technician. Entries are stored in the
+              official time records and linked to the job clocking log.
+            </p>
+          </div>
+
+          {formError && (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700">
+              {formError}
+            </div>
+          )}
+          {formSuccess && (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
+              {formSuccess}
+            </div>
+          )}
+
+          <form onSubmit={handleManualEntrySubmit} className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Job number
+              </label>
+              <input
+                list="active-job-list"
+                value={formJobNumber}
+                onChange={(event) => handleJobNumberChange(event.target.value)}
+                placeholder="Select active job or enter manually"
+                className="mt-1 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 focus:border-rose-400 focus:outline-none"
+              />
+              <datalist id="active-job-list">
+                {activeJobs.map((entry) => (
+                  <option key={`${entry.job_number}-${entry.job_id}`} value={entry.job_number} />
+                ))}
+              </datalist>
+              <p className="mt-1 text-xs text-slate-400">
+                {activeJobsLoading
+                  ? "Loading active jobs..."
+                  : "Select from open jobs or enter any job number."}
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Start time
+                </label>
+                <input
+                  type="time"
+                  value={formStartTime}
+                  onChange={(event) => setFormStartTime(event.target.value)}
+                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 focus:border-rose-400 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Finish time
+                </label>
+                <input
+                  type="time"
+                  value={formFinishTime}
+                  onChange={(event) => setFormFinishTime(event.target.value)}
+                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 focus:border-rose-400 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Status
+              </label>
+              <select
+                value={formStatus}
+                onChange={(event) => setFormStatus(event.target.value)}
+                className="mt-1 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 focus:border-rose-400 focus:outline-none"
+              >
+                {STATUS_STATES.map((state) => (
+                  <option key={state} value={state}>
+                    {state}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={formSubmitting}
+                className="w-full rounded-2xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {formSubmitting ? "Saving entry…" : "Save clocking entry"}
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
+    </div>
+  </Layout>
+);
 }
