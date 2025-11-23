@@ -20,6 +20,14 @@ const STATUS_STYLES = {
   "Not Clocked In": "bg-slate-50 border-slate-200 text-slate-700",
 };
 
+const STATUS_LEGEND_ORDER = [
+  "In Progress",
+  "On MOT",
+  "Tea Break",
+  "Waiting for Job",
+  "Not Clocked In",
+];
+
 const formatTime = (value) => {
   if (!value) return "—";
   const date = new Date(value);
@@ -169,6 +177,8 @@ function ClockingOverviewTab({ onSummaryChange }) {
           timeOnActivity: duration > 0 ? formatDuration(duration) : "—",
         };
       });
+
+      prepared.sort((a, b) => a.name.localeCompare(b.name));
 
       setTeamStatus(prepared);
       setError("");
@@ -529,7 +539,7 @@ function ControllerClockingTab() {
 
   const rows = useMemo(() => {
     const now = Date.now();
-    return latestByUser.map((record) => {
+    const mapped = latestByUser.map((record) => {
       const name = `${record.user?.first_name || ""} ${record.user?.last_name || ""}`.trim() || `ID ${record.user_id}`;
       const status = deriveStatus(null, record, now).status;
       return {
@@ -542,6 +552,17 @@ function ControllerClockingTab() {
         duration: formatDuration(getDurationMs(record.clock_in, record.clock_out)),
         status,
       };
+    });
+
+    const orderMap = STATUS_LEGEND_ORDER.reduce((acc, value, index) => {
+      acc[value] = index;
+      return acc;
+    }, {});
+
+    return mapped.sort((a, b) => {
+      const diff = (orderMap[a.status] ?? 999) - (orderMap[b.status] ?? 999);
+      if (diff !== 0) return diff;
+      return a.name.localeCompare(b.name);
     });
   }, [latestByUser]);
 
@@ -620,9 +641,9 @@ export default function ClockingPage() {
     }
   }, [activeTab]);
 
-  const legendRows = Object.entries(STATUS_STYLES).map(([label, style]) => ({
+  const legendRows = STATUS_LEGEND_ORDER.map((label) => ({
     label,
-    style,
+    style: STATUS_STYLES[label],
   }));
 
   return (
