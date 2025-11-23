@@ -151,22 +151,24 @@ const buildRectificationSummary = (items = []) => {
   return formatBulletText(lines.join("\n"));
 };
 
-const normaliseCauseEntries = (entries = [], requestItems = []) => {
-  const normalized = (Array.isArray(entries) ? entries : [])
-    .map((entry, index) => ({
-      requestKey: entry?.requestKey || requestItems[index]?.sourceKey || "",
-      text: entry?.text || entry?.notes || "",
-    }))
-    .filter((entry) => entry.requestKey);
+const normaliseCauseEntries = (entries = []) => {
+  return (Array.isArray(entries) ? entries : [])
+    .map((entry, index) => {
+      const requestKey = entry?.requestKey || entry?.request_id || entry?.requestId || "";
+      if (!requestKey) {
+        return null;
+      }
 
-  if (normalized.length > 0) {
-    return normalized;
-  }
-
-  return (requestItems || []).map((request) => ({
-    requestKey: request.sourceKey,
-    text: "",
-  }));
+      return {
+        id: entry?.id || `${requestKey}-${index}-${Math.random().toString(36).slice(2)}`,
+        requestKey,
+        text: entry?.text || entry?.cause_text || entry?.notes || "",
+        createdBy: entry?.createdBy || entry?.created_by || "",
+        jobNumber: entry?.jobNumber || entry?.job_number || "",
+        updatedAt: entry?.updatedAt || entry?.updated_at || new Date().toISOString(),
+      };
+    })
+    .filter(Boolean);
 };
 
 const syncWriteUpRectificationItems = async ({
@@ -1943,7 +1945,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       rectificationItems,
       jobRequests: job.requests || [],
       vhcAuthorizationId: latestAuthorizationId,
-      causeEntries: normaliseCauseEntries(writeUp?.cause_entries, requestItems),
+      causeEntries: normaliseCauseEntries(writeUp?.cause_entries),
     };
 
     if (!writeUp) {
@@ -1997,10 +1999,14 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
   const sanitizeCauseEntriesForUpload = (entries = []) =>
     (Array.isArray(entries) ? entries : [])
       .map((entry) => ({
-        requestKey: entry?.requestKey || "",
-        text: entry?.text || entry?.notes || "",
+        id: entry?.id || null,
+        job_number: entry?.jobNumber || entry?.job_number || jobNumber || null,
+        request_id: entry?.requestKey || entry?.request_id || "",
+        cause_text: entry?.text || entry?.cause_text || "",
+        created_by: entry?.createdBy || entry?.created_by || "",
+        updated_at: entry?.updatedAt || entry?.updated_at || new Date().toISOString(),
       }))
-      .filter((entry) => entry.requestKey);
+      .filter((entry) => entry.request_id);
 
   try {
     const { data: job, error: jobError } = await supabase

@@ -124,24 +124,34 @@ const sectionScrollerStyle = {
   paddingRight: "6px",
 };
 
-const createCauseEntry = (requestKey = "") => ({
-  id: `${requestKey || "cause"}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-  requestKey,
+const generateCauseId = () => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `cause-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
+const createCauseEntry = ({ jobNumber = "", createdBy = "" } = {}) => ({
+  id: generateCauseId(),
+  requestKey: "",
   text: "",
+  jobNumber,
+  createdBy: createdBy || "",
+  updatedAt: new Date().toISOString(),
 });
 
-const normalizeCauseEntriesForSave = (entries = []) =>
+const normalizeCauseEntriesForSave = (entries = [], jobNumber = "", createdBy = "") =>
   (Array.isArray(entries) ? entries : [])
-    .map((entry, index) => ({
-      requestKey: entry?.requestKey || "",
-      text: (entry?.text || "").toString(),
-      id: entry?.id ?? `${entry?.requestKey || "cause"}-${index}`,
-    }))
-    .filter((entry) => entry.requestKey)
     .map((entry) => ({
-      requestKey: entry.requestKey,
-      text: entry.text,
-    }));
+      id: entry?.id || generateCauseId(),
+      jobNumber: entry?.jobNumber || jobNumber || "",
+      requestKey: entry?.requestKey || entry?.request_id || entry?.requestId || "",
+      text: (entry?.text || entry?.cause_text || "").toString(),
+      createdBy: entry?.createdBy || entry?.created_by || createdBy || "",
+      updatedAt: entry?.updatedAt || entry?.updated_at || new Date().toISOString(),
+    }))
+    .filter((entry) => entry.requestKey);
 
 const buildCauseSignature = (entries = []) =>
   JSON.stringify(
@@ -153,18 +163,29 @@ const buildCauseSignature = (entries = []) =>
 
 const hydrateCauseEntries = (entries) => {
   return (Array.isArray(entries) ? entries : [])
-    .map((entry, index) => ({
-      id: entry?.id || `cause-${index}-${Math.random().toString(36).slice(2)}`,
-      requestKey: entry?.requestKey || "",
-      text: entry?.text || entry?.notes || "",
-    }))
-    .filter((entry) => entry.requestKey);
+    .map((entry, index) => {
+      const requestKey = entry?.requestKey || entry?.request_id || entry?.requestId || "";
+      if (!requestKey) return null;
+
+      return {
+        id:
+          entry?.id ||
+          `${requestKey}-${index}-${Math.random().toString(36).slice(2)}`,
+        requestKey,
+        text: entry?.text || entry?.cause_text || entry?.notes || "",
+        createdBy: entry?.createdBy || entry?.created_by || "",
+        jobNumber: entry?.jobNumber || entry?.job_number || "",
+        updatedAt: entry?.updatedAt || entry?.updated_at || new Date().toISOString(),
+      };
+    })
+    .filter(Boolean);
 };
 
 export default function WriteUpPage() {
   const router = useRouter(); // initialise router for navigation actions
   const { jobNumber } = router.query; // read job number from URL parameters
   const { user } = useUser(); // get the logged in user for permissions
+  const username = user?.username;
   const { usersByRole, isLoading: rosterLoading } = useRoster();
 
   const [jobData, setJobData] = useState(null);
@@ -212,7 +233,6 @@ export default function WriteUpPage() {
     };
   }, []);
 
-  const username = user?.username;
   const techsList = usersByRole?.["Techs"] || [];
   // ⚠️ Mock data found — replacing with Supabase query
   // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
@@ -380,29 +400,52 @@ export default function WriteUpPage() {
 
   const handleCauseRequestChange = (entryId) => (event) => {
     const value = event.target.value;
+    const timestamp = new Date().toISOString();
     setWriteUpData((prev) => ({
       ...prev,
       causeEntries: prev.causeEntries.map((entry) => {
         if (entry.id !== entryId) return entry;
-        return { ...entry, requestKey: value };
+        return {
+          ...entry,
+          requestKey: value,
+          jobNumber: jobNumber || entry.jobNumber || "",
+          updatedAt: timestamp,
+        };
       }),
     }));
   };
 
   const handleCauseTextChange = (entryId) => (event) => {
     const value = event.target.value;
+    const timestamp = new Date().toISOString();
     setWriteUpData((prev) => ({
       ...prev,
       causeEntries: prev.causeEntries.map((entry) => {
         if (entry.id !== entryId) return entry;
-        return { ...entry, text: value };
+        return {
+          ...entry,
+          text: value,
+          updatedAt: timestamp,
+        };
       }),
     }));
   };
 
   const addCauseRow = () => {
-    const defaultRequest = writeUpData.tasks.find((task) => task.source === "request");
-    const newEntry = createCauseEntry(defaultRequest?.sourceKey || "");
+    const requestCount = (writeUpData.tasks || []).filter((task) => task?.source === "request").length;
+    if (requestCount === 0) {
+      return;
+    }
+
+    if (writeUpData.causeEntries.length >= requestCount) {
+      return;
+    }
+
+    const newEntry = createCauseEntry({
+      jobNumber: jobNumber || "",
+      createdBy: username || "",
+    });
+
     setWriteUpData((prev) => ({
       ...prev,
       causeEntries: [...prev.causeEntries, newEntry],
@@ -429,7 +472,11 @@ export default function WriteUpPage() {
         rectification: rectification || "",
       };
 
-      const normalizedCauseEntries = normalizeCauseEntriesForSave(causeEntries);
+      const normalizedCauseEntries = normalizeCauseEntriesForSave(
+        causeEntries,
+        jobNumber || "",
+        username || ""
+      );
       const payload = {
         work_performed: sanitizedFields.fault || null,
         recommendations: sanitizedFields.caused || null,
@@ -491,7 +538,7 @@ export default function WriteUpPage() {
         console.error("❌ Live write-up sync failed:", error);
       }
     },
-    [writeUpMeta.jobId, writeUpMeta.writeupId, markFieldsSynced]
+    [jobNumber, username, writeUpMeta.jobId, writeUpMeta.writeupId, markFieldsSynced]
   );
 
   // ✅ Toggle checklist status and auto-update completion state
@@ -606,10 +653,7 @@ export default function WriteUpPage() {
         }
 
         const prevCauseSignature = buildCauseSignature(prev.causeEntries);
-        const incomingCauseEntries = hydrateCauseEntries(
-          incoming.cause_entries,
-          prev.tasks.filter((task) => task.source === "request")
-        );
+        const incomingCauseEntries = hydrateCauseEntries(incoming.cause_entries);
         const causeSignature = buildCauseSignature(incomingCauseEntries);
         if (causeSignature !== prevCauseSignature) {
           nextState.causeEntries = incomingCauseEntries;
@@ -728,6 +772,20 @@ export default function WriteUpPage() {
   const showRectificationStatus = rectificationTasks.length > 0;
   const visibleRequestCount = Math.max(2, requestTasks.length);
   const requestSlots = Array.from({ length: visibleRequestCount }, (_, index) => requestTasks[index] || null);
+  const assignedRequestKeys = new Set(
+    writeUpData.causeEntries
+      .map((entry) => entry.requestKey)
+      .filter(Boolean)
+  );
+  const canAddCause =
+    requestTasks.length > 0 && writeUpData.causeEntries.length < requestTasks.length;
+  const getRequestOptions = (entryRequestKey) =>
+    requestTasks.filter((task) => {
+      if (entryRequestKey && task.sourceKey === entryRequestKey) {
+        return true;
+      }
+      return !assignedRequestKeys.has(task.sourceKey);
+    });
   const metadataFields = [
     { label: "Warranty Claim Number", field: "warrantyClaim", type: "input" },
     { label: "TSR Number", field: "tsrNumber", type: "input" },
@@ -994,86 +1052,107 @@ export default function WriteUpPage() {
                     <div style={sectionBoxStyle}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                         <h3 style={{ margin: 0, color: "#d10000", fontSize: "18px", fontWeight: "600" }}>Cause</h3>
-                        <button
-                          type="button"
-                          onClick={addCauseRow}
-                          disabled={requestTasks.length === 0}
-                          style={{
-                            backgroundColor: requestTasks.length === 0 ? "#d1d5db" : "#1d4ed8",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "6px",
-                            padding: "8px 14px",
-                            cursor: requestTasks.length === 0 ? "not-allowed" : "pointer",
-                            fontSize: "13px",
-                            fontWeight: "600",
-                          }}
-                        >
-                          + Add Cause
-                        </button>
+                        {canAddCause && (
+                          <button
+                            type="button"
+                            onClick={addCauseRow}
+                            style={{
+                              backgroundColor: "#1d4ed8",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "6px",
+                              padding: "8px 14px",
+                              cursor: "pointer",
+                              fontSize: "13px",
+                              fontWeight: "600",
+                            }}
+                          >
+                            + Add Cause
+                          </button>
+                        )}
                       </div>
                       <div style={sectionScrollerStyle}>
-                        {writeUpData.causeEntries.length === 0 ? (
-                          <p style={{ margin: 0, color: "#9ca3af", fontSize: "13px" }}>
-                            Add a cause entry to link a request.
-                          </p>
-                        ) : (
-                          writeUpData.causeEntries.map((entry) => {
-                            const matchedRequest = requestTasks.find((task) => task.sourceKey === entry.requestKey);
-                            return (
-                              <div
-                                key={entry.id}
-                                style={{
-                                  border: "1px solid #e5e7eb",
-                                  borderRadius: "8px",
-                                  padding: "12px",
-                                  backgroundColor: "#f9fafb",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: "8px"
-                                }}
-                              >
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                  <span style={{ fontSize: "12px", color: "#6b7280" }}>
-                                    {matchedRequest ? matchedRequest.label : "Unmapped request"}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeCauseRow(entry.id)}
-                                    style={{
-                                      border: "none",
-                                      backgroundColor: "#ef4444",
-                                      color: "white",
-                                      borderRadius: "6px",
-                                      padding: "4px 12px",
-                                      cursor: "pointer",
-                                      fontSize: "12px",
-                                    }}
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                                <textarea
-                                  placeholder="Describe the cause..."
-                                  value={entry.text}
-                                  onChange={handleCauseTextChange(entry.id)}
+                        {writeUpData.causeEntries.map((entry) => {
+                          const matchedRequest = requestTasks.find((task) => task.sourceKey === entry.requestKey);
+                          const baseOptions = getRequestOptions(entry.requestKey);
+                          const dropdownOptions =
+                            entry.requestKey && !matchedRequest
+                              ? [
+                                  { sourceKey: entry.requestKey, label: entry.requestKey },
+                                  ...baseOptions,
+                                ]
+                              : baseOptions;
+                          return (
+                            <div
+                              key={entry.id}
+                              style={{
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "8px",
+                                padding: "12px",
+                                backgroundColor: "#f9fafb",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "8px"
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                                <select
+                                  value={entry.requestKey}
+                                  onChange={handleCauseRequestChange(entry.id)}
                                   style={{
-                                    width: "100%",
-                                    minHeight: "100px",
+                                    flex: 1,
                                     borderRadius: "6px",
-                                    border: "1px solid #cbd5f5",
-                                    padding: "10px",
+                                    border: "1px solid #d1d5db",
+                                    padding: "8px 10px",
                                     fontSize: "14px",
                                     fontFamily: "inherit",
-                                    resize: "vertical",
-                                    outline: "none",
                                     backgroundColor: "white",
+                                    cursor: "pointer",
                                   }}
-                                />
+                                >
+                                  <option value="">Select a job request...</option>
+                                  {dropdownOptions.map((request) => (
+                                    <option key={request.sourceKey} value={request.sourceKey}>
+                                      {request.label}
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => removeCauseRow(entry.id)}
+                                  style={{
+                                    border: "none",
+                                    backgroundColor: "#ef4444",
+                                    color: "white",
+                                    borderRadius: "6px",
+                                    padding: "4px 12px",
+                                    cursor: "pointer",
+                                    fontSize: "12px",
+                                  }}
+                                >
+                                  Remove
+                                </button>
                               </div>
-                            );
-                          })
-                        )}
+                              <textarea
+                                placeholder="Describe the cause..."
+                                value={entry.text}
+                                onChange={handleCauseTextChange(entry.id)}
+                                style={{
+                                  width: "100%",
+                                  minHeight: "100px",
+                                  borderRadius: "6px",
+                                  border: "1px solid #cbd5f5",
+                                  padding: "10px",
+                                  fontSize: "14px",
+                                  fontFamily: "inherit",
+                                  resize: "vertical",
+                                  outline: "none",
+                                  backgroundColor: "white",
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                     <div style={sectionBoxStyle}>
