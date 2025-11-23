@@ -88,10 +88,12 @@ const hasPartsOnOrder = (requests = []) =>
     PARTS_ON_ORDER_STATUSES.has(extractNormalizedStatus(request?.status))
   );
 
-const determineJobStatusFromTasks = (tasks = [], requests = []) => {
+const determineJobStatusFromTasks = (tasks = [], requests = [], hasRectificationItems = false) => {
   if (!Array.isArray(tasks)) {
     return null;
   }
+
+  if (!hasRectificationItems) return null;
 
   const hasIncomplete = tasks.some((task) => task.status !== "complete");
   if (!hasIncomplete) {
@@ -149,28 +151,14 @@ const buildCauseSignature = (entries = []) =>
     }))
   );
 
-const hydrateCauseEntries = (entries, fallbackRequests = []) => {
-  const normalized = (Array.isArray(entries) ? entries : [])
+const hydrateCauseEntries = (entries) => {
+  return (Array.isArray(entries) ? entries : [])
     .map((entry, index) => ({
-      id:
-        entry?.id ||
-        `${entry?.requestKey || fallbackRequests[index]?.sourceKey || "cause"}-${index}-${Math.random()
-          .toString(36)
-          .slice(2)}`,
-      requestKey: entry?.requestKey || fallbackRequests[index]?.sourceKey || "",
+      id: entry?.id || `cause-${index}-${Math.random().toString(36).slice(2)}`,
+      requestKey: entry?.requestKey || "",
       text: entry?.text || entry?.notes || "",
     }))
     .filter((entry) => entry.requestKey);
-
-  if (normalized.length > 0) {
-    return normalized;
-  }
-
-  return (fallbackRequests || []).map((request) => ({
-    id: `cause-${request.sourceKey}`,
-    requestKey: request.sourceKey,
-    text: "",
-  }));
 };
 
 export default function WriteUpPage() {
@@ -250,11 +238,7 @@ export default function WriteUpPage() {
         const fallbackRequests = buildRequestList(jobPayload?.jobCard?.requests);
 
         if (writeUpResponse) {
-          const resolvedRequests = writeUpResponse.requests || fallbackRequests;
-          const incomingCauseEntries = hydrateCauseEntries(
-            writeUpResponse.causeEntries,
-            resolvedRequests
-          );
+          const incomingCauseEntries = hydrateCauseEntries(writeUpResponse.causeEntries || []);
           setAuthorizedItems(writeUpResponse.authorisedItems || []);
           setWriteUpData((prev) => ({
             ...prev,
@@ -284,7 +268,6 @@ export default function WriteUpPage() {
           });
         } else {
           const fallbackDescription = formatNoteValue(jobPayload?.jobCard?.description || "");
-          const fallbackCauseEntries = hydrateCauseEntries([], fallbackRequests);
           setAuthorizedItems([]);
           setWriteUpData((prev) => ({
             ...prev,
@@ -310,13 +293,13 @@ export default function WriteUpPage() {
             completionStatus: "additional_work",
             jobDescription: fallbackDescription,
             vhcAuthorizationId: null,
-            causeEntries: fallbackCauseEntries,
+            causeEntries: [],
           }));
           markFieldsSynced({
             fault: fallbackDescription,
             caused: "",
             rectification: "",
-            causeSignature: buildCauseSignature(fallbackCauseEntries),
+            causeSignature: "",
           });
         }
       } catch (error) {
@@ -691,7 +674,7 @@ export default function WriteUpPage() {
         }
 
         const requestsForPartsStatus = jobData?.jobCard?.partsRequests || [];
-        const desiredStatus = determineJobStatusFromTasks(writeUpData.tasks, requestsForPartsStatus);
+        const desiredStatus = determineJobStatusFromTasks(writeUpData.tasks, requestsForPartsStatus, rectificationTasks.length > 0);
         if (desiredStatus && jobData?.jobCard?.id) {
           try {
             await updateJobStatus(jobData.jobCard.id, desiredStatus);
@@ -741,6 +724,7 @@ export default function WriteUpPage() {
   const completionStatusLabel =
     writeUpData.completionStatus === "complete" ? "Complete" : "Waiting Additional Work";
   const completionStatusColor = writeUpData.completionStatus === "complete" ? "#10b981" : "#f59e0b";
+  const showRectificationStatus = rectificationTasks.length > 0;
   const visibleRequestCount = Math.max(2, requestTasks.length);
   const requestSlots = Array.from({ length: visibleRequestCount }, (_, index) => requestTasks[index] || null);
   const rectificationTasks = writeUpData.tasks.filter((task) => task && task.source !== "request");
@@ -918,7 +902,7 @@ export default function WriteUpPage() {
                 cursor: "pointer"
               }}
             >
-              Write-Up
+              <span style={{ color: "#d10000" }}>Write-Up</span>
             </button>
             <button
               type="button"
@@ -933,7 +917,7 @@ export default function WriteUpPage() {
                 cursor: "pointer"
               }}
             >
-              Warranty Extras
+              <span style={{ color: "#d10000" }}>Warranty Extras</span>
             </button>
           </div>
           <div style={{ flex: 1, minHeight: 0 }}>
@@ -1095,16 +1079,18 @@ export default function WriteUpPage() {
                     <div style={sectionBoxStyle}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                         <h3 style={{ margin: 0, color: "#d10000", fontSize: "18px", fontWeight: "600" }}>Rectification</h3>
-                        <div style={{
-                          padding: "6px 14px",
-                          backgroundColor: completionStatusColor,
-                          color: "white",
-                          borderRadius: "16px",
-                          fontWeight: "600",
-                          fontSize: "12px"
-                        }}>
-                          {completionStatusLabel}
-                        </div>
+                    {showRectificationStatus && (
+                      <div style={{
+                        padding: "6px 14px",
+                        backgroundColor: completionStatusColor,
+                        color: "white",
+                        borderRadius: "16px",
+                        fontWeight: "600",
+                        fontSize: "12px"
+                      }}>
+                        {completionStatusLabel}
+                      </div>
+                    )}
                       </div>
                       <div style={sectionScrollerStyle}>
                         {rectificationTasks.length === 0 ? (
