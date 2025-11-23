@@ -930,7 +930,9 @@ export default function WriteUpPage() {
                   display: "flex",
                   flexDirection: "column",
                   flex: 1,
-                  minHeight: 0
+                  minHeight: 0,
+                  maxHeight: "420px",
+                  overflowY: "auto"
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                     <h3 style={{
@@ -1076,7 +1078,9 @@ export default function WriteUpPage() {
                   display: "flex",
                   flexDirection: "column",
                   flex: 1,
-                  minHeight: 0
+                  minHeight: 0,
+                  maxHeight: "420px",
+                  overflowY: "auto"
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <h3 style={{
