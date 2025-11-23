@@ -205,6 +205,7 @@ export default function WriteUpPage() {
 
   const [showCheckSheetPopup, setShowCheckSheetPopup] = useState(false);
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false);
+  const [activeTab, setActiveTab] = useState("writeup");
 
   const liveSyncTimeoutRef = useRef(null);
   const lastSyncedFieldsRef = useRef({
@@ -903,299 +904,335 @@ export default function WriteUpPage() {
           minHeight: 0,
           gap: "16px"
         }}>
-          <div style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-            minHeight: 0
-          }}>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div style={sectionBoxStyle}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <h3 style={{ margin: 0, color: "#d10000", textTransform: "capitalize", fontSize: "18px", fontWeight: "600" }}>
-                      Fault
-                    </h3>
-                    <span style={{ fontSize: "12px", color: "#666" }}>Matching job requests</span>
-                  </div>
-                  <div style={sectionScrollerStyle}>
-                    {requestSlots.map((task, index) => {
-                      const slotKey = task ? composeTaskKey(task) : `slot-${index}`;
-                      const isComplete = task?.status === "complete";
-                      return (
-                        <div
-                          key={slotKey}
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab("writeup")}
+              style={{
+                flex: 1,
+                padding: "12px",
+                borderRadius: "8px",
+                border: activeTab === "writeup" ? "2px solid #d10000" : "1px solid #e5e7eb",
+                backgroundColor: activeTab === "writeup" ? "#ffecec" : "white",
+                fontWeight: 600,
+                cursor: "pointer"
+              }}
+            >
+              Write-Up
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("extras")}
+              style={{
+                flex: 1,
+                padding: "12px",
+                borderRadius: "8px",
+                border: activeTab === "extras" ? "2px solid #d10000" : "1px solid #e5e7eb",
+                backgroundColor: activeTab === "extras" ? "#ffecec" : "white",
+                fontWeight: 600,
+                cursor: "pointer"
+              }}
+            >
+              Warranty Extras
+            </button>
+          </div>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            {activeTab === "writeup" ? (
+              <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{ flex: 1, display: "flex", gap: "16px", minHeight: 0 }}>
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <div style={sectionBoxStyle}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                        <h3 style={{ margin: 0, color: "#d10000", textTransform: "capitalize", fontSize: "18px", fontWeight: "600" }}>
+                          Fault
+                        </h3>
+                        <span style={{ fontSize: "12px", color: "#666" }}>Matching job requests</span>
+                      </div>
+                      <div style={sectionScrollerStyle}>
+                        {requestSlots.map((task, index) => {
+                          const slotKey = task ? composeTaskKey(task) : `slot-${index}`;
+                          const isComplete = task?.status === "complete";
+                          return (
+                            <div
+                              key={slotKey}
+                              style={{
+                                borderRadius: "8px",
+                                border: `1px solid ${isComplete ? "#10b981" : "#f3c1c1"}`,
+                                padding: "12px",
+                                backgroundColor: isComplete ? "#ecfdf5" : "#fff",
+                                minHeight: "120px",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "8px"
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: isComplete ? "#047857" : "#b45309" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isComplete}
+                                    onChange={() => task && toggleTaskStatus(slotKey)}
+                                    disabled={!task}
+                                    style={{ accentColor: "#d10000", cursor: task ? "pointer" : "not-allowed" }}
+                                  />
+                                  {isComplete ? "Completed" : "Mark as complete"}
+                                </label>
+                                <span style={{ fontSize: "12px", color: "#777" }}>Request {index + 1}</span>
+                              </div>
+                              <textarea
+                                value={task?.label || ""}
+                                onChange={task ? handleRequestLabelChange(slotKey) : undefined}
+                                placeholder={task ? "" : "No request added yet."}
+                                readOnly={!task}
+                                style={{
+                                  flex: 1,
+                                  width: "100%",
+                                  minHeight: "80px",
+                                  borderRadius: "6px",
+                                  border: task ? "1px solid #e0e0e0" : "1px dashed #d1d5db",
+                                  padding: "10px",
+                                  fontSize: "14px",
+                                  fontFamily: "inherit",
+                                  resize: "none",
+                                  outline: "none",
+                                  backgroundColor: task ? "white" : "#f8fafc",
+                                  color: task ? "#111827" : "#9ca3af",
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
+                        {requestSlots.length === 0 && (
+                          <p style={{ color: "#9ca3af", fontSize: "13px" }}>No job requests available yet.</p>
+                        )}
+                      </div>
+                    </div>
+                    <div style={sectionBoxStyle}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                        <h3 style={{ margin: 0, color: "#d10000", fontSize: "18px", fontWeight: "600" }}>Cause</h3>
+                        <button
+                          type="button"
+                          onClick={addCauseRow}
+                          disabled={requestTasks.length === 0}
                           style={{
-                            borderRadius: "8px",
-                            border: `1px solid ${isComplete ? "#10b981" : "#f3c1c1"}`,
-                            padding: "12px",
-                            backgroundColor: isComplete ? "#ecfdf5" : "#fff",
-                            minHeight: "120px",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "8px"
+                            backgroundColor: requestTasks.length === 0 ? "#d1d5db" : "#1d4ed8",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            padding: "8px 14px",
+                            cursor: requestTasks.length === 0 ? "not-allowed" : "pointer",
+                            fontSize: "13px",
+                            fontWeight: "600",
                           }}
                         >
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: isComplete ? "#047857" : "#b45309" }}>
-                              <input
-                                type="checkbox"
-                                checked={isComplete}
-                                onChange={() => task && toggleTaskStatus(slotKey)}
-                                disabled={!task}
-                                style={{ accentColor: "#d10000", cursor: task ? "pointer" : "not-allowed" }}
-                              />
-                              {isComplete ? "Completed" : "Mark as complete"}
-                            </label>
-                            <span style={{ fontSize: "12px", color: "#777" }}>Request {index + 1}</span>
-                          </div>
-                          <textarea
-                            value={task?.label || ""}
-                            onChange={task ? handleRequestLabelChange(slotKey) : undefined}
-                            placeholder={task ? "" : "No request added yet."}
-                            readOnly={!task}
-                            style={{
-                              flex: 1,
-                              width: "100%",
-                              minHeight: "80px",
-                              borderRadius: "6px",
-                              border: task ? "1px solid #e0e0e0" : "1px dashed #d1d5db",
-                              padding: "10px",
-                              fontSize: "14px",
-                              fontFamily: "inherit",
-                              resize: "none",
-                              outline: "none",
-                              backgroundColor: task ? "white" : "#f8fafc",
-                              color: task ? "#111827" : "#9ca3af",
-                            }}
-                          />
-                        </div>
-                      );
-                    })}
-                    {requestSlots.length === 0 && (
-                      <p style={{ color: "#9ca3af", fontSize: "13px" }}>No job requests available yet.</p>
-                    )}
-                  </div>
-                </div>
-                <div style={sectionBoxStyle}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <h3 style={{ margin: 0, color: "#d10000", fontSize: "18px", fontWeight: "600" }}>Cause</h3>
-                    <button
-                      type="button"
-                      onClick={addCauseRow}
-                      disabled={requestTasks.length === 0}
-                      style={{
-                        backgroundColor: requestTasks.length === 0 ? "#d1d5db" : "#1d4ed8",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        padding: "8px 14px",
-                        cursor: requestTasks.length === 0 ? "not-allowed" : "pointer",
-                        fontSize: "13px",
-                        fontWeight: "600",
-                      }}
-                    >
-                      + Add Cause
-                    </button>
-                  </div>
-                  <div style={sectionScrollerStyle}>
-                    {writeUpData.causeEntries.length === 0 ? (
-                      <p style={{ margin: 0, color: "#9ca3af", fontSize: "13px" }}>
-                        Add a cause edition to link a request. None added yet.
-                      </p>
-                    ) : (
-                      writeUpData.causeEntries.map((entry) => {
-                        const matchedRequest = requestTasks.find((task) => task.sourceKey === entry.requestKey);
-                        return (
-                          <div
-                            key={entry.id}
-                            style={{
-                              border: "1px solid #e5e7eb",
-                              borderRadius: "8px",
-                              padding: "12px",
-                              backgroundColor: "#f9fafb",
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: "8px"
-                            }}
-                          >
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <span style={{ fontSize: "12px", color: "#6b7280" }}>
-                                {matchedRequest ? matchedRequest.label : "Unmapped request"}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => removeCauseRow(entry.id)}
+                          + Add Cause
+                        </button>
+                      </div>
+                      <div style={sectionScrollerStyle}>
+                        {writeUpData.causeEntries.length === 0 ? (
+                          <p style={{ margin: 0, color: "#9ca3af", fontSize: "13px" }}>
+                            Add a cause entry to link a request.
+                          </p>
+                        ) : (
+                          writeUpData.causeEntries.map((entry) => {
+                            const matchedRequest = requestTasks.find((task) => task.sourceKey === entry.requestKey);
+                            return (
+                              <div
+                                key={entry.id}
                                 style={{
-                                  border: "none",
-                                  backgroundColor: "#ef4444",
-                                  color: "white",
-                                  borderRadius: "6px",
-                                  padding: "4px 12px",
-                                  cursor: "pointer",
-                                  fontSize: "12px",
+                                  border: "1px solid #e5e7eb",
+                                  borderRadius: "8px",
+                                  padding: "12px",
+                                  backgroundColor: "#f9fafb",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "8px"
                                 }}
                               >
-                                Remove
-                              </button>
-                            </div>
-                            <textarea
-                              placeholder="Describe the cause..."
-                              value={entry.text}
-                              onChange={handleCauseTextChange(entry.id)}
-                              style={{
-                                width: "100%",
-                                minHeight: "100px",
-                                borderRadius: "6px",
-                                border: "1px solid #cbd5f5",
-                                padding: "10px",
-                                fontSize: "14px",
-                                fontFamily: "inherit",
-                                resize: "vertical",
-                                outline: "none",
-                                backgroundColor: "white",
-                              }}
-                            />
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-                <div style={sectionBoxStyle}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <h3 style={{ margin: 0, color: "#d10000", fontSize: "18px", fontWeight: "600" }}>Rectification</h3>
-                    <div style={{
-                      padding: "6px 14px",
-                      backgroundColor: completionStatusColor,
-                      color: "white",
-                      borderRadius: "16px",
-                      fontWeight: "600",
-                      fontSize: "12px"
-                    }}>
-                      {completionStatusLabel}
-                    </div>
-                  </div>
-                  <div style={sectionScrollerStyle}>
-                    {rectificationTasks.length === 0 ? (
-                      <p style={{ margin: 0, color: "#9ca3af", fontSize: "13px" }}>
-                        Add authorised additional work to record rectifications.
-                      </p>
-                    ) : (
-                      rectificationTasks.map((task, index) => {
-                        const taskKey = composeTaskKey(task);
-                        const isComplete = task.status === "complete";
-                        return (
-                          <div
-                            key={taskKey}
-                            style={{
-                              border: `1px solid ${isComplete ? "#10b981" : "#f3c1c1"}`,
-                              borderRadius: "8px",
-                              padding: "12px",
-                              backgroundColor: isComplete ? "#ecfdf5" : "#fff",
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: "8px",
-                            }}
-                          >
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: isComplete ? "#047857" : "#b45309" }}>
-                                <input
-                                  type="checkbox"
-                                  checked={isComplete}
-                                  onChange={() => toggleTaskStatus(taskKey)}
-                                  style={{ accentColor: "#d10000" }}
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                                    {matchedRequest ? matchedRequest.label : "Unmapped request"}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeCauseRow(entry.id)}
+                                    style={{
+                                      border: "none",
+                                      backgroundColor: "#ef4444",
+                                      color: "white",
+                                      borderRadius: "6px",
+                                      padding: "4px 12px",
+                                      cursor: "pointer",
+                                      fontSize: "12px",
+                                    }}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                                <textarea
+                                  placeholder="Describe the cause..."
+                                  value={entry.text}
+                                  onChange={handleCauseTextChange(entry.id)}
+                                  style={{
+                                    width: "100%",
+                                    minHeight: "100px",
+                                    borderRadius: "6px",
+                                    border: "1px solid #cbd5f5",
+                                    padding: "10px",
+                                    fontSize: "14px",
+                                    fontFamily: "inherit",
+                                    resize: "vertical",
+                                    outline: "none",
+                                    backgroundColor: "white",
+                                  }}
                                 />
-                                Completed
-                              </label>
-                              <span style={{ fontSize: "12px", color: "#6b7280" }}>Item {index + 1}</span>
-                            </div>
-                            <textarea
-                              value={task.label}
-                              onChange={handleTaskLabelChange(taskKey)}
-                              style={{
-                                width: "100%",
-                                minHeight: "80px",
-                                borderRadius: "6px",
-                                border: "1px solid #d1d5db",
-                                padding: "10px",
-                                fontSize: "14px",
-                                fontFamily: "inherit",
-                                resize: "vertical",
-                                outline: "none",
-                                backgroundColor: "white",
-                              }}
-                            />
-                          </div>
-                        );
-                      })
-                    )}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                    <div style={sectionBoxStyle}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                        <h3 style={{ margin: 0, color: "#d10000", fontSize: "18px", fontWeight: "600" }}>Rectification</h3>
+                        <div style={{
+                          padding: "6px 14px",
+                          backgroundColor: completionStatusColor,
+                          color: "white",
+                          borderRadius: "16px",
+                          fontWeight: "600",
+                          fontSize: "12px"
+                        }}>
+                          {completionStatusLabel}
+                        </div>
+                      </div>
+                      <div style={sectionScrollerStyle}>
+                        {rectificationTasks.length === 0 ? (
+                          <p style={{ margin: 0, color: "#9ca3af", fontSize: "13px" }}>
+                            Add authorised additional work to record rectifications.
+                          </p>
+                        ) : (
+                          rectificationTasks.map((task, index) => {
+                            const taskKey = composeTaskKey(task);
+                            const isComplete = task.status === "complete";
+                            return (
+                              <div
+                                key={taskKey}
+                                style={{
+                                  border: `1px solid ${isComplete ? "#10b981" : "#f3c1c1"}`,
+                                  borderRadius: "8px",
+                                  padding: "12px",
+                                  backgroundColor: isComplete ? "#ecfdf5" : "#fff",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "8px",
+                                }}
+                              >
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: isComplete ? "#047857" : "#b45309" }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={isComplete}
+                                      onChange={() => toggleTaskStatus(taskKey)}
+                                      style={{ accentColor: "#d10000" }}
+                                    />
+                                    Completed
+                                  </label>
+                                  <span style={{ fontSize: "12px", color: "#6b7280" }}>Item {index + 1}</span>
+                                </div>
+                                <textarea
+                                  value={task.label}
+                                  onChange={handleTaskLabelChange(taskKey)}
+                                  style={{
+                                    width: "100%",
+                                    minHeight: "80px",
+                                    borderRadius: "6px",
+                                    border: "1px solid #d1d5db",
+                                    padding: "10px",
+                                    fontSize: "14px",
+                                    fontFamily: "inherit",
+                                    resize: "vertical",
+                                    outline: "none",
+                                    backgroundColor: "white",
+                                  }}
+                                />
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-              gap: "12px"
-            }}>
-              {metadataFields.map((fieldConfig) => (
-                <div
-                  key={fieldConfig.field}
-                  style={{
-                    backgroundColor: "white",
-                    padding: "16px",
-                    borderRadius: "8px",
-                    border: "1px solid #ffe5e5",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px"
-                  }}
-                >
-                  <label style={{ fontSize: "14px", fontWeight: "600", color: "#333" }}>
-                    {fieldConfig.label}
-                  </label>
-                  {fieldConfig.type === "textarea" ? (
-                    <textarea
-                      value={writeUpData[fieldConfig.field]}
-                      onChange={handleNoteChange(fieldConfig.field)}
-                      style={{
-                        width: "100%",
-                        minHeight: "80px",
-                        borderRadius: "8px",
-                        border: "1px solid #e0e0e0",
-                        padding: "10px",
-                        fontSize: "14px",
-                        fontFamily: "inherit",
-                        resize: "vertical",
-                        outline: "none",
-                      }}
-                      onFocus={(e) => (e.currentTarget.style.borderColor = "#d10000")}
-                      onBlur={(e) => (e.currentTarget.style.borderColor = "#e0e0e0")}
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      value={writeUpData[fieldConfig.field]}
-                      onChange={handleInputChange(fieldConfig.field)}
-                      style={{
-                        width: "100%",
-                        borderRadius: "8px",
-                        border: "1px solid #e0e0e0",
-                        padding: "10px",
-                        fontSize: "14px",
-                        fontFamily: "inherit",
-                        outline: "none",
-                      }}
-                      onFocus={(e) => (e.currentTarget.style.borderColor = "#d10000")}
-                      onBlur={(e) => (e.currentTarget.style.borderColor = "#e0e0e0")}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
+            ) : (
+              <div style={{
+                flex: 1,
+                display: "grid",
+                gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                gap: "16px",
+                minHeight: 0
+              }}>
+                {metadataFields.map((fieldConfig) => (
+                  <div
+                    key={fieldConfig.field}
+                    style={{
+                      backgroundColor: "white",
+                      padding: "16px",
+                      borderRadius: "8px",
+                      border: "1px solid #ffe5e5",
+                      boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+                      display: "flex",
+                      flexDirection: "column",
+                      minHeight: "140px",
+                      gap: "8px"
+                    }}
+                  >
+                    <label style={{ fontSize: "14px", fontWeight: "600", color: "#333" }}>
+                      {fieldConfig.label}
+                    </label>
+                    {fieldConfig.type === "textarea" ? (
+                      <textarea
+                        value={writeUpData[fieldConfig.field]}
+                        onChange={handleNoteChange(fieldConfig.field)}
+                        style={{
+                          width: "100%",
+                          minHeight: "80px",
+                          borderRadius: "8px",
+                          border: "1px solid #e0e0e0",
+                          padding: "10px",
+                          fontSize: "14px",
+                          fontFamily: "inherit",
+                          resize: "vertical",
+                          outline: "none",
+                          flex: 1
+                        }}
+                        onFocus={(e) => (e.currentTarget.style.borderColor = "#d10000")}
+                        onBlur={(e) => (e.currentTarget.style.borderColor = "#e0e0e0")}
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={writeUpData[fieldConfig.field]}
+                        onChange={handleInputChange(fieldConfig.field)}
+                        style={{
+                          width: "100%",
+                          borderRadius: "8px",
+                          border: "1px solid #e0e0e0",
+                          padding: "10px",
+                          fontSize: "14px",
+                          fontFamily: "inherit",
+                          outline: "none",
+                          flex: 1
+                        }}
+                        onFocus={(e) => (e.currentTarget.style.borderColor = "#d10000")}
+                        onBlur={(e) => (e.currentTarget.style.borderColor = "#e0e0e0")}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
