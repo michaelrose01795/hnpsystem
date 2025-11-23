@@ -9,7 +9,8 @@ import Layout from "@/components/Layout";
 import {
   getWriteUpByJobNumber,
   saveWriteUpToDatabase,
-  getJobByNumber
+  getJobByNumber,
+  updateJobStatus,
 } from "@/lib/database/jobs";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
@@ -76,6 +77,28 @@ const composeTaskKey = (task) => `${task.source}:${task.sourceKey}`;
 
 // ✅ Generate a reusable empty checkbox array
 const createCheckboxArray = () => Array(10).fill(false);
+const PARTS_ON_ORDER_STATUSES = new Set(["on-order", "on_order", "awaiting-stock", "awaiting_stock"]);
+
+const extractNormalizedStatus = (value = "") =>
+  `${value}`.toLowerCase().trim().replace(/\s+/g, "-");
+
+const hasPartsOnOrder = (requests = []) =>
+  (Array.isArray(requests) ? requests : []).some((request) =>
+    PARTS_ON_ORDER_STATUSES.has(extractNormalizedStatus(request?.status))
+  );
+
+const determineJobStatusFromTasks = (tasks = [], requests = []) => {
+  if (!Array.isArray(tasks)) {
+    return null;
+  }
+
+  const hasIncomplete = tasks.some((task) => task.status !== "complete");
+  if (!hasIncomplete) {
+    return "Tech Complete";
+  }
+
+  return hasPartsOnOrder(requests) ? "Awaiting Parts" : "In Progress";
+};
 
 const createCauseEntry = (requestKey = "") => ({
   id: `${requestKey || "cause"}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -641,13 +664,18 @@ export default function WriteUpPage() {
           setWriteUpData((prev) => ({ ...prev, completionStatus: result.completionStatus }));
         }
 
-        alert("✅ Write-up saved successfully!");
-
-        if (isTech) {
-          router.push(`/job-cards/myjobs/${jobNumber}`); // return to technician job view
-        } else {
-          router.push(`/job-cards/${jobNumber}`); // return to manager job view
+        const requestsForPartsStatus = jobData?.jobCard?.partsRequests || [];
+        const desiredStatus = determineJobStatusFromTasks(writeUpData.tasks, requestsForPartsStatus);
+        if (desiredStatus && jobData?.jobCard?.id) {
+          try {
+            await updateJobStatus(jobData.jobCard.id, desiredStatus);
+          } catch (statusError) {
+            console.error("❌ Failed to update job status after saving write-up:", statusError);
+          }
         }
+
+        alert("✅ Write-up saved successfully!");
+        router.push(`/job-cards/${jobNumber}`);
       } else {
         alert(result?.error || "❌ Failed to save write-up");
       }
