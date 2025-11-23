@@ -101,6 +101,27 @@ const determineJobStatusFromTasks = (tasks = [], requests = []) => {
   return hasPartsOnOrder(requests) ? "Awaiting Parts" : "In Progress";
 };
 
+const sectionBoxStyle = {
+  backgroundColor: "white",
+  padding: "20px",
+  borderRadius: "8px",
+  boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+  border: "1px solid #ffe5e5",
+  display: "flex",
+  flexDirection: "column",
+  flex: 1,
+  height: "360px",
+};
+
+const sectionScrollerStyle = {
+  flex: 1,
+  overflowY: "auto",
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px",
+  paddingRight: "6px",
+};
+
 const createCauseEntry = (requestKey = "") => ({
   id: `${requestKey || "cause"}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   requestKey,
@@ -719,6 +740,46 @@ export default function WriteUpPage() {
   const completionStatusLabel =
     writeUpData.completionStatus === "complete" ? "Complete" : "Waiting Additional Work";
   const completionStatusColor = writeUpData.completionStatus === "complete" ? "#10b981" : "#f59e0b";
+  const visibleRequestCount = Math.max(2, requestTasks.length);
+  const requestSlots = Array.from({ length: visibleRequestCount }, (_, index) => requestTasks[index] || null);
+  const rectificationTasks = writeUpData.tasks.filter((task) => task && task.source !== "request");
+  const metadataFields = [
+    { label: "Warranty Claim Number", field: "warrantyClaim", type: "input" },
+    { label: "TSR Number", field: "tsrNumber", type: "input" },
+    { label: "PWA Number", field: "pwaNumber", type: "input" },
+    { label: "Technical Bulletins", field: "technicalBulletins", type: "textarea" },
+    { label: "Technical Signature", field: "technicalSignature", type: "input" },
+    { label: "Quality Control", field: "qualityControl", type: "input" },
+    { label: "Additional Parts", field: "additionalParts", type: "textarea" },
+  ];
+
+  useEffect(() => {
+    const aggregated = requestTasks
+      .map((task) => (task?.label || "").trim())
+      .filter(Boolean)
+      .join("\n");
+
+    setWriteUpData((prev) => {
+      if (prev.fault === aggregated) {
+        return prev;
+      }
+      return { ...prev, fault: aggregated };
+    });
+  }, [requestTasks]);
+
+  useEffect(() => {
+    const aggregated = rectificationTasks
+      .map((task) => (task?.label || "").trim())
+      .filter(Boolean)
+      .join("\n");
+
+    setWriteUpData((prev) => {
+      if (prev.rectification === aggregated) {
+        return prev;
+      }
+      return { ...prev, rectification: aggregated };
+    });
+  }, [rectificationTasks]);
 
   // ✅ Loading state with spinner animation
   if (loading) {
@@ -828,7 +889,7 @@ export default function WriteUpPage() {
           </div>
         )}
 
-        {/* ✅ Main Content Area with Scrolling */}
+        {/* ✅ Main Content Layout */}
         <div style={{
           flex: 1,
           borderRadius: "8px",
@@ -839,154 +900,87 @@ export default function WriteUpPage() {
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          minHeight: 0
+          minHeight: 0,
+          gap: "16px"
         }}>
-
           <div style={{
             flex: 1,
-            overflowY: "auto",
-            paddingRight: "8px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
             minHeight: 0
           }}>
-            <div style={{
-              display: "flex",
-              gap: "16px",
-              height: "100%"
-            }}>
-
-              {/* ✅ Left Section - Notes and Checklist */}
-              <div style={{
-                flex: 3,
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
-                height: "100%"
-              }}>
-                <div style={{
-                  backgroundColor: "white",
-                  padding: "20px",
-                  borderRadius: "8px",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-                  border: "1px solid #ffe5e5",
-                  display: "flex",
-                  flexDirection: "column",
-                  flex: 1,
-                  minHeight: 0
-                }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={sectionBoxStyle}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <h3 style={{
-                      margin: 0,
-                      color: "#d10000",
-                      textTransform: "capitalize",
-                      fontSize: "18px",
-                      fontWeight: "600"
-                    }}>
-                      Fault (Job Description)
+                    <h3 style={{ margin: 0, color: "#d10000", textTransform: "capitalize", fontSize: "18px", fontWeight: "600" }}>
+                      Fault
                     </h3>
-                    <span style={{ fontSize: "12px", color: "#666" }}>
-                      Linked to job card description
-                    </span>
+                    <span style={{ fontSize: "12px", color: "#666" }}>Matching job requests</span>
                   </div>
-                  <textarea
-                    placeholder="Enter fault details..."
-                    value={writeUpData.fault}
-                    onChange={handleFaultChange}
-                    style={{
-                      flex: 1,
-                      padding: "12px",
-                      width: "100%",
-                      resize: "none",
-                      border: "1px solid #e0e0e0",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      fontFamily: "inherit",
-                      outline: "none",
-                      transition: "border-color 0.2s",
-                      minHeight: 0
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = "#d10000"}
-                    onBlur={(e) => e.currentTarget.style.borderColor = "#e0e0e0"}
-                  />
-                  <div style={{ marginTop: "16px" }}>
-                    <h4 style={{ margin: "0 0 8px 0", color: "#444", fontSize: "15px", fontWeight: "600" }}>
-                      Job requests (each box auto-loaded from the job card)
-                    </h4>
-                    {requestTasks.length > 0 ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                        {requestTasks.map((task, index) => {
-                          const taskKey = composeTaskKey(task);
-                          const isComplete = task.status === "complete";
-                          return (
-                            <div
-                              key={taskKey}
-                              style={{
-                                borderRadius: "8px",
-                                border: `1px solid ${isComplete ? "#10b981" : "#f3c1c1"}`,
-                                padding: "12px",
-                                backgroundColor: isComplete ? "#ecfdf5" : "#fff",
-                              }}
-                            >
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                                <label style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "13px", color: isComplete ? "#047857" : "#b45309" }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={isComplete}
-                                    onChange={() => toggleTaskStatus(taskKey)}
-                                    style={{ accentColor: "#d10000", cursor: "pointer" }}
-                                  />
-                                  {isComplete ? "Marked complete" : "Mark as complete"}
-                                </label>
-                                <span style={{ fontSize: "12px", color: "#777" }}>Request {index + 1}</span>
-                              </div>
-                              <textarea
-                                value={task.label}
-                                onChange={handleRequestLabelChange(taskKey)}
-                                style={{
-                                  width: "100%",
-                                  minHeight: "80px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #e0e0e0",
-                                  padding: "10px",
-                                  fontSize: "14px",
-                                  fontFamily: "inherit",
-                                  resize: "vertical",
-                                  outline: "none",
-                                }}
+                  <div style={sectionScrollerStyle}>
+                    {requestSlots.map((task, index) => {
+                      const slotKey = task ? composeTaskKey(task) : `slot-${index}`;
+                      const isComplete = task?.status === "complete";
+                      return (
+                        <div
+                          key={slotKey}
+                          style={{
+                            borderRadius: "8px",
+                            border: `1px solid ${isComplete ? "#10b981" : "#f3c1c1"}`,
+                            padding: "12px",
+                            backgroundColor: isComplete ? "#ecfdf5" : "#fff",
+                            minHeight: "120px",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "8px"
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: isComplete ? "#047857" : "#b45309" }}>
+                              <input
+                                type="checkbox"
+                                checked={isComplete}
+                                onChange={() => task && toggleTaskStatus(slotKey)}
+                                disabled={!task}
+                                style={{ accentColor: "#d10000", cursor: task ? "pointer" : "not-allowed" }}
                               />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p style={{ color: "#999", fontStyle: "italic", margin: 0 }}>
-                        No requests recorded for this job card.
-                      </p>
+                              {isComplete ? "Completed" : "Mark as complete"}
+                            </label>
+                            <span style={{ fontSize: "12px", color: "#777" }}>Request {index + 1}</span>
+                          </div>
+                          <textarea
+                            value={task?.label || ""}
+                            onChange={task ? handleRequestLabelChange(slotKey) : undefined}
+                            placeholder={task ? "" : "No request added yet."}
+                            readOnly={!task}
+                            style={{
+                              flex: 1,
+                              width: "100%",
+                              minHeight: "80px",
+                              borderRadius: "6px",
+                              border: task ? "1px solid #e0e0e0" : "1px dashed #d1d5db",
+                              padding: "10px",
+                              fontSize: "14px",
+                              fontFamily: "inherit",
+                              resize: "none",
+                              outline: "none",
+                              backgroundColor: task ? "white" : "#f8fafc",
+                              color: task ? "#111827" : "#9ca3af",
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
+                    {requestSlots.length === 0 && (
+                      <p style={{ color: "#9ca3af", fontSize: "13px" }}>No job requests available yet.</p>
                     )}
                   </div>
                 </div>
-
-                <div style={{
-                  backgroundColor: "white",
-                  padding: "20px",
-                  borderRadius: "8px",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-                  border: "1px solid #ffe5e5",
-                  display: "flex",
-                  flexDirection: "column",
-                  flex: 1,
-                  minHeight: 0,
-                  maxHeight: "420px",
-                  overflowY: "auto"
-                }}>
+                <div style={sectionBoxStyle}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <h3 style={{
-                      margin: 0,
-                      color: "#d10000",
-                      fontSize: "18px",
-                      fontWeight: "600"
-                    }}>
-                      Cause
-                    </h3>
+                    <h3 style={{ margin: 0, color: "#d10000", fontSize: "18px", fontWeight: "600" }}>Cause</h3>
                     <button
                       type="button"
                       onClick={addCauseRow}
@@ -1005,10 +999,13 @@ export default function WriteUpPage() {
                       + Add Cause
                     </button>
                   </div>
-
-                  {writeUpData.causeEntries.length > 0 ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                      {writeUpData.causeEntries.map((entry) => {
+                  <div style={sectionScrollerStyle}>
+                    {writeUpData.causeEntries.length === 0 ? (
+                      <p style={{ margin: 0, color: "#9ca3af", fontSize: "13px" }}>
+                        Add a cause edition to link a request. None added yet.
+                      </p>
+                    ) : (
+                      writeUpData.causeEntries.map((entry) => {
                         const matchedRequest = requestTasks.find((task) => task.sourceKey === entry.requestKey);
                         return (
                           <div
@@ -1017,59 +1014,39 @@ export default function WriteUpPage() {
                               border: "1px solid #e5e7eb",
                               borderRadius: "8px",
                               padding: "12px",
-                              backgroundColor: "#f9fafb"
+                              backgroundColor: "#f9fafb",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "8px"
                             }}
                           >
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                <span style={{ fontSize: "12px", color: "#6b7280" }}>
-                                  {matchedRequest ? matchedRequest.label : "Unmapped request"}
-                                </span>
-                              </div>
-                              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                                <select
-                                  value={entry.requestKey}
-                                  onChange={handleCauseRequestChange(entry.id)}
-                                  style={{
-                                    padding: "6px 8px",
-                                    borderRadius: "6px",
-                                    border: "1px solid #cbd5f5",
-                                    fontSize: "12px",
-                                  }}
-                                >
-                                  <option value="">
-                                    Select request
-                                  </option>
-                                  {requestTasks.map((task, index) => (
-                                    <option key={`${task.sourceKey}-${index}`} value={task.sourceKey}>
-                                      Request {index + 1}: {task.label}
-                                    </option>
-                                  ))}
-                                </select>
-                                <button
-                                  type="button"
-                                  onClick={() => removeCauseRow(entry.id)}
-                                  style={{
-                                    border: "none",
-                                    backgroundColor: "#ef4444",
-                                    color: "white",
-                                    borderRadius: "6px",
-                                    padding: "5px 10px",
-                                    cursor: "pointer",
-                                    fontSize: "12px",
-                                  }}
-                                >
-                                  Remove
-                                </button>
-                              </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                                {matchedRequest ? matchedRequest.label : "Unmapped request"}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => removeCauseRow(entry.id)}
+                                style={{
+                                  border: "none",
+                                  backgroundColor: "#ef4444",
+                                  color: "white",
+                                  borderRadius: "6px",
+                                  padding: "4px 12px",
+                                  cursor: "pointer",
+                                  fontSize: "12px",
+                                }}
+                              >
+                                Remove
+                              </button>
                             </div>
                             <textarea
-                              placeholder="Describe the cause for this request..."
+                              placeholder="Describe the cause..."
                               value={entry.text}
                               onChange={handleCauseTextChange(entry.id)}
                               style={{
                                 width: "100%",
-                                minHeight: "80px",
+                                minHeight: "100px",
                                 borderRadius: "6px",
                                 border: "1px solid #cbd5f5",
                                 padding: "10px",
@@ -1082,60 +1059,13 @@ export default function WriteUpPage() {
                             />
                           </div>
                         );
-                      })}
-                    </div>
-                  ) : (
-                    <p style={{ color: "#9ca3af", fontSize: "13px", marginTop: "4px" }}>
-                      Add request-specific causes so each job request has a matching root-cause note.
-                    </p>
-                  )}
-
-                  <div style={{ marginTop: "16px" }}>
-                    <textarea
-                      placeholder="Enter cause details..."
-                      value={writeUpData.caused}
-                      onChange={handleNoteChange("caused")}
-                      style={{
-                        padding: "12px",
-                        width: "100%",
-                        resize: "none",
-                        border: "1px solid #e0e0e0",
-                        borderRadius: "8px",
-                        fontSize: "14px",
-                        fontFamily: "inherit",
-                        outline: "none",
-                        transition: "border-color 0.2s",
-                        minHeight: 0,
-                      }}
-                      onFocus={(e) => e.currentTarget.style.borderColor = "#d10000"}
-                      onBlur={(e) => e.currentTarget.style.borderColor = "#e0e0e0"}
-                    />
+                      })
+                    )}
                   </div>
                 </div>
-
-                <div style={{
-                  backgroundColor: "white",
-                  padding: "20px",
-                  borderRadius: "8px",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-                  border: "1px solid #ffe5e5",
-                  display: "flex",
-                  flexDirection: "column",
-                  flex: 1,
-                  minHeight: 0,
-                  maxHeight: "420px",
-                  overflowY: "auto"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <h3 style={{
-                      marginTop: 0,
-                      marginBottom: "12px",
-                      color: "#d10000",
-                      fontSize: "18px",
-                      fontWeight: "600"
-                    }}>
-                      Rectification & Checklist
-                    </h3>
+                <div style={sectionBoxStyle}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <h3 style={{ margin: 0, color: "#d10000", fontSize: "18px", fontWeight: "600" }}>Rectification</h3>
                     <div style={{
                       padding: "6px 14px",
                       backgroundColor: completionStatusColor,
@@ -1147,302 +1077,124 @@ export default function WriteUpPage() {
                       {completionStatusLabel}
                     </div>
                   </div>
-                  <textarea
-                    placeholder="Enter rectification details..."
-                    value={writeUpData.rectification}
-                    onChange={handleNoteChange("rectification")}
-                    style={{
-                      flex: 0,
-                      padding: "12px",
-                      width: "100%",
-                      resize: "none",
-                      border: "1px solid #e0e0e0",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      fontFamily: "inherit",
-                      outline: "none",
-                      transition: "border-color 0.2s",
-                      minHeight: "100px",
-                      marginBottom: "16px"
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = "#d10000"}
-                    onBlur={(e) => e.currentTarget.style.borderColor = "#e0e0e0"}
-                  />
-
-                  <div style={{
-                    backgroundColor: "#fff6f6",
-                    border: "1px dashed #f3c1c1",
-                    borderRadius: "8px",
-                    padding: "16px",
-                    marginBottom: "16px"
-                  }}>
-                    <div style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "12px"
-                    }}>
-                      <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "#b91c1c" }}>
-                        Checklist Progress
-                      </h4>
-                      <span style={{ fontSize: "13px", color: "#555" }}>
-                        {completedTasks} of {totalTasks} complete
-                      </span>
-                    </div>
-                    {totalTasks > 0 ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                        {writeUpData.tasks.map((task, index) => {
-                          const taskKey = composeTaskKey(task);
-                          const isComplete = task.status === "complete";
-                          return (
-                            <div
-                              key={taskKey}
-                              style={{
-                                border: `1px solid ${isComplete ? "#10b981" : "#f3c1c1"}`,
-                                borderRadius: "8px",
-                                padding: "12px",
-                                backgroundColor: isComplete ? "#ecfdf5" : "#fff",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "8px",
-                              }}
-                            >
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: isComplete ? "#047857" : "#b45309" }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={isComplete}
-                                    onChange={() => toggleTaskStatus(taskKey)}
-                                    style={{
-                                      width: "18px",
-                                      height: "18px",
-                                      cursor: "pointer",
-                                      accentColor: "#d10000"
-                                    }}
-                                  />
-                                  {isComplete ? "Marked complete" : "Mark as complete"}
-                                </label>
-                                <span style={{ fontSize: "12px", color: "#6b7280" }}>Rectification {index + 1}</span>
-                              </div>
-                              <textarea
-                                value={task.label}
-                                onChange={handleTaskLabelChange(taskKey)}
-                                style={{
-                                  width: "100%",
-                                  minHeight: "66px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #e0e7ff",
-                                  padding: "10px",
-                                  fontSize: "14px",
-                                  fontFamily: "inherit",
-                                  resize: "vertical",
-                                  outline: "none",
-                                  backgroundColor: "white",
-                                }}
-                              />
-                              <div style={{ fontSize: "12px", color: isComplete ? "#047857" : "#b45309", fontWeight: "600" }}>
-                                {isComplete ? "Complete" : "Waiting Additional Work"}
-                              </div>
+                  <div style={sectionScrollerStyle}>
+                    {rectificationTasks.length === 0 ? (
+                      <p style={{ margin: 0, color: "#9ca3af", fontSize: "13px" }}>
+                        Add authorised additional work to record rectifications.
+                      </p>
+                    ) : (
+                      rectificationTasks.map((task, index) => {
+                        const taskKey = composeTaskKey(task);
+                        const isComplete = task.status === "complete";
+                        return (
+                          <div
+                            key={taskKey}
+                            style={{
+                              border: `1px solid ${isComplete ? "#10b981" : "#f3c1c1"}`,
+                              borderRadius: "8px",
+                              padding: "12px",
+                              backgroundColor: isComplete ? "#ecfdf5" : "#fff",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "8px",
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: isComplete ? "#047857" : "#b45309" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={isComplete}
+                                  onChange={() => toggleTaskStatus(taskKey)}
+                                  style={{ accentColor: "#d10000" }}
+                                />
+                                Completed
+                              </label>
+                              <span style={{ fontSize: "12px", color: "#6b7280" }}>Item {index + 1}</span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p style={{ color: "#999", fontStyle: "italic", margin: 0 }}>
-                        No checklist items available.
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <h4 style={{ margin: "0 0 8px 0", color: "#444", fontSize: "15px", fontWeight: "600" }}>
-                      Authorized VHC Work
-                    </h4>
-                    {authorizedItems.length > 0 ? (
-                      <ul style={{ margin: 0, paddingLeft: "18px", color: "#555", fontSize: "14px" }}>
-                        {authorizedItems.map((item) => (
-                          <li key={item.sourceKey}>{item.label}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p style={{ color: "#999", fontStyle: "italic", margin: 0 }}>
-                        No authorized VHC work linked yet.
-                      </p>
+                            <textarea
+                              value={task.label}
+                              onChange={handleTaskLabelChange(taskKey)}
+                              style={{
+                                width: "100%",
+                                minHeight: "80px",
+                                borderRadius: "6px",
+                                border: "1px solid #d1d5db",
+                                padding: "10px",
+                                fontSize: "14px",
+                                fontFamily: "inherit",
+                                resize: "vertical",
+                                outline: "none",
+                                backgroundColor: "white",
+                              }}
+                            />
+                          </div>
+                        );
+                      })
                     )}
                   </div>
                 </div>
               </div>
-
-              {/* ✅ Right Section - Metadata fields */}
-              <div style={{ flex: 2, display: "flex", flexDirection: "column", gap: "16px" }}>
-
-                {[{
-                  label: "Warranty Claim Number",
-                  field: "warrantyClaim"
-                }, {
-                  label: "TSR Number",
-                  field: "tsrNumber"
-                }, {
-                  label: "PWA Number",
-                  field: "pwaNumber"
-                }].map(({ label, field }) => (
-                  <div
-                    key={field}
-                    style={{
-                      backgroundColor: "white",
-                      padding: "16px",
-                      borderRadius: "8px",
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-                      border: "1px solid #ffe5e5"
-                    }}
-                  >
-                    <label style={{
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      color: "#333",
-                      display: "block",
-                      marginBottom: "8px"
-                    }}>
-                      {label}
-                    </label>
-                    <input
-                      type="text"
-                      value={writeUpData[field]}
-                      onChange={handleInputChange(field)}
-                      style={{
-                        width: "100%",
-                        padding: "10px 12px",
-                        border: "1px solid #e0e0e0",
-                        borderRadius: "8px",
-                        fontSize: "14px",
-                        outline: "none",
-                        transition: "border-color 0.2s"
-                      }}
-                      onFocus={(e) => (e.currentTarget.style.borderColor = "#d10000")}
-                      onBlur={(e) => (e.currentTarget.style.borderColor = "#e0e0e0")}
-                    />
-                  </div>
-                ))}
-
+            </div>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: "12px"
+            }}>
+              {metadataFields.map((fieldConfig) => (
                 <div
+                  key={fieldConfig.field}
                   style={{
                     backgroundColor: "white",
                     padding: "16px",
                     borderRadius: "8px",
+                    border: "1px solid #ffe5e5",
                     boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-                    border: "1px solid #ffe5e5"
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px"
                   }}
                 >
-                  <label style={{
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "#333",
-                    display: "block",
-                    marginBottom: "8px"
-                  }}>
-                    Technical Bulletins
+                  <label style={{ fontSize: "14px", fontWeight: "600", color: "#333" }}>
+                    {fieldConfig.label}
                   </label>
-                  <textarea
-                    value={writeUpData.technicalBulletins}
-                    onChange={handleNoteChange("technicalBulletins")}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: "1px solid #e0e0e0",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      resize: "vertical",
-                      minHeight: "80px",
-                      fontFamily: "inherit",
-                      outline: "none",
-                      transition: "border-color 0.2s"
-                    }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = "#d10000")}
-                  />
-                </div>
-
-                {[{
-                  label: "Technical Signature",
-                  field: "technicalSignature"
-                }, {
-                  label: "Quality Control",
-                  field: "qualityControl"
-                }].map(({ label, field }) => (
-                  <div
-                    key={field}
-                    style={{
-                      backgroundColor: "white",
-                      padding: "16px",
-                      borderRadius: "8px",
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-                      border: "1px solid #ffe5e5"
-                    }}
-                  >
-                    <label style={{
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      color: "#333",
-                      display: "block",
-                      marginBottom: "8px"
-                    }}>
-                      {label}
-                    </label>
-                    <input
-                      type="text"
-                      value={writeUpData[field]}
-                      onChange={handleInputChange(field)}
+                  {fieldConfig.type === "textarea" ? (
+                    <textarea
+                      value={writeUpData[fieldConfig.field]}
+                      onChange={handleNoteChange(fieldConfig.field)}
                       style={{
                         width: "100%",
-                        padding: "10px 12px",
-                        border: "1px solid #e0e0e0",
+                        minHeight: "80px",
                         borderRadius: "8px",
+                        border: "1px solid #e0e0e0",
+                        padding: "10px",
                         fontSize: "14px",
+                        fontFamily: "inherit",
+                        resize: "vertical",
                         outline: "none",
-                        transition: "border-color 0.2s"
                       }}
                       onFocus={(e) => (e.currentTarget.style.borderColor = "#d10000")}
                       onBlur={(e) => (e.currentTarget.style.borderColor = "#e0e0e0")}
                     />
-                  </div>
-                ))}
-
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    padding: "16px",
-                    borderRadius: "8px",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-                    border: "1px solid #ffe5e5"
-                  }}
-                >
-                  <label style={{
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "#333",
-                    display: "block",
-                    marginBottom: "8px"
-                  }}>
-                    Additional Parts
-                  </label>
-                  <textarea
-                    value={writeUpData.additionalParts}
-                    onChange={handleNoteChange("additionalParts")}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: "1px solid #e0e0e0",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      resize: "vertical",
-                      minHeight: "80px",
-                      fontFamily: "inherit",
-                      outline: "none",
-                      transition: "border-color 0.2s"
-                    }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = "#d10000")}
-                  />
+                  ) : (
+                    <input
+                      type="text"
+                      value={writeUpData[fieldConfig.field]}
+                      onChange={handleInputChange(fieldConfig.field)}
+                      style={{
+                        width: "100%",
+                        borderRadius: "8px",
+                        border: "1px solid #e0e0e0",
+                        padding: "10px",
+                        fontSize: "14px",
+                        fontFamily: "inherit",
+                        outline: "none",
+                      }}
+                      onFocus={(e) => (e.currentTarget.style.borderColor = "#d10000")}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "#e0e0e0")}
+                    />
+                  )}
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
