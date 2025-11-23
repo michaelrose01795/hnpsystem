@@ -13,11 +13,11 @@ const TARGET_ROLES = [...new Set([...TECH_ROLES, ...MOT_ROLES])];
 const TARGET_ROLE_SET = new Set(TARGET_ROLES.map((role) => role.toLowerCase()));
 
 const STATUS_STYLES = {
-  "In Progress": "bg-emerald-50 border-emerald-200 text-emerald-800",
-  "Waiting for Job": "bg-sky-50 border-sky-200 text-sky-800",
-  "Tea Break": "bg-amber-50 border-amber-200 text-amber-800",
-  "On MOT": "bg-purple-50 border-purple-200 text-purple-800",
-  "Not Clocked In": "bg-slate-50 border-slate-200 text-slate-700",
+  "In Progress": "bg-emerald-100 border-emerald-300 text-emerald-800",
+  "Waiting for Job": "bg-slate-100 border-slate-300 text-slate-700",
+  "Tea Break": "bg-amber-100 border-amber-300 text-amber-800",
+  "On MOT": "bg-blue-100 border-blue-300 text-blue-800",
+  "Not Clocked In": "bg-zinc-100 border-zinc-300 text-zinc-600",
 };
 
 const STATUS_LEGEND_ORDER = [
@@ -106,6 +106,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
   const [teamStatus, setTeamStatus] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [lastUpdated, setLastUpdated] = useState("");
 
   const fetchClocking = useCallback(async () => {
     setLoading(true);
@@ -197,19 +198,22 @@ function ClockingOverviewTab({ onSummaryChange }) {
 
       prepared.sort((a, b) => a.name.localeCompare(b.name));
 
+      const summaryPayload = {
+        total: prepared.length,
+        inProgress: prepared.filter((tech) => tech.status === "In Progress").length,
+        onMot: prepared.filter((tech) => tech.status === "On MOT").length,
+        teaBreak: prepared.filter((tech) => tech.status === "Tea Break").length,
+        waiting: prepared.filter((tech) => tech.status === "Waiting for Job").length,
+        notClocked: prepared.filter((tech) => tech.status === "Not Clocked In").length,
+        lastUpdated: new Date().toISOString(),
+      };
+
       setTeamStatus(prepared);
       setError("");
+      setLastUpdated(summaryPayload.lastUpdated);
 
       if (onSummaryChange) {
-        onSummaryChange({
-          total: prepared.length,
-          inProgress: prepared.filter((tech) => tech.status === "In Progress").length,
-          onMot: prepared.filter((tech) => tech.status === "On MOT").length,
-          teaBreak: prepared.filter((tech) => tech.status === "Tea Break").length,
-          waiting: prepared.filter((tech) => tech.status === "Waiting for Job").length,
-          notClocked: prepared.filter((tech) => tech.status === "Not Clocked In").length,
-          lastUpdated: new Date().toISOString(),
-        });
+        onSummaryChange(summaryPayload);
       }
     } catch (err) {
       console.error("Failed to load clocking dashboard", err);
@@ -247,24 +251,69 @@ function ClockingOverviewTab({ onSummaryChange }) {
     };
   }, [fetchClocking]);
 
+  const summaryStats = useMemo(() => {
+    const summary = {
+      total: teamStatus.length,
+      inProgress: 0,
+      onMot: 0,
+      teaBreak: 0,
+      waiting: 0,
+      notClocked: 0,
+    };
+
+    teamStatus.forEach((tech) => {
+      if (tech.status === "In Progress") summary.inProgress += 1;
+      else if (tech.status === "On MOT") summary.onMot += 1;
+      else if (tech.status === "Tea Break") summary.teaBreak += 1;
+      else if (tech.status === "Waiting for Job") summary.waiting += 1;
+      else if (tech.status === "Not Clocked In") summary.notClocked += 1;
+    });
+
+    return summary;
+  }, [teamStatus]);
+
+  const formattedLastUpdated = lastUpdated
+    ? new Date(lastUpdated).toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "—";
+
+  const summaryCards = [
+    { label: "Technicians", value: summaryStats.total },
+    { label: "In Progress", value: summaryStats.inProgress },
+    { label: "On MOT", value: summaryStats.onMot },
+    { label: "Tea Break", value: summaryStats.teaBreak },
+    { label: "Waiting", value: summaryStats.waiting },
+    { label: "Offline", value: summaryStats.notClocked },
+  ];
+
   const statusHeader = loading ? "Updating…" : "Live";
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-10">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Workshop clocking
+          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Technician grid
           </p>
-          <h2 className="text-xl font-semibold text-slate-900">
-            Technicians & MOT Testers
+          <h2 className="text-2xl font-semibold text-slate-900">
+            Live workshop board
           </h2>
+          <p className="mt-2 text-sm text-slate-500">
+            Scan every technician&apos;s current job, timer, and availability at a glance.
+          </p>
         </div>
         <span
-          className={`text-xs font-bold uppercase tracking-wide ${
-            loading ? "text-rose-600" : "text-emerald-600"
+          className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide ${
+            loading ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-700"
           }`}
         >
+          <span
+            className={`h-2 w-2 rounded-full ${
+              loading ? "bg-rose-500" : "bg-emerald-500"
+            }`}
+          />
           {statusHeader}
         </span>
       </div>
@@ -278,70 +327,87 @@ function ClockingOverviewTab({ onSummaryChange }) {
       {loading && teamStatus.length === 0 ? (
         <p className="text-sm text-slate-500">Loading live clocking…</p>
       ) : (
-        <>
+        <div className="space-y-8">
           {teamStatus.length === 0 ? (
-            <p className="text-sm text-slate-500">
+            <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 text-center text-sm text-slate-500">
               No technicians or MOT testers are currently clocked in.
-            </p>
+            </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {teamStatus.map((tech) => (
-                <Link
-                  key={tech.userId}
-                  href={`/clocking/${tech.userId}`}
-                  className="group block h-full"
-                >
-                  <div className="flex h-full flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-lg">
-                    <div className="flex items-start justify-between gap-3">
+                <Link key={tech.userId} href={`/clocking/${tech.userId}`} className="group block h-full">
+                  <article className="flex h-full flex-col rounded-3xl border border-slate-100 bg-white/90 p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-200 hover:shadow-lg">
+                    <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-lg font-semibold text-slate-900">
-                          {tech.name}
-                        </p>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-lg font-semibold text-slate-900">{tech.name}</p>
+                        <span className="mt-2 inline-flex items-center rounded-full border border-slate-200 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-600">
                           {tech.role}
-                        </p>
+                        </span>
                       </div>
                       <span
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold tracking-wide ${STATUS_STYLES[tech.status]}`}
+                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-wide ${STATUS_STYLES[tech.status]}`}
                       >
                         {tech.status}
                       </span>
                     </div>
 
-                    <div className="grid gap-2 text-sm text-slate-500 sm:grid-cols-2">
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-slate-400">
-                          Current job
-                        </p>
-                        <p className="text-base font-semibold text-slate-900">
-                          {(tech.status === "In Progress" || tech.status === "On MOT") &&
-                          tech.jobNumber
+                    <div className="mt-6 grid gap-4 text-sm text-slate-500 sm:grid-cols-2">
+                      <div className="rounded-2xl bg-slate-50/80 p-4">
+                        <p className="text-xs uppercase tracking-wide text-slate-400">Current job</p>
+                        <p className="mt-2 text-lg font-semibold text-slate-900">
+                          {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber
                             ? tech.jobNumber
                             : "—"}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-slate-400">
-                          Time on activity
-                        </p>
-                        <p className="text-base font-semibold text-slate-900">
-                          {tech.timeOnActivity}
-                        </p>
+                      <div className="rounded-2xl bg-slate-50/80 p-4">
+                        <p className="text-xs uppercase tracking-wide text-slate-400">Time on activity</p>
+                        <p className="mt-2 text-lg font-semibold text-slate-900">{tech.timeOnActivity}</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      <span className="rounded-full border border-slate-200 px-3 py-1 text-[0.65rem] text-slate-600">
-                        {tech.role}
+                    <div className="mt-auto flex items-center justify-between pt-6">
+                      <div className="text-xs uppercase tracking-wide text-slate-400">
+                        {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber
+                          ? "Active assignment"
+                          : "Awaiting assignment"}
+                      </div>
+                      <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 transition group-hover:bg-slate-900/10">
+                        Tap for details
+                        <span aria-hidden="true">&gt;</span>
                       </span>
-                      <span className="text-[0.65rem] text-slate-400">Tap for details</span>
                     </div>
-                  </div>
+                  </article>
                 </Link>
               ))}
             </div>
           )}
-        </>
+
+          <section className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Status snapshot summary
+                </p>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  {summaryStats.total} technicians monitored
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500">Updated {formattedLastUpdated}</p>
+            </div>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {summaryCards.map((card) => (
+                <div key={card.label} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">{card.label}</p>
+                  <p className="mt-2 text-2xl font-semibold text-slate-900">{card.value}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-6 text-xs text-slate-500">
+              Last refreshed {formattedLastUpdated}. Figures update automatically from the live clocking feed.
+            </p>
+          </section>
+        </div>
       )}
     </div>
   );
