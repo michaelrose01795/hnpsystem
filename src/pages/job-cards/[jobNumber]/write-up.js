@@ -721,13 +721,13 @@ export default function WriteUpPage() {
   const requestTasks = writeUpData.tasks.filter((task) => task && task.source === "request");
   const totalTasks = writeUpData.tasks.length;
   const completedTasks = writeUpData.tasks.filter((task) => task.status === "complete").length;
+  const rectificationTasks = writeUpData.tasks.filter((task) => task && task.source !== "request");
   const completionStatusLabel =
     writeUpData.completionStatus === "complete" ? "Complete" : "Waiting Additional Work";
   const completionStatusColor = writeUpData.completionStatus === "complete" ? "#10b981" : "#f59e0b";
   const showRectificationStatus = rectificationTasks.length > 0;
   const visibleRequestCount = Math.max(2, requestTasks.length);
   const requestSlots = Array.from({ length: visibleRequestCount }, (_, index) => requestTasks[index] || null);
-  const rectificationTasks = writeUpData.tasks.filter((task) => task && task.source !== "request");
   const metadataFields = [
     { label: "Warranty Claim Number", field: "warrantyClaim", type: "input" },
     { label: "TSR Number", field: "tsrNumber", type: "input" },
