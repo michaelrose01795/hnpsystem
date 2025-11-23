@@ -333,6 +333,19 @@ export default function WriteUpPage() {
     }));
   };
 
+  const handleTaskLabelChange = (taskKey) => (event) => {
+    const value = event.target.value;
+    setWriteUpData((prev) => ({
+      ...prev,
+      tasks: prev.tasks.map((task) => {
+        if (composeTaskKey(task) !== taskKey) {
+          return task;
+        }
+        return { ...task, label: value };
+      }),
+    }));
+  };
+
   const handleCauseRequestChange = (entryId) => (event) => {
     const value = event.target.value;
     setWriteUpData((prev) => ({
@@ -1129,45 +1142,60 @@ export default function WriteUpPage() {
                       </span>
                     </div>
                     {totalTasks > 0 ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        {writeUpData.tasks.map((task) => {
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        {writeUpData.tasks.map((task, index) => {
                           const taskKey = composeTaskKey(task);
                           const isComplete = task.status === "complete";
                           return (
-                            <label
+                            <div
                               key={taskKey}
                               style={{
-                                display: "flex",
-                                gap: "12px",
-                                alignItems: "flex-start",
-                                backgroundColor: isComplete ? "#ecfdf5" : "#fff",
                                 border: `1px solid ${isComplete ? "#10b981" : "#f3c1c1"}`,
                                 borderRadius: "8px",
-                                padding: "10px 12px",
-                                cursor: "pointer"
+                                padding: "12px",
+                                backgroundColor: isComplete ? "#ecfdf5" : "#fff",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "8px",
                               }}
                             >
-                              <input
-                                type="checkbox"
-                                checked={isComplete}
-                                onChange={() => toggleTaskStatus(taskKey)}
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: isComplete ? "#047857" : "#b45309" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isComplete}
+                                    onChange={() => toggleTaskStatus(taskKey)}
+                                    style={{
+                                      width: "18px",
+                                      height: "18px",
+                                      cursor: "pointer",
+                                      accentColor: "#d10000"
+                                    }}
+                                  />
+                                  {isComplete ? "Marked complete" : "Mark as complete"}
+                                </label>
+                                <span style={{ fontSize: "12px", color: "#6b7280" }}>Rectification {index + 1}</span>
+                              </div>
+                              <textarea
+                                value={task.label}
+                                onChange={handleTaskLabelChange(taskKey)}
                                 style={{
-                                  marginTop: "4px",
-                                  width: "18px",
-                                  height: "18px",
-                                  cursor: "pointer",
-                                  accentColor: "#d10000"
+                                  width: "100%",
+                                  minHeight: "66px",
+                                  borderRadius: "6px",
+                                  border: "1px solid #e0e7ff",
+                                  padding: "10px",
+                                  fontSize: "14px",
+                                  fontFamily: "inherit",
+                                  resize: "vertical",
+                                  outline: "none",
+                                  backgroundColor: "white",
                                 }}
                               />
-                              <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: "14px", color: "#333", fontWeight: "600", marginBottom: "4px" }}>
-                                  {task.label}
-                                </div>
-                                <div style={{ fontSize: "12px", color: isComplete ? "#047857" : "#b45309", fontWeight: "600" }}>
-                                  {isComplete ? "Complete" : "Waiting Additional Work"}
-                                </div>
+                              <div style={{ fontSize: "12px", color: isComplete ? "#047857" : "#b45309", fontWeight: "600" }}>
+                                {isComplete ? "Complete" : "Waiting Additional Work"}
                               </div>
-                            </label>
+                            </div>
                           );
                         })}
                       </div>
