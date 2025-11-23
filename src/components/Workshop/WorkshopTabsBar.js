@@ -8,9 +8,7 @@ export const workshopTabs = [
   { href: "/job-cards/view", label: "Job Cards" },
   { href: "/vhc/dashboard", label: "VHC" },
   { href: "/workshop/consumables-tracker", label: "Consumables" },
-  { href: "/workshop/Clocking", label: "Clocking" },
-  { href: "/workshop/ClockingTech", label: "Clocking Tech" },
-  { href: "/workshop/ControllerClocking", label: "Controller Clocking" },
+  { href: "/clocking", label: "Clocking" },
 ];
 
 export const workshopQuickActions = [

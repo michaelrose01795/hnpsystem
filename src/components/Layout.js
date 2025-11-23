@@ -33,24 +33,10 @@ const WORKSHOP_SHORTCUT_ROLES = ["workshop manager", "aftersales manager"];
 const WORKSHOP_SHORTCUT_LINKS = [
   {
     label: "⏱️ Clocking",
-    href: "/workshop/Clocking",
+    href: "/clocking",
     roles: WORKSHOP_SHORTCUT_ROLES,
-    keywords: ["clocking", "time"],
-    description: "Workshop clocking overview",
-  },
-  {
-    label: "🧰 Clocking Tech",
-    href: "/workshop/ClockingTech",
-    roles: WORKSHOP_SHORTCUT_ROLES,
-    keywords: ["clocking", "tech"],
-    description: "Technician clocking view",
-  },
-  {
-    label: "🕹️ Controller Clocking",
-    href: "/workshop/ControllerClocking",
-    roles: WORKSHOP_SHORTCUT_ROLES,
-    keywords: ["controller", "clocking"],
-    description: "Controller-specific clocking tools",
+    keywords: ["clocking", "time", "overview"],
+    description: "Unified clocking workspace",
   },
 ];
 
