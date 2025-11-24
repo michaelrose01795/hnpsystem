@@ -2816,27 +2816,300 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
 }
 
 // ✅ Parts Tab (TODO)
-function PartsTab({ jobData, canEdit }) {
-  return (
-    <div>
-      <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
-        Parts
-      </h2>
-      <div style={{
-        padding: "40px",
-        textAlign: "center",
-        backgroundColor: "#fff3e0",
-        borderRadius: "8px",
-        border: "2px dashed #ff9800"
-      }}>
-        <div style={{ fontSize: "48px", marginBottom: "16px" }}></div>
-        <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#e65100", marginBottom: "8px" }}>
-          Parts Management Coming Soon
-        </h3>
-        <p style={{ fontSize: "14px", color: "#666" }}>
-          This feature is currently under development
-        </p>
+const normalizePartStatus = (status = "") => {
+  const normalized = status.toLowerCase().replace(/\s+/g, "_");
+  if (["pending"].includes(normalized)) return "pending";
+  if (["priced"].includes(normalized)) return "priced";
+  if (["pre_pick", "pre-pick", "picked"].includes(normalized)) return "pre_pick";
+  if (["on_order", "on-order", "awaiting_stock"].includes(normalized)) return "on_order";
+  if (["stock", "allocated", "fitted"].includes(normalized)) return "stock";
+  return "pending";
+};
+
+const PART_STATUS_META = {
+  pending: { label: "Pending", color: "#92400e", background: "#fef3c7" },
+  priced: { label: "Priced", color: "#3730a3", background: "#eef2ff" },
+  pre_pick: { label: "Pre Pick", color: "#15803d", background: "#dcfce7" },
+  on_order: { label: "On Order", color: "#d97706", background: "#fefce8" },
+  stock: { label: "Stock", color: "#1d4ed8", background: "#dbeafe" },
+};
+
+const getPartStatusMeta = (status) => {
+  const normalized = normalizePartStatus(status || "pending");
+  return PART_STATUS_META[normalized] || PART_STATUS_META.pending;
+};
+
+const formatDateTime = (value) => {
+  if (!value) return "Not recorded";
+  try {
+    return new Date(value).toLocaleString();
+  } catch (_err) {
+    return value;
+  }
+};
+
+function PartsTab({ jobData }) {
+  const vhcParts = (Array.isArray(jobData.partsAllocations) ? jobData.partsAllocations : []).map((item) => ({
+    id: item.id,
+    partNumber: item.part?.partNumber || "N/A",
+    name: item.part?.name || "Part",
+    description: item.part?.description || "",
+    status: item.status || "pending",
+    quantityRequested: item.quantityRequested ?? 0,
+    quantityAllocated: item.quantityAllocated ?? 0,
+    quantityFitted: item.quantityFitted ?? 0,
+    source: item.origin && item.origin.toLowerCase() === "vhc" ? "VHC" : "Manual",
+    prePickLocation: item.prePickLocation || "Not assigned",
+    storageLocation: item.storageLocation || "Not assigned",
+    notes: item.requestNotes || "",
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt
+  }));
+
+  const manualRequests = (Array.isArray(jobData.partsRequests) ? jobData.partsRequests : []).map((request) => ({
+    requestId: request.requestId,
+    partNumber: request.part?.partNumber || "Custom",
+    name: request.part?.name || request.description || "Part",
+    description: request.description || "",
+    status: request.status || "pending",
+    quantity: request.quantity ?? 0,
+    requestedBy: request.requestedBy || "Technician",
+    approvedBy: request.approvedBy || null,
+    createdAt: request.createdAt,
+    updatedAt: request.updatedAt
+  }));
+
+  const hasParts = vhcParts.length > 0 || manualRequests.length > 0;
+
+  if (!hasParts) {
+    return (
+      <div>
+        <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
+          Parts Overview
+        </h2>
+        <div style={{
+          padding: "40px",
+          textAlign: "center",
+          backgroundColor: "#f9fafb",
+          borderRadius: "12px",
+          border: "1px solid #e5e7eb"
+        }}>
+          <div style={{ fontSize: "48px", marginBottom: "12px" }}>🧰</div>
+          <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#111827", marginBottom: "8px" }}>
+            No Parts Linked
+          </h3>
+          <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>
+            VHC authorizations and manual write-up requests will appear here automatically.
+          </p>
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <div>
+        <h2 style={{ margin: "0 0 12px 0", fontSize: "18px", fontWeight: "600", color: "#1f2937" }}>
+          VHC Linked Parts
+        </h2>
+        {vhcParts.length === 0 ? (
+          <div style={{
+            padding: "20px",
+            borderRadius: "10px",
+            border: "1px solid #e5e7eb",
+            backgroundColor: "#fcfcfd",
+            fontSize: "14px",
+            color: "#6b7280"
+          }}>
+            No VHC items have been converted into parts for this job yet.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {vhcParts.map((part) => {
+              const statusMeta = getPartStatusMeta(part.status);
+              return (
+                <div
+                  key={part.id}
+                  style={{
+                    padding: "16px",
+                    borderRadius: "12px",
+                    border: "1px solid #e5e7eb",
+                    backgroundColor: "#ffffff",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                    <div>
+                      <div style={{ fontSize: "12px", color: "#6b7280" }}>{part.partNumber}</div>
+                      <h3 style={{ margin: "2px 0", fontSize: "16px", fontWeight: "600", color: "#111827" }}>
+                        {part.name}
+                      </h3>
+                      {part.description && (
+                        <p style={{ margin: 0, fontSize: "13px", color: "#4b5563" }}>{part.description}</p>
+                      )}
+                    </div>
+                    <span
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: "999px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        color: statusMeta.color,
+                        backgroundColor: statusMeta.background
+                      }}
+                    >
+                      {statusMeta.label}
+                    </span>
+                  </div>
+
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))",
+                    gap: "12px",
+                    marginTop: "12px",
+                    fontSize: "13px",
+                    color: "#374151"
+                  }}>
+                    <div>
+                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Qty Requested</strong>
+                      <div style={{ fontWeight: "700", fontSize: "16px" }}>{part.quantityRequested}</div>
+                    </div>
+                    <div>
+                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Qty Allocated</strong>
+                      <div style={{ fontWeight: "700", fontSize: "16px" }}>{part.quantityAllocated}</div>
+                    </div>
+                    <div>
+                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Qty Fitted</strong>
+                      <div style={{ fontWeight: "700", fontSize: "16px" }}>{part.quantityFitted}</div>
+                    </div>
+                    <div>
+                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Source</strong>
+                      <div>{part.source}</div>
+                    </div>
+                    <div>
+                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Pre Pick Location</strong>
+                      <div>{part.prePickLocation}</div>
+                    </div>
+                    <div>
+                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Storage</strong>
+                      <div>{part.storageLocation}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: "12px", display: "flex", flexWrap: "wrap", gap: "20px", fontSize: "12px", color: "#6b7280" }}>
+                    <span>Created: {formatDateTime(part.createdAt)}</span>
+                    <span>Updated: {formatDateTime(part.updatedAt)}</span>
+                  </div>
+
+                  {part.notes && (
+                    <div style={{
+                      marginTop: "12px",
+                      padding: "10px 12px",
+                      borderRadius: "8px",
+                      backgroundColor: "#fef3c7",
+                      color: "#92400e",
+                      fontSize: "13px"
+                    }}>
+                      <strong style={{ fontSize: "12px", textTransform: "uppercase" }}>Technician Note:</strong>
+                      <div>{part.notes}</div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h2 style={{ margin: "12px 0", fontSize: "18px", fontWeight: "600", color: "#1f2937" }}>
+          Manual Requests (Write-up)
+        </h2>
+        {manualRequests.length === 0 ? (
+          <div style={{
+            padding: "20px",
+            borderRadius: "10px",
+            border: "1px solid #e5e7eb",
+            backgroundColor: "#fcfcfd",
+            fontSize: "14px",
+            color: "#6b7280"
+          }}>
+            No manual part requests have been logged.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {manualRequests.map((request) => {
+              const statusMeta = getPartStatusMeta(request.status);
+              return (
+                <div
+                  key={request.requestId}
+                  style={{
+                    padding: "16px",
+                    borderRadius: "12px",
+                    border: "1px solid #e5e7eb",
+                    backgroundColor: "#ffffff",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                    <div>
+                      <div style={{ fontSize: "12px", color: "#6b7280" }}>{request.partNumber}</div>
+                      <h3 style={{ margin: "2px 0", fontSize: "16px", fontWeight: "600", color: "#111827" }}>
+                        {request.name}
+                      </h3>
+                      {request.description && (
+                        <p style={{ margin: 0, fontSize: "13px", color: "#4b5563" }}>{request.description}</p>
+                      )}
+                    </div>
+                    <span
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: "999px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        color: statusMeta.color,
+                        backgroundColor: statusMeta.background
+                      }}
+                    >
+                      {statusMeta.label}
+                    </span>
+                  </div>
+
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))",
+                    gap: "12px",
+                    marginTop: "12px",
+                    fontSize: "13px",
+                    color: "#374151"
+                  }}>
+                    <div>
+                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Quantity</strong>
+                      <div style={{ fontWeight: "700", fontSize: "16px" }}>{request.quantity}</div>
+                    </div>
+                    <div>
+                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Requested By</strong>
+                      <div>{request.requestedBy}</div>
+                    </div>
+                    <div>
+                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Approved By</strong>
+                      <div>{request.approvedBy || "Awaiting approval"}</div>
+                    </div>
+                    <div>
+                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Created</strong>
+                      <div>{formatDateTime(request.createdAt)}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <p style={{ marginTop: "4px", color: "#9ca3af", fontSize: "12px" }}>
+        All data shown is read-only. Updates must be made from the VHC parts workflow or technician write-up form.
+      </p>
     </div>
   );
 }
