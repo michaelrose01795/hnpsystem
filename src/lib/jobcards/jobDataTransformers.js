@@ -162,6 +162,23 @@ const mapPartsAllocations = (rows = []) =>
       : null
   }));
 
+const mapVhcAuthorizations = (rows = []) =>
+  (rows || [])
+    .map((auth) => ({
+      id: auth.id,
+      jobId: auth.job_id,
+      authorizedBy: auth.authorized_by || "Customer",
+      authorizedAt: auth.authorized_at || auth.created_at || null,
+      authorizedItems: Array.isArray(auth.authorized_items) ? auth.authorized_items : auth.authorized_items || [],
+      customerNotes: auth.customer_notes || "",
+      createdAt: auth.created_at || null
+    }))
+    .sort((a, b) => {
+      const aTime = a.authorizedAt ? new Date(a.authorizedAt).getTime() : 0;
+      const bTime = b.authorizedAt ? new Date(b.authorizedAt).getTime() : 0;
+      return bTime - aTime;
+    });
+
 const mapClockingStatus = (rows = []) => {
   if (!Array.isArray(rows) || rows.length === 0) return null;
   const active = rows.find((entry) => !entry.clock_out) || rows[0];
@@ -292,6 +309,7 @@ const buildJobDataFromRow = (row, extras = {}) => {
     vhcChecks: Array.isArray(row.vhc_checks) ? row.vhc_checks : [],
     partsRequests: mapPartsRequests(row.parts_requests),
     partsAllocations: mapPartsAllocations(row.parts_job_items),
+    vhcAuthorizations: mapVhcAuthorizations(row.vhc_authorizations),
     notes: mapNotesWithUsers(row.job_notes || []),
     writeUp: row.job_writeups?.[0] || null,
     writeUpStatus:
@@ -310,6 +328,7 @@ export {
   mapJobRequests,
   mapPartsRequests,
   mapPartsAllocations,
+  mapVhcAuthorizations,
   mapClockingStatus,
   mapWarrantyJob,
   mapServiceHistoryJobs,

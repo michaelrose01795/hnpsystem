@@ -210,6 +210,15 @@ export default async function handler(req, res) {
             qty_on_order,
             storage_location
           )
+        ),
+        vhc_authorizations(
+          id,
+          job_id,
+          authorized_by,
+          authorized_at,
+          authorized_items,
+          customer_notes,
+          created_at
         )
       `)
       .eq("job_number", jobNumber)
