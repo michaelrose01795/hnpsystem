@@ -1,6 +1,6 @@
 // file location: src/pages/api/parts/job-items/index.js
 
-import { supabase } from '@/lib/supabaseClient' // Import Supabase client
+import { supabase } from "@/lib/supabaseClient";
 
 const WRITE_ROLE_KEYWORDS = ["tech", "parts", "manager", "admin"] // Role keywords permitted to create records
 const VALID_STATUSES = new Set(["pending", "awaiting_stock", "allocated", "picked", "fitted", "cancelled"]) // Allowed statuses
@@ -40,8 +40,8 @@ export default async function handler(req, res) {
 
       // Fetch job items from database
       const { data: items, error } = await supabase
-        .from('job_parts')
-        .select('*, parts_inventory(*)')
+        .from("parts_job_items")
+        .select('*, part:parts_catalog(*)')
         .eq('job_id', resolvedJobId)
         .order('created_at', { ascending: false })
 
@@ -93,9 +93,9 @@ export default async function handler(req, res) {
 
       // Insert job item into database
       const { data: created, error } = await supabase
-        .from('job_parts')
+        .from('parts_job_items')
         .insert([payload])
-        .select('*, parts_inventory(*)')
+        .select('*, part:parts_catalog(*)')
         .single()
 
       if (error) throw error

@@ -1,6 +1,6 @@
 // file location: src/pages/api/parts/deliveries/items/[itemId].js
 
-import { supabase } from '@/lib/supabaseClient' // Import Supabase client
+import { supabase } from "@/lib/supabaseClient";
 
 const parseInteger = (value, fallback) => {
   if (value === null || value === undefined) return fallback
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     // Get existing delivery item
     const { data: existing, error: fetchError } = await supabase
       .from('parts_delivery_items')
-      .select('*')
+      .select('*, part:parts_catalog(id, qty_in_stock, qty_on_order)')
       .eq('id', itemId)
       .single()
 
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
       // Update inventory if quantities changed
       if (orderDelta !== 0 || receivedDelta !== 0) {
         const { data: part, error: partError } = await supabase
-          .from('parts_inventory')
+          .from('parts_catalog')
           .select('qty_in_stock, qty_on_order')
           .eq('id', existing.part_id)
           .single()
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
         if (partError) throw partError
 
         const { error: invError } = await supabase
-          .from('parts_inventory')
+          .from('parts_catalog')
           .update({
             qty_in_stock: part.qty_in_stock + stockDelta,
             qty_on_order: part.qty_on_order + onOrderDelta,
@@ -137,7 +137,7 @@ export default async function handler(req, res) {
       // Reverse inventory adjustments
       if (outstanding !== 0 || stockReduction !== 0) {
         const { data: part, error: partError } = await supabase
-          .from('parts_inventory')
+          .from('parts_catalog')
           .select('qty_in_stock, qty_on_order')
           .eq('id', existing.part_id)
           .single()
@@ -145,7 +145,7 @@ export default async function handler(req, res) {
         if (partError) throw partError
 
         const { error: invError } = await supabase
-          .from('parts_inventory')
+          .from('parts_catalog')
           .update({
             qty_in_stock: part.qty_in_stock - stockReduction,
             qty_on_order: part.qty_on_order - outstanding,

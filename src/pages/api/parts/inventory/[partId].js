@@ -1,84 +1,119 @@
 // file location: src/pages/api/parts/inventory/[partId].js
 
-import { supabase } from '@/lib/supabaseClient' // Import Supabase client
+import { supabase } from "@/lib/supabaseClient";
+
+const parseNumeric = (value, fallback = 0) => {
+  if (value === null || value === undefined || value === "") {
+    return fallback;
+  }
+  const parsed = Number.parseFloat(value);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
 
 export default async function handler(req, res) {
-  const { partId } = req.query
+  const { partId } = req.query;
 
   if (!partId || typeof partId !== "string") {
     return res.status(400).json({
       success: false,
       message: "Part ID is required",
-    })
+    });
   }
 
   try {
     if (req.method === "GET") {
       const { data, error } = await supabase
-        .from('parts_inventory')
-        .select('*')
-        .eq('id', partId)
-        .single()
+        .from("parts_catalog")
+        .select("*")
+        .eq("id", partId)
+        .single();
 
       if (error || !data) {
         return res.status(404).json({
           success: false,
           message: "Part not found",
           error: error?.message,
-        })
+        });
       }
 
       return res.status(200).json({
         success: true,
         part: data,
-      })
+      });
     }
 
     if (req.method === "PATCH") {
-      const { userId, ...updates } = req.body || {}
+      const { userId, ...updates } = req.body || {};
 
-      // Add metadata
-      updates.updated_at = new Date().toISOString()
-      if (userId) updates.updated_by = userId
+      const payload = {
+        ...updates,
+        qty_in_stock: updates.qty_in_stock !== undefined
+          ? parseNumeric(updates.qty_in_stock, undefined)
+          : undefined,
+        qty_reserved: updates.qty_reserved !== undefined
+          ? parseNumeric(updates.qty_reserved, undefined)
+          : undefined,
+        qty_on_order: updates.qty_on_order !== undefined
+          ? parseNumeric(updates.qty_on_order, undefined)
+          : undefined,
+        reorder_level: updates.reorder_level !== undefined
+          ? parseNumeric(updates.reorder_level, undefined)
+          : undefined,
+        unit_cost: updates.unit_cost !== undefined
+          ? parseNumeric(updates.unit_cost, undefined)
+          : undefined,
+        unit_price: updates.unit_price !== undefined
+          ? parseNumeric(updates.unit_price, undefined)
+          : undefined,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (userId) payload.updated_by = userId;
+
+      Object.keys(payload).forEach((key) => {
+        if (payload[key] === undefined) {
+          delete payload[key];
+        }
+      });
 
       const { data, error } = await supabase
-        .from('parts_inventory')
-        .update(updates)
-        .eq('id', partId)
+        .from("parts_catalog")
+        .update(payload)
+        .eq("id", partId)
         .select()
-        .single()
+        .single();
 
-      if (error) throw error
+      if (error) throw error;
 
       return res.status(200).json({
         success: true,
         part: data,
-      })
+      });
     }
 
     if (req.method === "DELETE") {
       const { error } = await supabase
-        .from('parts_inventory')
+        .from("parts_catalog")
         .delete()
-        .eq('id', partId)
+        .eq("id", partId);
 
-      if (error) throw error
+      if (error) throw error;
 
-      return res.status(204).end()
+      return res.status(204).end();
     }
 
-    res.setHeader("Allow", ["GET", "PATCH", "DELETE"])
+    res.setHeader("Allow", ["GET", "PATCH", "DELETE"]);
     return res.status(405).json({
       success: false,
       message: `Method ${req.method} not allowed`,
-    })
+    });
 
   } catch (error) {
-    console.error('Error handling part:', error)
+    console.error("Error handling part:", error);
     return res.status(500).json({
       success: false,
       message: "Operation failed",
       error: error.message,
-    })
+    });
   }
 }

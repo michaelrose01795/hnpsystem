@@ -1,6 +1,6 @@
 // file location: src/pages/api/parts/deliveries/[deliveryId]/items.js
 
-import { supabase } from '@/lib/supabaseClient' // Import Supabase client
+import { supabase } from "@/lib/supabaseClient";
 
 const parseInteger = (value, fallback = 0) => {
   if (value === null || value === undefined) return fallback
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
 
       // Get current part inventory
       const { data: currentPart, error: partError } = await supabase
-        .from('parts_inventory')
+        .from('parts_catalog')
         .select('qty_in_stock, qty_on_order')
         .eq('id', partId)
         .single()
@@ -110,7 +110,7 @@ export default async function handler(req, res) {
 
       // Update part inventory
       const { error: updateError } = await supabase
-        .from('parts_inventory')
+        .from('parts_catalog')
         .update({
           qty_in_stock: newQtyInStock,
           qty_on_order: newQtyOnOrder,

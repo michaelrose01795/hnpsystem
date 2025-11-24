@@ -1,8 +1,7 @@
 // file location: src/pages/api/parts/jobs/index.js
 
-import { supabase } from '@/lib/supabaseClient' // Import Supabase client
+import { supabase } from "@/lib/supabaseClient";
 
-// Pre-pick location whitelist
 const PRE_PICK_LOCATIONS = new Set([
   "service_rack_1",
   "service_rack_2",
@@ -13,77 +12,115 @@ const PRE_PICK_LOCATIONS = new Set([
   "sales_rack_3",
   "sales_rack_4",
   "stairs_pre_pick",
-])
+]);
 
-// Convert value to boolean safely
+const PART_COLUMNS = [
+  "id",
+  "part_number",
+  "name",
+  "description",
+  "supplier",
+  "storage_location",
+  "service_default_zone",
+  "qty_in_stock",
+  "qty_reserved",
+  "qty_on_order",
+  "reorder_level",
+  "unit_cost",
+  "unit_price",
+].join(",");
+
 const toBoolean = (value) => {
-  if (typeof value === "boolean") return value
+  if (typeof value === "boolean") return value;
   if (typeof value === "string") {
-    return ["true", "1", "yes", "on"].includes(value.toLowerCase())
+    return ["true", "1", "yes", "on"].includes(value.toLowerCase());
   }
-  return Boolean(value)
-}
+  return Boolean(value);
+};
+
+const parseNumber = (value, fallback = 0) => {
+  if (value === null || value === undefined || value === "") {
+    return fallback;
+  }
+  const parsed = Number.parseFloat(value);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+const mapJobRecord = (job) => ({
+  id: job.id,
+  jobNumber: job.job_number,
+  reg: job.vehicle_reg || job.reg || job.vehicle_registration || null,
+  makeModel: job.vehicle_make_model || job.vehicle_make || job.vehicle_model || null,
+  description: job.description || job.job_description_snapshot || "",
+  status: job.status,
+  waitingStatus: job.waiting_status,
+  customer: job.customer,
+});
+
+const fetchJobParts = async (jobId) => {
+  const { data, error } = await supabase
+    .from("parts_job_items")
+    .select(
+      `id, job_id, part_id, quantity_requested, quantity_allocated, quantity_fitted, status, origin,
+       pre_pick_location, storage_location, unit_cost, unit_price, request_notes, created_at, updated_at,
+       part:parts_catalog(${PART_COLUMNS})`
+    )
+    .eq("job_id", jobId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+};
 
 export default async function handler(req, res) {
-  // Handle GET request - Fetch job with parts
   if (req.method === "GET") {
-    const { search } = req.query
+    const { search } = req.query;
 
-    if (!search) {
+    if (!search || !search.trim()) {
       return res.status(400).json({
         success: false,
         message: "Search query (job number or registration) is required",
-      })
+      });
     }
 
     try {
-      // Try to find job by job number or registration
-      const { data: jobs, error: jobError } = await supabase
-        .from('jobs')
-        .select(`
-          *,
-          customer:customers(*),
-          vehicle:vehicles(*),
-          job_parts:job_parts(*, parts_inventory(*))
-        `)
-        .or(`job_number.ilike.%${search}%,reg.ilike.%${search}%`)
+      const trimmed = search.trim();
+      const pattern = `%${trimmed}%`;
+      const { data: job, error: jobError } = await supabase
+        .from("jobs")
+        .select(
+          "id, job_number, vehicle_reg, vehicle_make_model, status, waiting_status, description, job_description_snapshot, customer"
+        )
+        .or(`job_number.ilike.${pattern},vehicle_reg.ilike.${pattern}`)
         .limit(1)
+        .maybeSingle();
 
-      if (jobError) throw jobError
+      if (jobError) throw jobError;
 
-      if (!jobs || jobs.length === 0) {
+      if (!job) {
         return res.status(404).json({
           success: false,
           message: "Job card not found for provided search term",
-        })
+        });
       }
 
-      const job = jobs[0]
+      const parts = await fetchJobParts(job.id);
 
       return res.status(200).json({
         success: true,
-        job: {
-          id: job.id,
-          job_number: job.job_number,
-          reg: job.reg,
-          status: job.status,
-          customer: job.customer,
-          vehicle: job.vehicle,
-        },
-        parts: job.job_parts || [],
-      })
-
+        job: mapJobRecord(job),
+        parts,
+      });
     } catch (error) {
-      console.error('Error fetching job:', error)
+      console.error("Error fetching job:", error);
       return res.status(500).json({
         success: false,
         message: "Failed to fetch job card details",
         error: error.message,
-      })
+      });
     }
   }
 
-  // Handle POST request - Add part to job
   if (req.method === "POST") {
     const {
       jobId,
@@ -99,144 +136,128 @@ export default async function handler(req, res) {
       unitPrice,
       requestNotes,
       userId,
-    } = req.body || {}
+    } = req.body || {};
 
-    // Validate required fields
     if (!jobId || !partId) {
       return res.status(400).json({
         success: false,
         message: "Job ID and part ID are required",
-      })
+      });
     }
 
     try {
-      // Parse quantity
-      const requestedQuantityRaw = quantityRequested ?? quantity ?? 1
-      const requestedQuantity = Math.max(1, Number.parseInt(requestedQuantityRaw, 10) || 1)
-      const shouldAllocate = toBoolean(allocateFromStock)
+      const resolvedQuantity = Math.max(
+        1,
+        Number.parseInt(quantityRequested ?? quantity ?? 1, 10) || 1
+      );
+      const shouldAllocate = toBoolean(allocateFromStock);
 
-      // Get part details
       const { data: part, error: partError } = await supabase
-        .from('parts_inventory')
-        .select('*')
-        .eq('id', partId)
-        .single()
+        .from("parts_catalog")
+        .select("id, qty_in_stock, qty_reserved, storage_location, unit_cost, unit_price")
+        .eq("id", partId)
+        .single();
 
       if (partError || !part) {
         return res.status(404).json({
           success: false,
           message: "Part not found in catalogue",
           error: partError?.message,
-        })
+        });
       }
 
-      // Resolve unit costs and prices
-      let resolvedUnitCost = typeof unitCost === "number" ? unitCost : Number.parseFloat(unitCost)
-      let resolvedUnitPrice = typeof unitPrice === "number" ? unitPrice : Number.parseFloat(unitPrice)
-
-      if (Number.isNaN(resolvedUnitCost)) {
-        resolvedUnitCost = part.unit_cost || 0
-      }
-
-      if (Number.isNaN(resolvedUnitPrice)) {
-        resolvedUnitPrice = part.unit_price || 0
-      }
-
-      const resolvedStorageLocation = storageLocation || part.storage_location || null
-
-      // Check stock availability if allocating
-      if (shouldAllocate && part.qty_in_stock < requestedQuantity) {
+      if (shouldAllocate && part.qty_in_stock < resolvedQuantity) {
         return res.status(409).json({
           success: false,
           message: `Insufficient stock. Available: ${part.qty_in_stock}`,
-        })
+        });
       }
 
-      // Validate pre-pick location
-      const sanitizedPrePick = typeof prePickLocation === "string" && PRE_PICK_LOCATIONS.has(prePickLocation)
-        ? prePickLocation
-        : null
+      const resolvedUnitCost = parseNumber(unitCost, part.unit_cost || 0);
+      const resolvedUnitPrice = parseNumber(unitPrice, part.unit_price || 0);
+      const resolvedStorage = storageLocation || part.storage_location || null;
+      const sanitizedPrePick =
+        typeof prePickLocation === "string" && PRE_PICK_LOCATIONS.has(prePickLocation)
+          ? prePickLocation
+          : null;
 
-      // Create job part record
-      const jobPartPayload = {
+      const payload = {
         job_id: jobId,
         part_id: partId,
-        quantity_requested: requestedQuantity,
-        quantity_allocated: shouldAllocate ? requestedQuantity : 0,
+        quantity_requested: resolvedQuantity,
+        quantity_allocated: shouldAllocate ? resolvedQuantity : 0,
+        quantity_fitted: 0,
         status: status || (shouldAllocate ? "allocated" : "awaiting_stock"),
         origin: origin || "vhc",
         pre_pick_location: sanitizedPrePick,
-        storage_location: resolvedStorageLocation,
+        storage_location: resolvedStorage,
         unit_cost: resolvedUnitCost,
         unit_price: resolvedUnitPrice,
         request_notes: requestNotes || null,
         allocated_by: shouldAllocate ? userId || null : null,
+        created_by: userId || null,
+        updated_by: userId || null,
         created_at: new Date().toISOString(),
-      }
+        updated_at: new Date().toISOString(),
+      };
 
-      const { data: newJobPart, error: createError } = await supabase
-        .from('job_parts')
-        .insert([jobPartPayload])
-        .select('*, parts_inventory(*)')
-        .single()
+      const { data: newJobPart, error: insertError } = await supabase
+        .from("parts_job_items")
+        .insert([payload])
+        .select(`*, part:parts_catalog(${PART_COLUMNS})`)
+        .single();
 
-      if (createError) throw createError
+      if (insertError) throw insertError;
 
-      // If allocating from stock, update inventory
       if (shouldAllocate) {
-        // Update part quantities
-        const { error: updateError } = await supabase
-          .from('parts_inventory')
+        const { error: stockError } = await supabase
+          .from("parts_catalog")
           .update({
-            qty_in_stock: part.qty_in_stock - requestedQuantity,
-            qty_reserved: (part.qty_reserved || 0) + requestedQuantity,
+            qty_in_stock: part.qty_in_stock - resolvedQuantity,
+            qty_reserved: (part.qty_reserved || 0) + resolvedQuantity,
             updated_at: new Date().toISOString(),
+            updated_by: userId || null,
           })
-          .eq('id', partId)
+          .eq("id", partId);
 
-        if (updateError) {
-          // Rollback: delete the job part
-          await supabase.from('job_parts').delete().eq('id', newJobPart.id)
-          
-          throw new Error("Failed to adjust stock levels for allocation")
+        if (stockError) {
+          await supabase.from("parts_job_items").delete().eq("id", newJobPart.id);
+          throw stockError;
         }
 
-        // Record stock movement
-        await supabase
-          .from('parts_stock_movements')
-          .insert([{
+        await supabase.from("parts_stock_movements").insert([
+          {
             part_id: partId,
             job_item_id: newJobPart.id,
-            movement_type: 'allocation',
-            quantity: -requestedQuantity,
+            movement_type: "allocation",
+            quantity: resolvedQuantity,
             unit_cost: resolvedUnitCost,
             unit_price: resolvedUnitPrice,
             performed_by: userId || null,
             reference: `job:${jobId}`,
             notes: requestNotes || null,
             created_at: new Date().toISOString(),
-          }])
+          },
+        ]);
       }
 
       return res.status(201).json({
         success: true,
         jobPart: newJobPart,
-      })
-
+      });
     } catch (error) {
-      console.error('Error creating job part:', error)
+      console.error("Error creating job part:", error);
       return res.status(500).json({
         success: false,
         message: "Failed to create job part entry",
         error: error.message,
-      })
+      });
     }
   }
 
-  // Method not allowed
-  res.setHeader("Allow", ["GET", "POST"])
+  res.setHeader("Allow", ["GET", "POST"]);
   return res.status(405).json({
     success: false,
     message: `Method ${req.method} not allowed`,
-  })
+  });
 }

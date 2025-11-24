@@ -1,6 +1,6 @@
 // file location: src/pages/api/parts/job-items/[id].js
 
-import { supabase } from '@/lib/supabaseClient' // Import Supabase client
+import { supabase } from "@/lib/supabaseClient";
 
 const MANAGER_ROLE_KEYWORDS = ["parts", "manager", "admin"]
 const VALID_STATUSES = new Set(["pending", "awaiting_stock", "allocated", "picked", "fitted", "cancelled"])
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
       updates.updated_at = new Date().toISOString()
 
       const { data: updated, error } = await supabase
-        .from('job_parts')
+        .from('parts_job_items')
         .update(updates)
         .eq('id', id)
         .select()
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
       }
 
       const { error } = await supabase
-        .from('job_parts')
+        .from('parts_job_items')
         .delete()
         .eq('id', id)
 

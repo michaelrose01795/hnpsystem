@@ -1089,6 +1089,35 @@ function PartsPortalPage() {
                             {part.storage_location || "No storage"} · Service default:{" "}
                             {part.service_default_zone || "—"}
                           </div>
+                          <div style={{ fontSize: "0.8rem", color: "#555" }}>
+                            Supplier: {part.supplier || "Unknown"}
+                          </div>
+                          <div style={{ marginTop: "4px" }}>
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                padding: "2px 10px",
+                                borderRadius: "999px",
+                                background:
+                                  part.stock_status === "low_stock"
+                                    ? "rgba(245,158,11,0.2)"
+                                    : part.stock_status === "back_order"
+                                    ? "rgba(209,0,0,0.15)"
+                                    : "rgba(16,185,129,0.18)",
+                                color:
+                                  part.stock_status === "low_stock"
+                                    ? "#92400e"
+                                    : part.stock_status === "back_order"
+                                    ? "#7f1d1d"
+                                    : "#065f46",
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {(part.stock_status || "in_stock").replace(/_/g, " ")}
+                            </span>
+                          </div>
                         </td>
                         <td style={{ padding: "10px", verticalAlign: "top" }}>
                           <div>On hand: {part.qty_in_stock}</div>
@@ -1120,7 +1149,7 @@ function PartsPortalPage() {
           </div>
         </div>
 
-        <div style={{ ...cardStyle }}>
+        <div id="deliveries" style={{ ...cardStyle }}>
           <div
             style={{
               display: "flex",

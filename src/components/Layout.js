@@ -381,6 +381,11 @@ export default function Layout({ children, jobNumber }) {
       description: "Manage parts allocations and deliveries",
       section: "Parts",
     });
+    addNavItem("🚚 Parts Deliveries", "/parts#deliveries", {
+      keywords: ["parts deliveries", "goods in", "stock"],
+      description: "Review inbound deliveries and update stock",
+      section: "Parts",
+    });
   }
 
   if (userRoles.includes("parts manager")) {

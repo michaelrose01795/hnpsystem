@@ -1,95 +1,101 @@
 // file location: src/pages/api/parts/summary.js
 
-import { supabase } from '@/lib/supabaseClient' // Import Supabase client
+import { supabase } from "@/lib/supabaseClient";
+
+const fetchCount = async (query) => {
+  const { count, error } = await query.select("id", { count: "exact", head: true });
+  if (error) throw error;
+  return count || 0;
+};
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
-    res.setHeader("Allow", ["GET"])
+    res.setHeader("Allow", ["GET"]);
     return res.status(405).json({
       success: false,
       message: `Method ${req.method} not allowed`,
-    })
+    });
   }
 
   try {
-    // Fetch parts inventory summary statistics
-    
-    // 1. Total parts count
-    const { count: totalParts, error: totalError } = await supabase
-      .from('parts_inventory')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_active', true)
+    const [{ data: catalog, error: catalogError }, totalParts, partsOnOrder, pendingDeliveries, activeJobParts] = await Promise.all([
+      supabase
+        .from("parts_catalog")
+        .select(
+          "id, part_number, name, supplier, storage_location, qty_in_stock, qty_on_order, reorder_level, unit_cost, unit_price, is_active",
+          { count: "exact" }
+        )
+        .eq("is_active", true),
+      fetchCount(supabase.from("parts_catalog").eq("is_active", true)),
+      fetchCount(supabase.from("parts_catalog").eq("is_active", true).gt("qty_on_order", 0)),
+      fetchCount(
+        supabase
+          .from("parts_deliveries")
+          .in("status", ["ordering", "on_route", "partial"])
+      ),
+      fetchCount(
+        supabase
+          .from("parts_job_items")
+          .in("status", ["pending", "awaiting_stock", "allocated"])
+      ),
+    ]);
 
-    if (totalError) throw totalError
+    if (catalogError) throw catalogError;
 
-    // 2. Low stock parts (below reorder level)
-    const { data: lowStockParts, error: lowStockError } = await supabase
-      .from('parts_inventory')
-      .select('*')
-      .eq('is_active', true)
-      .lt('qty_in_stock', supabase.raw('reorder_level'))
+    const stockAlerts = (catalog || [])
+      .filter((part) => Number(part.qty_in_stock || 0) <= Number(part.reorder_level || 0))
+      .map((part) => {
+        const inStock = Number(part.qty_in_stock) || 0;
+        const reorderLevel = Number(part.reorder_level) || 0;
+        const qtyOnOrder = Number(part.qty_on_order) || 0;
+        let status = "in_stock";
+        if (!part.is_active) {
+          status = "inactive";
+        } else if (inStock <= 0 && qtyOnOrder > 0) {
+          status = "back_order";
+        } else if (inStock <= reorderLevel) {
+          status = "low_stock";
+        }
 
-    if (lowStockError) throw lowStockError
+        return {
+          id: part.id,
+          partNumber: part.part_number,
+          name: part.name,
+          supplier: part.supplier,
+          location: part.storage_location,
+          inStock,
+          reorderLevel,
+          qtyOnOrder,
+          unitCost: Number(part.unit_cost) || 0,
+          unitPrice: Number(part.unit_price) || 0,
+          status,
+        };
+      })
+      .sort((a, b) => a.inStock - b.inStock);
 
-    // 3. Total value of inventory (cost)
-    const { data: inventoryForValue, error: valueError } = await supabase
-      .from('parts_inventory')
-      .select('qty_in_stock, unit_cost')
-      .eq('is_active', true)
-
-    if (valueError) throw valueError
-
-    const totalInventoryValue = inventoryForValue.reduce((sum, part) => {
-      return sum + (part.qty_in_stock * (part.unit_cost || 0))
-    }, 0)
-
-    // 4. Parts on order
-    const { count: partsOnOrder, error: onOrderError } = await supabase
-      .from('parts_inventory')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_active', true)
-      .gt('qty_on_order', 0)
-
-    if (onOrderError) throw onOrderError
-
-    // 5. Pending deliveries count
-    const { count: pendingDeliveries, error: deliveriesError } = await supabase
-      .from('parts_deliveries')
-      .select('*', { count: 'exact', head: true })
-      .in('status', ['ordering', 'in_transit'])
-
-    if (deliveriesError) throw deliveriesError
-
-    // 6. Active job parts requests
-    const { count: activeJobParts, error: jobPartsError } = await supabase
-      .from('job_parts')
-      .select('*', { count: 'exact', head: true })
-      .in('status', ['pending', 'awaiting_stock', 'allocated'])
-
-    if (jobPartsError) throw jobPartsError
-
-    // Build summary response
-    const summary = {
-      totalParts: totalParts || 0,
-      lowStockCount: lowStockParts?.length || 0,
-      lowStockParts: lowStockParts || [],
-      totalInventoryValue: Math.round(totalInventoryValue * 100) / 100,
-      partsOnOrder: partsOnOrder || 0,
-      pendingDeliveries: pendingDeliveries || 0,
-      activeJobParts: activeJobParts || 0,
-    }
+    const totalInventoryValue = (catalog || []).reduce(
+      (sum, part) => sum + (Number(part.qty_in_stock) || 0) * (Number(part.unit_cost) || 0),
+      0
+    );
 
     return res.status(200).json({
       success: true,
-      summary,
-    })
-
+      summary: {
+        totalParts,
+        lowStockCount: stockAlerts.length,
+        lowStockParts: stockAlerts,
+        totalInventoryValue: Math.round(totalInventoryValue * 100) / 100,
+        partsOnOrder,
+        pendingDeliveries,
+        activeJobParts,
+      },
+    });
   } catch (error) {
-    console.error('Error loading parts manager summary:', error)
+    console.error("Error loading parts manager summary:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to load parts manager summary",
       error: error.message,
-    })
+    });
   }
 }

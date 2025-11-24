@@ -148,22 +148,41 @@ export default function PartsDashboardGrid({
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
             <div style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Inventory Alerts</div>
-              {inventoryAlerts.map((alert) => (
-                <div
-                  key={alert.part}
-                  style={{
-                    padding: "12px 14px",
-                    marginBottom: "12px",
-                    borderRadius: "10px",
-                    border: "1px dashed rgba(209,0,0,0.3)",
-                    background: "rgba(209,0,0,0.03)",
-                  }}
-                >
-                  <div style={{ fontWeight: 600, color: "#b30000" }}>{alert.part}</div>
-                  <div style={{ color: "#666", fontSize: "0.85rem" }}>{alert.issue}</div>
-                  <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "#a00000" }}>{alert.action}</div>
-                </div>
-              ))}
+              {inventoryAlerts.map((alert) => {
+                const statusLabel =
+                  alert.status === "low_stock"
+                    ? "Low stock"
+                    : alert.status === "back_order"
+                    ? "On back-order"
+                    : alert.status === "inactive"
+                    ? "Inactive"
+                    : "In stock";
+                return (
+                  <div
+                    key={alert.id || alert.partNumber || alert.part}
+                    style={{
+                      padding: "12px 14px",
+                      marginBottom: "12px",
+                      borderRadius: "10px",
+                      border: "1px dashed rgba(209,0,0,0.3)",
+                      background: "rgba(209,0,0,0.03)",
+                    }}
+                  >
+                    <div style={{ fontWeight: 600, color: "#b30000" }}>
+                      {alert.partNumber ? `${alert.partNumber} · ${alert.name || ""}` : alert.part || "Part"}
+                    </div>
+                    <div style={{ color: "#666", fontSize: "0.85rem" }}>
+                      Supplier: {alert.supplier || "—"} · Location: {alert.location || "Not set"}
+                    </div>
+                    <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "#a00000" }}>
+                      {statusLabel} · Stock {alert.inStock ?? 0} / Reorder {alert.reorderLevel ?? 0} · On order {alert.qtyOnOrder ?? 0}
+                    </div>
+                    <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "#555" }}>
+                      Cost £{Number(alert.unitCost || 0).toFixed(2)} · Sell £{Number(alert.unitPrice || 0).toFixed(2)}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <div style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Team Focus</div>
