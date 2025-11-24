@@ -104,6 +104,7 @@ export default function JobCardDetailPage() {
   const [sharedNoteMeta, setSharedNoteMeta] = useState(null);
   const [sharedNoteSaving, setSharedNoteSaving] = useState(false);
   const sharedNoteSaveRef = useRef(null);
+  const jobRealtimeRefreshRef = useRef(null);
   const [vehicleJobHistory, setVehicleJobHistory] = useState([]);
   const [customerSaving, setCustomerSaving] = useState(false);
   const [waitingStatusSaving, setWaitingStatusSaving] = useState(false);
@@ -201,6 +202,15 @@ export default function JobCardDetailPage() {
     fetchJobData();
   }, [fetchJobData]);
 
+  const scheduleRealtimeRefresh = useCallback(() => {
+    if (jobRealtimeRefreshRef.current) {
+      clearTimeout(jobRealtimeRefreshRef.current);
+    }
+    jobRealtimeRefreshRef.current = setTimeout(() => {
+      fetchJobData({ silent: true });
+    }, 250);
+  }, [fetchJobData]);
+
   useEffect(() => {
     if (jobData?.files) {
       const mapped = (jobData.files || []).map(mapJobFileRecord);
@@ -209,36 +219,68 @@ export default function JobCardDetailPage() {
   }, [jobData?.files]);
 
   useEffect(() => {
-    if (!jobData?.id) return;
-
-    const channel = supabase
-      .channel(`job-notes-${jobData.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "job_notes",
-          filter: `job_id=eq.${jobData.id}`
-        },
-        () => {
-          refreshSharedNote(jobData.id);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [jobData?.id, refreshSharedNote]);
-
-  useEffect(() => {
     return () => {
       if (sharedNoteSaveRef.current) {
         clearTimeout(sharedNoteSaveRef.current);
       }
+      if (jobRealtimeRefreshRef.current) {
+        clearTimeout(jobRealtimeRefreshRef.current);
+      }
     };
   }, []);
+
+  useEffect(() => {
+    if (!jobData?.id) return;
+
+    const tablesToWatch = [
+      { table: "jobs", filter: `id=eq.${jobData.id}` },
+      { table: "appointments", filter: `job_id=eq.${jobData.id}` },
+      { table: "parts_job_items", filter: `job_id=eq.${jobData.id}` },
+      { table: "parts_requests", filter: `job_id=eq.${jobData.id}` },
+      { table: "vhc_checks", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_clocking", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_writeups", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_requests", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_files", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_cosmetic_damage", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_customer_statuses", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_progress", filter: `job_id=eq.${jobData.id}` },
+      {
+        table: "job_notes",
+        filter: `job_id=eq.${jobData.id}`,
+        shouldRefresh: false,
+        onPayload: () => refreshSharedNote(jobData.id)
+      }
+    ];
+
+    const channel = supabase.channel(`job-card-sync-${jobData.id}`);
+
+    tablesToWatch.forEach(({ table, filter, shouldRefresh = true, onPayload }) => {
+      channel.on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table,
+          filter
+        },
+        () => {
+          if (typeof onPayload === "function") {
+            onPayload();
+          }
+          if (shouldRefresh) {
+            scheduleRealtimeRefresh();
+          }
+        }
+      );
+    });
+
+    channel.subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [jobData?.id, refreshSharedNote, scheduleRealtimeRefresh]);
 
   const handleCustomerDetailsSave = useCallback(
     async (updatedDetails) => {
