@@ -2,13 +2,13 @@
 // file location: src/pages/job-cards/[jobNumber].js
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
-import { getJobByNumber, updateJob } from "@/lib/database/jobs";
-import { getNotesByJob, createJobNote, deleteJobNote } from "@/lib/database/notes";
-import { getCustomerJobs } from "@/lib/database/customers";
+import { supabase } from "@/lib/supabaseClient";
+import { updateJob } from "@/lib/database/jobs";
+import { createJobNote, deleteJobNote } from "@/lib/database/notes";
 
 const normalizeRequests = (rawRequests) => {
   if (Array.isArray(rawRequests)) {
@@ -70,6 +70,247 @@ const formatNoteValue = (value = "") => {
     .replace(/\n{3,}/g, "\n\n");
 };
 
+const formatAppointmentRow = (appointmentRow) => {
+  if (!appointmentRow) return null;
+
+  const scheduledAt = appointmentRow.scheduled_time
+    ? new Date(appointmentRow.scheduled_time)
+    : null;
+  const dateString = scheduledAt
+    ? `${scheduledAt.getFullYear()}-${String(scheduledAt.getMonth() + 1).padStart(2, "0")}-${String(scheduledAt.getDate()).padStart(2, "0")}`
+    : "";
+  const timeString = scheduledAt
+    ? scheduledAt.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      })
+    : "";
+
+  return {
+    appointmentId: appointmentRow.appointment_id,
+    date: dateString,
+    time: timeString,
+    status: appointmentRow.status || "",
+    notes: appointmentRow.notes || "",
+    createdAt: appointmentRow.created_at || null,
+    updatedAt: appointmentRow.updated_at || null
+  };
+};
+
+const mapNotesWithUsers = (rows = []) => {
+  const sorted = [...(rows || [])].sort((a, b) => {
+    const aDate = a?.created_at ? new Date(a.created_at).getTime() : 0;
+    const bDate = b?.created_at ? new Date(b.created_at).getTime() : 0;
+    return bDate - aDate;
+  });
+
+  return sorted.map((note) => {
+    const userName = note.user
+      ? `${note.user.first_name || ""} ${note.user.last_name || ""}`.trim() ||
+        note.user.email ||
+        "Unknown"
+      : "Unknown";
+
+    return {
+      noteId: note.note_id,
+      jobId: note.job_id,
+      userId: note.user_id,
+      noteText: note.note_text,
+      createdAt: note.created_at,
+      updatedAt: note.updated_at,
+      createdBy: userName,
+      createdByEmail: note.user?.email || "",
+      createdByRole: note.user?.role || ""
+    };
+  });
+};
+
+const mapJobRequests = (jobRow) => {
+  const requestRows = Array.isArray(jobRow?.job_requests) ? jobRow.job_requests : [];
+  if (requestRows.length > 0) {
+    return requestRows
+      .slice()
+      .sort((a, b) => (a?.sort_order || 0) - (b?.sort_order || 0))
+      .map((req) => ({
+        requestId: req.request_id,
+        text: req.description || "",
+        time: req.hours ?? "",
+        paymentType: req.job_type || "Customer"
+      }));
+  }
+
+  return normalizeRequests(jobRow?.requests);
+};
+
+const mapPartsRequests = (rows = []) =>
+  (rows || []).map((req) => ({
+    requestId: req.request_id,
+    quantity: req.quantity ?? null,
+    status: req.status || "",
+    description: req.description || "",
+    part: req.part
+      ? {
+          id: req.part.id,
+          partNumber: req.part.part_number,
+          name: req.part.name,
+          description: req.part.description,
+          unitCost: req.part.unit_cost,
+          unitPrice: req.part.unit_price,
+          qtyInStock: req.part.qty_in_stock,
+          qtyReserved: req.part.qty_reserved,
+          qtyOnOrder: req.part.qty_on_order,
+          storageLocation: req.part.storage_location
+        }
+      : null,
+    requestedBy: req.requester
+      ? `${req.requester.first_name || ""} ${req.requester.last_name || ""}`.trim()
+      : "",
+    approvedBy: req.approver
+      ? `${req.approver.first_name || ""} ${req.approver.last_name || ""}`.trim()
+      : "",
+    createdAt: req.created_at || null,
+    updatedAt: req.updated_at || null
+  }));
+
+const mapPartsAllocations = (rows = []) =>
+  (rows || []).map((item) => ({
+    id: item.id,
+    partId: item.part_id,
+    quantityRequested: item.quantity_requested ?? 0,
+    quantityAllocated: item.quantity_allocated ?? 0,
+    quantityFitted: item.quantity_fitted ?? 0,
+    status: item.status || "pending",
+    origin: item.origin || null,
+    prePickLocation: item.pre_pick_location || null,
+    storageLocation: item.storage_location || item.part?.storage_location || null,
+    unitCost: item.unit_cost ?? item.part?.unit_cost ?? 0,
+    unitPrice: item.unit_price ?? item.part?.unit_price ?? 0,
+    requestNotes: item.request_notes || "",
+    allocatedBy: item.allocated_by || null,
+    pickedBy: item.picked_by || null,
+    fittedBy: item.fitted_by || null,
+    createdAt: item.created_at || null,
+    updatedAt: item.updated_at || null,
+    part: item.part
+      ? {
+          id: item.part.id,
+          partNumber: item.part.part_number,
+          name: item.part.name,
+          description: item.part.description,
+          unitCost: item.part.unit_cost,
+          unitPrice: item.part.unit_price,
+          qtyInStock: item.part.qty_in_stock,
+          qtyReserved: item.part.qty_reserved,
+          qtyOnOrder: item.part.qty_on_order,
+          storageLocation: item.part.storage_location
+        }
+      : null
+  }));
+
+const mapClockingStatus = (rows = []) => {
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  const active = rows.find((entry) => !entry.clock_out) || rows[0];
+  if (!active) return null;
+
+  const userName = active.user
+    ? `${active.user.first_name || ""} ${active.user.last_name || ""}`.trim() ||
+      active.user.email ||
+      ""
+    : "";
+
+  return {
+    clockingId: active.id,
+    userId: active.user_id,
+    userName,
+    clockIn: active.clock_in,
+    clockOut: active.clock_out,
+    workType: active.work_type || "initial",
+    createdAt: active.created_at,
+    updatedAt: active.updated_at
+  };
+};
+
+const mapWarrantyJob = (rows = []) => {
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  const job = rows[0];
+  if (!job) return null;
+
+  return {
+    id: job.id,
+    jobNumber: job.job_number,
+    status: job.status,
+    jobSource: job.job_source,
+    vehicleReg: job.vehicle_reg,
+    vehicleMakeModel: job.vehicle_make_model,
+    createdAt: job.created_at
+  };
+};
+
+const buildJobDataFromRow = (row, extras = {}) => {
+  if (!row) return null;
+
+  const appointment = formatAppointmentRow(row.appointments?.[0]);
+  const vehicle = row.vehicle || {};
+  const customer = vehicle.customer || row.customer_record || {};
+
+  return {
+    id: row.id,
+    jobNumber: row.job_number,
+    description: row.description || "",
+    type: row.type || "",
+    status: row.status || "",
+    reg: row.vehicle_reg || vehicle.registration || vehicle.reg_number || "",
+    make: vehicle.make || "",
+    model: vehicle.model || "",
+    makeModel: row.vehicle_make_model || vehicle.make_model || "",
+    year: vehicle.year || "",
+    colour: vehicle.colour || "",
+    vin: vehicle.vin || "",
+    chassis: vehicle.chassis || "",
+    engineNumber: vehicle.engine_number || "",
+    engine: vehicle.engine || "",
+    mileage: vehicle.mileage || "",
+    fuelType: vehicle.fuel_type || "",
+    transmission: vehicle.transmission || "",
+    bodyStyle: vehicle.body_style || "",
+    motDue: vehicle.mot_due || "",
+    waitingStatus: row.waiting_status || "Neither",
+    jobSource: row.job_source || "Retail",
+    jobCategories: row.job_categories || [],
+    requests: mapJobRequests(row),
+    cosmeticNotes: row.job_cosmetic_damage?.[0]?.notes || row.cosmetic_notes || "",
+    cosmeticDamagePresent: row.job_cosmetic_damage?.[0]?.has_damage ?? null,
+    vhcRequired: Boolean(row.vhc_required),
+    maintenanceInfo: row.maintenance_info || {},
+    technician: "",
+    technicianEmail: "",
+    technicianRole: "",
+    assignedTo: row.assigned_to,
+    customer: customer.firstname || customer.lastname
+      ? `${customer.firstname || ""} ${customer.lastname || ""}`.trim()
+      : "",
+    customerId: row.customer_id || customer.id || null,
+    customerPhone: customer.mobile || customer.telephone || "",
+    customerEmail: customer.email || "",
+    customerAddress: customer.address || "",
+    customerPostcode: customer.postcode || "",
+    customerContactPreference: customer.contact_preference || "Email",
+    appointment,
+    vhcChecks: Array.isArray(row.vhc_checks) ? row.vhc_checks : [],
+    partsRequests: mapPartsRequests(row.parts_requests),
+    partsAllocations: mapPartsAllocations(row.parts_job_items),
+    notes: mapNotesWithUsers(row.job_notes || []),
+    writeUp: row.job_writeups?.[0] || null,
+    writeUpStatus:
+      row.job_writeups?.[0]?.completion_status || row.completion_status || "",
+    clockingStatus: extras.clockingStatus || null,
+    warrantyJob: extras.warrantyJob || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+};
+
 export default function JobCardDetailPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
@@ -97,51 +338,360 @@ export default function JobCardDetailPage() {
     "admin manager"
   ].some((role) => userRoles.includes(role));
 
-  // ✅ Fetch job data
-  useEffect(() => {
-    if (!jobNumber) return;
+  const refreshNotes = useCallback(async (jobId) => {
+    if (!jobId) return [];
 
-    const fetchJobData = async () => {
+    const { data, error } = await supabase
+      .from("job_notes")
+      .select(`
+        note_id,
+        job_id,
+        user_id,
+        note_text,
+        created_at,
+        updated_at,
+        user:user_id(
+          user_id,
+          first_name,
+          last_name,
+          email,
+          role
+        )
+      `)
+      .eq("job_id", jobId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("❌ Failed to refresh notes:", error);
+      return [];
+    }
+
+    return mapNotesWithUsers(data || []);
+  }, []);
+
+  const fetchJobData = useCallback(
+    async (options = { silent: false }) => {
+      if (!jobNumber) return;
+
+      const { silent } = options;
+
       try {
-        console.log("🔍 Fetching job:", jobNumber);
-        setLoading(true);
-        
-        const { data, error } = await getJobByNumber(jobNumber);
+        if (!silent) {
+          setLoading(true);
+        }
+        setError(null);
 
-        if (error || !data) {
-          console.error("❌ Job fetch error:", error);
+        const { data: jobRow, error: jobError } = await supabase
+          .from("jobs")
+          .select(`
+            id,
+            job_number,
+            description,
+            type,
+            status,
+            assigned_to,
+            customer_id,
+            vehicle_id,
+            vehicle_reg,
+            vehicle_make_model,
+            waiting_status,
+            job_source,
+            job_categories,
+            requests,
+            cosmetic_notes,
+            vhc_required,
+            maintenance_info,
+            completion_status,
+            created_at,
+            updated_at,
+            customer_record:customer_id(
+              id,
+              firstname,
+              lastname,
+              email,
+              mobile,
+              telephone,
+              address,
+              postcode,
+              contact_preference
+            ),
+            vehicle:vehicle_id(
+              vehicle_id,
+              registration,
+              reg_number,
+              make,
+              model,
+              make_model,
+              year,
+              colour,
+              vin,
+              chassis,
+              engine_number,
+              engine,
+              mileage,
+              fuel_type,
+              transmission,
+              body_style,
+              mot_due,
+              service_history,
+              warranty_type,
+              warranty_expiry,
+              customer:customer_id(
+                id,
+                firstname,
+                lastname,
+                email,
+                mobile,
+                telephone,
+                address,
+                postcode,
+                contact_preference
+              )
+            ),
+            appointments:appointments(
+              appointment_id,
+              scheduled_time,
+              status,
+              notes,
+              created_at,
+              updated_at
+            ),
+            vhc_checks:vhc_checks(
+              vhc_id,
+              section,
+              issue_title,
+              issue_description,
+              measurement,
+              traffic_light,
+              created_at,
+              updated_at
+            ),
+            job_requests:job_requests(
+              request_id,
+              description,
+              hours,
+              job_type,
+              sort_order,
+              created_at,
+              updated_at
+            ),
+            job_cosmetic_damage:job_cosmetic_damage(
+              has_damage,
+              notes,
+              updated_at
+            ),
+            job_notes:job_notes(
+              note_id,
+              job_id,
+              user_id,
+              note_text,
+              created_at,
+              updated_at,
+              user:user_id(
+                user_id,
+                first_name,
+                last_name,
+                email,
+                role
+              )
+            ),
+            job_writeups:job_writeups(
+              writeup_id,
+              completion_status,
+              work_performed,
+              recommendations,
+              labour_time,
+              warranty_claim,
+              created_at,
+              updated_at
+            ),
+            parts_requests:parts_requests(
+              request_id,
+              job_id,
+              part_id,
+              quantity,
+              status,
+              description,
+              requested_by,
+              approved_by,
+              created_at,
+              updated_at,
+              part:part_id(
+                id,
+                part_number,
+                name,
+                description,
+                unit_cost,
+                unit_price,
+                qty_in_stock,
+                qty_reserved,
+                qty_on_order,
+                storage_location
+              ),
+              requester:requested_by(
+                user_id,
+                first_name,
+                last_name
+              ),
+              approver:approved_by(
+                user_id,
+                first_name,
+                last_name
+              )
+            ),
+            parts_job_items:parts_job_items(
+              id,
+              part_id,
+              quantity_requested,
+              quantity_allocated,
+              quantity_fitted,
+              status,
+              origin,
+              pre_pick_location,
+              storage_location,
+              unit_cost,
+              unit_price,
+              request_notes,
+              allocated_by,
+              picked_by,
+              fitted_by,
+              created_at,
+              updated_at,
+              part:part_id(
+                id,
+                part_number,
+                name,
+                description,
+                unit_cost,
+                unit_price,
+                qty_in_stock,
+                qty_reserved,
+                qty_on_order,
+                storage_location
+              )
+            )
+          `)
+          .eq("job_number", jobNumber)
+          .maybeSingle();
+
+        if (jobError || !jobRow) {
+          console.error("❌ Job fetch error:", jobError);
           setError("Job card not found");
-          setLoading(false);
+          if (!silent) {
+            setLoading(false);
+          }
           return;
         }
 
-        console.log("✅ Job data loaded:", data);
-        setJobData(data.jobCard);
+        const jobId = jobRow.id;
+
+        const [clockingResponse, warrantyResponse, customerHistoryResponse] =
+          await Promise.all([
+            supabase
+              .from("job_clocking")
+              .select(
+                `
+                id,
+                user_id,
+                job_id,
+                job_number,
+                clock_in,
+                clock_out,
+                work_type,
+                created_at,
+                updated_at,
+                user:user_id(
+                  user_id,
+                  first_name,
+                  last_name,
+                  email,
+                  role
+                )
+              `
+              )
+              .eq("job_id", jobId)
+              .order("clock_in", { ascending: false }),
+            jobRow.vehicle_id
+              ? supabase
+                  .from("jobs")
+                  .select(
+                    `
+                    id,
+                    job_number,
+                    status,
+                    job_source,
+                    created_at,
+                    vehicle_id,
+                    vehicle_reg,
+                    vehicle_make_model
+                  `
+                  )
+                  .eq("vehicle_id", jobRow.vehicle_id)
+                  .eq("job_source", "Warranty")
+                  .neq("job_number", jobNumber)
+                  .order("created_at", { ascending: false })
+                  .limit(1)
+              : Promise.resolve({ data: [] }),
+            jobRow.customer_id
+              ? supabase
+                  .from("jobs")
+                  .select(
+                    `
+                    id,
+                    job_number,
+                    type,
+                    status,
+                    vehicle_reg,
+                    vehicle_make_model,
+                    job_source,
+                    waiting_status,
+                    created_at,
+                    updated_at
+                  `
+                  )
+                  .eq("customer_id", jobRow.customer_id)
+                  .order("created_at", { ascending: false })
+              : Promise.resolve({ data: [] })
+          ]);
+
+        if (clockingResponse?.error) {
+          console.error("❌ Clocking fetch error:", clockingResponse.error);
+        }
+        if (warrantyResponse?.error) {
+          console.error("❌ Warranty link fetch error:", warrantyResponse.error);
+        }
+        if (customerHistoryResponse?.error) {
+          console.error("❌ Customer history fetch error:", customerHistoryResponse.error);
+        }
+
+        const clockingStatus = mapClockingStatus(clockingResponse.data || []);
+        const warrantyJob = mapWarrantyJob(warrantyResponse.data || []);
+
+        const formattedJob = buildJobDataFromRow(jobRow, {
+          clockingStatus,
+          warrantyJob
+        });
+
+        setJobData(formattedJob);
         setIsEditingDescription(false);
-        setDescriptionDraft(formatNoteValue(data.jobCard?.description || ""));
-
-        // ✅ Fetch notes
-        if (data.jobCard?.id) {
-          const jobNotes = await getNotesByJob(data.jobCard.id);
-          setNotes(jobNotes);
-        }
-
-        // ✅ Fetch customer job history
-        if (data.customer?.customerId) {
-          const history = await getCustomerJobs(data.customer.customerId);
-          setCustomerJobHistory(history);
-        }
-
-        setLoading(false);
+        setDescriptionDraft(formatNoteValue(formattedJob?.description || ""));
+        setNotes(formattedJob.notes || []);
+        setCustomerJobHistory((customerHistoryResponse.data || []).filter(Boolean));
       } catch (err) {
         console.error("❌ Exception fetching job:", err);
         setError("Failed to load job card");
-        setLoading(false);
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
       }
-    };
+    },
+    [jobNumber]
+  );
 
+  useEffect(() => {
     fetchJobData();
-  }, [jobNumber]);
+  }, [fetchJobData]);
 
   // ✅ Add Note Handler
   const handleAddNote = async () => {
@@ -155,7 +705,7 @@ export default function JobCardDetailPage() {
       });
 
       if (result.success) {
-        const updatedNotes = await getNotesByJob(jobData.id);
+        const updatedNotes = await refreshNotes(jobData.id);
         setNotes(updatedNotes);
         setNewNote("");
       } else {
@@ -175,7 +725,8 @@ export default function JobCardDetailPage() {
       const result = await deleteJobNote(noteId, user?.user_id);
       
       if (result.success) {
-        setNotes(notes.filter(n => n.noteId !== noteId));
+        const updatedNotes = await refreshNotes(jobData.id);
+        setNotes(updatedNotes);
       } else {
         alert("Failed to delete note");
       }
@@ -258,7 +809,9 @@ export default function JobCardDetailPage() {
       });
 
       if (result.success && result.data) {
-        setJobData(result.data);
+        setJobData((prev) =>
+          prev ? { ...prev, ...result.data } : result.data
+        );
         setDescriptionDraft(formatNoteValue(result.data.description || ""));
         setIsEditingDescription(false);
         alert("✅ Job description updated successfully");
