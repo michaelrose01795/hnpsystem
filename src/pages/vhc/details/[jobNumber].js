@@ -811,14 +811,21 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
         const inStock = part.in_stock || 0;
         const location = item.part_selection?.location || PART_STORAGE_OPTIONS[0];
         const status =
-          inStock >= qty && typeof inStock === "number" ? "picked" : "awaiting_stock";
+          inStock >= qty && typeof inStock === "number" ? "stock" : "on_order";
+        const severity = typeof item.status === "string" ? item.status.toLowerCase() : "";
+        const origin = severity.includes("amber")
+          ? "vhc_amber"
+          : severity.includes("red")
+          ? "vhc_red"
+          : "vhc";
         await supabase.from("parts_job_items").insert([
           {
             job_id: jobId,
             part_id: part.id,
             quantity_requested: qty,
             status,
-            origin: "vhc",
+            origin,
+            vhc_item_id: item.id,
             storage_location: location,
             request_notes: "Auto-generated from VHC approval",
             unit_cost: part.unit_cost || 0,
@@ -838,7 +845,8 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
               job_id: jobId,
               part_id: part.id,
               quantity: qty,
-              status: "awaiting_stock",
+              status: "on_order",
+              source: "vhc_auto",
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             },

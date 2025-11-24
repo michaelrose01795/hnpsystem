@@ -8,7 +8,16 @@ const fetchCount = async (query) => {
   return count || 0;
 };
 
-const OPEN_JOB_STATUSES = ["pending", "awaiting_stock", "allocated", "picked"];
+const OPEN_JOB_STATUSES = [
+  "waiting_authorisation",
+  "pending",
+  "awaiting_stock",
+  "on_order",
+  "pre_picked",
+  "stock",
+  "allocated",
+  "picked",
+];
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -44,7 +53,7 @@ export default async function handler(req, res) {
       fetchCount(
         supabase
           .from("parts_job_items")
-          .in("status", ["pending", "awaiting_stock", "allocated"])
+          .in("status", OPEN_JOB_STATUSES)
       ),
     ]);
 

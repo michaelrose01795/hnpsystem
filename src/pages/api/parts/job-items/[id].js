@@ -3,7 +3,18 @@
 import { supabase } from "@/lib/supabaseClient";
 
 const MANAGER_ROLE_KEYWORDS = ["parts", "manager", "admin"]
-const VALID_STATUSES = new Set(["pending", "awaiting_stock", "allocated", "picked", "fitted", "cancelled"])
+const VALID_STATUSES = new Set([
+  "pending",
+  "waiting_authorisation",
+  "awaiting_stock",
+  "on_order",
+  "pre_picked",
+  "stock",
+  "allocated",
+  "picked",
+  "fitted",
+  "cancelled",
+])
 
 const normaliseRole = (role) => (typeof role === "string" ? role.trim().toLowerCase() : "")
 

@@ -62,7 +62,7 @@ const fetchJobParts = async (jobId) => {
     .from("parts_job_items")
     .select(
       `id, job_id, part_id, quantity_requested, quantity_allocated, quantity_fitted, status, origin,
-       pre_pick_location, storage_location, unit_cost, unit_price, request_notes, created_at, updated_at,
+       vhc_item_id, pre_pick_location, storage_location, unit_cost, unit_price, request_notes, created_at, updated_at,
        part:parts_catalog(${PART_COLUMNS})`
     )
     .eq("job_id", jobId)
@@ -70,6 +70,39 @@ const fetchJobParts = async (jobId) => {
 
   if (error) throw error;
   return data || [];
+};
+
+const fetchJobRequests = async (jobId) => {
+  const { data, error } = await supabase
+    .from("parts_requests")
+    .select("request_id, job_id, part_id, quantity, status, description, source, created_at, updated_at")
+    .eq("job_id", jobId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  const requests = data || [];
+  const partIds = requests.filter((req) => req.part_id).map((req) => req.part_id);
+  if (partIds.length === 0) {
+    return requests;
+  }
+
+  const { data: partDetails, error: partError } = await supabase
+    .from("parts_catalog")
+    .select("id, part_number, name")
+    .in("id", partIds);
+
+  if (partError) throw partError;
+
+  const partMap = (partDetails || []).reduce((acc, part) => {
+    acc[part.id] = part;
+    return acc;
+  }, {});
+
+  return requests.map((req) => ({
+    ...req,
+    part: req.part_id ? partMap[req.part_id] || null : null,
+  }));
 };
 
 export default async function handler(req, res) {
@@ -105,11 +138,13 @@ export default async function handler(req, res) {
       }
 
       const parts = await fetchJobParts(job.id);
+      const requests = await fetchJobRequests(job.id);
 
       return res.status(200).json({
         success: true,
         job: mapJobRecord(job),
         parts,
+        requests,
       });
     } catch (error) {
       console.error("Error fetching job:", error);
@@ -136,6 +171,7 @@ export default async function handler(req, res) {
       unitPrice,
       requestNotes,
       userId,
+      vhcItemId,
     } = req.body || {};
 
     if (!jobId || !partId) {
@@ -181,14 +217,18 @@ export default async function handler(req, res) {
           ? prePickLocation
           : null;
 
+      const resolvedStatus = status || (shouldAllocate ? "stock" : "on_order");
+      const resolvedOrigin = origin || "parts_workspace";
+
       const payload = {
         job_id: jobId,
         part_id: partId,
         quantity_requested: resolvedQuantity,
         quantity_allocated: shouldAllocate ? resolvedQuantity : 0,
         quantity_fitted: 0,
-        status: status || (shouldAllocate ? "allocated" : "awaiting_stock"),
-        origin: origin || "vhc",
+        status: resolvedStatus,
+        origin: resolvedOrigin,
+        vhc_item_id: vhcItemId || null,
         pre_pick_location: sanitizedPrePick,
         storage_location: resolvedStorage,
         unit_cost: resolvedUnitCost,

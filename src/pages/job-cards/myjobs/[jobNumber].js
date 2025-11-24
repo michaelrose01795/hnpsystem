@@ -424,7 +424,8 @@ export default function TechJobDetailPage() {
         requested_by: requesterId,
         quantity: Math.max(1, Number(partRequestQuantity) || 1),
         description: trimmedDescription,
-        status: "pending",
+        status: "waiting_authorisation",
+        source: "tech_request",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });

@@ -21,18 +21,110 @@ const deriveStockStatus = (part) => {
   return "in_stock";
 };
 
-const mapPartRecord = (record, jobCounts = {}) => ({
+const mapPartRecord = (record, jobCounts = {}, linkedJobs = {}) => ({
   ...record,
   stock_status: deriveStockStatus(record),
   open_job_count: jobCounts[record.id] || 0,
+  linked_jobs: linkedJobs[record.id] || [],
 });
 
-const OPEN_JOB_STATUSES = [
+const CLOSED_PART_STATUSES = new Set(["fitted", "cancelled"]);
+const OPEN_REQUEST_STATUSES = [
+  "waiting_authorisation",
   "pending",
   "awaiting_stock",
-  "allocated",
-  "picked",
+  "on_order",
 ];
+
+const buildLinkedJobsMap = async (partIds = []) => {
+  if (!partIds || partIds.length === 0) {
+    return { linkedJobs: {}, jobCounts: {} };
+  }
+
+  const { data: jobItems, error: jobItemsError } = await supabase
+    .from("parts_job_items")
+    .select("part_id, job_id, status, origin, quantity_requested")
+    .in("part_id", partIds);
+
+  if (jobItemsError) throw jobItemsError;
+
+  const activeJobItems = (jobItems || []).filter(
+    (item) => item.job_id && !CLOSED_PART_STATUSES.has(item.status)
+  );
+
+  const { data: requestRows, error: requestError } = await supabase
+    .from("parts_requests")
+    .select("request_id, job_id, part_id, status, quantity, source")
+    .in("part_id", partIds)
+    .in("status", OPEN_REQUEST_STATUSES);
+
+  if (requestError) throw requestError;
+
+  const jobIds = new Set();
+  activeJobItems.forEach((item) => jobIds.add(item.job_id));
+  (requestRows || []).forEach((req) => {
+    if (req.job_id) jobIds.add(req.job_id);
+  });
+
+  let jobMap = {};
+  if (jobIds.size > 0) {
+    const { data: jobsData, error: jobsError } = await supabase
+      .from("jobs")
+      .select("id, job_number, waiting_status, status")
+      .in("id", Array.from(jobIds));
+
+    if (jobsError) throw jobsError;
+
+    jobMap = (jobsData || []).reduce((acc, job) => {
+      acc[job.id] = job;
+      return acc;
+    }, {});
+  }
+
+  const linkedJobs = {};
+  const pushLink = (partId, entry) => {
+    if (!partId) return;
+    if (!linkedJobs[partId]) linkedJobs[partId] = [];
+    linkedJobs[partId].push(entry);
+  };
+
+  activeJobItems.forEach((item) => {
+    const job = jobMap[item.job_id];
+    if (!job) return;
+    pushLink(item.part_id, {
+      type: "job_item",
+      job_id: item.job_id,
+      job_number: job.job_number || `#${item.job_id}`,
+      job_waiting_status: job.waiting_status || job.status || null,
+      status: item.status,
+      source: item.origin || "manual",
+      quantity: item.quantity_requested || 1,
+    });
+  });
+
+  (requestRows || []).forEach((req) => {
+    if (!req.part_id || !req.job_id) return;
+    const job = jobMap[req.job_id];
+    if (!job) return;
+    pushLink(req.part_id, {
+      type: "request",
+      job_id: req.job_id,
+      job_number: job.job_number || `#${req.job_id}`,
+      job_waiting_status: job.waiting_status || job.status || null,
+      status: req.status || "waiting_authorisation",
+      source: req.source || "tech_request",
+      quantity: req.quantity || 1,
+      request_id: req.request_id,
+    });
+  });
+
+  const jobCounts = Object.keys(linkedJobs).reduce((acc, partId) => {
+    acc[partId] = linkedJobs[partId].length;
+    return acc;
+  }, {});
+
+  return { linkedJobs, jobCounts };
+};
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
@@ -75,28 +167,13 @@ export default async function handler(req, res) {
 
       if (error) throw error;
 
-      let jobCounts = {};
       const parts = data || [];
       const partIds = parts.map((part) => part.id).filter(Boolean);
-
-      if (partIds.length > 0) {
-        const { data: jobRows, error: jobError } = await supabase
-          .from("parts_job_items")
-          .select("part_id")
-          .in("part_id", partIds)
-          .in("status", OPEN_JOB_STATUSES);
-
-        if (jobError) throw jobError;
-
-        jobCounts = (jobRows || []).reduce((acc, row) => {
-          acc[row.part_id] = (acc[row.part_id] || 0) + 1;
-          return acc;
-        }, {});
-      }
+      const { linkedJobs, jobCounts } = await buildLinkedJobsMap(partIds);
 
       return res.status(200).json({
         success: true,
-        parts: parts.map((row) => mapPartRecord(row, jobCounts)),
+        parts: parts.map((row) => mapPartRecord(row, jobCounts, linkedJobs)),
         count: count || 0,
       });
     } catch (error) {
@@ -159,7 +236,7 @@ export default async function handler(req, res) {
 
       return res.status(201).json({
         success: true,
-        part: mapPartRecord(data),
+        part: mapPartRecord(data, {}, {}),
       });
     } catch (error) {
       console.error("Error creating part:", error);

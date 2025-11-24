@@ -3,7 +3,18 @@
 import { supabase } from "@/lib/supabaseClient";
 
 const WRITE_ROLE_KEYWORDS = ["tech", "parts", "manager", "admin"] // Role keywords permitted to create records
-const VALID_STATUSES = new Set(["pending", "awaiting_stock", "allocated", "picked", "fitted", "cancelled"]) // Allowed statuses
+const VALID_STATUSES = new Set([
+  "pending",
+  "waiting_authorisation",
+  "awaiting_stock",
+  "on_order",
+  "pre_picked",
+  "stock",
+  "allocated",
+  "picked",
+  "fitted",
+  "cancelled",
+]) // Allowed statuses
 
 // Lowercase helper for comparisons
 const normaliseRole = (role) => (typeof role === "string" ? role.trim().toLowerCase() : "")

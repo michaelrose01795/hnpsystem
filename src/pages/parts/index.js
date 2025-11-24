@@ -18,7 +18,11 @@ const PRE_PICK_OPTIONS = [
 
 const JOB_PART_STATUSES = [
   "pending",
+  "waiting_authorisation",
   "awaiting_stock",
+  "on_order",
+  "pre_picked",
+  "stock",
   "allocated",
   "picked",
   "fitted",
@@ -62,6 +66,59 @@ const tableStyle = {
   borderCollapse: "collapse",
 };
 
+const STATUS_COLOR_MAP = {
+  waiting_authorisation: { background: "rgba(251,191,36,0.2)", color: "#92400e" },
+  awaiting_stock: { background: "rgba(254,240,138,0.4)", color: "#92400e" },
+  on_order: { background: "rgba(191,219,254,0.6)", color: "#1d4ed8" },
+  pre_picked: { background: "rgba(221,214,254,0.6)", color: "#6d28d9" },
+  stock: { background: "rgba(209,250,229,0.8)", color: "#065f46" },
+  pending: { background: "rgba(229,231,235,0.8)", color: "#374151" },
+  allocated: { background: "rgba(186,230,253,0.8)", color: "#0369a1" },
+  picked: { background: "rgba(199,210,254,0.8)", color: "#3730a3" },
+  fitted: { background: "rgba(209,250,229,0.8)", color: "#065f46" },
+  cancelled: { background: "rgba(254,202,202,0.8)", color: "#991b1b" },
+};
+
+const SOURCE_META = {
+  vhc_red: { label: "VHC Red", background: "rgba(248,113,113,0.2)", color: "#991b1b" },
+  vhc_amber: { label: "VHC Amber", background: "rgba(251,191,36,0.25)", color: "#92400e" },
+  vhc: { label: "VHC", background: "rgba(248,113,113,0.15)", color: "#b91c1c" },
+  vhc_auto: { label: "VHC Auto-Order", background: "rgba(190,24,93,0.15)", color: "#9d174d" },
+  tech_request: { label: "Tech Request", background: "rgba(59,130,246,0.18)", color: "#1d4ed8" },
+  parts_workspace: { label: "Manual", background: "rgba(148,163,184,0.3)", color: "#475569" },
+  manual: { label: "Manual", background: "rgba(148,163,184,0.3)", color: "#475569" },
+};
+
+const formatStatusLabel = (status) =>
+  status ? status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "Unknown";
+
+const resolveStatusStyles = (status) => STATUS_COLOR_MAP[status] || { background: "rgba(229,231,235,0.8)", color: "#374151" };
+
+const resolveSourceMeta = (origin = "") => {
+  const normalized = typeof origin === "string" ? origin.toLowerCase() : "";
+  if (SOURCE_META[normalized]) return SOURCE_META[normalized];
+  if (normalized.includes("vhc")) return SOURCE_META.vhc;
+  if (normalized.includes("tech")) return SOURCE_META.tech_request;
+  return SOURCE_META.manual;
+};
+
+const RequirementBadge = ({ label, background, color }) => (
+  <span
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      padding: "2px 10px",
+      borderRadius: "999px",
+      fontSize: "0.75rem",
+      fontWeight: 600,
+      background,
+      color,
+    }}
+  >
+    {label}
+  </span>
+);
+
 function PartsPortalPage() {
   const { user, dbUserId } = useUser();
   const actingUserId = dbUserId || user?.id || null;
@@ -71,6 +128,7 @@ function PartsPortalPage() {
   const [jobError, setJobError] = useState("");
   const [jobData, setJobData] = useState(null);
   const [jobParts, setJobParts] = useState([]);
+  const [jobRequests, setJobRequests] = useState([]);
 
   const [inventorySearch, setInventorySearch] = useState("");
   const [inventoryLoading, setInventoryLoading] = useState(false);
@@ -122,6 +180,39 @@ function PartsPortalPage() {
     const diff = unitPrice - unitCost;
     const percent = unitPrice !== 0 ? (diff / unitPrice) * 100 : 0;
     return `${formatCurrency(diff)} (${percent.toFixed(0)}%)`;
+  };
+
+  const formatDateTime = (value) =>
+    value ? new Date(value).toLocaleString(undefined, { hour12: false }) : "—";
+
+  const renderLinkedJobs = (part) => {
+    const links = part.linked_jobs || [];
+    if (links.length === 0) return null;
+    return (
+      <div style={{ marginTop: "8px", fontSize: "0.8rem", color: "#4b5563" }}>
+        <div style={{ fontWeight: 600, color: "#a00000", marginBottom: "4px" }}>Linked Jobs</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          {links.slice(0, 3).map((link) => {
+            const sourceMeta = resolveSourceMeta(link.source);
+            const statusMeta = resolveStatusStyles(link.status);
+            return (
+              <div key={`${link.type}-${link.job_id}-${link.request_id || ""}-${link.status}`}>
+                <div>
+                  <strong>{link.job_number}</strong> · Qty {link.quantity || 1}
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "2px" }}>
+                  <RequirementBadge label={sourceMeta.label} background={sourceMeta.background} color={sourceMeta.color} />
+                  <RequirementBadge label={formatStatusLabel(link.status)} background={statusMeta.background} color={statusMeta.color} />
+                </div>
+              </div>
+            );
+          })}
+          {links.length > 3 && (
+            <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>+{links.length - 3} more jobs…</div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const fetchInventory = useCallback(
@@ -193,10 +284,12 @@ function PartsPortalPage() {
 
         setJobData(data.job || null);
         setJobParts(data.parts || []);
+        setJobRequests(data.requests || []);
       } catch (err) {
         setJobError(err.message || "Unable to load job card");
         setJobData(null);
         setJobParts([]);
+        setJobRequests([]);
       } finally {
         setJobLoading(false);
       }
@@ -297,6 +390,7 @@ function PartsPortalPage() {
             selectedPart?.storage_location || selectedPart?.service_default_zone || null,
           requestNotes: partNotes || null,
           userId: actingUserId,
+          origin: "parts_workspace",
         }),
       });
 
@@ -927,6 +1021,25 @@ function PartsPortalPage() {
                                 {part.part?.storage_location || "No bin"} · Stock:{" "}
                                 {part.part?.qty_in_stock}
                               </div>
+                              <div style={{ marginTop: "6px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                                {(() => {
+                                  const meta = resolveSourceMeta(part.origin);
+                                  return (
+                                    <RequirementBadge
+                                      label={meta.label}
+                                      background={meta.background}
+                                      color={meta.color}
+                                    />
+                                  );
+                                })()}
+                                {part.vhc_item_id ? (
+                                  <RequirementBadge
+                                    label={`VHC #${part.vhc_item_id}`}
+                                    background="rgba(248,113,113,0.18)"
+                                    color="#991b1b"
+                                  />
+                                ) : null}
+                              </div>
                             </td>
                             <td style={{ padding: "10px", verticalAlign: "top" }}>
                               <div>Requested: {part.quantity_requested}</div>
@@ -1014,6 +1127,59 @@ function PartsPortalPage() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                )}
+
+                {jobRequests.length > 0 && (
+                  <div style={{ marginTop: "20px" }}>
+                    <h4 style={{ ...sectionTitleStyle, marginBottom: "8px" }}>Workshop Requests</h4>
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ ...tableStyle, fontSize: "0.9rem" }}>
+                        <thead>
+                          <tr style={{ background: "#fff8f0", color: "#a04100" }}>
+                            <th style={{ textAlign: "left", padding: "10px" }}>Request</th>
+                            <th style={{ textAlign: "left", padding: "10px" }}>Quantity</th>
+                            <th style={{ textAlign: "left", padding: "10px" }}>Source</th>
+                            <th style={{ textAlign: "left", padding: "10px" }}>Status</th>
+                            <th style={{ textAlign: "left", padding: "10px" }}>Created</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {jobRequests.map((request) => {
+                            const sourceMeta = resolveSourceMeta(request.source);
+                            const statusMeta = resolveStatusStyles(request.status);
+                            return (
+                              <tr key={request.request_id} style={{ borderBottom: "1px solid #ffe1e1" }}>
+                                <td style={{ padding: "10px" }}>
+                                  <div style={{ fontWeight: 600 }}>{request.description || "Part request"}</div>
+                                  {request.part ? (
+                                    <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+                                      Suggested: {request.part.part_number} · {request.part.name}
+                                    </div>
+                                  ) : null}
+                                </td>
+                                <td style={{ padding: "10px" }}>{request.quantity || 1}</td>
+                                <td style={{ padding: "10px" }}>
+                                  <RequirementBadge
+                                    label={sourceMeta.label}
+                                    background={sourceMeta.background}
+                                    color={sourceMeta.color}
+                                  />
+                                </td>
+                                <td style={{ padding: "10px" }}>
+                                  <RequirementBadge
+                                    label={formatStatusLabel(request.status)}
+                                    background={statusMeta.background}
+                                    color={statusMeta.color}
+                                  />
+                                </td>
+                                <td style={{ padding: "10px" }}>{formatDateTime(request.created_at)}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
 
@@ -1129,6 +1295,7 @@ function PartsPortalPage() {
                               {(part.stock_status || "in_stock").replace(/_/g, " ")}
                             </span>
                           </div>
+                          {renderLinkedJobs(part)}
                         </td>
                         <td style={{ padding: "10px", verticalAlign: "top" }}>
                           <div>On hand: {part.qty_in_stock}</div>

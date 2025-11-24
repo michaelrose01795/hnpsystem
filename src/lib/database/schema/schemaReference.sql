@@ -424,6 +424,7 @@ CREATE TABLE public.job_writeups (
   quality_control text,
   qty jsonb DEFAULT '[]'::jsonb,
   booked jsonb DEFAULT '[]'::jsonb,
+  cause_entries jsonb DEFAULT '[]'::jsonb,
   CONSTRAINT job_writeups_pkey PRIMARY KEY (writeup_id),
   CONSTRAINT job_writeups_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT job_writeups_technician_id_fkey FOREIGN KEY (technician_id) REFERENCES public.users(user_id)
@@ -469,10 +470,14 @@ CREATE TABLE public.jobs (
   job_description_snapshot text,
   vhc_authorization_reference text,
   task_checklist jsonb DEFAULT '{}'::jsonb,
+  warranty_linked_job_id integer,
+  warranty_vhc_master_job_id integer,
   CONSTRAINT jobs_pkey PRIMARY KEY (id),
   CONSTRAINT jobs_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES public.users(user_id),
   CONSTRAINT jobs_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(vehicle_id),
-  CONSTRAINT jobs_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
+  CONSTRAINT jobs_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT jobs_warranty_linked_job_id_fkey FOREIGN KEY (warranty_linked_job_id) REFERENCES public.jobs(id),
+  CONSTRAINT jobs_warranty_vhc_master_job_id_fkey FOREIGN KEY (warranty_vhc_master_job_id) REFERENCES public.jobs(id)
 );
 CREATE TABLE public.key_tracking_events (
   key_event_id bigint NOT NULL DEFAULT nextval('key_tracking_events_key_event_id_seq'::regclass),

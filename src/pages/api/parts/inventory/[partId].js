@@ -10,7 +10,16 @@ const parseNumeric = (value, fallback = 0) => {
   return Number.isNaN(parsed) ? fallback : parsed;
 };
 
-const OPEN_JOB_STATUSES = ["pending", "awaiting_stock", "allocated", "picked"];
+const OPEN_JOB_STATUSES = [
+  "waiting_authorisation",
+  "pending",
+  "awaiting_stock",
+  "on_order",
+  "pre_picked",
+  "stock",
+  "allocated",
+  "picked",
+];
 
 const withJobCount = async (part) => {
   if (!part?.id) return part;

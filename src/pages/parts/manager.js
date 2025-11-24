@@ -36,13 +36,59 @@ const performanceTableStyle = {
   borderCollapse: "collapse",
 };
 
-const workloadStatusStyles = {
-  awaiting_stock: { color: "#b45309", background: "rgba(245,158,11,0.18)" },
-  pending: { color: "#a00000", background: "rgba(209,0,0,0.12)" },
-  allocated: { color: "#047857", background: "rgba(16,185,129,0.16)" },
-  picked: { color: "#1d4ed8", background: "rgba(59,130,246,0.16)" },
-  fitted: { color: "#0369a1", background: "rgba(191,219,254,0.6)" },
+const STATUS_COLOR_MAP = {
+  waiting_authorisation: { background: "rgba(251,191,36,0.2)", color: "#92400e" },
+  awaiting_stock: { background: "rgba(254,240,138,0.4)", color: "#92400e" },
+  on_order: { background: "rgba(191,219,254,0.6)", color: "#1d4ed8" },
+  pre_picked: { background: "rgba(221,214,254,0.6)", color: "#6d28d9" },
+  stock: { background: "rgba(209,250,229,0.8)", color: "#065f46" },
+  pending: { background: "rgba(229,231,235,0.8)", color: "#374151" },
+  allocated: { background: "rgba(186,230,253,0.8)", color: "#0369a1" },
+  picked: { background: "rgba(199,210,254,0.8)", color: "#3730a3" },
+  fitted: { background: "rgba(209,250,229,0.8)", color: "#065f46" },
 };
+
+const SOURCE_META = {
+  vhc_red: { label: "VHC Red", background: "rgba(248,113,113,0.2)", color: "#991b1b" },
+  vhc_amber: { label: "VHC Amber", background: "rgba(251,191,36,0.25)", color: "#92400e" },
+  vhc: { label: "VHC", background: "rgba(248,113,113,0.15)", color: "#b91c1c" },
+  vhc_auto: { label: "VHC Auto-Order", background: "rgba(190,24,93,0.15)", color: "#9d174d" },
+  tech_request: { label: "Tech Request", background: "rgba(59,130,246,0.18)", color: "#1d4ed8" },
+  parts_workspace: { label: "Manual", background: "rgba(148,163,184,0.3)", color: "#475569" },
+  manual: { label: "Manual", background: "rgba(148,163,184,0.3)", color: "#475569" },
+};
+
+const OPEN_REQUEST_STATUSES = ["waiting_authorisation", "pending", "awaiting_stock", "on_order"];
+
+const formatStatusLabel = (status) =>
+  status ? status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "Unknown";
+
+const resolveStatusStyles = (status) => STATUS_COLOR_MAP[status] || { background: "rgba(229,231,235,0.8)", color: "#374151" };
+
+const resolveSourceMeta = (origin = "") => {
+  const normalized = typeof origin === "string" ? origin.toLowerCase() : "";
+  if (SOURCE_META[normalized]) return SOURCE_META[normalized];
+  if (normalized.includes("vhc")) return SOURCE_META.vhc;
+  if (normalized.includes("tech")) return SOURCE_META.tech_request;
+  return SOURCE_META.manual;
+};
+
+const SourceBadge = ({ label, background, color }) => (
+  <span
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      padding: "2px 10px",
+      borderRadius: "999px",
+      fontSize: "0.75rem",
+      fontWeight: 600,
+      background,
+      color,
+    }}
+  >
+    {label}
+  </span>
+);
 
 const formatCurrency = (value) => {
   const numeric = Number(value || 0);
@@ -58,22 +104,34 @@ const formatMarginValue = (cost, price) => {
   return `${formatCurrency(diff)} (${percent.toFixed(0)}%)`;
 };
 
+const formatDateTime = (value) =>
+  value ? new Date(value).toLocaleString(undefined, { hour12: false }) : "—";
+
 const buildWorkloadRows = (items = []) =>
   items.map((item) => {
     const job = item.job || {};
     const part = item.part || {};
     const status = item.status || "pending";
-    const colors = workloadStatusStyles[status] || workloadStatusStyles.pending;
+    const statusStyles = resolveStatusStyles(status);
+    const sourceMeta = resolveSourceMeta(item.origin);
     const monetaryValue = (Number(part.unit_price) || 0) * (Number(item.quantity_requested) || 0);
+    const partLabel = part.part_number ? `${part.part_number} · ${part.name || "Part"}` : part.name || "Part";
 
     return {
       jobNumber: job.job_number || "—",
       reg: job.vehicle_reg || "—",
-      advisor: part.supplier || "Unknown supplier",
-      neededBy: job.waiting_status || "—",
-      status: status.replace(/_/g, " "),
-      statusColor: colors.background,
-      statusTextColor: colors.color,
+      advisor: (
+        <div>
+          <div style={{ fontWeight: 600 }}>{partLabel}</div>
+          <div style={{ marginTop: "4px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            <SourceBadge label={sourceMeta.label} background={sourceMeta.background} color={sourceMeta.color} />
+          </div>
+        </div>
+      ),
+      neededBy: job.waiting_status || job.status || "—",
+      status: formatStatusLabel(status),
+      statusColor: statusStyles.background,
+      statusTextColor: statusStyles.color,
       value: formatCurrency(monetaryValue),
     };
   });
@@ -86,7 +144,7 @@ const buildTeamBuckets = (items = []) => {
   }, {});
 
   return Object.entries(grouped).map(([status, count]) => ({
-    name: status.replace(/_/g, " "),
+    name: formatStatusLabel(status),
     role: "Job queue",
     status: `${count} line${count === 1 ? "" : "s"}`,
     window: "Updated just now",
@@ -100,15 +158,20 @@ const buildFocusItems = (alerts = []) =>
     owner: alert.supplier ? `Supplier: ${alert.supplier}` : "",
   }));
 
-const buildTeamPerformance = (queue = []) =>
-  queue.slice(0, 5).map((item) => ({
-    name: item.jobNumber,
-    role: item.reg,
-    fillRate: item.status,
-    accuracy: item.advisor,
-    picksPerHour: item.neededBy || "N/A",
-    valuePerDay: item.value,
-  }));
+const buildTeamPerformance = (items = []) =>
+  items.slice(0, 5).map((item) => {
+    const job = item.job || {};
+    const part = item.part || {};
+    const sourceMeta = resolveSourceMeta(item.origin);
+    return {
+      name: job.job_number || "—",
+      role: part.part_number ? `${part.part_number} · ${part.name || "Part"}` : part.name || "Part",
+      fillRate: formatStatusLabel(item.status || "pending"),
+      accuracy: sourceMeta.label,
+      picksPerHour: job.waiting_status || job.status || "N/A",
+      valuePerDay: formatCurrency((Number(part.unit_price) || 0) * (Number(item.quantity_requested) || 0)),
+    };
+  });
 
 export default function PartsManagerDashboard() {
   const { user } = useUser();
@@ -124,6 +187,8 @@ export default function PartsManagerDashboard() {
     inventoryAlerts: [],
     deliveries: [],
     teamAvailability: [],
+    teamPerformance: [],
+    techRequests: [],
   });
 
   useEffect(() => {
@@ -133,17 +198,36 @@ export default function PartsManagerDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const [summaryResponse, deliveriesResponse, jobItemsResponse] = await Promise.all([
+        const [summaryResponse, deliveriesResponse, jobItemsResponse, techRequestsResponse] = await Promise.all([
           fetch("/api/parts/summary").then((res) => res.json()),
           fetch("/api/parts/deliveries?limit=5").then((res) => res.json()),
           supabaseClient
             .from("parts_job_items")
             .select(
-              `id, status, quantity_requested, created_at, job:jobs(id, job_number, vehicle_reg, waiting_status), part:parts_catalog(part_number, name, supplier, unit_price)`
+              `id, status, origin, quantity_requested, created_at, job:jobs(id, job_number, vehicle_reg, waiting_status, status), part:parts_catalog(part_number, name, supplier, unit_price)`
             )
-            .in("status", ["pending", "awaiting_stock", "allocated", "picked"])
+            .in("status", [
+              "waiting_authorisation",
+              "pending",
+              "awaiting_stock",
+              "on_order",
+              "pre_picked",
+              "stock",
+              "allocated",
+              "picked",
+            ])
             .order("created_at", { ascending: false })
             .limit(8),
+          supabaseClient
+            .from("parts_requests")
+            .select(
+              `request_id, part_id, job_id, quantity, status, source, description, created_at,
+               job:jobs!inner(job_number, waiting_status),
+               part:parts_catalog(part_number, name)`
+            )
+            .in("status", OPEN_REQUEST_STATUSES)
+            .order("created_at", { ascending: false })
+            .limit(10),
         ]);
 
         if (!summaryResponse.success) {
@@ -158,9 +242,14 @@ export default function PartsManagerDashboard() {
           throw new Error(jobItemsResponse.error.message || "Unable to load job data");
         }
 
+        if (techRequestsResponse.error) {
+          throw new Error(techRequestsResponse.error.message || "Unable to load tech requests");
+        }
+
         const summary = summaryResponse.summary || {};
         const lowStock = summary.lowStockParts || [];
         const jobRows = jobItemsResponse.data || [];
+        const techRequests = techRequestsResponse.data || [];
 
         const summaryCards = [
           {
@@ -199,6 +288,8 @@ export default function PartsManagerDashboard() {
           inventoryAlerts: lowStock,
           deliveries,
           teamAvailability: buildTeamBuckets(jobRows),
+          teamPerformance: buildTeamPerformance(jobRows),
+          techRequests,
         });
       } catch (err) {
         console.error("Failed to load parts manager data", err);
@@ -211,13 +302,12 @@ export default function PartsManagerDashboard() {
     loadDashboard();
   }, [isManager]);
 
-  const teamPerformance = useMemo(() => buildTeamPerformance(dashboardData.workload), [
-    dashboardData.workload,
-  ]);
+  const teamPerformance = dashboardData.teamPerformance || [];
 
   const lowStockRows = useMemo(() => dashboardData.inventoryAlerts || [], [
     dashboardData.inventoryAlerts,
   ]);
+  const techRequests = dashboardData.techRequests || [];
 
   if (!isManager) {
     return (
@@ -362,6 +452,70 @@ export default function PartsManagerDashboard() {
                         <td style={{ padding: "12px 0", textAlign: "right" }}>{part.openJobCount || 0}</td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <div style={sectionCardStyle}>
+              <div style={sectionTitleStyle}>Tech Requests</div>
+              {techRequests.length === 0 ? (
+                <div style={{ color: "#666" }}>No open technician requests.</div>
+              ) : (
+                <table style={performanceTableStyle}>
+                  <thead>
+                    <tr style={{ textAlign: "left", color: "#777", fontSize: "0.85rem" }}>
+                      <th style={{ paddingBottom: "10px" }}>Job</th>
+                      <th style={{ paddingBottom: "10px" }}>Request</th>
+                      <th style={{ paddingBottom: "10px" }}>Qty</th>
+                      <th style={{ paddingBottom: "10px" }}>Source</th>
+                      <th style={{ paddingBottom: "10px" }}>Status</th>
+                      <th style={{ paddingBottom: "10px" }}>Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {techRequests.map((request) => {
+                      const sourceMeta = resolveSourceMeta(request.source);
+                      const statusMeta = resolveStatusStyles(request.status || "waiting_authorisation");
+                      return (
+                        <tr key={request.request_id} style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+                          <td style={{ padding: "12px 0" }}>{request.job?.job_number || `#${request.job_id}`}</td>
+                          <td style={{ padding: "12px 0" }}>
+                            <div style={{ fontWeight: 600 }}>{request.description || "Part request"}</div>
+                            {request.part ? (
+                              <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+                                {request.part.part_number} · {request.part.name}
+                              </div>
+                            ) : null}
+                          </td>
+                          <td style={{ padding: "12px 0" }}>{request.quantity || 1}</td>
+                          <td style={{ padding: "12px 0" }}>
+                            <SourceBadge
+                              label={sourceMeta.label}
+                              background={sourceMeta.background}
+                              color={sourceMeta.color}
+                            />
+                          </td>
+                          <td style={{ padding: "12px 0" }}>
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                padding: "2px 10px",
+                                borderRadius: "999px",
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                                background: statusMeta.background,
+                                color: statusMeta.color,
+                              }}
+                            >
+                              {formatStatusLabel(request.status || "waiting_authorisation")}
+                            </span>
+                          </td>
+                          <td style={{ padding: "12px 0" }}>{formatDateTime(request.created_at)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
