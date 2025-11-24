@@ -864,41 +864,6 @@ export default function JobCardDetailPage() {
           </div>
         </div>
 
-        {jobData && (
-          <div style={{
-            marginBottom: "16px",
-            padding: "20px",
-            backgroundColor: "white",
-            borderRadius: "12px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            border: "1px solid #e0e0e0",
-            flexShrink: 0
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
-                Job Description
-              </h2>
-            </div>
-            <div>
-              {jobData.description ? (
-                <ul style={{ margin: 0, paddingLeft: "18px", color: "#444", fontSize: "14px" }}>
-                  {jobData.description
-                    .split(/\r?\n/)
-                    .map((line) => line.trim())
-                    .filter((line) => line)
-                    .map((line, index) => (
-                      <li key={`${line}-${index}`}>{line.replace(/^-+\s*/, "")}</li>
-                    ))}
-                </ul>
-              ) : (
-                <p style={{ color: "#999", fontStyle: "italic", margin: 0 }}>
-                  No description recorded yet.
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* ✅ Vehicle & Customer Info Bar */}
         <div style={{
           display: "grid",
