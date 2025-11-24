@@ -269,6 +269,22 @@ export const getAllJobs = async () => {
       cosmetic_notes,
       vhc_required,
       maintenance_info,
+      warranty_linked_job_id,
+      warranty_vhc_master_job_id,
+      linked_warranty_job:warranty_linked_job_id(
+        id,
+        job_number,
+        status,
+        job_source,
+        vehicle_reg,
+        vehicle_make_model
+      ),
+      vhc_master_job:warranty_vhc_master_job_id(
+        id,
+        job_number,
+        status,
+        job_source
+      ),
       created_at,
       updated_at,
       vehicle:vehicle_id(
@@ -501,6 +517,22 @@ export const getJobByNumber = async (jobNumber) => {
       cosmetic_notes,
       vhc_required,
       maintenance_info,
+      warranty_linked_job_id,
+      warranty_vhc_master_job_id,
+      linked_warranty_job:warranty_linked_job_id(
+        id,
+        job_number,
+        status,
+        job_source,
+        vehicle_reg,
+        vehicle_make_model
+      ),
+      vhc_master_job:warranty_vhc_master_job_id(
+        id,
+        job_number,
+        status,
+        job_source
+      ),
       created_at,
       updated_at,
       vehicle:vehicle_id(
@@ -597,6 +629,70 @@ export const getJobByNumber = async (jobNumber) => {
   const messagingThread = await fetchJobMessagingThread(jobData.job_number);
   const formattedJob = formatJobData(jobData);
   formattedJob.messagingThread = messagingThread;
+  
+  if (
+    jobData.warranty_vhc_master_job_id &&
+    jobData.warranty_vhc_master_job_id !== jobData.id
+  ) {
+    const { data: masterJobData, error: masterJobError } = await supabase
+      .from("jobs")
+      .select(`
+        id,
+        job_number,
+        status,
+        job_source,
+        description,
+        vehicle_reg,
+        vehicle_make_model,
+        vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at),
+        parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, created_at, updated_at),
+        parts_job_items(
+          id,
+          part_id,
+          quantity_requested,
+          quantity_allocated,
+          quantity_fitted,
+          status,
+          origin,
+          pre_pick_location,
+          storage_location,
+          unit_cost,
+          unit_price,
+          request_notes,
+          allocated_by,
+          picked_by,
+          fitted_by,
+          created_at,
+          updated_at,
+          part:part_id(
+            id,
+            part_number,
+            name,
+            description,
+            unit_cost,
+            unit_price,
+            qty_in_stock,
+            qty_reserved,
+            qty_on_order,
+            storage_location
+          )
+        )
+      `)
+      .eq("id", jobData.warranty_vhc_master_job_id)
+      .single();
+
+    if (masterJobError) {
+      console.warn(
+        "⚠️ Unable to load warranty VHC master job data:",
+        masterJobError.message || masterJobError
+      );
+    } else if (masterJobData) {
+      const masterFormatted = formatJobData(masterJobData);
+      formattedJob.vhcChecks = masterFormatted.vhcChecks;
+      formattedJob.partsRequests = masterFormatted.partsRequests;
+      formattedJob.partsAllocations = masterFormatted.partsAllocations;
+    }
+  }
   
   // Return structured data with customer and vehicle history
   return { 
@@ -1404,6 +1500,22 @@ const formatJobData = (data) => {
     notes: data.job_notes || [],
     writeUp: data.job_writeups?.[0] || null,
     files: data.job_files || [], // ✅ NEW: File attachments
+    linkedWarrantyJobId: data.warranty_linked_job_id || null,
+    warrantyVhcMasterJobId: data.warranty_vhc_master_job_id || null,
+    linkedWarrantyJobNumber: data.linked_warranty_job?.job_number || null,
+    linkedWarrantyJobStatus: data.linked_warranty_job?.status || null,
+    linkedWarrantyJobSource: data.linked_warranty_job?.job_source || null,
+    linkedWarrantyJob: data.linked_warranty_job
+      ? {
+          id: data.linked_warranty_job.id,
+          jobNumber: data.linked_warranty_job.job_number,
+          status: data.linked_warranty_job.status,
+          jobSource: data.linked_warranty_job.job_source,
+          reg: data.linked_warranty_job.vehicle_reg || "",
+          makeModel: data.linked_warranty_job.vehicle_make_model || "",
+        }
+      : null,
+    warrantyVhcMasterJobNumber: data.vhc_master_job?.job_number || null,
     messagingThread: data.messagingThread || null,
     
     // ✅ Timestamps

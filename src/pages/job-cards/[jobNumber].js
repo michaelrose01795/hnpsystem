@@ -725,7 +725,8 @@ export default function JobCardDetailPage() {
     { id: "service-history", label: "Service History"},
     { id: "parts", label: "Parts"},
     { id: "notes", label: "Notes"},
-    { id: "vhc", label: "VHC"},
+    { id: "vhc", label: "VHC", badge: vhcTabBadge},
+    { id: "warranty", label: "Warranty"},
     { id: "messages", label: "Messages"},
     { id: "documents", label: "Documents"}
   ];
@@ -1029,6 +1030,15 @@ export default function JobCardDetailPage() {
           {/* VHC Tab */}
           {activeTab === "vhc" && (
             <VHCTab jobNumber={jobNumber} jobData={jobData} />
+          )}
+
+          {/* Warranty Tab */}
+          {activeTab === "warranty" && (
+            <WarrantyTab
+              jobData={jobData}
+              canEdit={canEdit}
+              onLinkComplete={() => fetchJobData({ silent: true })}
+            />
           )}
 
           {/* Messages Tab */}
@@ -3183,6 +3193,351 @@ const determineDocumentCategory = (record = {}) => {
 
   return "general";
 };
+
+function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
+  const router = useRouter();
+  const [linkMode, setLinkMode] = useState(false);
+  const [availableJobs, setAvailableJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState("");
+  const [linking, setLinking] = useState(false);
+  const [linkError, setLinkError] = useState("");
+  const linkedJob = jobData?.linkedWarrantyJob || null;
+  const sharedVhcJobNumber =
+    jobData?.warrantyVhcMasterJobNumber || jobData?.jobNumber;
+  const isLinked = Boolean(jobData?.linkedWarrantyJobId);
+
+  const loadWarrantyJobs = useCallback(async () => {
+    if (!canEdit) return;
+    setLoadingJobs(true);
+    try {
+      const { data, error } = await supabase
+        .from("jobs")
+        .select(
+          "id, job_number, status, job_source, vehicle_reg, vehicle_make_model, warranty_linked_job_id"
+        )
+        .eq("job_source", "Warranty")
+        .neq("id", jobData.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) {
+        throw error;
+      }
+
+      const filtered = (data || []).filter(
+        (record) =>
+          !record.warranty_linked_job_id ||
+          record.warranty_linked_job_id === jobData.id
+      );
+      setAvailableJobs(filtered);
+      setLinkError(
+        filtered.length ? "" : "No warranty jobs are available to link right now."
+      );
+    } catch (err) {
+      console.error("❌ Failed to load warranty jobs:", err);
+      setLinkError(err?.message || "Failed to load warranty jobs.");
+    } finally {
+      setLoadingJobs(false);
+    }
+  }, [canEdit, jobData?.id]);
+
+  useEffect(() => {
+    if (linkMode) {
+      loadWarrantyJobs();
+    } else {
+      setAvailableJobs([]);
+      setSelectedJobId("");
+      setLinkError("");
+    }
+  }, [linkMode, loadWarrantyJobs]);
+
+  const handleLinkJob = async () => {
+    if (!selectedJobId) {
+      setLinkError("Select a warranty job card to link.");
+      return;
+    }
+
+    const numericJobId = Number(selectedJobId);
+    if (Number.isNaN(numericJobId)) {
+      setLinkError("Invalid job selection.");
+      return;
+    }
+
+    const targetJob =
+      availableJobs.find((job) => job.id === numericJobId) || null;
+
+    if (!targetJob) {
+      setLinkError("Selected warranty job is no longer available.");
+      return;
+    }
+
+    const targetIsWarranty =
+      (targetJob.job_source || "").toLowerCase() === "warranty";
+    const currentIsWarranty =
+      (jobData?.jobSource || "").toLowerCase() === "warranty";
+
+    const masterJobId =
+      !currentIsWarranty && targetIsWarranty
+        ? jobData.id
+        : currentIsWarranty && !targetIsWarranty
+        ? targetJob.id
+        : jobData.id;
+
+    setLinking(true);
+    setLinkError("");
+
+    const currentUpdate = await updateJob(jobData.id, {
+      warranty_linked_job_id: numericJobId,
+      warranty_vhc_master_job_id: masterJobId
+    });
+
+    if (!currentUpdate?.success) {
+      setLinkError(
+        currentUpdate?.error?.message || "Failed to update primary job."
+      );
+      setLinking(false);
+      return;
+    }
+
+    const targetUpdate = await updateJob(numericJobId, {
+      warranty_linked_job_id: jobData.id,
+      warranty_vhc_master_job_id: masterJobId,
+      status: jobData.status
+    });
+
+    if (!targetUpdate?.success) {
+      await updateJob(jobData.id, {
+        warranty_linked_job_id: null,
+        warranty_vhc_master_job_id: null
+      });
+      setLinkError(
+        targetUpdate?.error?.message || "Failed to update warranty job."
+      );
+      setLinking(false);
+      return;
+    }
+
+    alert("✅ Warranty job card linked successfully.");
+    setLinkMode(false);
+    setSelectedJobId("");
+    setAvailableJobs([]);
+    setLinking(false);
+    if (typeof onLinkComplete === "function") {
+      onLinkComplete();
+    }
+  };
+
+  const handleOpenLinkedJob = () => {
+    if (!linkedJob?.jobNumber) return;
+    router.push(`/job-cards/${linkedJob.jobNumber}`);
+  };
+
+  const renderLinkControls = () => {
+    if (!canEdit) {
+      return null;
+    }
+
+    if (!linkMode) {
+      return (
+        <button
+          type="button"
+          onClick={() => setLinkMode(true)}
+          style={{
+            marginTop: "16px",
+            padding: "10px 18px",
+            borderRadius: "10px",
+            border: "none",
+            backgroundColor: "#d10000",
+            color: "white",
+            fontWeight: "600",
+            cursor: "pointer"
+          }}
+        >
+          {isLinked ? "Change Linked Warranty Job" : "Link Warranty Job Card"}
+        </button>
+      );
+    }
+
+    return (
+      <div
+        style={{
+          marginTop: "20px",
+          padding: "16px",
+          borderRadius: "12px",
+          border: "1px solid #e5e7eb",
+          backgroundColor: "#fff7ed",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px"
+        }}
+      >
+        <div>
+          <label
+            style={{
+              display: "block",
+              fontSize: "13px",
+              color: "#374151",
+              fontWeight: "600",
+              marginBottom: "6px"
+            }}
+          >
+            Select Warranty Job
+          </label>
+          <select
+            value={selectedJobId}
+            onChange={(event) => setSelectedJobId(event.target.value)}
+            disabled={loadingJobs || linking}
+            style={{
+              width: "100%",
+              padding: "10px 14px",
+              borderRadius: "8px",
+              border: "1px solid #d1d5db",
+              fontSize: "14px",
+              backgroundColor: "white"
+            }}
+          >
+            <option value="">
+              {loadingJobs
+                ? "Loading warranty jobs..."
+                : "Choose a warranty job number"}
+            </option>
+            {availableJobs.map((job) => (
+              <option key={job.id} value={job.id}>
+                {job.job_number} · {job.vehicle_reg || "No Reg"} ·{" "}
+                {job.vehicle_make_model || "Warranty Job"}
+              </option>
+            ))}
+          </select>
+          {linkError && (
+            <p style={{ marginTop: "6px", fontSize: "12px", color: "#b91c1c" }}>
+              {linkError}
+            </p>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button
+            type="button"
+            onClick={handleLinkJob}
+            disabled={linking || !selectedJobId}
+            style={{
+              padding: "10px 18px",
+              borderRadius: "10px",
+              border: "none",
+              backgroundColor: linking ? "#cbd5f5" : "#10b981",
+              color: "white",
+              fontWeight: "600",
+              cursor: linking ? "not-allowed" : "pointer",
+              minWidth: "140px"
+            }}
+          >
+            {linking ? "Linking..." : "Link Job"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setLinkMode(false)}
+            disabled={linking}
+            style={{
+              padding: "10px 18px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              backgroundColor: "white",
+              fontWeight: "600",
+              cursor: linking ? "not-allowed" : "pointer"
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <h2
+        style={{
+          margin: "0 0 12px 0",
+          fontSize: "20px",
+          fontWeight: "600",
+          color: "#1a1a1a"
+        }}
+      >
+        Warranty Linking
+      </h2>
+      <p style={{ color: "#6b7280", fontSize: "14px", margin: "0 0 18px 0" }}>
+        Link this job card with a warranty counterpart to mirror progress and
+        share the same Vehicle Health Check. Clocking and labour capture remain
+        independent for each job.
+      </p>
+
+      <div
+        style={{
+          padding: "18px",
+          borderRadius: "12px",
+          border: "1px solid #e5e7eb",
+          backgroundColor: "#f9fafb",
+          marginBottom: "16px"
+        }}
+      >
+        <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#0f172a" }}>
+          Linked Warranty Job
+        </h3>
+        {linkedJob ? (
+          <>
+            <p style={{ margin: 0, color: "#374151", fontSize: "14px" }}>
+              Linked to Job #{linkedJob.jobNumber} ({linkedJob.status || "Open"})
+            </p>
+            <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={handleOpenLinkedJob}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  backgroundColor: "white",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                  fontSize: "13px"
+                }}
+              >
+                View Linked Job
+              </button>
+            </div>
+          </>
+        ) : (
+          <p style={{ margin: 0, color: "#9ca3af", fontSize: "14px" }}>
+            No warranty job card is linked yet.
+          </p>
+        )}
+      </div>
+
+      <div
+        style={{
+          padding: "18px",
+          borderRadius: "12px",
+          border: "1px solid #e0f2fe",
+          backgroundColor: "#eff6ff"
+        }}
+      >
+        <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#0f172a" }}>
+          Shared VHC Source
+        </h3>
+        <p style={{ margin: "0 0 6px 0", color: "#1e3a8a", fontSize: "14px" }}>
+          VHC checklist hosted on Job #{sharedVhcJobNumber}
+        </p>
+        <p style={{ margin: 0, color: "#475569", fontSize: "13px" }}>
+          Any VHC updates, approvals, or parts raised on the master job instantly
+          reflect on both job cards. Clocking, labour, and invoicing remain
+          separate per job.
+        </p>
+      </div>
+
+      {renderLinkControls()}
+    </div>
+  );
+}
 
 function DocumentsTab({
   documents = [],
