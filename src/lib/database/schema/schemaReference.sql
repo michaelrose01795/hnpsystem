@@ -645,7 +645,7 @@ CREATE TABLE public.parts_job_items (
   quantity_requested integer NOT NULL DEFAULT 1,
   quantity_allocated integer NOT NULL DEFAULT 0,
   quantity_fitted integer NOT NULL DEFAULT 0,
-  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'awaiting_stock'::text, 'allocated'::text, 'picked'::text, 'fitted'::text, 'cancelled'::text])),
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'waiting_authorisation'::text, 'awaiting_stock'::text, 'on_order'::text, 'allocated'::text, 'pre_picked'::text, 'picked'::text, 'stock'::text, 'fitted'::text, 'cancelled'::text])),
   origin text DEFAULT 'vhc'::text,
   pre_pick_location text CHECK (pre_pick_location IS NULL OR (pre_pick_location = ANY (ARRAY['service_rack_1'::text, 'service_rack_2'::text, 'service_rack_3'::text, 'service_rack_4'::text, 'sales_rack_1'::text, 'sales_rack_2'::text, 'sales_rack_3'::text, 'sales_rack_4'::text, 'stairs_pre_pick'::text]))),
   storage_location text,
@@ -659,9 +659,11 @@ CREATE TABLE public.parts_job_items (
   updated_by uuid,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  vhc_item_id integer,
   CONSTRAINT parts_job_items_pkey PRIMARY KEY (id),
   CONSTRAINT parts_job_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
-  CONSTRAINT parts_job_items_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts_catalog(id)
+  CONSTRAINT parts_job_items_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts_catalog(id),
+  CONSTRAINT parts_job_items_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id)
 );
 CREATE TABLE public.parts_requests (
   request_id integer NOT NULL DEFAULT nextval('parts_requests_request_id_seq'::regclass),
@@ -674,6 +676,7 @@ CREATE TABLE public.parts_requests (
   updated_at timestamp with time zone DEFAULT now(),
   part_id uuid,
   description text,
+  source text DEFAULT 'manual'::text,
   CONSTRAINT parts_requests_pkey PRIMARY KEY (request_id),
   CONSTRAINT parts_requests_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES public.users(user_id),
   CONSTRAINT parts_requests_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(user_id),
