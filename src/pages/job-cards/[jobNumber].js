@@ -247,6 +247,40 @@ const mapWarrantyJob = (rows = []) => {
   };
 };
 
+const mapServiceHistoryJobs = (rows = []) =>
+  (rows || [])
+    .filter(Boolean)
+    .map((row) => {
+      const requests = mapJobRequests(row);
+      const invoiceFile = (row.job_files || []).find((file) => {
+        const type = file?.file_type?.toLowerCase() || "";
+        const folder = file?.folder?.toLowerCase() || "";
+        return type.includes("invoice") || folder.includes("invoice");
+      });
+
+      const serviceDateRaw =
+        row.appointments?.[0]?.scheduled_time || row.created_at || null;
+      const serviceDateFormatted = serviceDateRaw
+        ? new Date(serviceDateRaw).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+          })
+        : "Unknown";
+
+      return {
+        id: row.id,
+        jobNumber: row.job_number,
+        serviceDate: serviceDateRaw,
+        serviceDateFormatted,
+        mileage: row.mileage_at_service ?? null,
+        requests,
+        invoiceUrl: invoiceFile?.file_url || "",
+        invoiceName: invoiceFile?.file_name || "",
+        invoiceAvailable: Boolean(invoiceFile)
+      };
+    });
+
 const buildJobDataFromRow = (row, extras = {}) => {
   if (!row) return null;
 
@@ -327,8 +361,7 @@ export default function JobCardDetailPage() {
   const [activeTab, setActiveTab] = useState("customer-requests");
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState("");
-  const [customerJobHistory, setCustomerJobHistory] = useState([]);
-  const [selectedHistoryJob, setSelectedHistoryJob] = useState(null);
+  const [vehicleJobHistory, setVehicleJobHistory] = useState([]);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [customerSaving, setCustomerSaving] = useState(false);
@@ -592,7 +625,7 @@ export default function JobCardDetailPage() {
 
         const jobId = jobRow.id;
 
-        const [clockingResponse, warrantyResponse, customerHistoryResponse] =
+        const [clockingResponse, warrantyResponse, vehicleHistoryResponse] =
           await Promise.all([
             supabase
               .from("job_clocking")
@@ -639,19 +672,69 @@ export default function JobCardDetailPage() {
                   .order("created_at", { ascending: false })
                   .limit(1)
               : Promise.resolve({ data: [] }),
-            jobRow.customer_id
+            jobRow.vehicle_id
               ? supabase
                   .from("jobs")
                   .select(
                     `
                     id,
                     job_number,
-                    type,
-                    status,
                     vehicle_reg,
-                    vehicle_make_model,
-                    job_source,
-                    waiting_status,
+                    mileage_at_service,
+                    requests,
+                    created_at,
+                    job_requests(
+                      request_id,
+                      description,
+                      hours,
+                      job_type,
+                      sort_order
+                    ),
+                    job_files(
+                      file_id,
+                      file_name,
+                      file_url,
+                      file_type,
+                      folder,
+                      created_at
+                    ),
+                    appointments(
+                      appointment_id,
+                      scheduled_time
+                    )
+                  `
+                  )
+                  .eq("vehicle_id", jobRow.vehicle_id)
+                  .neq("id", jobId)
+                  .order("created_at", { ascending: false })
+              : Promise.resolve({ data: [] })
+          ]);
+
+        if (clockingResponse?.error) {
+          console.error("❌ Clocking fetch error:", clockingResponse.error);
+        }
+        if (warrantyResponse?.error) {
+          console.error("❌ Warranty link fetch error:", warrantyResponse.error);
+        }
+        if (vehicleHistoryResponse?.error) {
+          console.error("❌ Vehicle history fetch error:", vehicleHistoryResponse.error);
+        }
+
+        const clockingStatus = mapClockingStatus(clockingResponse.data || []);
+        const warrantyJob = mapWarrantyJob(warrantyResponse.data || []);
+        const serviceHistoryJobs = mapServiceHistoryJobs(vehicleHistoryResponse.data || []);
+
+        const formattedJob = buildJobDataFromRow(jobRow, {
+          clockingStatus,
+          warrantyJob
+        });
+
+        setJobData(formattedJob);
+        setIsEditingDescription(false);
+        setDescriptionDraft(formatNoteValue(formattedJob?.description || ""));
+        setNotes(formattedJob.notes || []);
+        setVehicleJobHistory(serviceHistoryJobs);
+      } catch (err) {
                     created_at,
                     updated_at
                   `
@@ -1456,9 +1539,7 @@ export default function JobCardDetailPage() {
           {/* Service History Tab */}
           {activeTab === "service-history" && (
             <ServiceHistoryTab 
-              customerJobHistory={customerJobHistory}
-              currentJobId={jobData.id}
-              onViewJob={setSelectedHistoryJob}
+              vehicleJobHistory={vehicleJobHistory}
             />
           )}
 
@@ -1496,13 +1577,6 @@ export default function JobCardDetailPage() {
           )}
         </div>
 
-        {/* ✅ Job History Popup */}
-        {selectedHistoryJob && (
-          <JobHistoryPopup 
-            job={selectedHistoryJob}
-            onClose={() => setSelectedHistoryJob(null)}
-          />
-        )}
       </div>
     </Layout>
   );
@@ -2627,13 +2701,23 @@ function SchedulingTab({
 }
 
 // ✅ Service History Tab
-function ServiceHistoryTab({ customerJobHistory, currentJobId, onViewJob }) {
-  const history = customerJobHistory.filter(job => job.id !== currentJobId);
+function ServiceHistoryTab({ vehicleJobHistory }) {
+  const history = Array.isArray(vehicleJobHistory)
+    ? vehicleJobHistory
+    : [];
+
+  const handleInvoiceOpen = (job) => {
+    if (job.invoiceAvailable && job.invoiceUrl) {
+      window.open(job.invoiceUrl, "_blank");
+    } else {
+      alert("No invoice document stored for this job yet.");
+    }
+  };
 
   return (
     <div>
       <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
-        Customer Service History
+        Service History (Same Vehicle)
       </h2>
 
       {history.length > 0 ? (
@@ -2641,62 +2725,76 @@ function ServiceHistoryTab({ customerJobHistory, currentJobId, onViewJob }) {
           {history.map((job) => (
             <div
               key={job.id}
-              onClick={() => onViewJob(job)}
+              onClick={() => handleInvoiceOpen(job)}
               style={{
                 padding: "16px",
-                backgroundColor: "#f9f9f9",
-                border: "1px solid #e0e0e0",
-                borderRadius: "8px",
-                cursor: "pointer",
+                backgroundColor: "#ffffff",
+                border: "1px solid #e5e7eb",
+                borderRadius: "10px",
+                cursor: job.invoiceAvailable ? "pointer" : "default",
                 transition: "all 0.2s"
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#f0f0f0";
+                e.currentTarget.style.backgroundColor = "#f9fafb";
                 e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#f9f9f9";
+                e.currentTarget.style.backgroundColor = "#ffffff";
                 e.currentTarget.style.boxShadow = "none";
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                 <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                   <span style={{ fontSize: "16px", fontWeight: "600", color: "#d10000" }}>
-                    Job #{job.job_number}
+                    Job #{job.jobNumber}
                   </span>
                   <span style={{
                     padding: "4px 10px",
-                    backgroundColor: "#e0e0e0",
-                    borderRadius: "12px",
+                    backgroundColor: "#f3f4f6",
+                    borderRadius: "999px",
                     fontSize: "11px",
-                    fontWeight: "600"
+                    fontWeight: "600",
+                    color: "#4b5563"
                   }}>
-                    {job.type}
-                  </span>
-                  <span style={{
-                    padding: "4px 10px",
-                    backgroundColor: 
-                      job.status === "Complete" ? "#e8f5e9" : 
-                      job.status === "Open" ? "#fff3e0" : 
-                      "#e0e0e0",
-                    color:
-                      job.status === "Complete" ? "#2e7d32" : 
-                      job.status === "Open" ? "#e65100" : 
-                      "#666",
-                    borderRadius: "12px",
-                    fontSize: "11px",
-                    fontWeight: "600"
-                  }}>
-                    {job.status}
+                    {job.serviceDateFormatted}
                   </span>
                 </div>
-                <span style={{ fontSize: "13px", color: "#666" }}>
-                  {new Date(job.created_at).toLocaleDateString()}
-                </span>
+                {job.invoiceAvailable ? (
+                  <span style={{ fontSize: "12px", color: "#10b981", fontWeight: "600" }}>
+                    Invoice Available
+                  </span>
+                ) : (
+                  <span style={{ fontSize: "12px", color: "#9ca3af", fontWeight: "600" }}>
+                    No Invoice
+                  </span>
+                )}
               </div>
-              <div style={{ fontSize: "14px", color: "#333" }}>
-                {job.vehicle_reg} • {job.vehicle_make_model}
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", fontSize: "13px", color: "#4b5563" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <strong>Mileage:</strong>
+                  <span>{job.mileage ? `${job.mileage} miles` : "Not recorded"}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <strong>Requests:</strong>
+                  <span>{job.requests.length}</span>
+                </div>
               </div>
+
+              {job.requests.length > 0 && (
+                <ul style={{ margin: "12px 0 0 0", paddingLeft: "18px", color: "#374151", fontSize: "13px" }}>
+                  {job.requests.slice(0, 3).map((req, index) => (
+                    <li key={`${job.id}-req-${index}`}>
+                      {req.text || req.description || "Request"}
+                    </li>
+                  ))}
+                  {job.requests.length > 3 && (
+                    <li style={{ listStyle: "none", color: "#6b7280" }}>
+                      +{job.requests.length - 3} more request{job.requests.length - 3 === 1 ? "" : "s"}
+                    </li>
+                  )}
+                </ul>
+              )}
             </div>
           ))}
         </div>
@@ -2709,7 +2807,7 @@ function ServiceHistoryTab({ customerJobHistory, currentJobId, onViewJob }) {
         }}>
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
           <p style={{ fontSize: "14px", color: "#666" }}>
-            No previous service history for this customer
+            No previous service history for this vehicle
           </p>
         </div>
       )}
@@ -2961,119 +3059,3 @@ function DocumentsTab({ jobData, canEdit }) {
 }
 
 // ✅ Job History Popup
-function JobHistoryPopup({ job, onClose }) {
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 9999
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          backgroundColor: "white",
-          padding: "24px",
-          borderRadius: "12px",
-          width: "600px",
-          maxWidth: "90%",
-          maxHeight: "80vh",
-          overflow: "auto",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.3)"
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-          <h3 style={{ margin: 0, fontSize: "20px", fontWeight: "600", color: "#d10000" }}>
-            Job #{job.job_number}
-          </h3>
-          <button
-            onClick={onClose}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "#6c757d",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontWeight: "600",
-              fontSize: "14px"
-            }}
-          >
-            Close
-          </button>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div>
-            <strong style={{ fontSize: "12px", color: "#666" }}>Status:</strong>
-            <div style={{ fontSize: "14px", color: "#333", marginTop: "4px" }}>
-              {job.status}
-            </div>
-          </div>
-          <div>
-            <strong style={{ fontSize: "12px", color: "#666" }}>Vehicle:</strong>
-            <div style={{ fontSize: "14px", color: "#333", marginTop: "4px" }}>
-              {job.vehicle_reg} • {job.vehicle_make_model}
-            </div>
-          </div>
-          <div>
-            <strong style={{ fontSize: "12px", color: "#666" }}>Job Type:</strong>
-            <div style={{ fontSize: "14px", color: "#333", marginTop: "4px" }}>
-              {job.type}
-            </div>
-          </div>
-          <div>
-            <strong style={{ fontSize: "12px", color: "#666" }}>Created:</strong>
-            <div style={{ fontSize: "14px", color: "#333", marginTop: "4px" }}>
-              {new Date(job.created_at).toLocaleString()}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ marginTop: "24px", display: "flex", gap: "12px" }}>
-          <button
-            onClick={() => window.open(`/job-cards/${job.job_number}`, '_blank')}
-            style={{
-              flex: 1,
-              padding: "10px 20px",
-              backgroundColor: "#ef4444",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontWeight: "600",
-              fontSize: "14px"
-            }}
-          >
-            View Full Job Card
-          </button>
-          <button
-            onClick={() => alert("Invoice viewing coming soon")}
-            style={{
-              flex: 1,
-              padding: "10px 20px",
-              backgroundColor: "#10b981",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontWeight: "600",
-              fontSize: "14px"
-            }}
-          >
-            View Invoice
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
