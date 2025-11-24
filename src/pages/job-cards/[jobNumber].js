@@ -290,6 +290,10 @@ const buildJobDataFromRow = (row, extras = {}) => {
     customer: customer.firstname || customer.lastname
       ? `${customer.firstname || ""} ${customer.lastname || ""}`.trim()
       : "",
+    customerFirstName: customer.firstname || "",
+    customerLastName: customer.lastname || "",
+    customerMobile: customer.mobile || "",
+    customerTelephone: customer.telephone || "",
     customerId: row.customer_id || customer.id || null,
     customerPhone: customer.mobile || customer.telephone || "",
     customerEmail: customer.email || "",
@@ -327,6 +331,7 @@ export default function JobCardDetailPage() {
   const [selectedHistoryJob, setSelectedHistoryJob] = useState(null);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [customerSaving, setCustomerSaving] = useState(false);
 
   // ✅ Permission Check
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
@@ -692,6 +697,63 @@ export default function JobCardDetailPage() {
   useEffect(() => {
     fetchJobData();
   }, [fetchJobData]);
+
+  const handleCustomerDetailsSave = useCallback(
+    async (updatedDetails) => {
+      if (!jobData?.customerId) {
+        alert("No customer is linked to this job card.");
+        return { success: false, error: { message: "Missing customer record" } };
+      }
+
+      setCustomerSaving(true);
+
+      try {
+        const payload = {
+          firstname: updatedDetails.firstName?.trim() || null,
+          lastname: updatedDetails.lastName?.trim() || null,
+          email: updatedDetails.email?.trim() || null,
+          mobile: updatedDetails.mobile?.trim() || null,
+          telephone: updatedDetails.telephone?.trim() || null,
+          address: updatedDetails.address?.trim() || null,
+          postcode: updatedDetails.postcode?.trim() || null,
+          contact_preference: updatedDetails.contactPreference || null
+        };
+
+        const { error: customerError } = await supabase
+          .from("customers")
+          .update(payload)
+          .eq("id", jobData.customerId);
+
+        if (customerError) {
+          throw customerError;
+        }
+
+        const updatedName = `${updatedDetails.firstName || ""} ${updatedDetails.lastName || ""}`.trim();
+
+        const { error: jobError } = await supabase
+          .from("jobs")
+          .update({
+            customer: updatedName || null
+          })
+          .eq("id", jobData.id);
+
+        if (jobError) {
+          throw jobError;
+        }
+
+        await fetchJobData({ silent: true });
+
+        return { success: true };
+      } catch (saveError) {
+        console.error("❌ Failed to update customer:", saveError);
+        alert(saveError?.message || "Failed to update customer details");
+        return { success: false, error: saveError };
+      } finally {
+        setCustomerSaving(false);
+      }
+    },
+    [jobData, fetchJobData]
+  );
 
   // ✅ Add Note Handler
   const handleAddNote = async () => {
@@ -1273,7 +1335,12 @@ export default function JobCardDetailPage() {
 
           {/* Contact Tab */}
           {activeTab === "contact" && (
-            <ContactTab jobData={jobData} canEdit={canEdit} />
+            <ContactTab
+              jobData={jobData}
+              canEdit={canEdit}
+              onSaveCustomerDetails={handleCustomerDetailsSave}
+              customerSaving={customerSaving}
+            />
           )}
 
           {/* Scheduling Tab */}
@@ -1776,7 +1843,68 @@ function CustomerRequestsTab({
 }
 
 // ✅ Contact Tab
-function ContactTab({ jobData, canEdit }) {
+function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving }) {
+  const [editing, setEditing] = useState(false);
+  const [approvalChecked, setApprovalChecked] = useState(false);
+  const [formState, setFormState] = useState({
+    firstName: jobData.customerFirstName || "",
+    lastName: jobData.customerLastName || "",
+    email: jobData.customerEmail || "",
+    mobile: jobData.customerMobile || jobData.customerPhone || "",
+    telephone: jobData.customerTelephone || "",
+    address: jobData.customerAddress || "",
+    postcode: jobData.customerPostcode || "",
+    contactPreference: jobData.customerContactPreference || "Email"
+  });
+  const [saveError, setSaveError] = useState("");
+
+  useEffect(() => {
+    if (!editing) {
+      setFormState({
+        firstName: jobData.customerFirstName || "",
+        lastName: jobData.customerLastName || "",
+        email: jobData.customerEmail || "",
+        mobile: jobData.customerMobile || jobData.customerPhone || "",
+        telephone: jobData.customerTelephone || "",
+        address: jobData.customerAddress || "",
+        postcode: jobData.customerPostcode || "",
+        contactPreference: jobData.customerContactPreference || "Email"
+      });
+      setSaveError("");
+      setApprovalChecked(false);
+    }
+  }, [jobData, editing]);
+
+  const handleFieldChange = (field, value) => {
+    setFormState((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const startEditing = () => {
+    setEditing(true);
+    setApprovalChecked(false);
+    setSaveError("");
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setApprovalChecked(false);
+  };
+
+  const handleSave = async () => {
+    if (!approvalChecked || !onSaveCustomerDetails) return;
+    setSaveError("");
+    const result = await onSaveCustomerDetails(formState);
+    if (result?.success) {
+      alert("✅ Customer details updated");
+      setEditing(false);
+      setApprovalChecked(false);
+    } else if (result?.error?.message) {
+      setSaveError(result.error.message);
+    }
+  };
+
+  const contactOptions = ["Email", "Phone", "SMS", "WhatsApp", "No Preference"];
+
   return (
     <div>
       <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
@@ -1788,108 +1916,344 @@ function ContactTab({ jobData, canEdit }) {
           <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "8px", fontWeight: "600" }}>
             CUSTOMER NAME
           </label>
-          <div style={{
-            padding: "12px",
-            backgroundColor: "#f9f9f9",
-            borderRadius: "8px",
-            fontSize: "14px",
-            color: "#333",
-            fontWeight: "500"
-          }}>
-            {jobData.customer || "N/A"}
-          </div>
+          {editing ? (
+            <div style={{ display: "flex", gap: "8px" }}>
+              <input
+                type="text"
+                placeholder="First name"
+                value={formState.firstName}
+                onChange={(e) => handleFieldChange("firstName", e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  fontSize: "14px"
+                }}
+                disabled={customerSaving}
+              />
+              <input
+                type="text"
+                placeholder="Last name"
+                value={formState.lastName}
+                onChange={(e) => handleFieldChange("lastName", e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  fontSize: "14px"
+                }}
+                disabled={customerSaving}
+              />
+            </div>
+          ) : (
+            <div style={{
+              padding: "12px",
+              backgroundColor: "#f9f9f9",
+              borderRadius: "8px",
+              fontSize: "14px",
+              color: "#333",
+              fontWeight: "500"
+            }}>
+              {jobData.customer || "N/A"}
+            </div>
+          )}
         </div>
 
         <div>
           <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "8px", fontWeight: "600" }}>
             EMAIL ADDRESS
           </label>
-          <div style={{
-            padding: "12px",
-            backgroundColor: "#f9f9f9",
-            borderRadius: "8px",
-            fontSize: "14px",
-            color: "#0066cc",
-            fontWeight: "500"
-          }}>
-            {jobData.customerEmail || "N/A"}
-          </div>
+          {editing ? (
+            <input
+              type="email"
+              value={formState.email}
+              onChange={(e) => handleFieldChange("email", e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px"
+              }}
+              disabled={customerSaving}
+            />
+          ) : (
+            <div style={{
+              padding: "12px",
+              backgroundColor: "#f9f9f9",
+              borderRadius: "8px",
+              fontSize: "14px",
+              color: "#0066cc",
+              fontWeight: "500"
+            }}>
+              {jobData.customerEmail || "N/A"}
+            </div>
+          )}
         </div>
 
         <div>
           <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "8px", fontWeight: "600" }}>
             MOBILE PHONE
           </label>
-          <div style={{
-            padding: "12px",
-            backgroundColor: "#f9f9f9",
-            borderRadius: "8px",
-            fontSize: "14px",
-            color: "#333",
-            fontWeight: "500"
-          }}>
-            {jobData.customerPhone || "N/A"}
-          </div>
+          {editing ? (
+            <input
+              type="tel"
+              value={formState.mobile}
+              onChange={(e) => handleFieldChange("mobile", e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px"
+              }}
+              disabled={customerSaving}
+            />
+          ) : (
+            <div style={{
+              padding: "12px",
+              backgroundColor: "#f9f9f9",
+              borderRadius: "8px",
+              fontSize: "14px",
+              color: "#333",
+              fontWeight: "500"
+            }}>
+              {jobData.customerMobile || jobData.customerPhone || "N/A"}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "8px", fontWeight: "600" }}>
+            LANDLINE PHONE
+          </label>
+          {editing ? (
+            <input
+              type="tel"
+              value={formState.telephone}
+              onChange={(e) => handleFieldChange("telephone", e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px"
+              }}
+              disabled={customerSaving}
+            />
+          ) : (
+            <div style={{
+              padding: "12px",
+              backgroundColor: "#f9f9f9",
+              borderRadius: "8px",
+              fontSize: "14px",
+              color: "#333",
+              fontWeight: "500"
+            }}>
+              {jobData.customerTelephone || "N/A"}
+            </div>
+          )}
         </div>
 
         <div>
           <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "8px", fontWeight: "600" }}>
             CONTACT PREFERENCE
           </label>
-          <div style={{
-            padding: "12px",
-            backgroundColor: "#f9f9f9",
-            borderRadius: "8px",
-            fontSize: "14px",
-            color: "#333",
-            fontWeight: "500"
-          }}>
-            {jobData.customerContactPreference || "Email"}
-          </div>
+          {editing ? (
+            <select
+              value={formState.contactPreference}
+              onChange={(e) => handleFieldChange("contactPreference", e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px"
+              }}
+              disabled={customerSaving}
+            >
+              {contactOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div style={{
+              padding: "12px",
+              backgroundColor: "#f9f9f9",
+              borderRadius: "8px",
+              fontSize: "14px",
+              color: "#333",
+              fontWeight: "500"
+            }}>
+              {jobData.customerContactPreference || "Email"}
+            </div>
+          )}
         </div>
 
         <div style={{ gridColumn: "1 / -1" }}>
           <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "8px", fontWeight: "600" }}>
             ADDRESS
           </label>
-          <div style={{
-            padding: "12px",
-            backgroundColor: "#f9f9f9",
-            borderRadius: "8px",
-            fontSize: "14px",
-            color: "#333",
-            fontWeight: "500"
-          }}>
-            {jobData.customerAddress || "N/A"}
-            {jobData.customerPostcode && (
-              <>
-                <br />
-                {jobData.customerPostcode}
-              </>
-            )}
-          </div>
+          {editing ? (
+            <textarea
+              value={formState.address}
+              onChange={(e) => handleFieldChange("address", e.target.value)}
+              rows={3}
+              style={{
+                width: "100%",
+                padding: "12px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px",
+                resize: "vertical"
+              }}
+              disabled={customerSaving}
+            />
+          ) : (
+            <div style={{
+              padding: "12px",
+              backgroundColor: "#f9f9f9",
+              borderRadius: "8px",
+              fontSize: "14px",
+              color: "#333",
+              fontWeight: "500"
+            }}>
+              {jobData.customerAddress || "N/A"}
+              {jobData.customerPostcode && (
+                <>
+                  <br />
+                  {jobData.customerPostcode}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "8px", fontWeight: "600" }}>
+            POSTCODE
+          </label>
+          {editing ? (
+            <input
+              type="text"
+              value={formState.postcode}
+              onChange={(e) => handleFieldChange("postcode", e.target.value.toUpperCase())}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px"
+              }}
+              disabled={customerSaving}
+            />
+          ) : (
+            <div style={{
+              padding: "12px",
+              backgroundColor: "#f9f9f9",
+              borderRadius: "8px",
+              fontSize: "14px",
+              color: "#333",
+              fontWeight: "500"
+            }}>
+              {jobData.customerPostcode || "N/A"}
+            </div>
+          )}
         </div>
       </div>
 
+      {editing && (
+        <div style={{
+          marginTop: "20px",
+          padding: "16px",
+          backgroundColor: approvalChecked ? "#ecfdf5" : "#fff7ed",
+          borderRadius: "8px",
+          border: `1px solid ${approvalChecked ? "#10b981" : "#f97316"}`
+        }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "14px", color: "#374151" }}>
+            <input
+              type="checkbox"
+              checked={approvalChecked}
+              onChange={(e) => setApprovalChecked(e.target.checked)}
+              disabled={customerSaving}
+              style={{ width: "16px", height: "16px" }}
+            />
+            Customer has approved updated details
+          </label>
+          <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "8px" }}>
+            Regulatory requirement: customer confirmation must be recorded before saving.
+          </p>
+        </div>
+      )}
+
+      {saveError && (
+        <div style={{ marginTop: "12px", padding: "10px", borderRadius: "6px", backgroundColor: "#fef2f2", color: "#b91c1c", fontSize: "13px" }}>
+          {saveError}
+        </div>
+      )}
+
       {canEdit && (
-        <div style={{ marginTop: "24px" }}>
-          <button
-            onClick={() => alert("Customer editing coming soon - will open customer profile page")}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#ef4444",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontWeight: "600",
-              fontSize: "14px"
-            }}
-          >
-            Edit Customer Details
-          </button>
-          <p style={{ fontSize: "12px", color: "#999", marginTop: "8px" }}>
-            Note: Changes to customer details must be approved by the customer
+        <div style={{ marginTop: "24px", display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
+          {editing ? (
+            <>
+              {approvalChecked && (
+                <button
+                  onClick={handleSave}
+                  disabled={customerSaving}
+                  style={{
+                    padding: "10px 20px",
+                    backgroundColor: customerSaving ? "#9ca3af" : "#10b981",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: customerSaving ? "not-allowed" : "pointer",
+                    fontWeight: "600",
+                    fontSize: "14px"
+                  }}
+                >
+                  {customerSaving ? "Saving..." : "Save"}
+                </button>
+              )}
+              <button
+                onClick={cancelEditing}
+                disabled={customerSaving}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "#6c757d",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: customerSaving ? "not-allowed" : "pointer",
+                  fontWeight: "600",
+                  fontSize: "14px"
+                }}
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={startEditing}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: "#ef4444",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontWeight: "600",
+                fontSize: "14px"
+              }}
+            >
+              Edit Customer Details
+            </button>
+          )}
+          <p style={{ fontSize: "12px", color: "#999", margin: 0 }}>
+            Note: Changes to customer records sync to appointments, job list, VHC, and messaging.
           </p>
         </div>
       )}
