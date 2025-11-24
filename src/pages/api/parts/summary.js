@@ -8,6 +8,8 @@ const fetchCount = async (query) => {
   return count || 0;
 };
 
+const OPEN_JOB_STATUSES = ["pending", "awaiting_stock", "allocated", "picked"];
+
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
@@ -18,7 +20,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    const [{ data: catalog, error: catalogError }, totalParts, partsOnOrder, pendingDeliveries, activeJobParts] = await Promise.all([
+    const [
+      { data: catalog, error: catalogError },
+      totalParts,
+      partsOnOrder,
+      pendingDeliveries,
+      activeJobParts,
+    ] = await Promise.all([
       supabase
         .from("parts_catalog")
         .select(
@@ -41,6 +49,24 @@ export default async function handler(req, res) {
     ]);
 
     if (catalogError) throw catalogError;
+
+    let jobCounts = {};
+    const partIds = (catalog || []).map((part) => part.id).filter(Boolean);
+
+    if (partIds.length > 0) {
+      const { data: jobRows, error: jobError } = await supabase
+        .from("parts_job_items")
+        .select("part_id")
+        .in("part_id", partIds)
+        .in("status", OPEN_JOB_STATUSES);
+
+      if (jobError) throw jobError;
+
+      jobCounts = (jobRows || []).reduce((acc, row) => {
+        acc[row.part_id] = (acc[row.part_id] || 0) + 1;
+        return acc;
+      }, {});
+    }
 
     const stockAlerts = (catalog || [])
       .filter((part) => Number(part.qty_in_stock || 0) <= Number(part.reorder_level || 0))
@@ -69,6 +95,7 @@ export default async function handler(req, res) {
           unitCost: Number(part.unit_cost) || 0,
           unitPrice: Number(part.unit_price) || 0,
           status,
+          openJobCount: jobCounts[part.id] || 0,
         };
       })
       .sort((a, b) => a.inStock - b.inStock);

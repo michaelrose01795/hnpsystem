@@ -116,6 +116,14 @@ function PartsPortalPage() {
       ? `£${Number(value).toFixed(2)}`
       : "£0.00";
 
+  const formatMargin = (cost, price) => {
+    const unitCost = Number(cost || 0);
+    const unitPrice = Number(price || 0);
+    const diff = unitPrice - unitCost;
+    const percent = unitPrice !== 0 ? (diff / unitPrice) * 100 : 0;
+    return `${formatCurrency(diff)} (${percent.toFixed(0)}%)`;
+  };
+
   const fetchInventory = useCallback(
     async (term = "") => {
       setInventoryLoading(true);
@@ -1092,6 +1100,9 @@ function PartsPortalPage() {
                           <div style={{ fontSize: "0.8rem", color: "#555" }}>
                             Supplier: {part.supplier || "Unknown"}
                           </div>
+                          <div style={{ fontSize: "0.8rem", color: "#555" }}>
+                            Cost {formatCurrency(part.unit_cost)} · Sell {formatCurrency(part.unit_price)} · Margin {formatMargin(part.unit_cost, part.unit_price)}
+                          </div>
                           <div style={{ marginTop: "4px" }}>
                             <span
                               style={{
@@ -1123,6 +1134,9 @@ function PartsPortalPage() {
                           <div>On hand: {part.qty_in_stock}</div>
                           <div>Reserved: {part.qty_reserved}</div>
                           <div>On order: {part.qty_on_order}</div>
+                          <div>Min level: {part.reorder_level ?? 0}</div>
+                          <div>Linked jobs: {part.open_job_count || 0}</div>
+                          <div>Status: {(part.stock_status || "in_stock").replace(/_/g, " ")}</div>
                         </td>
                         <td style={{ padding: "10px", verticalAlign: "top" }}>
                           <button

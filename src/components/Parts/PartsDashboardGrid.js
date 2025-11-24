@@ -54,6 +54,20 @@ const tableStyle = {
   borderSpacing: "0 10px",
 };
 
+const formatCurrency = (value) => {
+  const numeric = Number(value || 0);
+  if (Number.isNaN(numeric)) return "£0.00";
+  return `£${numeric.toFixed(2)}`;
+};
+
+const formatMargin = (cost, price) => {
+  const costValue = Number(cost || 0);
+  const priceValue = Number(price || 0);
+  const diff = priceValue - costValue;
+  const percent = priceValue !== 0 ? (diff / priceValue) * 100 : 0;
+  return `${formatCurrency(diff)} (${percent.toFixed(0)}%)`;
+};
+
 export default function PartsDashboardGrid({
   title,
   subtitle,
@@ -175,10 +189,13 @@ export default function PartsDashboardGrid({
                       Supplier: {alert.supplier || "—"} · Location: {alert.location || "Not set"}
                     </div>
                     <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "#a00000" }}>
-                      {statusLabel} · Stock {alert.inStock ?? 0} / Reorder {alert.reorderLevel ?? 0} · On order {alert.qtyOnOrder ?? 0}
+                      {statusLabel} · Stock {alert.inStock ?? 0} / Min {alert.reorderLevel ?? 0} · On order {alert.qtyOnOrder ?? 0}
                     </div>
                     <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "#555" }}>
-                      Cost £{Number(alert.unitCost || 0).toFixed(2)} · Sell £{Number(alert.unitPrice || 0).toFixed(2)}
+                      Cost {formatCurrency(alert.unitCost)} · Sell {formatCurrency(alert.unitPrice)} · Margin {formatMargin(alert.unitCost, alert.unitPrice)}
+                    </div>
+                    <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "#444" }}>
+                      Linked jobs: {alert.openJobCount ?? 0}
                     </div>
                   </div>
                 );

@@ -21,10 +21,18 @@ const deriveStockStatus = (part) => {
   return "in_stock";
 };
 
-const mapPartRecord = (record) => ({
+const mapPartRecord = (record, jobCounts = {}) => ({
   ...record,
   stock_status: deriveStockStatus(record),
+  open_job_count: jobCounts[record.id] || 0,
 });
+
+const OPEN_JOB_STATUSES = [
+  "pending",
+  "awaiting_stock",
+  "allocated",
+  "picked",
+];
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
@@ -67,9 +75,28 @@ export default async function handler(req, res) {
 
       if (error) throw error;
 
+      let jobCounts = {};
+      const parts = data || [];
+      const partIds = parts.map((part) => part.id).filter(Boolean);
+
+      if (partIds.length > 0) {
+        const { data: jobRows, error: jobError } = await supabase
+          .from("parts_job_items")
+          .select("part_id")
+          .in("part_id", partIds)
+          .in("status", OPEN_JOB_STATUSES);
+
+        if (jobError) throw jobError;
+
+        jobCounts = (jobRows || []).reduce((acc, row) => {
+          acc[row.part_id] = (acc[row.part_id] || 0) + 1;
+          return acc;
+        }, {});
+      }
+
       return res.status(200).json({
         success: true,
-        parts: (data || []).map(mapPartRecord),
+        parts: parts.map((row) => mapPartRecord(row, jobCounts)),
         count: count || 0,
       });
     } catch (error) {

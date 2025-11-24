@@ -47,7 +47,15 @@ const workloadStatusStyles = {
 const formatCurrency = (value) => {
   const numeric = Number(value || 0);
   if (Number.isNaN(numeric)) return "£0";
-  return `£${numeric.toFixed(0)}`;
+  return `£${numeric.toFixed(2)}`;
+};
+
+const formatMarginValue = (cost, price) => {
+  const unitCost = Number(cost || 0);
+  const unitPrice = Number(price || 0);
+  const diff = unitPrice - unitCost;
+  const percent = unitPrice !== 0 ? (diff / unitPrice) * 100 : 0;
+  return `${formatCurrency(diff)} (${percent.toFixed(0)}%)`;
 };
 
 const buildWorkloadRows = (items = []) =>
@@ -88,7 +96,7 @@ const buildTeamBuckets = (items = []) => {
 const buildFocusItems = (alerts = []) =>
   alerts.slice(0, 3).map((alert) => ({
     title: `${alert.partNumber || ""} ${alert.name || ""}`.trim(),
-    detail: `Stock ${alert.inStock}/${alert.reorderLevel} · On order ${alert.qtyOnOrder}`,
+    detail: `Stock ${alert.inStock}/${alert.reorderLevel} · On order ${alert.qtyOnOrder} · Jobs ${alert.openJobCount || 0}`,
     owner: alert.supplier ? `Supplier: ${alert.supplier}` : "",
   }));
 
@@ -207,6 +215,10 @@ export default function PartsManagerDashboard() {
     dashboardData.workload,
   ]);
 
+  const lowStockRows = useMemo(() => dashboardData.inventoryAlerts || [], [
+    dashboardData.inventoryAlerts,
+  ]);
+
   if (!isManager) {
     return (
       <Layout>
@@ -311,6 +323,48 @@ export default function PartsManagerDashboard() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            <div style={sectionCardStyle}>
+              <div style={sectionTitleStyle}>Low Stock Parts Overview</div>
+              {lowStockRows.length === 0 ? (
+                <div style={{ color: "#666" }}>No low stock parts currently.</div>
+              ) : (
+                <table style={performanceTableStyle}>
+                  <thead>
+                    <tr style={{ textAlign: "left", color: "#777", fontSize: "0.85rem" }}>
+                      <th style={{ paddingBottom: "10px" }}>Part</th>
+                      <th style={{ paddingBottom: "10px" }}>Supplier</th>
+                      <th style={{ paddingBottom: "10px" }}>Cost</th>
+                      <th style={{ paddingBottom: "10px" }}>Sell</th>
+                      <th style={{ paddingBottom: "10px" }}>Margin</th>
+                      <th style={{ paddingBottom: "10px" }}>Stock</th>
+                      <th style={{ paddingBottom: "10px" }}>Min</th>
+                      <th style={{ paddingBottom: "10px" }}>Status</th>
+                      <th style={{ paddingBottom: "10px", textAlign: "right" }}>Linked Jobs</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lowStockRows.map((part) => (
+                      <tr key={part.id} style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+                        <td style={{ padding: "12px 0" }}>
+                          <div style={{ fontWeight: 600 }}>
+                            {part.partNumber} · {part.name}
+                          </div>
+                        </td>
+                        <td style={{ padding: "12px 0" }}>{part.supplier || "—"}</td>
+                        <td style={{ padding: "12px 0" }}>{formatCurrency(part.unitCost)}</td>
+                        <td style={{ padding: "12px 0" }}>{formatCurrency(part.unitPrice)}</td>
+                        <td style={{ padding: "12px 0" }}>{formatMarginValue(part.unitCost, part.unitPrice)}</td>
+                        <td style={{ padding: "12px 0" }}>{part.inStock}</td>
+                        <td style={{ padding: "12px 0" }}>{part.reorderLevel}</td>
+                        <td style={{ padding: "12px 0" }}>{(part.status || "in stock").replace(/_/g, " ")}</td>
+                        <td style={{ padding: "12px 0", textAlign: "right" }}>{part.openJobCount || 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </>

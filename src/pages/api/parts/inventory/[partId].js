@@ -10,6 +10,24 @@ const parseNumeric = (value, fallback = 0) => {
   return Number.isNaN(parsed) ? fallback : parsed;
 };
 
+const OPEN_JOB_STATUSES = ["pending", "awaiting_stock", "allocated", "picked"];
+
+const withJobCount = async (part) => {
+  if (!part?.id) return part;
+  const { data: jobRows, error } = await supabase
+    .from("parts_job_items")
+    .select("part_id")
+    .eq("part_id", part.id)
+    .in("status", OPEN_JOB_STATUSES);
+
+  if (error) throw error;
+
+  return {
+    ...part,
+    open_job_count: (jobRows || []).length,
+  };
+};
+
 export default async function handler(req, res) {
   const { partId } = req.query;
 
@@ -36,9 +54,11 @@ export default async function handler(req, res) {
         });
       }
 
+      const payload = await withJobCount(data);
+
       return res.status(200).json({
         success: true,
-        part: data,
+        part: payload,
       });
     }
 
@@ -85,9 +105,11 @@ export default async function handler(req, res) {
 
       if (error) throw error;
 
+      const updatedWithCount = await withJobCount(data);
+
       return res.status(200).json({
         success: true,
-        part: data,
+        part: updatedWithCount,
       });
     }
 
