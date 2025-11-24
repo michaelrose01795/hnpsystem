@@ -214,7 +214,7 @@ export const sidebarSections = [
       },
       {
         label: "🚚 Parts Deliveries",
-        href: "/parts#deliveries",
+        href: "/parts/deliveries",
         roles: ["parts"],
       },
       {
@@ -245,7 +245,7 @@ export const sidebarSections = [
       },
       {
         label: "🚚 Parts Deliveries",
-        href: "/parts#deliveries",
+        href: "/parts/deliveries",
         roles: ["parts manager"],
       },
       {

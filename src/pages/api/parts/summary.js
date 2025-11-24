@@ -19,6 +19,42 @@ const OPEN_JOB_STATUSES = [
   "picked",
 ];
 
+const chunkArray = (array = [], size = 200) => {
+  if (!Array.isArray(array) || array.length === 0) return [];
+  const chunks = [];
+  for (let index = 0; index < array.length; index += size) {
+    chunks.push(array.slice(index, index + size));
+  }
+  return chunks;
+};
+
+const fetchJobCountsForParts = async (partIds = []) => {
+  if (!Array.isArray(partIds) || partIds.length === 0) {
+    return {};
+  }
+
+  const chunks = chunkArray(partIds, 200);
+  const results = await Promise.all(
+    chunks.map((chunk) =>
+      supabase
+        .from("parts_job_items")
+        .select("part_id")
+        .in("part_id", chunk)
+        .in("status", OPEN_JOB_STATUSES)
+    )
+  );
+
+  return results.reduce((acc, result) => {
+    if (result.error) {
+      throw result.error;
+    }
+    (result.data || []).forEach((row) => {
+      acc[row.part_id] = (acc[row.part_id] || 0) + 1;
+    });
+    return acc;
+  }, {});
+};
+
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
@@ -59,23 +95,8 @@ export default async function handler(req, res) {
 
     if (catalogError) throw catalogError;
 
-    let jobCounts = {};
     const partIds = (catalog || []).map((part) => part.id).filter(Boolean);
-
-    if (partIds.length > 0) {
-      const { data: jobRows, error: jobError } = await supabase
-        .from("parts_job_items")
-        .select("part_id")
-        .in("part_id", partIds)
-        .in("status", OPEN_JOB_STATUSES);
-
-      if (jobError) throw jobError;
-
-      jobCounts = (jobRows || []).reduce((acc, row) => {
-        acc[row.part_id] = (acc[row.part_id] || 0) + 1;
-        return acc;
-      }, {});
-    }
+    const jobCounts = await fetchJobCountsForParts(partIds);
 
     const stockAlerts = (catalog || [])
       .filter((part) => Number(part.qty_in_stock || 0) <= Number(part.reorder_level || 0))
