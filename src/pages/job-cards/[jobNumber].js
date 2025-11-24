@@ -332,6 +332,8 @@ export default function JobCardDetailPage() {
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [customerSaving, setCustomerSaving] = useState(false);
+  const [waitingStatusSaving, setWaitingStatusSaving] = useState(false);
+  const [appointmentSaving, setAppointmentSaving] = useState(false);
 
   // ✅ Permission Check
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
@@ -753,6 +755,102 @@ export default function JobCardDetailPage() {
       }
     },
     [jobData, fetchJobData]
+  );
+
+  const handleWaitingStatusChange = useCallback(
+    async (nextStatus) => {
+      if (!canEdit || !jobData?.id) return { success: false };
+
+      setWaitingStatusSaving(true);
+
+      try {
+        const result = await updateJob(jobData.id, {
+          waiting_status: nextStatus
+        });
+
+        if (result.success) {
+          setJobData((prev) =>
+            prev ? { ...prev, waitingStatus: nextStatus } : prev
+          );
+          return { success: true };
+        }
+
+        alert(result?.error?.message || "Failed to update customer status");
+        return { success: false, error: result?.error };
+      } catch (statusError) {
+        console.error("❌ Failed to update waiting status:", statusError);
+        alert(statusError?.message || "Failed to update customer status");
+        return { success: false, error: statusError };
+      } finally {
+        setWaitingStatusSaving(false);
+      }
+    },
+    [canEdit, jobData]
+  );
+
+  const handleAppointmentSave = useCallback(
+    async (appointmentDetails) => {
+      if (!canEdit || !jobData?.id) return { success: false };
+
+      if (!appointmentDetails.date || !appointmentDetails.time) {
+        alert("Please provide both date and time.");
+        return { success: false };
+      }
+
+      setAppointmentSaving(true);
+
+      try {
+        const scheduledTime = new Date(
+          `${appointmentDetails.date}T${appointmentDetails.time}`
+        );
+
+        if (Number.isNaN(scheduledTime.getTime())) {
+          throw new Error("Invalid appointment date or time");
+        }
+
+        const payload = {
+          scheduled_time: scheduledTime.toISOString(),
+          status: appointmentDetails.status || "booked",
+          notes: appointmentDetails.notes || null,
+          updated_at: new Date().toISOString()
+        };
+
+        if (jobData.appointment?.appointmentId) {
+          const { error } = await supabase
+            .from("appointments")
+            .update(payload)
+            .eq("appointment_id", jobData.appointment.appointmentId);
+
+          if (error) {
+            throw error;
+          }
+        } else {
+          const insertPayload = {
+            ...payload,
+            job_id: jobData.id,
+            customer_id: jobData.customerId || null
+          };
+
+          const { error } = await supabase
+            .from("appointments")
+            .insert([insertPayload]);
+
+          if (error) {
+            throw error;
+          }
+        }
+
+        await fetchJobData({ silent: true });
+        return { success: true };
+      } catch (appointmentError) {
+        console.error("❌ Failed to update appointment:", appointmentError);
+        alert(appointmentError?.message || "Failed to update appointment");
+        return { success: false, error: appointmentError };
+      } finally {
+        setAppointmentSaving(false);
+      }
+    },
+    [canEdit, jobData, fetchJobData]
   );
 
   // ✅ Add Note Handler
@@ -1345,7 +1443,14 @@ export default function JobCardDetailPage() {
 
           {/* Scheduling Tab */}
           {activeTab === "scheduling" && (
-            <SchedulingTab jobData={jobData} canEdit={canEdit} />
+            <SchedulingTab
+              jobData={jobData}
+              canEdit={canEdit}
+              onWaitingStatusChange={handleWaitingStatusChange}
+              waitingStatusSaving={waitingStatusSaving}
+              onAppointmentSave={handleAppointmentSave}
+              appointmentSaving={appointmentSaving}
+            />
           )}
 
           {/* Service History Tab */}
@@ -2262,132 +2367,259 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
 }
 
 // ✅ Scheduling Tab
-function SchedulingTab({ jobData, canEdit }) {
+function SchedulingTab({
+  jobData,
+  canEdit,
+  onWaitingStatusChange = () => {},
+  waitingStatusSaving = false,
+  onAppointmentSave = () => {},
+  appointmentSaving = false
+}) {
+  const router = useRouter();
+  const waitingOptions = ["Waiting", "Loan Car", "Collection", "Neither"];
+  const [appointmentForm, setAppointmentForm] = useState({
+    date: jobData.appointment?.date || "",
+    time: jobData.appointment?.time || "",
+    status: jobData.appointment?.status || "booked",
+    notes: jobData.appointment?.notes || ""
+  });
+  const [appointmentDirty, setAppointmentDirty] = useState(false);
+  const [appointmentMessage, setAppointmentMessage] = useState("");
+
+  useEffect(() => {
+    setAppointmentForm({
+      date: jobData.appointment?.date || "",
+      time: jobData.appointment?.time || "",
+      status: jobData.appointment?.status || "booked",
+      notes: jobData.appointment?.notes || ""
+    });
+    setAppointmentDirty(false);
+    setAppointmentMessage("");
+  }, [jobData.appointment]);
+
+  const handleWaitingSelect = async (value) => {
+    if (!canEdit || value === jobData.waitingStatus) return;
+    await onWaitingStatusChange(value);
+  };
+
+  const handleAppointmentFieldChange = (field, value) => {
+    setAppointmentForm((prev) => {
+      const next = { ...prev, [field]: value };
+      return next;
+    });
+    setAppointmentDirty(true);
+    setAppointmentMessage("");
+  };
+
+  const handleAppointmentSubmit = async () => {
+    if (!appointmentDirty || !canEdit) return;
+    const result = await onAppointmentSave(appointmentForm);
+    if (result?.success) {
+      setAppointmentDirty(false);
+      setAppointmentMessage("Appointment saved");
+      setTimeout(() => setAppointmentMessage(""), 3000);
+    }
+  };
+
+  const appointmentCreatedAt = jobData.appointment?.createdAt
+    ? new Date(jobData.appointment.createdAt).toLocaleString()
+    : "Not created yet";
+
   return (
     <div>
       <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
         Scheduling Information
       </h2>
 
-      {/* Appointment Info */}
-      {jobData.appointment ? (
-        <div style={{
-          padding: "20px",
-          backgroundColor: "#e8f5e9",
-          borderLeft: "4px solid #4caf50",
-          borderRadius: "8px",
-          marginBottom: "24px"
-        }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: "16px", fontWeight: "600", color: "#2e7d32" }}>
-            Appointment Scheduled
-          </h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-            <div>
-              <strong style={{ fontSize: "12px", color: "#666" }}>Date:</strong>
-              <div style={{ fontSize: "16px", fontWeight: "600", color: "#333" }}>
-                {jobData.appointment.date}
-              </div>
-            </div>
-            <div>
-              <strong style={{ fontSize: "12px", color: "#666" }}>Time:</strong>
-              <div style={{ fontSize: "16px", fontWeight: "600", color: "#333" }}>
-                {jobData.appointment.time}
-              </div>
-            </div>
-            {jobData.appointment.notes && (
-              <div style={{ gridColumn: "1 / -1" }}>
-                <strong style={{ fontSize: "12px", color: "#666" }}>Notes:</strong>
-                <div style={{ fontSize: "14px", color: "#333", marginTop: "4px" }}>
-                  {jobData.appointment.notes}
-                </div>
-              </div>
-            )}
+      <div style={{
+        padding: "20px",
+        backgroundColor: "white",
+        borderRadius: "12px",
+        border: "1px solid #e5e7eb",
+        marginBottom: "24px",
+        boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "#111827" }}>Customer Status</h3>
+            <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: "13px" }}>
+              Waiting area vs loan car vs collection requirements
+            </p>
+          </div>
+          {waitingStatusSaving && (
+            <span style={{ fontSize: "12px", color: "#9ca3af" }}>Updating...</span>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          {waitingOptions.map((option) => {
+            const isActive = jobData.waitingStatus === option || (!jobData.waitingStatus && option === "Neither");
+            return (
+              <button
+                key={option}
+                onClick={() => handleWaitingSelect(option)}
+                disabled={!canEdit || waitingStatusSaving}
+                style={{
+                  flex: "1 1 180px",
+                  minWidth: "140px",
+                  padding: "12px 16px",
+                  borderRadius: "10px",
+                  border: `2px solid ${isActive ? "#d10000" : "#e5e7eb"}`,
+                  backgroundColor: isActive ? "rgba(209,0,0,0.08)" : "white",
+                  color: isActive ? "#b91c1c" : "#374151",
+                  fontWeight: "600",
+                  cursor: canEdit ? "pointer" : "default",
+                  transition: "all 0.2s"
+                }}
+              >
+                {option}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{
+        padding: "20px",
+        backgroundColor: "white",
+        borderRadius: "12px",
+        border: "1px solid #e5e7eb",
+        marginBottom: "24px",
+        boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "#111827" }}>
+              Appointment Information
+            </h3>
+            <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: "13px" }}>
+              Adjust booking times directly from the job card
+            </p>
+          </div>
+          <button
+            onClick={() => router.push(`/appointments?job=${jobData.jobNumber}`)}
+            style={{
+              padding: "8px 14px",
+              borderRadius: "8px",
+              border: "1px solid #d1d5db",
+              backgroundColor: "#f9fafb",
+              color: "#111827",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer"
+            }}
+          >
+            Open Appointment Calendar
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "16px" }}>
+          <div>
+            <label style={{ fontSize: "12px", fontWeight: "600", color: "#6b7280", display: "block", marginBottom: "6px" }}>
+              Date
+            </label>
+            <input
+              type="date"
+              value={appointmentForm.date}
+              onChange={(e) => handleAppointmentFieldChange("date", e.target.value)}
+              disabled={!canEdit || appointmentSaving}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px"
+              }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: "12px", fontWeight: "600", color: "#6b7280", display: "block", marginBottom: "6px" }}>
+              Time
+            </label>
+            <input
+              type="time"
+              value={appointmentForm.time}
+              onChange={(e) => handleAppointmentFieldChange("time", e.target.value)}
+              disabled={!canEdit || appointmentSaving}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px"
+              }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: "12px", fontWeight: "600", color: "#6b7280", display: "block", marginBottom: "6px" }}>
+              Status
+            </label>
+            <select
+              value={appointmentForm.status}
+              onChange={(e) => handleAppointmentFieldChange("status", e.target.value)}
+              disabled={!canEdit || appointmentSaving}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px"
+              }}
+            >
+              <option value="booked">Booked</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="checked_in">Checked In</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
           </div>
         </div>
-      ) : (
-        <div style={{
-          padding: "20px",
-          backgroundColor: "#fff3e0",
-          borderLeft: "4px solid #ff9800",
-          borderRadius: "8px",
-          marginBottom: "24px"
-        }}>
-          <p style={{ margin: 0, fontSize: "14px", color: "#e65100", fontWeight: "500" }}>
-            No appointment scheduled yet
-          </p>
-        </div>
-      )}
 
-      {/* Waiting Status */}
-      <div style={{ marginBottom: "24px" }}>
-        <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "8px", fontWeight: "600" }}>
-          WAITING STATUS
-        </label>
-        <div style={{
-          padding: "12px 16px",
-          backgroundColor: 
-            jobData.waitingStatus === "Waiting" ? "#ffebee" :
-            jobData.waitingStatus === "Loan Car" ? "#e3f2fd" :
-            jobData.waitingStatus === "Collection" ? "#e8f5e9" :
-            "#f9f9f9",
-          borderRadius: "8px",
-          fontSize: "14px",
-          fontWeight: "600",
-          color:
-            jobData.waitingStatus === "Waiting" ? "#c62828" :
-            jobData.waitingStatus === "Loan Car" ? "#1565c0" :
-            jobData.waitingStatus === "Collection" ? "#2e7d32" :
-            "#666"
-        }}>
-          {jobData.waitingStatus || "Neither"}
+        <div style={{ marginTop: "16px" }}>
+          <label style={{ fontSize: "12px", fontWeight: "600", color: "#6b7280", display: "block", marginBottom: "6px" }}>
+            Notes
+          </label>
+          <textarea
+            value={appointmentForm.notes}
+            onChange={(e) => handleAppointmentFieldChange("notes", e.target.value)}
+            rows={3}
+            disabled={!canEdit || appointmentSaving}
+            style={{
+              width: "100%",
+              padding: "12px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              fontSize: "14px",
+              resize: "vertical"
+            }}
+          />
         </div>
-      </div>
 
-      {/* Courtesy Car Section */}
-      <div style={{ marginBottom: "24px" }}>
-        <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "600", color: "#333" }}>
-          Courtesy Car
-        </h3>
-        <div style={{
-          padding: "16px",
-          backgroundColor: "#f9f9f9",
-          borderRadius: "8px",
-          textAlign: "center",
-          color: "#999"
-        }}>
-          Courtesy car management coming soon
+        <div style={{ marginTop: "16px", display: "flex", alignItems: "center", gap: "12px" }}>
+          {canEdit && (
+            <button
+              onClick={handleAppointmentSubmit}
+              disabled={!appointmentDirty || appointmentSaving}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: appointmentDirty ? "#10b981" : "#9ca3af",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                fontWeight: "600",
+                fontSize: "14px",
+                cursor: appointmentDirty && !appointmentSaving ? "pointer" : "not-allowed"
+              }}
+            >
+              {appointmentSaving ? "Saving..." : jobData.appointment ? "Update Appointment" : "Schedule Appointment"}
+            </button>
+          )}
+          {appointmentMessage && (
+            <span style={{ fontSize: "13px", color: "#16a34a" }}>{appointmentMessage}</span>
+          )}
         </div>
-      </div>
 
-      {/* Collection Details */}
-      <div style={{ marginBottom: "24px" }}>
-        <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "600", color: "#333" }}>
-          Collection Details
-        </h3>
-        <div style={{
-          padding: "16px",
-          backgroundColor: "#f9f9f9",
-          borderRadius: "8px",
-          textAlign: "center",
-          color: "#999"
-        }}>
-          Collection management coming soon
-        </div>
-      </div>
-
-      {/* Return Details */}
-      <div>
-        <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "600", color: "#333" }}>
-          Return Details
-        </h3>
-        <div style={{
-          padding: "16px",
-          backgroundColor: "#f9f9f9",
-          borderRadius: "8px",
-          textAlign: "center",
-          color: "#999"
-        }}>
-          Return management coming soon
+        <div style={{ marginTop: "20px", padding: "12px", backgroundColor: "#f9fafb", borderRadius: "8px", fontSize: "13px", color: "#4b5563" }}>
+          Appointment created: <strong>{appointmentCreatedAt}</strong>
         </div>
       </div>
     </div>
