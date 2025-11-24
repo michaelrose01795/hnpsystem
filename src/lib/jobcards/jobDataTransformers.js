@@ -9,7 +9,8 @@ const normalizeRequests = (rawRequests) => {
     try {
       const parsed = JSON.parse(rawRequests);
       return Array.isArray(parsed) ? parsed : [];
-    } catch (_err) {
+    } catch (parseError) {
+      console.warn("Unable to parse requests string into array:", parseError);
       return [];
     }
   }
