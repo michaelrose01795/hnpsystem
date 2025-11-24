@@ -46,16 +46,32 @@ const mapCustomerJobsToHistory = (jobs = [], vehicleReg = "") => {
           })
         : "Unknown";
 
+      const requests =
+        Array.isArray(job.job_requests) && job.job_requests.length
+          ? job.job_requests.map((req) => ({
+              requestId: req.request_id,
+              text: req.description || "",
+              time: req.hours ?? "",
+              paymentType: req.job_type || "Customer"
+            }))
+          : normalizeRequests(job.requests);
+
+      const invoiceFile = (job.job_files || []).find((file) => {
+        const type = (file.file_type || "").toLowerCase();
+        const folder = (file.folder || "").toLowerCase();
+        return type.includes("invoice") || folder.includes("invoice");
+      });
+
       return {
         id: job.id,
         jobNumber: job.job_number || job.jobNumber,
         serviceDate: requestedAt,
         serviceDateFormatted,
         mileage: job.mileage_at_service ?? job.mileageAtService ?? null,
-        requests: normalizeRequests(job.requests),
-        invoiceUrl: "",
-        invoiceName: "",
-        invoiceAvailable: false
+        requests,
+        invoiceUrl: invoiceFile?.file_url || "",
+        invoiceName: invoiceFile?.file_name || "",
+        invoiceAvailable: Boolean(invoiceFile)
       };
     });
 };

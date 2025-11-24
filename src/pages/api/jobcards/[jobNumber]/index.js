@@ -2,7 +2,7 @@
 import { getJobByNumber } from "@/lib/database/jobs";
 import { getNotesByJob } from "@/lib/database/notes";
 import { getCustomerJobs } from "@/lib/database/customers";
-import { mapCustomerJobsToHistory } from "@/lib/jobcards/utils";
+import { mapCustomerJobsToHistory, normalizeRequests } from "@/lib/jobcards/utils";
 
 export default async function handler(req, res) {
   const { jobNumber } = req.query;
@@ -30,13 +30,11 @@ export default async function handler(req, res) {
     const jobCard = data.jobCard;
     const notes = jobCard.id ? await getNotesByJob(jobCard.id) : [];
     const sharedNote = notes[0] || null;
-    const customerJobs = jobCard.customerId
-      ? await getCustomerJobs(jobCard.customerId)
-      : [];
-    const vehicleJobHistory = mapCustomerJobsToHistory(
-      customerJobs,
-      jobCard.reg
-    );
+    let vehicleJobHistory = [];
+    if (jobCard.customerId) {
+      const customerJobs = await getCustomerJobs(jobCard.customerId);
+      vehicleJobHistory = mapCustomerJobsToHistory(customerJobs, jobCard.reg);
+    }
 
     return res.status(200).json({
       job: jobCard,

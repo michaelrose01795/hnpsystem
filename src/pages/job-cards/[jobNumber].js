@@ -2,12 +2,12 @@
 // file location: src/pages/job-cards/[jobNumber].js
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
-import { getJobByNumber, updateJob } from "@/lib/database/jobs";
+import { getJobByNumber, updateJob, addJobFile, deleteJobFile } from "@/lib/database/jobs";
 import {
   getNotesByJob,
   createJobNote,
@@ -45,6 +45,51 @@ const deriveVhcSeverity = (check = {}) => {
 
 const resolveVhcSeverity = (check = {}) => deriveVhcSeverity(check) || "grey";
 
+const sanitizeFileName = (value = "") => {
+  const trimmed = value || "";
+  const safe = trimmed.replace(/[^a-z0-9._-]/gi, "_");
+  return safe || `document-${Date.now()}`;
+};
+
+const mapJobFileRecord = (record = {}) => ({
+  id: record.file_id ?? record.id ?? null,
+  name: record.file_name || record.name || "Document",
+  url: record.file_url || record.url || "",
+  type: record.file_type || record.type || "",
+  folder: (record.folder || "general").toLowerCase(),
+  uploadedBy: record.uploaded_by || record.uploadedBy || null,
+  uploadedAt: record.uploaded_at || record.uploadedAt || null
+});
+
+const deriveStoragePathFromUrl = (url = "") => {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    const marker = "/job-documents/";
+    const idx = parsed.pathname.indexOf(marker);
+    if (idx >= 0) {
+      return decodeURIComponent(parsed.pathname.substring(idx + marker.length));
+    }
+    const storageIdx = parsed.pathname.indexOf("/storage/v1/object/public/");
+    if (storageIdx >= 0) {
+      const segment = parsed.pathname.substring(storageIdx + "/storage/v1/object/public/".length);
+      if (segment.startsWith("job-documents/")) {
+        return decodeURIComponent(segment.substring("job-documents/".length));
+      }
+    }
+  } catch (_err) {
+    // fallback to string parsing
+  }
+  const fallbackMarker = "/job-documents/";
+  const fallbackIdx = url.indexOf(fallbackMarker);
+  if (fallbackIdx >= 0) {
+    return decodeURIComponent(url.substring(fallbackIdx + fallbackMarker.length));
+  }
+  return null;
+};
+
+const JOB_DOCUMENT_BUCKET = "job-documents";
+
 // ✅ Ensure shared note formatting matches write-up bullet styling
 const formatNoteValue = (value = "") => {
   if (!value) return "";
@@ -80,6 +125,8 @@ export default function JobCardDetailPage() {
   const [customerSaving, setCustomerSaving] = useState(false);
   const [waitingStatusSaving, setWaitingStatusSaving] = useState(false);
   const [appointmentSaving, setAppointmentSaving] = useState(false);
+  const [jobDocuments, setJobDocuments] = useState([]);
+  const [documentUploading, setDocumentUploading] = useState(false);
 
   // ✅ Permission Check
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
@@ -87,6 +134,13 @@ export default function JobCardDetailPage() {
     "service",
     "service manager",
     "workshop manager",
+    "admin",
+    "admin manager"
+  ].some((role) => userRoles.includes(role));
+  const canManageDocuments = [
+    "service manager",
+    "workshop manager",
+    "after-sales manager",
     "admin",
     "admin manager"
   ].some((role) => userRoles.includes(role));
@@ -131,7 +185,10 @@ export default function JobCardDetailPage() {
         }
 
         const jobCard = data.jobCard;
-        setJobData(jobCard);
+        const mappedFiles = (jobCard.files || []).map(mapJobFileRecord);
+        const hydratedJobCard = { ...jobCard, files: mappedFiles };
+        setJobData(hydratedJobCard);
+        setJobDocuments(mappedFiles);
         setIsEditingDescription(false);
         setDescriptionDraft(formatNoteValue(jobCard?.description || ""));
 
@@ -162,6 +219,13 @@ export default function JobCardDetailPage() {
   useEffect(() => {
     fetchJobData();
   }, [fetchJobData]);
+
+  useEffect(() => {
+    if (jobData?.files) {
+      const mapped = (jobData.files || []).map(mapJobFileRecord);
+      setJobDocuments(mapped);
+    }
+  }, [jobData?.files]);
 
   useEffect(() => {
     if (!jobData?.id) return;
@@ -346,6 +410,112 @@ export default function JobCardDetailPage() {
       }
     },
     [canEdit, jobData, fetchJobData]
+  );
+
+  const handleDocumentUpload = useCallback(
+    async (fileList, categoryId = "general") => {
+      if (!jobData?.id) {
+        alert("Save the job before uploading documents.");
+        return;
+      }
+
+      const files = Array.from(fileList || []);
+      if (files.length === 0) return;
+
+      setDocumentUploading(true);
+      const folderKey = categoryId || "general";
+
+      try {
+        for (const file of files) {
+          const safeName = sanitizeFileName(file.name || `document-${Date.now()}`);
+          const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+          const ext = safeName.includes(".") ? safeName.split(".").pop() : "bin";
+          const objectPath = `jobs/${jobData.id}/${folderKey}/${uniqueSuffix}.${ext}`;
+
+          const { error: storageError } = await supabase.storage
+            .from(JOB_DOCUMENT_BUCKET)
+            .upload(objectPath, file, {
+              cacheControl: "3600",
+              upsert: false,
+              contentType: file.type || "application/octet-stream"
+            });
+
+          if (storageError) {
+            throw storageError;
+          }
+
+          const { data: publicUrlData } = supabase.storage
+            .from(JOB_DOCUMENT_BUCKET)
+            .getPublicUrl(objectPath);
+
+          const publicUrl = publicUrlData?.publicUrl;
+
+          const response = await addJobFile(
+            jobData.id,
+            safeName,
+            publicUrl,
+            file.type || "application/octet-stream",
+            folderKey,
+            user?.user_id || null
+          );
+
+          if (response?.success && response.data) {
+            const mapped = mapJobFileRecord(response.data);
+            setJobDocuments((prev) => [mapped, ...prev]);
+            setJobData((prev) =>
+              prev ? { ...prev, files: [mapped, ...(prev.files || [])] } : prev
+            );
+          } else if (response?.error) {
+            throw new Error(response.error.message || "Failed to save file metadata");
+          }
+        }
+
+        alert("✅ Files uploaded successfully");
+      } catch (uploadError) {
+        console.error("❌ Failed to upload documents:", uploadError);
+        alert(uploadError?.message || "Failed to upload documents");
+      } finally {
+        setDocumentUploading(false);
+      }
+    },
+    [jobData?.id, user?.user_id]
+  );
+
+  const handleDeleteDocument = useCallback(
+    async (file) => {
+      if (!canManageDocuments || !file?.id) return;
+      const confirmDelete = confirm(`Delete ${file.name || "this file"}?`);
+      if (!confirmDelete) return;
+
+      try {
+        const storagePath = deriveStoragePathFromUrl(file.url);
+        if (storagePath) {
+          const { error: removeError } = await supabase.storage
+            .from(JOB_DOCUMENT_BUCKET)
+            .remove([storagePath]);
+          if (removeError) {
+            console.warn("⚠️ Failed to remove file from storage:", removeError);
+          }
+        }
+
+        const result = await deleteJobFile(file.id);
+        if (!result?.success) {
+          alert(result?.error?.message || "Failed to delete document");
+          return;
+        }
+
+        setJobDocuments((prev) => prev.filter((doc) => doc.id !== file.id));
+        setJobData((prev) =>
+          prev
+            ? { ...prev, files: (prev.files || []).filter((doc) => doc.id !== file.id) }
+            : prev
+        );
+      } catch (deleteError) {
+        console.error("❌ Failed to delete document:", deleteError);
+        alert(deleteError?.message || "Failed to delete document");
+      }
+    },
+    [canManageDocuments]
   );
 
   const saveSharedNote = useCallback(
@@ -1023,7 +1193,14 @@ export default function JobCardDetailPage() {
 
           {/* Documents Tab */}
           {activeTab === "documents" && (
-            <DocumentsTab jobData={jobData} canEdit={canEdit} />
+            <DocumentsTab
+              documents={jobDocuments}
+              canUpload={canEdit}
+              uploading={documentUploading}
+              onUpload={handleDocumentUpload}
+              canDelete={canManageDocuments}
+              onDelete={handleDeleteDocument}
+            />
           )}
         </div>
 
@@ -3079,28 +3256,413 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
   );
 }
 
-// ✅ Documents Tab (TODO)
-function DocumentsTab({ jobData, canEdit }) {
+const DOCUMENT_CATEGORY_CONFIG = [
+  {
+    id: "check-sheets",
+    label: "Check-Sheets",
+    description: "Technician check sheets, inspection reports, and paper service checklists.",
+    icon: "📋",
+    accent: "#fb923c",
+    hints: ["check", "sheet", "inspection", "checklist"],
+    emptyState: "No check-sheets have been uploaded yet."
+  },
+  {
+    id: "vhc",
+    label: "VHC Reports",
+    description: "Exports from the Vehicle Health Check system and annotated VHC PDFs.",
+    icon: "🩺",
+    accent: "#f87171",
+    hints: ["vhc", "health", "traffic", "vhcreport", "vhc-report", "vhc_report"],
+    emptyState: "No VHC reports have been uploaded for this job."
+  },
+  {
+    id: "vehicle",
+    label: "Vehicle Documents",
+    description: "V5, warranty packs, loan agreements, and other vehicle-specific paperwork.",
+    icon: "🚗",
+    accent: "#38bdf8",
+    hints: ["vehicle", "v5", "logbook", "warranty", "vehicle-doc", "vehicledoc"],
+    emptyState: "No vehicle documents are stored yet."
+  },
+  {
+    id: "customer",
+    label: "Customer Uploads",
+    description: "Documents or photos supplied by the customer (portal or email).",
+    icon: "👤",
+    accent: "#34d399",
+    hints: ["customer", "client", "cust", "customer-upload", "customer_upload"],
+    emptyState: "No customer uploads have been linked yet."
+  },
+  {
+    id: "service",
+    label: "Service Forms",
+    description: "Signed invoices, service authorisations, and mandatory service paperwork.",
+    icon: "🧾",
+    accent: "#c084fc",
+    hints: ["service", "form", "authorisation", "authorization", "service-form"],
+    emptyState: "No service forms have been uploaded yet."
+  },
+  {
+    id: "general",
+    label: "General Attachments",
+    description: "Any other supporting photos, notes, or files.",
+    icon: "📎",
+    accent: "#94a3b8",
+    hints: [],
+    emptyState: "No attachments stored yet."
+  }
+];
+
+const determineDocumentCategory = (record = {}) => {
+  const folder = (record.folder || "").toLowerCase();
+  const name = (record.name || "").toLowerCase();
+  const type = (record.type || "").toLowerCase();
+  const searchable = `${folder} ${name} ${type}`;
+
+  for (const category of DOCUMENT_CATEGORY_CONFIG) {
+    if (category.id === "general") {
+      continue;
+    }
+    if (category.hints.some((hint) => hint && searchable.includes(hint))) {
+      return category.id;
+    }
+  }
+
+  if (folder && folder !== "general") {
+    return folder;
+  }
+
+  return "general";
+};
+
+function DocumentsTab({
+  documents = [],
+  canUpload,
+  uploading,
+  onUpload,
+  canDelete,
+  onDelete
+}) {
+  const [selectedCategory, setSelectedCategory] = useState(
+    DOCUMENT_CATEGORY_CONFIG[0].id
+  );
+  const fileInputRef = useRef(null);
+
+  const groupedDocuments = useMemo(() => {
+    const buckets = DOCUMENT_CATEGORY_CONFIG.reduce((acc, category) => {
+      acc[category.id] = [];
+      return acc;
+    }, {});
+
+    (documents || []).forEach((doc = {}) => {
+      const categoryId = determineDocumentCategory(doc);
+      const resolved = buckets[categoryId] ? categoryId : "general";
+      buckets[resolved].push(doc);
+    });
+
+    return buckets;
+  }, [documents]);
+
+  const selectedCategoryMeta =
+    DOCUMENT_CATEGORY_CONFIG.find((category) => category.id === selectedCategory) ||
+    DOCUMENT_CATEGORY_CONFIG[0];
+
+  const categoryDocuments = groupedDocuments[selectedCategory] || [];
+  const totalDocuments = documents?.length || 0;
+
+  const handleFileInputChange = (event) => {
+    const files = event.target.files;
+    if (files && files.length > 0 && typeof onUpload === "function") {
+      onUpload(files, selectedCategory);
+    }
+    event.target.value = "";
+  };
+
+  const handleUploadClick = () => {
+    if (!canUpload || !fileInputRef.current) return;
+    fileInputRef.current.value = "";
+    fileInputRef.current.click();
+  };
+
+  const handlePreview = (doc) => {
+    if (!doc?.url) return;
+    window.open(doc.url, "_blank", "noopener,noreferrer");
+  };
+
+  const formatTimestamp = (value) => {
+    if (!value) return "Unknown";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return "Unknown";
+    }
+    return parsed.toLocaleString();
+  };
+
+  const renderDocumentCard = (doc) => {
+    const isImage = (doc.type || "").toLowerCase().startsWith("image/");
+    const fallbackLabel = (doc.type || "").split("/").pop() || "FILE";
+    const ext =
+      doc.name && doc.name.includes(".")
+        ? doc.name.split(".").pop().toUpperCase()
+        : fallbackLabel.toUpperCase();
+
+    return (
+      <div
+        key={doc.id || doc.url}
+        style={{
+          display: "flex",
+          gap: "16px",
+          padding: "16px",
+          borderRadius: "12px",
+          border: "1px solid #e5e7eb",
+          backgroundColor: "#ffffff",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+        }}
+      >
+        <div
+          style={{
+            width: "84px",
+            height: "84px",
+            borderRadius: "10px",
+            border: "1px solid #e5e7eb",
+            backgroundColor: "#f8fafc",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden"
+          }}
+        >
+          {isImage ? (
+            <img
+              src={doc.url}
+              alt={doc.name}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "28px", marginBottom: "4px" }}>📄</div>
+              <div style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>
+                {ext}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <h4 style={{ margin: "0 0 4px 0", fontSize: "15px", color: "#111827" }}>
+                {doc.name || "Document"}
+              </h4>
+              <p style={{ margin: 0, color: "#6b7280", fontSize: "13px" }}>
+                Folder: {(doc.folder || "general").replace(/-/g, " ")} · {doc.type || "Unknown type"}
+              </p>
+              <p style={{ margin: "6px 0 0 0", color: "#9ca3af", fontSize: "12px" }}>
+                Uploaded {formatTimestamp(doc.uploadedAt)} by {doc.uploadedBy || "System"}
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                type="button"
+                onClick={() => handlePreview(doc)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  backgroundColor: "white",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer"
+                }}
+              >
+                Preview
+              </button>
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={() => typeof onDelete === "function" && onDelete(doc)}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid #fecaca",
+                    backgroundColor: "#fee2e2",
+                    color: "#b91c1c",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    cursor: "pointer"
+                  }}
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div>
-      <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
+      <h2
+        style={{
+          margin: "0 0 8px 0",
+          fontSize: "20px",
+          fontWeight: "600",
+          color: "#1a1a1a"
+        }}
+      >
         Documents & Attachments
       </h2>
-      <div style={{
-        padding: "40px",
-        textAlign: "center",
-        backgroundColor: "#fff3e0",
-        borderRadius: "8px",
-        border: "2px dashed #ff9800"
-      }}>
-        <div style={{ fontSize: "48px", marginBottom: "16px" }}></div>
-        <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#e65100", marginBottom: "8px" }}>
-          Document Management Coming Soon
-        </h3>
-        <p style={{ fontSize: "14px", color: "#666" }}>
-          This feature is currently under development
-        </p>
+      <p style={{ color: "#6b7280", fontSize: "14px", margin: "0 0 20px 0" }}>
+        Centralised storage for check-sheets, VHC exports, customer uploads, vehicle documents, and
+        service paperwork. {totalDocuments} file{totalDocuments === 1 ? "" : "s"} stored for this job.
+      </p>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "12px",
+          marginBottom: "20px"
+        }}
+      >
+        {DOCUMENT_CATEGORY_CONFIG.map((category) => {
+          const docsInCategory = groupedDocuments[category.id] || [];
+          const isActive = selectedCategory === category.id;
+          return (
+            <button
+              key={category.id}
+              type="button"
+              onClick={() => setSelectedCategory(category.id)}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+                padding: "16px",
+                borderRadius: "12px",
+                border: isActive ? `2px solid ${category.accent}` : "1px solid #e5e7eb",
+                backgroundColor: isActive ? "rgba(209,0,0,0.05)" : "white",
+                cursor: "pointer",
+                textAlign: "left",
+                boxShadow: isActive ? "0 4px 12px rgba(209,0,0,0.12)" : "none"
+              }}
+            >
+              <span style={{ fontSize: "18px" }}>{category.icon}</span>
+              <strong style={{ fontSize: "14px", color: "#111827" }}>
+                {category.label}
+              </strong>
+              <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                {docsInCategory.length} file{docsInCategory.length === 1 ? "" : "s"}
+              </span>
+            </button>
+          );
+        })}
       </div>
+
+      {canUpload && (
+        <div
+          style={{
+            marginBottom: "24px",
+            padding: "16px",
+            borderRadius: "12px",
+            border: "1px dashed #cbd5f5",
+            backgroundColor: "#f8fafc",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "16px"
+          }}
+        >
+          <div style={{ flex: "1 1 240px" }}>
+            <p style={{ margin: "0 0 6px 0", fontSize: "14px", color: "#0f172a", fontWeight: "600" }}>
+              Upload to {selectedCategoryMeta.label}
+            </p>
+            <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
+              You can select multiple images or documents. Files instantly sync to all job card
+              surfaces and technician views.
+            </p>
+            {uploading && (
+              <p style={{ margin: "8px 0 0 0", fontSize: "12px", color: "#0f172a", fontWeight: "600" }}>
+                Uploading… please keep this tab open.
+              </p>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              type="button"
+              onClick={handleUploadClick}
+              disabled={uploading}
+              style={{
+                padding: "10px 18px",
+                borderRadius: "10px",
+                border: "none",
+                backgroundColor: uploading ? "#cbd5f5" : "#d10000",
+                color: "white",
+                fontWeight: "600",
+                cursor: uploading ? "not-allowed" : "pointer",
+                minWidth: "140px"
+              }}
+            >
+              {uploading ? "Uploading…" : "Upload Files"}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              style={{ display: "none" }}
+              onChange={handleFileInputChange}
+            />
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginBottom: "12px" }}>
+        <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#0f172a" }}>
+          {selectedCategoryMeta.label}
+        </h3>
+        <p style={{ margin: 0, color: "#6b7280", fontSize: "13px" }}>
+          {selectedCategoryMeta.description}
+        </p>
+        {!canDelete && (
+          <p style={{ margin: "6px 0 0 0", fontSize: "11px", color: "#94a3b8" }}>
+            Only workshop/service managers can delete files. Contact management if a document needs to
+            be removed.
+          </p>
+        )}
+        {canDelete && (
+          <p style={{ margin: "6px 0 0 0", fontSize: "11px", color: "#94a3b8" }}>
+            Delete removes the Supabase storage file and the job file record.
+          </p>
+        )}
+      </div>
+
+      {categoryDocuments.length === 0 ? (
+        <div
+          style={{
+            padding: "28px",
+            borderRadius: "12px",
+            border: "1px dashed #e5e7eb",
+            textAlign: "center",
+            color: "#94a3b8",
+            fontSize: "14px"
+          }}
+        >
+          {selectedCategoryMeta.emptyState}
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px"
+          }}
+        >
+          {categoryDocuments.map((doc) => renderDocumentCard(doc))}
+        </div>
+      )}
     </div>
   );
 }

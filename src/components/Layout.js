@@ -15,18 +15,8 @@ import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
 import { useRoster } from "@/context/RosterContext";
 import HrTabsBar from "@/components/HR/HrTabsBar";
-import { workshopTabs, workshopQuickActions } from "@/components/Workshop/WorkshopTabsBar";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
-
-const WORKSHOP_ACCESS_ROLES = [
-  "workshop manager",
-  "after sales director",
-  "service manager",
-  "parts manager",
-];
-
-const WORKSHOP_ACCESS_ROLES_SET = new Set(WORKSHOP_ACCESS_ROLES);
 
 const WORKSHOP_SHORTCUT_ROLES = ["workshop manager", "aftersales manager"];
 
@@ -71,10 +61,6 @@ export default function Layout({ children, jobNumber }) {
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
   const showHrTabs = router.pathname.startsWith("/hr") || router.pathname.startsWith("/admin/users");
-  const workshopAccessRoles = WORKSHOP_ACCESS_ROLES_SET;
-  const workshopNavRoutes = Array.from(
-    new Set([...workshopTabs, ...workshopQuickActions].map((item) => item.href))
-  );
 
   const getViewportWidth = () =>
     typeof window !== "undefined" && window.innerWidth ? window.innerWidth : 1440;
@@ -126,11 +112,6 @@ export default function Layout({ children, jobNumber }) {
     matchesDepartment(shortcut.roles || [])
   );
   const canUseServiceActions = userRoles.some((role) => SERVICE_ACTION_ROLES.has(role));
-  const showServiceButtons =
-    userRoles.some((role) => workshopAccessRoles.has(role)) &&
-    workshopNavRoutes.some(
-      (href) => router.pathname === href || router.pathname.startsWith(`${href}/`)
-    );
   const retailManagerDashboardRoles = ["service manager", "workshop manager", "after sales director"];
   const hasRetailDashboardAccess = userRoles.some((role) =>
     retailManagerDashboardRoles.includes(role)
@@ -287,7 +268,6 @@ export default function Layout({ children, jobNumber }) {
 
   const serviceSidebarSections = WORKSHOP_SHORTCUT_SECTIONS;
   const combinedSidebarSections = [...sidebarSections, ...serviceSidebarSections];
-  const serviceHeaderButtons = workshopQuickActions;
   const navigationItems = [];
   const seenNavItems = new Set();
   const roleMatches = (requiredRoles = []) => {
@@ -932,100 +912,6 @@ export default function Layout({ children, jobNumber }) {
             }}
           >
             {showHrTabs && <HrTabsBar />}
-            {showServiceButtons && (
-              <section
-                style={{
-                  background: "#ffffff",
-                  borderRadius: "18px",
-                  padding: isMobile ? "14px" : "18px",
-                  border: "1px solid #ffe0e0",
-                  boxShadow: "0 16px 30px rgba(209, 0, 0, 0.08)",
-                  marginBottom: isMobile ? "16px" : "22px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "14px",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "4px",
-                      minWidth: "200px",
-                      flex: "1 1 220px",
-                    }}
-                  >
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: "0.65rem",
-                        letterSpacing: "0.12em",
-                        textTransform: "uppercase",
-                        color: colors.mutedText,
-                      }}
-                    >
-                      Service Buttons
-                    </p>
-                    <strong
-                      style={{
-                        fontSize: isMobile ? "1rem" : "1.1rem",
-                        color: colors.accent,
-                      }}
-                    >
-                      Quick tools for the service team
-                    </strong>
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "10px",
-                      justifyContent: "flex-end",
-                      flex: "2 1 280px",
-                    }}
-                  >
-                    {serviceHeaderButtons.map((action) => {
-                      const active =
-                        router.pathname === action.href ||
-                        router.pathname.startsWith(`${action.href}/`);
-                      return (
-                        <Link
-                          key={action.href}
-                          href={action.href}
-                          style={{
-                            minWidth: "150px",
-                            textAlign: "center",
-                            padding: "10px 18px",
-                            borderRadius: "999px",
-                            border: active ? "1px solid #b10000" : "1px solid #ffe0e0",
-                            backgroundColor: active ? "#b10000" : "#fff5f5",
-                            color: active ? "#ffffff" : "#720000",
-                            fontWeight: 600,
-                            fontSize: "0.9rem",
-                            textDecoration: "none",
-                            boxShadow: active
-                              ? "0 16px 32px rgba(177, 0, 0, 0.22)"
-                              : "0 10px 20px rgba(209, 0, 0, 0.12)",
-                            transition:
-                              "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {action.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              </section>
-            )}
             {children}
           </div>
         </main>
