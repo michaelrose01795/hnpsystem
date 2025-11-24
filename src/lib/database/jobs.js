@@ -593,11 +593,15 @@ export const getJobByNumber = async (jobNumber) => {
   }
 
   console.log("✅ Job found by job_number:", jobData.job_number); // Debug log
+
+  const messagingThread = await fetchJobMessagingThread(jobData.job_number);
+  const formattedJob = formatJobData(jobData);
+  formattedJob.messagingThread = messagingThread;
   
   // Return structured data with customer and vehicle history
   return { 
     data: {
-      jobCard: formatJobData(jobData),
+      jobCard: formattedJob,
       customer: jobData.vehicle?.customer ? {
         customerId: jobData.vehicle.customer.id,
         firstName: jobData.vehicle.customer.firstname,
@@ -860,6 +864,167 @@ const normalizeBooleanField = (value) => {
     if (["false", "no", "n", "0"].includes(normalized)) return false;
   }
   return Boolean(value);
+};
+
+const JOB_THREAD_PREFIX = "job:";
+
+const buildJobThreadHash = (jobNumber) => {
+  const trimmed = (jobNumber || "").toString().trim();
+  return trimmed ? `${JOB_THREAD_PREFIX}${trimmed}` : null;
+};
+
+const formatThreadParticipantRow = (row) => {
+  if (!row) return null;
+  const profile = row.user || {};
+  const fullName = [profile.first_name, profile.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  const displayName = fullName || profile.email || "Team Member";
+  const derivedRole = row.role || profile.role || "";
+  return {
+    userId: row.user_id,
+    role: derivedRole,
+    name: displayName,
+    email: profile.email || "",
+    joinedAt: row.joined_at || null,
+    lastReadAt: row.last_read_at || null,
+  };
+};
+
+const formatThreadMessageRow = (row) => {
+  if (!row) return null;
+  const metadata = row.metadata || {};
+  const staffOnly =
+    metadata.audience === "staff" ||
+    metadata.visibility === "staff" ||
+    metadata.customerVisible === false;
+  const senderProfile = row.sender || {};
+  const senderName = [senderProfile.first_name, senderProfile.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  return {
+    id: row.message_id,
+    threadId: row.thread_id,
+    content: row.content,
+    createdAt: row.created_at,
+    metadata,
+    customerVisible: !staffOnly,
+    audience: staffOnly ? "staff" : "customer",
+    sender: {
+      userId: senderProfile.user_id || row.sender_id || null,
+      name: senderName || senderProfile.email || "Team Member",
+      role: senderProfile.role || "",
+      email: senderProfile.email || "",
+    },
+  };
+};
+
+const fetchJobMessagingThread = async (jobNumber) => {
+  const hash = buildJobThreadHash(jobNumber);
+  if (!hash) return null;
+
+  try {
+    const { data: threadRow, error: threadError } = await supabase
+      .from("message_threads")
+      .select(
+        `
+        thread_id,
+        thread_type,
+        title,
+        unique_hash,
+        created_by,
+        created_at,
+        updated_at
+      `
+      )
+      .eq("unique_hash", hash)
+      .maybeSingle();
+
+    if (threadError) {
+      if (threadError.code !== "PGRST116") {
+        console.error("❌ fetchJobMessagingThread error:", threadError);
+      }
+      return null;
+    }
+
+    if (!threadRow) {
+      return null;
+    }
+
+    const [participantsResult, messagesResult] = await Promise.all([
+      supabase
+        .from("message_thread_members")
+        .select(
+          `
+          user_id,
+          role,
+          joined_at,
+          last_read_at,
+          user:user_id(
+            user_id,
+            first_name,
+            last_name,
+            email,
+            role
+          )
+        `
+        )
+        .eq("thread_id", threadRow.thread_id),
+      supabase
+        .from("messages")
+        .select(
+          `
+          message_id,
+          thread_id,
+          content,
+          created_at,
+          metadata,
+          sender_id,
+          sender:sender_id(
+            user_id,
+            first_name,
+            last_name,
+            email,
+            role
+          )
+        `
+        )
+        .eq("thread_id", threadRow.thread_id)
+        .order("created_at", { ascending: true })
+        .limit(50),
+    ]);
+
+    if (participantsResult?.error) {
+      console.error("❌ Failed to load thread participants:", participantsResult.error);
+    }
+    if (messagesResult?.error) {
+      console.error("❌ Failed to load thread messages:", messagesResult.error);
+    }
+
+    const participants = (participantsResult?.data || [])
+      .map(formatThreadParticipantRow)
+      .filter(Boolean);
+
+    const messages = (messagesResult?.data || [])
+      .map(formatThreadMessageRow)
+      .filter(Boolean);
+
+    return {
+      id: threadRow.thread_id,
+      title: threadRow.title || `Job ${jobNumber} Conversation`,
+      type: threadRow.thread_type,
+      createdAt: threadRow.created_at,
+      updatedAt: threadRow.updated_at,
+      hash,
+      participants,
+      messages,
+    };
+  } catch (threadError) {
+    console.error("❌ Unexpected messaging thread error:", threadError);
+    return null;
+  }
 };
 
 // ✅ Ensure note fields always render with bullet (-) prefixes per requirements
@@ -1239,6 +1404,7 @@ const formatJobData = (data) => {
     notes: data.job_notes || [],
     writeUp: data.job_writeups?.[0] || null,
     files: data.job_files || [], // ✅ NEW: File attachments
+    messagingThread: data.messagingThread || null,
     
     // ✅ Timestamps
     createdAt: data.created_at,

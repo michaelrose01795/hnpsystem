@@ -1014,7 +1014,11 @@ export default function JobCardDetailPage() {
 
           {/* Messages Tab */}
           {activeTab === "messages" && (
-            <MessagesTab jobData={jobData} />
+            <MessagesTab
+              thread={jobData.messagingThread}
+              jobNumber={jobData.jobNumber}
+              customerEmail={jobData.customerEmail}
+            />
           )}
 
           {/* Documents Tab */}
@@ -2856,28 +2860,221 @@ function VHCTab({ jobNumber, jobData }) {
   );
 }
 
-// ✅ Messages Tab (TODO)
-function MessagesTab({ jobData }) {
+// ✅ Messages Tab
+function MessagesTab({ thread, jobNumber, customerEmail }) {
+  const router = useRouter();
+  const members = Array.isArray(thread?.participants) ? thread.participants : [];
+  const customerMember = members.find((member) =>
+    (member.role || "").toLowerCase().includes("customer")
+  );
+  const staffMembers = members.filter(
+    (member) => !(member.role || "").toLowerCase().includes("customer")
+  );
+  const customerLinked = Boolean(customerEmail && customerMember);
+  const messages = Array.isArray(thread?.messages) ? thread.messages : [];
+
+  const handleOpenMessagingHub = () => {
+    router.push("/messages");
+  };
+
   return (
     <div>
-      <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
+      <h2 style={{ margin: "0 0 12px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
         Messages
       </h2>
-      <div style={{
-        padding: "40px",
-        textAlign: "center",
-        backgroundColor: "#fff3e0",
-        borderRadius: "8px",
-        border: "2px dashed #ff9800"
-      }}>
-        <div style={{ fontSize: "48px", marginBottom: "16px" }}></div>
-        <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#e65100", marginBottom: "8px" }}>
-          Messaging System Coming Soon
-        </h3>
-        <p style={{ fontSize: "14px", color: "#666" }}>
-          This feature is currently under development
-        </p>
-      </div>
+      <p style={{ margin: "0 0 20px 0", color: "#6b7280", fontSize: "14px" }}>
+        Conversations between service, workshop, after-sales, and the customer. Replying is available
+        from the Messaging hub.
+      </p>
+
+      {!thread ? (
+        <div style={{
+          padding: "28px",
+          borderRadius: "12px",
+          border: "1px dashed #fecaca",
+          backgroundColor: "#fff8f8",
+          textAlign: "center"
+        }}>
+          <h3 style={{ margin: "0 0 8px 0", fontSize: "17px", fontWeight: "600", color: "#b91c1c" }}>
+            No conversation linked yet
+          </h3>
+          <p style={{ margin: "0 0 16px 0", fontSize: "14px", color: "#6b7280" }}>
+            Open the Messaging hub to start a thread for Job #{jobNumber}. Customers see the thread
+            once their email is on file and they are added as a participant.
+          </p>
+          <button
+            onClick={handleOpenMessagingHub}
+            style={{
+              padding: "10px 18px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor: "#d10000",
+              color: "white",
+              fontWeight: "600",
+              cursor: "pointer"
+            }}
+          >
+            Open Messaging Hub
+          </button>
+        </div>
+      ) : (
+        <>
+          <div style={{
+            padding: "20px",
+            borderRadius: "12px",
+            border: "1px solid #e5e7eb",
+            backgroundColor: "#ffffff",
+            marginBottom: "16px",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <p style={{ margin: 0, fontSize: "12px", color: "#9ca3af", letterSpacing: "0.2em" }}>
+                  Thread
+                </p>
+                <h3 style={{ margin: "4px 0 0 0", fontSize: "17px", fontWeight: "600", color: "#111827" }}>
+                  {thread.title}
+                </h3>
+              </div>
+              <button
+                onClick={handleOpenMessagingHub}
+                style={{
+                  padding: "8px 14px",
+                  backgroundColor: "#d10000",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer"
+                }}
+              >
+                Open in Messaging Hub
+              </button>
+            </div>
+            <div style={{ marginTop: "12px", display: "flex", flexWrap: "wrap", gap: "12px" }}>
+              {staffMembers.map((member, index) => (
+                <span
+                  key={member.userId || `staff-${index}`}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "999px",
+                    fontSize: "12px",
+                    backgroundColor: "#f3f4f6",
+                    color: "#374151"
+                  }}
+                >
+                  {member.name} · {member.role || "Team"}
+                </span>
+              ))}
+              {customerMember && (
+                <span
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "999px",
+                    fontSize: "12px",
+                    backgroundColor: "#dbeafe",
+                    color: "#1d4ed8"
+                  }}
+                >
+                  {customerMember.name || "Customer"} · Customer
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div style={{
+            padding: "16px",
+            borderRadius: "12px",
+            border: "1px solid #e5e7eb",
+            backgroundColor: "#ffffff",
+            marginBottom: "16px",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+          }}>
+            <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#111827" }}>
+              Customer delivery status
+            </h4>
+            <p style={{ margin: "6px 0 0 0", fontSize: "13px", color: "#6b7280" }}>
+              {customerEmail
+                ? customerLinked
+                  ? `Messages are shared with ${customerEmail}.`
+                  : `Email on file (${customerEmail}) is not yet linked to this thread. Add them in Messaging to share updates.`
+                : "No customer email is linked yet. Add one to start messaging the customer."}
+            </p>
+            <p style={{ margin: "6px 0 0 0", fontSize: "12px", color: "#9ca3af" }}>
+              Staff-only messages remain hidden from the customer portal.
+            </p>
+          </div>
+
+          <div style={{
+            padding: "0 0 4px 0",
+            borderRadius: "12px",
+            border: "1px solid #e5e7eb",
+            backgroundColor: "#ffffff",
+            maxHeight: "360px",
+            overflowY: "auto",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+          }}>
+            {messages.length === 0 ? (
+              <div style={{ padding: "24px", textAlign: "center", color: "#9ca3af", fontSize: "14px" }}>
+                No messages have been posted in this thread yet.
+              </div>
+            ) : (
+              messages.map((message) => {
+                const isStaffOnly = message.customerVisible === false || message.audience === "staff";
+                return (
+                  <div
+                    key={message.id || `${message.createdAt}-${message.content.slice(0, 20)}`}
+                    style={{
+                      padding: "16px",
+                      borderBottom: "1px solid #f3f4f6",
+                      backgroundColor: isStaffOnly ? "#fff8f8" : "#f8fafc"
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <strong style={{ color: "#111827", fontSize: "14px" }}>
+                          {message.sender?.name || "Team Member"}
+                        </strong>
+                        {message.sender?.role && (
+                          <span style={{ marginLeft: "8px", fontSize: "12px", color: "#9ca3af" }}>
+                            {message.sender.role}
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: "12px", color: "#9ca3af" }}>
+                        {message.createdAt ? new Date(message.createdAt).toLocaleString() : ""}
+                      </span>
+                    </div>
+                    <p style={{ margin: "8px 0 0 0", color: "#374151", fontSize: "14px", whiteSpace: "pre-wrap" }}>
+                      {message.content}
+                    </p>
+                    <div style={{ marginTop: "8px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      <span
+                        style={{
+                          padding: "4px 10px",
+                          borderRadius: "999px",
+                          fontSize: "11px",
+                          fontWeight: "600",
+                          color: isStaffOnly ? "#b91c1c" : "#047857",
+                          backgroundColor: isStaffOnly ? "#fee2e2" : "#d1fae5"
+                        }}
+                      >
+                        {isStaffOnly ? "Internal only" : "Shared with customer"}
+                      </span>
+                      {message.metadata?.jobNumber && (
+                        <span style={{ fontSize: "11px", color: "#6b7280" }}>
+                          Linked job #{message.metadata.jobNumber}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
