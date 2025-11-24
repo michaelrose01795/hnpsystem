@@ -96,7 +96,13 @@ export default async function handler(req, res) {
     if (catalogError) throw catalogError;
 
     const partIds = (catalog || []).map((part) => part.id).filter(Boolean);
-    const jobCounts = await fetchJobCountsForParts(partIds);
+    let jobCounts = {};
+    try {
+      jobCounts = await fetchJobCountsForParts(partIds);
+    } catch (jobCountError) {
+      console.error("Failed to load job counts for parts summary", jobCountError);
+      jobCounts = {};
+    }
 
     const stockAlerts = (catalog || [])
       .filter((part) => Number(part.qty_in_stock || 0) <= Number(part.reorder_level || 0))

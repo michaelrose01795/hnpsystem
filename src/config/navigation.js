@@ -203,11 +203,6 @@ export const sidebarSections = [
         roles: ["parts"],
       },
       {
-        label: "📊 Parts Dashboard",
-        href: "/dashboard/parts",
-        roles: ["parts", "parts manager"],
-      },
-      {
         label: "🧰 Parts Workspace",
         href: "/parts",
         roles: ["parts"],
@@ -246,11 +241,6 @@ export const sidebarSections = [
       {
         label: "🚚 Parts Deliveries",
         href: "/parts/deliveries",
-        roles: ["parts manager"],
-      },
-      {
-        label: "📈 Parts Manager Dashboard",
-        href: "/parts/manager",
         roles: ["parts manager"],
       },
     ],
