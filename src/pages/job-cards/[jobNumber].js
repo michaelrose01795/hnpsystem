@@ -7,11 +7,18 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
-import { updateJob } from "@/lib/database/jobs";
+import { getJobByNumber, updateJob } from "@/lib/database/jobs";
+import {
+  getNotesByJob,
+  createJobNote,
+  deleteJobNote,
+  updateJobNote
+} from "@/lib/database/notes";
+import { getCustomerJobs } from "@/lib/database/customers";
 import {
   normalizeRequests,
-  mapNotesWithUsers
-} from "@/lib/jobcards/jobDataTransformers";
+  mapCustomerJobsToHistory
+} from "@/lib/jobcards/utils";
 
 const deriveVhcSeverity = (check = {}) => {
   const fields = [
@@ -87,35 +94,13 @@ export default function JobCardDetailPage() {
   const fetchSharedNote = useCallback(async (jobId) => {
     if (!jobId) return null;
 
-    const { data, error } = await supabase
-      .from("job_notes")
-      .select(`
-        note_id,
-        job_id,
-        user_id,
-        note_text,
-        created_at,
-        updated_at,
-        user:user_id(
-          user_id,
-          first_name,
-          last_name,
-          email,
-          role
-        )
-      `)
-      .eq("job_id", jobId)
-      .order("updated_at", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    if (error) {
-      console.error("❌ Failed to load shared note:", error);
+    try {
+      const notes = await getNotesByJob(jobId);
+      return notes[0] || null;
+    } catch (noteError) {
+      console.error("❌ Failed to load shared note:", noteError);
       return null;
     }
-
-    const formatted = mapNotesWithUsers(data || []);
-    return formatted[0] || null;
   }, []);
 
   const refreshSharedNote = useCallback(async (jobId) => {
@@ -138,32 +123,30 @@ export default function JobCardDetailPage() {
         }
         setError(null);
 
-        const response = await fetch(
-          `/api/jobcards/${encodeURIComponent(jobNumber)}`
-        );
+        const { data, error } = await getJobByNumber(jobNumber);
 
-        const payload = await response
-          .json()
-          .catch(() => ({ message: "Job card not found" }));
-
-        if (!response.ok || !payload?.job) {
-          setError(payload?.message || "Job card not found");
-          if (!silent) {
-            setLoading(false);
-          }
+        if (error || !data?.jobCard) {
+          setError(error?.message || "Job card not found");
           return;
         }
 
-        const formattedJob = payload.job;
-
-        setJobData(formattedJob);
+        const jobCard = data.jobCard;
+        setJobData(jobCard);
         setIsEditingDescription(false);
-        setDescriptionDraft(formatNoteValue(formattedJob?.description || ""));
-        const initialSharedNote =
-          payload.sharedNote || (formattedJob.notes || [])[0] || null;
-        setSharedNote(initialSharedNote?.noteText || "");
-        setSharedNoteMeta(initialSharedNote);
-        setVehicleJobHistory(payload.vehicleJobHistory || []);
+        setDescriptionDraft(formatNoteValue(jobCard?.description || ""));
+
+        const latestSharedNote = jobCard.id
+          ? await fetchSharedNote(jobCard.id)
+          : null;
+        setSharedNote(latestSharedNote?.noteText || "");
+        setSharedNoteMeta(latestSharedNote);
+
+        const customerJobs = jobCard.customerId
+          ? await getCustomerJobs(jobCard.customerId)
+          : [];
+        setVehicleJobHistory(
+          mapCustomerJobsToHistory(customerJobs, jobCard.reg)
+        );
       } catch (err) {
         console.error("❌ Exception fetching job:", err);
         setError(err?.message || "Failed to load job card");
@@ -173,7 +156,7 @@ export default function JobCardDetailPage() {
         }
       }
     },
-    [jobNumber]
+    [jobNumber, fetchSharedNote]
   );
 
   useEffect(() => {
@@ -365,84 +348,66 @@ export default function JobCardDetailPage() {
     [canEdit, jobData, fetchJobData]
   );
 
-  const saveSharedNote = useCallback(async (value) => {
-    if (!jobData?.id) return;
+  const saveSharedNote = useCallback(
+    async (value) => {
+      if (!jobData?.id) return;
 
-    try {
-      setSharedNoteSaving(true);
-      const payload = {
-        note_text: value || "",
-        user_id: user?.user_id || null,
-        updated_at: new Date().toISOString()
-      };
+      try {
+        setSharedNoteSaving(true);
+        const draftValue = typeof value === "string" ? value : "";
+        const isEmpty = draftValue.trim().length === 0;
 
-      if (sharedNoteMeta?.noteId) {
-        const { data, error } = await supabase
-          .from("job_notes")
-          .update(payload)
-          .eq("note_id", sharedNoteMeta.noteId)
-          .select(`
-            note_id,
-            job_id,
-            user_id,
-            note_text,
-            created_at,
-            updated_at,
-            user:user_id(
-              user_id,
-              first_name,
-              last_name,
-              email,
-              role
-            )
-          `)
-          .single();
+        if (isEmpty && sharedNoteMeta?.noteId) {
+          const deleteResult = await deleteJobNote(
+            sharedNoteMeta.noteId,
+            user?.user_id || null
+          );
+          if (!deleteResult?.success) {
+            throw deleteResult?.error || new Error("Failed to delete note");
+          }
+          setSharedNote("");
+          setSharedNoteMeta(null);
+          return;
+        }
 
-        if (error) throw error;
-        const formatted = mapNotesWithUsers([data])[0];
-        setSharedNoteMeta(formatted);
-        setSharedNote(formatted?.noteText || "");
-      } else {
-        const { data, error } = await supabase
-          .from("job_notes")
-          .insert([
-            {
-              job_id: jobData.id,
-              note_text: value || "",
-              user_id: user?.user_id || null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }
-          ])
-          .select(`
-            note_id,
-            job_id,
-            user_id,
-            note_text,
-            created_at,
-            updated_at,
-            user:user_id(
-              user_id,
-              first_name,
-              last_name,
-              email,
-              role
-            )
-          `)
-          .single();
+        if (isEmpty) {
+          return;
+        }
 
-        if (error) throw error;
-        const formatted = mapNotesWithUsers([data])[0];
-        setSharedNoteMeta(formatted);
-        setSharedNote(formatted?.noteText || "");
+        if (sharedNoteMeta?.noteId) {
+          const updateResult = await updateJobNote(
+            sharedNoteMeta.noteId,
+            draftValue,
+            user?.user_id || null
+          );
+
+          if (!updateResult?.success) {
+            throw updateResult?.error || new Error("Failed to update note");
+          }
+        } else {
+          const createResult = await createJobNote({
+            job_id: jobData.id,
+            user_id: user?.user_id || null,
+            note_text: draftValue
+          });
+
+          if (!createResult?.success) {
+            throw createResult?.error || new Error("Failed to create note");
+          }
+        }
+
+        const latest = await fetchSharedNote(jobData.id);
+        setSharedNote(latest?.noteText || "");
+        setSharedNoteMeta(latest);
+      } catch (saveError) {
+        console.error("❌ Failed to save note:", saveError);
+        alert(saveError?.message || "Failed to save note");
+      } finally {
+        setSharedNoteSaving(false);
       }
-    } catch (saveError) {
-      console.error("❌ Failed to save note:", saveError);
-      alert(saveError?.message || "Failed to save note");
-    } finally {
-      setSharedNoteSaving(false);
-    }
-  }, [jobData?.id, sharedNoteMeta?.noteId, user?.user_id]);
+    },
+    [jobData?.id, sharedNoteMeta?.noteId, user?.user_id, fetchSharedNote]
+  );
 
   const handleSharedNoteChange = useCallback((value) => {
     if (!canEdit) return;
