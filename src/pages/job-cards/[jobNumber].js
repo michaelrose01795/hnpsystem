@@ -2,13 +2,12 @@
 // file location: src/pages/job-cards/[jobNumber].js
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 import { updateJob } from "@/lib/database/jobs";
-import { createJobNote, deleteJobNote } from "@/lib/database/notes";
 
 const normalizeRequests = (rawRequests) => {
   if (Array.isArray(rawRequests)) {
@@ -100,9 +99,11 @@ const formatAppointmentRow = (appointmentRow) => {
 
 const mapNotesWithUsers = (rows = []) => {
   const sorted = [...(rows || [])].sort((a, b) => {
-    const aDate = a?.created_at ? new Date(a.created_at).getTime() : 0;
-    const bDate = b?.created_at ? new Date(b.created_at).getTime() : 0;
-    return bDate - aDate;
+    const aDate = a?.updated_at || a?.created_at;
+    const bDate = b?.updated_at || b?.created_at;
+    const aTime = aDate ? new Date(aDate).getTime() : 0;
+    const bTime = bDate ? new Date(bDate).getTime() : 0;
+    return bTime - aTime;
   });
 
   return sorted.map((note) => {
@@ -359,8 +360,10 @@ export default function JobCardDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("customer-requests");
-  const [notes, setNotes] = useState([]);
-  const [newNote, setNewNote] = useState("");
+  const [sharedNote, setSharedNote] = useState("");
+  const [sharedNoteMeta, setSharedNoteMeta] = useState(null);
+  const [sharedNoteSaving, setSharedNoteSaving] = useState(false);
+  const sharedNoteSaveRef = useRef(null);
   const [vehicleJobHistory, setVehicleJobHistory] = useState([]);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [descriptionDraft, setDescriptionDraft] = useState("");
@@ -378,8 +381,8 @@ export default function JobCardDetailPage() {
     "admin manager"
   ].some((role) => userRoles.includes(role));
 
-  const refreshNotes = useCallback(async (jobId) => {
-    if (!jobId) return [];
+  const fetchSharedNote = useCallback(async (jobId) => {
+    if (!jobId) return null;
 
     const { data, error } = await supabase
       .from("job_notes")
@@ -399,15 +402,26 @@ export default function JobCardDetailPage() {
         )
       `)
       .eq("job_id", jobId)
-      .order("created_at", { ascending: false });
+      .order("updated_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(1);
 
     if (error) {
-      console.error("❌ Failed to refresh notes:", error);
-      return [];
+      console.error("❌ Failed to load shared note:", error);
+      return null;
     }
 
-    return mapNotesWithUsers(data || []);
+    const formatted = mapNotesWithUsers(data || []);
+    return formatted[0] || null;
   }, []);
+
+  const refreshSharedNote = useCallback(async (jobId) => {
+    if (!jobId) return null;
+    const latest = await fetchSharedNote(jobId);
+    setSharedNote(latest?.noteText || "");
+    setSharedNoteMeta(latest);
+    return latest;
+  }, [fetchSharedNote]);
 
   const fetchJobData = useCallback(
     async (options = { silent: false }) => {
@@ -732,41 +746,10 @@ export default function JobCardDetailPage() {
         setJobData(formattedJob);
         setIsEditingDescription(false);
         setDescriptionDraft(formatNoteValue(formattedJob?.description || ""));
-        setNotes(formattedJob.notes || []);
+        const initialSharedNote = (formattedJob.notes || [])[0] || null;
+        setSharedNote(initialSharedNote?.noteText || "");
+        setSharedNoteMeta(initialSharedNote);
         setVehicleJobHistory(serviceHistoryJobs);
-      } catch (err) {
-                    created_at,
-                    updated_at
-                  `
-                  )
-                  .eq("customer_id", jobRow.customer_id)
-                  .order("created_at", { ascending: false })
-              : Promise.resolve({ data: [] })
-          ]);
-
-        if (clockingResponse?.error) {
-          console.error("❌ Clocking fetch error:", clockingResponse.error);
-        }
-        if (warrantyResponse?.error) {
-          console.error("❌ Warranty link fetch error:", warrantyResponse.error);
-        }
-        if (customerHistoryResponse?.error) {
-          console.error("❌ Customer history fetch error:", customerHistoryResponse.error);
-        }
-
-        const clockingStatus = mapClockingStatus(clockingResponse.data || []);
-        const warrantyJob = mapWarrantyJob(warrantyResponse.data || []);
-
-        const formattedJob = buildJobDataFromRow(jobRow, {
-          clockingStatus,
-          warrantyJob
-        });
-
-        setJobData(formattedJob);
-        setIsEditingDescription(false);
-        setDescriptionDraft(formatNoteValue(formattedJob?.description || ""));
-        setNotes(formattedJob.notes || []);
-        setCustomerJobHistory((customerHistoryResponse.data || []).filter(Boolean));
       } catch (err) {
         console.error("❌ Exception fetching job:", err);
         setError("Failed to load job card");
@@ -782,6 +765,38 @@ export default function JobCardDetailPage() {
   useEffect(() => {
     fetchJobData();
   }, [fetchJobData]);
+
+  useEffect(() => {
+    if (!jobData?.id) return;
+
+    const channel = supabase
+      .channel(`job-notes-${jobData.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "job_notes",
+          filter: `job_id=eq.${jobData.id}`
+        },
+        () => {
+          refreshSharedNote(jobData.id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [jobData?.id, refreshSharedNote]);
+
+  useEffect(() => {
+    return () => {
+      if (sharedNoteSaveRef.current) {
+        clearTimeout(sharedNoteSaveRef.current);
+      }
+    };
+  }, []);
 
   const handleCustomerDetailsSave = useCallback(
     async (updatedDetails) => {
@@ -936,48 +951,100 @@ export default function JobCardDetailPage() {
     [canEdit, jobData, fetchJobData]
   );
 
-  // ✅ Add Note Handler
-  const handleAddNote = async () => {
-    if (!newNote.trim() || !jobData?.id) return;
+  const saveSharedNote = useCallback(async (value) => {
+    if (!jobData?.id) return;
 
     try {
-      const result = await createJobNote({
-        job_id: jobData.id,
+      setSharedNoteSaving(true);
+      const payload = {
+        note_text: value || "",
         user_id: user?.user_id || null,
-        note_text: newNote.trim()
-      });
+        updated_at: new Date().toISOString()
+      };
 
-      if (result.success) {
-        const updatedNotes = await refreshNotes(jobData.id);
-        setNotes(updatedNotes);
-        setNewNote("");
+      if (sharedNoteMeta?.noteId) {
+        const { data, error } = await supabase
+          .from("job_notes")
+          .update(payload)
+          .eq("note_id", sharedNoteMeta.noteId)
+          .select(`
+            note_id,
+            job_id,
+            user_id,
+            note_text,
+            created_at,
+            updated_at,
+            user:user_id(
+              user_id,
+              first_name,
+              last_name,
+              email,
+              role
+            )
+          `)
+          .single();
+
+        if (error) throw error;
+        const formatted = mapNotesWithUsers([data])[0];
+        setSharedNoteMeta(formatted);
+        setSharedNote(formatted?.noteText || "");
       } else {
-        alert("Failed to add note");
-      }
-    } catch (error) {
-      console.error("Error adding note:", error);
-      alert("Failed to add note");
-    }
-  };
+        const { data, error } = await supabase
+          .from("job_notes")
+          .insert([
+            {
+              job_id: jobData.id,
+              note_text: value || "",
+              user_id: user?.user_id || null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+          ])
+          .select(`
+            note_id,
+            job_id,
+            user_id,
+            note_text,
+            created_at,
+            updated_at,
+            user:user_id(
+              user_id,
+              first_name,
+              last_name,
+              email,
+              role
+            )
+          `)
+          .single();
 
-  // ✅ Delete Note Handler
-  const handleDeleteNote = async (noteId) => {
-    if (!confirm("Are you sure you want to delete this note?")) return;
-
-    try {
-      const result = await deleteJobNote(noteId, user?.user_id);
-      
-      if (result.success) {
-        const updatedNotes = await refreshNotes(jobData.id);
-        setNotes(updatedNotes);
-      } else {
-        alert("Failed to delete note");
+        if (error) throw error;
+        const formatted = mapNotesWithUsers([data])[0];
+        setSharedNoteMeta(formatted);
+        setSharedNote(formatted?.noteText || "");
       }
-    } catch (error) {
-      console.error("Error deleting note:", error);
-      alert("Failed to delete note");
+    } catch (saveError) {
+      console.error("❌ Failed to save note:", saveError);
+      alert(saveError?.message || "Failed to save note");
+    } finally {
+      setSharedNoteSaving(false);
     }
-  };
+  }, [jobData?.id, sharedNoteMeta?.noteId, user?.user_id]);
+
+  const handleSharedNoteChange = useCallback((value) => {
+    if (!canEdit) return;
+    setSharedNote(value);
+
+    if (sharedNoteSaveRef.current) {
+      clearTimeout(sharedNoteSaveRef.current);
+    }
+
+    sharedNoteSaveRef.current = setTimeout(() => {
+      if (value === (sharedNoteMeta?.noteText || "")) {
+        return;
+      }
+      saveSharedNote(value);
+    }, 600);
+  }, [canEdit, saveSharedNote, sharedNoteMeta?.noteText]);
 
   // ✅ Update Job Request Handler
   const handleUpdateRequests = async (updatedRequests) => {
@@ -1551,13 +1618,11 @@ export default function JobCardDetailPage() {
           {/* Notes Tab */}
           {activeTab === "notes" && (
             <NotesTab 
-              notes={notes}
-              newNote={newNote}
-              setNewNote={setNewNote}
-              onAddNote={handleAddNote}
-              onDeleteNote={handleDeleteNote}
+              value={sharedNote}
+              onChange={handleSharedNoteChange}
               canEdit={canEdit}
-              currentUser={user}
+              saving={sharedNoteSaving}
+              meta={sharedNoteMeta}
             />
           )}
 
@@ -3115,127 +3180,60 @@ function PartsTab({ jobData }) {
 }
 
 // ✅ Notes Tab
-function NotesTab({ notes, newNote, setNewNote, onAddNote, onDeleteNote, canEdit, currentUser }) {
+function NotesTab({ value, onChange, canEdit, saving, meta }) {
+  const lastUpdated =
+    meta?.updatedAt || meta?.createdAt
+      ? new Date(meta?.updatedAt || meta?.createdAt).toLocaleString()
+      : null;
+  const updatedBy = meta?.createdBy || "Unassigned";
+
   return (
     <div>
       <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
         Job Notes
       </h2>
 
-      {/* Add Note Section */}
-      {canEdit && (
-        <div style={{
-          padding: "16px",
-          backgroundColor: "#f9f9f9",
-          borderRadius: "8px",
-          marginBottom: "24px"
-        }}>
-          <textarea
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            placeholder="Add a new note..."
-            style={{
-              width: "100%",
-              minHeight: "100px",
-              padding: "12px",
-              border: "1px solid #e0e0e0",
-              borderRadius: "8px",
-              fontSize: "14px",
-              fontFamily: "inherit",
-              resize: "vertical",
-              marginBottom: "12px"
-            }}
-          />
-          <button
-            onClick={onAddNote}
-            disabled={!newNote.trim()}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: newNote.trim() ? "#10b981" : "#ccc",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: newNote.trim() ? "pointer" : "not-allowed",
-              fontWeight: "600",
-              fontSize: "14px"
-            }}
-          >
-            Add Note
-          </button>
+      <div style={{
+        padding: "20px",
+        backgroundColor: "#fff",
+        borderRadius: "12px",
+        border: "1px solid #e5e7eb",
+        boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+      }}>
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          readOnly={!canEdit}
+          placeholder="Type job notes here. Changes are saved automatically."
+          style={{
+            width: "100%",
+            minHeight: "280px",
+            padding: "16px",
+            borderRadius: "12px",
+            border: canEdit ? "1px solid #d1d5db" : "1px solid #e5e7eb",
+            fontSize: "15px",
+            lineHeight: 1.5,
+            resize: "vertical",
+            backgroundColor: canEdit ? "#ffffff" : "#f9fafb",
+            color: "#1f2937"
+          }}
+        />
+        <div style={{ marginTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px", color: "#6b7280" }}>
+          <div>
+            {lastUpdated ? (
+              <>
+                Last updated by <strong style={{ color: "#111827" }}>{updatedBy}</strong> on{" "}
+                <strong style={{ color: "#111827" }}>{lastUpdated}</strong>
+              </>
+            ) : (
+              "No notes recorded yet."
+            )}
+          </div>
+          <div style={{ fontSize: "12px", color: saving ? "#d97706" : "#9ca3af" }}>
+            {saving ? "Saving…" : "Synced"}
+          </div>
         </div>
-      )}
-
-      {/* Notes List */}
-      {notes.length > 0 ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {notes.map((note) => (
-            <div
-              key={note.noteId}
-              style={{
-                padding: "16px",
-                backgroundColor: "#fff",
-                border: "1px solid #e0e0e0",
-                borderRadius: "8px"
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                <div>
-                  <strong style={{ fontSize: "14px", color: "#333" }}>
-                    {note.createdBy}
-                  </strong>
-                  {note.createdByRole && (
-                    <span style={{
-                      marginLeft: "8px",
-                      padding: "2px 8px",
-                      backgroundColor: "#e0e0e0",
-                      borderRadius: "10px",
-                      fontSize: "11px",
-                      fontWeight: "600"
-                    }}>
-                      {note.createdByRole}
-                    </span>
-                  )}
-                  <div style={{ fontSize: "12px", color: "#999", marginTop: "4px" }}>
-                    {new Date(note.createdAt).toLocaleString()}
-                  </div>
-                </div>
-                {canEdit && note.userId === currentUser?.user_id && (
-                  <button
-                    onClick={() => onDeleteNote(note.noteId)}
-                    style={{
-                      padding: "4px 12px",
-                      backgroundColor: "#ef4444",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                      fontSize: "12px",
-                      fontWeight: "600"
-                    }}
-                  >
-                    Delete
-                  </button>
-                )}
-              </div>
-              <div style={{ fontSize: "14px", color: "#333", whiteSpace: "pre-wrap" }}>
-                {note.noteText}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div style={{
-          padding: "40px",
-          textAlign: "center",
-          backgroundColor: "#f9f9f9",
-          borderRadius: "8px"
-        }}>
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>📝</div>
-          <p style={{ fontSize: "14px", color: "#666" }}>
-            No notes added yet
-          </p>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -3330,5 +3328,3 @@ function DocumentsTab({ jobData, canEdit }) {
     </div>
   );
 }
-
-// ✅ Job History Popup
