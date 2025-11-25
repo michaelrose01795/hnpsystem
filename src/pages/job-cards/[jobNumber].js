@@ -19,6 +19,7 @@ import {
   normalizeRequests,
   mapCustomerJobsToHistory
 } from "@/lib/jobcards/utils";
+import { summarizePartsPipeline } from "@/lib/partsPipeline";
 
 const deriveVhcSeverity = (check = {}) => {
   const fields = [
@@ -2372,6 +2373,12 @@ function PartsTab({ jobData }) {
     updatedAt: item.updatedAt
   }));
 
+  const pipelineSummary = useMemo(
+    () => summarizePartsPipeline(vhcParts, { quantityField: "quantityRequested" }),
+    [vhcParts]
+  );
+  const pipelineStages = pipelineSummary.stageSummary || [];
+
   const manualRequests = (Array.isArray(jobData.partsRequests) ? jobData.partsRequests : []).map((request) => ({
     requestId: request.requestId,
     partNumber: request.part?.partNumber || "Custom",
@@ -2414,6 +2421,59 @@ function PartsTab({ jobData }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <div
+        style={{
+          background: "white",
+          border: "1px solid #ffe5e5",
+          borderRadius: "14px",
+          padding: "16px",
+          boxShadow: "0 8px 20px rgba(209,0,0,0.08)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "0.9rem",
+            fontWeight: 600,
+            color: "#d10000",
+            letterSpacing: "0.05em",
+            textTransform: "uppercase",
+          }}
+        >
+          Parts Pipeline
+        </div>
+        <div
+          style={{
+            marginTop: "12px",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+            gap: "10px",
+          }}
+        >
+          {pipelineStages.map((stage) => (
+            <div
+              key={stage.id}
+              style={{
+                padding: "10px",
+                borderRadius: "10px",
+                border: "1px solid rgba(209,0,0,0.3)",
+                background: stage.count > 0 ? "#fff4f4" : "#f9fafb",
+              }}
+            >
+              <div style={{ fontSize: "1.25rem", fontWeight: 600, color: "#d10000" }}>
+                {stage.count}
+              </div>
+              <div style={{ fontWeight: 600 }}>{stage.label}</div>
+              <p style={{ margin: "4px 0 0", fontSize: "0.75rem", color: "#4b5563" }}>
+                {stage.description}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p style={{ marginTop: "12px", fontSize: "0.85rem", color: "#4b5563" }}>
+          {pipelineSummary.totalCount} part line
+          {pipelineSummary.totalCount === 1 ? "" : "s"} currently tracked across these stages.
+        </p>
+      </div>
       <div>
         <h2 style={{ margin: "0 0 12px 0", fontSize: "18px", fontWeight: "600", color: "#1f2937" }}>
           VHC Linked Parts

@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabaseClient"; // import Supabase client
 import Layout from "@/components/Layout"; // import layout wrapper
 import { updateJob } from "@/lib/database/jobs";
 import { logVhcSendEvent } from "@/lib/database/vhc";
+import { summarizePartsPipeline } from "@/lib/partsPipeline";
 
 // ✅ Status color mapping (same as dashboard)
 const STATUS_COLORS = {
@@ -151,6 +152,14 @@ const [partsDrafts, setPartsDrafts] = useState({}); // cache unsaved modal entri
 const [partsSearchResults, setPartsSearchResults] = useState([]); // store search results from parts catalog
 const [partsOnOrder, setPartsOnOrder] = useState([]); // live parts on order linked to job
 const [partsOnOrderLoading, setPartsOnOrderLoading] = useState(false); // loading flag for parts on order
+const partsPipelineSummary = useMemo(
+  () =>
+    summarizePartsPipeline(partsOnOrder, {
+      quantityField: "quantity",
+    }),
+  [partsOnOrder]
+);
+const pipelineStages = partsPipelineSummary.stageSummary || [];
 const [orderNeededWarning, setOrderNeededWarning] = useState(null); // order-needed notification
 const SECTION_CATEGORY_MAP = {
   brakes: ["Brakes", "Hubs", "Discs", "Pads"],
@@ -220,7 +229,17 @@ const SECTION_CATEGORY_MAP = {
             `,
           )
           .eq("job_id", jobRow.id)
-          .in("status", ["awaiting_stock", "pending", "picked", "allocated"]);
+          .in("status", [
+            "waiting_authorisation",
+            "pending",
+            "awaiting_stock",
+            "on_order",
+            "pre_picked",
+            "picked",
+            "allocated",
+            "stock",
+            "fitted",
+          ]);
 
         if (partsError) {
           console.error("❌ Error fetching parts on order:", partsError);
@@ -1380,6 +1399,60 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
           </div>
         </div>
 
+        <div
+          style={{
+            background: 'white',
+            border: '1px solid #ffe5e5',
+            borderRadius: '16px',
+            padding: '16px',
+            boxShadow: '0 8px 20px rgba(0,0,0,0.08)',
+            marginBottom: '16px',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              color: '#d10000',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Parts Pipeline
+          </div>
+          <div
+            style={{
+              marginTop: '12px',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: '10px',
+            }}
+          >
+            {pipelineStages.map((stage) => (
+              <div
+                key={stage.id}
+                style={{
+                  padding: '10px',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(209,0,0,0.2)',
+                  background: stage.count > 0 ? '#fff4f4' : '#f9fafb',
+                }}
+              >
+                <div style={{ fontSize: '1.2rem', fontWeight: 600, color: '#d10000' }}>
+                  {stage.count}
+                </div>
+                <div style={{ fontWeight: 600 }}>{stage.label}</div>
+                <p style={{ marginTop: '4px', fontSize: '0.75rem', color: '#4b5563' }}>
+                  {stage.description}
+                </p>
+              </div>
+            ))}
+          </div>
+          <p style={{ marginTop: '12px', fontSize: '0.85rem', color: '#4b5563' }}>
+            Tracking {partsPipelineSummary.totalCount} part line
+            {partsPipelineSummary.totalCount === 1 ? '' : 's'} across these stages.
+          </p>
+        </div>
         {/* ✅ Tabs Navigation */}
         <div style={{
           display: "flex",

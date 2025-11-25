@@ -2,6 +2,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
+import {
+  summarizePartsPipeline,
+  mapPartStatusToPipelineId,
+  getPipelineStageMeta,
+} from "@/lib/partsPipeline";
 
 const PRE_PICK_OPTIONS = [
   { value: "", label: "Not assigned" },
@@ -129,6 +134,7 @@ function PartsPortalPage() {
   const [jobData, setJobData] = useState(null);
   const [jobParts, setJobParts] = useState([]);
   const [jobRequests, setJobRequests] = useState([]);
+  const [selectedPipelineStage, setSelectedPipelineStage] = useState("all");
 
   const [inventorySearch, setInventorySearch] = useState("");
   const [inventoryLoading, setInventoryLoading] = useState(false);
@@ -168,6 +174,17 @@ function PartsPortalPage() {
       ),
     [jobParts]
   );
+
+  const partsPipeline = useMemo(
+    () => summarizePartsPipeline(jobParts, { quantityField: "quantity_requested" }),
+    [jobParts]
+  );
+
+  const displayedJobParts = useMemo(() => {
+    if (selectedPipelineStage === "all") return jobParts;
+    const stageMap = partsPipeline.stageMap || {};
+    return stageMap[selectedPipelineStage]?.parts || [];
+  }, [jobParts, partsPipeline.stageMap, selectedPipelineStage]);
 
   const formatCurrency = (value) =>
     value !== null && value !== undefined
@@ -304,6 +321,10 @@ function PartsPortalPage() {
       searchJob(jobSearch);
     }
   }, [jobData?.jobNumber, jobSearch, searchJob]);
+
+  useEffect(() => {
+    setSelectedPipelineStage("all");
+  }, [jobData?.id]);
 
   useEffect(() => {
     fetchInventory("");
@@ -985,6 +1006,87 @@ function PartsPortalPage() {
                   </button>
                 </div>
 
+                {jobParts.length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "10px",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPipelineStage("all")}
+                      aria-pressed={selectedPipelineStage === "all"}
+                      style={{
+                        borderRadius: "14px",
+                        border: "1px solid rgba(209,0,0,0.4)",
+                        backgroundColor:
+                          selectedPipelineStage === "all" ? "#ffeceb" : "#fff",
+                        padding: "8px 14px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                        gap: "2px",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        color: selectedPipelineStage === "all" ? "#d10000" : "#a00000",
+                      }}
+                    >
+                      <span>All Parts</span>
+                      <small style={{ fontSize: "0.75rem", color: "#555" }}>
+                        {jobParts.length} line{jobParts.length === 1 ? "" : "s"} total
+                      </small>
+                    </button>
+                    {partsPipeline.stageSummary.map((stage) => (
+                      <button
+                        key={stage.id}
+                        type="button"
+                        onClick={() => setSelectedPipelineStage(stage.id)}
+                        aria-pressed={selectedPipelineStage === stage.id}
+                        style={{
+                          borderRadius: "14px",
+                          border: "1px solid rgba(209,0,0,0.4)",
+                          backgroundColor:
+                            selectedPipelineStage === stage.id ? "#ffeceb" : "#fff",
+                          padding: "8px 14px",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          gap: "2px",
+                          cursor: "pointer",
+                          fontWeight: 600,
+                          color:
+                            selectedPipelineStage === stage.id ? "#d10000" : "#a00000",
+                        }}
+                      >
+                        <span>{stage.label}</span>
+                        <small style={{ fontSize: "0.75rem", color: "#555" }}>
+                          {stage.count} line{stage.count === 1 ? "" : "s"}
+                        </small>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {selectedPipelineStage !== "all" && displayedJobParts.length === 0 && (
+                  <div
+                    style={{
+                      background: "#fffaf0",
+                      borderRadius: "10px",
+                      border: "1px solid #ffd1d1",
+                      padding: "10px 14px",
+                      marginBottom: "12px",
+                      color: "#92400e",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    No parts currently staged for{" "}
+                    {getPipelineStageMeta(selectedPipelineStage).label}.
+                  </div>
+                )}
+
                 {jobParts.length === 0 ? (
                   <div
                     style={{
@@ -1005,13 +1107,17 @@ function PartsPortalPage() {
                         <tr style={{ background: "#fff4f4", color: "#a41d1d" }}>
                           <th style={{ textAlign: "left", padding: "10px" }}>Part</th>
                           <th style={{ textAlign: "left", padding: "10px" }}>Qty</th>
+                          <th style={{ textAlign: "left", padding: "10px" }}>Stage</th>
                           <th style={{ textAlign: "left", padding: "10px" }}>Status</th>
                           <th style={{ textAlign: "left", padding: "10px" }}>Pre-pick</th>
                           <th style={{ textAlign: "left", padding: "10px" }}>Notes</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {jobParts.map((part) => (
+                        {displayedJobParts.map((part) => {
+                          const stageId = mapPartStatusToPipelineId(part.status);
+                          const stageMeta = getPipelineStageMeta(stageId);
+                          return (
                           <tr key={part.id} style={{ borderBottom: "1px solid #ffe1e1" }}>
                             <td style={{ padding: "10px", verticalAlign: "top" }}>
                               <div style={{ fontWeight: 600 }}>
@@ -1061,6 +1167,26 @@ function PartsPortalPage() {
                               >
                                 Mark fitted
                               </button>
+                            </td>
+                            <td style={{ padding: "10px", verticalAlign: "top" }}>
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  padding: "4px 10px",
+                                  borderRadius: "999px",
+                                  fontSize: "0.8rem",
+                                  fontWeight: 600,
+                                  backgroundColor: "#fff0f0",
+                                  color: "#991b1b",
+                                  marginBottom: "6px",
+                                }}
+                              >
+                                {stageMeta.label}
+                              </span>
+                              <div style={{ fontSize: "0.75rem", color: "#555" }}>
+                                {stageMeta.description}
+                              </div>
                             </td>
                             <td style={{ padding: "10px", verticalAlign: "top" }}>
                               <select
@@ -1124,7 +1250,8 @@ function PartsPortalPage() {
                               {part.request_notes || "—"}
                             </td>
                           </tr>
-                        ))}
+                        );
+                      })}
                       </tbody>
                     </table>
                   </div>

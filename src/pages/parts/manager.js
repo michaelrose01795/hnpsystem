@@ -3,6 +3,7 @@ import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import PartsOpsDashboard from "@/components/dashboards/PartsOpsDashboard";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { summarizePartsPipeline } from "@/lib/partsPipeline";
 
 const containerStyle = {
   padding: "0 24px 48px",
@@ -57,6 +58,8 @@ const SOURCE_META = {
   parts_workspace: { label: "Manual", background: "rgba(148,163,184,0.3)", color: "#475569" },
   manual: { label: "Manual", background: "rgba(148,163,184,0.3)", color: "#475569" },
 };
+
+const EMPTY_PIPELINE_SUMMARY = summarizePartsPipeline([]);
 
 const OPEN_REQUEST_STATUSES = ["waiting_authorisation", "pending", "awaiting_stock", "on_order"];
 
@@ -189,6 +192,7 @@ export default function PartsManagerDashboard() {
     teamAvailability: [],
     teamPerformance: [],
     techRequests: [],
+    pipelineSummary: EMPTY_PIPELINE_SUMMARY,
   });
 
   useEffect(() => {
@@ -250,6 +254,9 @@ export default function PartsManagerDashboard() {
         const lowStock = summary.lowStockParts || [];
         const jobRows = jobItemsResponse.data || [];
         const techRequests = techRequestsResponse.data || [];
+        const pipelineSummary = summarizePartsPipeline(jobRows, {
+          quantityField: "quantity_requested",
+        });
 
         const summaryCards = [
           {
@@ -289,6 +296,7 @@ export default function PartsManagerDashboard() {
           deliveries,
           teamAvailability: buildTeamBuckets(jobRows),
           teamPerformance: buildTeamPerformance(jobRows),
+          pipelineSummary,
           techRequests,
         });
       } catch (err) {
@@ -302,6 +310,8 @@ export default function PartsManagerDashboard() {
     loadDashboard();
   }, [isManager]);
 
+  const pipelineSummary = dashboardData.pipelineSummary || { stageSummary: [], totalCount: 0 };
+  const pipelineStages = pipelineSummary.stageSummary || [];
   const teamPerformance = dashboardData.teamPerformance || [];
 
   const lowStockRows = useMemo(() => dashboardData.inventoryAlerts || [], [
@@ -334,6 +344,42 @@ export default function PartsManagerDashboard() {
             subtitle="Live queue, inbound deliveries and inventory status pulled from Supabase"
             data={dashboardData}
           />
+
+          <div style={sectionCardStyle}>
+            <div style={sectionTitleStyle}>Parts Pipeline</div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: "12px",
+              }}
+            >
+              {pipelineStages.map((stage) => (
+                <div
+                  key={stage.id}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: "12px",
+                    border: "1px solid rgba(209,0,0,0.2)",
+                    background: "rgba(255, 228, 228, 0.4)",
+                    minHeight: "100px",
+                  }}
+                >
+                  <div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#d10000" }}>
+                    {stage.count}
+                  </div>
+                  <div style={{ fontWeight: 600 }}>{stage.label}</div>
+                  <p style={{ margin: "6px 0 0 0", fontSize: "0.8rem", color: "#555" }}>
+                    {stage.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: "12px", fontSize: "0.9rem", color: "#57534e" }}>
+              {pipelineSummary.totalCount} part line
+              {pipelineSummary.totalCount === 1 ? "" : "s"} currently tracked in the pipeline.
+            </div>
+          </div>
 
           <div style={containerStyle}>
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(280px, 1fr)", gap: "20px" }}>

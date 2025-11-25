@@ -12,6 +12,7 @@ import { getClockingStatus } from "@/lib/database/clocking";
 import JobCardModal from "@/components/JobCards/JobCardModal"; // Import Start Job modal
 import { getUserActiveJobs } from "@/lib/database/jobClocking";
 import { supabase } from "@/lib/supabaseClient";
+import { summarizePartsPipeline } from "@/lib/partsPipeline";
 
 const STATUS_BADGE_STYLES = {
   "In Progress": { background: "#dbeafe", color: "#1e40af" },
@@ -661,6 +662,12 @@ export default function MyJobsPage() {
                 });
                 const clockStateLabel = isClockedOn ? "Clocked On" : "Clocked Off";
                 const partsIndicatorColor = partsPending ? "#dc2626" : "#10b981";
+                const jobPipeline = summarizePartsPipeline(job.partsAllocations || [], {
+                  quantityField: "quantityRequested",
+                });
+                const stageBadges = (jobPipeline.stageSummary || []).filter(
+                  (stage) => stage.count > 0
+                );
 
                 return (
                   <div
@@ -790,6 +797,46 @@ export default function MyJobsPage() {
                             {job.reg || "No Reg"}
                           </span>
                         </div>
+
+                        {stageBadges.length > 0 && (
+                          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                            {stageBadges.slice(0, 3).map((stage) => (
+                              <span
+                                key={stage.id}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  padding: "4px 10px",
+                                  borderRadius: "999px",
+                                  fontSize: "11px",
+                                  fontWeight: 600,
+                                  color: "#a00000",
+                                  border: "1px solid rgba(209,0,0,0.3)",
+                                  background: "rgba(234, 15, 15, 0.08)",
+                                }}
+                              >
+                                {stage.label.split(" ").slice(0, 2).join(" ")} · {stage.count}
+                              </span>
+                            ))}
+                            {stageBadges.length > 3 && (
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  padding: "4px 10px",
+                                  borderRadius: "999px",
+                                  fontSize: "11px",
+                                  color: "#6b7280",
+                                  border: "1px solid #e5e7eb",
+                                  background: "#f3f4f6",
+                                }}
+                              >
+                                +{stageBadges.length - 3} more
+                              </span>
+                            )}
+                          </div>
+                        )}
 
                         <div
                           style={{
