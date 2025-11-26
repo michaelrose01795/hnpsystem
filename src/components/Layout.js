@@ -49,6 +49,8 @@ const SERVICE_ACTION_ROLES = new Set([
   "aftersales manager",
 ]);
 
+const PARTS_NAV_ROLES = new Set(["parts", "parts manager"]);
+
 const SERVICE_ACTION_LINKS = [
   { label: "Create Job Card", href: "/job-cards/create" },
   { label: "Appointments", href: "/job-cards/appointments" },
@@ -127,6 +129,8 @@ export default function Layout({ children, jobNumber }) {
   const canViewStatusSidebar = userRoles.some((role) =>
     statusSidebarRoles.includes(role)
   );
+  const hasPartsAccess = userRoles.some((role) => PARTS_NAV_ROLES.has(role));
+  const isPartsManager = userRoles.includes("parts manager");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -370,7 +374,7 @@ export default function Layout({ children, jobNumber }) {
     });
   }
 
-  if (userRoles.includes("parts") || userRoles.includes("parts manager")) {
+  if (hasPartsAccess) {
     addNavItem("🧰 Parts Workspace", "/parts", {
       keywords: ["parts", "inventory", "vhc parts"],
       description: "Manage parts allocations and deliveries",
@@ -383,7 +387,7 @@ export default function Layout({ children, jobNumber }) {
     });
   }
 
-  if (userRoles.includes("parts manager")) {
+  if (isPartsManager) {
     addNavItem("📈 Parts Manager Dashboard", "/parts/manager", {
       keywords: ["parts manager", "stock value", "parts dashboard"],
       description: "View stock, spending, and income KPIs",

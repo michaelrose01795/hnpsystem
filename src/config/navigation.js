@@ -243,6 +243,11 @@ export const sidebarSections = [
         href: "/parts/deliveries",
         roles: ["parts manager"],
       },
+      {
+        label: "📈 Parts Manager Dashboard",
+        href: "/parts/manager",
+        roles: ["parts manager"],
+      },
     ],
   },
   {
