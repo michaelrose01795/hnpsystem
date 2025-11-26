@@ -92,19 +92,6 @@ const ListBlock = ({ title, items }) => (
   </div>
 );
 
-const defaultData = {
-  requestSummary: {
-    totalRequests: 0,
-    partsOnOrder: 0,
-    prePicked: 0,
-    delayedOrders: 0,
-  },
-  stockAlerts: [],
-  requestsByStatus: [],
-  recentRequests: [],
-  trend: [],
-};
-
 export default function PartsDashboard() {
   const { user } = useUser();
   const roleLabels = (user?.roles || []).map((role) => String(role).toLowerCase());
@@ -119,9 +106,15 @@ export default function PartsDashboard() {
       </Layout>
     );
   }
-  const [data, setData] = useState(defaultData);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const requestSummary = data?.requestSummary ?? {};
+  const stockAlerts = data?.stockAlerts || [];
+  const requestsByStatus = data?.requestsByStatus || [];
+  const recentRequests = data?.recentRequests || [];
+  const trendData = data?.trend || [];
 
   useEffect(() => {
     const loadData = async () => {
@@ -132,6 +125,7 @@ export default function PartsDashboard() {
         setData(payload);
       } catch (fetchError) {
         console.error("Failed to load parts dashboard", fetchError);
+        setData(null);
         setError(fetchError.message || "Unable to load parts data");
       } finally {
         setLoading(false);
@@ -165,26 +159,52 @@ export default function PartsDashboard() {
             <p style={{ color: "#6b7280" }}>Loading request counts…</p>
           ) : error ? (
             <p style={{ color: "#ff4040" }}>{error}</p>
-          ) : (
+          ) : data ? (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-              <MetricCard label="Parts requests" value={data.requestSummary.totalRequests} helper="Open requests" />
-              <MetricCard label="Parts on order" value={data.requestSummary.partsOnOrder} helper="Units on order" />
-              <MetricCard label="Pre picked" value={data.requestSummary.prePicked} helper="Assigned to racks" />
-              <MetricCard label="Delayed orders" value={data.requestSummary.delayedOrders} helper="Missing qty" />
+              <MetricCard
+                label="Parts requests"
+                value={requestSummary.totalRequests ?? 0}
+                helper="Open requests"
+              />
+              <MetricCard
+                label="Parts on order"
+                value={requestSummary.partsOnOrder ?? 0}
+                helper="Units on order"
+              />
+              <MetricCard
+                label="Pre picked"
+                value={requestSummary.prePicked ?? 0}
+                helper="Assigned to racks"
+              />
+              <MetricCard
+                label="Delayed orders"
+                value={requestSummary.delayedOrders ?? 0}
+                helper="Missing qty"
+              />
             </div>
+          ) : (
+            <p style={{ color: "#6b7280" }}>No request data available yet.</p>
           )}
         </Section>
 
         <Section title="Requests trend" subtitle="Last 7 days">
-          <TrendBlock data={data.trend} />
+          {loading ? (
+            <p style={{ color: "#6b7280" }}>Loading request trends…</p>
+          ) : trendData.length === 0 ? (
+            <p style={{ color: "#6b7280" }}>No trend data available yet.</p>
+          ) : (
+            <TrendBlock data={trendData} />
+          )}
         </Section>
 
         <Section title="Stock levels" subtitle="Lowest availability items">
-          {data.stockAlerts.length === 0 ? (
+          {loading ? (
+            <p style={{ margin: 0, color: "#6b7280" }}>Loading stock alerts…</p>
+          ) : stockAlerts.length === 0 ? (
             <p style={{ margin: 0, color: "#6b7280" }}>No low stock alerts yet.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {data.stockAlerts.map((part) => (
+              {stockAlerts.map((part) => (
                 <div
                   key={part.id}
                   style={{
@@ -213,11 +233,13 @@ export default function PartsDashboard() {
         </Section>
 
         <Section title="Requests by status">
-          {data.requestsByStatus.length === 0 ? (
+          {loading ? (
+            <p style={{ margin: 0, color: "#6b7280" }}>Loading request status breakdown…</p>
+          ) : requestsByStatus.length === 0 ? (
             <p style={{ margin: 0, color: "#6b7280" }}>Waiting for request data.</p>
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
-              {data.requestsByStatus.map((row) => (
+              {requestsByStatus.map((row) => (
                 <div
                   key={row.status}
                   style={{
@@ -237,7 +259,11 @@ export default function PartsDashboard() {
         </Section>
 
         <Section title="Recent requests" subtitle="Most recent entries">
-          <ListBlock title="Recent requests" items={data.recentRequests} />
+          {loading ? (
+            <p style={{ margin: 0, color: "#6b7280" }}>Loading recent requests…</p>
+          ) : (
+            <ListBlock title="Recent requests" items={recentRequests} />
+          )}
         </Section>
       </div>
     </Layout>

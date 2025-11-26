@@ -8,3 +8,99 @@ ALTER TABLE job_notes
 ALTER TABLE job_notes
   ADD CONSTRAINT IF NOT EXISTS job_notes_last_updated_by_fkey
     FOREIGN KEY (last_updated_by) REFERENCES public.users(user_id);
+
+-- Seed a few catalogue rows so parts dashboards can show data in fresh environments
+INSERT INTO public.parts_catalog (
+  part_number,
+  name,
+  category,
+  supplier,
+  unit_cost,
+  unit_price,
+  qty_in_stock,
+  qty_reserved,
+  qty_on_order,
+  reorder_level,
+  storage_location,
+  service_default_zone,
+  notes,
+  created_at,
+  updated_at
+)
+VALUES
+  (
+    'BRK-FR-001',
+    'Front brake kit',
+    'Brakes',
+    'TPS Leeds',
+    180,
+    285,
+    2,
+    0,
+    1,
+    2,
+    'Aisle 1 / Bin 3',
+    'service_rack_1',
+    'Seed data for dev',
+    NOW(),
+    NOW()
+  ),
+  (
+    'CAB-FLTR-019',
+    'OEM cabin filter',
+    'HVAC',
+    'TPS Leeds',
+    12.5,
+    29.5,
+    12,
+    0,
+    0,
+    5,
+    'Aisle 4 / Bin 9',
+    'service_rack_2',
+    'Seed data for dev',
+    NOW(),
+    NOW()
+  ),
+  (
+    'WHL-19-SET',
+    '19" diamond cut wheel (set of 4)',
+    'Wheels',
+    'VW UK',
+    980,
+    1280,
+    1,
+    0,
+    0,
+    1,
+    'Bulk storage',
+    'service_rack_3',
+    'Seed data for dev',
+    NOW(),
+    NOW()
+  )
+ON CONFLICT (part_number) DO NOTHING;
+
+-- Record a stock movement so the inventory page can show baseline history
+INSERT INTO public.parts_stock_movements (
+  part_id,
+  movement_type,
+  quantity,
+  unit_cost,
+  reference,
+  notes
+)
+SELECT
+  p.id,
+  'stock_take',
+  p.qty_in_stock,
+  p.unit_cost,
+  format('seed-%s', p.part_number),
+  'Initial seeded inventory level'
+FROM public.parts_catalog p
+WHERE p.part_number IN ('BRK-FR-001', 'CAB-FLTR-019', 'WHL-19-SET')
+  AND NOT EXISTS (
+    SELECT 1
+    FROM public.parts_stock_movements m
+    WHERE m.reference = format('seed-%s', p.part_number)
+  );
