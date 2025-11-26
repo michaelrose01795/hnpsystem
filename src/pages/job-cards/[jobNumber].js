@@ -2980,15 +2980,35 @@ function VHCTab({ jobNumber, jobData }) {
 // ✅ Messages Tab
 function MessagesTab({ thread, jobNumber, customerEmail }) {
   const router = useRouter();
-  const members = Array.isArray(thread?.participants) ? thread.participants : [];
-  const customerMember = members.find((member) =>
-    (member.role || "").toLowerCase().includes("customer")
+  const participants = Array.isArray(thread?.participants) ? thread.participants : [];
+  const normalizeRole = (value = "") => (value || "").toLowerCase().trim();
+  const customerMember = participants.find((member) =>
+    normalizeRole(member.role).includes("customer")
   );
-  const staffMembers = members.filter(
-    (member) => !(member.role || "").toLowerCase().includes("customer")
+  const allowedStaffRoleKeywords = [
+    "service",
+    "service advisor",
+    "service manager",
+    "workshop manager",
+    "after-sales manager",
+    "after sales manager",
+    "after-sales",
+    "after sales",
+  ];
+  const isAllowedStaff = (member = {}) => {
+    const role = normalizeRole(member.role);
+    return allowedStaffRoleKeywords.some((keyword) => role.includes(keyword));
+  };
+  const staffMembers = participants.filter(
+    (member) => !normalizeRole(member.role).includes("customer") && isAllowedStaff(member)
   );
   const customerLinked = Boolean(customerEmail && customerMember);
-  const messages = Array.isArray(thread?.messages) ? thread.messages : [];
+  const messages = (Array.isArray(thread?.messages) ? thread.messages : []).filter((message) => {
+    const role = normalizeRole(message.sender?.role);
+    const isCustomerMessage = role.includes("customer") || message.audience === "customer";
+    const isStaffMessage = isAllowedStaff(message.sender || {});
+    return isCustomerMessage || isStaffMessage;
+  });
 
   const handleOpenMessagingHub = () => {
     router.push("/messages");
@@ -3000,8 +3020,8 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
         Messages
       </h2>
       <p style={{ margin: "0 0 20px 0", color: "#6b7280", fontSize: "14px" }}>
-        Conversations between service, workshop, after-sales, and the customer. Replying is available
-        from the Messaging hub.
+        Conversations between service advisors, workshop managers, after-sales managers, and the customer
+        (customers join once their email is linked). Replying is available from the Messaging hub.
       </p>
 
       {!thread ? (
