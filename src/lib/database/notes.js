@@ -24,6 +24,7 @@ export const createJobNote = async (noteData) => {
       .insert([{
         job_id: noteData.job_id,
         user_id: noteData.user_id || null, // ✅ Track who created the note
+        last_updated_by: noteData.user_id || null,
         note_text: noteData.note_text.trim(),
         created_at: new Date().toISOString()
       }])
@@ -31,10 +32,18 @@ export const createJobNote = async (noteData) => {
         note_id,
         job_id,
         user_id,
+        last_updated_by,
         note_text,
         created_at,
         updated_at,
         user:user_id(
+          user_id,
+          first_name,
+          last_name,
+          email,
+          role
+        ),
+        updatedBy:last_updated_by(
           user_id,
           first_name,
           last_name,
@@ -70,12 +79,19 @@ export const getNotesByJob = async (jobId) => {
         note_text,
         created_at,
         updated_at,
+        last_updated_by,
         user:user_id(
           user_id,
           first_name,
           last_name,
           email,
           role
+        ),
+        updatedBy:last_updated_by(
+          user_id,
+          first_name,
+          last_name,
+          email
         )
       `)
       .eq("job_id", jobId)
@@ -86,17 +102,28 @@ export const getNotesByJob = async (jobId) => {
     console.log("✅ Notes found:", data?.length || 0); // debug log
     
     // ✅ Format notes for display
-    const formattedNotes = (data || []).map(note => ({
-      noteId: note.note_id,
-      jobId: note.job_id,
-      userId: note.user_id,
-      noteText: note.note_text,
-      createdAt: note.created_at,
-      updatedAt: note.updated_at,
-      createdBy: note.user ? `${note.user.first_name} ${note.user.last_name}` : "Unknown",
-      createdByEmail: note.user?.email || "",
-      createdByRole: note.user?.role || ""
-    }));
+    const formattedNotes = (data || []).map(note => {
+      const creatorName = note.user
+        ? `${note.user.first_name || ""} ${note.user.last_name || ""}`.trim()
+        : "Unknown";
+      const updaterName = note.updatedBy
+        ? `${note.updatedBy.first_name || ""} ${note.updatedBy.last_name || ""}`.trim()
+        : creatorName;
+      return {
+        noteId: note.note_id,
+        jobId: note.job_id,
+        userId: note.user_id,
+        noteText: note.note_text,
+        createdAt: note.created_at,
+        updatedAt: note.updated_at,
+        createdBy: creatorName || "Unknown",
+        createdByEmail: note.user?.email || "",
+        createdByRole: note.user?.role || "",
+        lastUpdatedBy: updaterName || "Unknown",
+        lastUpdatedByEmail: note.updatedBy?.email || note.user?.email || "",
+        lastUpdatedById: note.last_updated_by || note.user_id || null
+      };
+    });
 
     return formattedNotes;
   } catch (error) {
@@ -163,17 +190,25 @@ export const updateJobNote = async (noteId, noteText, userId = null) => {
       .from("job_notes")
       .update({ 
         note_text: noteText.trim(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        last_updated_by: userId || null
       })
       .eq("note_id", noteId)
       .select(`
         note_id,
         job_id,
         user_id,
+        last_updated_by,
         note_text,
         created_at,
         updated_at,
         user:user_id(
+          first_name,
+          last_name,
+          email
+        ),
+        updatedBy:last_updated_by(
+          user_id,
           first_name,
           last_name,
           email

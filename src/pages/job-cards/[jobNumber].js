@@ -616,7 +616,7 @@ export default function JobCardDetailPage() {
         return;
       }
       saveSharedNote(value);
-    }, 600);
+    }, 300);
   }, [canEdit, saveSharedNote, sharedNoteMeta?.noteText]);
 
   // ✅ Update Job Request Handler
@@ -2684,9 +2684,17 @@ function PartsTab({ jobData }) {
 function NotesTab({ value, onChange, canEdit, saving, meta }) {
   const lastUpdated =
     meta?.updatedAt || meta?.createdAt
-      ? new Date(meta?.updatedAt || meta?.createdAt).toLocaleString()
+      ? new Date(meta?.updatedAt || meta?.createdAt).toLocaleString("en-GB", {
+          hour12: false,
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
       : null;
-  const updatedBy = meta?.createdBy || "Unassigned";
+  const updatedBy =
+    meta?.lastUpdatedBy || meta?.createdBy || "Unassigned";
 
   return (
     <div>
@@ -2708,23 +2716,29 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
           placeholder="Type job notes here. Changes are saved automatically."
           style={{
             width: "100%",
-            minHeight: "280px",
-            padding: "16px",
+            minHeight: "360px",
+            maxHeight: "65vh",
+            padding: "18px",
             borderRadius: "12px",
             border: canEdit ? "1px solid #d1d5db" : "1px solid #e5e7eb",
-            fontSize: "15px",
-            lineHeight: 1.5,
+            fontSize: "16px",
+            lineHeight: 1.7,
             resize: "vertical",
             backgroundColor: canEdit ? "#ffffff" : "#f9fafb",
             color: "#1f2937"
           }}
         />
-        <div style={{ marginTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px", color: "#6b7280" }}>
+        <div style={{ marginTop: "16px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", fontSize: "13px", color: "#6b7280", gap: "16px" }}>
           <div>
             {lastUpdated ? (
               <>
                 Last updated by <strong style={{ color: "#111827" }}>{updatedBy}</strong> on{" "}
                 <strong style={{ color: "#111827" }}>{lastUpdated}</strong>
+                {meta?.lastUpdatedByEmail ? (
+                  <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "2px" }}>
+                    {meta.lastUpdatedByEmail}
+                  </div>
+                ) : null}
               </>
             ) : (
               "No notes recorded yet."
