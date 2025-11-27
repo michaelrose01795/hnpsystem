@@ -7,6 +7,8 @@ import {
   mapPartStatusToPipelineId,
   getPipelineStageMeta,
 } from "@/lib/partsPipeline";
+import { supabase } from "@/lib/supabaseClient";
+import DeliverySchedulerModal from "@/components/Parts/DeliverySchedulerModal";
 
 const PRE_PICK_OPTIONS = [
   { value: "", label: "Not assigned" },
@@ -33,6 +35,8 @@ const JOB_PART_STATUSES = [
   "fitted",
   "cancelled",
 ];
+
+const needsDeliveryScheduling = (status = "") => /collect|delivery/i.test(String(status || ""));
 
 const cardStyle = {
   backgroundColor: "white",
@@ -144,6 +148,10 @@ function PartsPortalPage() {
   const [deliveriesLoading, setDeliveriesLoading] = useState(false);
   const [deliveriesError, setDeliveriesError] = useState("");
   const [deliveries, setDeliveries] = useState([]);
+  const [deliveryRoutesList, setDeliveryRoutesList] = useState([]);
+  const [jobDeliveryInfo, setJobDeliveryInfo] = useState(null);
+  const [scheduleModalJob, setScheduleModalJob] = useState(null);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
   const [showAddPartModal, setShowAddPartModal] = useState(false);
   const [selectedPartId, setSelectedPartId] = useState("");
@@ -216,6 +224,45 @@ function PartsPortalPage() {
               <div key={`${link.type}-${link.job_id}-${link.request_id || ""}-${link.status}`}>
                 <div>
                   <strong>{link.job_number}</strong> · Qty {link.quantity || 1}
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                    marginBottom: "12px",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div>
+                    <p style={{ margin: 0, fontSize: "0.8rem", color: "#a00000" }}>Delivery plan</p>
+                    {jobDeliveryInfo ? (
+                      <div style={{ fontWeight: 600 }}>
+                        Stop {jobDeliveryInfo.stop_number} ·{" "}
+                        {jobDeliveryInfo.delivery?.delivery_date
+                          ? new Date(jobDeliveryInfo.delivery.delivery_date).toLocaleDateString()
+                          : "Scheduled"}
+                      </div>
+                    ) : (
+                      <div style={{ fontWeight: 600, color: "#6b7280" }}>No upcoming delivery</div>
+                    )}
+                  </div>
+                  {needsDeliveryScheduling(jobData.waitingStatus || jobData.waiting_status) && (
+                    <button
+                      type="button"
+                      onClick={openScheduleModal}
+                      style={{
+                        ...buttonStyle,
+                        border: "1px solid #2563eb",
+                        background: "#fff",
+                        color: "#2563eb",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Schedule Delivery
+                    </button>
+                  )}
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "2px" }}>
                   <RequirementBadge label={sourceMeta.label} background={sourceMeta.background} color={sourceMeta.color} />
@@ -322,6 +369,57 @@ function PartsPortalPage() {
     }
   }, [jobData?.jobNumber, jobSearch, searchJob]);
 
+  const loadDeliveryRoutesList = useCallback(async () => {
+    try {
+      const query = new URLSearchParams({ status: "all", limit: "20" });
+      const response = await fetch(`/api/parts/deliveries?${query}`);
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setDeliveryRoutesList(data.deliveries || []);
+      }
+    } catch (err) {
+      console.error("Unable to load deliveries for scheduling", err);
+    }
+  }, []);
+
+  const loadJobDeliveryInfo = useCallback(async () => {
+    if (!jobData?.id) {
+      setJobDeliveryInfo(null);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from("delivery_stops")
+        .select("stop_number, status, delivery:deliveries(id, delivery_date, vehicle_reg, fuel_type)")
+        .eq("job_id", jobData.id)
+        .in("status", ["planned", "en_route"])
+        .order("stop_number", { ascending: true });
+      if (error) {
+        throw error;
+      }
+      setJobDeliveryInfo((data || [])[0] || null);
+    } catch (loadErr) {
+      console.error("Unable to load job delivery info", loadErr);
+      setJobDeliveryInfo(null);
+    }
+  }, [jobData?.id]);
+
+  const openScheduleModal = () => {
+    if (!jobData?.id) return;
+    setScheduleModalJob({
+      id: jobData.id,
+      job_number: jobData.jobNumber || jobData.job_number,
+      waiting_status: jobData.waitingStatus || jobData.waiting_status,
+    });
+    setIsScheduleModalOpen(true);
+  };
+
+  const handleDeliveryScheduled = useCallback(() => {
+    loadDeliveryRoutesList();
+    loadJobDeliveryInfo();
+    refreshJob();
+  }, [loadDeliveryRoutesList, loadJobDeliveryInfo, refreshJob]);
+
   useEffect(() => {
     setSelectedPipelineStage("all");
   }, [jobData?.id]);
@@ -332,11 +430,19 @@ function PartsPortalPage() {
   }, [fetchInventory, fetchDeliveries]);
 
   useEffect(() => {
+    loadDeliveryRoutesList();
+  }, [loadDeliveryRoutesList]);
+
+  useEffect(() => {
     const handler = setTimeout(() => {
       fetchInventory(inventorySearch);
     }, 400);
     return () => clearTimeout(handler);
   }, [inventorySearch, fetchInventory]);
+
+  useEffect(() => {
+    loadJobDeliveryInfo();
+  }, [loadJobDeliveryInfo]);
 
   const openAddPartModal = (part) => {
     if (part) {
@@ -1542,6 +1648,13 @@ function PartsPortalPage() {
 
         {renderAddPartModal()}
         {renderDeliveryModal()}
+        <DeliverySchedulerModal
+          open={isScheduleModalOpen}
+          onClose={() => setIsScheduleModalOpen(false)}
+          job={scheduleModalJob}
+          deliveries={deliveryRoutesList}
+          onScheduled={handleDeliveryScheduled}
+        />
       </div>
     </Layout>
   );

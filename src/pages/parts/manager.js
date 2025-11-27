@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import PartsOpsDashboard from "@/components/dashboards/PartsOpsDashboard";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
+import DeliverySchedulerModal from "@/components/Parts/DeliverySchedulerModal";
 
 const containerStyle = {
   padding: "0 24px 48px",
@@ -76,6 +77,11 @@ const resolveSourceMeta = (origin = "") => {
   return SOURCE_META.manual;
 };
 
+const needsDeliveryScheduling = (waitingStatus = "") => {
+  const normalized = String(waitingStatus || "").toLowerCase();
+  return /collect|delivery/.test(normalized);
+};
+
 const SourceBadge = ({ label, background, color }) => (
   <span
     style={{
@@ -121,8 +127,10 @@ const buildWorkloadRows = (items = []) =>
     const partLabel = part.part_number ? `${part.part_number} · ${part.name || "Part"}` : part.name || "Part";
 
     return {
+      jobId: job.id,
       jobNumber: job.job_number || "—",
       reg: job.vehicle_reg || "—",
+      waitingStatus: job.waiting_status || job.status || "",
       advisor: (
         <div>
           <div style={{ fontWeight: 600 }}>{partLabel}</div>
@@ -138,6 +146,15 @@ const buildWorkloadRows = (items = []) =>
       value: formatCurrency(monetaryValue),
     };
   });
+
+const groupByJobId = (items = []) =>
+  items.reduce((acc, stop) => {
+    const jobId = stop.job_id;
+    if (!jobId) return acc;
+    if (!acc[jobId]) acc[jobId] = [];
+    acc[jobId].push(stop);
+    return acc;
+  }, {});
 
 const buildTeamBuckets = (items = []) => {
   const grouped = items.reduce((acc, item) => {
@@ -194,121 +211,161 @@ export default function PartsManagerDashboard() {
     techRequests: [],
     pipelineSummary: EMPTY_PIPELINE_SUMMARY,
   });
+  const [deliveryRoutes, setDeliveryRoutes] = useState([]);
+  const [jobDeliveryMap, setJobDeliveryMap] = useState({});
+  const [scheduleModalJob, setScheduleModalJob] = useState(null);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
-  useEffect(() => {
+  const refreshJobDeliveryMap = useCallback(
+    async (jobIds = []) => {
+      if (!jobIds.length) {
+        setJobDeliveryMap({});
+        return;
+      }
+      const { data, error } = await supabaseClient
+        .from("delivery_stops")
+        .select("job_id, status, stop_number, delivery:deliveries(id, delivery_date, vehicle_reg)")
+        .in("job_id", jobIds)
+        .in("status", ["planned", "en_route"])
+        .order("stop_number", { ascending: true });
+      if (error) {
+        console.error("Failed to load delivery stops for jobs:", error);
+        return;
+      }
+      setJobDeliveryMap(groupByJobId(data || []));
+    },
+    []
+  );
+
+  const openScheduleModalForRow = useCallback((row) => {
+    if (!row?.jobId) return;
+    setScheduleModalJob({
+      id: row.jobId,
+      job_number: row.jobNumber,
+      waiting_status: row.waitingStatus,
+    });
+    setIsScheduleModalOpen(true);
+  }, []);
+
+  const closeScheduleModal = useCallback(() => {
+    setIsScheduleModalOpen(false);
+    setScheduleModalJob(null);
+  }, []);
+
+  const loadDashboard = useCallback(async () => {
     if (!isManager) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const [summaryResponse, deliveriesResponse, jobItemsResponse, techRequestsResponse] = await Promise.all([
+        fetch("/api/parts/summary").then((res) => res.json()),
+        fetch("/api/parts/deliveries?limit=5").then((res) => res.json()),
+        supabaseClient
+          .from("parts_job_items")
+          .select(
+            `id, status, origin, quantity_requested, created_at, job:jobs(id, job_number, vehicle_reg, waiting_status, status), part:parts_catalog(part_number, name, supplier, unit_price)`
+          )
+          .in("status", [
+            "waiting_authorisation",
+            "pending",
+            "awaiting_stock",
+            "on_order",
+            "pre_picked",
+            "stock",
+            "allocated",
+            "picked",
+          ])
+          .order("created_at", { ascending: false })
+          .limit(8),
+        supabaseClient
+          .from("parts_requests")
+          .select(
+            `request_id, part_id, job_id, quantity, status, source, description, created_at,
+             job:jobs!inner(job_number, waiting_status),
+             part:parts_catalog(part_number, name)`
+          )
+          .in("status", OPEN_REQUEST_STATUSES)
+          .order("created_at", { ascending: false })
+          .limit(10),
+      ]);
 
-    const loadDashboard = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [summaryResponse, deliveriesResponse, jobItemsResponse, techRequestsResponse] = await Promise.all([
-          fetch("/api/parts/summary").then((res) => res.json()),
-          fetch("/api/parts/deliveries?limit=5").then((res) => res.json()),
-          supabaseClient
-            .from("parts_job_items")
-            .select(
-              `id, status, origin, quantity_requested, created_at, job:jobs(id, job_number, vehicle_reg, waiting_status, status), part:parts_catalog(part_number, name, supplier, unit_price)`
-            )
-            .in("status", [
-              "waiting_authorisation",
-              "pending",
-              "awaiting_stock",
-              "on_order",
-              "pre_picked",
-              "stock",
-              "allocated",
-              "picked",
-            ])
-            .order("created_at", { ascending: false })
-            .limit(8),
-          supabaseClient
-            .from("parts_requests")
-            .select(
-              `request_id, part_id, job_id, quantity, status, source, description, created_at,
-               job:jobs!inner(job_number, waiting_status),
-               part:parts_catalog(part_number, name)`
-            )
-            .in("status", OPEN_REQUEST_STATUSES)
-            .order("created_at", { ascending: false })
-            .limit(10),
-        ]);
+      if (!summaryResponse.success) {
+        throw new Error(summaryResponse.message || "Unable to load summary");
+      }
 
-        if (!summaryResponse.success) {
-          throw new Error(summaryResponse.message || "Unable to load summary");
-        }
+      if (!deliveriesResponse.success) {
+        throw new Error(deliveriesResponse.message || "Unable to load deliveries");
+      }
 
-        if (!deliveriesResponse.success) {
-          throw new Error(deliveriesResponse.message || "Unable to load deliveries");
-        }
+      if (jobItemsResponse.error) {
+        throw new Error(jobItemsResponse.error.message || "Unable to load job data");
+      }
 
-        if (jobItemsResponse.error) {
-          throw new Error(jobItemsResponse.error.message || "Unable to load job data");
-        }
+      if (techRequestsResponse.error) {
+        throw new Error(techRequestsResponse.error.message || "Unable to load tech requests");
+      }
 
-        if (techRequestsResponse.error) {
-          throw new Error(techRequestsResponse.error.message || "Unable to load tech requests");
-        }
+      const summary = summaryResponse.summary || {};
+      const lowStock = summary.lowStockParts || [];
+      const jobRows = jobItemsResponse.data || [];
+      const techRequests = techRequestsResponse.data || [];
+      const pipelineSummary = summarizePartsPipeline(jobRows, {
+        quantityField: "quantity_requested",
+      });
 
-        const summary = summaryResponse.summary || {};
-        const lowStock = summary.lowStockParts || [];
-        const jobRows = jobItemsResponse.data || [];
-        const techRequests = techRequestsResponse.data || [];
-        const pipelineSummary = summarizePartsPipeline(jobRows, {
-          quantityField: "quantity_requested",
-        });
+      const summaryCards = [
+        {
+          label: "Active parts",
+          value: summary.totalParts ?? 0,
+          helper: `${summary.lowStockCount || 0} low stock`,
+        },
+        {
+          label: "Inventory value",
+          value: formatCurrency(summary.totalInventoryValue || 0),
+          helper: "Cost basis",
+        },
+        {
+          label: "Parts on order",
+          value: summary.partsOnOrder ?? 0,
+          helper: "Awaiting delivery",
+        },
+        {
+          label: "Pending deliveries",
+          value: summary.pendingDeliveries ?? 0,
+          helper: `${summary.activeJobParts || 0} live job lines`,
+        },
+      ];
 
-        const summaryCards = [
-          {
-            label: "Active parts",
-            value: summary.totalParts ?? 0,
-            helper: `${summary.lowStockCount || 0} low stock`,
-          },
-          {
-            label: "Inventory value",
-            value: formatCurrency(summary.totalInventoryValue || 0),
-            helper: "Cost basis",
-          },
-          {
-            label: "Parts on order",
-            value: summary.partsOnOrder ?? 0,
-            helper: "Awaiting delivery",
-          },
-          {
-            label: "Pending deliveries",
-            value: summary.pendingDeliveries ?? 0,
-            helper: `${summary.activeJobParts || 0} live job lines`,
-          },
-        ];
+      setDeliveryRoutes(deliveriesResponse.deliveries || []);
+      await refreshJobDeliveryMap(jobRows.map((row) => row.job?.id).filter(Boolean));
 
-        const deliveries = (deliveriesResponse.deliveries || []).map((delivery) => ({
+      setDashboardData({
+        summaryCards,
+        workload: buildWorkloadRows(jobRows),
+        focusItems: buildFocusItems(lowStock),
+        inventoryAlerts: lowStock,
+        deliveries: (deliveriesResponse.deliveries || []).map((delivery) => ({
           supplier: delivery.supplier || "Unknown supplier",
           eta: delivery.expected_date || delivery.received_date || "TBC",
           items: (delivery.delivery_items || []).length,
           reference: delivery.order_reference || delivery.id,
-        }));
+        })),
+        teamAvailability: buildTeamBuckets(jobRows),
+        teamPerformance: buildTeamPerformance(jobRows),
+        pipelineSummary,
+        techRequests,
+      });
+    } catch (err) {
+      console.error("Failed to load parts manager data", err);
+      setError(err.message || "Unable to load parts dashboard");
+    } finally {
+      setLoading(false);
+    }
+  }, [isManager, refreshJobDeliveryMap]);
 
-        setDashboardData({
-          summaryCards,
-          workload: buildWorkloadRows(jobRows),
-          focusItems: buildFocusItems(lowStock),
-          inventoryAlerts: lowStock,
-          deliveries,
-          teamAvailability: buildTeamBuckets(jobRows),
-          teamPerformance: buildTeamPerformance(jobRows),
-          pipelineSummary,
-          techRequests,
-        });
-      } catch (err) {
-        console.error("Failed to load parts manager data", err);
-        setError(err.message || "Unable to load parts dashboard");
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  useEffect(() => {
     loadDashboard();
-  }, [isManager]);
+  }, [isManager, loadDashboard]);
 
   const pipelineSummary = dashboardData.pipelineSummary || { stageSummary: [], totalCount: 0 };
   const pipelineStages = pipelineSummary.stageSummary || [];
@@ -389,6 +446,7 @@ export default function PartsManagerDashboard() {
                   <thead>
                     <tr style={{ textAlign: "left", color: "#777", fontSize: "0.85rem" }}>
                       <th style={{ paddingBottom: "10px" }}>Job</th>
+                      <th style={{ paddingBottom: "10px" }}>Delivery</th>
                       <th style={{ paddingBottom: "10px" }}>Reg</th>
                       <th style={{ paddingBottom: "10px" }}>Supplier</th>
                       <th style={{ paddingBottom: "10px" }}>Status</th>
@@ -396,15 +454,54 @@ export default function PartsManagerDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {dashboardData.workload.map((row) => (
-                      <tr key={`${row.jobNumber}-${row.advisor}`} style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-                        <td style={{ padding: "12px 0" }}>{row.jobNumber}</td>
-                        <td style={{ padding: "12px 0" }}>{row.reg}</td>
-                        <td style={{ padding: "12px 0" }}>{row.advisor}</td>
-                        <td style={{ padding: "12px 0" }}>{row.status}</td>
-                        <td style={{ padding: "12px 0", textAlign: "right", fontWeight: 600 }}>{row.value}</td>
-                      </tr>
-                    ))}
+                    {dashboardData.workload.map((row) => {
+                      const deliveryInfo = jobDeliveryMap[row.jobId || ""]?.[0] || null;
+                      const deliveryDate = deliveryInfo?.delivery?.delivery_date;
+                      const needsSchedule = needsDeliveryScheduling(row.waitingStatus);
+                      return (
+                        <tr
+                          key={`${row.jobNumber}-${row.advisor}-${row.jobId}`}
+                          style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}
+                        >
+                          <td style={{ padding: "12px 0" }}>{row.jobNumber}</td>
+                          <td style={{ padding: "12px 0" }}>
+                            {deliveryInfo ? (
+                              <div>
+                                <div style={{ fontWeight: 600 }}>Stop {deliveryInfo.stop_number}</div>
+                                <div style={{ fontSize: "0.8rem", color: "#555" }}>
+                                  {deliveryDate ? new Date(deliveryDate).toLocaleDateString() : "Delivery scheduled"}
+                                </div>
+                              </div>
+                            ) : (
+                              <span style={{ color: "#6b7280" }}>None</span>
+                            )}
+                            {needsSchedule && (
+                              <button
+                                type="button"
+                                onClick={() => openScheduleModalForRow(row)}
+                                style={{
+                                  marginTop: "6px",
+                                  borderRadius: "8px",
+                                  border: "1px solid #2563eb",
+                                  background: "#fff",
+                                  color: "#2563eb",
+                                  padding: "4px 10px",
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                  fontSize: "0.75rem",
+                                }}
+                              >
+                                Schedule Delivery
+                              </button>
+                            )}
+                          </td>
+                          <td style={{ padding: "12px 0" }}>{row.reg}</td>
+                          <td style={{ padding: "12px 0" }}>{row.advisor}</td>
+                          <td style={{ padding: "12px 0" }}>{row.status}</td>
+                          <td style={{ padding: "12px 0", textAlign: "right", fontWeight: 600 }}>{row.value}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -503,12 +600,12 @@ export default function PartsManagerDashboard() {
               )}
             </div>
 
-            <div style={sectionCardStyle}>
-              <div style={sectionTitleStyle}>Tech Requests</div>
-              {techRequests.length === 0 ? (
-                <div style={{ color: "#666" }}>No open technician requests.</div>
-              ) : (
-                <table style={performanceTableStyle}>
+          <div style={sectionCardStyle}>
+            <div style={sectionTitleStyle}>Tech Requests</div>
+            {techRequests.length === 0 ? (
+              <div style={{ color: "#666" }}>No open technician requests.</div>
+            ) : (
+              <table style={performanceTableStyle}>
                   <thead>
                     <tr style={{ textAlign: "left", color: "#777", fontSize: "0.85rem" }}>
                       <th style={{ paddingBottom: "10px" }}>Job</th>
@@ -563,12 +660,19 @@ export default function PartsManagerDashboard() {
                       );
                     })}
                   </tbody>
-                </table>
-              )}
-            </div>
+              </table>
+            )}
           </div>
-        </>
-      )}
-    </Layout>
-  );
+        </div>
+      </>
+    )}
+      <DeliverySchedulerModal
+        open={isScheduleModalOpen}
+        onClose={closeScheduleModal}
+        job={scheduleModalJob}
+        deliveries={deliveryRoutes}
+        onScheduled={() => loadDashboard()}
+      />
+  </Layout>
+);
 }
