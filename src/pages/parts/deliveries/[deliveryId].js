@@ -61,6 +61,14 @@ const estimateDistance = (fromStop, toStop) => {
 const sortStopsByNumber = (stops = []) =>
   [...stops].sort((a, b) => (a.stop_number || 0) - (b.stop_number || 0));
 
+const calculateFuelCost = (mileage, mpg = 1, pricePerLitre = 1.75) => {
+  if (!mileage || Number.isNaN(Number(mileage))) return 0;
+  const safeMpg = mpg && mpg > 0 ? mpg : 1;
+  const safePrice = pricePerLitre && pricePerLitre > 0 ? pricePerLitre : 0;
+  const fuelCost = Number(mileage) * (safePrice / safeMpg);
+  return Number(fuelCost.toFixed(2));
+};
+
 export default function DeliveryRoutePage() {
   const router = useRouter();
   const { deliveryId } = router.query;
@@ -85,6 +93,9 @@ export default function DeliveryRoutePage() {
   const [savingStop, setSavingStop] = useState(false);
   const [draggedStopId, setDraggedStopId] = useState(null);
   const [dropTargetId, setDropTargetId] = useState(null);
+  const [dieselPricePerLitre, setDieselPricePerLitre] = useState(1.75);
+  const [mpgDraft, setMpgDraft] = useState("");
+  const [fuelSyncedKey, setFuelSyncedKey] = useState(null);
 
   const loadDelivery = useCallback(async () => {
     if (!isReady || !deliveryId) {
@@ -108,6 +119,7 @@ export default function DeliveryRoutePage() {
       if (fetchError) throw fetchError;
       const payload = data || null;
       setDelivery(payload);
+      setFuelSyncedKey(null);
       return payload;
     } catch (fetchErr) {
       console.error("Failed to load delivery:", fetchErr);
@@ -159,6 +171,32 @@ export default function DeliveryRoutePage() {
     };
   }, [customerQuery]);
 
+  const loadFuelSettings = useCallback(async () => {
+    try {
+      const { data, error: fetchError } = await supabase
+        .from("delivery_settings")
+        .select("diesel_price_per_litre")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (fetchError) throw fetchError;
+      if (data?.diesel_price_per_litre) {
+        setDieselPricePerLitre(data.diesel_price_per_litre);
+      }
+    } catch (settingsError) {
+      console.error("Failed to load diesel price:", settingsError);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFuelSettings();
+  }, [loadFuelSettings]);
+
+  useEffect(() => {
+    setMpgDraft(delivery?.vehicle_mpg ? String(delivery.vehicle_mpg) : "");
+  }, [delivery?.vehicle_mpg]);
+
+
   const orderedStops = useMemo(() => {
     if (!delivery?.stops) return [];
     return sortStopsByNumber(delivery.stops || []);
@@ -177,33 +215,68 @@ export default function DeliveryRoutePage() {
     if (failure) throw failure.error;
   }, []);
 
-  const syncLegMileage = useCallback(async (ordered = []) => {
-    if (!ordered.length) return;
-    const updates = [];
-    for (let index = 0; index < ordered.length; index += 1) {
-      const previousStop = ordered[index - 1];
-      const currentStop = ordered[index];
-      const targetMileage = index === 0 ? 0 : estimateDistance(previousStop, currentStop);
-      const currentMileage = Number(currentStop.mileage_for_leg || 0);
-      if (currentMileage !== targetMileage) {
-        updates.push({
-          id: currentStop.id,
-          mileage_for_leg: targetMileage,
-        });
+  const syncLegMileage = useCallback(
+    async (ordered = [], mpgValue = delivery?.vehicle_mpg || 0) => {
+      if (!ordered.length) return;
+      const updates = [];
+      for (let index = 0; index < ordered.length; index += 1) {
+        const previousStop = ordered[index - 1];
+        const currentStop = ordered[index];
+        const targetMileage = index === 0 ? 0 : estimateDistance(previousStop, currentStop);
+        const currentMileage = Number(currentStop.mileage_for_leg || 0);
+        const targetFuelCost = calculateFuelCost(
+          targetMileage,
+          mpgValue,
+          dieselPricePerLitre
+        );
+        const currentFuelCost = Number(currentStop.estimated_fuel_cost || 0);
+        if (currentMileage !== targetMileage || currentFuelCost !== targetFuelCost) {
+          updates.push({
+            id: currentStop.id,
+            mileage_for_leg: targetMileage,
+            estimated_fuel_cost: targetFuelCost,
+          });
+        }
       }
-    }
-    if (!updates.length) return;
-    const results = await Promise.all(
-      updates.map((update) =>
-        supabase
-          .from("delivery_stops")
-          .update({ mileage_for_leg: update.mileage_for_leg })
-          .eq("id", update.id)
-      )
-    );
-    const failure = results.find((result) => result.error);
-    if (failure) throw failure.error;
-  }, []);
+      if (!updates.length) return;
+      const results = await Promise.all(
+        updates.map((update) =>
+          supabase
+            .from("delivery_stops")
+            .update({
+              mileage_for_leg: update.mileage_for_leg,
+              estimated_fuel_cost: update.estimated_fuel_cost,
+            })
+            .eq("id", update.id)
+        )
+      );
+      const failure = results.find((result) => result.error);
+      if (failure) throw failure.error;
+    },
+    [dieselPricePerLitre]
+  );
+
+  useEffect(() => {
+    if (!delivery?.id || !orderedStops.length) return undefined;
+    const syncKey = `${delivery.id}-${dieselPricePerLitre}`;
+    if (fuelSyncedKey === syncKey) return undefined;
+    let isMounted = true;
+    const runSync = async () => {
+      try {
+        await syncLegMileage(orderedStops, delivery?.vehicle_mpg);
+        await loadDelivery();
+        if (isMounted) {
+          setFuelSyncedKey(syncKey);
+        }
+      } catch (syncErr) {
+        console.error("Failed to sync mileage after fuel settings change:", syncErr);
+      }
+    };
+    runSync();
+    return () => {
+      isMounted = false;
+    };
+  }, [delivery?.id, dieselPricePerLitre, orderedStops, syncLegMileage, loadDelivery, fuelSyncedKey]);
 
   const activeStop = orderedStops.find((stop) => stop.status === "en_route");
   const nextPlannedStop = orderedStops.find((stop) => stop.status === "planned");
@@ -254,6 +327,31 @@ export default function DeliveryRoutePage() {
     }
     handleStatusUpdate(pendingIds, "delivered");
   };
+
+  const handleSaveMpg = useCallback(async () => {
+    if (!delivery?.id) return;
+    const parsedMpg = parseFloat(mpgDraft);
+    if (Number.isNaN(parsedMpg) || parsedMpg <= 0) {
+      setError("Enter a valid MPG value.");
+      return;
+    }
+    setActionLoading(true);
+    setError("");
+    try {
+      const { error: updateError } = await supabase
+        .from("deliveries")
+        .update({ vehicle_mpg: parsedMpg })
+        .eq("id", delivery.id);
+      if (updateError) throw updateError;
+      await syncLegMileage(orderedStops, parsedMpg);
+      await loadDelivery();
+    } catch (mpgErr) {
+      console.error("Failed to save MPG:", mpgErr);
+      setError(mpgErr?.message || "Unable to save MPG");
+    } finally {
+      setActionLoading(false);
+    }
+  }, [delivery?.id, mpgDraft, orderedStops, syncLegMileage, loadDelivery]);
 
   const resetModal = () => {
     setCustomerQuery("");
@@ -325,7 +423,7 @@ export default function DeliveryRoutePage() {
       const latestDelivery = await loadDelivery();
       if (latestDelivery?.stops?.length) {
         const sortedStops = sortStopsByNumber(latestDelivery.stops);
-        await syncLegMileage(sortedStops);
+        await syncLegMileage(sortedStops, latestDelivery.vehicle_mpg);
         await loadDelivery();
       }
       setModalOpen(false);
@@ -361,7 +459,7 @@ export default function DeliveryRoutePage() {
         const [moved] = nextOrder.splice(fromIndex, 1);
         nextOrder.splice(toIndex, 0, moved);
         await persistStopNumbers(nextOrder);
-        await syncLegMileage(nextOrder);
+        await syncLegMileage(nextOrder, delivery?.vehicle_mpg);
         await loadDelivery();
       } catch (reorderErr) {
         console.error("Failed to reorder stops:", reorderErr);
@@ -413,7 +511,7 @@ export default function DeliveryRoutePage() {
         if (deleteError) throw deleteError;
         const remainingStops = orderedStops.filter((stop) => stop.id !== stopId);
         await persistStopNumbers(remainingStops);
-        await syncLegMileage(remainingStops);
+        await syncLegMileage(remainingStops, delivery?.vehicle_mpg);
         await loadDelivery();
       } catch (deleteErr) {
         console.error("Failed to delete stop:", deleteErr);
@@ -437,6 +535,15 @@ export default function DeliveryRoutePage() {
 
   const driverLabel = delivery?.driver_id ? `Driver ${delivery.driver_id.slice(0, 8)}` : "Driver unassigned";
   const vehicleLabel = delivery?.vehicle_reg || "Vehicle TBC";
+  const stopsCount = orderedStops.length;
+  const totalMileage = orderedStops.reduce(
+    (acc, stop) => acc + Number(stop.mileage_for_leg || 0),
+    0
+  );
+  const totalFuelCost = orderedStops.reduce(
+    (acc, stop) => acc + Number(stop.estimated_fuel_cost || 0),
+    0
+  );
 
   return (
     <Layout>
@@ -466,7 +573,13 @@ export default function DeliveryRoutePage() {
             Route overview
           </p>
           <h1 style={{ margin: "4px 0 0", color: "#d10000" }}>Stops & delivery details</h1>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: "16px",
+            }}
+          >
             <div>
               <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>Driver</p>
               <p style={{ margin: "4px 0 0", fontWeight: 600 }}>{driverLabel}</p>
@@ -479,6 +592,62 @@ export default function DeliveryRoutePage() {
               <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>Fuel type</p>
               <p style={{ margin: "4px 0 0", fontWeight: 600 }}>
                 {delivery?.fuel_type || "Not specified"}
+              </p>
+            </div>
+            <div>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>Diesel price</p>
+              <p style={{ margin: "4px 0 0", fontWeight: 600 }}>
+                {formatCurrency(dieselPricePerLitre)} / L
+              </p>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>Vehicle MPG</p>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <input
+                  type="number"
+                  min="1"
+                  step="0.1"
+                  value={mpgDraft}
+                  onChange={(event) => setMpgDraft(event.target.value)}
+                  placeholder="e.g. 28"
+                  style={{
+                    borderRadius: "10px",
+                    border: "1px solid #ffd1d1",
+                    padding: "8px 10px",
+                    width: "100px",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveMpg}
+                  disabled={actionLoading}
+                  style={{
+                    ...buttonStyle,
+                    background: "#0f766e",
+                    color: "#ffffff",
+                    padding: "8px 12px",
+                    minWidth: "80px",
+                    opacity: actionLoading ? 0.6 : 1,
+                  }}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+            <div>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>Stops planned</p>
+              <p style={{ margin: "4px 0 0", fontWeight: 600 }}>{stopsCount}</p>
+            </div>
+            <div>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>Total mileage</p>
+              <p style={{ margin: "4px 0 0", fontWeight: 600 }}>
+                {totalMileage.toLocaleString()} km
+              </p>
+            </div>
+            <div>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>Fuel estimate</p>
+              <p style={{ margin: "4px 0 0", fontWeight: 600 }}>
+                {formatCurrency(totalFuelCost)}
               </p>
             </div>
           </div>
