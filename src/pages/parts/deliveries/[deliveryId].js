@@ -323,6 +323,21 @@ export default function DeliveryRoutePage() {
   const activeStop = orderedStops.find((stop) => stop.status === "en_route");
   const nextPlannedStop = orderedStops.find((stop) => stop.status === "planned");
 
+  const notifySystemEvent = useCallback(async (payload) => {
+    try {
+      await fetch("/api/messages/system-notifications/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch (notifyError) {
+      console.error("Unable to send delivery notification:", notifyError);
+    }
+  }, []);
+
+  const buildDriverLabel = (delivery) =>
+    delivery?.driver_id ? `Driver ${delivery.driver_id.slice(0, 8)}` : "Driver unassigned";
+
   const handleStatusUpdate = useCallback(
     async (stopIds, status) => {
       if (!stopIds.length) return;
@@ -337,6 +352,47 @@ export default function DeliveryRoutePage() {
         const latestDelivery = await loadDelivery();
         if (status === "delivered" && latestDelivery) {
           await progressNextStop(latestDelivery);
+        }
+
+        if (!latestDelivery) {
+          return;
+        }
+        const stopsData = latestDelivery.stops || [];
+        const driverLabel = buildDriverLabel(latestDelivery);
+        if (status === "en_route") {
+          const stopInfo = stopsData.find((stop) => stopIds.includes(stop.id));
+          await notifySystemEvent({
+            message: `Delivery route ${latestDelivery.id} started by ${driverLabel}`,
+            metadata: {
+              event: "delivery_started",
+              deliveryId: latestDelivery.id,
+              vehicle: latestDelivery.vehicle_reg || null,
+              stopId: stopInfo?.id || null,
+              stopNumber: stopInfo?.stop_number || null,
+            },
+          });
+        }
+        if (status === "delivered") {
+          const stopInfo = stopsData.find((stop) => stopIds.includes(stop.id));
+          await notifySystemEvent({
+            message: `Stop ${stopInfo?.stop_number || ""} delivered for Job ${stopInfo?.job?.job_number || stopInfo?.job_id || "—"}`,
+            metadata: {
+              event: "stop_delivered",
+              deliveryId: latestDelivery.id,
+              stopId: stopInfo?.id || null,
+              jobId: stopInfo?.job?.id || stopInfo?.job_id || null,
+            },
+          });
+          const allDelivered = stopsData.length > 0 && stopsData.every((stop) => stop.status === "delivered");
+          if (allDelivered) {
+            await notifySystemEvent({
+              message: `Delivery route ${latestDelivery.id} completed by ${driverLabel}`,
+              metadata: {
+                event: "delivery_completed",
+                deliveryId: latestDelivery.id,
+              },
+            });
+          }
         }
       } catch (actionErr) {
         console.error("Status update failed:", actionErr);

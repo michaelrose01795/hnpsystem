@@ -1,4 +1,5 @@
 import { supabaseService } from "@/lib/supabaseClient";
+import { sendSystemNotification } from "@/lib/notifications/system";
 
 const DEFAULT_STATUS = ["planned", "en_route"];
 
@@ -101,6 +102,15 @@ export default async function handler(req, res) {
       .single();
 
     if (insertError) throw insertError;
+
+    await sendSystemNotification({
+      content: `Delivery created for Job ${jobRow.job_number || jobRow.id} (Stop ${nextStopNumber})`,
+      metadata: {
+        event: "delivery_created",
+        jobId: jobRow.id,
+        deliveryId: targetDeliveryId,
+      },
+    });
 
     return res.status(201).json({ success: true, stop: inserted, deliveryId: targetDeliveryId });
   } catch (error) {
