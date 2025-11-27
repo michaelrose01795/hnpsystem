@@ -646,6 +646,12 @@ CREATE TABLE public.parts_delivery_runs (
   CONSTRAINT parts_delivery_runs_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT parts_delivery_runs_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
 );
+CREATE TABLE public.parts_delivery_settings (
+  fuel_type text NOT NULL,
+  price_per_litre numeric NOT NULL,
+  last_updated timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT parts_delivery_settings_pkey PRIMARY KEY (fuel_type)
+);
 CREATE TABLE public.parts_inventory (
   part_id integer NOT NULL DEFAULT nextval('parts_inventory_part_id_seq'::regclass),
   part_number character varying NOT NULL UNIQUE,
