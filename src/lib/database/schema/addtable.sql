@@ -21,6 +21,7 @@ CREATE TABLE public.delivery_stops (
   job_id uuid,
   customer_id uuid NOT NULL,
   address text,
+  notes text,
   postcode text,
   mileage_for_leg numeric NOT NULL DEFAULT 0,
   estimated_fuel_cost numeric NOT NULL DEFAULT 0,

@@ -96,6 +96,9 @@ export default function DeliveryRoutePage() {
   const [dieselPricePerLitre, setDieselPricePerLitre] = useState(1.75);
   const [mpgDraft, setMpgDraft] = useState("");
   const [fuelSyncedKey, setFuelSyncedKey] = useState(null);
+  const [noteEditingId, setNoteEditingId] = useState(null);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
 
   const loadDelivery = useCallback(async () => {
     if (!isReady || !deliveryId) {
@@ -278,6 +281,29 @@ export default function DeliveryRoutePage() {
     };
   }, [delivery?.id, dieselPricePerLitre, orderedStops, syncLegMileage, loadDelivery, fuelSyncedKey]);
 
+  useEffect(() => {
+    if (!deliveryId) return undefined;
+    const channel = supabase
+      .channel(`delivery_stops_updates_${deliveryId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "delivery_stops",
+          filter: `delivery_id=eq.${deliveryId}`,
+        },
+        () => {
+          loadDelivery();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [deliveryId, loadDelivery]);
+
   const activeStop = orderedStops.find((stop) => stop.status === "en_route");
   const nextPlannedStop = orderedStops.find((stop) => stop.status === "planned");
 
@@ -292,7 +318,10 @@ export default function DeliveryRoutePage() {
           .update({ status })
           .in("id", stopIds);
         if (updateError) throw updateError;
-        await loadDelivery();
+        const latestDelivery = await loadDelivery();
+        if (status === "delivered" && latestDelivery) {
+          await progressNextStop(latestDelivery);
+        }
       } catch (actionErr) {
         console.error("Status update failed:", actionErr);
         setError(actionErr?.message || "Unable to update stop status");
@@ -352,6 +381,52 @@ export default function DeliveryRoutePage() {
       setActionLoading(false);
     }
   }, [delivery?.id, mpgDraft, orderedStops, syncLegMileage, loadDelivery]);
+
+  const startNoteEditing = useCallback((stop) => {
+    setNoteEditingId(stop.id);
+    setNoteDraft(stop.notes || "");
+  }, []);
+
+  const cancelNoteEditing = useCallback(() => {
+    setNoteEditingId(null);
+    setNoteDraft("");
+  }, []);
+
+  const handleSaveNote = useCallback(async () => {
+    if (!noteEditingId) return;
+    setNoteSaving(true);
+    setError("");
+    try {
+      const { error: noteError } = await supabase
+        .from("delivery_stops")
+        .update({ notes: noteDraft })
+        .eq("id", noteEditingId);
+      if (noteError) throw noteError;
+      await loadDelivery();
+      cancelNoteEditing();
+    } catch (saveErr) {
+      console.error("Failed to save note:", saveErr);
+      setError(saveErr?.message || "Unable to save note");
+    } finally {
+      setNoteSaving(false);
+    }
+  }, [noteEditingId, noteDraft, loadDelivery, cancelNoteEditing]);
+
+  const progressNextStop = useCallback(
+    async (latestDelivery) => {
+      const nextStop = sortStopsByNumber(latestDelivery?.stops || []).find(
+        (stop) => stop.status === "planned"
+      );
+      if (!nextStop) return;
+      const { error: updateError } = await supabase
+        .from("delivery_stops")
+        .update({ status: "en_route" })
+        .eq("id", nextStop.id);
+      if (updateError) throw updateError;
+      await loadDelivery();
+    },
+    [loadDelivery]
+  );
 
   const resetModal = () => {
     setCustomerQuery("");
@@ -1010,6 +1085,38 @@ export default function DeliveryRoutePage() {
                         <option value="delivered">Delivered</option>
                       </select>
                     </div>
+                    <div style={{ marginTop: "8px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        onClick={() => handleStatusUpdate([stop.id], "delivered")}
+                        style={{
+                          borderRadius: "8px",
+                          border: "1px solid #ffe0e0",
+                          background: "#d10000",
+                          color: "#fff",
+                          padding: "6px 12px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Mark stop as delivered
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => startNoteEditing(stop)}
+                        style={{
+                          borderRadius: "8px",
+                          border: "1px solid #ffd1d1",
+                          background: "#ffffff",
+                          color: "#a00000",
+                          padding: "6px 12px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Add delivery notes
+                      </button>
+                    </div>
                     <div
                       style={{
                         marginTop: "12px",
@@ -1038,6 +1145,57 @@ export default function DeliveryRoutePage() {
                         </p>
                       </div>
                     </div>
+                    {stop.notes && noteEditingId !== stop.id && (
+                      <p style={{ marginTop: "12px", color: "#4b5563", fontSize: "0.9rem" }}>
+                        <strong>Note:</strong> {stop.notes}
+                      </p>
+                    )}
+                    {noteEditingId === stop.id && (
+                      <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <textarea
+                          value={noteDraft}
+                          onChange={(event) => setNoteDraft(event.target.value)}
+                          rows={3}
+                          placeholder="Capture delivery notes…"
+                          style={{
+                            borderRadius: "12px",
+                            border: "1px solid #ffd1d1",
+                            padding: "10px",
+                            resize: "vertical",
+                            width: "100%",
+                          }}
+                        />
+                        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                          <button
+                            type="button"
+                            onClick={handleSaveNote}
+                            disabled={noteSaving}
+                            style={{
+                              ...buttonStyle,
+                              background: "#0f766e",
+                              color: "#fff",
+                              padding: "6px 12px",
+                              opacity: noteSaving ? 0.6 : 1,
+                            }}
+                          >
+                            {noteSaving ? "Saving…" : "Save note"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelNoteEditing}
+                            style={{
+                              ...buttonStyle,
+                              background: "#fff",
+                              border: "1px solid #ffd1d1",
+                              color: "#a00000",
+                              padding: "6px 12px",
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </li>
               );
