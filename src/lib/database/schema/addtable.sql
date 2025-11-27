@@ -104,3 +104,23 @@ WHERE p.part_number IN ('BRK-FR-001', 'CAB-FLTR-019', 'WHL-19-SET')
     FROM public.parts_stock_movements m
     WHERE m.reference = format('seed-%s', p.part_number)
   );
+
+CREATE TABLE IF NOT EXISTS public.parts_delivery_runs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  job_id integer NOT NULL,
+  customer_id uuid NOT NULL,
+  delivery_date date NOT NULL,
+  time_leave time,
+  time_arrive time,
+  mileage integer NOT NULL DEFAULT 0,
+  fuel_cost numeric NOT NULL DEFAULT 0,
+  stops_count integer NOT NULL DEFAULT 1,
+  destination_address text,
+  status text NOT NULL DEFAULT 'planned'::text CHECK (status = ANY (ARRAY['planned'::text, 'dispatched'::text, 'completed'::text, 'cancelled'::text])),
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT parts_delivery_runs_pkey PRIMARY KEY (id),
+  CONSTRAINT parts_delivery_runs_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT parts_delivery_runs_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
+);
