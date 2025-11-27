@@ -39,6 +39,28 @@ const buttonStyle = {
   cursor: "pointer",
 };
 
+const getStopLocationValue = (stop = {}) =>
+  `${stop.address || stop.customer?.address || ""} ${stop.postcode || stop.customer?.postcode || ""}`.trim();
+
+const estimateDistance = (fromStop, toStop) => {
+  if (!fromStop || !toStop) {
+    return 0;
+  }
+  const fromValue = getStopLocationValue(fromStop);
+  const toValue = getStopLocationValue(toStop);
+  if (!fromValue || !toValue) {
+    return 5;
+  }
+  const charDiff = Math.abs(fromValue.length - toValue.length);
+  const sharedChars = Array.from(fromValue)
+    .map((char, index) => (toValue[index] === char ? 1 : 0))
+    .reduce((acc, val) => acc + val, 0);
+  return Math.max(1, Math.floor(charDiff + sharedChars * 0.2) + 4);
+};
+
+const sortStopsByNumber = (stops = []) =>
+  [...stops].sort((a, b) => (a.stop_number || 0) - (b.stop_number || 0));
+
 export default function DeliveryRoutePage() {
   const router = useRouter();
   const { deliveryId } = router.query;
@@ -84,13 +106,16 @@ export default function DeliveryRoutePage() {
         .maybeSingle();
 
       if (fetchError) throw fetchError;
-      setDelivery(data || null);
+      const payload = data || null;
+      setDelivery(payload);
+      return payload;
     } catch (fetchErr) {
       console.error("Failed to load delivery:", fetchErr);
       setError(fetchErr?.message || "Unable to load delivery route");
     } finally {
       setLoading(false);
     }
+    return null;
   }, [deliveryId, isReady]);
 
   useEffect(() => {
@@ -136,7 +161,7 @@ export default function DeliveryRoutePage() {
 
   const orderedStops = useMemo(() => {
     if (!delivery?.stops) return [];
-    return [...delivery.stops].sort((a, b) => a.stop_number - b.stop_number);
+    return sortStopsByNumber(delivery.stops || []);
   }, [delivery]);
 
   const persistStopNumbers = useCallback(async (ordered = []) => {
@@ -148,6 +173,34 @@ export default function DeliveryRoutePage() {
         .eq("id", stop.id)
     );
     const results = await Promise.all(promises);
+    const failure = results.find((result) => result.error);
+    if (failure) throw failure.error;
+  }, []);
+
+  const syncLegMileage = useCallback(async (ordered = []) => {
+    if (!ordered.length) return;
+    const updates = [];
+    for (let index = 0; index < ordered.length; index += 1) {
+      const previousStop = ordered[index - 1];
+      const currentStop = ordered[index];
+      const targetMileage = index === 0 ? 0 : estimateDistance(previousStop, currentStop);
+      const currentMileage = Number(currentStop.mileage_for_leg || 0);
+      if (currentMileage !== targetMileage) {
+        updates.push({
+          id: currentStop.id,
+          mileage_for_leg: targetMileage,
+        });
+      }
+    }
+    if (!updates.length) return;
+    const results = await Promise.all(
+      updates.map((update) =>
+        supabase
+          .from("delivery_stops")
+          .update({ mileage_for_leg: update.mileage_for_leg })
+          .eq("id", update.id)
+      )
+    );
     const failure = results.find((result) => result.error);
     if (failure) throw failure.error;
   }, []);
@@ -269,7 +322,12 @@ export default function DeliveryRoutePage() {
       };
       const { error: insertError } = await supabase.from("delivery_stops").insert([payload]);
       if (insertError) throw insertError;
-      await loadDelivery();
+      const latestDelivery = await loadDelivery();
+      if (latestDelivery?.stops?.length) {
+        const sortedStops = sortStopsByNumber(latestDelivery.stops);
+        await syncLegMileage(sortedStops);
+        await loadDelivery();
+      }
       setModalOpen(false);
       resetModal();
     } catch (saveErr) {
@@ -303,6 +361,7 @@ export default function DeliveryRoutePage() {
         const [moved] = nextOrder.splice(fromIndex, 1);
         nextOrder.splice(toIndex, 0, moved);
         await persistStopNumbers(nextOrder);
+        await syncLegMileage(nextOrder);
         await loadDelivery();
       } catch (reorderErr) {
         console.error("Failed to reorder stops:", reorderErr);
@@ -354,6 +413,7 @@ export default function DeliveryRoutePage() {
         if (deleteError) throw deleteError;
         const remainingStops = orderedStops.filter((stop) => stop.id !== stopId);
         await persistStopNumbers(remainingStops);
+        await syncLegMileage(remainingStops);
         await loadDelivery();
       } catch (deleteErr) {
         console.error("Failed to delete stop:", deleteErr);
