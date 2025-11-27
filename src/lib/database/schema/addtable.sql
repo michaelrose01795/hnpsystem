@@ -124,3 +124,15 @@ CREATE TABLE IF NOT EXISTS public.parts_delivery_runs (
   CONSTRAINT parts_delivery_runs_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT parts_delivery_runs_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
 );
+
+CREATE TABLE IF NOT EXISTS public.parts_delivery_settings (
+  fuel_type text NOT NULL PRIMARY KEY,
+  price_per_litre numeric NOT NULL,
+  last_updated timestamp with time zone NOT NULL DEFAULT now()
+);
+
+INSERT INTO public.parts_delivery_settings (fuel_type, price_per_litre)
+VALUES ('diesel', 1.75)
+ON CONFLICT (fuel_type) DO UPDATE
+  SET price_per_litre = EXCLUDED.price_per_litre,
+      last_updated = now();

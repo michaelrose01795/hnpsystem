@@ -627,6 +627,25 @@ CREATE TABLE public.parts_delivery_items (
   CONSTRAINT parts_delivery_items_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts_catalog(id),
   CONSTRAINT parts_delivery_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
+CREATE TABLE public.parts_delivery_runs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  job_id integer NOT NULL,
+  customer_id uuid NOT NULL,
+  delivery_date date NOT NULL,
+  time_leave time without time zone,
+  time_arrive time without time zone,
+  mileage integer NOT NULL DEFAULT 0,
+  fuel_cost numeric NOT NULL DEFAULT 0,
+  stops_count integer NOT NULL DEFAULT 1,
+  destination_address text,
+  status text NOT NULL DEFAULT 'planned'::text CHECK (status = ANY (ARRAY['planned'::text, 'dispatched'::text, 'completed'::text, 'cancelled'::text])),
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT parts_delivery_runs_pkey PRIMARY KEY (id),
+  CONSTRAINT parts_delivery_runs_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT parts_delivery_runs_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
+);
 CREATE TABLE public.parts_inventory (
   part_id integer NOT NULL DEFAULT nextval('parts_inventory_part_id_seq'::regclass),
   part_number character varying NOT NULL UNIQUE,

@@ -385,6 +385,11 @@ export default function Layout({ children, jobNumber }) {
       description: "Review inbound deliveries and update stock",
       section: "Parts",
     });
+    addNavItem("🗓️ Delivery Planner", "/parts/delivery-planner", {
+      keywords: ["delivery planner", "routes", "outbound"],
+      description: "Plan outbound parts run timing, stops, and costs",
+      section: "Parts",
+    });
   }
 
   if (isPartsManager) {

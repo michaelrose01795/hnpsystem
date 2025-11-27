@@ -54,10 +54,13 @@ const formatCurrency = (value) => {
 
 const formatDate = (value) => {
   if (!value) return "TBC";
+  if (String(value).toLowerCase() === "unscheduled") return "Unscheduled";
   const day = new Date(value);
   if (Number.isNaN(day.getTime())) return value;
   return day.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
 };
+
+const KM_PER_LITRE = 8;
 
 const customerName = (customer) => {
   if (!customer) return "Customer";
@@ -73,6 +76,9 @@ export default function PartsDeliveryPlannerPage() {
   const [runs, setRuns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [fuelRate, setFuelRate] = useState(null);
+  const [selectedDate, setSelectedDate] = useState("");
+  const pricePerLitre = fuelRate?.price_per_litre ?? 1.75;
 
   useEffect(() => {
     if (!hasPartsAccess) return;
@@ -102,6 +108,21 @@ export default function PartsDeliveryPlannerPage() {
     loadRuns();
   }, [hasPartsAccess]);
 
+  useEffect(() => {
+    const loadFuelRate = async () => {
+      const { data, error: rateError } = await supabaseClient
+        .from("parts_delivery_settings")
+        .select("fuel_type, price_per_litre, last_updated")
+        .order("last_updated", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!rateError && data) {
+        setFuelRate(data);
+      }
+    };
+    loadFuelRate();
+  }, []);
+
   const runsByDate = useMemo(() => {
     const map = {};
     runs.forEach((run) => {
@@ -111,11 +132,32 @@ export default function PartsDeliveryPlannerPage() {
       }
       map[key].push(run);
     });
-    return Object.entries(map).sort((a, b) => new Date(a[0]) - new Date(b[0]));
+    return Object.entries(map).sort((a, b) => {
+      const aKey = a[0] === "unscheduled" ? Number.MAX_SAFE_INTEGER : new Date(a[0]).getTime();
+      const bKey = b[0] === "unscheduled" ? Number.MAX_SAFE_INTEGER : new Date(b[0]).getTime();
+      return aKey - bKey;
+    });
   }, [runs]);
 
+  const computeFuelCost = (run) => ((Number(run.mileage) || 0) / KM_PER_LITRE) * pricePerLitre;
+  const priceLabel = fuelRate?.fuel_type
+    ? `${fuelRate.fuel_type} @ ${formatCurrency(pricePerLitre)} / L`
+    : `Diesel @ ${formatCurrency(pricePerLitre)} / L`;
   const totalMileage = runs.reduce((total, run) => total + (Number(run.mileage) || 0), 0);
-  const totalFuel = runs.reduce((total, run) => total + (Number(run.fuel_cost) || 0), 0);
+  const totalFuel = runs.reduce(
+    (total, run) => total + (Number(run.fuel_cost) || computeFuelCost(run)),
+    0
+  );
+
+  const filteredRunsByDate = useMemo(() => {
+    if (!selectedDate) return runsByDate;
+    return runsByDate.filter(([date]) => date === selectedDate);
+  }, [runsByDate, selectedDate]);
+
+  const dateOptions = runsByDate.map(([date]) => ({
+    value: date,
+    label: date === "unscheduled" ? "Unscheduled" : formatDate(date),
+  }));
 
   if (!hasPartsAccess) {
     return (
@@ -159,26 +201,90 @@ export default function PartsDeliveryPlannerPage() {
               <strong style={{ fontSize: "1.6rem" }}>{formatCurrency(totalFuel)}</strong>
             </div>
           </div>
+          <div style={{ color: "#4b5563", fontSize: "0.85rem", marginTop: "6px" }}>
+            Fuel rate: {priceLabel}
+          </div>
         </header>
 
         <section style={sectionStyle}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "12px",
+            }}
+          >
+            <label style={{ fontSize: "0.85rem", color: "#4b5563" }}>
+              <span style={{ display: "block", fontWeight: 600, marginBottom: "4px" }}>Filter by day</span>
+              <select
+                value={selectedDate}
+                onChange={(event) => setSelectedDate(event.target.value)}
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: "8px",
+                  border: "1px solid #ffdede",
+                  fontSize: "0.9rem",
+                  color: "#a00000",
+                }}
+              >
+                <option value="">All days</option>
+                {dateOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {selectedDate && (
+              <button
+                type="button"
+                onClick={() => setSelectedDate("")}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: "999px",
+                  border: "1px solid #ffdede",
+                  background: "#fffbfb",
+                  color: "#a00000",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                }}
+              >
+                Clear day filter
+              </button>
+            )}
+          </div>
           {loading ? (
             <p style={{ color: "#6b7280", margin: 0 }}>Loading delivery runs…</p>
           ) : error ? (
             <p style={{ color: "#ff4040", margin: 0 }}>{error}</p>
-          ) : runsByDate.length === 0 ? (
-            <p style={{ margin: 0, color: "#6b7280" }}>No delivery runs scheduled yet.</p>
+          ) : filteredRunsByDate.length === 0 ? (
+            <p style={{ margin: 0, color: "#6b7280" }}>
+              {selectedDate
+                ? `No delivery runs scheduled for ${formatDate(selectedDate)}.`
+                : "No delivery runs scheduled yet."}
+            </p>
           ) : (
-            runsByDate.map(([date, items]) => {
+            filteredRunsByDate.map(([date, items]) => {
               const dayMileage = items.reduce((total, item) => total + (Number(item.mileage) || 0), 0);
-              const dayFuel = items.reduce((total, item) => total + (Number(item.fuel_cost) || 0), 0);
+              const dayFuel = items.reduce(
+                (total, item) => total + (Number(item.fuel_cost) || computeFuelCost(item)),
+                0
+              );
+              const dayDrops = items.reduce((total, item) => total + (item.stops_count || 1), 0);
+              const status = items[0]?.status?.replace(/_/g, " ") || "Planned";
+              const cardLabel = date === "unscheduled" ? "Unscheduled" : formatDate(date);
               return (
-                <div key={date} style={dayCardStyle}>
+                <div key={`${date}-${status}`} style={dayCardStyle}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <h3 style={{ margin: 0, color: "#a00000" }}>{formatDate(date)}</h3>
+                      <h3 style={{ margin: 0, color: "#a00000" }}>{cardLabel}</h3>
                       <p style={{ margin: "4px 0 0", color: "#555" }}>
-                        {items.length} run{items.length === 1 ? "" : "s"} · {dayMileage} km · {formatCurrency(dayFuel)}
+                        {items.length} run{items.length === 1 ? "" : "s"} · {dayMileage} km ·{" "}
+                        {formatCurrency(dayFuel)} · {dayDrops} drop{dayDrops === 1 ? "" : "s"}
                       </p>
                     </div>
                     <span
@@ -190,7 +296,7 @@ export default function PartsDeliveryPlannerPage() {
                         letterSpacing: "0.05em",
                       }}
                     >
-                      {items[0].status?.replace(/_/g, " ") || "Planned"}
+                      {status}
                     </span>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -199,6 +305,7 @@ export default function PartsDeliveryPlannerPage() {
                       const jobNumber = run.job?.job_number || `#${run.job_id}`;
                       const address =
                         run.destination_address || customer?.address || run.customer?.name || "Address TBC";
+                      const fuelExpense = Number(run.fuel_cost) || computeFuelCost(run);
                       return (
                         <article key={run.id} style={runRowStyle}>
                           <div>
@@ -226,7 +333,7 @@ export default function PartsDeliveryPlannerPage() {
                               <strong>Mileage:</strong> {run.mileage ?? 0} km
                             </div>
                             <div>
-                              <strong>Fuel:</strong> {formatCurrency(run.fuel_cost)}
+                              <strong>Fuel:</strong> {formatCurrency(fuelExpense)}
                             </div>
                           </div>
                         </article>
