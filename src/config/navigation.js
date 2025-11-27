@@ -201,38 +201,38 @@ export const sidebarSections = [
         label: "👀 View Job Cards",
         href: "/job-cards/view",
         roles: ["parts"],
-    },
-    {
-      label: "🧰 Parts Workspace",
-      href: "/parts",
-      roles: ["parts"],
-    },
-    {
-      label: "🚚 Deliveries",
-      href: "/parts/deliveries",
-      roles: ["parts"],
-    },
-    {
-      label: "🗓️ Delivery Planner",
-      href: "/parts/delivery-planner",
-      roles: ["parts"],
-    },
-    {
-      label: "📝 VHC Dashboard",
-      href: "/vhc/dashboard",
-      roles: ["parts"],
-    },
-  ],
-},
-{
-  label: "Parts Manager",
-  category: "departments",
-  items: [
-    {
-      label: "👀 View Job Cards",
-      href: "/job-cards/view",
-      roles: ["parts manager"],
-    },
+      },
+      {
+        label: "🧰 Parts Workspace",
+        href: "/parts",
+        roles: ["parts"],
+      },
+      {
+        label: "🚚 Deliveries",
+        href: "/parts/deliveries",
+        roles: ["parts"],
+      },
+      {
+        label: "🗓️ Delivery Planner",
+        href: "/parts/delivery-planner",
+        roles: ["parts"],
+      },
+      {
+        label: "📝 VHC Dashboard",
+        href: "/vhc/dashboard",
+        roles: ["parts"],
+      },
+    ],
+  },
+  {
+    label: "Parts Manager",
+    category: "departments",
+    items: [
+      {
+        label: "👀 View Job Cards",
+        href: "/job-cards/view",
+        roles: ["parts manager"],
+      },
       {
         label: "📝 VHC Dashboard",
         href: "/vhc/dashboard",
@@ -243,16 +243,16 @@ export const sidebarSections = [
         href: "/parts",
         roles: ["parts manager"],
       },
-    {
-      label: "🚚 Deliveries",
-      href: "/parts/deliveries",
-      roles: ["parts manager"],
-    },
-    {
-      label: "🗓️ Delivery Planner",
-      href: "/parts/delivery-planner",
-      roles: ["parts manager"],
-    },
+      {
+        label: "🚚 Deliveries",
+        href: "/parts/deliveries",
+        roles: ["parts manager"],
+      },
+      {
+        label: "🗓️ Delivery Planner",
+        href: "/parts/delivery-planner",
+        roles: ["parts manager"],
+      },
       {
         label: "📈 Parts Manager Dashboard",
         href: "/parts/manager",
