@@ -753,6 +753,29 @@ export default function Layout({ children, jobNumber }) {
                   <NextActionPrompt />
                 </div>
 
+                {hasPartsAccess && (
+                  <Link
+                    href="/parts/deliveries"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "8px 14px",
+                      borderRadius: "14px",
+                      border: "1px solid #ffe0e0",
+                      background: "#fff5f5",
+                      color: "#720000",
+                      fontWeight: 600,
+                      textDecoration: "none",
+                      boxShadow: "0 6px 16px rgba(209,0,0,0.12)",
+                    }}
+                  >
+                    <span role="img" aria-label="deliveries">
+                      🚚
+                    </span>
+                    Deliveries
+                  </Link>
+                )}
                 <Link
                   href="/messages"
                   style={{

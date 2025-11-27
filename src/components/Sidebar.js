@@ -28,6 +28,8 @@ export default function Sidebar({ onToggle, isCondensed = false, extraSections =
   const { user, logout, dbUserId } = useUser();
   const { unreadCount } = useMessagesBadge(dbUserId);
   const userRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
+  const partsRoles = new Set(["parts", "parts manager"]);
+  const hasPartsSidebarAccess = userRoles.some((role) => partsRoles.has(role));
   const dashboardShortcuts = departmentDashboardShortcuts.filter((shortcut) => {
     if (!shortcut.roles || shortcut.roles.length === 0) return true;
     return shortcut.roles.some((role) => userRoles.includes(role));
@@ -181,6 +183,31 @@ export default function Sidebar({ onToggle, isCondensed = false, extraSections =
 
       {/* Navigation Content */}
       <div style={{ padding: "20px" }}>
+        {hasPartsSidebarAccess && (
+          <div style={{ marginBottom: "16px" }}>
+            <Link
+              href="/parts/deliveries"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "10px 14px",
+                borderRadius: "12px",
+                border: "1px solid #ffe0e0",
+                background: "#fff5f5",
+                color: "#a00000",
+                fontWeight: 600,
+                textDecoration: "none",
+                boxShadow: "0 6px 16px rgba(209,0,0,0.12)",
+              }}
+            >
+              <span role="img" aria-label="deliveries">
+                🚚
+              </span>
+              Deliveries
+            </Link>
+          </div>
+        )}
         {dashboardShortcuts.length > 0 && (
           <>
             <div
