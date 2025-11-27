@@ -202,11 +202,22 @@ export const SERVICE_STATUS_FLOW = {
     id: 'ready_for_release',
     label: 'Ready for Customer',
     color: '#10B981', // green
-    next: ['invoicing'],
+    next: ['delivered_to_customer', 'invoicing'],
     department: 'Service',
     canClockOn: false,
     pausesTime: true,
     notifyDepartments: ['Service', 'Accounts']
+  },
+
+  DELIVERED_TO_CUSTOMER: {
+    id: 'delivered_to_customer',
+    label: 'Delivered to Customer',
+    color: '#0F766E', // teal
+    next: ['invoicing'],
+    department: 'Service',
+    canClockOn: false,
+    pausesTime: true,
+    notifyDepartments: ['Service', 'Parts']
   },
 
   INVOICING: {

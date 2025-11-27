@@ -21,11 +21,11 @@ CREATE TABLE public.delivery_stops (
   job_id uuid,
   customer_id uuid NOT NULL,
   address text,
-  notes text,
   postcode text,
   mileage_for_leg numeric NOT NULL DEFAULT 0,
   estimated_fuel_cost numeric NOT NULL DEFAULT 0,
   status text NOT NULL DEFAULT 'planned'::text CHECK (status = ANY (ARRAY['planned'::text, 'en_route'::text, 'delivered'::text])),
+  notes text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT delivery_stops_pkey PRIMARY KEY (id),
@@ -40,3 +40,6 @@ CREATE TABLE public.delivery_settings (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT delivery_settings_pkey PRIMARY KEY (id)
 );
+
+ALTER TABLE public.jobs
+  ADD COLUMN IF NOT EXISTS delivery_confirmed_at timestamp with time zone;

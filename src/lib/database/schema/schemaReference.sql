@@ -73,6 +73,7 @@ CREATE TABLE public.deliveries (
   notes text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  vehicle_mpg numeric DEFAULT 0,
   CONSTRAINT deliveries_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.delivery_settings (
@@ -94,6 +95,7 @@ CREATE TABLE public.delivery_stops (
   status text NOT NULL DEFAULT 'planned'::text CHECK (status = ANY (ARRAY['planned'::text, 'en_route'::text, 'delivered'::text])),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  notes text,
   CONSTRAINT delivery_stops_pkey PRIMARY KEY (id),
   CONSTRAINT delivery_stops_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT delivery_stops_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),

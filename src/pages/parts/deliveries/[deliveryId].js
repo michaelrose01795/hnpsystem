@@ -73,7 +73,7 @@ export default function DeliveryRoutePage() {
   const router = useRouter();
   const { deliveryId } = router.query;
   const isReady = router.isReady;
-  const { user } = useUser();
+  const { user, dbUserId } = useUser();
   const roles = (user?.roles || []).map((role) => String(role).toLowerCase());
   const hasAccess = roles.includes("parts") || roles.includes("parts manager");
 
@@ -205,6 +205,22 @@ export default function DeliveryRoutePage() {
     return sortStopsByNumber(delivery.stops || []);
   }, [delivery]);
 
+  const progressNextStop = useCallback(
+    async (latestDelivery) => {
+      const nextStop = sortStopsByNumber(latestDelivery?.stops || []).find(
+        (stop) => stop.status === "planned"
+      );
+      if (!nextStop) return;
+      const { error: updateError } = await supabase
+        .from("delivery_stops")
+        .update({ status: "en_route" })
+        .eq("id", nextStop.id);
+      if (updateError) throw updateError;
+      await loadDelivery();
+    },
+    [loadDelivery]
+  );
+
   const persistStopNumbers = useCallback(async (ordered = []) => {
     if (!ordered.length) return;
     const promises = ordered.map((stop, index) =>
@@ -329,7 +345,7 @@ export default function DeliveryRoutePage() {
         setActionLoading(false);
       }
     },
-    [loadDelivery]
+    [loadDelivery, progressNextStop]
   );
 
   const handleStartRoute = () => {
@@ -412,20 +428,37 @@ export default function DeliveryRoutePage() {
     }
   }, [noteEditingId, noteDraft, loadDelivery, cancelNoteEditing]);
 
-  const progressNextStop = useCallback(
-    async (latestDelivery) => {
-      const nextStop = sortStopsByNumber(latestDelivery?.stops || []).find(
-        (stop) => stop.status === "planned"
-      );
-      if (!nextStop) return;
-      const { error: updateError } = await supabase
-        .from("delivery_stops")
-        .update({ status: "en_route" })
-        .eq("id", nextStop.id);
-      if (updateError) throw updateError;
-      await loadDelivery();
+  const handleConfirmDelivery = useCallback(
+    async (stop) => {
+      if (!stop?.job?.id || !dbUserId) return;
+      try {
+        setError("");
+        await handleStatusUpdate([stop.id], "delivered");
+        const customerName =
+          stop?.customer?.name ||
+          [stop?.customer?.firstname, stop?.customer?.lastname].filter(Boolean).join(" ").trim() ||
+          "Customer";
+        const response = await fetch("/api/parts/deliveries/confirm-job", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jobId: stop.job.id,
+            stopNumber: stop.stop_number,
+            customerName,
+            userId: dbUserId,
+            deliveryId,
+          }),
+        });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => null);
+          throw new Error(payload?.message || "Unable to confirm job delivery.");
+        }
+      } catch (confirmError) {
+        console.error("Failed to confirm job delivery:", confirmError);
+        setError(confirmError?.message || "Unable to confirm job delivery.");
+      }
     },
-    [loadDelivery]
+    [handleStatusUpdate, dbUserId, deliveryId]
   );
 
   const resetModal = () => {
@@ -1116,6 +1149,25 @@ export default function DeliveryRoutePage() {
                       >
                         Add delivery notes
                       </button>
+                      {stop.job?.job_number && (
+                        <button
+                          type="button"
+                          onClick={() => handleConfirmDelivery(stop)}
+                          disabled={stop.status === "delivered" || actionLoading}
+                          style={{
+                            borderRadius: "8px",
+                            border: "1px solid #2563eb",
+                            background: "#2563eb",
+                            color: "#ffffff",
+                            padding: "6px 12px",
+                            fontWeight: 600,
+                            cursor: stop.status === "delivered" ? "default" : "pointer",
+                            opacity: stop.status === "delivered" || actionLoading ? 0.6 : 1,
+                          }}
+                        >
+                          Confirm Delivery
+                        </button>
+                      )}
                     </div>
                     <div
                       style={{
