@@ -1,66 +1,120 @@
-import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
+import { supabase } from "@/lib/supabaseClient";
 
-const cardStyle = {
-  backgroundColor: "white",
-  borderRadius: "16px",
-  padding: "24px",
-  boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-  border: "1px solid #ffe1e1",
+const pageStyles = {
+  container: {
+    padding: "24px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "24px",
+  },
+  header: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+  },
+  controls: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: "16px",
+  },
+  dateControl: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  cardGrid: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "18px",
+  },
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: "20px",
+    padding: "24px",
+    border: "1px solid #ffddd8",
+    boxShadow: "0 12px 30px rgba(0, 0, 0, 0.08)",
+    width: "100%",
+  },
+  cardRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: "16px",
+  },
+  cardColumn: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+  },
+  smallText: {
+    color: "#6b7280",
+    fontSize: "0.85rem",
+  },
+  badge: {
+    padding: "6px 14px",
+    borderRadius: "999px",
+    fontWeight: 600,
+    fontSize: "0.85rem",
+    letterSpacing: "0.04em",
+  },
 };
 
-const sectionTitleStyle = {
-  fontSize: "1.2rem",
-  fontWeight: 700,
-  color: "#a00000",
-  marginBottom: "16px",
+const statusVariants = {
+  planned: { label: "Planned", background: "rgba(15, 118, 110, 0.12)", color: "#0f766e" },
+  in_progress: { label: "In Progress", background: "rgba(59, 130, 246, 0.15)", color: "#1d4ed8" },
+  completed: { label: "Completed", background: "rgba(16, 185, 129, 0.25)", color: "#047857" },
 };
 
-const tableStyle = {
-  width: "100%",
-  borderCollapse: "collapse",
+const formatCurrency = (value) => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "—";
+  return new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value));
 };
 
-const statusBadgeStyles = {
-  ordering: { background: "rgba(59,130,246,0.15)", color: "#1d4ed8" },
-  on_route: { background: "rgba(251,191,36,0.2)", color: "#92400e" },
-  received: { background: "rgba(16,185,129,0.2)", color: "#047857" },
-  partial: { background: "rgba(249,115,22,0.2)", color: "#c2410c" },
-  cancelled: { background: "rgba(248,113,113,0.2)", color: "#b91c1c" },
+const formatIsoDate = (value) => {
+  try {
+    const date = value ? new Date(value) : new Date();
+    return new Intl.DateTimeFormat("en-GB", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(date);
+  } catch {
+    return "—";
+  }
 };
 
-const STATUS_OPTIONS = [
-  { value: "all", label: "All" },
-  { value: "ordering", label: "Ordering" },
-  { value: "on_route", label: "On route" },
-  { value: "received", label: "Received" },
-  { value: "partial", label: "Partial" },
-  { value: "cancelled", label: "Cancelled" },
-];
+const deriveStatus = (stops = []) => {
+  if (!Array.isArray(stops) || stops.length === 0) {
+    return "planned";
+  }
+  const statuses = new Set(stops.map((stop) => stop.status));
+  if (Array.from(statuses).every((value) => value === "delivered")) {
+    return "completed";
+  }
+  if (statuses.has("en_route") || statuses.has("delivered")) {
+    return "in_progress";
+  }
+  return "planned";
+};
 
-const formatDate = (value) =>
-  value ? new Date(value).toLocaleString(undefined, { hour12: false }) : "—";
+const todayIso = () => new Date().toISOString().slice(0, 10);
 
-const StatusBadge = ({ status }) => {
-  const meta = statusBadgeStyles[status] || { background: "rgba(148,163,184,0.2)", color: "#475569" };
-  const label = status ? status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "Unknown";
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "4px 10px",
-        borderRadius: "999px",
-        fontSize: "0.8rem",
-        fontWeight: 600,
-        background: meta.background,
-        color: meta.color,
-      }}
-    >
-      {label}
-    </span>
-  );
+const adjustIsoDate = (isoDate, delta) => {
+  const base = isoDate ? new Date(isoDate) : new Date();
+  base.setDate(base.getDate() + delta);
+  return base.toISOString().slice(0, 10);
 };
 
 export default function PartsDeliveriesPage() {
@@ -68,38 +122,66 @@ export default function PartsDeliveriesPage() {
   const roles = (user?.roles || []).map((role) => String(role).toLowerCase());
   const hasAccess = roles.includes("parts") || roles.includes("parts manager");
 
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedDate, setSelectedDate] = useState(todayIso());
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const loadDeliveries = useCallback(async () => {
+  const fetchDeliveries = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams({ status: statusFilter, limit: "50" });
-      const response = await fetch(`/api/parts/deliveries?${params.toString()}`);
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to load deliveries");
+      let query = supabase
+        .from("deliveries")
+        .select("*, stops:delivery_stops(*)")
+        .order("delivery_date", { ascending: false });
+
+      if (selectedDate) {
+        query = query.eq("delivery_date", selectedDate);
       }
-      setDeliveries(data.deliveries || []);
-    } catch (err) {
-      setError(err.message || "Unable to load deliveries");
+
+      const { data, error: fetchError } = await query;
+      if (fetchError) {
+        throw fetchError;
+      }
+      setDeliveries(data || []);
+    } catch (loadError) {
+      console.error("Failed to load deliveries:", loadError);
+      setError(loadError?.message || "Unable to load delivery routes");
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [selectedDate]);
 
   useEffect(() => {
-    loadDeliveries();
-  }, [loadDeliveries]);
+    fetchDeliveries();
+  }, [fetchDeliveries]);
+
+  const summaryForDelivery = (delivery) => {
+    const stops = delivery?.stops || [];
+    const totalMileage = stops.reduce(
+      (acc, stop) => acc + Number(stop.mileage_for_leg || 0),
+      0
+    );
+    const totalFuelCost = stops.reduce(
+      (acc, stop) => acc + Number(stop.estimated_fuel_cost || 0),
+      0
+    );
+    return {
+      stopsCount: stops.length,
+      totalMileage,
+      totalFuelCost,
+      status: deriveStatus(stops),
+    };
+  };
+
+  const displayDate = useMemo(() => formatIsoDate(selectedDate), [selectedDate]);
 
   if (!hasAccess) {
     return (
       <Layout>
         <div style={{ padding: "48px", textAlign: "center", color: "#a00000" }}>
-          You do not have access to Parts deliveries.
+          You do not have access to delivery planning.
         </div>
       </Layout>
     );
@@ -107,102 +189,183 @@ export default function PartsDeliveriesPage() {
 
   return (
     <Layout>
-      <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
-        <header>
-          <p style={{ marginBottom: "6px", textTransform: "uppercase", color: "#a00000", letterSpacing: "0.08em" }}>
-            Parts Department
-          </p>
-          <h1 style={{ margin: 0, color: "#d10000" }}>Inbound Deliveries</h1>
-          <p style={{ marginTop: "6px", color: "#6b7280" }}>
-            Track supplier drops, ETA updates, and delivery statuses in one place.
-          </p>
-        </header>
-
-        <div style={{ ...cardStyle, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: "1rem", color: "#a00000", letterSpacing: "0.05em" }}>Filter by status</h2>
-            <p style={{ margin: 0, color: "#6b7280", fontSize: "0.85rem" }}>
-              Narrow the delivery list by workflow status.
-            </p>
-          </div>
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
+      <div style={pageStyles.container}>
+        <div style={pageStyles.header}>
+          <p
             style={{
-              minWidth: 180,
-              padding: "10px",
-              borderRadius: "10px",
-              border: "1px solid #ffd1d1",
-              fontWeight: 600,
+              margin: 0,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
               color: "#a00000",
+              fontSize: "0.85rem",
             }}
           >
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            Parts Deliveries
+          </p>
+          <h1 style={{ margin: 0, color: "#d10000" }}>Delivery Routes</h1>
+          <p style={{ margin: 0, color: "#6b7280" }}>
+            Plan multi-stop runs, capture mileage/fuel, and confirm deliveries in a single workspace.
+          </p>
         </div>
 
-        <div style={cardStyle}>
-          <div style={sectionTitleStyle}>Deliveries</div>
-          {error && <div style={{ color: "#b91c1c", marginBottom: "12px" }}>{error}</div>}
-          {loading ? (
-            <div style={{ color: "#6b7280" }}>Loading deliveries…</div>
-          ) : deliveries.length === 0 ? (
-            <div style={{ color: "#6b7280" }}>No deliveries recorded for this filter.</div>
-          ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ ...tableStyle, fontSize: "0.9rem" }}>
-                <thead>
-                  <tr style={{ background: "#fff4f4", color: "#a00000" }}>
-                    <th style={{ textAlign: "left", padding: "10px" }}>Supplier</th>
-                    <th style={{ textAlign: "left", padding: "10px" }}>Items</th>
-                    <th style={{ textAlign: "left", padding: "10px" }}>Dates</th>
-                    <th style={{ textAlign: "left", padding: "10px" }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {deliveries.map((delivery) => (
-                    <tr key={delivery.id} style={{ borderBottom: "1px solid #ffe1e1" }}>
-                      <td style={{ padding: "10px", verticalAlign: "top" }}>
-                        <div style={{ fontWeight: 600 }}>{delivery.supplier || "Unknown supplier"}</div>
-                        <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
-                          Ref: {delivery.order_reference || "—"}
-                        </div>
-                      </td>
-                      <td style={{ padding: "10px", verticalAlign: "top" }}>
-                        {(delivery.delivery_items || []).slice(0, 3).map((item) => (
-                          <div key={item.id} style={{ marginBottom: "8px" }}>
-                            <div style={{ fontWeight: 600 }}>
-                              {item.part?.part_number} · {item.part?.name}
-                            </div>
-                            <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
-                              Ordered {item.quantity_ordered} · Received {item.quantity_received}
-                            </div>
-                          </div>
-                        ))}
-                        {(delivery.delivery_items || []).length > 3 && (
-                          <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>
-                            +{delivery.delivery_items.length - 3} more lines…
-                          </div>
-                        )}
-                      </td>
-                      <td style={{ padding: "10px", verticalAlign: "top" }}>
-                        <div>Expected: {formatDate(delivery.expected_date)}</div>
-                        <div>Received: {formatDate(delivery.received_date)}</div>
-                        <div>Logged: {formatDate(delivery.created_at)}</div>
-                      </td>
-                      <td style={{ padding: "10px", verticalAlign: "top" }}>
-                        <StatusBadge status={delivery.status} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <div style={pageStyles.controls}>
+          <div>
+            <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#a00000" }}>Selected day</div>
+            <div style={{ fontSize: "1.1rem", fontWeight: 600 }}>{displayDate}</div>
+          </div>
+          <div style={pageStyles.dateControl}>
+            <button
+              type="button"
+              onClick={() => setSelectedDate((prev) => adjustIsoDate(prev, -1))}
+              style={{
+                borderRadius: "10px",
+                border: "1px solid #ffd1d1",
+                background: "#ffffff",
+                color: "#a00000",
+                padding: "10px 14px",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              Previous day
+            </button>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(event) => setSelectedDate(event.target.value)}
+              style={{
+                borderRadius: "10px",
+                border: "1px solid #ffd1d1",
+                padding: "10px 12px",
+                fontWeight: 600,
+                color: "#a00000",
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setSelectedDate((prev) => adjustIsoDate(prev, 1))}
+              style={{
+                borderRadius: "10px",
+                border: "1px solid #ffd1d1",
+                background: "#a00000",
+                color: "#ffffff",
+                padding: "10px 14px",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              Next day
+            </button>
+          </div>
+        </div>
+
+        <div style={pageStyles.cardGrid}>
+          {error && (
+            <div style={{ color: "#b91c1c", fontWeight: 600 }}>{error}</div>
+          )}
+          {loading && <div style={{ color: "#6b7280" }}>Loading delivery routes…</div>}
+          {!loading && deliveries.length === 0 && (
+            <div style={{ color: "#6b7280" }}>
+              No planned deliveries found for the selected day. Adjust the date to keep planning.
             </div>
           )}
+          {!loading &&
+            deliveries.map((delivery) => {
+              const { stopsCount, totalMileage, totalFuelCost, status } =
+                summaryForDelivery(delivery);
+              const statusMeta = statusVariants[status] || statusVariants.planned;
+              const driverLabel = delivery.driver_id
+                ? `Driver ${delivery.driver_id.slice(0, 8)}`
+                : "Driver unassigned";
+
+              return (
+                <div key={delivery.id} style={pageStyles.card}>
+                  <div style={pageStyles.cardRow}>
+                    <div style={pageStyles.cardColumn}>
+                      <span style={{ color: "#6b7280", fontSize: "0.85rem" }}>
+                        Delivery date
+                      </span>
+                      <span style={{ fontSize: "1.1rem", fontWeight: 700 }}>
+                        {formatIsoDate(delivery.delivery_date)}
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        ...pageStyles.badge,
+                        background: statusMeta.background,
+                        color: statusMeta.color,
+                      }}
+                    >
+                      {statusMeta.label}
+                    </span>
+                  </div>
+
+                  <div style={{ ...pageStyles.cardRow, marginTop: "16px" }}>
+                    <div style={{ flex: "1 1 250px" }}>
+                      <div style={{ fontWeight: 600 }}>{driverLabel}</div>
+                      <p style={pageStyles.smallText}>
+                        Vehicle · {delivery.vehicle_reg || "TBC"}
+                      </p>
+                      <p style={pageStyles.smallText}>{delivery.notes || ""}</p>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "16px",
+                        flexWrap: "wrap",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>Stops</div>
+                        <div style={{ fontWeight: 700, fontSize: "1.3rem" }}>{stopsCount}</div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>Mileage</div>
+                        <div style={{ fontWeight: 700, fontSize: "1.3rem" }}>
+                          {totalMileage.toLocaleString()} km
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>Fuel cost</div>
+                        <div style={{ fontWeight: 700, fontSize: "1.3rem" }}>
+                          {formatCurrency(totalFuelCost)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: "20px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: "12px",
+                    }}
+                  >
+                    <div style={pageStyles.smallText}>
+                      {delivery.fuel_type ? `Fuel: ${delivery.fuel_type}` : "Fuel not set"}
+                    </div>
+                    <Link
+                      href={`/parts/delivery-planner?deliveryId=${delivery.id}`}
+                      style={{
+                        textDecoration: "none",
+                        background: "#d10000",
+                        color: "#ffffff",
+                        padding: "10px 18px",
+                        borderRadius: "12px",
+                        fontWeight: 600,
+                        boxShadow: "0 6px 20px rgba(209, 0, 0, 0.25)",
+                      }}
+                    >
+                      View route
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
         </div>
       </div>
     </Layout>
