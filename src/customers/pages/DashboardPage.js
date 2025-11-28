@@ -8,6 +8,7 @@ import VHCSummaryList from "@/customers/components/VHCSummaryList";
 import PartsAccessCard from "@/customers/components/PartsAccessCard";
 import MessagingHub from "@/customers/components/MessagingHub";
 import AppointmentTimeline from "@/customers/components/AppointmentTimeline";
+import CustomerBookingCalendar from "@/customers/components/CustomerBookingCalendar";
 import { useCustomerPortalData } from "@/customers/hooks/useCustomerPortalData";
 
 export default function CustomerDashboardPage() {
@@ -27,6 +28,9 @@ export default function CustomerDashboardPage() {
         </div>
       ) : null}
       <div className="grid gap-6 lg:grid-cols-2">
+        <div className="lg:col-span-2">
+          <CustomerBookingCalendar />
+        </div>
         <VehicleGarageCard vehicles={vehicles} />
         <VHCSummaryList summaries={vhcSummaries} vehicles={vehicles} />
         <PartsAccessCard parts={parts} />
