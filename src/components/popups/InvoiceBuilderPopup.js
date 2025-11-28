@@ -15,6 +15,7 @@ export default function InvoiceBuilderPopup({
   onClose,
   jobData,
   onConfirm,
+  invoiceResponse,
   isSubmitting = false
 }) {
   const [requestLines, setRequestLines] = useState([]);
@@ -26,6 +27,18 @@ export default function InvoiceBuilderPopup({
   );
   const [sendEmail, setSendEmail] = useState(true);
   const [sendPortal, setSendPortal] = useState(true);
+  const [latestBuilderPayload, setLatestBuilderPayload] = useState(null);
+  const [invoiceMeta, setInvoiceMeta] = useState(null);
+  const [pdfBlob, setPdfBlob] = useState(null);
+  const [pdfUrl, setPdfUrl] = useState("");
+  const [shareFeedback, setShareFeedback] = useState("");
+  const [isSharing, setIsSharing] = useState(false);
+
+  useEffect(() => {
+    if (invoiceResponse) {
+      setInvoiceMeta(invoiceResponse);
+    }
+  }, [invoiceResponse]);
 
   useEffect(() => {
     const normalized = normalizeRequests(jobData?.requests).map((entry, index) => ({
@@ -83,22 +96,206 @@ export default function InvoiceBuilderPopup({
   };
 
   const handleConfirm = () => {
+    const builderPayload = {
+      requests: requestLines.map((line) => ({
+        ...line
+      })),
+      partLines,
+      providerId: selectedProvider,
+      sendEmail,
+      sendPortal,
+      totals: {
+        partsTotal: partsSubtotal,
+        labourTotal: labourValue,
+        vatTotal,
+        total: invoiceTotal
+      }
+    };
+
+    setLatestBuilderPayload(builderPayload);
     if (typeof onConfirm === "function") {
-      onConfirm({
-        requests: requestLines.map((line) => ({
-          ...line
-        })),
-        partLines,
-        providerId: selectedProvider,
-        sendEmail,
-        sendPortal,
-        totals: {
-          partsTotal: partsSubtotal,
-          labourTotal: labourValue,
-          vatTotal,
-          total: invoiceTotal
-        }
+      onConfirm(builderPayload);
+    }
+  };
+
+  const buildInvoiceHtml = () => {
+    if (!latestBuilderPayload) {
+      return `<html><body><p>Invoice preview will appear here once generated.</p></body></html>`;
+    }
+
+    const { requests, partLines, totals } = latestBuilderPayload;
+    const requestRows =
+      (requests || [])
+        .map(
+          (req) =>
+            `<tr>
+              <td>${req.description}</td>
+              <td>${req.quantity}</td>
+              <td>${formatCurrency(req.unitPrice ?? 0)}</td>
+              <td>${formatCurrency((req.quantity || 1) * (req.unitPrice ?? 0))}</td>
+            </tr>`
+        )
+        .join("") || "<tr><td colspan='4'>No requests</td></tr>";
+
+    const partRows =
+      (partLines || [])
+        .map(
+          (part) =>
+            `<tr>
+              <td>${part.name}</td>
+              <td>${part.quantity}</td>
+              <td>${formatCurrency(part.unitPrice)}</td>
+              <td>${formatCurrency(part.quantity * part.unitPrice)}</td>
+            </tr>`
+        )
+        .join("") || "<tr><td colspan='4'>No parts</td></tr>";
+
+    const summaryRows = `
+      <tr><td>Parts Subtotal</td><td colspan="3">${formatCurrency(totals.partsTotal)}</td></tr>
+      <tr><td>Labour</td><td colspan="3">${formatCurrency(totals.labourTotal)}</td></tr>
+      <tr><td>VAT</td><td colspan="3">${formatCurrency(totals.vatTotal)}</td></tr>
+      <tr><td><strong>Total</strong></td><td colspan="3"><strong>${formatCurrency(totals.total)}</strong></td></tr>
+    `;
+
+    const invoiceNumber = invoiceMeta?.invoice?.job_id
+      ? `INV-${invoiceMeta.invoice.job_id}-${invoiceMeta.invoice.id}`
+      : "INV-DRAFT";
+
+    return `
+      <html>
+        <head>
+          <title>${invoiceNumber}</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #111827; padding: 24px; }
+            h1 { color: #0d9488; margin-bottom: 0; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+            th, td { padding: 8px; border: 1px solid #e5e5eb; }
+            th { background: #f8fafc; text-align: left; }
+          </style>
+        </head>
+        <body>
+          <h1>Invoice Preview</h1>
+          <p>Job: ${jobData?.jobNumber || "N/A"} | Customer: ${
+      jobData?.customer || "N/A"
+    }</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Request</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${requestRows}
+            </tbody>
+          </table>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Part</th>
+                <th>Qty</th>
+                <th>Unit</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${partRows}
+            </tbody>
+          </table>
+
+          <table style="margin-top: 16px;">
+            <tbody>
+              ${summaryRows}
+            </tbody>
+          </table>
+          ${
+            invoiceMeta?.paymentLink?.checkout_url
+              ? `<p>Payment Link: <a href="${invoiceMeta.paymentLink.checkout_url}">${invoiceMeta.paymentLink.checkout_url}</a></p>`
+              : ""
+          }
+        </body>
+      </html>
+    `;
+  };
+
+  const createPdfResource = () => {
+    if (!latestBuilderPayload) return;
+    const html = buildInvoiceHtml();
+    const blob = new Blob([html], { type: "application/pdf" });
+    if (pdfUrl) {
+      URL.revokeObjectURL(pdfUrl);
+    }
+    setPdfBlob(blob);
+    setPdfUrl(URL.createObjectURL(blob));
+  };
+
+  useEffect(() => {
+    if (invoiceMeta && latestBuilderPayload) {
+      createPdfResource();
+    }
+  }, [invoiceMeta, latestBuilderPayload]);
+
+  const blobToBase64 = (blob) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result.split(",")[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+  const handlePrintInvoice = () => {
+    const html = buildInvoiceHtml();
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  const handleShareInvoice = async (action) => {
+    if (!invoiceMeta || !pdfBlob) {
+      setShareFeedback("Generate invoice PDF first.");
+      return;
+    }
+    setIsSharing(true);
+    setShareFeedback("");
+    try {
+      const base64 = await blobToBase64(pdfBlob);
+      const fileName = `invoice-${invoiceMeta.invoice.id}.pdf`;
+      const response = await fetch("/api/invoices/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId: jobData?.id,
+          jobNumber: jobData?.jobNumber,
+          invoiceId: invoiceMeta.invoice.id,
+          customerEmail: jobData?.customerEmail,
+          fileData: base64,
+          fileName,
+          action
+        })
       });
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || "Unable to share invoice");
+      }
+      setShareFeedback(
+        action === "email"
+          ? "Invoice emailed to customer."
+          : "Invoice saved to job documents."
+      );
+    } catch (error) {
+      console.error("Share invoice failed:", error);
+      setShareFeedback(error.message);
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -339,6 +536,88 @@ export default function InvoiceBuilderPopup({
             </select>
           </div>
         </section>
+
+        {invoiceMeta && (
+          <section
+            style={{
+              marginBottom: "18px",
+              padding: "16px",
+              borderRadius: "12px",
+              border: "1px solid #e5e7eb",
+              background: "#f9fafb"
+            }}
+          >
+            <h3 style={{ margin: "0 0 10px 0" }}>Invoice Actions</h3>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+              <button
+                type="button"
+                disabled={!pdfUrl}
+                onClick={() => {
+                  if (!pdfUrl) return;
+                  const link = document.createElement("a");
+                  link.href = pdfUrl;
+                  link.download = `invoice-${invoiceMeta.invoice.id}.pdf`;
+                  link.click();
+                }}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "#0d9488",
+                  color: "white",
+                  cursor: pdfUrl ? "pointer" : "not-allowed"
+                }}
+              >
+                Download PDF
+              </button>
+              <button
+                type="button"
+                onClick={handlePrintInvoice}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  background: "white",
+                  cursor: "pointer"
+                }}
+              >
+                Print
+              </button>
+              <button
+                type="button"
+                onClick={() => handleShareInvoice("email")}
+                disabled={isSharing}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #0d9488",
+                  background: "#0d9488",
+                  color: "white",
+                  cursor: isSharing ? "not-allowed" : "pointer"
+                }}
+              >
+                {isSharing ? "Sending..." : "Email to customer"}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleShareInvoice("save")}
+                disabled={isSharing}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  background: "white",
+                  cursor: isSharing ? "not-allowed" : "pointer"
+                }}
+              >
+                {isSharing ? "Saving..." : "Save copy to documents"}
+              </button>
+            </div>
+            {shareFeedback && (
+              <p style={{ marginTop: "10px", color: "#0d9488" }}>{shareFeedback}</p>
+            )}
+          </section>
+        )}
 
         <section>
           <div

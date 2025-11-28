@@ -151,6 +151,7 @@ export default function JobCardDetailPage() {
   const [documentUploading, setDocumentUploading] = useState(false);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [invoicePopupOpen, setInvoicePopupOpen] = useState(false);
+  const [invoiceResponse, setInvoiceResponse] = useState(null);
 
   // ✅ Permission Check
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
@@ -507,10 +508,14 @@ export default function JobCardDetailPage() {
       if (!statusResult?.success) {
         console.warn("Invoice created but failed to update status:", statusResult?.error);
       }
+      const statusResult = await updateJobStatus(jobData.id, "Invoicing");
+      if (!statusResult?.success) {
+        console.warn("Invoice created but failed to update status:", statusResult?.error);
+      }
       alert(
         `✅ Invoice created. Payment link ready: ${payload.paymentLink?.checkout_url || ""}`
       );
-      setInvoicePopupOpen(false);
+      setInvoiceResponse(payload);
       await fetchJobData({ silent: true });
     } catch (createError) {
       console.error("❌ Failed to trigger invoice creation:", createError);
@@ -1203,9 +1208,13 @@ export default function JobCardDetailPage() {
         </div>
         <InvoiceBuilderPopup
           isOpen={invoicePopupOpen}
-          onClose={() => setInvoicePopupOpen(false)}
+          onClose={() => {
+            setInvoicePopupOpen(false);
+            setInvoiceResponse(null);
+          }}
           jobData={jobData}
           onConfirm={handleInvoiceBuilderConfirm}
+          invoiceResponse={invoiceResponse}
           isSubmitting={creatingInvoice}
         />
 
