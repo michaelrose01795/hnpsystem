@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Popup from "./Popup";
 import { normalizeRequests } from "@/lib/jobcards/utils";
+import { PAYMENT_PROVIDERS } from "@/lib/payments/paymentProviders";
 
 const formatCurrency = (value) => {
   const amount = Number(value) || 0;
@@ -20,6 +21,11 @@ export default function InvoiceBuilderPopup({
   const [labourTotal, setLabourTotal] = useState(0);
   const [vatRate, setVatRate] = useState(DEFAULT_VAT_RATE);
   const [previewOpen, setPreviewOpen] = useState(true);
+  const [selectedProvider, setSelectedProvider] = useState(
+    PAYMENT_PROVIDERS[0]?.id || "klarna"
+  );
+  const [sendEmail, setSendEmail] = useState(true);
+  const [sendPortal, setSendPortal] = useState(true);
 
   useEffect(() => {
     const normalized = normalizeRequests(jobData?.requests).map((entry, index) => ({
@@ -79,13 +85,19 @@ export default function InvoiceBuilderPopup({
   const handleConfirm = () => {
     if (typeof onConfirm === "function") {
       onConfirm({
-        partsTotal: partsSubtotal,
-        labourTotal: labourValue,
-        vatTotal,
-        total: invoiceTotal,
         requests: requestLines.map((line) => ({
           ...line
-        }))
+        })),
+        partLines,
+        providerId: selectedProvider,
+        sendEmail,
+        sendPortal,
+        totals: {
+          partsTotal: partsSubtotal,
+          labourTotal: labourValue,
+          vatTotal,
+          total: invoiceTotal
+        }
       });
     }
   };
@@ -205,6 +217,61 @@ export default function InvoiceBuilderPopup({
               ))}
             </div>
           )}
+        </section>
+
+        <section style={{ marginBottom: "18px" }}>
+          <h3 style={{ marginBottom: "12px" }}>Payment Provider</h3>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            {PAYMENT_PROVIDERS.map((provider) => (
+              <button
+                key={provider.id}
+                type="button"
+                onClick={() => setSelectedProvider(provider.id)}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "10px",
+                  border:
+                    selectedProvider === provider.id
+                      ? "2px solid #0d9488"
+                      : "1px solid #e5e7eb",
+                  background:
+                    selectedProvider === provider.id ? "#ecfdf5" : "#ffffff",
+                  cursor: "pointer",
+                  fontWeight: selectedProvider === provider.id ? 600 : 500,
+                  color: "#0f172a"
+                }}
+              >
+                {provider.label}
+              </button>
+            ))}
+          </div>
+          <div
+            style={{
+              marginTop: "12px",
+              display: "flex",
+              gap: "16px",
+              flexWrap: "wrap",
+              fontSize: "14px",
+              color: "#4b5563"
+            }}
+          >
+            <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <input
+                type="checkbox"
+                checked={sendEmail}
+                onChange={(event) => setSendEmail(event.target.checked)}
+              />
+              Send invoice to customer email
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <input
+                type="checkbox"
+                checked={sendPortal}
+                onChange={(event) => setSendPortal(event.target.checked)}
+              />
+              Publish invoice to customer portal balance
+            </label>
+          </div>
         </section>
 
         <section

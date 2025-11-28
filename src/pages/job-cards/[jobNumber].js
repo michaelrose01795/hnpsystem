@@ -475,25 +475,58 @@ export default function JobCardDetailPage() {
     [canEdit, jobData, fetchJobData]
   );
 
-  const handleInvoiceBuilderConfirm = useCallback(async () => {
+  const handleInvoiceBuilderConfirm = useCallback(async (builderPayload) => {
     if (!canEdit || !jobData?.id) return;
     setCreatingInvoice(true);
     try {
-      const result = await updateJobStatus(jobData.id, "Invoicing");
-      if (result.success) {
-        alert("✅ Invoice workflow started. Job moved to Invoicing status.");
-        await fetchJobData({ silent: true });
-        setInvoicePopupOpen(false);
-      } else {
-        throw result.error || new Error("Unable to trigger invoice creation");
+      const response = await fetch("/api/invoices/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          jobId: jobData.id,
+          jobNumber: jobData.jobNumber,
+          customerId: jobData.customerId,
+          customerEmail: jobData.customerEmail,
+          providerId: builderPayload.providerId,
+          totals: builderPayload.totals,
+          requests: builderPayload.requests,
+          partLines: builderPayload.partLines,
+          sendEmail: builderPayload.sendEmail,
+          sendPortal: builderPayload.sendPortal
+        })
+      });
+
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || "Failed to create invoice");
       }
+
+      const statusResult = await updateJobStatus(jobData.id, "Invoicing");
+      if (!statusResult?.success) {
+        console.warn("Invoice created but failed to update status:", statusResult?.error);
+      }
+      alert(
+        `✅ Invoice created. Payment link ready: ${payload.paymentLink?.checkout_url || ""}`
+      );
+      setInvoicePopupOpen(false);
+      await fetchJobData({ silent: true });
     } catch (createError) {
       console.error("❌ Failed to trigger invoice creation:", createError);
       alert(createError?.message || "Failed to trigger invoice creation");
     } finally {
       setCreatingInvoice(false);
     }
-  }, [canEdit, fetchJobData, jobData?.id]);
+  }, [
+    canEdit,
+    fetchJobData,
+    jobData?.id,
+    jobData?.jobNumber,
+    jobData?.customerId,
+    jobData?.customerEmail,
+    updateJobStatus
+  ]);
 
   const handleDocumentUpload = useCallback(
     async (fileList, categoryId = "general") => {
