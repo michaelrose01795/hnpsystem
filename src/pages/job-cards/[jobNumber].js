@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
-import { getJobByNumber, updateJob, addJobFile, deleteJobFile } from "@/lib/database/jobs";
+import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile } from "@/lib/database/jobs";
 import {
   getNotesByJob,
   createJobNote,
@@ -91,6 +91,42 @@ const deriveStoragePathFromUrl = (url = "") => {
 
 const JOB_DOCUMENT_BUCKET = "job-documents";
 
+const READY_FOR_INVOICING_STATUS_IDS = new Set([
+  "ready_for_release",
+  "ready_for_invoice",
+  "ready_for_invoicing",
+  "awaiting_invoicing",
+  "ready_for_accounts",
+  "delivered_to_customer"
+]);
+
+const normalizeStatusId = (value = "") =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_");
+
+const isStatusReadyForInvoicing = (status) =>
+  READY_FOR_INVOICING_STATUS_IDS.has(normalizeStatusId(status));
+
+const arePartsPricedAndAssigned = (allocations = []) => {
+  const parts = Array.isArray(allocations) ? allocations : [];
+  if (parts.length === 0) {
+    return true;
+  }
+
+  return parts.every((item) => {
+    if (!item) return false;
+    const requestedQty = Number(item.quantityRequested ?? 0);
+    const allocatedQty = Number(item.quantityAllocated ?? 0);
+    const hasAllocated =
+      requestedQty > 0 ? allocatedQty >= requestedQty : allocatedQty > 0;
+    const unitPrice =
+      Number(item.unitPrice ?? 0) || Number(item.part?.unitPrice ?? 0);
+    return hasAllocated && unitPrice > 0;
+  });
+};
+
 export default function JobCardDetailPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
@@ -112,6 +148,7 @@ export default function JobCardDetailPage() {
   const [appointmentSaving, setAppointmentSaving] = useState(false);
   const [jobDocuments, setJobDocuments] = useState([]);
   const [documentUploading, setDocumentUploading] = useState(false);
+  const [creatingInvoice, setCreatingInvoice] = useState(false);
 
   // ✅ Permission Check
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
@@ -436,6 +473,25 @@ export default function JobCardDetailPage() {
     [canEdit, jobData, fetchJobData]
   );
 
+  const handleCreateInvoice = useCallback(async () => {
+    if (!canEdit || !jobData?.id) return;
+    setCreatingInvoice(true);
+    try {
+      const result = await updateJobStatus(jobData.id, "Invoicing");
+      if (result.success) {
+        alert("✅ Invoice workflow started. Job moved to Invoicing status.");
+        await fetchJobData({ silent: true });
+      } else {
+        throw result.error || new Error("Unable to trigger invoice creation");
+      }
+    } catch (createError) {
+      console.error("❌ Failed to trigger invoice creation:", createError);
+      alert(createError?.message || "Failed to trigger invoice creation");
+    } finally {
+      setCreatingInvoice(false);
+    }
+  }, [canEdit, fetchJobData, jobData?.id]);
+
   const handleDocumentUpload = useCallback(
     async (fileList, categoryId = "general") => {
       if (!jobData?.id) {
@@ -744,6 +800,15 @@ export default function JobCardDetailPage() {
     );
   }
 
+  const writeUpComplete =
+    jobData.completionStatus === "complete" ||
+    jobData.writeUp?.completion_status === "complete";
+  const vhcQualified = !jobData.vhcRequired || Boolean(jobData.vhcCompletedAt);
+  const partsReady = arePartsPricedAndAssigned(jobData.partsAllocations);
+  const statusReadyForInvoicing = isStatusReadyForInvoicing(jobData.status);
+  const showCreateInvoiceButton =
+    canEdit && writeUpComplete && vhcQualified && partsReady && statusReadyForInvoicing;
+
   const jobVhcChecks = Array.isArray(jobData.vhcChecks) ? jobData.vhcChecks : [];
   const redIssues = jobVhcChecks.filter((check) => resolveVhcSeverity(check) === "red");
   const amberIssues = jobVhcChecks.filter((check) => resolveVhcSeverity(check) === "amber");
@@ -844,6 +909,36 @@ export default function JobCardDetailPage() {
           </div>
           
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            {showCreateInvoiceButton && (
+              <button
+                onClick={handleCreateInvoice}
+                disabled={creatingInvoice}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "#0d9488",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: creatingInvoice ? "not-allowed" : "pointer",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                  transition: "background-color 0.2s, transform 0.2s",
+                  opacity: creatingInvoice ? 0.7 : 1
+                }}
+                onMouseEnter={(e) => {
+                  if (!creatingInvoice) {
+                    e.target.style.backgroundColor = "#0f766e";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!creatingInvoice) {
+                    e.target.style.backgroundColor = "#0d9488";
+                  }
+                }}
+              >
+                {creatingInvoice ? "Creating Invoice..." : "Create Invoice"}
+              </button>
+            )}
             <button
               onClick={() => router.push("/job-cards/view")}
               style={{
