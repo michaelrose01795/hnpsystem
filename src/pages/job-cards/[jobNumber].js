@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
+import InvoiceBuilderPopup from "@/components/popups/InvoiceBuilderPopup";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile } from "@/lib/database/jobs";
@@ -149,6 +150,7 @@ export default function JobCardDetailPage() {
   const [jobDocuments, setJobDocuments] = useState([]);
   const [documentUploading, setDocumentUploading] = useState(false);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const [invoicePopupOpen, setInvoicePopupOpen] = useState(false);
 
   // ✅ Permission Check
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
@@ -473,7 +475,7 @@ export default function JobCardDetailPage() {
     [canEdit, jobData, fetchJobData]
   );
 
-  const handleCreateInvoice = useCallback(async () => {
+  const handleInvoiceBuilderConfirm = useCallback(async () => {
     if (!canEdit || !jobData?.id) return;
     setCreatingInvoice(true);
     try {
@@ -481,6 +483,7 @@ export default function JobCardDetailPage() {
       if (result.success) {
         alert("✅ Invoice workflow started. Job moved to Invoicing status.");
         await fetchJobData({ silent: true });
+        setInvoicePopupOpen(false);
       } else {
         throw result.error || new Error("Unable to trigger invoice creation");
       }
@@ -911,7 +914,7 @@ export default function JobCardDetailPage() {
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             {showCreateInvoiceButton && (
               <button
-                onClick={handleCreateInvoice}
+                onClick={() => setInvoicePopupOpen(true)}
                 disabled={creatingInvoice}
                 style={{
                   padding: "10px 20px",
@@ -936,7 +939,7 @@ export default function JobCardDetailPage() {
                   }
                 }}
               >
-                {creatingInvoice ? "Creating Invoice..." : "Create Invoice"}
+                Create Invoice
               </button>
             )}
             <button
@@ -1165,6 +1168,13 @@ export default function JobCardDetailPage() {
             />
           )}
         </div>
+        <InvoiceBuilderPopup
+          isOpen={invoicePopupOpen}
+          onClose={() => setInvoicePopupOpen(false)}
+          jobData={jobData}
+          onConfirm={handleInvoiceBuilderConfirm}
+          isSubmitting={creatingInvoice}
+        />
 
       </div>
     </Layout>
