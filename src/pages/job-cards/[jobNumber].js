@@ -2984,7 +2984,7 @@ function SchedulingTab({
               fontSize: "14px",
               resize: "vertical"
             }}
-            placeholder="- Customer waiting for vehicle&#10;- Loan car requested"
+            placeholder="- Customer waiting for vehicle\n- Loan car requested"
           />
           <p style={{ marginTop: "6px", fontSize: "12px", color: "#6b7280" }}>
             Each new line automatically starts with "- " to maintain the booking
