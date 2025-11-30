@@ -508,7 +508,7 @@ export default function JobCardDetailPage() {
       if (!statusResult?.success) {
         console.warn("Invoice created but failed to update status:", statusResult?.error);
       }
-      const statusResult = await updateJobStatus(jobData.id, "Invoicing");
+      statusResult = await updateJobStatus(jobData.id, "Invoicing");
       if (!statusResult?.success) {
         console.warn("Invoice created but failed to update status:", statusResult?.error);
       }
