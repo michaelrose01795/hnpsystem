@@ -508,10 +508,6 @@ export default function JobCardDetailPage() {
       if (!statusResult?.success) {
         console.warn("Invoice created but failed to update status:", statusResult?.error);
       }
-      statusResult = await updateJobStatus(jobData.id, "Invoicing");
-      if (!statusResult?.success) {
-        console.warn("Invoice created but failed to update status:", statusResult?.error);
-      }
       alert(
         `✅ Invoice created. Payment link ready: ${payload.paymentLink?.checkout_url || ""}`
       );
