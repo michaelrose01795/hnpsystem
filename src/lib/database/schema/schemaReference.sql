@@ -345,7 +345,37 @@ CREATE TABLE public.invoices (
   payment_method text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  sent_email_at timestamp with time zone,
+  sent_portal_at timestamp with time zone,
   CONSTRAINT invoices_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.job_booking_requests (
+  request_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  job_id integer NOT NULL UNIQUE,
+  customer_id uuid,
+  vehicle_id integer,
+  description text NOT NULL,
+  waiting_status text,
+  status text NOT NULL DEFAULT 'pending'::text,
+  submitted_by integer,
+  submitted_by_name text,
+  submitted_at timestamp with time zone NOT NULL DEFAULT now(),
+  approved_by integer,
+  approved_by_name text,
+  approved_at timestamp with time zone,
+  confirmation_sent_at timestamp with time zone,
+  price_estimate numeric,
+  estimated_completion timestamp with time zone,
+  loan_car_details text,
+  confirmation_notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT job_booking_requests_pkey PRIMARY KEY (request_id),
+  CONSTRAINT job_booking_requests_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT job_booking_requests_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT job_booking_requests_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(vehicle_id),
+  CONSTRAINT job_booking_requests_submitted_by_fkey FOREIGN KEY (submitted_by) REFERENCES public.users(user_id),
+  CONSTRAINT job_booking_requests_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.job_check_sheet_checkboxes (
   checkbox_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,

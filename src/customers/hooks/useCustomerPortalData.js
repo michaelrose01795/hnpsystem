@@ -25,7 +25,7 @@ const buildContacts = (usersByRole = {}) => [
 
 const mapVehicleRow = (row) => ({
   id: row.vehicle_id,
-  reg: row.registration || row.reg_number,
+  reg: (row.registration || row.reg_number || "").toUpperCase(),
   makeModel: row.make_model || [row.make, row.model].filter(Boolean).join(" "),
   vin: row.vin || "N/A",
   mileage: row.mileage || "—",
@@ -33,7 +33,7 @@ const mapVehicleRow = (row) => ({
 });
 
 const mapPartsRow = (row, vehicles) => {
-  const appliesTo = vehicles.length ? [vehicles[0].reg] : ["Your vehicles"];
+  const appliesTo = vehicles.length ? vehicles.map((vehicle) => vehicle.reg) : ["Your vehicles"];
   const price = row.unit_price ? `£${Number(row.unit_price).toFixed(2)}` : "Price on request";
   const availability = row.qty_in_stock > 0 ? `In stock - ${row.qty_in_stock}` : "Back order";
   return {
@@ -45,16 +45,20 @@ const mapPartsRow = (row, vehicles) => {
   };
 };
 
-const mapVhcRow = (row) => ({
+const mapVhcRow = (row, mediaItems = []) => ({
   id: `vhc-${row.job_id}`,
-  vehicleId: row.vehicle_reg,
+  jobId: row.job_id,
+  jobNumber: row.job_number,
+  vehicleId: (row.vehicle_reg || "").toUpperCase(),
   createdAt: dayjs(row.last_sent_at || row.vhc_sent_at || row.updated_at || row.created_at || new Date()).format(
     "YYYY-MM-DD"
   ),
+  createdAtRaw: row.last_sent_at || row.vhc_sent_at || row.updated_at || row.created_at || new Date().toISOString(),
   status: row.status || "In progress",
   amberItems: Math.max(0, (row.vhc_checks_count || 0) - (row.authorization_count || 0)),
   redItems: row.authorization_count || 0,
-  media: row.authorization_count || 0,
+  mediaCount: mediaItems.length,
+  mediaItems,
 });
 
 const mapTimeline = (history = []) =>
@@ -126,13 +130,39 @@ export function useCustomerPortalData() {
 
         const { data: jobsData } = await supabase
           .from("jobs")
-          .select("id, job_number, status, job_concern, vehicle_reg, created_at, updated_at, customer_id")
+          .select(
+            "id, job_number, status, description, job_concern, vehicle_reg, created_at, updated_at, customer_id"
+          )
           .eq("customer_id", customerRow.id)
           .order("created_at", { ascending: false });
 
         const jobIds = (jobsData || []).map((job) => job.id);
 
+        let vhcMediaByJob = {};
+        if (jobIds.length) {
+          const { data: mediaRows } = await supabase
+            .from("job_files")
+            .select("job_id, file_id, file_url, file_type, folder, uploaded_at")
+            .in("job_id", jobIds)
+            .in("folder", ["vhc", "vhc_reports", "vhc-media", "vhc_photos"]);
+          if (mediaRows) {
+            vhcMediaByJob = mediaRows.reduce((acc, file) => {
+              const entry = {
+                id: file.file_id,
+                url: file.file_url,
+                type: file.file_type,
+                folder: file.folder,
+                uploadedAt: file.uploaded_at,
+              };
+              if (!acc[file.job_id]) acc[file.job_id] = [];
+              acc[file.job_id].push(entry);
+              return acc;
+            }, {});
+          }
+        }
+
         let vhcSummaries = [];
+        let vhcSummaryByJobId = {};
         if (jobIds.length) {
           const { data: vhcRows } = await supabase
             .from("vhc_workflow_status")
@@ -140,8 +170,49 @@ export function useCustomerPortalData() {
               "job_id, job_number, status, vhc_checks_count, authorization_count, vehicle_reg, created_at, updated_at, vhc_sent_at, last_sent_at"
             )
             .in("job_id", jobIds);
-          vhcSummaries = (vhcRows || []).map(mapVhcRow);
+          vhcSummaries = (vhcRows || []).map((row) => {
+            const mapped = mapVhcRow(row, vhcMediaByJob[row.job_id] || []);
+            vhcSummaryByJobId[row.job_id] = mapped;
+            return mapped;
+          });
         }
+
+        const jobsByVehicle = {};
+        (jobsData || []).forEach((job) => {
+          const regKey = (job.vehicle_reg || "").toUpperCase();
+          if (!regKey) return;
+          const entry = {
+            id: job.id,
+            jobNumber: job.job_number,
+            status: job.status || "Open",
+            concern: job.job_concern || job.description || "Workshop visit",
+            createdAt: dayjs(job.created_at).format("DD MMM YYYY"),
+            createdAtRaw: job.created_at,
+            updatedAt: job.updated_at,
+          };
+          if (!jobsByVehicle[regKey]) {
+            jobsByVehicle[regKey] = [];
+          }
+          jobsByVehicle[regKey].push(entry);
+        });
+
+        const vehiclesWithHistory = vehicles.map((vehicle) => {
+          const vehicleJobs = (jobsByVehicle[vehicle.reg] || []).sort(
+            (a, b) => new Date(b.createdAtRaw) - new Date(a.createdAtRaw)
+          );
+          const latestVhc = vehicleJobs
+            .map((job) => vhcSummaryByJobId[job.id])
+            .filter(Boolean)
+            .sort((a, b) => new Date(b.createdAtRaw) - new Date(a.createdAtRaw))[0] || null;
+
+          return {
+            ...vehicle,
+            jobs: vehicleJobs,
+            latestVhc,
+            accessoriesLink: `/customer/parts?vehicle=${encodeURIComponent(vehicle.reg)}&view=accessories`,
+            shopLink: `/customer/parts?vehicle=${encodeURIComponent(vehicle.reg)}&view=shop`,
+          };
+        });
 
         const { data: partsData } = await supabase
           .from("parts_catalog")
@@ -149,7 +220,7 @@ export function useCustomerPortalData() {
           .order("updated_at", { ascending: false })
           .limit(3);
 
-        const parts = (partsData || []).map((row) => mapPartsRow(row, vehicles));
+        const parts = (partsData || []).map((row) => mapPartsRow(row, vehiclesWithHistory));
 
         let timeline = [];
         if (jobsData?.length) {
@@ -166,7 +237,7 @@ export function useCustomerPortalData() {
           isLoading: false,
           error: null,
           customer: customerRow,
-          vehicles,
+          vehicles: vehiclesWithHistory,
           jobs: jobsData || [],
           vhcSummaries,
           parts,
