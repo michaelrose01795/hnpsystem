@@ -361,7 +361,25 @@ export const getAllJobs = async () => {
       ),
       job_notes(note_id, note_text, user_id, created_at, updated_at),
       job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time, technician_id, created_at, updated_at),
-      job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at)
+      job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at),
+      booking_request:job_booking_requests(
+        request_id,
+        job_id,
+        status,
+        description,
+        waiting_status,
+        submitted_by,
+        submitted_by_name,
+        submitted_at,
+        approved_by,
+        approved_by_name,
+        approved_at,
+        confirmation_sent_at,
+        price_estimate,
+        estimated_completion,
+        loan_car_details,
+        confirmation_notes
+      )
     `)
     .order('created_at', { ascending: false }); // Order by newest first
 
@@ -1431,6 +1449,31 @@ const formatJobData = (data) => {
       : null,
   }));
 
+  const bookingRequestRow = Array.isArray(data.booking_request)
+    ? data.booking_request[0]
+    : data.booking_request;
+
+  const bookingRequest = bookingRequestRow
+    ? {
+        requestId: bookingRequestRow.request_id,
+        jobId: bookingRequestRow.job_id,
+        status: bookingRequestRow.status || "pending",
+        description: bookingRequestRow.description || "",
+        waitingStatus: bookingRequestRow.waiting_status || "Neither",
+        submittedBy: bookingRequestRow.submitted_by || null,
+        submittedByName: bookingRequestRow.submitted_by_name || "",
+        submittedAt: bookingRequestRow.submitted_at || null,
+        approvedBy: bookingRequestRow.approved_by || null,
+        approvedByName: bookingRequestRow.approved_by_name || "",
+        approvedAt: bookingRequestRow.approved_at || null,
+        confirmationSentAt: bookingRequestRow.confirmation_sent_at || null,
+        priceEstimate: bookingRequestRow.price_estimate || null,
+        estimatedCompletion: bookingRequestRow.estimated_completion || null,
+        loanCarDetails: bookingRequestRow.loan_car_details || "",
+        confirmationNotes: bookingRequestRow.confirmation_notes || ""
+      }
+    : null;
+
   return {
     id: data.id,
     jobNumber: data.job_number,
@@ -1524,6 +1567,7 @@ const formatJobData = (data) => {
       : null,
     warrantyVhcMasterJobNumber: data.vhc_master_job?.job_number || null,
     messagingThread: data.messagingThread || null,
+    bookingRequest,
     
     // ✅ Timestamps
     createdAt: data.created_at,

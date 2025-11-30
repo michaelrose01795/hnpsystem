@@ -152,7 +152,7 @@ const formatBookingDescriptionInput = (value = "") => {
 export default function JobCardDetailPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
-  const { user } = useUser();
+  const { user, dbUserId } = useUser();
 
   // ✅ State Management
   const [jobData, setJobData] = useState(null);
@@ -170,6 +170,7 @@ export default function JobCardDetailPage() {
   const [customerSaving, setCustomerSaving] = useState(false);
   const [appointmentSaving, setAppointmentSaving] = useState(false);
   const [bookingFlowSaving, setBookingFlowSaving] = useState(false);
+  const [bookingApprovalSaving, setBookingApprovalSaving] = useState(false);
   const [jobDocuments, setJobDocuments] = useState([]);
   const [documentUploading, setDocumentUploading] = useState(false);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
@@ -338,6 +339,7 @@ export default function JobCardDetailPage() {
       { table: "job_cosmetic_damage", filter: `job_id=eq.${jobData.id}` },
       { table: "job_customer_statuses", filter: `job_id=eq.${jobData.id}` },
       { table: "job_progress", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_booking_requests", filter: `job_id=eq.${jobData.id}` },
       {
         table: "job_notes",
         filter: `job_id=eq.${jobData.id}`,
@@ -589,6 +591,46 @@ export default function JobCardDetailPage() {
           await fetchJobData({ silent: true });
         }
 
+        try {
+          const response = await fetch(
+            `/api/job-cards/${jobData.jobNumber}/booking-request`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                vehicleId: normalizedVehicleId || jobData.vehicleId || null,
+                waitingStatus: updates.waiting_status || "Neither",
+                description,
+                submittedBy: dbUserId || null,
+                submittedByName:
+                  user?.username ||
+                  user?.name ||
+                  user?.fullName ||
+                  user?.email ||
+                  "Workshop User"
+              })
+            }
+          );
+
+          const payload = await response.json();
+          if (!response.ok) {
+            throw new Error(payload?.error || "Failed to log booking request");
+          }
+
+          if (payload?.bookingRequest) {
+            setJobData((prev) =>
+              prev ? { ...prev, bookingRequest: payload.bookingRequest } : prev
+            );
+          }
+        } catch (requestError) {
+          console.error(
+            "⚠️ Booking request notifications failed:",
+            requestError
+          );
+        }
+
         return { success: true };
       } catch (bookingError) {
         console.error("❌ Failed to save booking details:", bookingError);
@@ -598,7 +640,65 @@ export default function JobCardDetailPage() {
         setBookingFlowSaving(false);
       }
     },
-    [canEdit, jobData, customerVehicles, fetchJobData]
+    [canEdit, jobData, customerVehicles, fetchJobData, dbUserId, user]
+  );
+
+  const handleBookingApproval = useCallback(
+    async ({
+      priceEstimate,
+      estimatedCompletion,
+      loanCarDetails,
+      confirmationMessage
+    }) => {
+      if (!canEdit || !jobData?.jobNumber) return { success: false };
+
+      setBookingApprovalSaving(true);
+
+      try {
+        const response = await fetch(
+          `/api/job-cards/${jobData.jobNumber}/booking-request`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              priceEstimate,
+              estimatedCompletion,
+              loanCarDetails,
+              confirmationMessage,
+              approvedBy: dbUserId || null,
+              approvedByName:
+                user?.username ||
+                user?.name ||
+                user?.fullName ||
+                user?.email ||
+                "Workshop User"
+            })
+          }
+        );
+
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload?.error || "Failed to approve booking");
+        }
+
+        if (payload?.bookingRequest) {
+          setJobData((prev) =>
+            prev ? { ...prev, bookingRequest: payload.bookingRequest } : prev
+          );
+        }
+
+        return { success: true };
+      } catch (approvalError) {
+        console.error("❌ Failed to approve booking:", approvalError);
+        alert(approvalError?.message || "Failed to approve booking");
+        return { success: false, error: approvalError };
+      } finally {
+        setBookingApprovalSaving(false);
+      }
+    },
+    [canEdit, jobData?.jobNumber, dbUserId, user]
   );
 
   const handleInvoiceBuilderConfirm = useCallback(async (builderPayload) => {
@@ -1264,8 +1364,11 @@ export default function JobCardDetailPage() {
               canEdit={canEdit}
               customerVehicles={customerVehicles}
               customerVehiclesLoading={customerVehiclesLoading}
+              bookingRequest={jobData.bookingRequest}
               onBookingFlowSave={handleBookingFlowSave}
               bookingFlowSaving={bookingFlowSaving}
+              onBookingApproval={handleBookingApproval}
+              bookingApprovalSaving={bookingApprovalSaving}
               onAppointmentSave={handleAppointmentSave}
               appointmentSaving={appointmentSaving}
             />
@@ -2217,311 +2320,6 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
   );
 }
 
-// ✅ Scheduling Tab
-function SchedulingTab({
-  jobData,
-  canEdit,
-  customerVehicles = [],
-  customerVehiclesLoading = false,
-  onBookingFlowSave = () => {},
-  bookingFlowSaving = false,
-  onAppointmentSave = () => {},
-  appointmentSaving = false
-}) {
-  const router = useRouter();
-  const waitingOptions = ["Waiting", "Loan Car", "Collection", "Neither"];
-  const [appointmentForm, setAppointmentForm] = useState({
-    date: jobData.appointment?.date || "",
-    time: jobData.appointment?.time || "",
-    status: jobData.appointment?.status || "booked",
-    notes: jobData.appointment?.notes || ""
-  });
-  const [appointmentDirty, setAppointmentDirty] = useState(false);
-  const [appointmentMessage, setAppointmentMessage] = useState("");
-  const [selectedVehicleId, setSelectedVehicleId] = useState(
-    jobData.vehicleId || null
-  );
-  const [confirmCustomerDetails, setConfirmCustomerDetails] = useState(false);
-  const [bookingDescription, setBookingDescription] = useState(() =>
-    formatBookingDescriptionInput(jobData.description || "")
-  );
-  const [bookingWaitingStatus, setBookingWaitingStatus] = useState(
-    jobData.waitingStatus || "Neither"
-  );
-  const [bookingMessage, setBookingMessage] = useState("");
-
-  useEffect(() => {
-    setAppointmentForm({
-      date: jobData.appointment?.date || "",
-      time: jobData.appointment?.time || "",
-      status: jobData.appointment?.status || "booked",
-      notes: jobData.appointment?.notes || ""
-    });
-    setAppointmentDirty(false);
-    setAppointmentMessage("");
-  }, [jobData.appointment]);
-
-  useEffect(() => {
-    setSelectedVehicleId(jobData.vehicleId || null);
-    setBookingDescription(formatBookingDescriptionInput(jobData.description || ""));
-    setBookingWaitingStatus(jobData.waitingStatus || "Neither");
-    setConfirmCustomerDetails(false);
-    setBookingMessage("");
-  }, [jobData.vehicleId, jobData.description, jobData.waitingStatus]);
-
-  const vehicleOptions = useMemo(() => {
-    const seen = new Set();
-    const options = [];
-    const pushVehicle = (vehicle) => {
-      if (!vehicle || !vehicle.vehicle_id) return;
-      if (seen.has(vehicle.vehicle_id)) return;
-      seen.add(vehicle.vehicle_id);
-      options.push(vehicle);
-    };
-
-    if (jobData.vehicleId) {
-      pushVehicle({
-        vehicle_id: jobData.vehicleId,
-        registration: jobData.reg,
-        reg_number: jobData.reg,
-        make_model: jobData.makeModel,
-        make: jobData.make,
-        model: jobData.model
-      });
-    }
-
-    (customerVehicles || []).forEach((vehicle) => pushVehicle(vehicle));
-
-    return options;
-  }, [
-    jobData.vehicleId,
-    jobData.reg,
-    jobData.makeModel,
-    jobData.make,
-    jobData.model,
-    customerVehicles
-  ]);
-
-  const selectedVehicle = useMemo(
-    () =>
-      vehicleOptions.find(
-        (vehicle) => vehicle.vehicle_id === selectedVehicleId
-      ) || null,
-    [vehicleOptions, selectedVehicleId]
-  );
-
-  const handleVehicleChange = (value) => {
-    const parsed = value ? Number(value) : null;
-    setSelectedVehicleId(Number.isNaN(parsed) ? null : parsed);
-    setBookingMessage("");
-  };
-
-  const handleAppointmentFieldChange = (field, value) => {
-    setAppointmentForm((prev) => {
-      const next = { ...prev, [field]: value };
-      return next;
-    });
-    setAppointmentDirty(true);
-    setAppointmentMessage("");
-  };
-
-  const handleAppointmentSubmit = async () => {
-    if (!appointmentDirty || !canEdit) return;
-    const result = await onAppointmentSave(appointmentForm);
-    if (result?.success) {
-      setAppointmentDirty(false);
-      setAppointmentMessage("Appointment saved");
-      setTimeout(() => setAppointmentMessage(""), 3000);
-    }
-  };
-
-  const handleBookingDescriptionChange = (value) => {
-    setBookingDescription(
-      value ? formatBookingDescriptionInput(value) : ""
-    );
-    setBookingMessage("");
-  };
-
-  const handleBookingWaitingSelect = (value) => {
-    setBookingWaitingStatus(value);
-    setBookingMessage("");
-  };
-
-  const handleBookingSubmit = async () => {
-    if (!canEdit || !selectedVehicleId || !confirmCustomerDetails) return;
-    if (!bookingDescription.trim()) return;
-    const payload = {
-      vehicleId: selectedVehicleId,
-      description: bookingDescription,
-      waitingStatus: bookingWaitingStatus
-    };
-    const result = await onBookingFlowSave(payload);
-    if (result?.success) {
-      setBookingMessage("Booking details updated");
-      setTimeout(() => setBookingMessage(""), 3000);
-    }
-  };
-
-  const selectedVehicleIdValue =
-    selectedVehicleId != null ? String(selectedVehicleId) : "";
-  const bookingButtonDisabled =
-    !canEdit ||
-    bookingFlowSaving ||
-    !confirmCustomerDetails ||
-    !selectedVehicleId ||
-    !bookingDescription.trim();
-
-  const appointmentCreatedAt = jobData.appointment?.createdAt
-    ? new Date(jobData.appointment.createdAt).toLocaleString()
-    : "Not created yet";
-
-  return (
-    <div>
-      <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
-        Scheduling Information
-      </h2>
-
-      <div style={{
-        padding: "20px",
-        backgroundColor: "white",
-        borderRadius: "12px",
-        border: "1px solid #e5e7eb",
-        marginBottom: "24px",
-        boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
-      }}>
-        <div style={{ marginBottom: "16px" }}>
-          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "#111827" }}>Customer Booking</h3>
-          <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: "13px" }}>
-            Select the stored vehicle, confirm customer details, choose their status, and describe the booking.
-          </p>
-        </div>
-
-        <div>
-          <label style={{ fontSize: "12px", fontWeight: "600", color: "#6b7280", display: "block", marginBottom: "6px" }}>
-            Vehicle
-          </label>
-          {customerVehiclesLoading ? (
-            <div style={{ fontSize: "13px", color: "#6b7280", padding: "8px 0" }}>
-              Loading stored vehicles...
-            </div>
-          ) : vehicleOptions.length > 0 ? (
-            <>
-              <select
-                value={selectedVehicleIdValue}
-                onChange={(e) => handleVehicleChange(e.target.value)}
-                disabled={!canEdit}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: "8px",
-                  border: "1px solid #d1d5db",
-                  fontSize: "14px",
-                  marginBottom: "10px"
-                }}
-              >
-                <option value="" disabled>
-                  Select stored vehicle
-                </option>
-                {vehicleOptions.map((vehicle) => (
-                  <option key={vehicle.vehicle_id} value={vehicle.vehicle_id}>
-                    {`${vehicle.registration || vehicle.reg_number || "Vehicle"} · ${
-                      vehicle.make_model ||
-                      [vehicle.make, vehicle.model].filter(Boolean).join(" ")
-                    }`}
-                  </option>
-                ))}
-              </select>
-              {selectedVehicle && (
-                <div style={{
-                  padding: "12px",
-                  backgroundColor: "#f9fafb",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "10px",
-                  fontSize: "13px",
-                  color: "#374151"
-                }}>
-                  <div style={{ fontWeight: "600", color: "#d10000" }}>
-                    {selectedVehicle.registration || selectedVehicle.reg_number}
-                  </div>
-                  <div>
-                    {selectedVehicle.make_model ||
-                      [selectedVehicle.make, selectedVehicle.model].filter(Boolean).join(" ")}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div style={{ fontSize: "13px", color: "#b91c1c", padding: "8px 0" }}>
-              No stored vehicles found for this customer.
-            </div>
-          )}
-        </div>
-
-        <div style={{
-          marginTop: "16px",
-          padding: "12px",
-          borderRadius: "10px",
-          border: `1px solid ${confirmCustomerDetails ? "#10b981" : "#fbbf24"}`,
-          backgroundColor: confirmCustomerDetails ? "#ecfdf5" : "#fff7ed"
-        }}>
-          <label style={{ display: "flex", gap: "10px", alignItems: "center", fontSize: "13px", color: "#374151" }}>
-            <input
-              type="checkbox"
-              checked={confirmCustomerDetails}
-              onChange={(e) => setConfirmCustomerDetails(e.target.checked)}
-              disabled={!canEdit}
-              style={{ width: "16px", height: "16px" }}
-            />
-            I confirm {jobData.customer || "the customer"}'s contact details for this booking.
-          </label>
-        </div>
-
-        <div style={{ marginTop: "16px" }}>
-          <div style={{ fontSize: "13px", fontWeight: "600", color: "#374151", marginBottom: "8px" }}>
-            Customer Status
-          </div>
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            {waitingOptions.map((option) => {
-              const isActive =
-                bookingWaitingStatus === option ||
-                (!bookingWaitingStatus && option === "Neither");
-              return (
-                <button
-                  key={option}
-                  onClick={() => handleBookingWaitingSelect(option)}
-                  disabled={!canEdit}
-                  style={{
-                    flex: "1 1 180px",
-                    minWidth: "140px",
-                    padding: "12px 16px",
-                    borderRadius: "10px",
-                    border: `2px solid ${isActive ? "#d10000" : "#e5e7eb"}`,
-                    backgroundColor: isActive ? "rgba(209,0,0,0.08)" : "white",
-                    color: isActive ? "#b91c1c" : "#374151",
-                    fontWeight: "600",
-                    cursor: canEdit ? "pointer" : "default",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  {option}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div style={{ marginTop: "16px" }}>
-          <label style={{ fontSize: "12px", fontWeight: "600", color: "#6b7280", display: "block", marginBottom: "6px" }}>
-            Booking Description
-          </label>
-          <textarea
-            value={bookingDescription}
-            onChange={(e) => handleBookingDescriptionChange(e.target.value)}
-            rows={4}
-            disabled={!canEdit}
-            style={{
-              width: "100%",
-              padding: "12px",
               borderRadius: "10px",
               border: "1px solid #d1d5db",
               fontSize: "14px",
@@ -2703,6 +2501,1175 @@ function SchedulingTab({
         </div>
 
         <div style={{ marginTop: "20px", padding: "12px", backgroundColor: "#f9fafb", borderRadius: "8px", fontSize: "13px", color: "#4b5563" }}>
+          Appointment created: <strong>{appointmentCreatedAt}</strong>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ✅ Scheduling Tab
+function SchedulingTab({
+  jobData,
+  canEdit,
+  customerVehicles = [],
+  customerVehiclesLoading = false,
+  bookingRequest = null,
+  onBookingFlowSave = () => {},
+  bookingFlowSaving = false,
+  onBookingApproval = () => {},
+  bookingApprovalSaving = false,
+  onAppointmentSave = () => {},
+  appointmentSaving = false
+}) {
+  const router = useRouter();
+  const waitingOptions = ["Waiting", "Loan Car", "Collection", "Neither"];
+  const [appointmentForm, setAppointmentForm] = useState({
+    date: jobData.appointment?.date || "",
+    time: jobData.appointment?.time || "",
+    status: jobData.appointment?.status || "booked",
+    notes: jobData.appointment?.notes || ""
+  });
+  const [appointmentDirty, setAppointmentDirty] = useState(false);
+  const [appointmentMessage, setAppointmentMessage] = useState("");
+  const [selectedVehicleId, setSelectedVehicleId] = useState(
+    jobData.vehicleId || null
+  );
+  const [confirmCustomerDetails, setConfirmCustomerDetails] = useState(false);
+  const [bookingDescription, setBookingDescription] = useState(() =>
+    formatBookingDescriptionInput(jobData.description || "")
+  );
+  const [bookingWaitingStatus, setBookingWaitingStatus] = useState(
+    jobData.waitingStatus || "Neither"
+  );
+  const [bookingMessage, setBookingMessage] = useState("");
+  const [approvalMessage, setApprovalMessage] = useState("");
+  const formatDateInput = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+  const formatTimeInput = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
+  };
+  const [approvalForm, setApprovalForm] = useState({
+    priceEstimate: bookingRequest?.priceEstimate
+      ? String(bookingRequest.priceEstimate)
+      : "",
+    etaDate: formatDateInput(bookingRequest?.estimatedCompletion),
+    etaTime: formatTimeInput(bookingRequest?.estimatedCompletion),
+    loanCarDetails: bookingRequest?.loanCarDetails || "",
+    confirmationMessage: bookingRequest?.confirmationNotes || ""
+  });
+
+  useEffect(() => {
+    setAppointmentForm({
+      date: jobData.appointment?.date || "",
+      time: jobData.appointment?.time || "",
+      status: jobData.appointment?.status || "booked",
+      notes: jobData.appointment?.notes || ""
+    });
+    setAppointmentDirty(false);
+    setAppointmentMessage("");
+  }, [jobData.appointment]);
+
+  useEffect(() => {
+    setSelectedVehicleId(jobData.vehicleId || null);
+    setBookingDescription(
+      formatBookingDescriptionInput(jobData.description || "")
+    );
+    setBookingWaitingStatus(jobData.waitingStatus || "Neither");
+    setConfirmCustomerDetails(false);
+    setBookingMessage("");
+  }, [jobData.vehicleId, jobData.description, jobData.waitingStatus]);
+
+  useEffect(() => {
+    setApprovalForm({
+      priceEstimate: bookingRequest?.priceEstimate
+        ? String(bookingRequest.priceEstimate)
+        : "",
+      etaDate: formatDateInput(bookingRequest?.estimatedCompletion),
+      etaTime: formatTimeInput(bookingRequest?.estimatedCompletion),
+      loanCarDetails: bookingRequest?.loanCarDetails || "",
+      confirmationMessage: bookingRequest?.confirmationNotes || ""
+    });
+    setApprovalMessage("");
+  }, [bookingRequest]);
+
+  const vehicleOptions = useMemo(() => {
+    const seen = new Set();
+    const options = [];
+    const pushVehicle = (vehicle) => {
+      if (!vehicle || !vehicle.vehicle_id) return;
+      if (seen.has(vehicle.vehicle_id)) return;
+      seen.add(vehicle.vehicle_id);
+      options.push(vehicle);
+    };
+
+    if (jobData.vehicleId) {
+      pushVehicle({
+        vehicle_id: jobData.vehicleId,
+        registration: jobData.reg,
+        reg_number: jobData.reg,
+        make_model: jobData.makeModel,
+        make: jobData.make,
+        model: jobData.model
+      });
+    }
+
+    (customerVehicles || []).forEach((vehicle) => pushVehicle(vehicle));
+
+    return options;
+  }, [
+    jobData.vehicleId,
+    jobData.reg,
+    jobData.makeModel,
+    jobData.make,
+    jobData.model,
+    customerVehicles
+  ]);
+
+  const selectedVehicle = useMemo(
+    () =>
+      vehicleOptions.find(
+        (vehicle) => vehicle.vehicle_id === selectedVehicleId
+      ) || null,
+    [vehicleOptions, selectedVehicleId]
+  );
+
+  const descriptionLines = useMemo(() => {
+    if (!bookingRequest?.description) return [];
+    return bookingRequest.description
+      .split("\n")
+      .map((line) => line.replace(/^-+\s*/, "").trim())
+      .filter(Boolean);
+  }, [bookingRequest?.description]);
+
+  const handleVehicleChange = (value) => {
+    const parsed = value ? Number(value) : null;
+    setSelectedVehicleId(Number.isNaN(parsed) ? null : parsed);
+    setBookingMessage("");
+  };
+
+  const handleAppointmentFieldChange = (field, value) => {
+    setAppointmentForm((prev) => ({ ...prev, [field]: value }));
+    setAppointmentDirty(true);
+    setAppointmentMessage("");
+  };
+
+  const handleAppointmentSubmit = async () => {
+    if (!appointmentDirty || !canEdit) return;
+    const result = await onAppointmentSave(appointmentForm);
+    if (result?.success) {
+      setAppointmentDirty(false);
+      setAppointmentMessage("Appointment saved");
+      setTimeout(() => setAppointmentMessage(""), 3000);
+    }
+  };
+
+  const handleBookingDescriptionChange = (value) => {
+    setBookingDescription(
+      value ? formatBookingDescriptionInput(value) : ""
+    );
+    setBookingMessage("");
+  };
+
+  const handleBookingWaitingSelect = (value) => {
+    setBookingWaitingStatus(value);
+    setBookingMessage("");
+  };
+
+  const handleBookingSubmit = async () => {
+    if (!canEdit || !selectedVehicleId || !confirmCustomerDetails) return;
+    if (!bookingDescription.trim()) return;
+    const payload = {
+      vehicleId: selectedVehicleId,
+      description: bookingDescription,
+      waitingStatus: bookingWaitingStatus
+    };
+    const result = await onBookingFlowSave(payload);
+    if (result?.success) {
+      setBookingMessage("Booking request submitted");
+      setTimeout(() => setBookingMessage(""), 3000);
+    }
+  };
+
+  const handleApprovalFieldChange = (field, value) => {
+    setApprovalForm((prev) => ({ ...prev, [field]: value }));
+    setApprovalMessage("");
+  };
+
+  const handleApprovalSubmit = async () => {
+    if (!canEdit || !bookingRequest) return;
+    if (
+      !approvalForm.priceEstimate.trim() ||
+      !approvalForm.etaDate ||
+      !approvalForm.etaTime
+    ) {
+      return;
+    }
+    const etaCandidate = new Date(
+      `${approvalForm.etaDate}T${approvalForm.etaTime}`
+    );
+    if (Number.isNaN(etaCandidate.getTime())) {
+      return;
+    }
+    const payload = {
+      priceEstimate: approvalForm.priceEstimate,
+      estimatedCompletion: etaCandidate.toISOString(),
+      loanCarDetails: approvalForm.loanCarDetails?.trim() || "",
+      confirmationMessage: approvalForm.confirmationMessage?.trim() || ""
+    };
+    const result = await onBookingApproval(payload);
+    if (result?.success) {
+      setApprovalMessage("Confirmation sent to customer");
+      setTimeout(() => setApprovalMessage(""), 3000);
+    }
+  };
+
+  const selectedVehicleIdValue =
+    selectedVehicleId != null ? String(selectedVehicleId) : "";
+  const bookingButtonDisabled =
+    !canEdit ||
+    bookingFlowSaving ||
+    !confirmCustomerDetails ||
+    !selectedVehicleId ||
+    !bookingDescription.trim();
+
+  const approvalButtonDisabled =
+    !canEdit ||
+    !bookingRequest ||
+    bookingApprovalSaving ||
+    !approvalForm.priceEstimate.trim() ||
+    !approvalForm.etaDate ||
+    !approvalForm.etaTime;
+
+  const appointmentCreatedAt = jobData.appointment?.createdAt
+    ? new Date(jobData.appointment.createdAt).toLocaleString()
+    : "Not created yet";
+  const bookingStatus = bookingRequest?.status || "pending";
+  const statusColor =
+    bookingStatus === "approved"
+      ? { background: "#dcfce7", color: "#166534" }
+      : { background: "#fff7ed", color: "#92400e" };
+  const submittedAt = bookingRequest?.submittedAt
+    ? new Date(bookingRequest.submittedAt).toLocaleString()
+    : "Awaiting submission";
+  const approvedAt = bookingRequest?.approvedAt
+    ? new Date(bookingRequest.approvedAt).toLocaleString()
+    : null;
+  const etaDisplay = bookingRequest?.estimatedCompletion
+    ? new Date(bookingRequest.estimatedCompletion).toLocaleString()
+    : null;
+
+  return (
+    <div>
+      <h2
+        style={{
+          margin: "0 0 20px 0",
+          fontSize: "20px",
+          fontWeight: "600",
+          color: "#1a1a1a"
+        }}
+      >
+        Scheduling Information
+      </h2>
+
+      <div
+        style={{
+          padding: "20px",
+          backgroundColor: "white",
+          borderRadius: "12px",
+          border: "1px solid #e5e7eb",
+          marginBottom: "24px",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+        }}
+      >
+        <div style={{ marginBottom: "16px" }}>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: "16px",
+              fontWeight: "600",
+              color: "#111827"
+            }}
+          >
+            Customer Booking
+          </h3>
+          <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: "13px" }}>
+            Select the stored vehicle, confirm details, and capture the customer
+            request so the team can approve it.
+          </p>
+        </div>
+
+        <div>
+          <label
+            style={{
+              fontSize: "12px",
+              fontWeight: "600",
+              color: "#6b7280",
+              display: "block",
+              marginBottom: "6px"
+            }}
+          >
+            Vehicle
+          </label>
+          {customerVehiclesLoading ? (
+            <div style={{ fontSize: "13px", color: "#6b7280", padding: "8px 0" }}>
+              Loading stored vehicles...
+            </div>
+          ) : vehicleOptions.length > 0 ? (
+            <>
+              <select
+                value={selectedVehicleIdValue}
+                onChange={(event) => handleVehicleChange(event.target.value)}
+                disabled={!canEdit}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  fontSize: "14px",
+                  marginBottom: "10px"
+                }}
+              >
+                <option value="" disabled>
+                  Select stored vehicle
+                </option>
+                {vehicleOptions.map((vehicle) => (
+                  <option key={vehicle.vehicle_id} value={vehicle.vehicle_id}>
+                    {`${vehicle.registration || vehicle.reg_number || "Vehicle"} · ${
+                      vehicle.make_model ||
+                      [vehicle.make, vehicle.model].filter(Boolean).join(" ")
+                    }`}
+                  </option>
+                ))}
+              </select>
+              {selectedVehicle && (
+                <div
+                  style={{
+                    padding: "12px",
+                    backgroundColor: "#f9fafb",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "10px",
+                    fontSize: "13px",
+                    color: "#374151"
+                  }}
+                >
+                  <div style={{ fontWeight: "600", color: "#d10000" }}>
+                    {selectedVehicle.registration || selectedVehicle.reg_number}
+                  </div>
+                  <div>
+                    {selectedVehicle.make_model ||
+                      [selectedVehicle.make, selectedVehicle.model]
+                        .filter(Boolean)
+                        .join(" ")}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ fontSize: "13px", color: "#b91c1c", padding: "8px 0" }}>
+              No stored vehicles found for this customer.
+            </div>
+          )}
+        </div>
+
+        <div
+          style={{
+            marginTop: "16px",
+            padding: "12px",
+            borderRadius: "10px",
+            border: `1px solid ${confirmCustomerDetails ? "#10b981" : "#fbbf24"}`,
+            backgroundColor: confirmCustomerDetails ? "#ecfdf5" : "#fff7ed"
+          }}
+        >
+          <label
+            style={{
+              display: "flex",
+              gap: "10px",
+              alignItems: "center",
+              fontSize: "13px",
+              color: "#374151"
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={confirmCustomerDetails}
+              onChange={(event) =>
+                setConfirmCustomerDetails(event.target.checked)
+              }
+              disabled={!canEdit}
+              style={{ width: "16px", height: "16px" }}
+            />
+            I confirm {jobData.customer || "the customer"}'s contact details for
+            this booking.
+          </label>
+        </div>
+
+        <div style={{ marginTop: "16px" }}>
+          <div
+            style={{
+              fontSize: "13px",
+              fontWeight: "600",
+              color: "#374151",
+              marginBottom: "8px"
+            }}
+          >
+            Customer Status
+          </div>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            {waitingOptions.map((option) => {
+              const isActive =
+                bookingWaitingStatus === option ||
+                (!bookingWaitingStatus && option === "Neither");
+              return (
+                <button
+                  key={option}
+                  onClick={() => handleBookingWaitingSelect(option)}
+                  disabled={!canEdit}
+                  style={{
+                    flex: "1 1 180px",
+                    minWidth: "140px",
+                    padding: "12px 16px",
+                    borderRadius: "10px",
+                    border: `2px solid ${isActive ? "#d10000" : "#e5e7eb"}`,
+                    backgroundColor: isActive ? "rgba(209,0,0,0.08)" : "white",
+                    color: isActive ? "#b91c1c" : "#374151",
+                    fontWeight: "600",
+                    cursor: canEdit ? "pointer" : "default",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  {option}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ marginTop: "16px" }}>
+          <label
+            style={{
+              fontSize: "12px",
+              fontWeight: "600",
+              color: "#6b7280",
+              display: "block",
+              marginBottom: "6px"
+            }}
+          >
+            Booking Description
+          </label>
+          <textarea
+            value={bookingDescription}
+            onChange={(event) =>
+              handleBookingDescriptionChange(event.target.value)
+            }
+            rows={4}
+            disabled={!canEdit}
+            style={{
+              width: "100%",
+              padding: "12px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              fontSize: "14px",
+              resize: "vertical"
+            }}
+            placeholder="- Customer waiting for vehicle&#10;- Loan car requested"
+          />
+          <p style={{ marginTop: "6px", fontSize: "12px", color: "#6b7280" }}>
+            Each new line automatically starts with "- " to maintain the booking
+            checklist format.
+          </p>
+        </div>
+
+        <div
+          style={{
+            marginTop: "16px",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            flexWrap: "wrap"
+          }}
+        >
+          <button
+            onClick={handleBookingSubmit}
+            disabled={bookingButtonDisabled || vehicleOptions.length === 0}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: bookingButtonDisabled ? "#9ca3af" : "#ef4444",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: bookingButtonDisabled ? "not-allowed" : "pointer",
+              fontWeight: "600",
+              fontSize: "14px"
+            }}
+          >
+            {bookingFlowSaving ? "Saving..." : "Save Booking Details"}
+          </button>
+          {bookingMessage && (
+            <span style={{ fontSize: "13px", color: "#16a34a" }}>
+              {bookingMessage}
+            </span>
+          )}
+          {!confirmCustomerDetails && canEdit && (
+            <span style={{ fontSize: "12px", color: "#dc2626" }}>
+              Please confirm customer details before saving.
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div
+        style={{
+          padding: "20px",
+          backgroundColor: "white",
+          borderRadius: "12px",
+          border: "1px solid #e5e7eb",
+          marginBottom: "24px",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+        }}
+      >
+        <div style={{ marginBottom: "16px" }}>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: "16px",
+              fontWeight: "600",
+              color: "#111827"
+            }}
+          >
+            Booking Approval & Confirmation
+          </h3>
+          <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: "13px" }}>
+            Review the booking request, capture workshop commitments, and send the
+            confirmation email.
+          </p>
+        </div>
+
+        {bookingRequest ? (
+          <>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "12px",
+                alignItems: "center",
+                marginBottom: "16px"
+              }}
+            >
+              <span
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: "20px",
+                  fontWeight: "600",
+                  fontSize: "13px",
+                  backgroundColor: statusColor.background,
+                  color: statusColor.color
+                }}
+              >
+                {bookingStatus === "approved" ? "Approved" : "Awaiting Approval"}
+              </span>
+              <span style={{ fontSize: "13px", color: "#6b7280" }}>
+                Waiting status: {bookingRequest.waitingStatus || "Neither"}
+              </span>
+            </div>
+
+            {descriptionLines.length > 0 && (
+              <div
+                style={{
+                  marginBottom: "16px",
+                  padding: "12px",
+                  borderRadius: "10px",
+                  border: "1px solid #e5e7eb",
+                  backgroundColor: "#f9fafb"
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "#374151",
+                    marginBottom: "8px"
+                  }}
+                >
+                  Customer Request
+                </div>
+                <ul
+                  style={{
+                    margin: 0,
+                    paddingLeft: "18px",
+                    color: "#4b5563",
+                    fontSize: "13px"
+                  }}
+                >
+                  {descriptionLines.map((line, index) => (
+                    <li key={`${line}-${index}`}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+                gap: "12px",
+                marginBottom: "16px"
+              }}
+            >
+              <div
+                style={{
+                  padding: "12px",
+                  borderRadius: "10px",
+                  border: "1px solid #e5e7eb",
+                  backgroundColor: "#f9fafb"
+                }}
+              >
+                <p style={{ margin: "0 0 4px 0", color: "#6b7280", fontSize: "12px" }}>
+                  Submitted
+                </p>
+                <p style={{ margin: 0, fontSize: "14px", color: "#111827" }}>
+                  {submittedAt}
+                </p>
+                <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>
+                  {bookingRequest.submittedByName || "Customer Portal"}
+                </p>
+              </div>
+              <div
+                style={{
+                  padding: "12px",
+                  borderRadius: "10px",
+                  border: "1px solid #e5e7eb",
+                  backgroundColor: "#f9fafb"
+                }}
+              >
+                <p style={{ margin: "0 0 4px 0", color: "#6b7280", fontSize: "12px" }}>
+                  Approved
+                </p>
+                <p style={{ margin: 0, fontSize: "14px", color: "#111827" }}>
+                  {approvedAt || "Not yet approved"}
+                </p>
+                {bookingRequest.approvedByName && (
+                  <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>
+                    {bookingRequest.approvedByName}
+                  </p>
+                )}
+              </div>
+              <div
+                style={{
+                  padding: "12px",
+                  borderRadius: "10px",
+                  border: "1px solid #e5e7eb",
+                  backgroundColor: "#f9fafb"
+                }}
+              >
+                <p style={{ margin: "0 0 4px 0", color: "#6b7280", fontSize: "12px" }}>
+                  Estimated Completion
+                </p>
+                <p style={{ margin: 0, fontSize: "14px", color: "#111827" }}>
+                  {etaDisplay || "Not scheduled"}
+                </p>
+                {bookingRequest.priceEstimate && (
+                  <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>
+                    Estimate: £{Number(bookingRequest.priceEstimate).toFixed(2)}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {bookingRequest.loanCarDetails && (
+              <div
+                style={{
+                  marginBottom: "16px",
+                  padding: "12px",
+                  borderRadius: "10px",
+                  border: "1px solid #e5e7eb",
+                  backgroundColor: "#fff7ed",
+                  color: "#92400e",
+                  fontSize: "13px"
+                }}
+              >
+                <strong style={{ display: "block", marginBottom: "4px" }}>
+                  Loan Car Details
+                </strong>
+                {bookingRequest.loanCarDetails}
+              </div>
+            )}
+
+            {bookingRequest.confirmationNotes && (
+              <div
+                style={{
+                  marginBottom: "16px",
+                  padding: "12px",
+                  borderRadius: "10px",
+                  border: "1px solid #e5e7eb",
+                  backgroundColor: "#f0fdf4",
+                  color: "#166534",
+                  fontSize: "13px"
+                }}
+              >
+                <strong style={{ display: "block", marginBottom: "4px" }}>
+                  Last Confirmation
+                </strong>
+                {bookingRequest.confirmationNotes}
+              </div>
+            )}
+
+            {canEdit && (
+              <div
+                style={{
+                  marginTop: "12px",
+                  paddingTop: "16px",
+                  borderTop: "1px solid #e5e7eb"
+                }}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fit,minmax(220px,1fr))",
+                    gap: "16px",
+                    marginBottom: "16px"
+                  }}
+                >
+                  <div>
+                    <label
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        color: "#6b7280",
+                        display: "block",
+                        marginBottom: "6px"
+                      }}
+                    >
+                      Price Estimate (£)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={approvalForm.priceEstimate}
+                      onChange={(event) =>
+                        handleApprovalFieldChange(
+                          "priceEstimate",
+                          event.target.value
+                        )
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: "8px",
+                        border: "1px solid #d1d5db",
+                        fontSize: "14px"
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        color: "#6b7280",
+                        display: "block",
+                        marginBottom: "6px"
+                      }}
+                    >
+                      ETA Date
+                    </label>
+                    <input
+                      type="date"
+                      value={approvalForm.etaDate}
+                      onChange={(event) =>
+                        handleApprovalFieldChange("etaDate", event.target.value)
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: "8px",
+                        border: "1px solid #d1d5db",
+                        fontSize: "14px"
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        color: "#6b7280",
+                        display: "block",
+                        marginBottom: "6px"
+                      }}
+                    >
+                      ETA Time
+                    </label>
+                    <input
+                      type="time"
+                      value={approvalForm.etaTime}
+                      onChange={(event) =>
+                        handleApprovalFieldChange("etaTime", event.target.value)
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: "8px",
+                        border: "1px solid #d1d5db",
+                        fontSize: "14px"
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: "12px" }}>
+                  <label
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color: "#6b7280",
+                      display: "block",
+                      marginBottom: "6px"
+                    }}
+                  >
+                    Loan Car Details
+                  </label>
+                  <textarea
+                    value={approvalForm.loanCarDetails}
+                    onChange={(event) =>
+                      handleApprovalFieldChange(
+                        "loanCarDetails",
+                        event.target.value
+                      )
+                    }
+                    rows={2}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      borderRadius: "10px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "14px",
+                      resize: "vertical"
+                    }}
+                    placeholder="Confirmed courtesy car, fuel policy, insurance details..."
+                  />
+                </div>
+
+                <div style={{ marginBottom: "12px" }}>
+                  <label
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color: "#6b7280",
+                      display: "block",
+                      marginBottom: "6px"
+                    }}
+                  >
+                    Confirmation Message
+                  </label>
+                  <textarea
+                    value={approvalForm.confirmationMessage}
+                    onChange={(event) =>
+                      handleApprovalFieldChange(
+                        "confirmationMessage",
+                        event.target.value
+                      )
+                    }
+                    rows={3}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      borderRadius: "10px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "14px",
+                      resize: "vertical"
+                    }}
+                    placeholder="Optional note to include in the confirmation email."
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "12px",
+                    alignItems: "center",
+                    flexWrap: "wrap"
+                  }}
+                >
+                  <button
+                    onClick={handleApprovalSubmit}
+                    disabled={approvalButtonDisabled}
+                    style={{
+                      padding: "10px 20px",
+                      backgroundColor: approvalButtonDisabled
+                        ? "#9ca3af"
+                        : "#10b981",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: approvalButtonDisabled
+                        ? "not-allowed"
+                        : "pointer",
+                      fontWeight: "600",
+                      fontSize: "14px"
+                    }}
+                  >
+                    {bookingApprovalSaving ? "Sending..." : "Send Confirmation"}
+                  </button>
+                  {approvalMessage && (
+                    <span style={{ fontSize: "13px", color: "#16a34a" }}>
+                      {approvalMessage}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <p style={{ color: "#6b7280", fontSize: "13px", margin: 0 }}>
+            Save the booking details above to generate a request that can be
+            approved.
+          </p>
+        )}
+      </div>
+
+      <div
+        style={{
+          padding: "20px",
+          backgroundColor: "white",
+          borderRadius: "12px",
+          border: "1px solid #e5e7eb",
+          marginBottom: "24px",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "16px"
+          }}
+        >
+          <div>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: "16px",
+                fontWeight: "600",
+                color: "#111827"
+              }}
+            >
+              Appointment Information
+            </h3>
+            <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: "13px" }}>
+              Adjust booking times directly from the job card
+            </p>
+          </div>
+          <button
+            onClick={() => router.push(`/appointments?job=${jobData.jobNumber}`)}
+            style={{
+              padding: "8px 14px",
+              borderRadius: "8px",
+              border: "1px solid #d1d5db",
+              backgroundColor: "#f9fafb",
+              color: "#111827",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer"
+            }}
+          >
+            Open Appointment Calendar
+          </button>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))",
+            gap: "16px"
+          }}
+        >
+          <div>
+            <label
+              style={{
+                fontSize: "12px",
+                fontWeight: "600",
+                color: "#6b7280",
+                display: "block",
+                marginBottom: "6px"
+              }}
+            >
+              Date
+            </label>
+            <input
+              type="date"
+              value={appointmentForm.date}
+              onChange={(event) =>
+                handleAppointmentFieldChange("date", event.target.value)
+              }
+              disabled={!canEdit || appointmentSaving}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px"
+              }}
+            />
+          </div>
+          <div>
+            <label
+              style={{
+                fontSize: "12px",
+                fontWeight: "600",
+                color: "#6b7280",
+                display: "block",
+                marginBottom: "6px"
+              }}
+            >
+              Time
+            </label>
+            <input
+              type="time"
+              value={appointmentForm.time}
+              onChange={(event) =>
+                handleAppointmentFieldChange("time", event.target.value)
+              }
+              disabled={!canEdit || appointmentSaving}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px"
+              }}
+            />
+          </div>
+          <div>
+            <label
+              style={{
+                fontSize: "12px",
+                fontWeight: "600",
+                color: "#6b7280",
+                display: "block",
+                marginBottom: "6px"
+              }}
+            >
+              Status
+            </label>
+            <select
+              value={appointmentForm.status}
+              onChange={(event) =>
+                handleAppointmentFieldChange("status", event.target.value)
+              }
+              disabled={!canEdit || appointmentSaving}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px"
+              }}
+            >
+              <option value="booked">Booked</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="checked_in">Checked In</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={{ marginTop: "16px" }}>
+          <label
+            style={{
+              fontSize: "12px",
+              fontWeight: "600",
+              color: "#6b7280",
+              display: "block",
+              marginBottom: "6px"
+            }}
+          >
+            Notes
+          </label>
+          <textarea
+            value={appointmentForm.notes}
+            onChange={(event) =>
+              handleAppointmentFieldChange("notes", event.target.value)
+            }
+            rows={3}
+            disabled={!canEdit || appointmentSaving}
+            style={{
+              width: "100%",
+              padding: "12px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              fontSize: "14px",
+              resize: "vertical"
+            }}
+          />
+        </div>
+
+        <div
+          style={{
+            marginTop: "16px",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px"
+          }}
+        >
+          {canEdit && (
+            <button
+              onClick={handleAppointmentSubmit}
+              disabled={!appointmentDirty || appointmentSaving}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: appointmentDirty ? "#10b981" : "#9ca3af",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                fontWeight: "600",
+                fontSize: "14px",
+                cursor:
+                  appointmentDirty && !appointmentSaving
+                    ? "pointer"
+                    : "not-allowed"
+              }}
+            >
+              {appointmentSaving
+                ? "Saving..."
+                : jobData.appointment
+                  ? "Update Appointment"
+                  : "Schedule Appointment"}
+            </button>
+          )}
+          {appointmentMessage && (
+            <span style={{ fontSize: "13px", color: "#16a34a" }}>
+              {appointmentMessage}
+            </span>
+          )}
+        </div>
+
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "12px",
+            backgroundColor: "#f9fafb",
+            borderRadius: "8px",
+            fontSize: "13px",
+            color: "#4b5563"
+          }}
+        >
           Appointment created: <strong>{appointmentCreatedAt}</strong>
         </div>
       </div>
