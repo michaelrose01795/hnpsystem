@@ -15,7 +15,7 @@ import {
   deleteJobNote,
   updateJobNote
 } from "@/lib/database/notes";
-import { getCustomerJobs } from "@/lib/database/customers";
+import { getCustomerJobs, getCustomerVehicles } from "@/lib/database/customers";
 import {
   normalizeRequests,
   mapCustomerJobsToHistory
@@ -128,6 +128,27 @@ const arePartsPricedAndAssigned = (allocations = []) => {
   });
 };
 
+const formatBookingDescriptionInput = (value = "") => {
+  const normalized = String(value || "").replace(/\r/g, "");
+  if (!normalized.trim()) {
+    return "";
+  }
+
+  return normalized
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        return "- ";
+      }
+      const withoutPrefix = trimmed.startsWith("- ")
+        ? trimmed.slice(2).trimStart()
+        : trimmed.replace(/^-+\s*/, "").trimStart();
+      return `- ${withoutPrefix}`;
+    })
+    .join("\n");
+};
+
 export default function JobCardDetailPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
@@ -144,9 +165,11 @@ export default function JobCardDetailPage() {
   const sharedNoteSaveRef = useRef(null);
   const jobRealtimeRefreshRef = useRef(null);
   const [vehicleJobHistory, setVehicleJobHistory] = useState([]);
+  const [customerVehicles, setCustomerVehicles] = useState([]);
+  const [customerVehiclesLoading, setCustomerVehiclesLoading] = useState(false);
   const [customerSaving, setCustomerSaving] = useState(false);
-  const [waitingStatusSaving, setWaitingStatusSaving] = useState(false);
   const [appointmentSaving, setAppointmentSaving] = useState(false);
+  const [bookingFlowSaving, setBookingFlowSaving] = useState(false);
   const [jobDocuments, setJobDocuments] = useState([]);
   const [documentUploading, setDocumentUploading] = useState(false);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
@@ -252,12 +275,41 @@ export default function JobCardDetailPage() {
     }, 250);
   }, [fetchJobData]);
 
+  const refreshCustomerVehicles = useCallback(
+    async (customerId) => {
+      if (!customerId) {
+        setCustomerVehicles([]);
+        return;
+      }
+
+      setCustomerVehiclesLoading(true);
+      try {
+        const vehicles = await getCustomerVehicles(customerId);
+        setCustomerVehicles(Array.isArray(vehicles) ? vehicles : []);
+      } catch (vehicleError) {
+        console.error("❌ Failed to load customer vehicles:", vehicleError);
+        setCustomerVehicles([]);
+      } finally {
+        setCustomerVehiclesLoading(false);
+      }
+    },
+    []
+  );
+
   useEffect(() => {
     if (jobData?.files) {
       const mapped = (jobData.files || []).map(mapJobFileRecord);
       setJobDocuments(mapped);
     }
   }, [jobData?.files]);
+
+  useEffect(() => {
+    if (!jobData?.customerId) {
+      setCustomerVehicles([]);
+      return;
+    }
+    refreshCustomerVehicles(jobData.customerId);
+  }, [jobData?.customerId, refreshCustomerVehicles]);
 
   useEffect(() => {
     return () => {
@@ -380,37 +432,6 @@ export default function JobCardDetailPage() {
     [jobData, fetchJobData]
   );
 
-  const handleWaitingStatusChange = useCallback(
-    async (nextStatus) => {
-      if (!canEdit || !jobData?.id) return { success: false };
-
-      setWaitingStatusSaving(true);
-
-      try {
-        const result = await updateJob(jobData.id, {
-          waiting_status: nextStatus
-        });
-
-        if (result.success) {
-          setJobData((prev) =>
-            prev ? { ...prev, waitingStatus: nextStatus } : prev
-          );
-          return { success: true };
-        }
-
-        alert(result?.error?.message || "Failed to update customer status");
-        return { success: false, error: result?.error };
-      } catch (statusError) {
-        console.error("❌ Failed to update waiting status:", statusError);
-        alert(statusError?.message || "Failed to update customer status");
-        return { success: false, error: statusError };
-      } finally {
-        setWaitingStatusSaving(false);
-      }
-    },
-    [canEdit, jobData]
-  );
-
   const handleAppointmentSave = useCallback(
     async (appointmentDetails) => {
       if (!canEdit || !jobData?.id) return { success: false };
@@ -474,6 +495,110 @@ export default function JobCardDetailPage() {
       }
     },
     [canEdit, jobData, fetchJobData]
+  );
+
+  const handleBookingFlowSave = useCallback(
+    async ({ vehicleId, description, waitingStatus }) => {
+      if (!canEdit || !jobData?.id) return { success: false };
+
+      setBookingFlowSaving(true);
+
+      try {
+        const normalizedVehicleId =
+          typeof vehicleId === "string" ? Number(vehicleId) : vehicleId;
+
+        const selectedVehicle =
+          customerVehicles.find(
+            (vehicle) => vehicle.vehicle_id === normalizedVehicleId
+          ) ||
+          (jobData.vehicleId && jobData.vehicleId === normalizedVehicleId
+            ? {
+                vehicle_id: jobData.vehicleId,
+                registration: jobData.reg,
+                reg_number: jobData.reg,
+                make_model: jobData.makeModel,
+                make: jobData.make,
+                model: jobData.model
+              }
+            : null);
+
+        const updates = {
+          description:
+            description && description.trim().length > 0 ? description : null,
+          waiting_status: waitingStatus || "Neither"
+        };
+
+        if (normalizedVehicleId && normalizedVehicleId !== jobData.vehicleId) {
+          updates.vehicle_id = normalizedVehicleId;
+          if (selectedVehicle) {
+            const regValue =
+              (selectedVehicle.registration ||
+                selectedVehicle.reg_number ||
+                "")?.toString().toUpperCase() || null;
+            if (regValue) {
+              updates.vehicle_reg = regValue;
+            }
+            const derivedMakeModel =
+              selectedVehicle.make_model ||
+              [selectedVehicle.make, selectedVehicle.model]
+                .filter(Boolean)
+                .join(" ")
+                .trim();
+            if (derivedMakeModel) {
+              updates.vehicle_make_model = derivedMakeModel;
+            }
+          }
+        }
+
+        const result = await updateJob(jobData.id, updates);
+
+        if (!result?.success) {
+          throw (
+            result?.error || new Error("Failed to update booking details")
+          );
+        }
+
+        setJobData((prev) => {
+          if (!prev) return prev;
+          const next = {
+            ...prev,
+            description: description || "",
+            waitingStatus: updates.waiting_status || prev.waitingStatus
+          };
+          if (updates.vehicle_id) {
+            next.vehicleId = updates.vehicle_id;
+          }
+          if (updates.vehicle_reg) {
+            next.reg = updates.vehicle_reg;
+          }
+          if (selectedVehicle) {
+            next.make = selectedVehicle.make || next.make;
+            next.model = selectedVehicle.model || next.model;
+            next.makeModel =
+              updates.vehicle_make_model ||
+              selectedVehicle.make_model ||
+              next.makeModel;
+          }
+          return next;
+        });
+
+        if (
+          normalizedVehicleId &&
+          normalizedVehicleId !== jobData.vehicleId
+        ) {
+          await fetchJobData({ silent: true });
+        }
+
+        return { success: true };
+      } catch (bookingError) {
+        console.error("❌ Failed to save booking details:", bookingError);
+        alert(bookingError?.message || "Failed to save booking details");
+        return { success: false, error: bookingError };
+      } finally {
+        setBookingFlowSaving(false);
+      }
+    },
+    [canEdit, jobData, customerVehicles, fetchJobData]
   );
 
   const handleInvoiceBuilderConfirm = useCallback(async (builderPayload) => {
@@ -1137,8 +1262,10 @@ export default function JobCardDetailPage() {
             <SchedulingTab
               jobData={jobData}
               canEdit={canEdit}
-              onWaitingStatusChange={handleWaitingStatusChange}
-              waitingStatusSaving={waitingStatusSaving}
+              customerVehicles={customerVehicles}
+              customerVehiclesLoading={customerVehiclesLoading}
+              onBookingFlowSave={handleBookingFlowSave}
+              bookingFlowSaving={bookingFlowSaving}
               onAppointmentSave={handleAppointmentSave}
               appointmentSaving={appointmentSaving}
             />
@@ -2094,8 +2221,10 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
 function SchedulingTab({
   jobData,
   canEdit,
-  onWaitingStatusChange = () => {},
-  waitingStatusSaving = false,
+  customerVehicles = [],
+  customerVehiclesLoading = false,
+  onBookingFlowSave = () => {},
+  bookingFlowSaving = false,
   onAppointmentSave = () => {},
   appointmentSaving = false
 }) {
@@ -2109,6 +2238,17 @@ function SchedulingTab({
   });
   const [appointmentDirty, setAppointmentDirty] = useState(false);
   const [appointmentMessage, setAppointmentMessage] = useState("");
+  const [selectedVehicleId, setSelectedVehicleId] = useState(
+    jobData.vehicleId || null
+  );
+  const [confirmCustomerDetails, setConfirmCustomerDetails] = useState(false);
+  const [bookingDescription, setBookingDescription] = useState(() =>
+    formatBookingDescriptionInput(jobData.description || "")
+  );
+  const [bookingWaitingStatus, setBookingWaitingStatus] = useState(
+    jobData.waitingStatus || "Neither"
+  );
+  const [bookingMessage, setBookingMessage] = useState("");
 
   useEffect(() => {
     setAppointmentForm({
@@ -2121,9 +2261,59 @@ function SchedulingTab({
     setAppointmentMessage("");
   }, [jobData.appointment]);
 
-  const handleWaitingSelect = async (value) => {
-    if (!canEdit || value === jobData.waitingStatus) return;
-    await onWaitingStatusChange(value);
+  useEffect(() => {
+    setSelectedVehicleId(jobData.vehicleId || null);
+    setBookingDescription(formatBookingDescriptionInput(jobData.description || ""));
+    setBookingWaitingStatus(jobData.waitingStatus || "Neither");
+    setConfirmCustomerDetails(false);
+    setBookingMessage("");
+  }, [jobData.vehicleId, jobData.description, jobData.waitingStatus]);
+
+  const vehicleOptions = useMemo(() => {
+    const seen = new Set();
+    const options = [];
+    const pushVehicle = (vehicle) => {
+      if (!vehicle || !vehicle.vehicle_id) return;
+      if (seen.has(vehicle.vehicle_id)) return;
+      seen.add(vehicle.vehicle_id);
+      options.push(vehicle);
+    };
+
+    if (jobData.vehicleId) {
+      pushVehicle({
+        vehicle_id: jobData.vehicleId,
+        registration: jobData.reg,
+        reg_number: jobData.reg,
+        make_model: jobData.makeModel,
+        make: jobData.make,
+        model: jobData.model
+      });
+    }
+
+    (customerVehicles || []).forEach((vehicle) => pushVehicle(vehicle));
+
+    return options;
+  }, [
+    jobData.vehicleId,
+    jobData.reg,
+    jobData.makeModel,
+    jobData.make,
+    jobData.model,
+    customerVehicles
+  ]);
+
+  const selectedVehicle = useMemo(
+    () =>
+      vehicleOptions.find(
+        (vehicle) => vehicle.vehicle_id === selectedVehicleId
+      ) || null,
+    [vehicleOptions, selectedVehicleId]
+  );
+
+  const handleVehicleChange = (value) => {
+    const parsed = value ? Number(value) : null;
+    setSelectedVehicleId(Number.isNaN(parsed) ? null : parsed);
+    setBookingMessage("");
   };
 
   const handleAppointmentFieldChange = (field, value) => {
@@ -2145,6 +2335,42 @@ function SchedulingTab({
     }
   };
 
+  const handleBookingDescriptionChange = (value) => {
+    setBookingDescription(
+      value ? formatBookingDescriptionInput(value) : ""
+    );
+    setBookingMessage("");
+  };
+
+  const handleBookingWaitingSelect = (value) => {
+    setBookingWaitingStatus(value);
+    setBookingMessage("");
+  };
+
+  const handleBookingSubmit = async () => {
+    if (!canEdit || !selectedVehicleId || !confirmCustomerDetails) return;
+    if (!bookingDescription.trim()) return;
+    const payload = {
+      vehicleId: selectedVehicleId,
+      description: bookingDescription,
+      waitingStatus: bookingWaitingStatus
+    };
+    const result = await onBookingFlowSave(payload);
+    if (result?.success) {
+      setBookingMessage("Booking details updated");
+      setTimeout(() => setBookingMessage(""), 3000);
+    }
+  };
+
+  const selectedVehicleIdValue =
+    selectedVehicleId != null ? String(selectedVehicleId) : "";
+  const bookingButtonDisabled =
+    !canEdit ||
+    bookingFlowSaving ||
+    !confirmCustomerDetails ||
+    !selectedVehicleId ||
+    !bookingDescription.trim();
+
   const appointmentCreatedAt = jobData.appointment?.createdAt
     ? new Date(jobData.appointment.createdAt).toLocaleString()
     : "Not created yet";
@@ -2163,42 +2389,176 @@ function SchedulingTab({
         marginBottom: "24px",
         boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "#111827" }}>Customer Status</h3>
-            <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: "13px" }}>
-              Waiting area vs loan car vs collection requirements
-            </p>
-          </div>
-          {waitingStatusSaving && (
-            <span style={{ fontSize: "12px", color: "#9ca3af" }}>Updating...</span>
-          )}
+        <div style={{ marginBottom: "16px" }}>
+          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "#111827" }}>Customer Booking</h3>
+          <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: "13px" }}>
+            Select the stored vehicle, confirm customer details, choose their status, and describe the booking.
+          </p>
         </div>
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          {waitingOptions.map((option) => {
-            const isActive = jobData.waitingStatus === option || (!jobData.waitingStatus && option === "Neither");
-            return (
-              <button
-                key={option}
-                onClick={() => handleWaitingSelect(option)}
-                disabled={!canEdit || waitingStatusSaving}
+
+        <div>
+          <label style={{ fontSize: "12px", fontWeight: "600", color: "#6b7280", display: "block", marginBottom: "6px" }}>
+            Vehicle
+          </label>
+          {customerVehiclesLoading ? (
+            <div style={{ fontSize: "13px", color: "#6b7280", padding: "8px 0" }}>
+              Loading stored vehicles...
+            </div>
+          ) : vehicleOptions.length > 0 ? (
+            <>
+              <select
+                value={selectedVehicleIdValue}
+                onChange={(e) => handleVehicleChange(e.target.value)}
+                disabled={!canEdit}
                 style={{
-                  flex: "1 1 180px",
-                  minWidth: "140px",
-                  padding: "12px 16px",
-                  borderRadius: "10px",
-                  border: `2px solid ${isActive ? "#d10000" : "#e5e7eb"}`,
-                  backgroundColor: isActive ? "rgba(209,0,0,0.08)" : "white",
-                  color: isActive ? "#b91c1c" : "#374151",
-                  fontWeight: "600",
-                  cursor: canEdit ? "pointer" : "default",
-                  transition: "all 0.2s"
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  fontSize: "14px",
+                  marginBottom: "10px"
                 }}
               >
-                {option}
-              </button>
-            );
-          })}
+                <option value="" disabled>
+                  Select stored vehicle
+                </option>
+                {vehicleOptions.map((vehicle) => (
+                  <option key={vehicle.vehicle_id} value={vehicle.vehicle_id}>
+                    {`${vehicle.registration || vehicle.reg_number || "Vehicle"} · ${
+                      vehicle.make_model ||
+                      [vehicle.make, vehicle.model].filter(Boolean).join(" ")
+                    }`}
+                  </option>
+                ))}
+              </select>
+              {selectedVehicle && (
+                <div style={{
+                  padding: "12px",
+                  backgroundColor: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "10px",
+                  fontSize: "13px",
+                  color: "#374151"
+                }}>
+                  <div style={{ fontWeight: "600", color: "#d10000" }}>
+                    {selectedVehicle.registration || selectedVehicle.reg_number}
+                  </div>
+                  <div>
+                    {selectedVehicle.make_model ||
+                      [selectedVehicle.make, selectedVehicle.model].filter(Boolean).join(" ")}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ fontSize: "13px", color: "#b91c1c", padding: "8px 0" }}>
+              No stored vehicles found for this customer.
+            </div>
+          )}
+        </div>
+
+        <div style={{
+          marginTop: "16px",
+          padding: "12px",
+          borderRadius: "10px",
+          border: `1px solid ${confirmCustomerDetails ? "#10b981" : "#fbbf24"}`,
+          backgroundColor: confirmCustomerDetails ? "#ecfdf5" : "#fff7ed"
+        }}>
+          <label style={{ display: "flex", gap: "10px", alignItems: "center", fontSize: "13px", color: "#374151" }}>
+            <input
+              type="checkbox"
+              checked={confirmCustomerDetails}
+              onChange={(e) => setConfirmCustomerDetails(e.target.checked)}
+              disabled={!canEdit}
+              style={{ width: "16px", height: "16px" }}
+            />
+            I confirm {jobData.customer || "the customer"}'s contact details for this booking.
+          </label>
+        </div>
+
+        <div style={{ marginTop: "16px" }}>
+          <div style={{ fontSize: "13px", fontWeight: "600", color: "#374151", marginBottom: "8px" }}>
+            Customer Status
+          </div>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            {waitingOptions.map((option) => {
+              const isActive =
+                bookingWaitingStatus === option ||
+                (!bookingWaitingStatus && option === "Neither");
+              return (
+                <button
+                  key={option}
+                  onClick={() => handleBookingWaitingSelect(option)}
+                  disabled={!canEdit}
+                  style={{
+                    flex: "1 1 180px",
+                    minWidth: "140px",
+                    padding: "12px 16px",
+                    borderRadius: "10px",
+                    border: `2px solid ${isActive ? "#d10000" : "#e5e7eb"}`,
+                    backgroundColor: isActive ? "rgba(209,0,0,0.08)" : "white",
+                    color: isActive ? "#b91c1c" : "#374151",
+                    fontWeight: "600",
+                    cursor: canEdit ? "pointer" : "default",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  {option}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ marginTop: "16px" }}>
+          <label style={{ fontSize: "12px", fontWeight: "600", color: "#6b7280", display: "block", marginBottom: "6px" }}>
+            Booking Description
+          </label>
+          <textarea
+            value={bookingDescription}
+            onChange={(e) => handleBookingDescriptionChange(e.target.value)}
+            rows={4}
+            disabled={!canEdit}
+            style={{
+              width: "100%",
+              padding: "12px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              fontSize: "14px",
+              resize: "vertical"
+            }}
+            placeholder="- Customer waiting for vehicle\n- Loan car requested"
+          />
+          <p style={{ marginTop: "6px", fontSize: "12px", color: "#6b7280" }}>
+            Each new line automatically starts with "- " to maintain the booking checklist format.
+          </p>
+        </div>
+
+        <div style={{ marginTop: "16px", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          <button
+            onClick={handleBookingSubmit}
+            disabled={bookingButtonDisabled || vehicleOptions.length === 0}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: bookingButtonDisabled ? "#9ca3af" : "#ef4444",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: bookingButtonDisabled ? "not-allowed" : "pointer",
+              fontWeight: "600",
+              fontSize: "14px"
+            }}
+          >
+            {bookingFlowSaving ? "Saving..." : "Save Booking Details"}
+          </button>
+          {bookingMessage && (
+            <span style={{ fontSize: "13px", color: "#16a34a" }}>{bookingMessage}</span>
+          )}
+          {!confirmCustomerDetails && canEdit && (
+            <span style={{ fontSize: "12px", color: "#dc2626" }}>
+              Please confirm customer details before saving.
+            </span>
+          )}
         </div>
       </div>
 

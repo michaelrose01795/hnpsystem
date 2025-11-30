@@ -1439,6 +1439,7 @@ const formatJobData = (data) => {
     status: data.status,
     
     // ✅ Vehicle info from both direct fields and joined table
+    vehicleId: data.vehicle_id || data.vehicle?.vehicle_id || null,
     reg: data.vehicle_reg || data.vehicle?.registration || data.vehicle?.reg_number || "",
     make: data.vehicle?.make || "",
     model: data.vehicle?.model || "",
