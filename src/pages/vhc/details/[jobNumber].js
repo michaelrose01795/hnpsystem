@@ -14,7 +14,6 @@ import {
   summariseTechnicianVhc,
 } from "@/lib/vhc/summary";
 
-// Define color palettes for item status badges (Red, Amber, Green, Neutral)
 const ITEM_STATUS_COLORS = {
   Red: { background: "rgba(239,68,68,0.16)", color: "#ef4444", border: "rgba(239,68,68,0.28)" },
   Amber: { background: "rgba(245,158,11,0.16)", color: "#b45309", border: "rgba(245,158,11,0.28)" },
@@ -22,7 +21,6 @@ const ITEM_STATUS_COLORS = {
   Neutral: { background: "rgba(107,114,128,0.16)", color: "#374151", border: "rgba(107,114,128,0.28)" },
 };
 
-// Define colors for concern status indicators
 const CONCERN_STATUS_COLORS = {
   Red: "#ef4444",
   Amber: "#b45309",
@@ -30,7 +28,6 @@ const CONCERN_STATUS_COLORS = {
   Grey: "#6b7280",
 };
 
-// Format date-time values for display
 const formatDateTime = (value) => {
   if (!value) return "—";
   const date = new Date(value);
@@ -38,7 +35,6 @@ const formatDateTime = (value) => {
   return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 };
 
-// Build inline style object for status badges
 const buildBadgeStyle = (status) => {
   const palette = ITEM_STATUS_COLORS[status] || ITEM_STATUS_COLORS.Neutral;
   return {
@@ -53,10 +49,8 @@ const buildBadgeStyle = (status) => {
   };
 };
 
-// Get color for a specific concern status
 const getConcernColor = (status) => CONCERN_STATUS_COLORS[status] || CONCERN_STATUS_COLORS.Grey;
 
-// Format measurement values (e.g., "5mm, 6mm" → "5mm / 6mm")
 const formatMeasurementList = (value) => {
   if (value === null || value === undefined) return null;
   const segments = Array.isArray(value) ? value : value.toString().split(/[, ]+/);
@@ -67,7 +61,6 @@ const formatMeasurementList = (value) => {
   return cleaned.length > 0 ? cleaned.join(" / ") : null;
 };
 
-// Format mileage value with thousands separator
 const formatMileage = (mileage) => {
   if (mileage === null || mileage === undefined) return null;
   const numeric = Number(mileage);
@@ -75,7 +68,6 @@ const formatMileage = (mileage) => {
   return `${numeric.toLocaleString()} mi`;
 };
 
-// Count red, amber, and grey concerns in an array
 const tallyConcerns = (concerns = []) =>
   concerns.reduce(
     (acc, concern) => {
@@ -90,16 +82,15 @@ const tallyConcerns = (concerns = []) =>
 
 export default function VhcDetailsPage() {
   const router = useRouter();
-  const { jobNumber } = router.query; // Extract job number from URL
-  const [loading, setLoading] = useState(true); // Loading state
-  const [jobData, setJobData] = useState(null); // Full job card data
-  const [vhcSummary, setVhcSummary] = useState({ sections: [], totals: { total: 0, red: 0, amber: 0, grey: 0 } }); // VHC summary
-  const [vhcBuilderData, setVhcBuilderData] = useState(null); // Parsed VHC builder payload
-  const [workflow, setWorkflow] = useState(null); // VHC workflow status
-  const [vhcStatus, setVhcStatus] = useState("VHC not started"); // Current VHC status
-  const [error, setError] = useState(null); // Error message if any
+  const { jobNumber } = router.query;
+  const [loading, setLoading] = useState(true);
+  const [jobData, setJobData] = useState(null);
+  const [vhcSummary, setVhcSummary] = useState({ sections: [], totals: { total: 0, red: 0, amber: 0, grey: 0 } });
+  const [vhcBuilderData, setVhcBuilderData] = useState(null);
+  const [workflow, setWorkflow] = useState(null);
+  const [vhcStatus, setVhcStatus] = useState("VHC not started");
+  const [error, setError] = useState(null);
 
-  // Load job and VHC data when jobNumber changes
   useEffect(() => {
     if (!jobNumber) return;
 
@@ -108,7 +99,6 @@ export default function VhcDetailsPage() {
       setError(null);
 
       try {
-        // Fetch job data by job number
         const job = await getJobByNumberOrReg(jobNumber);
         if (!job) {
           setError("Job not found. Please verify the job number.");
@@ -116,7 +106,6 @@ export default function VhcDetailsPage() {
           return;
         }
 
-        // Check if VHC was required for this job
         if (job.vhcRequired !== true) {
           setError("This job was not flagged for a Vehicle Health Check.");
           setJobData(job);
@@ -124,13 +113,11 @@ export default function VhcDetailsPage() {
           return;
         }
 
-        // Get VHC workflow status and parse builder data
         const workflowRow = job.id ? await getVhcWorkflowStatus(job.id) : null;
         const builderPayload = parseVhcBuilderPayload(job.vhcChecks);
         const summary = summariseTechnicianVhc(builderPayload);
         const partsCount = (job.partsRequests?.length || 0) + (job.partsAllocations?.length || 0);
 
-        // Derive overall VHC status
         const vhcState = deriveVhcDashboardStatus({
           job,
           workflow: workflowRow,
@@ -154,7 +141,6 @@ export default function VhcDetailsPage() {
     loadData();
   }, [jobNumber]);
 
-  // Build timeline of key VHC workflow events
   const timelineEvents = useMemo(() => {
     if (!jobData) return [];
     const events = [];
@@ -175,7 +161,6 @@ export default function VhcDetailsPage() {
     return events;
   }, [jobData, workflow]);
 
-  // Show loading state
   if (loading) {
     return (
       <Layout>
@@ -184,7 +169,6 @@ export default function VhcDetailsPage() {
     );
   }
 
-  // Show error state
   if (error) {
     return (
       <Layout>
@@ -210,7 +194,6 @@ export default function VhcDetailsPage() {
     );
   }
 
-  // Show no job found state
   if (!jobData) {
     return (
       <Layout>
@@ -220,9 +203,8 @@ export default function VhcDetailsPage() {
   }
 
   const { sections, totals } = vhcSummary;
-  const statusColor = STATUS_COLORS[vhcStatus] || "#9ca3af"; // Get status color for badge
+  const statusColor = STATUS_COLORS[vhcStatus] || "#9ca3af";
 
-  // Render badge row showing red, amber, grey counts
   const renderBadgeRow = (stats) => (
     <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
       {stats.red > 0 ? (
@@ -243,7 +225,6 @@ export default function VhcDetailsPage() {
     </div>
   );
 
-  // Render list of concerns with color-coded status
   const renderConcernsList = (concerns) => {
     if (!Array.isArray(concerns) || concerns.length === 0) return null;
     return (
@@ -266,7 +247,6 @@ export default function VhcDetailsPage() {
     );
   };
 
-// Render the Wheels & Tyres section with all four wheels and spare
 const renderTyreSection = () => {
   const tyres = vhcBuilderData?.wheelsTyres;
     const wheelOrder = [
@@ -276,7 +256,6 @@ const renderTyreSection = () => {
       ["OSR", "Offside Rear"],
     ];
 
-    // Build cards for each main wheel position
     const cards = wheelOrder
       .map(([key, label]) => {
         const tyre = tyres && typeof tyres === "object" ? tyres[key] : null;
@@ -332,48 +311,70 @@ const renderTyreSection = () => {
       })
       .filter(Boolean);
 
-    // Build spare tire card (MERGED VERSION - combines both previous definitions)
-    const spareCard = (() => {
-      if (!tyres || typeof tyres !== "object") return null;
+    const spare = (() => {
       const entry = tyres.Spare;
       if (!entry || typeof entry !== "object") return null;
-      
-      const rows = [];
-      const concerns = Array.isArray(entry.concerns) ? entry.concerns : [];
-      const counts = tallyConcerns(concerns);
-      
-      // Add type and condition
-      if (entry.type) rows.push(`Type: ${entry.type}`);
-      if (entry.condition) rows.push(`Condition: ${entry.condition}`);
-      
-      // Add manufacture date if available
-      if (entry.month && entry.year) {
-        rows.push(`Manufactured: ${String(entry.month).padStart(2, "0")}/${entry.year}`);
-      }
-      
-      // Add notes if available
-      if (entry.note) rows.push(`Notes: ${entry.note}`);
-      
-      // Extract details (manufacturer, size)
-      const details = entry.details || {};
-      if (details.manufacturer) rows.push(`Manufacturer: ${details.manufacturer}`);
-      if (details.size) rows.push(`Size: ${details.size}`);
-      
-      // Extract tread depth readings
-      const tread = details.tread || entry.tread || {};
-      const depthSegments = ["outer", "middle", "inner"]
+      const tread = entry.details?.tread || entry.tread || {};
+      const depthLine = ["outer", "middle", "inner"]
         .map((segment) => {
           const value = tread[segment];
           if (value === null || value === undefined || value === "") return null;
           const pretty = value.toString().endsWith("mm") ? value : `${value}mm`;
           return `${segment.charAt(0).toUpperCase() + segment.slice(1)} ${pretty}`;
         })
-        .filter(Boolean);
-      
-      if (depthSegments.length > 0) {
-        rows.push(`Tread depths: ${depthSegments.join(" • ")}`);
+        .filter(Boolean)
+        .join(" • ");
+      return (
+        <div
+          key="tyre-summary-spare"
+          style={{
+            border: "1px solid #f3f4f6",
+            borderRadius: "10px",
+            padding: "12px",
+            backgroundColor: "#fff",
+            display: "flex",
+            flexDirection: "column",
+            gap: "6px",
+          }}
+        >
+          <span style={{ fontSize: "13px", fontWeight: 600 }}>Spare / Repair Kit</span>
+          <span style={{ fontSize: "12px", color: "#4b5563" }}>Type: {entry.type || "—"}</span>
+          <span style={{ fontSize: "12px", color: "#4b5563" }}>Condition: {entry.condition || "—"}</span>
+          {entry.details?.manufacturer ? (
+            <span style={{ fontSize: "12px", color: "#4b5563" }}>Make: {entry.details.manufacturer}</span>
+          ) : null}
+          {entry.details?.size ? (
+            <span style={{ fontSize: "12px", color: "#4b5563" }}>Size: {entry.details.size}</span>
+          ) : null}
+          {depthLine ? (
+            <span style={{ fontSize: "12px", color: "#374151" }}>Depths: {depthLine}</span>
+          ) : (
+            <span style={{ fontSize: "12px", color: "#9ca3af" }}>Depths not recorded</span>
+          )}
+        </div>
+      );
+    })();
+
+    if (spare) {
+      cards.push(spare);
+    }
+
+    const spareDetails = (() => {
+      if (!tyres || typeof tyres !== "object") return null;
+      const entry = tyres.Spare;
+      if (!entry || typeof entry !== "object") return null;
+      const rows = [];
+      const concerns = Array.isArray(entry.concerns) ? entry.concerns : [];
+      const counts = tallyConcerns(concerns);
+      if (entry.type) rows.push(`Type: ${entry.type}`);
+      if (entry.condition) rows.push(`Condition: ${entry.condition}`);
+      if (entry.month && entry.year) {
+        rows.push(`Manufactured: ${String(entry.month).padStart(2, "0")}/${entry.year}`);
       }
-      
+      if (entry.note) rows.push(`Notes: ${entry.note}`);
+      const details = entry.details || {};
+      if (details.manufacturer) rows.push(`Manufacturer: ${details.manufacturer}`);
+      if (details.size) rows.push(`Size: ${details.size}`);
       return (
         <div
           key="spare"
@@ -391,26 +392,20 @@ const renderTyreSection = () => {
             <span style={{ fontSize: "13px", fontWeight: 600 }}>Spare / Repair Kit</span>
             {concerns.length > 0 ? renderBadgeRow(counts) : null}
           </div>
-          {rows.length > 0 ? (
-            rows.map((row, idx) => (
-              <span key={`spare-${idx}`} style={{ fontSize: "12px", color: "#4b5563" }}>
-                {row}
-              </span>
-            ))
-          ) : (
-            <span style={{ fontSize: "12px", color: "#9ca3af" }}>No spare tire data recorded</span>
-          )}
+          {rows.map((row) => (
+            <span key={`spare-${row}`} style={{ fontSize: "12px", color: "#4b5563" }}>
+              {row}
+            </span>
+          ))}
           {renderConcernsList(concerns)}
         </div>
       );
     })();
 
-    // Add spare card to the main cards array
-    if (spareCard) {
-      cards.push(spareCard);
+    if (spareDetails) {
+      cards.push(spareDetails);
     }
 
-    // If no tyre data at all, show empty state
     if (cards.length === 0) {
       return (
         <section
@@ -435,7 +430,6 @@ const renderTyreSection = () => {
       );
     }
 
-    // Render all tyre cards in a grid
     return (
       <section
         style={{
@@ -461,12 +455,10 @@ const renderTyreSection = () => {
     );
   };
 
-  // Render the Brakes & Hubs section
   const renderBrakesSection = () => {
     const brakes = vhcBuilderData?.brakesHubs;
     const rows = [];
 
-    // Helper to append brake pad data
     const appendPad = (key, label) => {
       const pad = brakes?.[key];
       if (!pad || typeof pad !== "object") return;
@@ -482,7 +474,6 @@ const renderTyreSection = () => {
       });
     };
 
-    // Helper to append disc data
     const appendDisc = (key, label) => {
       const disc = brakes?.[key];
       if (!disc || typeof disc !== "object") return;
@@ -501,13 +492,11 @@ const renderTyreSection = () => {
       });
     };
 
-    // Append all brake components
     appendPad("frontPads", "Front Pads");
     appendPad("rearPads", "Rear Pads");
     appendDisc("frontDiscs", "Front Discs");
     appendDisc("rearDiscs", "Rear Discs");
 
-    // Handle rear drums if present
     const drum = brakes?.rearDrums;
     if (drum && typeof drum === "object") {
       const drumRows = [];
@@ -520,7 +509,6 @@ const renderTyreSection = () => {
       });
     }
 
-    // Show empty state if no brake data
     if (rows.length === 0) {
       return (
         <section
@@ -545,7 +533,6 @@ const renderTyreSection = () => {
       );
     }
 
-    // Render brake data in grid
     return (
       <section
         style={{
@@ -592,7 +579,6 @@ const renderTyreSection = () => {
     );
   };
 
-// Render Service Indicator & Under Bonnet section
 const renderServiceSection = () => {
     const serviceEntries = Array.isArray(vhcBuilderData?.serviceIndicator) ? vhcBuilderData.serviceIndicator : [];
     if (serviceEntries.length === 0) {
@@ -671,14 +657,12 @@ const renderServiceSection = () => {
     );
   };
 
-  // Configuration for optional VHC sections
   const optionalSectionConfig = [
     { key: "externalInspection", title: "External / Drive-in Inspection" },
     { key: "internalElectrics", title: "Internal / Lamps / Electrics" },
     { key: "underside", title: "Underside Inspection" },
   ];
 
-// Render optional inspection sections
 const renderOptionalSections = () => {
     if (!vhcBuilderData) return null;
     return optionalSectionConfig
@@ -764,7 +748,6 @@ const renderOptionalSections = () => {
       .filter(Boolean);
   };
 
-  // Build summary text for the job card header
   const summaryBits = [];
   const mileageLabel = formatMileage(jobData.mileage);
   if (mileageLabel) summaryBits.push(mileageLabel);
@@ -772,7 +755,6 @@ const renderOptionalSections = () => {
   if (jobData.checkedInAt) summaryBits.push(`Checked in ${new Date(jobData.checkedInAt).toLocaleDateString()}`);
   const summaryText = summaryBits.length > 0 ? summaryBits.join(" • ") : "No additional VHC summary recorded yet.";
 
-  // Render tyre overview summary (used in summary section)
   const renderTyreSummary = () => {
     const tyres = vhcBuilderData?.wheelsTyres;
     if (!tyres || typeof tyres !== "object") return null;
@@ -848,7 +830,6 @@ const renderOptionalSections = () => {
     );
   };
 
-  // Render brake overview summary (used in summary section)
   const renderBrakeSummary = () => {
     const brakes = vhcBuilderData?.brakesHubs;
     if (!brakes || typeof brakes !== "object") return null;
@@ -922,7 +903,6 @@ const renderOptionalSections = () => {
     );
   };
 
-  // Build groups of red/amber items from all VHC sections
   const buildRedAmberGroups = (summarySections = []) => {
     const groups = [];
     summarySections.forEach((section) => {
@@ -944,7 +924,6 @@ const renderOptionalSections = () => {
 
   const redAmberGroups = useMemo(() => buildRedAmberGroups(vhcSummary.sections), [vhcSummary.sections]);
 
-  // Render red & amber summary section
   const renderRedAmberSummary = () => {
     if (redAmberGroups.length === 0) return null;
     return (
@@ -993,16 +972,13 @@ const renderOptionalSections = () => {
     );
   };
 
-  // Generate summary blocks
   const tyreSummaryBlock = renderTyreSummary();
   const brakeSummaryBlock = renderBrakeSummary();
   const redAmberSummaryBlock = renderRedAmberSummary();
 
-  // Main page render
   return (
     <Layout>
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
-        {/* Header with navigation */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <button
             type="button"
@@ -1023,7 +999,6 @@ const renderOptionalSections = () => {
           </Link>
         </div>
 
-        {/* Job summary card */}
         <div
           style={{
             background: "#fff",
@@ -1066,7 +1041,6 @@ const renderOptionalSections = () => {
           </div>
         </div>
 
-        {/* Workflow timeline */}
         {timelineEvents.length > 0 ? (
           <div
             style={{
@@ -1089,7 +1063,6 @@ const renderOptionalSections = () => {
           </div>
         ) : null}
 
-        {/* VHC statistics cards */}
         <div
           style={{
             background: "#fff",
@@ -1125,7 +1098,6 @@ const renderOptionalSections = () => {
           ))}
         </div>
 
-        {/* Summary sections (tyres, brakes, red/amber) */}
         {(tyreSummaryBlock || brakeSummaryBlock || redAmberSummaryBlock) && (
           <div
             style={{
@@ -1140,7 +1112,6 @@ const renderOptionalSections = () => {
           </div>
         )}
 
-        {/* Full VHC details section */}
         <div
           style={{
             background: "#fff",
