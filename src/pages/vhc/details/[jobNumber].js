@@ -247,8 +247,8 @@ export default function VhcDetailsPage() {
     );
   };
 
-  const renderTyreSection = () => {
-    const tyres = vhcBuilderData?.wheelsTyres;
+const renderTyreSection = () => {
+  const tyres = vhcBuilderData?.wheelsTyres;
     const wheelOrder = [
       ["NSF", "Nearside Front"],
       ["OSF", "Offside Front"],
@@ -310,6 +310,54 @@ export default function VhcDetailsPage() {
         );
       })
       .filter(Boolean);
+
+    const spare = (() => {
+      const entry = tyres.Spare;
+      if (!entry || typeof entry !== "object") return null;
+      const tread = entry.details?.tread || entry.tread || {};
+      const depthLine = ["outer", "middle", "inner"]
+        .map((segment) => {
+          const value = tread[segment];
+          if (value === null || value === undefined || value === "") return null;
+          const pretty = value.toString().endsWith("mm") ? value : `${value}mm`;
+          return `${segment.charAt(0).toUpperCase() + segment.slice(1)} ${pretty}`;
+        })
+        .filter(Boolean)
+        .join(" • ");
+      return (
+        <div
+          key="tyre-summary-spare"
+          style={{
+            border: "1px solid #f3f4f6",
+            borderRadius: "10px",
+            padding: "12px",
+            backgroundColor: "#fff",
+            display: "flex",
+            flexDirection: "column",
+            gap: "6px",
+          }}
+        >
+          <span style={{ fontSize: "13px", fontWeight: 600 }}>Spare / Repair Kit</span>
+          <span style={{ fontSize: "12px", color: "#4b5563" }}>Type: {entry.type || "—"}</span>
+          <span style={{ fontSize: "12px", color: "#4b5563" }}>Condition: {entry.condition || "—"}</span>
+          {entry.details?.manufacturer ? (
+            <span style={{ fontSize: "12px", color: "#4b5563" }}>Make: {entry.details.manufacturer}</span>
+          ) : null}
+          {entry.details?.size ? (
+            <span style={{ fontSize: "12px", color: "#4b5563" }}>Size: {entry.details.size}</span>
+          ) : null}
+          {depthLine ? (
+            <span style={{ fontSize: "12px", color: "#374151" }}>Depths: {depthLine}</span>
+          ) : (
+            <span style={{ fontSize: "12px", color: "#9ca3af" }}>Depths not recorded</span>
+          )}
+        </div>
+      );
+    })();
+
+    if (spare) {
+      cards.push(spare);
+    }
 
     const spare = (() => {
       if (!tyres || typeof tyres !== "object") return null;
@@ -531,7 +579,7 @@ export default function VhcDetailsPage() {
     );
   };
 
-  const renderServiceSection = () => {
+const renderServiceSection = () => {
     const serviceEntries = Array.isArray(vhcBuilderData?.serviceIndicator) ? vhcBuilderData.serviceIndicator : [];
     if (serviceEntries.length === 0) {
       return (
@@ -615,7 +663,7 @@ export default function VhcDetailsPage() {
     { key: "underside", title: "Underside Inspection" },
   ];
 
-  const renderOptionalSections = () => {
+const renderOptionalSections = () => {
     if (!vhcBuilderData) return null;
     return optionalSectionConfig
       .map(({ key, title }) => {
@@ -706,6 +754,227 @@ export default function VhcDetailsPage() {
   if (jobData.createdAt) summaryBits.push(`Opened ${new Date(jobData.createdAt).toLocaleDateString()}`);
   if (jobData.checkedInAt) summaryBits.push(`Checked in ${new Date(jobData.checkedInAt).toLocaleDateString()}`);
   const summaryText = summaryBits.length > 0 ? summaryBits.join(" • ") : "No additional VHC summary recorded yet.";
+
+  const renderTyreSummary = () => {
+    const tyres = vhcBuilderData?.wheelsTyres;
+    if (!tyres || typeof tyres !== "object") return null;
+    const wheelOrder = [
+      ["NSF", "Nearside Front"],
+      ["OSF", "Offside Front"],
+      ["NSR", "Nearside Rear"],
+      ["OSR", "Offside Rear"],
+    ];
+    const cards = wheelOrder
+      .map(([key, label]) => {
+        const tyre = tyres[key];
+        if (!tyre || typeof tyre !== "object") return null;
+        const tread = tyre.tread || {};
+        const depthLine = ["outer", "middle", "inner"]
+          .map((segment) => {
+            const value = tread[segment];
+            if (value === null || value === undefined || value === "") return null;
+            const pretty = value.toString().endsWith("mm") ? value : `${value}mm`;
+            return `${segment.charAt(0).toUpperCase() + segment.slice(1)} ${pretty}`;
+          })
+          .filter(Boolean)
+          .join(" • ");
+        return (
+          <div
+            key={`tyre-summary-${key}`}
+            style={{
+              border: "1px solid #f3f4f6",
+              borderRadius: "10px",
+              padding: "12px",
+              backgroundColor: "#fff",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+            }}
+          >
+            <span style={{ fontSize: "13px", fontWeight: 600 }}>{label}</span>
+            <span style={{ fontSize: "12px", color: "#4b5563" }}>Make: {tyre.manufacturer || "—"}</span>
+            <span style={{ fontSize: "12px", color: "#4b5563" }}>Size: {tyre.size || "—"}</span>
+            <span style={{ fontSize: "12px", color: "#4b5563" }}>
+              Load / Speed: {(tyre.load || "—") + " / " + (tyre.speed || "—")}
+            </span>
+            {depthLine ? (
+              <span style={{ fontSize: "12px", color: "#374151" }}>Depths: {depthLine}</span>
+            ) : (
+              <span style={{ fontSize: "12px", color: "#9ca3af" }}>Depths not recorded</span>
+            )}
+          </div>
+        );
+      })
+      .filter(Boolean);
+
+    if (cards.length === 0) return null;
+
+    return (
+      <section
+        style={{
+          border: "1px solid #f3f4f6",
+          borderRadius: "12px",
+          padding: "16px",
+          backgroundColor: "#fff",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+        }}
+      >
+        <header>
+          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>Tyres overview</h3>
+          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>Measurements and specification for each wheel.</p>
+        </header>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>{cards}</div>
+      </section>
+    );
+  };
+
+  const renderBrakeSummary = () => {
+    const brakes = vhcBuilderData?.brakesHubs;
+    if (!brakes || typeof brakes !== "object") return null;
+    const entries = [
+      { key: "frontPads", label: "Front Pads", data: brakes.frontPads },
+      { key: "rearPads", label: "Rear Pads", data: brakes.rearPads },
+      { key: "frontDiscs", label: "Front Discs", data: brakes.frontDiscs },
+      { key: "rearDiscs", label: "Rear Discs", data: brakes.rearDiscs },
+      { key: "rearDrums", label: "Rear Drums", data: brakes.rearDrums },
+    ]
+      .map(({ key, label, data }) => {
+        if (!data || typeof data !== "object") return null;
+        const rows = [];
+        if (data.measurement) {
+          const formatted = formatMeasurementList(data.measurement);
+          if (formatted) rows.push(`Measurement: ${formatted}`);
+        }
+        if (data.measurements?.values || data.measurements?.thickness) {
+          const formatted = formatMeasurementList(data.measurements?.values || data.measurements?.thickness);
+          if (formatted) rows.push(`Measurement: ${formatted}`);
+        }
+        if (data.measurements?.status) rows.push(`Measurement status: ${data.measurements.status}`);
+        if (data.visual?.status) rows.push(`Visual status: ${data.visual.status}`);
+        if (data.visual?.notes || data.visual?.note) rows.push(data.visual?.notes || data.visual?.note);
+        if (data.status && rows.length === 0) rows.push(`Status: ${data.status}`);
+        if (rows.length === 0) rows.push("No measurements captured.");
+        return (
+          <div
+            key={`brake-summary-${key}`}
+            style={{
+              border: "1px solid #f3f4f6",
+              borderRadius: "10px",
+              padding: "12px",
+              backgroundColor: "#fff",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+            }}
+          >
+            <span style={{ fontSize: "13px", fontWeight: 600 }}>{label}</span>
+            {rows.map((row, index) => (
+              <span key={`${key}-${index}`} style={{ fontSize: "12px", color: "#4b5563" }}>
+                {row}
+              </span>
+            ))}
+          </div>
+        );
+      })
+      .filter(Boolean);
+
+    if (entries.length === 0) return null;
+
+    return (
+      <section
+        style={{
+          border: "1px solid #f3f4f6",
+          borderRadius: "12px",
+          padding: "16px",
+          backgroundColor: "#fff",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+        }}
+      >
+        <header>
+          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>Brakes overview</h3>
+          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>Pad and disc measurements recorded by technicians.</p>
+        </header>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>{entries}</div>
+      </section>
+    );
+  };
+
+  const buildRedAmberGroups = (summarySections = []) => {
+    const groups = [];
+    summarySections.forEach((section) => {
+      const relevant = (section.items || []).filter((item) => {
+        const status = (item.status || "").toLowerCase();
+        const matchesStatus = status.includes("red") || status.includes("amber");
+        const hasConcern = (item.concerns || []).some((concern) => {
+          const cStatus = (concern.status || "").toLowerCase();
+          return cStatus.includes("red") || cStatus.includes("amber");
+        });
+        return matchesStatus || hasConcern;
+      });
+      if (relevant.length > 0) {
+        groups.push({ title: section.title, items: relevant });
+      }
+    });
+    return groups;
+  };
+
+  const redAmberGroups = useMemo(() => buildRedAmberGroups(vhcSummary.sections), [vhcSummary.sections]);
+
+  const renderRedAmberSummary = () => {
+    if (redAmberGroups.length === 0) return null;
+    return (
+      <section
+        style={{
+          border: "1px solid #f3f4f6",
+          borderRadius: "12px",
+          padding: "16px",
+          backgroundColor: "#fff",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+        }}
+      >
+        <header>
+          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>Red & amber actions</h3>
+          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>Grouped by technician section for quick follow-up.</p>
+        </header>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {redAmberGroups.map((group) => (
+            <div key={group.title} style={{ border: "1px solid #f3f4f6", borderRadius: "10px", padding: "12px", background: "#fff" }}>
+              <h4 style={{ margin: "0 0 8px", fontSize: "14px", fontWeight: 600 }}>{group.title}</h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {group.items.map((item, idx) => {
+                  const description = item.rows && item.rows.length > 0 ? item.rows.join(" • ") : "No measurement notes.";
+                  const status = item.status ? item.status : "Requires attention";
+                  const relevantConcerns = (item.concerns || []).filter((concern) => {
+                    const s = (concern.status || "").toLowerCase();
+                    return s.includes("red") || s.includes("amber");
+                  });
+                  return (
+                    <div key={`${group.title}-${idx}`} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <div style={{ fontSize: "13px", fontWeight: 600 }}>
+                        {item.heading || "VHC item"} – {status}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#4b5563" }}>{description}</div>
+                      {renderConcernsList(relevantConcerns)}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  };
+
+  const tyreSummaryBlock = renderTyreSummary();
+  const brakeSummaryBlock = renderBrakeSummary();
+  const redAmberSummaryBlock = renderRedAmberSummary();
 
   return (
     <Layout>
@@ -828,6 +1097,20 @@ export default function VhcDetailsPage() {
             </div>
           ))}
         </div>
+
+        {(tyreSummaryBlock || brakeSummaryBlock || redAmberSummaryBlock) && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+            }}
+          >
+            {tyreSummaryBlock}
+            {brakeSummaryBlock}
+            {redAmberSummaryBlock}
+          </div>
+        )}
 
         <div
           style={{
