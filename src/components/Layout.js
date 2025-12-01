@@ -1,5 +1,4 @@
 // file location: src/components/Layout.js
-// Edit: Connected JobTimeline to existing right-hand status sidebar (no styling changes made)
 // ✅ Imports converted to use absolute alias "@/"
 import React, { useEffect, useState } from "react"; // import React hooks
 import Link from "next/link"; // import Next.js link component
@@ -7,8 +6,6 @@ import { useRouter } from "next/router"; // import router for navigation
 import { useUser } from "@/context/UserContext"; // import user context
 import GlobalSearch from "@/components/GlobalSearch"; // import global search component
 import JobCardModal from "@/components/JobCards/JobCardModal"; // import job modal
-import StatusSidebar from "@/components/StatusTracking/StatusSidebar"; // import status sidebar
-import JobTimeline from "@/components/Timeline/JobTimeline";
 import Sidebar from "@/components/Sidebar";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import TopbarAlerts, { AlertBadge } from "@/components/TopbarAlerts";
@@ -73,7 +70,7 @@ const MODE_ROLE_MAP = {
   Sales: new Set((roleCategories.Sales || []).map((role) => role.toLowerCase())),
 };
 
-export default function Layout({ children, jobNumber }) {
+export default function Layout({ children }) {
   const { user, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
   const { usersByRole } = useRoster(); // get roster data for role-based checks
   const router = useRouter();
@@ -87,42 +84,12 @@ export default function Layout({ children, jobNumber }) {
   const [viewportWidth, setViewportWidth] = useState(getViewportWidth());
 
   const [isModalOpen, setIsModalOpen] = useState(false); // job card modal state
-  const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false); // status sidebar toggle state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // mobile menu toggle state
 
   // Responsive breakpoint checks
   const isTablet = viewportWidth <= 1024;
   const isMobile = viewportWidth <= 640;
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
-
-  // Extract job ID from various URL query parameters
-  const urlJobId =
-    router.query.id ||
-    router.query.jobId ||
-    router.query.jobNumber ||
-    router.query.jobnumber ||
-    router.query.job ||
-    null;
-  const [searchedJobId, setSearchedJobId] = useState(null); // job ID from global search
-  const [isAutoJobCleared, setIsAutoJobCleared] = useState(false); // track if URL job was manually cleared
-  const hasActiveAutoJob = !!(urlJobId && !isAutoJobCleared); // check if URL job is active
-  const activeJobId = searchedJobId || (hasActiveAutoJob ? urlJobId : null); // determine which job to show in status sidebar
-  const timelineJobNumber = jobNumber || activeJobId || currentJob?.jobNumber || null; // determine which job timeline to show
-  const [currentJobStatus, setCurrentJobStatus] = useState("booked"); // current status of active job
-
-  // Define roles that should see status sidebar
-  const statusSidebarRoles = [
-    "admin manager",
-    "service",
-    "service manager",
-    "workshop manager",
-    "after sales director",
-    "techs",
-    "parts",
-    "parts manager",
-    "mot tester",
-    "valet service",
-  ];
 
   // Get user's raw roles from context
   const rawUserRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
@@ -216,11 +183,6 @@ export default function Layout({ children, jobNumber }) {
   const hasTechRole = userRoles.some((role) => role.includes("tech") || role.includes("mot"));
   const isTech = (normalizedUsername && allowedTechNames.has(normalizedUsername)) || hasTechRole;
 
-  // Check if user can view status sidebar
-  const canViewStatusSidebar = userRoles.some((role) =>
-    statusSidebarRoles.includes(role)
-  );
-
   // Check if user has parts department access
   const hasPartsAccess = userRoles.some((role) => PARTS_NAV_ROLES.has(role));
   const isPartsManager = userRoles.includes("parts manager");
@@ -258,48 +220,10 @@ export default function Layout({ children, jobNumber }) {
     }
   }, [user, hideSidebar, router]);
 
-  // Fetch job status when active job changes
-  useEffect(() => {
-    if (activeJobId) fetchCurrentJobStatus(activeJobId);
-  }, [activeJobId]);
-
-  // Reset search state when URL job changes
-  useEffect(() => {
-    if (urlJobId) {
-      setSearchedJobId(null);
-      setIsAutoJobCleared(false);
-    }
-  }, [urlJobId]);
-
-  // Handle job search from global search
-  const handleJobSearch = (jobId) => {
-    setSearchedJobId(jobId);
-    setIsAutoJobCleared(false);
-  };
-
-  // Handle clearing active job from status sidebar
-  const handleJobClear = () => {
-    setSearchedJobId(null);
-    if (urlJobId) {
-      setIsAutoJobCleared(true);
-    }
-  };
-
   // Handle mode selection from dropdown
   const handleModeSelect = (mode) => {
     if (!mode || mode === selectedMode) return;
     setSelectedMode(mode);
-  };
-
-  // Fetch current job status from API
-  const fetchCurrentJobStatus = async (id) => {
-    try {
-      const response = await fetch(`/api/status/getCurrentStatus?jobId=${id}`);
-      const data = await response.json();
-      if (data.success) setCurrentJobStatus(data.status);
-    } catch (error) {
-      console.error("Error fetching job status:", error);
-    }
   };
 
   // Define roles that can view job cards
@@ -665,18 +589,12 @@ export default function Layout({ children, jobNumber }) {
         {/* Mobile Navigation Buttons */}
         {showMobileSidebar && (
           <>
-            <div
-              style={{
-                display: "flex",
-                gap: "10px",
-                width: "100%",
-              }}
-            >
+            <div>
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(true)}
                 style={{
-                  flex: canViewStatusSidebar ? "1 1 50%" : "1 1 100%",
+                  width: "100%",
                   padding: "10px 14px",
                   borderRadius: "12px",
                   border: `1px solid ${colors.accent}`,
@@ -693,32 +611,6 @@ export default function Layout({ children, jobNumber }) {
               >
                 <span aria-hidden="true">☰</span> Navigation
               </button>
-              {canViewStatusSidebar && (
-                <button
-                  type="button"
-                  onClick={() => setIsStatusSidebarOpen((prev) => !prev)}
-                  style={{
-                    flex: "1 1 50%",
-                    padding: "10px 14px",
-                    borderRadius: "12px",
-                    border: `1px solid ${colors.accent}`,
-                    background: "linear-gradient(90deg, #fff5f5, #ffffff)",
-                    fontWeight: 600,
-                    color: colors.accent,
-                    boxShadow: "0 6px 14px rgba(0,0,0,0.08)",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
-                  }}
-                >
-                  <span role="img" aria-hidden="true">
-                    📊
-                  </span>
-                  Status
-                </button>
-              )}
             </div>
 
             {/* Mobile Menu Overlay */}
@@ -1146,27 +1038,6 @@ export default function Layout({ children, jobNumber }) {
           </div>
         </main>
       </div>
-
-      {/* Status Sidebar */}
-      {canViewStatusSidebar && (
-        <StatusSidebar
-          jobId={activeJobId}
-          currentStatus={currentJobStatus}
-          isOpen={isStatusSidebarOpen}
-          onToggle={() => setIsStatusSidebarOpen(!isStatusSidebarOpen)}
-          onJobSearch={handleJobSearch}
-          onJobClear={handleJobClear}
-          hasUrlJobId={hasActiveAutoJob}
-          viewportWidth={viewportWidth}
-          isCompact={isTablet}
-          timelineContent={
-            timelineJobNumber ? (
-              <JobTimeline jobNumber={String(timelineJobNumber)} />
-            ) : null
-          }
-          showToggleButton={!isTablet}
-        />
-      )}
 
       {/* Job Card Modal for Technicians */}
       {isTech && (
