@@ -1,5 +1,5 @@
 // file location: src/components/Layout.js
-// Edit: Hide Job Progress Tracker on phone view, make top buttons scroll with page content
+// Edit: Add status button next to navigation on phone view, make all top controls scroll with page
 // ✅ Imports converted to use absolute alias "@/"
 import React, { useEffect, useState } from "react"; // import React hooks
 import Link from "next/link"; // import Next.js link component
@@ -525,8 +525,6 @@ export default function Layout({ children, jobNumber }) {
 
   // Show status sidebar on tablet but not on mobile phones
   const showStatusSidebar = canViewStatusSidebar && !isMobile;
-  // Show status button on tablet but not on mobile phones
-  const showStatusButton = canViewStatusSidebar && !isMobile;
 
   return (
     <div style={layoutStyles}>
@@ -586,14 +584,14 @@ export default function Layout({ children, jobNumber }) {
           background: colors.mainBg,
           height: "100%",
           maxHeight: "100vh",
-          overflowY: "auto",
+          overflowY: "auto", // this makes everything scroll
           overflowX: "hidden",
           position: "relative",
         }}
       >
         {showMobileSidebar && (
           <>
-            {/* 50/50 split navigation and status buttons - scrolls with page content */}
+            {/* Navigation and status buttons - scrolls with page content */}
             <div
               style={{
                 display: "flex",
@@ -605,7 +603,7 @@ export default function Layout({ children, jobNumber }) {
                 type="button"
                 onClick={() => setIsMobileMenuOpen(true)}
                 style={{
-                  flex: showStatusButton ? "1 1 50%" : "1 1 100%", // take 50% if status button present, 100% if not
+                  flex: canViewStatusSidebar ? "1 1 50%" : "1 1 100%", // 50/50 split when status access, full width otherwise
                   padding: "10px 14px",
                   borderRadius: "12px",
                   border: `1px solid ${colors.accent}`,
@@ -622,12 +620,12 @@ export default function Layout({ children, jobNumber }) {
               >
                 <span aria-hidden="true">☰</span> Navigation
               </button>
-              {showStatusButton && ( // show status button on tablet but hide on mobile phones
+              {canViewStatusSidebar && ( // show status button for all users with status access (including mobile)
                 <button
                   type="button"
                   onClick={() => setIsStatusSidebarOpen((prev) => !prev)} // toggle status sidebar
                   style={{
-                    flex: "1 1 50%", // take 50% of available width
+                    flex: "1 1 50%", // 50/50 split with navigation
                     padding: "10px 14px",
                     borderRadius: "12px",
                     border: `1px solid ${colors.accent}`,
