@@ -273,8 +273,8 @@ export default function StatusSidebar({
 
   return (
     <>
-      {/* Toggle button - always visible unless an external control is provided */}
-      {showToggleButton && (
+      {/* Toggle button - desktop only; compact/mobile view uses external controls */}
+      {showToggleButton && !compactMode && (
         <button
           aria-label={isOpen ? 'Hide job progress' : 'Show job progress'}
           onClick={(e) => {
