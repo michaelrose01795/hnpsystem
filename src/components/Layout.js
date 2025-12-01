@@ -1,4 +1,5 @@
 // file location: src/components/Layout.js
+// Edit: Restored 50/50 navigation/status button split for mobile, status sidebar defaults to closed
 // ✅ Imports converted to use absolute alias "@/"
 import React, { useEffect, useState } from "react"; // import React hooks
 import Link from "next/link"; // import Next.js link component
@@ -6,6 +7,8 @@ import { useRouter } from "next/router"; // import router for navigation
 import { useUser } from "@/context/UserContext"; // import user context
 import GlobalSearch from "@/components/GlobalSearch"; // import global search component
 import JobCardModal from "@/components/JobCards/JobCardModal"; // import job modal
+import StatusSidebar from "@/components/StatusTracking/StatusSidebar"; // import status sidebar
+import JobTimeline from "@/components/Timeline/JobTimeline";
 import Sidebar from "@/components/Sidebar";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import TopbarAlerts, { AlertBadge } from "@/components/TopbarAlerts";
@@ -14,12 +17,11 @@ import { sidebarSections } from "@/config/navigation";
 import { useRoster } from "@/context/RosterContext";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
+import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { roleCategories } from "@/config/users";
 
-// Define roles that should see workshop shortcuts
 const WORKSHOP_SHORTCUT_ROLES = ["workshop manager", "aftersales manager"];
 
-// Define workshop shortcut navigation links
 const WORKSHOP_SHORTCUT_LINKS = [
   {
     label: "⏱️ Clocking",
@@ -30,7 +32,6 @@ const WORKSHOP_SHORTCUT_LINKS = [
   },
 ];
 
-// Group workshop shortcuts into a navigation section
 const WORKSHOP_SHORTCUT_SECTIONS = [
   {
     label: "Workshop Shortcuts",
@@ -39,7 +40,6 @@ const WORKSHOP_SHORTCUT_SECTIONS = [
   },
 ];
 
-// Define roles that should see service action buttons
 const SERVICE_ACTION_ROLES = new Set([
   "service",
   "service department",
@@ -51,64 +51,80 @@ const SERVICE_ACTION_ROLES = new Set([
   "aftersales manager",
 ]);
 
-// Define roles that should have parts navigation access
 const PARTS_NAV_ROLES = new Set(["parts", "parts manager"]);
 
-// Define quick action links for service department
 const SERVICE_ACTION_LINKS = [
   { label: "Create Job Card", href: "/job-cards/create" },
   { label: "Appointments", href: "/job-cards/appointments" },
   { label: "Check In", href: "/workshop/check-in" },
 ];
 
-// Storage key for persisting user's mode selection
 const MODE_STORAGE_KEY = "appModeSelection";
-
-// Map modes to their associated roles
 const MODE_ROLE_MAP = {
   Retail: new Set((roleCategories.Retail || []).map((role) => role.toLowerCase())),
   Sales: new Set((roleCategories.Sales || []).map((role) => role.toLowerCase())),
 };
 
-export default function Layout({ children }) {
+export default function Layout({ children, jobNumber }) {
   const { user, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
-  const { usersByRole } = useRoster(); // get roster data for role-based checks
+  const { usersByRole } = useRoster();
   const router = useRouter();
-  const hideSidebar = router.pathname === "/login"; // hide sidebar on login page
-  const showHrTabs = router.pathname.startsWith("/hr") || router.pathname.startsWith("/admin/users"); // show HR tabs on HR pages
+  const hideSidebar = router.pathname === "/login";
+  const showHrTabs = router.pathname.startsWith("/hr") || router.pathname.startsWith("/admin/users");
 
-  // Get current viewport width for responsive layout
   const getViewportWidth = () =>
     typeof window !== "undefined" && window.innerWidth ? window.innerWidth : 1440;
 
   const [viewportWidth, setViewportWidth] = useState(getViewportWidth());
+  const { unreadCount: messagesUnread } = useMessagesBadge(dbUserId);
 
-  const [isModalOpen, setIsModalOpen] = useState(false); // job card modal state
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // mobile menu toggle state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false); // default closed
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Responsive breakpoint checks
   const isTablet = viewportWidth <= 1024;
   const isMobile = viewportWidth <= 640;
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
-  // Get user's raw roles from context
-  const rawUserRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const urlJobId =
+    router.query.id ||
+    router.query.jobId ||
+    router.query.jobNumber ||
+    router.query.jobnumber ||
+    router.query.job ||
+    null;
+  const [searchedJobId, setSearchedJobId] = useState(null);
+  const [isAutoJobCleared, setIsAutoJobCleared] = useState(false);
+  const hasActiveAutoJob = !!(urlJobId && !isAutoJobCleared);
+  const activeJobId = searchedJobId || (hasActiveAutoJob ? urlJobId : null);
+  const timelineJobNumber = jobNumber || activeJobId || currentJob?.jobNumber || null;
+  const [currentJobStatus, setCurrentJobStatus] = useState("booked");
 
-  // Determine which modes are available to this user based on their roles
+  const statusSidebarRoles = [
+    "admin manager",
+    "service",
+    "service manager",
+    "workshop manager",
+    "after sales director",
+    "techs",
+    "parts",
+    "parts manager",
+    "mot tester",
+    "valet service",
+  ];
+
+  const rawUserRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
   const availableModes = Object.entries(MODE_ROLE_MAP).reduce((acc, [mode, roleSet]) => {
     if (rawUserRoles.some((role) => roleSet.has(role))) {
       acc.push(mode);
     }
     return acc;
   }, []);
-
-  // Set initial selected mode (if only one mode available, auto-select it)
   const [selectedMode, setSelectedMode] = useState(() =>
     availableModes.length === 1 ? availableModes[0] : null
   );
-  const availableModesKey = availableModes.join("|"); // unique key for mode array to detect changes
+  const availableModesKey = availableModes.join("|");
 
-  // Handle mode selection logic when available modes change
   useEffect(() => {
     if (availableModes.length === 0) {
       if (selectedMode !== null) {
@@ -135,59 +151,44 @@ export default function Layout({ children }) {
     setSelectedMode(availableModes[0]);
   }, [availableModesKey, selectedMode]);
 
-  // Persist selected mode to localStorage
   useEffect(() => {
     if (!selectedMode) return;
     if (typeof window === "undefined") return;
     window.localStorage.setItem(MODE_STORAGE_KEY, selectedMode);
   }, [selectedMode]);
 
-  // Filter user roles based on selected mode (if multi-mode user)
   const modeRoleSet = selectedMode ? MODE_ROLE_MAP[selectedMode] : null;
   const scopedRoles =
     availableModes.length > 1 && modeRoleSet
       ? rawUserRoles.filter((role) => modeRoleSet.has(role))
       : rawUserRoles;
-  const userRoles = scopedRoles.length > 0 ? scopedRoles : rawUserRoles; // fallback to all roles if no scoped roles
-  const activeModeLabel = selectedMode || availableModes[0] || null; // get active mode label for display
+  const userRoles = scopedRoles.length > 0 ? scopedRoles : rawUserRoles;
+  const activeModeLabel = selectedMode || availableModes[0] || null;
 
-  // Check if user's roles match required department roles
   const matchesDepartment = (rolesToMatch = []) => {
     if (!rolesToMatch || rolesToMatch.length === 0) return true;
     return rolesToMatch.some((roleName) => userRoles.includes(roleName));
   };
-
-  // Filter dashboard shortcuts based on user's department roles
   const dashboardShortcuts = departmentDashboardShortcuts.filter((shortcut) =>
     matchesDepartment(shortcut.roles || [])
   );
-
-  // Check if user can use service action buttons
   const canUseServiceActions = userRoles.some((role) => SERVICE_ACTION_ROLES.has(role));
-
-  // Define roles for retail manager dashboard access
   const retailManagerDashboardRoles = ["service manager", "workshop manager", "after sales director"];
   const hasRetailDashboardAccess = userRoles.some((role) =>
     retailManagerDashboardRoles.includes(role)
   );
-
-  // Get lists of technicians and MOT testers from roster
   const techsList = usersByRole?.["Techs"] || [];
   const motTestersList = usersByRole?.["MOT Tester"] || [];
-
-  // Build set of allowed technician names
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
-
-  // Determine if current user is a technician
   const normalizedUsername = typeof user?.username === "string" ? user.username.trim() : "";
   const hasTechRole = userRoles.some((role) => role.includes("tech") || role.includes("mot"));
   const isTech = (normalizedUsername && allowedTechNames.has(normalizedUsername)) || hasTechRole;
-
-  // Check if user has parts department access
+  const canViewStatusSidebar = userRoles.some((role) =>
+    statusSidebarRoles.includes(role)
+  );
   const hasPartsAccess = userRoles.some((role) => PARTS_NAV_ROLES.has(role));
   const isPartsManager = userRoles.includes("parts manager");
 
-  // Update viewport width on window resize
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handleResize = () => setViewportWidth(getViewportWidth());
@@ -196,12 +197,10 @@ export default function Layout({ children }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Close mobile menu when switching to desktop view
   useEffect(() => {
     if (!isTablet) setIsMobileMenuOpen(false);
   }, [isTablet]);
 
-  // Handle escape key to close mobile menu
   useEffect(() => {
     if (typeof window === "undefined" || !isMobileMenuOpen) return;
     const handleKeyDown = (event) => {
@@ -213,23 +212,57 @@ export default function Layout({ children }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isMobileMenuOpen]);
 
-  // Redirect to login if user is not authenticated
   useEffect(() => {
     if (user === null && !hideSidebar) {
       router.replace("/login");
     }
   }, [user, hideSidebar, router]);
 
-  // Handle mode selection from dropdown
+  useEffect(() => {
+    if (activeJobId) fetchCurrentJobStatus(activeJobId);
+  }, [activeJobId]);
+
+  useEffect(() => {
+    if (urlJobId) {
+      setSearchedJobId(null);
+      setIsAutoJobCleared(false);
+    }
+  }, [urlJobId]);
+
+  const handleJobSearch = (jobId) => {
+    setSearchedJobId(jobId);
+    setIsAutoJobCleared(false);
+  };
+
+  const handleJobClear = () => {
+    setSearchedJobId(null);
+    if (urlJobId) {
+      setIsAutoJobCleared(true);
+    }
+  };
+
   const handleModeSelect = (mode) => {
     if (!mode || mode === selectedMode) return;
     setSelectedMode(mode);
   };
 
-  // Define roles that can view job cards
-  const viewRoles = ["manager", "service", "sales"];
+  const fetchCurrentJobStatus = async (id) => {
+    try {
+      const response = await fetch(`/api/status/getCurrentStatus?jobId=${id}`);
+      const data = await response.json();
+      if (data.success) setCurrentJobStatus(data.status);
+    } catch (error) {
+      console.error("Error fetching job status:", error);
+    }
+  };
 
-  // Define roles that can access VHC features
+  const role = userRoles[0] || "guest";
+  const roleDisplay = role
+    .split(" ")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+  const viewRoles = ["manager", "service", "sales"];
   const vhcAccessRoles = new Set([
     "admin",
     "service",
@@ -240,20 +273,13 @@ export default function Layout({ children }) {
     "parts",
     "parts manager",
   ]);
-
-  // Check if current route is active
   const isActive = (path) => router.pathname.startsWith(path);
 
-  // Get theme colors
   const colors = appShellTheme.light;
 
-  // Sidebar open/close state
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  // Content key for forcing re-render on route change
   const [contentKey, setContentKey] = useState(() => router.asPath || "initial");
 
-  // Initialize sidebar state based on viewport and localStorage
   useEffect(() => {
     if (isTablet) {
       setIsSidebarOpen(false);
@@ -268,18 +294,15 @@ export default function Layout({ children }) {
     }
   }, [isTablet]);
 
-  // Persist sidebar state to localStorage
   useEffect(() => {
     if (typeof window === "undefined" || isTablet) return;
     window.localStorage.setItem("sidebarOpen", isSidebarOpen ? "true" : "false");
   }, [isSidebarOpen, isTablet]);
 
-  // Update content key on route change to force component remount
   useEffect(() => {
     setContentKey(router.asPath || `${router.pathname}-${Date.now()}`);
   }, [router.asPath, router.pathname]);
 
-  // iOS-specific fix for rendering issues on route change
   useEffect(() => {
     if (typeof window === "undefined" || !router?.events) return;
 
@@ -309,21 +332,15 @@ export default function Layout({ children }) {
     };
   }, [router]);
 
-  // Combine sidebar sections with workshop shortcuts
   const serviceSidebarSections = WORKSHOP_SHORTCUT_SECTIONS;
   const combinedSidebarSections = [...sidebarSections, ...serviceSidebarSections];
-
-  // Build navigation items array for global search
   const navigationItems = [];
-  const seenNavItems = new Set(); // track added items to prevent duplicates
-
-  // Check if user's roles match required roles for navigation item
+  const seenNavItems = new Set();
   const roleMatches = (requiredRoles = []) => {
     if (!requiredRoles || requiredRoles.length === 0) return true;
     return requiredRoles.some((role) => userRoles.includes(role.toLowerCase()));
   };
 
-  // Add navigation item to search index
   const addNavItem = (
     label,
     href,
@@ -357,7 +374,6 @@ export default function Layout({ children }) {
     });
   };
 
-  // Add all sidebar section items to navigation search
   combinedSidebarSections.forEach((section) => {
     (section.items || []).forEach((item) => {
       addNavItem(item.label, item.href, {
@@ -369,7 +385,6 @@ export default function Layout({ children }) {
     });
   });
 
-  // Add user profile to navigation
   if (user) {
     addNavItem("🙋 My Profile", "/profile", {
       keywords: ["profile", "employee profile", "my profile"],
@@ -378,7 +393,6 @@ export default function Layout({ children }) {
     });
   }
 
-  // Add technician-specific navigation items
   if (isTech) {
     addNavItem("🧰 My Jobs", "/job-cards/myjobs", {
       keywords: ["my jobs", "jobs", "tech"],
@@ -395,7 +409,6 @@ export default function Layout({ children }) {
     });
   }
 
-  // Add next jobs navigation for managers
   if (
     ["service manager", "workshop manager", "admin manager"].some((roleName) =>
       userRoles.includes(roleName)
@@ -407,7 +420,6 @@ export default function Layout({ children }) {
     });
   }
 
-  // Add consumables tracker for workshop managers
   if (userRoles.includes("workshop manager")) {
     addNavItem("🧾 Consumables Tracker", "/workshop/consumables-tracker", {
       keywords: ["consumables", "tracker", "budget"],
@@ -416,7 +428,6 @@ export default function Layout({ children }) {
     });
   }
 
-  // Add view job cards for managers/service
   if (viewRoles.some((r) => userRoles.includes(r))) {
     addNavItem("👀 View Job Cards", "/job-cards/view", {
       keywords: ["view job", "job cards"],
@@ -425,7 +436,6 @@ export default function Layout({ children }) {
     });
   }
 
-  // Add parts department navigation items
   if (hasPartsAccess) {
     addNavItem("🧰 Parts Workspace", "/parts", {
       keywords: ["parts", "inventory", "vhc parts"],
@@ -444,7 +454,6 @@ export default function Layout({ children }) {
     });
   }
 
-  // Add parts manager dashboard
   if (isPartsManager) {
     addNavItem("📈 Parts Manager Dashboard", "/parts/manager", {
       keywords: ["parts manager", "stock value", "parts dashboard"],
@@ -453,7 +462,6 @@ export default function Layout({ children }) {
     });
   }
 
-  // Add VHC dashboard for authorized roles
   if (userRoles.some((role) => vhcAccessRoles.has(role))) {
     addNavItem("📝 VHC Dashboard", "/vhc/dashboard", {
       keywords: ["vhc", "vehicle health check", "dashboard"],
@@ -461,7 +469,6 @@ export default function Layout({ children }) {
     });
   }
 
-  // Add HR navigation items based on role
   const hrAccessRoles = ["hr manager", "admin manager", "owner", "admin"];
   if (userRoles.some((role) => hrAccessRoles.includes(role))) {
     addNavItem("👥 HR Dashboard", "/hr", {
@@ -482,7 +489,6 @@ export default function Layout({ children }) {
     });
   }
 
-  // Add valet navigation for authorized roles
   if (
     userRoles.includes("valet service") ||
     userRoles.includes("service manager") ||
@@ -495,10 +501,8 @@ export default function Layout({ children }) {
     });
   }
 
-  // Toggle sidebar open/closed
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
-  // Layout styling
   const mainColumnMaxWidth = "100%";
   const layoutStyles = {
     display: "flex",
@@ -516,14 +520,11 @@ export default function Layout({ children }) {
     boxSizing: "border-box",
     overflow: "hidden",
   };
-
-  // Determine which sidebar to show based on viewport
   const showDesktopSidebar = !hideSidebar && !isTablet;
   const showMobileSidebar = !hideSidebar && isTablet;
 
   return (
     <div style={layoutStyles}>
-      {/* Desktop Sidebar */}
       {showDesktopSidebar && (
         <div
           style={{
@@ -568,7 +569,6 @@ export default function Layout({ children }) {
         </div>
       )}
 
-      {/* Main Content Column */}
       <div
         style={{
           flex: 1,
@@ -586,15 +586,21 @@ export default function Layout({ children }) {
           position: "relative",
         }}
       >
-        {/* Mobile Navigation Buttons */}
         {showMobileSidebar && (
           <>
-            <div>
+            {/* 50/50 split navigation and status buttons */}
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                width: "100%",
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(true)}
                 style={{
-                  width: "100%",
+                  flex: canViewStatusSidebar ? "1 1 50%" : "1 1 100%", // take 50% if status button present, 100% if not
                   padding: "10px 14px",
                   borderRadius: "12px",
                   border: `1px solid ${colors.accent}`,
@@ -611,9 +617,34 @@ export default function Layout({ children }) {
               >
                 <span aria-hidden="true">☰</span> Navigation
               </button>
+              {canViewStatusSidebar && ( // show status button on the right for users with access
+                <button
+                  type="button"
+                  onClick={() => setIsStatusSidebarOpen((prev) => !prev)} // toggle status sidebar
+                  style={{
+                    flex: "1 1 50%", // take 50% of available width
+                    padding: "10px 14px",
+                    borderRadius: "12px",
+                    border: `1px solid ${colors.accent}`,
+                    background: "linear-gradient(90deg, #fff5f5, #ffffff)",
+                    fontWeight: 600,
+                    color: colors.accent,
+                    boxShadow: "0 6px 14px rgba(0,0,0,0.08)",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <span role="img" aria-hidden="true">
+                    📊
+                  </span>
+                  Status
+                </button>
+              )}
             </div>
 
-            {/* Mobile Menu Overlay */}
             {isMobileMenuOpen && (
               <div
                 style={{
@@ -667,40 +698,36 @@ export default function Layout({ children }) {
           </>
         )}
 
-        {/* Header Section */}
         {!hideSidebar && (
           <section
             style={{
-              background: "rgba(255,255,255,0.95)",
-              borderRadius: "14px",
-              border: "1px solid rgba(209,0,0,0.1)",
-              boxShadow: "0 12px 24px rgba(209,0,0,0.08)",
-              padding: isMobile ? "8px 10px" : "12px 16px",
+              background: "rgba(255,255,255,0.92)",
+              borderRadius: "16px",
+              border: "1px solid rgba(209,0,0,0.12)",
+              boxShadow: "0 10px 20px rgba(209,0,0,0.12)",
+              padding: isMobile ? "10px 12px" : "12px 14px",
               display: "flex",
               flexDirection: "column",
-              gap: isMobile ? "12px" : "14px",
-              backdropFilter: "blur(8px)",
+              gap: isMobile ? "8px" : "12px",
+              backdropFilter: "blur(10px)",
             }}
           >
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: isMobile
-                  ? "1fr"
-                  : canUseServiceActions
-                  ? "minmax(220px, 1fr) minmax(240px, 1fr) minmax(220px, 1fr)"
-                  : "minmax(220px, 1fr) minmax(220px, 1fr)",
-                gap: isMobile ? "12px" : "16px",
-                alignItems: "stretch",
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: "12px",
+                justifyContent: "space-between",
               }}
             >
-              {/* Welcome Section */}
               <div
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: "6px",
-                  minWidth: 0,
+                  gap: "4px",
+                  minWidth: isMobile ? "100%" : "220px",
+                  flex: "1 1 220px",
                 }}
               >
                 <p
@@ -717,14 +744,14 @@ export default function Layout({ children }) {
                 <div
                   style={{
                     display: "flex",
-                    alignItems: isMobile ? "flex-start" : "center",
+                    alignItems: "center",
                     flexWrap: "wrap",
-                    gap: "6px",
+                    gap: "8px",
                   }}
                 >
                   <h1
                     style={{
-                      fontSize: isMobile ? "0.95rem" : "1.1rem",
+                      fontSize: isMobile ? "1rem" : "1.15rem",
                       fontWeight: 700,
                       margin: 0,
                       color: colors.accent,
@@ -733,24 +760,29 @@ export default function Layout({ children }) {
                   >
                     Welcome back, {user?.username || "Guest"}
                   </h1>
+                  <span
+                    style={{
+                      padding: "3px 10px",
+                      borderRadius: "999px",
+                      background: "rgba(209,0,0,0.12)",
+                      color: colors.accent,
+                      fontWeight: 600,
+                      fontSize: "0.7rem",
+                    }}
+                  >
+                    Role: {roleDisplay}
+                  </span>
                   {availableModes.length > 0 && (
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
                         gap: "6px",
-                        fontSize: "0.7rem",
+                        fontSize: "0.75rem",
                         fontWeight: 600,
-                        flexWrap: "wrap",
                       }}
                     >
-                      <span
-                        style={{
-                          color: colors.mutedText,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.08em",
-                        }}
-                      >
+                      <span style={{ color: colors.mutedText, textTransform: "uppercase", letterSpacing: "0.08em" }}>
                         Mode
                       </span>
                       {availableModes.length > 1 ? (
@@ -760,11 +792,11 @@ export default function Layout({ children }) {
                           style={{
                             borderRadius: "999px",
                             border: "1px solid rgba(209,0,0,0.3)",
-                            padding: "3px 10px",
+                            padding: "4px 12px",
                             background: "#fff5f5",
                             color: colors.accent,
                             fontWeight: 600,
-                            fontSize: "0.7rem",
+                            fontSize: "0.75rem",
                             cursor: "pointer",
                           }}
                         >
@@ -777,11 +809,10 @@ export default function Layout({ children }) {
                       ) : (
                         <span
                           style={{
-                            padding: "3px 10px",
+                            padding: "4px 10px",
                             borderRadius: "999px",
-                            background: "rgba(16,185,129,0.12)",
+                            background: "rgba(16,185,129,0.15)",
                             color: "#047857",
-                            fontWeight: 600,
                           }}
                         >
                           {activeModeLabel}
@@ -792,78 +823,66 @@ export default function Layout({ children }) {
                 </div>
               </div>
 
-              {/* Quick Actions Section */}
               {canUseServiceActions && (
                 <div
                   style={{
                     display: "flex",
-                    flexDirection: "column",
-                    gap: "6px",
-                    minWidth: 0,
+                    flexWrap: "wrap",
+                    gap: "8px",
+                    justifyContent: isTablet ? "flex-start" : "center",
+                    alignItems: "center",
+                    flex: "1 1 260px",
+                    minWidth: isMobile ? "100%" : "260px",
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: "0.7rem",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      color: colors.mutedText,
-                    }}
-                  >
-                    Quick Actions
-                  </span>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: isMobile ? "nowrap" : "wrap",
-                      gap: "8px",
-                      overflowX: isMobile ? "auto" : "visible",
-                      paddingBottom: isMobile ? "4px" : 0,
-                    }}
-                  >
-                    {SERVICE_ACTION_LINKS.map((action) => {
-                      const active =
-                        router.pathname === action.href ||
-                        router.pathname.startsWith(`${action.href}/`);
-                      return (
-                        <Link
-                          key={action.href}
-                          href={action.href}
-                          style={{
-                            padding: "6px 12px",
-                            borderRadius: "999px",
-                            border: active ? "1px solid #b10000" : "1px solid #ffe0e0",
-                            backgroundColor: active ? "#b10000" : "#fff5f5",
-                            color: active ? "#ffffff" : "#720000",
-                            fontWeight: 600,
-                            fontSize: "0.8rem",
-                            textDecoration: "none",
-                            boxShadow: active
-                              ? "0 8px 16px rgba(177, 0, 0, 0.18)"
-                              : "0 4px 10px rgba(209, 0, 0, 0.08)",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {action.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
+                  {SERVICE_ACTION_LINKS.map((action) => {
+                    const active =
+                      router.pathname === action.href ||
+                      router.pathname.startsWith(`${action.href}/`);
+                    return (
+                      <Link
+                        key={action.href}
+                        href={action.href}
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: "999px",
+                          border: active ? "1px solid #b10000" : "1px solid #ffe0e0",
+                          backgroundColor: active ? "#b10000" : "#fff5f5",
+                          color: active ? "#ffffff" : "#720000",
+                          fontWeight: 600,
+                          fontSize: "0.85rem",
+                          textDecoration: "none",
+                          boxShadow: active
+                            ? "0 12px 24px rgba(177, 0, 0, 0.2)"
+                            : "0 6px 16px rgba(209, 0, 0, 0.1)",
+                          transition:
+                            "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {action.label}
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
 
-              {/* Search and Utilities Section */}
               <div
                 style={{
                   display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
-                  minWidth: 0,
+                  alignItems: "center",
+                  gap: "10px",
+                  flex: "1 1 280px",
+                  minWidth: isTablet ? "100%" : "280px",
+                  justifyContent: isTablet ? "flex-start" : "flex-end",
                 }}
               >
                 <div
                   style={{
+                    flex: "1 1 220px",
+                    minWidth: "180px",
                     width: "100%",
+                    maxWidth: isMobile ? "100%" : "260px",
                     position: "relative",
                   }}
                 >
@@ -873,69 +892,97 @@ export default function Layout({ children }) {
 
                 <div
                   style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "8px",
-                    justifyContent: isMobile ? "flex-start" : "flex-end",
-                    alignItems: "center",
+                    flexShrink: 0,
                   }}
                 >
-                  <div
+                  <NextActionPrompt />
+                </div>
+
+                {hasPartsAccess && (
+                  <Link
+                    href="/parts/deliveries"
                     style={{
-                      flexShrink: 0,
-                      minWidth: isMobile ? "100%" : "auto",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "8px 14px",
+                      borderRadius: "14px",
+                      border: "1px solid #ffe0e0",
+                      background: "#fff5f5",
+                      color: "#720000",
+                      fontWeight: 600,
+                      textDecoration: "none",
+                      boxShadow: "0 6px 16px rgba(209,0,0,0.12)",
                     }}
                   >
-                    <NextActionPrompt />
-                  </div>
-
-                  {hasPartsAccess && (
-                    <Link
-                      href="/parts/deliveries"
+                    <span role="img" aria-label="deliveries">
+                      🚚
+                    </span>
+                    Deliveries
+                  </Link>
+                )}
+                <Link
+                  href="/messages"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "8px 14px",
+                    borderRadius: "14px",
+                    border: "1px solid #ffe0e0",
+                    background: "#fff5f5",
+                    color: "#720000",
+                    fontWeight: 600,
+                    textDecoration: "none",
+                    boxShadow: "0 6px 16px rgba(209,0,0,0.12)",
+                  }}
+                >
+                  <span role="img" aria-label="messages">
+                    📨
+                  </span>
+                  Messages
+                  {messagesUnread > 0 && (
+                    <span
                       style={{
+                        minWidth: 24,
+                        minHeight: 24,
+                        padding: "0 6px",
+                        borderRadius: 999,
+                        background: "#d10000",
+                        color: "#ffffff",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
                         display: "inline-flex",
                         alignItems: "center",
-                        gap: "6px",
-                        padding: "6px 12px",
-                        borderRadius: "12px",
-                        border: "1px solid #ffe0e0",
-                        background: "#fff5f5",
-                        color: "#720000",
-                        fontWeight: 600,
-                        textDecoration: "none",
-                        boxShadow: "0 4px 10px rgba(209,0,0,0.08)",
-                        whiteSpace: "nowrap",
+                        justifyContent: "center",
                       }}
                     >
-                      <span role="img" aria-label="deliveries">
-                        🚚
-                      </span>
-                      Deliveries
-                    </Link>
+                      {messagesUnread > 99 ? "99+" : messagesUnread}
+                    </span>
                   )}
+                </Link>
 
-                  {userRoles.includes("admin manager") && (
-                    <Link
-                      href="/admin/users"
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: "12px",
-                        background: "linear-gradient(135deg, #d10000, #a60000)",
-                        color: "#ffffff",
-                        fontWeight: 600,
-                        textDecoration: "none",
-                        boxShadow: "0 10px 18px rgba(209,0,0,0.18)",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      ➕ Create User
-                    </Link>
-                  )}
-                </div>
+                {userRoles.includes("admin manager") && (
+                  <Link
+                    href="/admin/users"
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: "14px",
+                      background: "linear-gradient(135deg, #d10000, #a60000)",
+                      color: "#ffffff",
+                      fontWeight: 600,
+                      textDecoration: "none",
+                      boxShadow: "0 12px 20px rgba(209,0,0,0.22)",
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
+                    }}
+                  >
+                    ➕ Create User
+                  </Link>
+                )}
               </div>
             </div>
 
-            {/* Technician Quick Controls */}
             {isTech && (
               <div
                 style={{
@@ -1014,12 +1061,12 @@ export default function Layout({ children }) {
           </section>
         )}
 
-        {/* Main Content Area */}
         <main
           style={{
             flex: 1,
             minHeight: 0,
-            width: "100%",
+            height: "100%",
+            overflow: "auto",
           }}
         >
           <div
@@ -1031,6 +1078,7 @@ export default function Layout({ children }) {
               border: hideSidebar ? "none" : "1px solid #ffe0e0",
               boxShadow: hideSidebar ? "none" : "0 32px 64px rgba(209,0,0,0.1)",
               padding: hideSidebar ? "0" : isMobile ? "18px 14px" : "32px",
+              overflow: "auto",
             }}
           >
             {showHrTabs && <HrTabsBar />}
@@ -1039,12 +1087,30 @@ export default function Layout({ children }) {
         </main>
       </div>
 
-      {/* Job Card Modal for Technicians */}
+      {/* Status sidebar - shown on right side with toggle button for desktop, controlled by mobile button on mobile */}
+      {canViewStatusSidebar && (
+        <StatusSidebar
+          jobId={activeJobId}
+          currentStatus={currentJobStatus}
+          isOpen={isStatusSidebarOpen}
+          onToggle={() => setIsStatusSidebarOpen(!isStatusSidebarOpen)}
+          onJobSearch={handleJobSearch}
+          onJobClear={handleJobClear}
+          hasUrlJobId={hasActiveAutoJob}
+          viewportWidth={viewportWidth}
+          isCompact={isTablet}
+          timelineContent={
+            timelineJobNumber ? (
+              <JobTimeline jobNumber={String(timelineJobNumber)} />
+            ) : null
+          }
+          showToggleButton={!isTablet} // only show toggle button on desktop, mobile uses the 50/50 split button
+        />
+      )}
+
       {isTech && (
         <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       )}
-
-      {/* Topbar Alerts */}
       <TopbarAlerts />
     </div>
   );
