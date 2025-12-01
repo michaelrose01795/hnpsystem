@@ -177,22 +177,26 @@ export default function JobCardDetailPage() {
   const [invoicePopupOpen, setInvoicePopupOpen] = useState(false);
   const [invoiceResponse, setInvoiceResponse] = useState(null);
 
+  const isArchiveMode = router.query.archive === "1";
+
   // ✅ Permission Check
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
-  const canEdit = [
+  const canEditBase = [
     "service",
     "service manager",
     "workshop manager",
     "admin",
     "admin manager"
   ].some((role) => userRoles.includes(role));
-  const canManageDocuments = [
+  const canManageDocumentsBase = [
     "service manager",
     "workshop manager",
     "after-sales manager",
     "admin",
     "admin manager"
   ].some((role) => userRoles.includes(role));
+  const canEdit = !isArchiveMode && canEditBase;
+  const canManageDocuments = !isArchiveMode && canManageDocumentsBase;
 
   const fetchSharedNote = useCallback(async (jobId) => {
     if (!jobId) return null;
@@ -1111,7 +1115,23 @@ export default function JobCardDetailPage() {
         padding: "16px",
         overflow: "hidden" 
       }}>
-        
+        {isArchiveMode && (
+          <div
+            style={{
+              marginBottom: "16px",
+              padding: "12px 16px",
+              borderRadius: "12px",
+              border: "1px solid #fcd9d7",
+              backgroundColor: "#fff4f4",
+              color: "#7c2d12",
+              fontSize: "0.95rem",
+              fontWeight: 600,
+            }}
+          >
+            Archived copy &middot; Job #{jobData.jobNumber} is read-only. VHC, notes, and documents are preserved for audit.
+          </div>
+        )}
+
         {/* ✅ Header Section */}
         <div style={{
           display: "flex",
