@@ -20,6 +20,7 @@ export default function StatusSidebar({
   viewportWidth = 1440,
   isCompact = false,
   timelineContent = null,
+  showToggleButton = true,
 }) {
   const [statusHistory, setStatusHistory] = useState([]); // Array of past statuses with timestamps
   const [totalTimeSpent, setTotalTimeSpent] = useState(0); // Total working time in minutes
@@ -272,19 +273,21 @@ export default function StatusSidebar({
 
   return (
     <>
-      {/* Toggle button - always visible */}
-      <button
-        aria-label={isOpen ? 'Hide job progress' : 'Show job progress'}
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggle();
-        }}
-        style={toggleButtonStyle}
-        onMouseEnter={handleToggleMouseEnter}
-        onMouseLeave={handleToggleMouseLeave}
-      >
-        {compactMode ? (isOpen ? '▼' : '▲') : isOpen ? '‹' : '›'}
-      </button>
+      {/* Toggle button - always visible unless an external control is provided */}
+      {showToggleButton && (
+        <button
+          aria-label={isOpen ? 'Hide job progress' : 'Show job progress'}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle();
+          }}
+          style={toggleButtonStyle}
+          onMouseEnter={handleToggleMouseEnter}
+          onMouseLeave={handleToggleMouseLeave}
+        >
+          {compactMode ? (isOpen ? '▼' : '▲') : isOpen ? '‹' : '›'}
+        </button>
+      )}
 
       {/* Sidebar panel - FLOATING */}
       <div style={panelStyle}>
@@ -293,8 +296,31 @@ export default function StatusSidebar({
           background: 'linear-gradient(to right, #d10000, #a00000)', // Red gradient
           color: 'white',
           padding: '20px',
-          borderRadius: '0' // Match full-height edge-to-edge layout
+          borderRadius: '0', // Match full-height edge-to-edge layout
+          position: 'relative'
         }}>
+          <button
+            aria-label="Close status sidebar"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle();
+            }}
+            style={{
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              background: 'rgba(255,255,255,0.2)',
+              border: '1px solid rgba(255,255,255,0.4)',
+              borderRadius: '999px',
+              color: '#fff',
+              fontWeight: '700',
+              fontSize: '14px',
+              padding: '4px 10px',
+              cursor: 'pointer'
+            }}
+          >
+            ✕
+          </button>
           <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '12px' }}>
             Job Progress Tracker
           </h2>

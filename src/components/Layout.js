@@ -17,7 +17,6 @@ import { sidebarSections } from "@/config/navigation";
 import { useRoster } from "@/context/RosterContext";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
-import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { roleCategories } from "@/config/users";
 
 const WORKSHOP_SHORTCUT_ROLES = ["workshop manager", "aftersales manager"];
@@ -76,7 +75,6 @@ export default function Layout({ children, jobNumber }) {
     typeof window !== "undefined" && window.innerWidth ? window.innerWidth : 1440;
 
   const [viewportWidth, setViewportWidth] = useState(getViewportWidth());
-  const { unreadCount: messagesUnread } = useMessagesBadge(dbUserId);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false);
@@ -258,8 +256,6 @@ export default function Layout({ children, jobNumber }) {
     }
   };
 
-  const role = userRoles[0] || "guest";
-  const roleDisplay = role
     .split(" ")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
@@ -593,32 +589,57 @@ export default function Layout({ children, jobNumber }) {
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                position: "sticky",
-                top: 0,
-                zIndex: 5,
-                background: colors.mainBg,
-                padding: "8px 0",
+                gap: "10px",
+                width: "100%",
               }}
             >
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(true)}
                 style={{
-                  width: "100%",
-                  padding: "10px 16px",
+                  flex: canViewStatusSidebar ? "1 1 50%" : "1 1 100%",
+                  padding: "10px 14px",
                   borderRadius: "12px",
                   border: `1px solid ${colors.accent}`,
                   background: "linear-gradient(90deg, #ffffff, #fff5f5)",
                   fontWeight: 600,
                   color: colors.accent,
-                  boxShadow: "0 8px 18px rgba(0,0,0,0.08)",
+                  boxShadow: "0 6px 14px rgba(0,0,0,0.08)",
                   cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
                 }}
               >
-                ☰ Navigation
+                <span aria-hidden="true">☰</span> Navigation
               </button>
+              {canViewStatusSidebar && (
+                <button
+                  type="button"
+                  onClick={() => setIsStatusSidebarOpen((prev) => !prev)}
+                  style={{
+                    flex: "1 1 50%",
+                    padding: "10px 14px",
+                    borderRadius: "12px",
+                    border: `1px solid ${colors.accent}`,
+                    background: "linear-gradient(90deg, #fff5f5, #ffffff)",
+                    fontWeight: 600,
+                    color: colors.accent,
+                    boxShadow: "0 6px 14px rgba(0,0,0,0.08)",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <span role="img" aria-hidden="true">
+                    📊
+                  </span>
+                  Status
+                </button>
+              )}
             </div>
 
             {isMobileMenuOpen && (
@@ -677,33 +698,35 @@ export default function Layout({ children, jobNumber }) {
         {!hideSidebar && ( // render the modern compact header when the sidebar is visible
           <section
             style={{
-              background: "rgba(255,255,255,0.92)", // soften the header background
-              borderRadius: "16px", // tighten radius for slimmer appearance
-              border: "1px solid rgba(209,0,0,0.12)", // introduce subtle red border accent
-              boxShadow: "0 10px 20px rgba(209,0,0,0.12)", // lighten drop shadow for depth without bulk
-              padding: isMobile ? "10px 12px" : "12px 14px", // reduce padding to shrink header height
+              background: "rgba(255,255,255,0.95)",
+              borderRadius: "14px",
+              border: "1px solid rgba(209,0,0,0.1)",
+              boxShadow: "0 12px 24px rgba(209,0,0,0.08)",
+              padding: isMobile ? "8px 10px" : "12px 16px",
               display: "flex",
               flexDirection: "column",
-              gap: isMobile ? "8px" : "12px",
-              backdropFilter: "blur(10px)", // add subtle glassmorphism effect
+              gap: isMobile ? "12px" : "14px",
+              backdropFilter: "blur(8px)",
             }}
           >
             <div
               style={{
-                display: "flex",
-                flexWrap: "wrap",
-                alignItems: "center",
-                gap: "12px",
-                justifyContent: "space-between", // keep header content balanced edge to edge
+                display: "grid",
+                gridTemplateColumns: isMobile
+                  ? "1fr"
+                  : canUseServiceActions
+                  ? "minmax(220px, 1fr) minmax(240px, 1fr) minmax(220px, 1fr)"
+                  : "minmax(220px, 1fr) minmax(220px, 1fr)",
+                gap: isMobile ? "12px" : "16px",
+                alignItems: "stretch",
               }}
             >
               <div
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: "4px",
-                  minWidth: isMobile ? "100%" : "220px",
-                  flex: "1 1 220px",
+                  gap: "6px",
+                  minWidth: 0,
                 }}
               >
                 <p
@@ -720,14 +743,14 @@ export default function Layout({ children, jobNumber }) {
                 <div
                   style={{
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: isMobile ? "flex-start" : "center",
                     flexWrap: "wrap",
-                    gap: "8px",
+                    gap: "6px",
                   }}
                 >
                   <h1
                     style={{
-                      fontSize: isMobile ? "1rem" : "1.15rem",
+                      fontSize: isMobile ? "0.95rem" : "1.1rem",
                       fontWeight: 700,
                       margin: 0,
                       color: colors.accent,
@@ -736,29 +759,24 @@ export default function Layout({ children, jobNumber }) {
                   >
                     Welcome back, {user?.username || "Guest"}
                   </h1>
-                  <span
-                    style={{
-                      padding: "3px 10px",
-                      borderRadius: "999px",
-                      background: "rgba(209,0,0,0.12)",
-                      color: colors.accent,
-                      fontWeight: 600,
-                      fontSize: "0.7rem",
-                    }}
-                  >
-                    Role: {roleDisplay}
-                  </span>
                   {availableModes.length > 0 && (
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
                         gap: "6px",
-                        fontSize: "0.75rem",
+                        fontSize: "0.7rem",
                         fontWeight: 600,
+                        flexWrap: "wrap",
                       }}
                     >
-                      <span style={{ color: colors.mutedText, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                      <span
+                        style={{
+                          color: colors.mutedText,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.08em",
+                        }}
+                      >
                         Mode
                       </span>
                       {availableModes.length > 1 ? (
@@ -768,11 +786,11 @@ export default function Layout({ children, jobNumber }) {
                           style={{
                             borderRadius: "999px",
                             border: "1px solid rgba(209,0,0,0.3)",
-                            padding: "4px 12px",
+                            padding: "3px 10px",
                             background: "#fff5f5",
                             color: colors.accent,
                             fontWeight: 600,
-                            fontSize: "0.75rem",
+                            fontSize: "0.7rem",
                             cursor: "pointer",
                           }}
                         >
@@ -785,10 +803,11 @@ export default function Layout({ children, jobNumber }) {
                       ) : (
                         <span
                           style={{
-                            padding: "4px 10px",
+                            padding: "3px 10px",
                             borderRadius: "999px",
-                            background: "rgba(16,185,129,0.15)",
+                            background: "rgba(16,185,129,0.12)",
                             color: "#047857",
+                            fontWeight: 600,
                           }}
                         >
                           {activeModeLabel}
@@ -803,160 +822,140 @@ export default function Layout({ children, jobNumber }) {
                 <div
                   style={{
                     display: "flex",
-                    flexWrap: "wrap",
-                    gap: "8px",
-                    justifyContent: isTablet ? "flex-start" : "center",
-                    alignItems: "center",
-                    flex: "1 1 260px",
-                    minWidth: isMobile ? "100%" : "260px",
+                    flexDirection: "column",
+                    gap: "6px",
+                    minWidth: 0,
                   }}
                 >
-                  {SERVICE_ACTION_LINKS.map((action) => {
-                    const active =
-                      router.pathname === action.href ||
-                      router.pathname.startsWith(`${action.href}/`);
-                    return (
-                      <Link
-                        key={action.href}
-                        href={action.href}
-                        style={{
-                          padding: "8px 16px",
-                          borderRadius: "999px",
-                          border: active ? "1px solid #b10000" : "1px solid #ffe0e0",
-                          backgroundColor: active ? "#b10000" : "#fff5f5",
-                          color: active ? "#ffffff" : "#720000",
-                          fontWeight: 600,
-                          fontSize: "0.85rem",
-                          textDecoration: "none",
-                          boxShadow: active
-                            ? "0 12px 24px rgba(177, 0, 0, 0.2)"
-                            : "0 6px 16px rgba(209, 0, 0, 0.1)",
-                          transition:
-                            "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {action.label}
-                      </Link>
-                    );
-                  })}
+                  <span
+                    style={{
+                      fontSize: "0.7rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      color: colors.mutedText,
+                    }}
+                  >
+                    Quick Actions
+                  </span>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: isMobile ? "nowrap" : "wrap",
+                      gap: "8px",
+                      overflowX: isMobile ? "auto" : "visible",
+                      paddingBottom: isMobile ? "4px" : 0,
+                    }}
+                  >
+                    {SERVICE_ACTION_LINKS.map((action) => {
+                      const active =
+                        router.pathname === action.href ||
+                        router.pathname.startsWith(`${action.href}/`);
+                      return (
+                        <Link
+                          key={action.href}
+                          href={action.href}
+                          style={{
+                            padding: "6px 12px",
+                            borderRadius: "999px",
+                            border: active ? "1px solid #b10000" : "1px solid #ffe0e0",
+                            backgroundColor: active ? "#b10000" : "#fff5f5",
+                            color: active ? "#ffffff" : "#720000",
+                            fontWeight: 600,
+                            fontSize: "0.8rem",
+                            textDecoration: "none",
+                            boxShadow: active
+                              ? "0 8px 16px rgba(177, 0, 0, 0.18)"
+                              : "0 4px 10px rgba(209, 0, 0, 0.08)",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {action.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
               <div
                 style={{
                   display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  flex: "1 1 280px",
-                  minWidth: isTablet ? "100%" : "280px",
-                  justifyContent: isTablet ? "flex-start" : "flex-end",
+                  flexDirection: "column",
+                  gap: "8px",
+                  minWidth: 0,
                 }}
               >
                 <div
                   style={{
-                    flex: "1 1 220px",
-                    minWidth: "180px",
                     width: "100%",
-                    maxWidth: isMobile ? "100%" : "260px",
                     position: "relative",
                   }}
                 >
-                  <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />{/* expose global search with brand accent */}
+                  <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />
                   <AlertBadge />
                 </div>
 
                 <div
                   style={{
-                    flexShrink: 0,
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "8px",
+                    justifyContent: isMobile ? "flex-start" : "flex-end",
+                    alignItems: "center",
                   }}
                 >
-                  <NextActionPrompt />
-                </div>
-
-                {hasPartsAccess && (
-                  <Link
-                    href="/parts/deliveries"
+                  <div
                     style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "8px 14px",
-                      borderRadius: "14px",
-                      border: "1px solid #ffe0e0",
-                      background: "#fff5f5",
-                      color: "#720000",
-                      fontWeight: 600,
-                      textDecoration: "none",
-                      boxShadow: "0 6px 16px rgba(209,0,0,0.12)",
+                      flexShrink: 0,
+                      minWidth: isMobile ? "100%" : "auto",
                     }}
                   >
-                    <span role="img" aria-label="deliveries">
-                      🚚
-                    </span>
-                    Deliveries
-                  </Link>
-                )}
-                <Link
-                  href="/messages"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "8px 14px",
-                    borderRadius: "14px",
-                    border: "1px solid #ffe0e0",
-                    background: "#fff5f5",
-                    color: "#720000",
-                    fontWeight: 600,
-                    textDecoration: "none",
-                    boxShadow: "0 6px 16px rgba(209,0,0,0.12)",
-                  }}
-                >
-                  <span role="img" aria-label="messages">
-                    📨
-                  </span>
-                  Messages
-                  {messagesUnread > 0 && (
-                    <span
+                    <NextActionPrompt />
+                  </div>
+
+                  {hasPartsAccess && (
+                    <Link
+                      href="/parts/deliveries"
                       style={{
-                        minWidth: 24,
-                        minHeight: 24,
-                        padding: "0 6px",
-                        borderRadius: 999,
-                        background: "#d10000",
-                        color: "#ffffff",
-                        fontSize: "0.75rem",
-                        fontWeight: 700,
                         display: "inline-flex",
                         alignItems: "center",
-                        justifyContent: "center",
+                        gap: "6px",
+                        padding: "6px 12px",
+                        borderRadius: "12px",
+                        border: "1px solid #ffe0e0",
+                        background: "#fff5f5",
+                        color: "#720000",
+                        fontWeight: 600,
+                        textDecoration: "none",
+                        boxShadow: "0 4px 10px rgba(209,0,0,0.08)",
+                        whiteSpace: "nowrap",
                       }}
                     >
-                      {messagesUnread > 99 ? "99+" : messagesUnread}
-                    </span>
+                      <span role="img" aria-label="deliveries">
+                        🚚
+                      </span>
+                      Deliveries
+                    </Link>
                   )}
-                </Link>
 
-                {userRoles.includes("admin manager") &&
-                  ( // quick access for administrators to add new users
+                  {userRoles.includes("admin manager") && (
                     <Link
                       href="/admin/users"
                       style={{
-                        padding: "8px 14px",
-                        borderRadius: "14px",
+                        padding: "6px 12px",
+                        borderRadius: "12px",
                         background: "linear-gradient(135deg, #d10000, #a60000)",
                         color: "#ffffff",
                         fontWeight: 600,
                         textDecoration: "none",
-                        boxShadow: "0 12px 20px rgba(209,0,0,0.22)",
+                        boxShadow: "0 10px 18px rgba(209,0,0,0.18)",
                         whiteSpace: "nowrap",
-                        flexShrink: 0,
                       }}
                     >
                       ➕ Create User
                     </Link>
                   )}
+                </div>
               </div>
             </div>
 
@@ -1048,8 +1047,7 @@ export default function Layout({ children, jobNumber }) {
           style={{
             flex: 1,
             minHeight: 0,
-            height: "100%",
-            overflow: "auto",
+            width: "100%",
           }}
         >
           <div
@@ -1061,7 +1059,6 @@ export default function Layout({ children, jobNumber }) {
               border: hideSidebar ? "none" : "1px solid #ffe0e0",
               boxShadow: hideSidebar ? "none" : "0 32px 64px rgba(209,0,0,0.1)",
               padding: hideSidebar ? "0" : isMobile ? "18px 14px" : "32px",
-              overflow: "auto",
             }}
           >
             {showHrTabs && <HrTabsBar />}
@@ -1086,6 +1083,7 @@ export default function Layout({ children, jobNumber }) {
               <JobTimeline jobNumber={String(timelineJobNumber)} />
             ) : null
           }
+          showToggleButton={!isTablet}
         />
       )}
 
