@@ -80,6 +80,50 @@ const tallyConcerns = (concerns = []) =>
     { red: 0, amber: 0, grey: 0 },
   );
 
+const formatDepthReading = (value) => {
+  if (value === null || value === undefined || value === "") return "—";
+  const text = value.toString().trim();
+  if (!text) return "—";
+  return text.endsWith("mm") ? text : `${text}mm`;
+};
+
+const normaliseSeverityKeyword = (value) => {
+  if (!value) return null;
+  const label = value.toString().toLowerCase();
+  if (label.includes("red")) return "red";
+  if (label.includes("amber") || label.includes("yellow")) return "amber";
+  return null;
+};
+
+const resolveItemSeverity = (item = {}) => {
+  let severity = normaliseSeverityKeyword(item.status);
+  (item.concerns || []).forEach((concern) => {
+    const concernSeverity = normaliseSeverityKeyword(concern?.status);
+    if (concernSeverity === "red") {
+      severity = "red";
+    } else if (concernSeverity === "amber" && severity !== "red") {
+      severity = severity || "amber";
+    }
+  });
+  return severity;
+};
+
+const groupItemsBySeverity = (sections = []) => {
+  const buckets = { red: new Map(), amber: new Map() };
+  sections.forEach((section) => {
+    const sectionTitle = section.title || "Vehicle Health Check";
+    (section.items || []).forEach((item) => {
+      const severity = resolveItemSeverity(item);
+      if (!severity) return;
+      const bucket = buckets[severity];
+      const existing = bucket.get(sectionTitle) || [];
+      existing.push(item);
+      bucket.set(sectionTitle, existing);
+    });
+  });
+  return buckets;
+};
+
 export default function VhcDetailsPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
@@ -779,20 +823,12 @@ const renderOptionalSections = () => {
       ["NSR", "Nearside Rear"],
       ["OSR", "Offside Rear"],
     ];
+
     const cards = wheelOrder
       .map(([key, label]) => {
         const tyre = tyres[key];
         if (!tyre || typeof tyre !== "object") return null;
         const tread = tyre.tread || {};
-        const depthLine = ["outer", "middle", "inner"]
-          .map((segment) => {
-            const value = tread[segment];
-            if (value === null || value === undefined || value === "") return null;
-            const pretty = value.toString().endsWith("mm") ? value : `${value}mm`;
-            return `${segment.charAt(0).toUpperCase() + segment.slice(1)} ${pretty}`;
-          })
-          .filter(Boolean)
-          .join(" • ");
         return (
           <div
             key={`tyre-summary-${key}`}
@@ -803,20 +839,38 @@ const renderOptionalSections = () => {
               backgroundColor: "#fff",
               display: "flex",
               flexDirection: "column",
-              gap: "6px",
+              gap: "10px",
             }}
           >
             <span style={{ fontSize: "13px", fontWeight: 600 }}>{label}</span>
-            <span style={{ fontSize: "12px", color: "#4b5563" }}>Make: {tyre.manufacturer || "—"}</span>
-            <span style={{ fontSize: "12px", color: "#4b5563" }}>Size: {tyre.size || "—"}</span>
-            <span style={{ fontSize: "12px", color: "#4b5563" }}>
-              Load / Speed: {(tyre.load || "—") + " / " + (tyre.speed || "—")}
-            </span>
-            {depthLine ? (
-              <span style={{ fontSize: "12px", color: "#374151" }}>Depths: {depthLine}</span>
-            ) : (
-              <span style={{ fontSize: "12px", color: "#9ca3af" }}>Depths not recorded</span>
-            )}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "8px" }}>
+              {[
+                { label: "Make", value: tyre.manufacturer || "—" },
+                { label: "Size", value: tyre.size || "—" },
+                { label: "Load", value: tyre.load || "—" },
+                { label: "Speed", value: tyre.speed || "—" },
+              ].map((meta) => (
+                <div key={`${key}-${meta.label}`} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <span style={{ fontSize: "11px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.12em" }}>
+                    {meta.label}
+                  </span>
+                  <strong style={{ fontSize: "13px", color: "#111827" }}>{meta.value}</strong>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ fontSize: "11px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.12em" }}>
+                Depths
+              </span>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(60px, 1fr))", gap: "6px" }}>
+                {["outer", "middle", "inner"].map((segment) => (
+                  <div key={`${key}-${segment}`} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                    <span style={{ fontSize: "11px", color: "#6b7280" }}>{segment.toUpperCase()}</span>
+                    <strong style={{ fontSize: "13px", color: "#111827" }}>{formatDepthReading(tread[segment])}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         );
       })
@@ -838,9 +892,11 @@ const renderOptionalSections = () => {
       >
         <header>
           <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>Tyres overview</h3>
-          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>Measurements and specification for each wheel.</p>
+          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>
+            Size, load index, manufacturer, and recorded tread depths for every wheel.
+          </p>
         </header>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>{cards}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px" }}>{cards}</div>
       </section>
     );
   };
