@@ -49,6 +49,19 @@ CREATE TABLE public.appointments (
   CONSTRAINT appointments_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT appointments_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
 );
+CREATE TABLE public.customer_payment_methods (
+  method_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  customer_id uuid NOT NULL,
+  nickname text,
+  card_brand text,
+  last4 text NOT NULL,
+  expiry_month integer NOT NULL,
+  expiry_year integer NOT NULL,
+  is_default boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT customer_payment_methods_pkey PRIMARY KEY (method_id),
+  CONSTRAINT customer_payment_methods_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
+);
 CREATE TABLE public.customers (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   firstname text,
@@ -335,7 +348,7 @@ CREATE TABLE public.invoice_items (
 );
 CREATE TABLE public.invoices (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  job_id uuid,
+  job_id integer,
   customer_id uuid,
   total_parts numeric DEFAULT 0,
   total_labour numeric DEFAULT 0,
@@ -347,7 +360,9 @@ CREATE TABLE public.invoices (
   updated_at timestamp with time zone DEFAULT now(),
   sent_email_at timestamp with time zone,
   sent_portal_at timestamp with time zone,
-  CONSTRAINT invoices_pkey PRIMARY KEY (id)
+  CONSTRAINT invoices_pkey PRIMARY KEY (id),
+  CONSTRAINT invoices_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT invoices_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
 );
 CREATE TABLE public.job_booking_requests (
   request_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
@@ -827,6 +842,24 @@ CREATE TABLE public.payment_links (
   CONSTRAINT payment_links_pkey PRIMARY KEY (id),
   CONSTRAINT payment_links_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id)
 );
+CREATE TABLE public.payment_plans (
+  plan_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  customer_id uuid NOT NULL,
+  job_id integer,
+  invoice_id uuid,
+  name text,
+  description text,
+  total_amount numeric NOT NULL DEFAULT 0,
+  balance_due numeric NOT NULL DEFAULT 0,
+  frequency text,
+  next_payment_date date,
+  status text NOT NULL DEFAULT 'active'::text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT payment_plans_pkey PRIMARY KEY (plan_id),
+  CONSTRAINT payment_plans_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT payment_plans_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT payment_plans_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id)
+);
 CREATE TABLE public.sales_tracking (
   sale_id integer NOT NULL DEFAULT nextval('sales_tracking_sale_id_seq'::regclass),
   vehicle_id integer,
@@ -843,6 +876,34 @@ CREATE TABLE public.schema_migrations (
   migration_name text NOT NULL UNIQUE,
   applied_at timestamp with time zone DEFAULT now(),
   CONSTRAINT schema_migrations_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.staff_vehicle_history (
+  history_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  vehicle_id uuid NOT NULL,
+  job_id integer,
+  description text,
+  cost numeric DEFAULT 0,
+  deduct_from_payroll boolean NOT NULL DEFAULT true,
+  recorded_at timestamp with time zone NOT NULL DEFAULT now(),
+  payroll_processed_at timestamp with time zone,
+  CONSTRAINT staff_vehicle_history_pkey PRIMARY KEY (history_id),
+  CONSTRAINT staff_vehicle_history_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.staff_vehicles(vehicle_id),
+  CONSTRAINT staff_vehicle_history_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
+);
+CREATE TABLE public.staff_vehicles (
+  vehicle_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id integer NOT NULL,
+  make text,
+  model text,
+  registration text NOT NULL,
+  vin text,
+  colour text,
+  payroll_deduction_enabled boolean NOT NULL DEFAULT true,
+  payroll_deduction_reference text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT staff_vehicles_pkey PRIMARY KEY (vehicle_id),
+  CONSTRAINT staff_vehicles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.time_records (
   id bigint NOT NULL DEFAULT nextval('time_records_id_seq'::regclass),

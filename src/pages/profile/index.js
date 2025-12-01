@@ -7,6 +7,7 @@ import { useUser } from "@/context/UserContext"; // Keycloak user context
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook
 import { SectionCard, StatusTag, MetricCard } from "@/components/HR/MetricCard"; // HR UI components
 import OvertimeEntriesEditor from "@/components/HR/OvertimeEntriesEditor"; // overtime editor widget
+import StaffVehiclesCard from "@/components/HR/StaffVehiclesCard";
 
 function formatDate(value) {
   if (!value) return "—"; // guard empty values
@@ -39,6 +40,7 @@ export function ProfilePage({
   const attendanceLogs = data?.attendanceLogs ?? []; // clocking records
   const overtimeSummaries = data?.overtimeSummaries ?? []; // overtime totals
   const leaveBalances = data?.leaveBalances ?? []; // leave usage
+  const staffVehicles = data?.staffVehicles ?? [];
   const activeUserName = previewUserParam || user?.username || null; // active username resolution
 
   const hrProfile = useMemo(() => {
@@ -99,6 +101,11 @@ export function ProfilePage({
       },
     ]; // placeholder entry for editor
   }, [aggregatedStats]);
+
+  const profileStaffVehicles = useMemo(() => {
+    if (!profile?.userId) return [];
+    return staffVehicles.filter((vehicle) => vehicle.userId === profile.userId);
+  }, [profile?.userId, staffVehicles]);
 
   if (!user && !previewUserParam) {
     const fallback = (
@@ -313,6 +320,10 @@ export function ProfilePage({
               </div>
             </SectionCard>
           </section>
+
+          {profile && (
+            <StaffVehiclesCard userId={profile.userId} vehicles={profileStaffVehicles} />
+          )}
         </>
       ) : null}
 

@@ -827,6 +827,70 @@ export async function getEmployeeDirectory() {
   });
 }
 
+const mapStaffVehicleHistoryRow = (row = {}) => ({
+  id: row.history_id,
+  vehicleId: row.vehicle_id,
+  jobId: row.job_id,
+  description: row.description || "",
+  cost: Number(row.cost ?? 0),
+  deductFromPayroll: row.deduct_from_payroll !== false,
+  recordedAt: row.recorded_at,
+  payrollProcessedAt: row.payroll_processed_at || null,
+});
+
+const mapStaffVehicleRow = (row = {}) => ({
+  id: row.vehicle_id,
+  userId: row.user_id,
+  make: row.make || "",
+  model: row.model || "",
+  registration: row.registration || "",
+  vin: row.vin || "",
+  colour: row.colour || "",
+  payrollDeductionEnabled: row.payroll_deduction_enabled !== false,
+  payrollDeductionReference: row.payroll_deduction_reference || "",
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+  history: Array.isArray(row.history) ? row.history.map(mapStaffVehicleHistoryRow) : [],
+});
+
+export async function getStaffVehiclesWithHistory() {
+  const { data, error } = await adminDb
+    .from("staff_vehicles")
+    .select(
+      `
+        vehicle_id,
+        user_id,
+        make,
+        model,
+        registration,
+        vin,
+        colour,
+        payroll_deduction_enabled,
+        payroll_deduction_reference,
+        created_at,
+        updated_at,
+        history:staff_vehicle_history(
+          history_id,
+          vehicle_id,
+          job_id,
+          description,
+          cost,
+          deduct_from_payroll,
+          recorded_at,
+          payroll_processed_at
+        )
+      `
+    )
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("❌ getStaffVehiclesWithHistory error", error);
+    throw error;
+  }
+
+  return (data || []).map(mapStaffVehicleRow);
+}
+
 // Helper that loads user names for any referenced IDs so we can resolve approvers and employees
 async function fetchUsersByIds(ids = []) {
   const uniqueIds = Array.from(new Set((ids || []).filter(Boolean)));
@@ -1120,6 +1184,7 @@ export async function getHrOperationsSnapshot() {
     leaveBalances,
     payRateHistory,
     performanceReviews,
+    staffVehicles,
   ] = await Promise.all([
     getHrAttendanceSnapshot(),
     getHrDashboardSnapshot(),
@@ -1128,6 +1193,7 @@ export async function getHrOperationsSnapshot() {
     getLeaveBalances(),
     getPayRateHistory(),
     getPerformanceReviews(),
+    getStaffVehiclesWithHistory(),
   ]);
 
   return {
@@ -1144,5 +1210,6 @@ export async function getHrOperationsSnapshot() {
     leaveRequests,
     leaveBalances,
     performanceReviews,
+    staffVehicles,
   };
 }
