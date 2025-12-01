@@ -2,12 +2,32 @@
 // file location: src/pages/job-cards/view/index.js
 "use client"; // enables client-side rendering for Next.js
 
-import React, { useState, useEffect } from "react"; // import React and hooks
-import Link from "next/link";
+import React, { useState, useEffect, useMemo } from "react"; // import React and hooks
 import Layout from "@/components/Layout"; // import layout wrapper
 import { useNextAction } from "@/context/NextActionContext"; // import next action context
 import { useRouter } from "next/router"; // for navigation
 import { getAllJobs, updateJobStatus } from "@/lib/database/jobs"; // import database functions
+
+const TODAY_STATUSES = [
+  "Booked",
+  "Checked In",
+  "Workshop/MOT",
+  "VHC Complete",
+  "VHC Sent",
+  "Additional Work Required",
+  "Additional Work Being Carried Out",
+  "Being Washed",
+  "Complete",
+];
+
+const CARRY_OVER_STATUSES = [
+  "Retail Parts on Order",
+  "Warranty Parts on Order",
+  "Raise TSR",
+  "Waiting for TSR Response",
+  "Warranty Quality Control",
+  "Warranty Ready to Claim",
+];
 
 /* ================================
    Utility function: today's date
@@ -20,13 +40,94 @@ const getTodayDate = () => {
   return `${yyyy}-${mm}-${dd}`; // return formatted date
 };
 
+const STATUS_GROUPS = {
+  today: TODAY_STATUSES,
+  carryOver: CARRY_OVER_STATUSES,
+};
+
+const normalizeString = (value) =>
+  typeof value === "string" ? value.trim().toLowerCase() : "";
+
+const formatCustomerStatusLabel = (value) => {
+  if (!value) return "Neither";
+  const normalized = normalizeString(value);
+  if (normalized.includes("loan")) return "Loan Car";
+  if (normalized.includes("collect")) return "Collection";
+  if (normalized.includes("wait")) return "Waiting";
+  return value;
+};
+
+const getJobDate = (job) => {
+  if (job?.appointment?.date) return job.appointment.date;
+  if (job?.createdAt) return job.createdAt.substring(0, 10);
+  return null;
+};
+
+const deriveJobType = (job) => {
+  if (Array.isArray(job?.jobCategories) && job.jobCategories.length > 0) {
+    if (job.jobCategories.some((type) => normalizeString(type).includes("mot")))
+      return "MOT";
+    if (
+      job.jobCategories.some((type) => normalizeString(type).includes("service"))
+    )
+      return "Service";
+    if (
+      job.jobCategories.some((type) =>
+        normalizeString(type).includes("diag")
+      )
+    )
+      return "Diagnose";
+  }
+  const baseType = normalizeString(job?.type);
+  if (baseType.includes("mot")) return "MOT";
+  if (baseType.includes("service")) return "Service";
+  if (baseType.includes("diag")) return "Diagnose";
+  return "Other";
+};
+
+const getRequestsCount = (requests) => {
+  if (!requests) return 0;
+  if (Array.isArray(requests)) return requests.length;
+  if (typeof requests === "object") return Object.keys(requests).length;
+  return 0;
+};
+
+const getStatusCounts = (jobs = []) => {
+  return jobs.reduce((acc, job) => {
+    const key = job.status || "Unknown";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+};
+
+const matchesSearchTerm = (job, value) => {
+  if (!value) return true;
+  const haystack = [
+    job.jobNumber,
+    job.reg,
+    job.customer,
+    job.makeModel,
+    job.waitingStatus,
+  ]
+    .filter(Boolean)
+    .map((entry) => entry.toLowerCase());
+  return haystack.some((entry) => entry.includes(value));
+};
+
 /* ================================
    Main component: ViewJobCards
 ================================ */
 export default function ViewJobCards() {
   const [jobs, setJobs] = useState([]); // store all jobs
   const [popupJob, setPopupJob] = useState(null); // store selected job for popup
-  const [searchTerms, setSearchTerms] = useState({}); // store search terms for each status
+  const [searchValues, setSearchValues] = useState({
+    today: "",
+    carryOver: "",
+  });
+  const [statusFilters, setStatusFilters] = useState({
+    today: new Set(TODAY_STATUSES),
+    carryOver: new Set(CARRY_OVER_STATUSES),
+  });
   const [activeTab, setActiveTab] = useState("today"); // track active tab
   const [loading, setLoading] = useState(true); // loading state
   const router = useRouter(); // router for navigation
@@ -92,290 +193,168 @@ export default function ViewJobCards() {
     }
   };
 
-  /* ----------------------------
-     Define status categories
-  ---------------------------- */
-  const tabs = {
-    today: [
-      "Booked",
-      "Checked In",
-      "Workshop/MOT",
-      "VHC Complete",
-      "VHC Sent",
-      "Additional Work Required",
-      "Additional Work Being Carried Out",
-      "Being Washed",
-      "Complete",
-    ],
-    carryOver: [
-      "Retail Parts on Order",
-      "Warranty Parts on Order",
-      "Raise TSR",
-      "Waiting for TSR Response",
-      "Warranty Quality Control",
-      "Warranty Ready to Claim",
-    ],
-  };
-
-  /* ----------------------------
-     Filter jobs by status/date
-  ---------------------------- */
-  const filterJobs = (status) => {
-    let filtered = jobs.filter((job) => job.status === status); // filter by status
-
-    // Only today's appointments in Booked
-    if (status === "Booked") {
-      filtered = filtered.filter(
-        (job) => job.appointment && job.appointment.date === today // filter by today's date
-      );
-    }
-
-    // Search filter - now includes more fields
-    if (searchTerms[status]) {
-      const term = searchTerms[status].toLowerCase(); // convert search term to lowercase
-      filtered = filtered.filter(
-        (job) =>
-          job.jobNumber.toLowerCase().includes(term) || // search by job number
-          job.customer.toLowerCase().includes(term) || // search by customer name
-          (job.reg && job.reg.toLowerCase().includes(term)) || // search by registration
-          (job.makeModel && job.makeModel.toLowerCase().includes(term)) || // ✅ search by make/model
-          (job.vin && job.vin.toLowerCase().includes(term)) // ✅ search by VIN
-      );
-    }
-
-    return filtered; // return filtered jobs
-  };
-
-  /* ----------------------------
-     Handle search field input
-  ---------------------------- */
-  const handleSearchChange = (status, value) => {
-    setSearchTerms({ ...searchTerms, [status]: value }); // update search term for specific status
-  };
-
-  /* ----------------------------
-     ✅ Get background color based on job source
-  ---------------------------- */
-  const getJobCardBackground = (job) => {
-    if (job.jobSource === "Warranty") {
-      return "linear-gradient(135deg, #fff5e6 0%, #ffe6cc 100%)"; // orange gradient for warranty
-    }
-    return "#ffffff"; // white for retail
-  };
-
-  /* ----------------------------
-     ✅ Get border color based on waiting status
-  ---------------------------- */
-  const getJobCardBorderColor = (job) => {
-    switch (job.waitingStatus) {
-      case "Waiting":
-        return "#ff4444"; // red for waiting
-      case "Loan Car":
-        return "#4488ff"; // blue for loan car
-      case "Collection":
-        return "#44ff88"; // green for collection
-      default:
-        return "#e0e0e0"; // default grey
-    }
-  };
-
-  /* ----------------------------
-     Render each job card box
-  ---------------------------- */
-  const renderJobCard = (job, fullView = false) => (
-    <div
-      key={job.jobNumber}
-      style={{
-        border: `2px solid ${getJobCardBorderColor(job)}`, // ✅ dynamic border based on waiting status
-        borderRadius: "12px", // rounded corners
-        padding: "12px", // inner padding
-        background: getJobCardBackground(job), // ✅ dynamic background based on job source
-        cursor: "pointer", // pointer cursor on hover
-        boxShadow: "0 2px 4px rgba(0,0,0,0.08)", // subtle shadow
-        transition: "all 0.2s", // smooth transition
-        marginBottom: "8px", // spacing between cards
-      }}
-      onClick={() => setPopupJob(job)} // open popup on click
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = "0 4px 8px rgba(209,0,0,0.15)"; // enhance shadow on hover
-        e.currentTarget.style.transform = "translateY(-2px)"; // lift effect
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.08)"; // reset shadow
-        e.currentTarget.style.transform = "translateY(0)"; // reset position
-      }}
-    >
-      {/* ✅ Job Source Badge */}
-      {job.jobSource === "Warranty" && (
-        <div style={{
-          position: "absolute",
-          top: "8px",
-          right: "8px",
-          backgroundColor: "#ff8800",
-          color: "white",
-          padding: "4px 8px",
-          borderRadius: "6px",
-          fontSize: "10px",
-          fontWeight: "600"
-        }}>
-          WARRANTY
-        </div>
-      )}
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-        <strong style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-          {job.jobNumber}
-        </strong>
-        <span style={{ fontSize: "12px", color: "#666" }}>
-          {job.customer.split(" ").slice(-1)} {/* show last name only */}
-        </span>
-      </div>
-      
-      <div style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>
-        {job.reg || "No Reg"} {/* show registration or placeholder */}
-      </div>
-
-      {/* ✅ Show make/model if available */}
-      {job.makeModel && (
-        <div style={{ fontSize: "12px", color: "#999", marginBottom: "4px" }}>
-          {job.makeModel}
-        </div>
-      )}
-      
-      {/* ✅ Show job categories as badges */}
-      {job.jobCategories && job.jobCategories.length > 0 && (
-        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginTop: "6px" }}>
-          {job.jobCategories.map((category, idx) => (
-            <span
-              key={idx}
-              style={{
-                backgroundColor: "#f0f0f0",
-                color: "#666",
-                padding: "2px 6px",
-                borderRadius: "4px",
-                fontSize: "10px",
-                fontWeight: "600"
-              }}
-            >
-              {category}
-            </span>
-          ))}
-        </div>
-      )}
-      
-      {fullView && (
-        <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #f0f0f0" }}>
-          <div style={{ fontSize: "13px", color: "#666", marginBottom: "6px" }}>
-            <strong>Customer:</strong> {job.customer}
-          </div>
-          <div style={{ fontSize: "13px", color: "#666", marginBottom: "6px" }}>
-            <strong>Reg:</strong> {job.reg}
-          </div>
-          {job.makeModel && (
-            <div style={{ fontSize: "13px", color: "#666", marginBottom: "6px" }}>
-              <strong>Vehicle:</strong> {job.makeModel}
-            </div>
-          )}
-          {/* ✅ Show waiting status */}
-          {job.waitingStatus && job.waitingStatus !== "Neither" && (
-            <div style={{ fontSize: "13px", color: "#666", marginBottom: "6px" }}>
-              <strong>Status:</strong> {job.waitingStatus}
-            </div>
-          )}
-          {/* ✅ Show requests if available */}
-          {job.requests && job.requests.length > 0 && (
-            <div style={{ fontSize: "12px", color: "#666", marginTop: "8px" }}>
-              <strong>Requests:</strong>
-              <ul style={{ margin: "4px 0 0 0", paddingLeft: "20px" }}>
-                {job.requests.slice(0, 2).map((req, idx) => (
-                  <li key={idx} style={{ marginBottom: "2px" }}>
-                    {req.text || req}
-                  </li>
-                ))}
-                {job.requests.length > 2 && (
-                  <li style={{ color: "#999", fontStyle: "italic" }}>
-                    +{job.requests.length - 2} more...
-                  </li>
-                )}
-              </ul>
-            </div>
-          )}
-          {job.appointment && (
-            <div style={{ fontSize: "13px", color: "#666", marginBottom: "6px" }}>
-              <strong>Appointment:</strong> {job.appointment.date} {job.appointment.time}
-            </div>
-          )}
-          {/* Display counts with badges */}
-          <div style={{ display: "flex", gap: "8px", marginTop: "12px", flexWrap: "wrap" }}>
-            <div style={{
-              backgroundColor: "#f0f9ff",
-              color: "#0369a1",
-              padding: "4px 10px",
-              borderRadius: "6px",
-              fontSize: "11px",
-              fontWeight: "600"
-            }}>
-              VHC: {job.vhcChecks?.length || 0}
-            </div>
-            <div style={{
-              backgroundColor: "#fef3c7",
-              color: "#92400e",
-              padding: "4px 10px",
-              borderRadius: "6px",
-              fontSize: "11px",
-              fontWeight: "600"
-            }}>
-              Parts: {job.partsRequests?.length || 0}
-            </div>
-            <div style={{
-              backgroundColor: "#f0fdf4",
-              color: "#166534",
-              padding: "4px 10px",
-              borderRadius: "6px",
-              fontSize: "11px",
-              fontWeight: "600"
-            }}>
-              Notes: {job.notes?.length || 0}
-            </div>
-            {/* ✅ NEW: Show files count */}
-            {job.files && job.files.length > 0 && (
-              <div style={{
-                backgroundColor: "#fef3f2",
-                color: "#991b1b",
-                padding: "4px 10px",
-                borderRadius: "6px",
-                fontSize: "11px",
-                fontWeight: "600"
-              }}>
-                Files: {job.files.length}
-              </div>
-            )}
-            {/* ✅ NEW: Show VHC required indicator */}
-            {job.vhcRequired && (
-              <div style={{
-                backgroundColor: "#ffe4e6",
-                color: "#be123c",
-                padding: "4px 10px",
-                borderRadius: "6px",
-                fontSize: "11px",
-                fontWeight: "600"
-              }}>
-                VHC REQUIRED
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+  const jobDateLookup = useMemo(
+    () =>
+      jobs.reduce((acc, job) => {
+        acc[job.id] = getJobDate(job);
+        return acc;
+      }, {}),
+    [jobs]
   );
 
-  /* ----------------------------
-     Grid layout styling
-  ---------------------------- */
-  const gridLayout =
-    activeTab === "today"
-      ? { gridTemplateColumns: "repeat(3, 1fr)", gridTemplateRows: "repeat(3, 1fr)" } // 3x3 grid for today
-      : { gridTemplateColumns: "repeat(2, 1fr)", gridTemplateRows: "repeat(3, 1fr)" }; // 2x3 grid for carry over
+  const todayJobs = useMemo(
+    () =>
+      jobs.filter((job) => {
+        const status = job.status || "";
+        const jobDate = jobDateLookup[job.id];
+        return jobDate === today && TODAY_STATUSES.includes(status);
+      }),
+    [jobs, today, jobDateLookup]
+  );
+
+  const carryOverJobs = useMemo(
+    () =>
+      jobs.filter((job) => {
+        const status = job.status || "";
+        const jobDate = jobDateLookup[job.id];
+        return jobDate !== today && CARRY_OVER_STATUSES.includes(status);
+      }),
+    [jobs, today, jobDateLookup]
+  );
+
+  const todayStatusCounts = useMemo(
+    () => getStatusCounts(todayJobs),
+    [todayJobs]
+  );
+  const carryStatusCounts = useMemo(
+    () => getStatusCounts(carryOverJobs),
+    [carryOverJobs]
+  );
+
+  const handleSearchValueChange = (tab, value) => {
+    setSearchValues((prev) => ({ ...prev, [tab]: value }));
+  };
+
+  const handleStatusToggle = (tab, status) => {
+    setStatusFilters((prev) => {
+      const nextSet = new Set(prev[tab]);
+      if (nextSet.has(status)) {
+        nextSet.delete(status);
+      } else {
+        nextSet.add(status);
+      }
+      return { ...prev, [tab]: nextSet };
+    });
+  };
+
+  const resetStatuses = (tab) => {
+    setStatusFilters((prev) => ({
+      ...prev,
+      [tab]: new Set(STATUS_GROUPS[tab]),
+    }));
+  };
+
+  const baseJobs = activeTab === "today" ? todayJobs : carryOverJobs;
+  const statusOptions = STATUS_GROUPS[activeTab];
+  const statusCounts =
+    activeTab === "today" ? todayStatusCounts : carryStatusCounts;
+  const activeStatuses = statusFilters[activeTab];
+  const searchValue = searchValues[activeTab]?.trim().toLowerCase() || "";
+
+  const filteredByStatus = baseJobs.filter((job) => {
+    if (statusOptions.length && !statusOptions.includes(job.status || "")) {
+      return false;
+    }
+    if (activeStatuses.size === 0) return true;
+    return activeStatuses.has(job.status);
+  });
+
+  const filteredJobs = searchValue
+    ? filteredByStatus.filter((job) => matchesSearchTerm(job, searchValue))
+    : filteredByStatus;
+
+  const getSortValue = (job) => {
+    if (job?.appointment?.date && job?.appointment?.time) {
+      return new Date(`${job.appointment.date}T${job.appointment.time}`);
+    }
+    if (job?.appointment?.date) {
+      return new Date(`${job.appointment.date}T00:00:00`);
+    }
+    if (job?.createdAt) {
+      return new Date(job.createdAt);
+    }
+    return new Date(0);
+  };
+
+  const sortedJobs = filteredJobs
+    .slice()
+    .sort((a, b) => getSortValue(a) - getSortValue(b));
+
+  const getAppointmentDisplay = (job) => {
+    if (job?.appointment?.date && job?.appointment?.time) {
+      return `${job.appointment.date} · ${job.appointment.time}`;
+    }
+    if (job?.appointment?.date) {
+      return job.appointment.date;
+    }
+    return "Not scheduled";
+  };
+
+  const renderVhcBadge = (job) => {
+    if (!job.vhcRequired) {
+      return (
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            fontSize: "12px",
+            color: "#9ca3af",
+          }}
+        >
+          <span
+            style={{
+              width: "10px",
+              height: "10px",
+              borderRadius: "50%",
+              backgroundColor: "#d1d5db",
+            }}
+          />
+          Not required
+        </span>
+      );
+    }
+    const completed = Boolean(job.vhcCompletedAt);
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "6px",
+          fontSize: "12px",
+          color: completed ? "#15803d" : "#b45309",
+        }}
+      >
+        <span
+          style={{
+            width: "10px",
+            height: "10px",
+            borderRadius: "50%",
+            backgroundColor: completed ? "#22c55e" : "#f97316",
+          }}
+        />
+        {completed ? "VHC complete" : "VHC pending"}
+      </span>
+    );
+  };
+
+  const combinedStatusOptions = useMemo(() => {
+    const union = new Set([...TODAY_STATUSES, ...CARRY_OVER_STATUSES]);
+    if (popupJob?.status) {
+      union.add(popupJob.status);
+    }
+    return Array.from(union);
+  }, [popupJob]);
 
   /* ================================
      Loading State
@@ -419,17 +398,18 @@ export default function ViewJobCards() {
         padding: "16px",
         overflow: "hidden" 
       }}>
-        {/* ✅ Header Section */}
-        <div style={{ 
-          display: "flex", 
-          justifyContent: "space-between", 
-          alignItems: "center",
-          marginBottom: "16px",
-          flexShrink: 0
-        }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "12px",
+            flexWrap: "wrap",
+          }}
+        >
           <div>
             <p style={{ fontSize: "14px", color: "#666", margin: 0 }}>
-              Total Jobs: {jobs.length} | Today: {filterJobs("Booked").length} Booked
+              Total Jobs: {jobs.length} · Today&apos;s Workload: {todayJobs.length} · Carry Over: {carryOverJobs.length}
             </p>
           </div>
           <button
@@ -443,174 +423,286 @@ export default function ViewJobCards() {
               cursor: "pointer",
               fontSize: "14px",
               fontWeight: "600",
-              transition: "background-color 0.2s"
+              transition: "background-color 0.2s",
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
-            onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#b00000")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#d10000")}
           >
             🔄 Refresh
           </button>
         </div>
 
-        {/* ✅ Tabs Navigation */}
         <div
           style={{
             display: "flex",
-            flexWrap: "wrap",
-            gap: "12px",
-            justifyContent: "flex-start",
-            alignItems: "center",
-            borderBottom: "2px solid #e0e0e0",
-            paddingBottom: "8px",
-            marginBottom: "16px",
+            borderRadius: "12px",
+            border: "1px solid #ffe0e0",
+            overflow: "hidden",
+            width: "fit-content",
+          }}
+        >
+          <button
+            onClick={() => setActiveTab("today")}
+            style={{
+              padding: "10px 24px",
+              border: "none",
+              backgroundColor: activeTab === "today" ? "#d10000" : "transparent",
+              color: activeTab === "today" ? "white" : "#7f1d1d",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "background-color 0.2s",
+            }}
+          >
+            Today&apos;s Workload
+          </button>
+          <button
+            onClick={() => setActiveTab("carryOver")}
+            style={{
+              padding: "10px 24px",
+              border: "none",
+              backgroundColor: activeTab === "carryOver" ? "#d10000" : "transparent",
+              color: activeTab === "carryOver" ? "white" : "#7f1d1d",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "background-color 0.2s",
+            }}
+          >
+            Carry Over
+          </button>
+        </div>
+
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            background: "white",
+            borderRadius: "20px",
+            border: "1px solid #f3f4f6",
+            boxShadow: "0 18px 40px rgba(15,23,42,0.08)",
+            padding: "20px",
+            minHeight: "0",
           }}
         >
           <div
             style={{
               display: "flex",
-              gap: "8px",
               flexWrap: "wrap",
-              flex: "1 1 auto",
-              minWidth: "240px",
+              gap: "12px",
+              alignItems: "center",
+              marginBottom: "16px",
             }}
           >
-            <button
-              onClick={() => setActiveTab("today")}
+            <input
+              type="text"
+              placeholder="Search job number, registration, or customer"
+              value={searchValues[activeTab]}
+              onChange={(event) =>
+                handleSearchValueChange(activeTab, event.target.value)
+              }
               style={{
-                padding: "12px 24px",
-                backgroundColor: activeTab === "today" ? "#d10000" : "transparent",
-                color: activeTab === "today" ? "white" : "#666",
-                border: "none",
-                borderBottom: activeTab === "today" ? "3px solid #d10000" : "3px solid transparent",
-                cursor: "pointer",
+                flex: "1 1 260px",
+                minWidth: "220px",
+                padding: "10px 14px",
+                borderRadius: "999px",
+                border: "1px solid #e5e7eb",
                 fontSize: "14px",
-                fontWeight: activeTab === "today" ? "600" : "500",
-                transition: "all 0.2s",
+                outline: "none",
+                boxShadow: "inset 0 1px 2px rgba(0,0,0,0.05)",
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => resetStatuses(activeTab)}
+              style={{
+                padding: "8px 14px",
+                borderRadius: "999px",
+                border: "1px solid #ffe0e0",
+                backgroundColor: "white",
+                color: "#b91c1c",
+                fontWeight: 600,
+                cursor: "pointer",
               }}
             >
-              Today&apos;s Workload
-            </button>
-            <button
-              onClick={() => setActiveTab("carryOver")}
-              style={{
-                padding: "12px 24px",
-                backgroundColor: activeTab === "carryOver" ? "#d10000" : "transparent",
-                color: activeTab === "carryOver" ? "white" : "#666",
-                border: "none",
-                borderBottom: activeTab === "carryOver" ? "3px solid #d10000" : "3px solid transparent",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: activeTab === "carryOver" ? "600" : "500",
-                transition: "all 0.2s",
-              }}
-            >
-              Carry Over
+              All statuses
             </button>
           </div>
-        </div>
 
-        {/* ✅ Job Sections Grid - Scrollable */}
-        <div
-          style={{
-            display: "grid",
-            gap: "16px",
-            ...gridLayout,
-            flex: 1,
-            overflow: "hidden"
-          }}
-        >
-          {tabs[activeTab].map((status) => {
-            const filteredJobs = filterJobs(status);
-            return (
-              <div
-                key={status}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "8px",
+              marginBottom: "12px",
+            }}
+          >
+            {statusOptions.map((status) => {
+              const count = statusCounts[status] || 0;
+              const isActive = activeStatuses.has(status);
+              return (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => handleStatusToggle(activeTab, status)}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "999px",
+                    border: isActive ? "1px solid #d10000" : "1px solid #e5e7eb",
+                    backgroundColor: isActive ? "#fff5f5" : "white",
+                    color: isActive ? "#b91c1c" : "#4b5563",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <span>{status}</span>
+                  <span
+                    style={{
+                      backgroundColor: isActive ? "#fee2e2" : "#f3f4f6",
+                      color: isActive ? "#b91c1c" : "#6b7280",
+                      borderRadius: "999px",
+                      padding: "0 8px",
+                      fontSize: "11px",
+                    }}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div
+            style={{
+              flex: 1,
+              overflow: "hidden",
+              borderRadius: "16px",
+              border: "1px solid #f1f5f9",
+            }}
+          >
+            <div style={{ overflowY: "auto", height: "100%" }}>
+              <table
                 style={{
-                  background: "white",
-                  borderRadius: "16px",
-                  padding: "20px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                  border: "1px solid #e0e0e0",
-                  display: "flex",
-                  flexDirection: "column",
-                  overflow: "hidden"
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: "13px",
                 }}
               >
-                {/* Section Header with Count */}
-                <div style={{ 
-                  display: "flex", 
-                  justifyContent: "space-between", 
-                  alignItems: "center",
-                  marginBottom: "12px",
-                  flexShrink: 0
-                }}>
-                  <h2 style={{ 
-                    fontSize: "16px", 
-                    fontWeight: "600", 
-                    color: "#1a1a1a",
-                    margin: 0
-                  }}>
-                    {status}
-                  </h2>
-                  <span style={{
-                    backgroundColor: "#f0f0f0",
-                    color: "#666",
-                    padding: "4px 10px",
-                    borderRadius: "12px",
-                    fontSize: "12px",
-                    fontWeight: "600"
-                  }}>
-                    {filteredJobs.length}
-                  </span>
-                </div>
-
-                {/* Search Input - Modern Design */}
-                <input
-                  type="text"
-                  placeholder="Search job, reg, vehicle..."
-                  value={searchTerms[status] || ""}
-                  onChange={(e) => handleSearchChange(status, e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    marginBottom: "12px",
-                    borderRadius: "8px",
-                    border: "1px solid #e0e0e0",
-                    fontSize: "13px",
-                    outline: "none",
-                    transition: "border-color 0.2s",
-                    flexShrink: 0
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "#d10000"}
-                  onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
-                />
-
-                {/* Job Cards - Scrollable Area */}
-                <div style={{ 
-                  flex: 1,
-                  overflowY: "auto",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
-                  position: "relative"
-                }}>
-                  {filteredJobs.length > 0 ? (
-                    filteredJobs.map((job) =>
-                      status === "Booked" ? renderJobCard(job, true) : renderJobCard(job)
-                    )
+                <thead>
+                  <tr
+                    style={{
+                      background: "#f8fafc",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                      fontSize: "11px",
+                      color: "#64748b",
+                    }}
+                  >
+                    {[
+                      "Job #",
+                      "Reg",
+                      "Customer",
+                      "Customer Status",
+                      "Job Type",
+                      "Status",
+                      "Appointment",
+                      "Requests",
+                      "VHC",
+                    ].map((header) => (
+                      <th
+                        key={header}
+                        style={{
+                          textAlign: "left",
+                          padding: "12px 16px",
+                          borderBottom: "1px solid #e2e8f0",
+                          position: "sticky",
+                          top: 0,
+                          background: "#f8fafc",
+                        }}
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedJobs.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={9}
+                        style={{
+                          padding: "32px",
+                          textAlign: "center",
+                          color: "#94a3b8",
+                        }}
+                      >
+                        {searchValue
+                          ? "No jobs match your search."
+                          : "No jobs in this status group."}
+                      </td>
+                    </tr>
                   ) : (
-                    <div style={{
-                      textAlign: "center",
-                      color: "#999",
-                      fontSize: "13px",
-                      padding: "20px"
-                    }}>
-                      No jobs found
-                    </div>
+                    sortedJobs.map((job) => (
+                      <tr
+                        key={job.jobNumber}
+                        onClick={() => setPopupJob(job)}
+                        style={{
+                          cursor: "pointer",
+                          transition: "background-color 0.15s",
+                        }}
+                        onMouseEnter={(event) => {
+                          event.currentTarget.style.backgroundColor = "#fff7ed";
+                        }}
+                        onMouseLeave={(event) => {
+                          event.currentTarget.style.backgroundColor = "transparent";
+                        }}
+                      >
+                        <td style={{ padding: "12px 16px", fontWeight: 600 }}>
+                          {job.jobNumber}
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "#475569" }}>
+                          {job.reg || "—"}
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "#111827" }}>
+                          {job.customer || "Unknown customer"}
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "#475569" }}>
+                          <span
+                            style={{
+                              padding: "4px 10px",
+                              borderRadius: "999px",
+                              backgroundColor: "#e0f2fe",
+                              color: "#0c4a6e",
+                              fontWeight: 600,
+                              fontSize: "12px",
+                            }}
+                          >
+                            {formatCustomerStatusLabel(job.waitingStatus)}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "#111827" }}>
+                          {deriveJobType(job)}
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "#111827" }}>
+                          {job.status || "Status pending"}
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "#475569" }}>
+                          {getAppointmentDisplay(job)}
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "#475569" }}>
+                          {getRequestsCount(job.requests)}
+                        </td>
+                        <td style={{ padding: "12px 16px" }}>{renderVhcBadge(job)}</td>
+                      </tr>
+                    ))
                   )}
-                </div>
-              </div>
-            );
-          })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         {/* ✅ Job Popup - Enhanced with all new fields */}
@@ -844,10 +936,10 @@ export default function ViewJobCards() {
                     borderRadius: "8px",
                     border: "1px solid #e0e0e0",
                     backgroundColor: "white",
-                    cursor: "pointer"
+                    cursor: "pointer",
                   }}
                 >
-                  {Object.values(tabs).flat().map((statusOption) => (
+                  {combinedStatusOptions.map((statusOption) => (
                     <option key={statusOption} value={statusOption}>
                       {statusOption}
                     </option>
