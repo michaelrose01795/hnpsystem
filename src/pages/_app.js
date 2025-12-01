@@ -10,6 +10,7 @@ import { JobsProvider, useJobs } from "@/context/JobsContext"; // import jobs co
 import { ClockingProvider } from "@/context/ClockingContext"; // import clocking context
 import { RosterProvider } from "@/context/RosterContext"; // import roster context
 import { getAllJobs } from "@/lib/database/jobs"; // database helper to seed jobs in context
+import { AlertProvider } from "@/context/AlertContext";
 
 function AppWrapper({ Component, pageProps }) {
   const { user } = useUser() || {}; // read logged in user
@@ -32,17 +33,19 @@ function AppWrapper({ Component, pageProps }) {
 export default function MyApp({ Component, pageProps }) {
   return (
     <SessionProvider session={pageProps.session}>
-      <UserProvider>
-        <NextActionProvider>
-          <JobsProvider>
-            <ClockingProvider>
-              <RosterProvider>
-                <AppWrapper Component={Component} pageProps={pageProps} />
-              </RosterProvider>
-            </ClockingProvider>
-          </JobsProvider>
-        </NextActionProvider>
-      </UserProvider>
+      <AlertProvider>
+        <UserProvider>
+          <NextActionProvider>
+            <JobsProvider>
+              <ClockingProvider>
+                <RosterProvider>
+                  <AppWrapper Component={Component} pageProps={pageProps} />
+                </RosterProvider>
+              </ClockingProvider>
+            </JobsProvider>
+          </NextActionProvider>
+        </UserProvider>
+      </AlertProvider>
     </SessionProvider>
   );
 }

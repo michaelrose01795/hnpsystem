@@ -11,6 +11,7 @@ import StatusSidebar from "@/components/StatusTracking/StatusSidebar"; // import
 import JobTimeline from "@/components/Timeline/JobTimeline";
 import Sidebar from "@/components/Sidebar";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
+import TopbarAlerts, { AlertBadge } from "@/components/TopbarAlerts";
 import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
 import { useRoster } from "@/context/RosterContext";
@@ -740,9 +741,11 @@ export default function Layout({ children, jobNumber }) {
                     minWidth: "180px",
                     width: "100%",
                     maxWidth: isMobile ? "100%" : "260px",
+                    position: "relative",
                   }}
                 >
                   <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />{/* expose global search with brand accent */}
+                  <AlertBadge />
                 </div>
 
                 <div
@@ -971,6 +974,7 @@ export default function Layout({ children, jobNumber }) {
       {isTech && (
         <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       )}
+      <TopbarAlerts />
     </div>
   );
 }
