@@ -564,6 +564,7 @@ export default function VHCDashboard() {
             const builderPayload = parseVhcBuilderPayload(checks); // extract technician VHC JSON blob
             const builderSummary = summariseTechnicianVhc(builderPayload); // summarise into dashboard sections
             const hasBuilderSections = builderSummary.sections.length > 0; // track whether we have technician data
+            const hasTechnicianData = hasBuilderSections || checks.length > 0;
 
             const legacyRedIssues = checks.filter((check) =>
               typeof check.section === "string" && check.section.toLowerCase().includes("brake"),
@@ -578,18 +579,29 @@ export default function VHCDashboard() {
               ? checks.length
               : partsCount; // number of cards/sections available for counter display
 
+            const workflowRequiresVhc = workflow?.vhcRequired;
+            if (workflowRequiresVhc === false) {
+              return null;
+            }
+
+            const workflowHasActivity = Boolean(
+              (workflow?.vhcChecksCount || 0) > 0 ||
+                workflow?.vhcSentAt ||
+                workflow?.lastSentAt ||
+                workflow?.authorizationCount ||
+                workflow?.declinationCount ||
+                workflow?.vhcCompletedAt,
+            );
+            const hasVhcState = hasTechnicianData || workflowHasActivity;
+            const meetsInclusionRule = Boolean(job.checkedInAt) || hasVhcState;
+
             const vhcStatus = deriveVhcDashboardStatus({
               job,
               workflow,
-              hasChecks: hasBuilderSections || checks.length > 0,
-              partsCount,
+              hasChecks: hasTechnicianData,
             }); // resolve dashboard status directly from workflow + job fields
 
-            const statusAllowed = VALID_VHC_STATUSES.includes(vhcStatus);
-            const meetsCheckInRule =
-              Boolean(job.checkedInAt) || vhcStatus !== "VHC not started";
-
-            if (!statusAllowed || !meetsCheckInRule) {
+            if (!vhcStatus || !VALID_VHC_STATUSES.includes(vhcStatus) || !meetsInclusionRule) {
               return null;
             }
 

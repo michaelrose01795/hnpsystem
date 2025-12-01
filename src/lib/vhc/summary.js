@@ -70,50 +70,81 @@ const OPTIONAL_SECTION_TITLES = {
 const normaliseWorkflowLabel = (value) => (value ? value.toString().trim().toLowerCase() : "");
 
 // ✅ Map raw job/workflow status into the dashboard-friendly buckets
-export const deriveVhcDashboardStatus = ({ job = {}, workflow = null, hasChecks = false, partsCount = 0 }) => {
+export const deriveVhcDashboardStatus = ({ job = {}, workflow = null, hasChecks = false }) => {
   const jobStatus = normaliseWorkflowLabel(job.status);
-  const waitingStatus = normaliseWorkflowLabel(job.waitingStatus);
   const workflowStatus = normaliseWorkflowLabel(workflow?.status);
   const vhcChecksCount = typeof workflow?.vhcChecksCount === "number" ? workflow.vhcChecksCount : 0;
-  const authorizationCount = typeof workflow?.authorizationCount === "number" ? workflow.authorizationCount : 0;
-  const declinationCount = typeof workflow?.declinationCount === "number" ? workflow.declinationCount : 0;
-  const hasSentTimestamp = Boolean(workflow?.vhcSentAt || workflow?.lastSentAt);
+  const jobCheckCount = Array.isArray(job.vhcChecks) ? job.vhcChecks.length : 0;
+  const authorizationCount = Number.isFinite(Number(workflow?.authorizationCount))
+    ? Number(workflow.authorizationCount)
+    : 0;
+  const declinationCount = Number.isFinite(Number(workflow?.declinationCount))
+    ? Number(workflow.declinationCount)
+    : 0;
+  const hasSentTimestamp = Boolean(workflow?.vhcSentAt || workflow?.lastSentAt || job.vhcSentAt);
+  const completedAt = workflow?.vhcCompletedAt || job.vhcCompletedAt;
 
   const statusIncludes = (source, terms = []) => terms.some((term) => source.includes(term));
 
-  if (workflow?.vhcCompletedAt || statusIncludes(workflowStatus, ["vhc complete"]) || statusIncludes(jobStatus, ["vhc complete"]) || jobStatus === "complete") {
+  const mapWorkflowStatus = (label) => {
+    if (!label) return null;
+    if (statusIncludes(label, ["vhc_complete", "vhc completed", "vhccomplete", "complete"])) {
+      return "Completed";
+    }
+    if (statusIncludes(label, ["vhc_declined", "vhc declined"])) {
+      return "Declined";
+    }
+    if (statusIncludes(label, ["vhc_approved", "vhc approved"])) {
+      return "Approved";
+    }
+    if (statusIncludes(label, ["waiting_for_parts", "waiting for parts", "vhc_waiting"])) {
+      return "Waiting for parts";
+    }
+    if (
+      statusIncludes(label, ["vhc_sent_to_customer", "vhc sent to customer", "vhc_sent", "vhc sent"]) ||
+      statusIncludes(label, ["sent_to_customer"])
+    ) {
+      return "Sent to customer";
+    }
+    if (statusIncludes(label, ["awaiting approval", "awaiting_authorization"])) {
+      return "Awaiting approval";
+    }
+    if (
+      statusIncludes(label, ["vhc_in_progress", "vhc sent to service", "vhc_sent_to_service", "vhc_priced", "vhc priced"]) ||
+      statusIncludes(label, ["vhc"])
+    ) {
+      return "In progress";
+    }
+    return null;
+  };
+
+  if (completedAt) {
     return "Completed";
   }
 
-  if (declinationCount > 0 || statusIncludes(workflowStatus, ["declin"]) || statusIncludes(jobStatus, ["declin"])) {
+  const mappedWorkflowStatus = mapWorkflowStatus(workflowStatus);
+  if (mappedWorkflowStatus) {
+    return mappedWorkflowStatus;
+  }
+
+  if (declinationCount > 0) {
     return "Declined";
   }
 
-  if (authorizationCount > 0 || statusIncludes(workflowStatus, ["approv"]) || statusIncludes(jobStatus, ["approv"])) {
+  if (authorizationCount > 0) {
     return "Approved";
   }
 
-  if (
-    statusIncludes(workflowStatus, ["waiting_for_parts", "waiting for parts"]) ||
-    statusIncludes(jobStatus, ["waiting_for_parts", "waiting for parts"]) ||
-    statusIncludes(waitingStatus, ["waiting for parts", "waiting"])
-  ) {
-    return "Waiting for parts";
-  }
-
-  if (statusIncludes(workflowStatus, ["vhc_sent", "vhc sent", "sent to customer"]) || statusIncludes(jobStatus, ["vhc_sent", "vhc sent", "sent to customer"])) {
-    return "Sent to customer";
+  const mappedJobStatus = mapWorkflowStatus(jobStatus);
+  if (mappedJobStatus) {
+    return mappedJobStatus;
   }
 
   if (hasSentTimestamp) {
     return "Awaiting approval";
   }
 
-  if (statusIncludes(workflowStatus, ["awaiting approval", "awaiting_authorization"]) || statusIncludes(jobStatus, ["awaiting approval", "awaiting_authorization"])) {
-    return "Awaiting approval";
-  }
-
-  if (statusIncludes(workflowStatus, ["vhc"]) || statusIncludes(jobStatus, ["vhc"]) || vhcChecksCount > 0 || hasChecks) {
+  if (vhcChecksCount > 0 || jobCheckCount > 0 || hasChecks) {
     return "In progress";
   }
 
@@ -121,11 +152,7 @@ export const deriveVhcDashboardStatus = ({ job = {}, workflow = null, hasChecks 
     return "VHC not started";
   }
 
-  if (partsCount > 0) {
-    return "Waiting for parts";
-  }
-
-  return "VHC not started";
+  return null;
 };
 
 // ✅ Normalise an incoming status string to a consistent label

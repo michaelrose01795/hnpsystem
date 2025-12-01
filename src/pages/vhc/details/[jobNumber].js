@@ -1,1155 +1,545 @@
-// file location: src/pages/vhc/details/[jobNumber].js
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
+import { supabase } from "@/lib/supabaseClient";
+import { summarizePartsPipeline } from "@/lib/partsPipeline";
 import { getJobByNumberOrReg } from "@/lib/database/jobs";
 import { getVhcWorkflowStatus } from "@/lib/database/vhc";
 import {
   STATUS_COLORS,
+  computeSeverityTotals,
   deriveVhcDashboardStatus,
   parseVhcBuilderPayload,
   summariseTechnicianVhc,
 } from "@/lib/vhc/summary";
 
-const ITEM_STATUS_COLORS = {
-  Red: { background: "rgba(239,68,68,0.16)", color: "#ef4444", border: "rgba(239,68,68,0.28)" },
-  Amber: { background: "rgba(245,158,11,0.16)", color: "#b45309", border: "rgba(245,158,11,0.28)" },
-  Green: { background: "rgba(16,185,129,0.16)", color: "#059669", border: "rgba(16,185,129,0.28)" },
-  Neutral: { background: "rgba(107,114,128,0.16)", color: "#374151", border: "rgba(107,114,128,0.28)" },
-};
+const VAT_RATE = 0.2;
+const EMPTY_SUMMARY = { sections: [], itemCount: 0 };
 
-const CONCERN_STATUS_COLORS = {
-  Red: "#ef4444",
-  Amber: "#b45309",
-  Green: "#059669",
-  Grey: "#6b7280",
+const formatMoney = (value = 0) => {
+  const numeric = Number.parseFloat(value || 0);
+  if (!Number.isFinite(numeric)) {
+    return "0.00";
+  }
+  return numeric.toFixed(2);
 };
 
 const formatDateTime = (value) => {
   if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return parsed.toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
-const buildBadgeStyle = (status) => {
-  const palette = ITEM_STATUS_COLORS[status] || ITEM_STATUS_COLORS.Neutral;
-  return {
-    backgroundColor: palette.background,
-    color: palette.color,
-    border: `1px solid ${palette.border}`,
-    borderRadius: "999px",
-    fontSize: "11px",
-    fontWeight: 600,
-    padding: "2px 10px",
-    letterSpacing: "0.3px",
-  };
+const sumAuthorizedItems = (items) => {
+  if (!Array.isArray(items)) return 0;
+  return items.reduce((sum, entry) => {
+    if (!entry) return sum;
+    const amount = Number.parseFloat(
+      entry.amount ??
+        entry.total ??
+        entry.value ??
+        entry.price ??
+        entry.cost ??
+        (typeof entry === "number" ? entry : 0),
+    );
+    if (!Number.isFinite(amount)) {
+      return sum;
+    }
+    return sum + amount;
+  }, 0);
 };
 
-const getConcernColor = (status) => CONCERN_STATUS_COLORS[status] || CONCERN_STATUS_COLORS.Grey;
+const Badge = ({ label, color }) => (
+  <span
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "4px 12px",
+      borderRadius: "999px",
+      fontSize: "12px",
+      fontWeight: 600,
+      color: "#fff",
+      backgroundColor: color || "#9ca3af",
+      textTransform: "capitalize",
+    }}
+  >
+    {label}
+  </span>
+);
 
-const formatMeasurementList = (value) => {
-  if (value === null || value === undefined) return null;
-  const segments = Array.isArray(value) ? value : value.toString().split(/[, ]+/);
-  const cleaned = segments
-    .map((segment) => segment.toString().trim())
-    .filter((segment) => segment !== "")
-    .map((segment) => (segment.endsWith("mm") ? segment : `${segment}mm`));
-  return cleaned.length > 0 ? cleaned.join(" / ") : null;
-};
-
-const formatMileage = (mileage) => {
-  if (mileage === null || mileage === undefined) return null;
-  const numeric = Number(mileage);
-  if (Number.isNaN(numeric)) return null;
-  return `${numeric.toLocaleString()} mi`;
-};
-
-const tallyConcerns = (concerns = []) =>
-  concerns.reduce(
-    (acc, concern) => {
-      const status = (concern?.status || "").toLowerCase();
-      if (status.startsWith("red")) acc.red += 1;
-      else if (status.startsWith("amber") || status.startsWith("yellow")) acc.amber += 1;
-      else if (status.startsWith("grey") || status.startsWith("gray")) acc.grey += 1;
-      return acc;
-    },
-    { red: 0, amber: 0, grey: 0 },
-  );
-
-export default function VhcDetailsPage() {
+export default function VHCDetailedView() {
   const router = useRouter();
   const { jobNumber } = router.query;
-  const [loading, setLoading] = useState(true);
-  const [jobData, setJobData] = useState(null);
-  const [vhcSummary, setVhcSummary] = useState({ sections: [], totals: { total: 0, red: 0, amber: 0, grey: 0 } });
-  const [vhcBuilderData, setVhcBuilderData] = useState(null);
+
+  const [job, setJob] = useState(null);
   const [workflow, setWorkflow] = useState(null);
+  const [builderSummary, setBuilderSummary] = useState(EMPTY_SUMMARY);
+  const [severityTotals, setSeverityTotals] = useState({ red: 0, amber: 0, grey: 0 });
   const [vhcStatus, setVhcStatus] = useState("VHC not started");
+  const [partsItems, setPartsItems] = useState([]);
+  const [authorizedValue, setAuthorizedValue] = useState(0);
+  const [declinedCount, setDeclinedCount] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!jobNumber) return;
+    let cancelled = false;
 
-    const loadData = async () => {
+    const fetchPartsForJob = async (jobId) => {
+      const { data, error: partsError } = await supabase
+        .from("parts_job_items")
+        .select(
+          `
+            id,
+            status,
+            quantity_requested,
+            quantity_allocated,
+            quantity_fitted,
+            part:part_id(id, part_number, name)
+          `,
+        )
+        .eq("job_id", jobId);
+
+      if (partsError) {
+        console.error("❌ Failed to load parts for VHC detail", partsError);
+        return;
+      }
+
+      if (cancelled) return;
+
+      const mapped = (data || []).map((row) => ({
+        id: row.id,
+        status: row.status,
+        quantity: row.quantity_requested || row.quantity_allocated || row.quantity_fitted || 1,
+        partName: row.part?.name || "Part",
+        partNumber: row.part?.part_number || "",
+      }));
+
+      setPartsItems(mapped);
+    };
+
+    const fetchFinancialsForJob = async (jobId) => {
+      const [authResponse, declineResponse] = await Promise.all([
+        supabase.from("vhc_authorizations").select("authorized_items").eq("job_id", jobId),
+        supabase.from("vhc_declinations").select("id").eq("job_id", jobId),
+      ]);
+
+      if (authResponse.error) {
+        console.error("❌ Failed to load VHC authorizations", authResponse.error);
+      }
+      if (declineResponse.error) {
+        console.error("❌ Failed to load VHC declinations", declineResponse.error);
+      }
+      if (cancelled) return;
+
+      const authorizedNet = (authResponse.data || []).reduce(
+        (sum, row) => sum + sumAuthorizedItems(row?.authorized_items),
+        0,
+      );
+      setAuthorizedValue(authorizedNet);
+      setDeclinedCount((declineResponse.data || []).length);
+    };
+
+    const loadJob = async () => {
       setLoading(true);
       setError(null);
-
       try {
-        const job = await getJobByNumberOrReg(jobNumber);
-        if (!job) {
-          setError("Job not found. Please verify the job number.");
-          setLoading(false);
+        const jobRecord = await getJobByNumberOrReg(jobNumber);
+        if (cancelled) return;
+
+        if (!jobRecord) {
+          setJob(null);
+          setError("Job not found.");
           return;
         }
 
-        if (job.vhcRequired !== true) {
-          setError("This job was not flagged for a Vehicle Health Check.");
-          setJobData(job);
-          setLoading(false);
-          return;
-        }
+        setJob(jobRecord);
 
-        const workflowRow = job.id ? await getVhcWorkflowStatus(job.id) : null;
-        const builderPayload = parseVhcBuilderPayload(job.vhcChecks);
-        const summary = summariseTechnicianVhc(builderPayload);
-        const partsCount = (job.partsRequests?.length || 0) + (job.partsAllocations?.length || 0);
+        const builderPayload = parseVhcBuilderPayload(jobRecord.vhcChecks || []);
+        const summary = summariseTechnicianVhc(builderPayload) || EMPTY_SUMMARY;
+        setBuilderSummary(summary);
+        setSeverityTotals(
+          computeSeverityTotals({
+            builderSummary: summary,
+            checks: jobRecord.vhcChecks || [],
+          }),
+        );
 
-        const vhcState = deriveVhcDashboardStatus({
-          job,
-          workflow: workflowRow,
-          hasChecks: summary.itemCount > 0,
-          partsCount,
+        const workflowRow = await getVhcWorkflowStatus(jobRecord.id).catch((workflowError) => {
+          console.error("❌ Failed to fetch VHC workflow status", workflowError);
+          return null;
         });
 
-        setJobData(job);
+        if (cancelled) return;
+
         setWorkflow(workflowRow);
-        setVhcSummary(summary);
-        setVhcBuilderData(builderPayload);
-        setVhcStatus(vhcState);
+        const resolvedStatus = deriveVhcDashboardStatus({
+          job: jobRecord,
+          workflow: workflowRow,
+          hasChecks: summary.sections.length > 0,
+        });
+        if (resolvedStatus) {
+          setVhcStatus(resolvedStatus);
+        } else if (!jobRecord.vhcRequired) {
+          setVhcStatus("Not required");
+        } else {
+          setVhcStatus("VHC not started");
+        }
+
+        await Promise.all([fetchPartsForJob(jobRecord.id), fetchFinancialsForJob(jobRecord.id)]);
       } catch (err) {
-        console.error("❌ Failed to load VHC details:", err);
-        setError("We couldn't load this VHC. Please try again.");
+        if (!cancelled) {
+          console.error("❌ Failed to load VHC details", err);
+          setError(err.message || "Failed to load VHC details.");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    loadData();
+    loadJob();
+
+    return () => {
+      cancelled = true;
+    };
   }, [jobNumber]);
 
-  const timelineEvents = useMemo(() => {
-    if (!jobData) return [];
-    const events = [];
+  const partsPipelineSummary = useMemo(
+    () =>
+      summarizePartsPipeline(partsItems, {
+        quantityField: (part) => part.quantity || 1,
+      }),
+    [partsItems],
+  );
 
-    if (jobData.checkedInAt) {
-      events.push({ label: "Checked in", value: jobData.checkedInAt });
-    }
-    if (workflow?.vhcSentAt || workflow?.lastSentAt) {
-      events.push({ label: "VHC sent to customer", value: workflow?.vhcSentAt || workflow?.lastSentAt });
-    }
-    if (jobData.vhcCompletedAt || workflow?.vhcCompletedAt) {
-      events.push({ label: "VHC completed", value: jobData.vhcCompletedAt || workflow?.vhcCompletedAt });
-    }
-    if (jobData.completedAt) {
-      events.push({ label: "Job completed", value: jobData.completedAt });
-    }
-
-    return events;
-  }, [jobData, workflow]);
+  const statusColor = STATUS_COLORS[vhcStatus] || "#9ca3af";
+  const totalChecksLogged = builderSummary?.itemCount || 0;
+  const sections = builderSummary?.sections || [];
+  const authorizedGross = authorizedValue * (1 + VAT_RATE);
 
   if (loading) {
     return (
       <Layout>
-        <div style={{ padding: "24px", color: "#6b7280" }}>Loading VHC details…</div>
+        <div
+          style={{
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "16px",
+            color: "#4b5563",
+          }}
+        >
+          Loading VHC details…
+        </div>
       </Layout>
     );
   }
 
-  if (error) {
+  if (error || !job) {
     return (
       <Layout>
-        <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
-          <p style={{ color: "#ef4444", fontWeight: 600 }}>{error}</p>
+        <div
+          style={{
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "12px",
+            color: "#b91c1c",
+            fontSize: "16px",
+          }}
+        >
+          <p>{error || "Unable to load that job."}</p>
           <button
-            type="button"
             onClick={() => router.push("/vhc/dashboard")}
             style={{
-              alignSelf: "flex-start",
-              padding: "10px 14px",
-              borderRadius: "10px",
-              border: "1px solid #e5e7eb",
+              padding: "10px 18px",
+              borderRadius: "8px",
+              border: "1px solid #ef4444",
               background: "#fff",
-              fontWeight: 600,
+              color: "#b91c1c",
               cursor: "pointer",
+              fontWeight: 600,
             }}
           >
-            Back to VHC dashboard
+            Back to VHC Dashboard
           </button>
         </div>
       </Layout>
     );
   }
-
-  if (!jobData) {
-    return (
-      <Layout>
-        <div style={{ padding: "24px" }}>Unable to find the requested job.</div>
-      </Layout>
-    );
-  }
-
-  const { sections, totals } = vhcSummary;
-  const statusColor = STATUS_COLORS[vhcStatus] || "#9ca3af";
-
-  const renderBadgeRow = (stats) => (
-    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-      {stats.red > 0 ? (
-        <span style={{ ...buildBadgeStyle("Red"), fontSize: "10px" }}>
-          {stats.red} Red
-        </span>
-      ) : null}
-      {stats.amber > 0 ? (
-        <span style={{ ...buildBadgeStyle("Amber"), fontSize: "10px" }}>
-          {stats.amber} Amber
-        </span>
-      ) : null}
-      {stats.grey > 0 ? (
-        <span style={{ ...buildBadgeStyle("Neutral"), fontSize: "10px" }}>
-          {stats.grey} Grey
-        </span>
-      ) : null}
-    </div>
-  );
-
-  const renderConcernsList = (concerns) => {
-    if (!Array.isArray(concerns) || concerns.length === 0) return null;
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-        {concerns.map((concern, concernIdx) => (
-          <div
-            key={`concern-${concernIdx}-${concern?.text || concernIdx}`}
-            style={{ display: "flex", gap: "6px", alignItems: "flex-start" }}
-          >
-            <span style={{ fontSize: "10px", color: "#d1d5db", lineHeight: "18px" }}>•</span>
-            <span style={{ fontSize: "12px", color: "#4b5563" }}>
-              <span style={{ fontWeight: "600", color: getConcernColor(concern?.status) }}>
-                {concern?.status || "Note"}:
-              </span>{" "}
-              {concern?.text || "No description provided"}
-            </span>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-const renderTyreSection = () => {
-  const tyres = vhcBuilderData?.wheelsTyres;
-    const wheelOrder = [
-      ["NSF", "Nearside Front"],
-      ["OSF", "Offside Front"],
-      ["NSR", "Nearside Rear"],
-      ["OSR", "Offside Rear"],
-    ];
-
-    const cards = wheelOrder
-      .map(([key, label]) => {
-        const tyre = tyres && typeof tyres === "object" ? tyres[key] : null;
-        if (!tyre || typeof tyre !== "object") return null;
-        const rows = [];
-        if (tyre.manufacturer) rows.push(`Manufacturer: ${tyre.manufacturer}`);
-        if (tyre.size) rows.push(`Size: ${tyre.size}`);
-        const loadSpeed = [];
-        if (tyre.load) loadSpeed.push(`Load ${tyre.load}`);
-        if (tyre.speed) loadSpeed.push(`Speed ${tyre.speed}`);
-        if (loadSpeed.length > 0) rows.push(loadSpeed.join(" • "));
-        if (typeof tyre.runFlat === "boolean") {
-          rows.push(`Run flat: ${tyre.runFlat ? "Yes" : "No"}`);
-        }
-        const treadValues = tyre.tread || {};
-        const treadSegments = ["outer", "middle", "inner"]
-          .map((segment) => {
-            const reading = treadValues[segment];
-            if (reading === null || reading === undefined || reading === "") return null;
-            return `${segment.charAt(0).toUpperCase() + segment.slice(1)}: ${reading}${
-              reading.toString().endsWith("mm") ? "" : "mm"
-            }`;
-          })
-          .filter(Boolean);
-        if (treadSegments.length > 0) rows.push(treadSegments.join(" • "));
-        const concerns = Array.isArray(tyre.concerns) ? tyre.concerns : [];
-        const concernCounts = tallyConcerns(concerns);
-        return (
-          <div
-            key={key}
-            style={{
-              border: "1px solid #f3f4f6",
-              borderRadius: "10px",
-              padding: "12px",
-              backgroundColor: "#fff",
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: "13px", fontWeight: 600 }}>{label}</span>
-              {concerns.length > 0 ? renderBadgeRow(concernCounts) : null}
-            </div>
-            {rows.map((row) => (
-              <span key={`${key}-${row}`} style={{ fontSize: "12px", color: "#4b5563" }}>
-                {row}
-              </span>
-            ))}
-            {renderConcernsList(concerns)}
-          </div>
-        );
-      })
-      .filter(Boolean);
-
-    const spare = (() => {
-      const entry = tyres.Spare;
-      if (!entry || typeof entry !== "object") return null;
-      const tread = entry.details?.tread || entry.tread || {};
-      const depthLine = ["outer", "middle", "inner"]
-        .map((segment) => {
-          const value = tread[segment];
-          if (value === null || value === undefined || value === "") return null;
-          const pretty = value.toString().endsWith("mm") ? value : `${value}mm`;
-          return `${segment.charAt(0).toUpperCase() + segment.slice(1)} ${pretty}`;
-        })
-        .filter(Boolean)
-        .join(" • ");
-      return (
-        <div
-          key="tyre-summary-spare"
-          style={{
-            border: "1px solid #f3f4f6",
-            borderRadius: "10px",
-            padding: "12px",
-            backgroundColor: "#fff",
-            display: "flex",
-            flexDirection: "column",
-            gap: "6px",
-          }}
-        >
-          <span style={{ fontSize: "13px", fontWeight: 600 }}>Spare / Repair Kit</span>
-          <span style={{ fontSize: "12px", color: "#4b5563" }}>Type: {entry.type || "—"}</span>
-          <span style={{ fontSize: "12px", color: "#4b5563" }}>Condition: {entry.condition || "—"}</span>
-          {entry.details?.manufacturer ? (
-            <span style={{ fontSize: "12px", color: "#4b5563" }}>Make: {entry.details.manufacturer}</span>
-          ) : null}
-          {entry.details?.size ? (
-            <span style={{ fontSize: "12px", color: "#4b5563" }}>Size: {entry.details.size}</span>
-          ) : null}
-          {depthLine ? (
-            <span style={{ fontSize: "12px", color: "#374151" }}>Depths: {depthLine}</span>
-          ) : (
-            <span style={{ fontSize: "12px", color: "#9ca3af" }}>Depths not recorded</span>
-          )}
-        </div>
-      );
-    })();
-
-    if (spare) {
-      cards.push(spare);
-    }
-
-    const spareDetails = (() => {
-      if (!tyres || typeof tyres !== "object") return null;
-      const entry = tyres.Spare;
-      if (!entry || typeof entry !== "object") return null;
-      const rows = [];
-      const concerns = Array.isArray(entry.concerns) ? entry.concerns : [];
-      const counts = tallyConcerns(concerns);
-      if (entry.type) rows.push(`Type: ${entry.type}`);
-      if (entry.condition) rows.push(`Condition: ${entry.condition}`);
-      if (entry.month && entry.year) {
-        rows.push(`Manufactured: ${String(entry.month).padStart(2, "0")}/${entry.year}`);
-      }
-      if (entry.note) rows.push(`Notes: ${entry.note}`);
-      const details = entry.details || {};
-      if (details.manufacturer) rows.push(`Manufacturer: ${details.manufacturer}`);
-      if (details.size) rows.push(`Size: ${details.size}`);
-      return (
-        <div
-          key="spare"
-          style={{
-            border: "1px solid #f3f4f6",
-            borderRadius: "10px",
-            padding: "12px",
-            backgroundColor: "#fff",
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "13px", fontWeight: 600 }}>Spare / Repair Kit</span>
-            {concerns.length > 0 ? renderBadgeRow(counts) : null}
-          </div>
-          {rows.map((row) => (
-            <span key={`spare-${row}`} style={{ fontSize: "12px", color: "#4b5563" }}>
-              {row}
-            </span>
-          ))}
-          {renderConcernsList(concerns)}
-        </div>
-      );
-    })();
-
-    if (spareDetails) {
-      cards.push(spareDetails);
-    }
-
-    if (cards.length === 0) {
-      return (
-        <section
-          style={{
-            border: "1px solid #f3f4f6",
-            borderRadius: "12px",
-            padding: "16px",
-            backgroundColor: "#fff",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-          }}
-        >
-          <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>Wheels & Tyres</h3>
-              <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>Measurements and tread readings captured by technician.</p>
-            </div>
-          </header>
-          <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>No tyre data recorded yet.</p>
-        </section>
-      );
-    }
-
-    return (
-      <section
-        style={{
-          border: "1px solid #f3f4f6",
-          borderRadius: "12px",
-          padding: "16px",
-          backgroundColor: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-        }}
-      >
-        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>Wheels & Tyres</h3>
-            <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>Measurements and tread readings captured by technician.</p>
-          </div>
-        </header>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
-          {cards}
-        </div>
-      </section>
-    );
-  };
-
-  const renderBrakesSection = () => {
-    const brakes = vhcBuilderData?.brakesHubs;
-    const rows = [];
-
-    const appendPad = (key, label) => {
-      const pad = brakes?.[key];
-      if (!pad || typeof pad !== "object") return;
-      const measurement = formatMeasurementList(pad.measurement);
-      const padRows = [];
-      if (measurement) padRows.push(`Measurements: ${measurement}`);
-      if (pad.status) padRows.push(`Status: ${pad.status}`);
-      rows.push({
-        key,
-        heading: label,
-        rows: padRows,
-        concerns: Array.isArray(pad.concerns) ? pad.concerns : [],
-      });
-    };
-
-    const appendDisc = (key, label) => {
-      const disc = brakes?.[key];
-      if (!disc || typeof disc !== "object") return;
-      const measurement = formatMeasurementList(disc.measurements?.values || disc.measurements?.thickness);
-      const discRows = [];
-      if (measurement) discRows.push(`Thickness: ${measurement}`);
-      if (disc.measurements?.status) discRows.push(`Measurement check: ${disc.measurements.status}`);
-      if (disc.visual?.status) discRows.push(`Visual check: ${disc.visual.status}`);
-      const notes = disc.visual?.notes || disc.visual?.note;
-      if (notes) discRows.push(`Notes: ${notes}`);
-      rows.push({
-        key,
-        heading: label,
-        rows: discRows,
-        concerns: Array.isArray(disc.concerns) ? disc.concerns : [],
-      });
-    };
-
-    appendPad("frontPads", "Front Pads");
-    appendPad("rearPads", "Rear Pads");
-    appendDisc("frontDiscs", "Front Discs");
-    appendDisc("rearDiscs", "Rear Discs");
-
-    const drum = brakes?.rearDrums;
-    if (drum && typeof drum === "object") {
-      const drumRows = [];
-      if (drum.status) drumRows.push(`Status: ${drum.status}`);
-      rows.push({
-        key: "rearDrums",
-        heading: "Rear Drums",
-        rows: drumRows,
-        concerns: Array.isArray(drum.concerns) ? drum.concerns : [],
-      });
-    }
-
-    if (rows.length === 0) {
-      return (
-        <section
-          style={{
-            border: "1px solid #f3f4f6",
-            borderRadius: "12px",
-            padding: "16px",
-            backgroundColor: "#fff",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-          }}
-        >
-          <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>Brakes & Hubs</h3>
-              <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>Measurements and visual inspections captured in the workshop.</p>
-            </div>
-          </header>
-          <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>No brake data recorded yet.</p>
-        </section>
-      );
-    }
-
-    return (
-      <section
-        style={{
-          border: "1px solid #f3f4f6",
-          borderRadius: "12px",
-          padding: "16px",
-          backgroundColor: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-        }}
-      >
-        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>Brakes & Hubs</h3>
-            <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>Measurements and visual inspections captured in the workshop.</p>
-          </div>
-        </header>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
-          {rows.map((entry) => (
-            <div
-              key={entry.key}
-              style={{
-                border: "1px solid #f3f4f6",
-                borderRadius: "10px",
-                padding: "12px",
-                backgroundColor: "#fff",
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-              }}
-            >
-              <span style={{ fontSize: "13px", fontWeight: 600 }}>{entry.heading}</span>
-              {entry.rows.map((line) => (
-                <span key={`${entry.key}-${line}`} style={{ fontSize: "12px", color: "#4b5563" }}>
-                  {line}
-                </span>
-              ))}
-              {renderConcernsList(entry.concerns)}
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  };
-
-const renderServiceSection = () => {
-    const serviceEntries = Array.isArray(vhcBuilderData?.serviceIndicator) ? vhcBuilderData.serviceIndicator : [];
-    if (serviceEntries.length === 0) {
-      return (
-        <section
-          style={{
-            border: "1px solid #f3f4f6",
-            borderRadius: "12px",
-            padding: "16px",
-            backgroundColor: "#fff",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-          }}
-        >
-          <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>Service Indicator & Under Bonnet</h3>
-              <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>Technician responses to service reminder and fluid checks.</p>
-            </div>
-          </header>
-          <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>No service indicator data recorded yet.</p>
-        </section>
-      );
-    }
-    return (
-      <section
-        style={{
-          border: "1px solid #f3f4f6",
-          borderRadius: "12px",
-          padding: "16px",
-          backgroundColor: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-        }}
-      >
-        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>Service Indicator & Under Bonnet</h3>
-            <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>Technician responses to service reminder and fluid checks.</p>
-          </div>
-        </header>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
-          {serviceEntries.map((entry, idx) => {
-            const rows = [];
-            if (entry.serviceChoice) rows.push(`Service choice: ${entry.serviceChoice}`);
-            if (entry.oilLevel) rows.push(`Oil level: ${entry.oilLevel}`);
-            if (entry.oilCondition) rows.push(`Oil condition: ${entry.oilCondition}`);
-            if (entry.notes) rows.push(entry.notes);
-            return (
-              <div
-                key={`service-${idx}`}
-                style={{
-                  border: "1px solid #f3f4f6",
-                  borderRadius: "10px",
-                  padding: "12px",
-                  backgroundColor: "#fff",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
-                }}
-              >
-                <span style={{ fontSize: "13px", fontWeight: 600 }}>{entry.heading || `Entry ${idx + 1}`}</span>
-                {rows.map((line) => (
-                  <span key={`${idx}-${line}`} style={{ fontSize: "12px", color: "#4b5563" }}>
-                    {line}
-                  </span>
-                ))}
-                {renderConcernsList(Array.isArray(entry.concerns) ? entry.concerns : [])}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-    );
-  };
-
-  const optionalSectionConfig = [
-    { key: "externalInspection", title: "External / Drive-in Inspection" },
-    { key: "internalElectrics", title: "Internal / Lamps / Electrics" },
-    { key: "underside", title: "Underside Inspection" },
-  ];
-
-const renderOptionalSections = () => {
-    if (!vhcBuilderData) return null;
-    return optionalSectionConfig
-      .map(({ key, title }) => {
-        const data = vhcBuilderData[key];
-        const entryList = Array.isArray(data)
-          ? data
-          : typeof data === "object"
-          ? Object.entries(data).map(([heading, entry]) => ({ heading, ...(entry || {}) }))
-          : [];
-        const cards = entryList
-          .map((entry, idx) => {
-            const concerns = Array.isArray(entry.concerns) ? entry.concerns : [];
-            if (concerns.length === 0) return null;
-            return (
-              <div
-                key={`${key}-${entry.heading || idx}`}
-                style={{
-                  border: "1px solid #f3f4f6",
-                  borderRadius: "10px",
-                  padding: "12px",
-                  backgroundColor: "#fff",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
-                }}
-              >
-                <span style={{ fontSize: "13px", fontWeight: 600 }}>{entry.heading || "Inspection item"}</span>
-                {renderConcernsList(concerns)}
-              </div>
-            );
-          })
-          .filter(Boolean);
-        if (cards.length === 0) {
-          return (
-            <section
-              key={key}
-              style={{
-                border: "1px solid #f3f4f6",
-                borderRadius: "12px",
-                padding: "16px",
-                backgroundColor: "#fff",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-              }}
-            >
-              <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>{title}</h3>
-                  <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>Recorded amber/red observations.</p>
-                </div>
-              </header>
-              <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>No observations recorded for this section.</p>
-            </section>
-          );
-        }
-        return (
-          <section
-            key={key}
-            style={{
-              border: "1px solid #f3f4f6",
-              borderRadius: "12px",
-              padding: "16px",
-              backgroundColor: "#fff",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-            }}
-          >
-            <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>{title}</h3>
-                <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>Recorded amber/red observations.</p>
-              </div>
-            </header>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
-              {cards}
-            </div>
-          </section>
-        );
-      })
-      .filter(Boolean);
-  };
-
-  const summaryBits = [];
-  const mileageLabel = formatMileage(jobData.mileage);
-  if (mileageLabel) summaryBits.push(mileageLabel);
-  if (jobData.createdAt) summaryBits.push(`Opened ${new Date(jobData.createdAt).toLocaleDateString()}`);
-  if (jobData.checkedInAt) summaryBits.push(`Checked in ${new Date(jobData.checkedInAt).toLocaleDateString()}`);
-  const summaryText = summaryBits.length > 0 ? summaryBits.join(" • ") : "No additional VHC summary recorded yet.";
-
-  const renderTyreSummary = () => {
-    const tyres = vhcBuilderData?.wheelsTyres;
-    if (!tyres || typeof tyres !== "object") return null;
-    const wheelOrder = [
-      ["NSF", "Nearside Front"],
-      ["OSF", "Offside Front"],
-      ["NSR", "Nearside Rear"],
-      ["OSR", "Offside Rear"],
-    ];
-    const cards = wheelOrder
-      .map(([key, label]) => {
-        const tyre = tyres[key];
-        if (!tyre || typeof tyre !== "object") return null;
-        const tread = tyre.tread || {};
-        const depthLine = ["outer", "middle", "inner"]
-          .map((segment) => {
-            const value = tread[segment];
-            if (value === null || value === undefined || value === "") return null;
-            const pretty = value.toString().endsWith("mm") ? value : `${value}mm`;
-            return `${segment.charAt(0).toUpperCase() + segment.slice(1)} ${pretty}`;
-          })
-          .filter(Boolean)
-          .join(" • ");
-        return (
-          <div
-            key={`tyre-summary-${key}`}
-            style={{
-              border: "1px solid #f3f4f6",
-              borderRadius: "10px",
-              padding: "12px",
-              backgroundColor: "#fff",
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px",
-            }}
-          >
-            <span style={{ fontSize: "13px", fontWeight: 600 }}>{label}</span>
-            <span style={{ fontSize: "12px", color: "#4b5563" }}>Make: {tyre.manufacturer || "—"}</span>
-            <span style={{ fontSize: "12px", color: "#4b5563" }}>Size: {tyre.size || "—"}</span>
-            <span style={{ fontSize: "12px", color: "#4b5563" }}>
-              Load / Speed: {(tyre.load || "—") + " / " + (tyre.speed || "—")}
-            </span>
-            {depthLine ? (
-              <span style={{ fontSize: "12px", color: "#374151" }}>Depths: {depthLine}</span>
-            ) : (
-              <span style={{ fontSize: "12px", color: "#9ca3af" }}>Depths not recorded</span>
-            )}
-          </div>
-        );
-      })
-      .filter(Boolean);
-
-    if (cards.length === 0) return null;
-
-    return (
-      <section
-        style={{
-          border: "1px solid #f3f4f6",
-          borderRadius: "12px",
-          padding: "16px",
-          backgroundColor: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-        }}
-      >
-        <header>
-          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>Tyres overview</h3>
-          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>Measurements and specification for each wheel.</p>
-        </header>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>{cards}</div>
-      </section>
-    );
-  };
-
-  const renderBrakeSummary = () => {
-    const brakes = vhcBuilderData?.brakesHubs;
-    if (!brakes || typeof brakes !== "object") return null;
-    const entries = [
-      { key: "frontPads", label: "Front Pads", data: brakes.frontPads },
-      { key: "rearPads", label: "Rear Pads", data: brakes.rearPads },
-      { key: "frontDiscs", label: "Front Discs", data: brakes.frontDiscs },
-      { key: "rearDiscs", label: "Rear Discs", data: brakes.rearDiscs },
-      { key: "rearDrums", label: "Rear Drums", data: brakes.rearDrums },
-    ]
-      .map(({ key, label, data }) => {
-        if (!data || typeof data !== "object") return null;
-        const rows = [];
-        if (data.measurement) {
-          const formatted = formatMeasurementList(data.measurement);
-          if (formatted) rows.push(`Measurement: ${formatted}`);
-        }
-        if (data.measurements?.values || data.measurements?.thickness) {
-          const formatted = formatMeasurementList(data.measurements?.values || data.measurements?.thickness);
-          if (formatted) rows.push(`Measurement: ${formatted}`);
-        }
-        if (data.measurements?.status) rows.push(`Measurement status: ${data.measurements.status}`);
-        if (data.visual?.status) rows.push(`Visual status: ${data.visual.status}`);
-        if (data.visual?.notes || data.visual?.note) rows.push(data.visual?.notes || data.visual?.note);
-        if (data.status && rows.length === 0) rows.push(`Status: ${data.status}`);
-        if (rows.length === 0) rows.push("No measurements captured.");
-        return (
-          <div
-            key={`brake-summary-${key}`}
-            style={{
-              border: "1px solid #f3f4f6",
-              borderRadius: "10px",
-              padding: "12px",
-              backgroundColor: "#fff",
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px",
-            }}
-          >
-            <span style={{ fontSize: "13px", fontWeight: 600 }}>{label}</span>
-            {rows.map((row, index) => (
-              <span key={`${key}-${index}`} style={{ fontSize: "12px", color: "#4b5563" }}>
-                {row}
-              </span>
-            ))}
-          </div>
-        );
-      })
-      .filter(Boolean);
-
-    if (entries.length === 0) return null;
-
-    return (
-      <section
-        style={{
-          border: "1px solid #f3f4f6",
-          borderRadius: "12px",
-          padding: "16px",
-          backgroundColor: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-        }}
-      >
-        <header>
-          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>Brakes overview</h3>
-          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>Pad and disc measurements recorded by technicians.</p>
-        </header>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>{entries}</div>
-      </section>
-    );
-  };
-
-  const buildRedAmberGroups = (summarySections = []) => {
-    const groups = [];
-    summarySections.forEach((section) => {
-      const relevant = (section.items || []).filter((item) => {
-        const status = (item.status || "").toLowerCase();
-        const matchesStatus = status.includes("red") || status.includes("amber");
-        const hasConcern = (item.concerns || []).some((concern) => {
-          const cStatus = (concern.status || "").toLowerCase();
-          return cStatus.includes("red") || cStatus.includes("amber");
-        });
-        return matchesStatus || hasConcern;
-      });
-      if (relevant.length > 0) {
-        groups.push({ title: section.title, items: relevant });
-      }
-    });
-    return groups;
-  };
-
-  const redAmberGroups = useMemo(() => buildRedAmberGroups(vhcSummary.sections), [vhcSummary.sections]);
-
-  const renderRedAmberSummary = () => {
-    if (redAmberGroups.length === 0) return null;
-    return (
-      <section
-        style={{
-          border: "1px solid #f3f4f6",
-          borderRadius: "12px",
-          padding: "16px",
-          backgroundColor: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-        }}
-      >
-        <header>
-          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>Red & amber actions</h3>
-          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>Grouped by technician section for quick follow-up.</p>
-        </header>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {redAmberGroups.map((group) => (
-            <div key={group.title} style={{ border: "1px solid #f3f4f6", borderRadius: "10px", padding: "12px", background: "#fff" }}>
-              <h4 style={{ margin: "0 0 8px", fontSize: "14px", fontWeight: 600 }}>{group.title}</h4>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {group.items.map((item, idx) => {
-                  const description = item.rows && item.rows.length > 0 ? item.rows.join(" • ") : "No measurement notes.";
-                  const status = item.status ? item.status : "Requires attention";
-                  const relevantConcerns = (item.concerns || []).filter((concern) => {
-                    const s = (concern.status || "").toLowerCase();
-                    return s.includes("red") || s.includes("amber");
-                  });
-                  return (
-                    <div key={`${group.title}-${idx}`} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                      <div style={{ fontSize: "13px", fontWeight: 600 }}>
-                        {item.heading || "VHC item"} – {status}
-                      </div>
-                      <div style={{ fontSize: "12px", color: "#4b5563" }}>{description}</div>
-                      {renderConcernsList(relevantConcerns)}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  };
-
-  const tyreSummaryBlock = renderTyreSummary();
-  const brakeSummaryBlock = renderBrakeSummary();
-  const redAmberSummaryBlock = renderRedAmberSummary();
 
   return (
     <Layout>
-      <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <button
-            type="button"
-            onClick={() => router.push("/vhc/dashboard")}
-            style={{
-              padding: "10px 14px",
-              borderRadius: "10px",
-              border: "1px solid #e5e7eb",
-              background: "#fff",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            ← Back to VHC dashboard
-          </button>
-          <Link href={`/job-cards/${jobData.jobNumber}`} style={{ fontSize: "13px", color: "#d10000", fontWeight: 600 }}>
-            View full job card →
-          </Link>
-        </div>
-
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "12px",
-            border: "1px solid #f3f4f6",
-            padding: "16px 20px",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "16px",
-            alignItems: "center",
-          }}
-        >
-          <div style={{ minWidth: "140px" }}>
-            <p style={{ margin: 0, fontSize: "11px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.2em" }}>Job</p>
-            <p style={{ margin: "4px 0 0", fontSize: "16px", fontWeight: 700, color: "#111827" }}>#{jobData.jobNumber || "—"}</p>
-          </div>
-          <div style={{ minWidth: "140px" }}>
-            <p style={{ margin: 0, fontSize: "11px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.2em" }}>Reg</p>
-            <p style={{ margin: "4px 0 0", fontSize: "16px", fontWeight: 700, color: "#111827" }}>{jobData.reg || "—"}</p>
-          </div>
-          <div style={{ minWidth: "180px" }}>
-            <p style={{ margin: 0, fontSize: "11px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.2em" }}>Customer</p>
-            <p style={{ margin: "4px 0 0", fontSize: "16px", fontWeight: 600, color: "#111827" }}>{jobData.customer || "Unknown customer"}</p>
-          </div>
-          <div style={{ flex: 1, minWidth: "220px" }}>
-            <p style={{ margin: 0, fontSize: "11px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.2em" }}>Summary</p>
-            <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#4b5563" }}>{summaryText}</p>
-          </div>
-          <div
-            style={{
-              backgroundColor: statusColor,
-              color: "#fff",
-              padding: "6px 14px",
-              borderRadius: "999px",
-              fontWeight: 600,
-              fontSize: "13px",
-            }}
-          >
-            {vhcStatus}
-          </div>
-        </div>
-
-        {timelineEvents.length > 0 ? (
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "12px",
-              border: "1px solid #f3f4f6",
-              padding: "16px",
-            }}
-          >
-            <p style={{ margin: "0 0 8px", fontSize: "12px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.2em" }}>
-              Workflow milestones
-            </p>
-            <ul style={{ margin: 0, paddingLeft: "18px", color: "#374151", fontSize: "13px" }}>
-              {timelineEvents.map((event) => (
-                <li key={`${event.label}-${event.value}`} style={{ marginBottom: "6px" }}>
-                  <strong>{event.label}:</strong> {formatDateTime(event.value)}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "12px",
-            border: "1px solid #f3f4f6",
-            padding: "20px",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "16px",
-          }}
-        >
-          {[
-            { label: "Red issues", value: totals.red, color: "#ef4444" },
-            { label: "Amber issues", value: totals.amber, color: "#f97316" },
-            { label: "Grey / not checked", value: totals.grey, color: "#6b7280" },
-            { label: "VHC sections", value: sections.length, color: "#0f172a" },
-          ].map((card) => (
-            <div
-              key={card.label}
-              style={{
-                flex: "1 1 200px",
-                borderRadius: "10px",
-                border: "1px solid #f3f4f6",
-                padding: "14px 16px",
-                background: "#fff",
-              }}
-            >
-              <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>{card.label}</p>
-              <p style={{ margin: 0, marginTop: "4px", fontSize: "24px", fontWeight: 700, color: card.color }}>
-                {card.value}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {(tyreSummaryBlock || brakeSummaryBlock || redAmberSummaryBlock) && (
+      <div
+        style={{
+          height: "100%",
+          padding: "16px",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px", flex: 1, overflowY: "auto" }}>
           <div
             style={{
               display: "flex",
-              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "12px",
+            }}
+          >
+            <button
+              onClick={() => router.push("/vhc/dashboard")}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid #e5e7eb",
+                background: "#fff",
+                cursor: "pointer",
+                fontWeight: 500,
+              }}
+            >
+              ← Back
+            </button>
+            <div style={{ flex: 1, minWidth: "220px" }}>
+              <div style={{ fontSize: "14px", color: "#6b7280" }}>Job {job.jobNumber}</div>
+              <h1 style={{ fontSize: "24px", margin: "4px 0", color: "#111827" }}>Vehicle Health Check</h1>
+              <div style={{ fontSize: "18px", fontWeight: 600, color: "#1f2937" }}>{job.reg || "Registration pending"}</div>
+            </div>
+            <Link
+              href={`/job-cards/${job.jobNumber}`}
+              style={{
+                padding: "10px 18px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                background: "#f9fafb",
+                color: "#111827",
+                fontWeight: 600,
+              }}
+            >
+              Open Job Card
+            </Link>
+          </div>
+
+          {job.vhcRequired === false && (
+            <div
+              style={{
+                borderRadius: "12px",
+                border: "1px solid #fed7aa",
+                background: "#fff7ed",
+                padding: "12px 16px",
+                color: "#9a3412",
+                fontWeight: 500,
+              }}
+            >
+              This job was not flagged for a VHC when it was created. Any checks shown below were captured manually after check-in.
+            </div>
+          )}
+
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "16px",
+              border: "1px solid #f3f4f6",
+              padding: "20px",
+              boxShadow: "0 4px 16px rgba(15,23,42,0.06)",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
               gap: "16px",
             }}
           >
-            {tyreSummaryBlock}
-            {brakeSummaryBlock}
-            {redAmberSummaryBlock}
-          </div>
-        )}
-
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "12px",
-            border: "1px solid #f3f4f6",
-            padding: "20px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#111827" }}>Health Check</h2>
-            <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>
-              Mirrors the technician layout from the VHC workspace.
-            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "13px", color: "#6b7280" }}>Vehicle</span>
+              <strong style={{ fontSize: "16px", color: "#111827" }}>{job.makeModel || "Not recorded"}</strong>
+              <span style={{ fontSize: "13px", color: "#4b5563" }}>Mileage: {job.mileage ? `${job.mileage} miles` : "Unknown"}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "13px", color: "#6b7280" }}>Customer</span>
+              <strong style={{ fontSize: "16px", color: "#111827" }}>{job.customer || "Not recorded"}</strong>
+              <span style={{ fontSize: "13px", color: "#4b5563" }}>{job.customerPhone || job.customerEmail || "No contact on file"}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "13px", color: "#6b7280" }}>Timeline</span>
+              <span style={{ fontSize: "13px", color: "#4b5563" }}>Checked in: {job.checkedInAt ? formatDateTime(job.checkedInAt) : "Not yet"}</span>
+              <span style={{ fontSize: "13px", color: "#4b5563" }}>Last sent: {workflow?.lastSentAt ? formatDateTime(workflow.lastSentAt) : "Never"}</span>
+              <span style={{ fontSize: "13px", color: "#4b5563" }}>VHC completed: {job.vhcCompletedAt ? formatDateTime(job.vhcCompletedAt) : workflow?.vhcCompletedAt ? formatDateTime(workflow.vhcCompletedAt) : "Not complete"}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <span style={{ fontSize: "13px", color: "#6b7280" }}>Current VHC status</span>
+              <Badge label={vhcStatus} color={statusColor} />
+            </div>
           </div>
 
-          {vhcBuilderData ? (
-            <>
-              {renderTyreSection()}
-              {renderBrakesSection()}
-              {renderServiceSection()}
-              {renderOptionalSections()}
-            </>
-          ) : (
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "16px",
+              border: "1px solid #f3f4f6",
+              padding: "20px",
+              boxShadow: "0 4px 16px rgba(15,23,42,0.04)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+              <h2 style={{ margin: 0, fontSize: "18px", color: "#111827" }}>Totals</h2>
+              <span style={{ fontSize: "13px", color: "#6b7280" }}>All figures use live data</span>
+            </div>
             <div
               style={{
-                padding: "24px",
-                borderRadius: "10px",
-                border: "1px dashed #e5e7eb",
-                textAlign: "center",
-                color: "#6b7280",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                gap: "12px",
               }}
             >
-              Technicians have not started this VHC yet.
+              {[
+                { label: "Red items", value: severityTotals.red, accent: "#ef4444" },
+                { label: "Amber items", value: severityTotals.amber, accent: "#f97316" },
+                { label: "Grey items", value: severityTotals.grey, accent: "#6b7280" },
+                { label: "Total checks logged", value: totalChecksLogged, accent: "#111827" },
+                { label: "Authorised (inc VAT)", value: `£${formatMoney(authorizedGross)}`, accent: "#0f766e" },
+                { label: "Declined decisions", value: declinedCount, accent: "#b91c1c" },
+                { label: "Parts lines tracked", value: partsPipelineSummary.totalCount, accent: "#1d4ed8" },
+                { label: "Last customer share", value: workflow?.vhcSentAt ? formatDateTime(workflow.vhcSentAt) : "Not sent", accent: "#6b7280" },
+              ].map((card) => (
+                <div
+                  key={card.label}
+                  style={{
+                    border: "1px solid #f1f5f9",
+                    borderRadius: "12px",
+                    padding: "14px",
+                    background: "#f9fafb",
+                  }}
+                >
+                  <div style={{ fontSize: "13px", color: "#6b7280" }}>{card.label}</div>
+                  <div style={{ fontSize: "20px", fontWeight: 700, color: card.accent }}>{card.value}</div>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
+
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "16px",
+              border: "1px solid #f3f4f6",
+              padding: "20px",
+              boxShadow: "0 4px 12px rgba(15,23,42,0.04)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <div>
+                <div style={{ fontSize: "13px", color: "#6b7280" }}>Parts pipeline</div>
+                <h2 style={{ margin: 0, fontSize: "18px", color: "#111827" }}>Tracked part movements</h2>
+              </div>
+              <span style={{ fontSize: "13px", color: "#6b7280" }}>{partsPipelineSummary.totalCount} active line{partsPipelineSummary.totalCount === 1 ? "" : "s"}</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px" }}>
+              {(partsPipelineSummary.stageSummary || []).map((stage) => (
+                <div
+                  key={stage.id}
+                  style={{
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    padding: "12px",
+                    background: stage.count > 0 ? "#fff7ed" : "#f9fafb",
+                  }}
+                >
+                  <div style={{ fontSize: "13px", color: "#6b7280" }}>{stage.label}</div>
+                  <div style={{ fontSize: "22px", fontWeight: 700, color: "#ea580c" }}>{stage.count}</div>
+                  <p style={{ fontSize: "12px", color: "#6b7280", margin: "4px 0 0" }}>{stage.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "16px",
+              border: "1px solid #f3f4f6",
+              padding: "20px",
+              boxShadow: "0 4px 12px rgba(15,23,42,0.04)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h2 style={{ margin: 0, fontSize: "18px", color: "#111827" }}>Captured checks</h2>
+              <span style={{ fontSize: "13px", color: "#6b7280" }}>{sections.length} section{sections.length === 1 ? "" : "s"}</span>
+            </div>
+            {sections.length === 0 ? (
+              <div style={{ padding: "20px", borderRadius: "12px", background: "#f8fafc", textAlign: "center", color: "#475569" }}>
+                No digital VHC data has been recorded for this job yet.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {sections.map((section) => (
+                  <div key={section.key || section.title} style={{ border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
+                      <div>
+                        <div style={{ fontSize: "14px", color: "#6b7280" }}>Section</div>
+                        <div style={{ fontSize: "18px", fontWeight: 600, color: "#111827" }}>{section.title}</div>
+                      </div>
+                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                        {section.metrics?.red ? <Badge label={`${section.metrics.red} Red`} color="#dc2626" /> : null}
+                        {section.metrics?.amber ? <Badge label={`${section.metrics.amber} Amber`} color="#f97316" /> : null}
+                        {section.metrics?.grey ? <Badge label={`${section.metrics.grey} Grey`} color="#6b7280" /> : null}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {(section.items || []).map((item, index) => (
+                        <div
+                          key={`${section.key || section.title}-${index}`}
+                          style={{
+                            border: "1px solid #f1f5f9",
+                            borderRadius: "10px",
+                            padding: "12px",
+                            background: "#fdfdfd",
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "8px", gap: "12px" }}>
+                            <span style={{ fontSize: "16px", fontWeight: 600, color: "#111827" }}>{item.heading}</span>
+                            {item.status ? <Badge label={item.status} color={STATUS_COLORS[item.status] || "#9ca3af"} /> : null}
+                          </div>
+                          {item.rows?.length ? (
+                            <ul style={{ margin: 0, paddingLeft: "18px", color: "#374151", fontSize: "13px" }}>
+                              {item.rows.map((row, rowIndex) => (
+                                <li key={`${section.key || section.title}-${index}-row-${rowIndex}`}>{row}</li>
+                              ))}
+                            </ul>
+                          ) : null}
+                          {item.concerns?.length ? (
+                            <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                              {item.concerns.map((concern, concernIndex) => (
+                                <div key={`${section.key || section.title}-${index}-concern-${concernIndex}`} style={{ display: "flex", gap: "6px", fontSize: "13px", color: "#374151" }}>
+                                  <span style={{ fontWeight: 600, color: STATUS_COLORS[concern.status] || "#b45309" }}>{concern.status}:</span>
+                                  <span>{concern.text}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </Layout>
