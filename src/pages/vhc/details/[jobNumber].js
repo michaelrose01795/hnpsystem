@@ -1,2910 +1,441 @@
-// ✅ Connected to Supabase (frontend)
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/vhc/details/[jobNumber].js
-"use client"; // enables client-side rendering for Next.js
+"use client";
 
-import React, { useEffect, useMemo, useState } from "react"; // import React and hooks
-import Link from "next/link"; // for linking back to job card
-import { useRouter } from "next/router"; // for getting URL params and navigation
-import { supabase } from "@/lib/supabaseClient"; // import Supabase client
-import Layout from "@/components/Layout"; // import layout wrapper
-import { updateJob } from "@/lib/database/jobs";
-import { logVhcSendEvent } from "@/lib/database/vhc";
-import { summarizePartsPipeline } from "@/lib/partsPipeline";
+import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import Layout from "@/components/Layout";
+import { getJobByNumberOrReg } from "@/lib/database/jobs";
+import { getVhcWorkflowStatus } from "@/lib/database/vhc";
+import {
+  STATUS_COLORS,
+  deriveVhcDashboardStatus,
+  parseVhcBuilderPayload,
+  summariseTechnicianVhc,
+} from "@/lib/vhc/summary";
 
-// ✅ Status color mapping (same as dashboard)
-const STATUS_COLORS = {
-  "Outstanding": "#9ca3af", // grey
-  "Accepted": "#d10000", // red
-  "In Progress": "#3b82f6", // blue
-  "Awaiting Authorization": "#fbbf24", // yellow
-  "Authorized": "#9333ea", // purple
-  "Ready": "#10b981", // green
-  "Carry Over": "#f97316", // orange
-  "Complete": "#06b6d4", // cyan
-  "Sent": "#8b5cf6", // purple for sent status
-  "Viewed": "#06b6d4", // cyan for viewed status
+const ITEM_STATUS_COLORS = {
+  Red: { background: "rgba(239,68,68,0.16)", color: "#ef4444", border: "rgba(239,68,68,0.28)" },
+  Amber: { background: "rgba(245,158,11,0.16)", color: "#b45309", border: "rgba(245,158,11,0.28)" },
+  Green: { background: "rgba(16,185,129,0.16)", color: "#059669", border: "rgba(16,185,129,0.28)" },
+  Neutral: { background: "rgba(107,114,128,0.16)", color: "#374151", border: "rgba(107,114,128,0.28)" },
 };
-const VAT_RATE = 0.2; // 20% VAT
-const HOURLY_LABOUR_RATE = 125; // hourly labour rate (ex VAT) -> £150 inc VAT
 
-// ✅ Dropdown options for decline reasons so managers can provide quick context
-const DECLINE_REASON_OPTIONS = [
-  "Select a decline reason", // placeholder option prompting user selection
-  "Customer requested delay", // customer wants to postpone the work
-  "Awaiting budget approval", // waiting for cost approval
-  "Parts unavailable today", // parts not currently in stock
-  "Schedule for next visit", // plan to revisit in future service
-  "Other reason" // catch-all option for bespoke notes
-];
+const CONCERN_STATUS_COLORS = {
+  Red: "#ef4444",
+  Amber: "#b45309",
+  Green: "#059669",
+  Grey: "#6b7280",
+};
 
-// ✅ Month options for follow-up reminders so advisors can set revisit schedule
-const DECLINE_REMINDER_MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => index + 1); // builds 1-12 month values
+const formatDateTime = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+};
 
-// ✅ Generate dummy VHC detail data for testing
-const generateDummyVHCDetail = (jobNumber) => {
-  const statuses = ["Outstanding", "Accepted", "In Progress", "Awaiting Authorization", "Authorized", "Ready", "Carry Over", "Complete"];
-  const makes = ["Ford", "BMW", "Mercedes", "Audi", "Toyota", "Honda", "Nissan", "Volkswagen"];
-  const names = ["John Smith", "Sarah Johnson", "Michael Brown", "Emma Wilson", "James Taylor"];
-  const randomIndex = parseInt(jobNumber.replace("JOB", "")) % 10;
-
+const buildBadgeStyle = (status) => {
+  const palette = ITEM_STATUS_COLORS[status] || ITEM_STATUS_COLORS.Neutral;
   return {
-    id: `vhc-${randomIndex}`,
-    job_number: jobNumber,
-    reg: `AB${20 + randomIndex} CDE`,
-    customer_name: names[randomIndex % names.length],
-    customer_phone: `07${Math.floor(Math.random() * 1000000000).toString().padStart(9, "0")}`,
-    customer_email: `${names[randomIndex % names.length].toLowerCase().replace(" ", ".")}@email.com`,
-    vehicle_make: makes[randomIndex % makes.length],
-    vehicle_model: "Model X",
-    vehicle_year: 2015 + (randomIndex % 8),
-    mileage: 15000 + (randomIndex * 5000),
-    status: statuses[randomIndex % statuses.length],
-    technician_name: "Tech A",
-    service_advisor: "MR",
-    technician: "SP",
-    parts_person: "DS",
-    location_person: "JK",
-    admin_person: "LM",
-    last_visit: randomIndex % 3 === 0 ? new Date(Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : "First visit",
-    next_service: randomIndex % 4 === 0 ? new Date(Date.now() + Math.random() * 120 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : "Not scheduled",
-    mot_expiry: new Date(Date.now() + Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    red_work: "475.00",
-    amber_work: "460.00",
-    authorized: "200.00",
-    declined_work: "0.00",
-    created_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-    // VHC Check Items with all categories
-    vhc_items: [
-      { id: 1, category: "Brakes", item: "Front Brake Pads", status: "Red", notes: "Worn below minimum", estimated_cost: "150.00", labor_hours: 1, parts_price: "80.00", total_price: "230.00", authorized: false, declined: false },
-      { id: 2, category: "Brakes", item: "Rear Brake Discs", status: "Amber", notes: "Some wear visible", estimated_cost: "200.00", labor_hours: 1.5, parts_price: "120.00", total_price: "345.00", authorized: false, declined: false },
-      { id: 3, category: "Tyres", item: "Front Left Tyre", status: "Green", notes: "Good condition", estimated_cost: "0.00", labor_hours: 0, parts_price: "0.00", total_price: "0.00", authorized: false, declined: false },
-      { id: 4, category: "Tyres", item: "Front Right Tyre", status: "Amber", notes: "Tread at 3mm", estimated_cost: "80.00", labor_hours: 0.5, parts_price: "60.00", total_price: "135.00", authorized: false, declined: false },
-      { id: 5, category: "Lights", item: "Headlight Bulb", status: "Red", notes: "Not working", estimated_cost: "25.00", labor_hours: 0.25, parts_price: "15.00", total_price: "52.50", authorized: false, declined: false },
-      { id: 6, category: "Fluid Levels", item: "Engine Oil", status: "Green", notes: "Topped up", estimated_cost: "0.00", labor_hours: 0, parts_price: "0.00", total_price: "0.00", authorized: false, declined: false },
-      { id: 7, category: "Suspension", item: "Front Shock Absorbers", status: "Amber", notes: "Minor leak detected", estimated_cost: "180.00", labor_hours: 2, parts_price: "100.00", total_price: "400.00", authorized: false, declined: false },
-      { id: 8, category: "Battery", item: "Battery Health", status: "Green", notes: "Good voltage", estimated_cost: "0.00", labor_hours: 0, parts_price: "0.00", total_price: "0.00", authorized: false, declined: false },
-      { id: 9, category: "Wipers", item: "Wiper Blades", status: "Grey", notes: "Not checked yet", estimated_cost: "0.00", labor_hours: 0, parts_price: "0.00", total_price: "0.00", authorized: false, declined: false },
-      { id: 10, category: "Air Filter", item: "Cabin Air Filter", status: "Amber", notes: "Dirty, needs replacement", estimated_cost: "45.00", labor_hours: 0.25, parts_price: "25.00", total_price: "62.50", authorized: false, declined: false },
-      { id: 11, category: "Exhaust", item: "Exhaust System", status: "Red", notes: "Leak detected at manifold", estimated_cost: "300.00", labor_hours: 2.5, parts_price: "200.00", total_price: "575.00", authorized: false, declined: false },
-      { id: 12, category: "Steering", item: "Power Steering Fluid", status: "Green", notes: "Level OK", estimated_cost: "0.00", labor_hours: 0, parts_price: "0.00", total_price: "0.00", authorized: false, declined: false },
-    ],
-    // Parts data
-    parts_identified: [
-      { id: 1, part_name: "Front Brake Pads Set", part_number: "BP-12345", supplier: "AutoParts Ltd", price: "80.00", quantity: 1, vhc_item_id: 1 },
-      { id: 2, part_name: "Rear Brake Disc Pair", part_number: "BD-67890", supplier: "BrakeCo", price: "120.00", quantity: 1, vhc_item_id: 2 },
-      { id: 3, part_name: "H7 Headlight Bulb", part_number: "HB-11111", supplier: "LightSource", price: "15.00", quantity: 1, vhc_item_id: 5 },
-      { id: 4, part_name: "Front Shock Absorber Pair", part_number: "SA-22222", supplier: "SuspensionPro", price: "100.00", quantity: 1, vhc_item_id: 7 },
-      { id: 5, part_name: "Tyre 205/55R16", part_number: "TY-33333", supplier: "TyreMart", price: "60.00", quantity: 1, vhc_item_id: 4 },
-      { id: 6, part_name: "Cabin Air Filter", part_number: "AF-44444", supplier: "FilterWorld", price: "25.00", quantity: 1, vhc_item_id: 10 },
-      { id: 7, part_name: "Exhaust Manifold Gasket", part_number: "EX-55555", supplier: "ExhaustCo", price: "200.00", quantity: 1, vhc_item_id: 11 },
-    ],
-    // Parts on order
-    parts_on_order: [
-      { id: 2, part_name: "Rear Brake Disc Pair", part_number: "BD-67890", supplier: "BrakeCo", expected_date: "2025-11-05", order_number: "ORD-12345" },
-      { id: 7, part_name: "Exhaust Manifold Gasket", part_number: "EX-55555", supplier: "ExhaustCo", expected_date: "2025-11-08", order_number: "ORD-12346" },
-    ],
-    // Photos uploaded by tech
-    photos: [
-      { id: 1, url: "https://via.placeholder.com/400x300/ff0000/ffffff?text=Brake+Pads", caption: "Front brake pads worn", send_to_customer: false, vhc_item_id: 1 },
-      { id: 2, url: "https://via.placeholder.com/400x300/fbbf24/ffffff?text=Brake+Discs", caption: "Rear brake disc wear", send_to_customer: false, vhc_item_id: 2 },
-      { id: 3, url: "https://via.placeholder.com/400x300/ff0000/ffffff?text=Headlight", caption: "Headlight not working", send_to_customer: false, vhc_item_id: 5 },
-      { id: 4, url: "https://via.placeholder.com/400x300/10b981/ffffff?text=Engine+Bay", caption: "General engine bay view", send_to_customer: false, vhc_item_id: null },
-    ],
-    // Videos uploaded by tech
-    videos: [
-      { id: 1, url: "https://www.w3schools.com/html/mov_bbb.mp4", caption: "Brake noise demonstration", send_to_customer: false, vhc_item_id: 1 },
-      { id: 2, url: "https://www.w3schools.com/html/movie.mp4", caption: "Exhaust leak sound", send_to_customer: false, vhc_item_id: 11 },
-    ],
-    // Notes and comments
-    technician_notes: "Customer reported squeaking noise from brakes. Inspection confirmed front pads need replacement urgently. Advised customer of amber items for next service.",
-    customer_comments: "Please call me before doing any additional work. Available 9am-5pm weekdays.",
+    backgroundColor: palette.background,
+    color: palette.color,
+    border: `1px solid ${palette.border}`,
+    borderRadius: "999px",
+    fontSize: "11px",
+    fontWeight: 600,
+    padding: "2px 10px",
+    letterSpacing: "0.3px",
   };
 };
 
-// ✅ VHC Details Page Component
-export default function VHCDetails() {
-  const router = useRouter(); // router for navigation and params
-  const { jobNumber } = router.query; // get job number from URL
-  const isCustomerView = router.query?.view === "customer";
-  const [vhcData, setVhcData] = useState(null); // VHC job data
-  const [loading, setLoading] = useState(true); // loading state
-  const [activeTab, setActiveTab] = useState("summary"); // active tab state
-  const [selectedItems, setSelectedItems] = useState([]); // selected items for authorization
-  const [editingLabor, setEditingLabor] = useState({}); // track which labor fields are being edited
-  const [followUpPopup, setFollowUpPopup] = useState(false); // show follow-up call popup after send
-const [declineReason, setDeclineReason] = useState(DECLINE_REASON_OPTIONS[0]); // default decline reason dropdown selection
-const [declineReminderMonths, setDeclineReminderMonths] = useState("3"); // default reminder period in months
-const PART_STORAGE_OPTIONS = ["Pre Pick", "Auto Pick", "Service Rack 1", "Service Rack 2"];
-const defaultPartsForm = {
-  search: "",
-  selectedPart: null,
-  costToOrder: "",
-  customerCost: "",
-  quantity: 1,
-  backOrder: false,
-  location: PART_STORAGE_OPTIONS[0],
-}; // default modal form
-const [partsModal, setPartsModal] = useState({ open: false, itemId: null }); // track active parts modal
-const [partsForm, setPartsForm] = useState(defaultPartsForm); // store modal form fields
-const [partsDrafts, setPartsDrafts] = useState({}); // cache unsaved modal entries by item id
-const [partsSearchResults, setPartsSearchResults] = useState([]); // store search results from parts catalog
-const [partsOnOrder, setPartsOnOrder] = useState([]); // live parts on order linked to job
-const [partsOnOrderLoading, setPartsOnOrderLoading] = useState(false); // loading flag for parts on order
-const partsPipelineSummary = useMemo(
-  () =>
-    summarizePartsPipeline(partsOnOrder, {
-      quantityField: "quantity",
-    }),
-  [partsOnOrder]
-);
-const pipelineStages = partsPipelineSummary.stageSummary || [];
-const [orderNeededWarning, setOrderNeededWarning] = useState(null); // order-needed notification
-const SECTION_CATEGORY_MAP = {
-  brakes: ["Brakes", "Hubs", "Discs", "Pads"],
-  tyres: ["Tyres", "Wheels"],
-  underside: ["Underside", "Suspension", "Exhaust"],
-  underBonnet: ["Fluid Levels", "Engine", "Under Bonnet"],
-  cosmetics: ["Cosmetics", "Bodywork", "Interior", "Exterior"],
-  electronics: ["Electronics", "Lights", "Electrical"],
-};
+const getConcernColor = (status) => CONCERN_STATUS_COLORS[status] || CONCERN_STATUS_COLORS.Grey;
 
-  // ✅ Fetch VHC details from Supabase (or use dummy data)
+export default function VhcDetailsPage() {
+  const router = useRouter();
+  const { jobNumber } = router.query;
+  const [loading, setLoading] = useState(true);
+  const [jobData, setJobData] = useState(null);
+  const [vhcSummary, setVhcSummary] = useState({ sections: [], totals: { total: 0, red: 0, amber: 0, grey: 0 } });
+  const [workflow, setWorkflow] = useState(null);
+  const [vhcStatus, setVhcStatus] = useState("VHC not started");
+  const [error, setError] = useState(null);
+
   useEffect(() => {
-    if (!jobNumber) return; // wait for jobNumber to be available
+    if (!jobNumber) return;
 
-    const fetchVHCDetails = async () => {
+    const loadData = async () => {
       setLoading(true);
+      setError(null);
 
-      // Try to fetch from Supabase
-      const { data, error } = await supabase
-        .from("vhc_checks")
-        .select("*")
-        .eq("job_number", jobNumber)
-        .single(); // get single record
+      try {
+        const job = await getJobByNumberOrReg(jobNumber);
+        if (!job) {
+          setError("Job not found. Please verify the job number.");
+          setLoading(false);
+          return;
+        }
 
-      if (error || !data) {
-        console.log("Using dummy data for testing"); // log when using dummy data
-        setVhcData(generateDummyVHCDetail(jobNumber)); // use dummy data
-      } else {
-        setVhcData(data); // use real data from database
+        if (job.vhcRequired !== true) {
+          setError("This job was not flagged for a Vehicle Health Check.");
+          setJobData(job);
+          setLoading(false);
+          return;
+        }
+
+        const workflowRow = job.id ? await getVhcWorkflowStatus(job.id) : null;
+        const builderPayload = parseVhcBuilderPayload(job.vhcChecks);
+        const summary = summariseTechnicianVhc(builderPayload);
+        const partsCount = (job.partsRequests?.length || 0) + (job.partsAllocations?.length || 0);
+
+        const vhcState = deriveVhcDashboardStatus({
+          job,
+          workflow: workflowRow,
+          hasChecks: summary.itemCount > 0,
+          partsCount,
+        });
+
+        setJobData(job);
+        setWorkflow(workflowRow);
+        setVhcSummary(summary);
+        setVhcStatus(vhcState);
+      } catch (err) {
+        console.error("❌ Failed to load VHC details:", err);
+        setError("We couldn't load this VHC. Please try again.");
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
-    fetchVHCDetails(); // call on load
+    loadData();
   }, [jobNumber]);
 
-  // ✅ Fetch parts on order / related parts activity for the job
-  useEffect(() => {
-    const fetchPartsOnOrder = async () => {
-      if (!jobNumber) return;
-      setPartsOnOrderLoading(true);
-      try {
-        const { data: jobRow, error: jobError } = await supabase
-          .from("jobs")
-          .select("id")
-          .eq("job_number", jobNumber)
-          .maybeSingle();
-        if (jobError || !jobRow?.id) {
-          setPartsOnOrder(vhcData?.parts_on_order || []);
-          return;
-        }
+  const timelineEvents = useMemo(() => {
+    if (!jobData) return [];
+    const events = [];
 
-        const { data: items, error: partsError } = await supabase
-          .from("parts_job_items")
-          .select(
-            `
-              id,
-              part_id,
-              status,
-              quantity_requested,
-              quantity_allocated,
-              quantity_fitted,
-              request_notes,
-              storage_location,
-              part:part_id(id, part_number, name, unit_price, unit_cost, supplier, qty_in_stock, qty_on_order)
-            `,
-          )
-          .eq("job_id", jobRow.id)
-          .in("status", [
-            "waiting_authorisation",
-            "pending",
-            "awaiting_stock",
-            "on_order",
-            "pre_picked",
-            "picked",
-            "allocated",
-            "stock",
-            "fitted",
-          ]);
-
-        if (partsError) {
-          console.error("❌ Error fetching parts on order:", partsError);
-          setPartsOnOrder(vhcData?.parts_on_order || []);
-          return;
-        }
-
-        const mapped = (items || []).map((row) => ({
-          id: row.id,
-          status: row.status,
-          quantity: row.quantity_requested,
-          notes: row.request_notes,
-          part: {
-            id: row.part?.id,
-            number: row.part?.part_number,
-            name: row.part?.name,
-            unit_price: row.part?.unit_price,
-            unit_cost: row.part?.unit_cost,
-            supplier: row.part?.supplier,
-            in_stock: row.part?.qty_in_stock,
-            on_order: row.part?.qty_on_order,
-          },
-        }));
-        setPartsOnOrder(mapped);
-      } finally {
-        setPartsOnOrderLoading(false);
-      }
-    };
-
-    fetchPartsOnOrder();
-  }, [jobNumber, vhcData?.parts_on_order]);
-
-  // ✅ Recalculate totals when vhcData changes
-  useEffect(() => {
-    if (!vhcData) return;
-
-    const sumGross = (filterFn) => {
-      const net = vhcData.vhc_items
-        .filter(filterFn)
-        .reduce((sum, item) => item.part_not_required ? sum : sum + parseFloat(item.total_price || 0), 0);
-      return net * (1 + VAT_RATE);
-    };
-
-    const redTotal = sumGross(item => item.status === "Red" && !item.authorized && !item.declined);
-    const amberTotal = sumGross(item => item.status === "Amber" && !item.authorized && !item.declined);
-    const authorizedTotal = sumGross(item => item.authorized);
-    const declinedTotal = sumGross(item => item.declined);
-
-    setVhcData(prev => ({
-      ...prev,
-      red_work: redTotal.toFixed(2),
-      amber_work: amberTotal.toFixed(2),
-      authorized: authorizedTotal.toFixed(2),
-      declined_work: declinedTotal.toFixed(2)
-    }));
-  }, [vhcData?.vhc_items]);
-
-  const computedTotals = useMemo(() => {
-    const partsNet = (vhcData?.vhc_items || []).reduce((sum, item) => {
-      if (item.part_not_required) return sum;
-      return sum + (parseFloat(item.parts_price) || 0);
-    }, 0);
-    const labourNet = (vhcData?.vhc_items || []).reduce((sum, item) => {
-      if (item.part_not_required) return sum;
-      return sum + (parseFloat(item.labor_cost) || 0);
-    }, 0);
-    const net = partsNet + labourNet;
-    const vat = net * VAT_RATE;
-    const gross = net + vat;
-    return {
-      partsNet,
-      labourNet,
-      net,
-      vat,
-      gross,
-    };
-  }, [vhcData?.vhc_items]);
-
-  const approvedSeverityTotals = useMemo(() => {
-    const items = vhcData?.vhc_items || [];
-    const calc = (status) => {
-      const net = items
-        .filter((item) => item.authorized && item.status === status && !item.part_not_required)
-        .reduce((sum, item) => sum + (parseFloat(item.total_price) || 0), 0);
-      const vat = net * VAT_RATE;
-      return {
-        net,
-        gross: net + vat,
-      };
-    };
-    return {
-      red: calc("Red"),
-      amber: calc("Amber"),
-    };
-  }, [vhcData?.vhc_items]);
-
-  const customerViewItems = useMemo(
-    () => (vhcData?.vhc_items || []).filter((item) => (item.status === "Red" || item.status === "Amber") && !item.part_not_required && !item.declined),
-    [vhcData?.vhc_items],
-  );
-
-  // ✅ Handle checkbox selection
-  const handleSelectItem = (itemId) => {
-    setSelectedItems(prev =>
-      prev.includes(itemId)
-        ? prev.filter(id => id !== itemId)
-        : [...prev, itemId]
-    );
-  };
-
-  // ✅ Determine if every item in a section is currently selected for bulk actions
-  const areAllSelected = (items = []) => items.every(item => selectedItems.includes(item.id));
-
-  // ✅ Toggle select all / clear all behaviour for a given list of items
-  const handleToggleSelectAll = (items = []) => {
-    setSelectedItems(prev => {
-      const targetIds = items.map(item => item.id); // capture ids for comparison
-      const allAlreadySelected = targetIds.every(id => prev.includes(id)); // check existing selection
-      if (allAlreadySelected) {
-        return prev.filter(id => !targetIds.includes(id)); // remove section ids when already selected
-      }
-      return Array.from(new Set([...prev, ...targetIds])); // merge unique ids when adding selection
-    });
-  };
-
-  // ✅ Handle authorize selected items
-  const handleAuthorizeSelected = (targetIds = selectedItems) => {
-    if (!targetIds.length) return;
-    setVhcData(prev => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map(item =>
-        targetIds.includes(item.id)
-          ? {
-              ...item,
-              authorized: true,
-              declined: false,
-              decline_reason: null,
-              decline_reminder_months: null
-            }
-          : item
-      )
-    }));
-    setSelectedItems(prev => prev.filter(id => !targetIds.includes(id))); // clear only ids we handled
-  };
-
-  // ✅ Handle decline selected items
-  const handleDeclineSelected = (targetIds = selectedItems) => {
-    if (!targetIds.length) return;
-    if (!declineReason || declineReason === DECLINE_REASON_OPTIONS[0]) {
-      alert("Please select a reason for declining before applying the change."); // prompt user to choose a reason
-      return;
+    if (jobData.checkedInAt) {
+      events.push({ label: "Checked in", value: jobData.checkedInAt });
+    }
+    if (workflow?.vhcSentAt || workflow?.lastSentAt) {
+      events.push({ label: "VHC sent to customer", value: workflow?.vhcSentAt || workflow?.lastSentAt });
+    }
+    if (jobData.vhcCompletedAt || workflow?.vhcCompletedAt) {
+      events.push({ label: "VHC completed", value: jobData.vhcCompletedAt || workflow?.vhcCompletedAt });
+    }
+    if (jobData.completedAt) {
+      events.push({ label: "Job completed", value: jobData.completedAt });
     }
 
-    const reminderValue = parseInt(declineReminderMonths, 10) || null; // parse reminder value from dropdown
+    return events;
+  }, [jobData, workflow]);
 
-    setVhcData(prev => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map(item =>
-        targetIds.includes(item.id)
-          ? {
-              ...item,
-              declined: true,
-              authorized: false,
-              decline_reason: declineReason,
-              decline_reminder_months: reminderValue
-            }
-          : item
-      )
-    }));
-    setSelectedItems(prev => prev.filter(id => !targetIds.includes(id))); // clear only ids we handled
-  };
-
-  // ✅ Handle toggle authorize/decline for individual item
-  const handleToggleAuthorize = (itemId) => {
-    setVhcData(prev => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map(item => {
-        if (item.id !== itemId) {
-          return item; // leave other items unchanged
-        }
-        if (item.authorized) {
-          return { ...item, authorized: false }; // simply un-authorize when currently authorized
-        }
-        return {
-          ...item,
-          authorized: true,
-          declined: false,
-          decline_reason: null,
-          decline_reminder_months: null
-        }; // set authorization and clear any decline metadata
-      })
-    }));
-  };
-
-  const handleToggleDecline = (itemId) => {
-    setVhcData(prev => {
-      const targetItem = prev.vhc_items.find(item => item.id === itemId); // grab item to check state
-      if (!targetItem) {
-        return prev; // no change if item not found
-      }
-
-      if (!targetItem.declined && (!declineReason || declineReason === DECLINE_REASON_OPTIONS[0])) {
-        alert("Please select a reason before declining this work item."); // enforce reason selection on single toggle
-        return prev; // exit without modification
-      }
-
-      const reminderValue = parseInt(declineReminderMonths, 10) || null; // convert reminder months for storage
-
-      return {
-        ...prev,
-        vhc_items: prev.vhc_items.map(item => {
-          if (item.id !== itemId) {
-            return item; // leave other items untouched
-          }
-          if (item.declined) {
-            return {
-              ...item,
-              declined: false,
-              decline_reason: null,
-              decline_reminder_months: null
-            }; // clear decline metadata when undoing decline
-          }
-          return {
-            ...item,
-            declined: true,
-            authorized: false,
-            decline_reason: declineReason,
-            decline_reminder_months: reminderValue
-          }; // apply decline metadata when setting decline
-        })
-      };
-    });
-  };
-
-  // ✅ Handle labor hours change
-  const handleLaborChange = (itemId, hours) => {
-    const parsedHours = parseFloat(hours) || 0;
-    const labourCostNet = parsedHours * HOURLY_LABOUR_RATE;
-    setVhcData(prev => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map(item => {
-        if (item.id === itemId) {
-          const partsCost = parseFloat(item.parts_price) || 0;
-          const newTotal = partsCost + labourCostNet;
-          return { 
-            ...item, 
-            labor_hours: parsedHours, 
-            labor_cost: labourCostNet.toFixed(2),
-            total_price: newTotal.toFixed(2)
-          };
-        }
-        return item;
-      })
-    }));
-  };
-
-  // ✅ Handle price change (manual override)
-  const handlePriceChange = (itemId, price) => {
-    setVhcData(prev => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map(item => 
-        item.id === itemId 
-          ? { ...item, total_price: parseFloat(price) || 0 }
-          : item
-      )
-    }));
-  };
-
-  // ✅ Handle send VHC button
-  const handleSendVHC = async () => {
-    // Check if all items have labor and parts
-    const allItemsComplete = vhcData.vhc_items
-      .filter(item => item.status === "Red" || item.status === "Amber")
-      .every(item => item.labor_hours > 0 && item.parts_price > 0);
-
-    if (!allItemsComplete) {
-      alert("Please add labor time and parts to all red and amber items before sending VHC");
-      return;
-    }
-
-    const jobId = vhcData.job_id || vhcData.jobId || vhcData.job?.id;
-    if (!jobId) {
-      alert("Unable to determine job link; please verify job record before sending.");
-      return;
-    }
-
-    const sendTime = new Date().toISOString();
-    try {
-      await updateJob(jobId, {
-        status: "Sent",
-        status_updated_at: sendTime,
-        status_updated_by: "VHC_SEND",
-        vhc_sent_at: sendTime,
-      });
-
-      await logVhcSendEvent({
-        jobId,
-        sentBy: "SYSTEM_VHC",
-        customerEmail: vhcData.customer_email || null,
-        sendMethod: "email",
-      });
-
-      const portalLink = `${window.location.origin}/vhc/details/${jobNumber}?view=customer`;
-      await supabase
-        .from("vhc_send_history")
-        .insert([
-          {
-            job_id: jobId,
-            sent_by: "SYSTEM_VHC",
-            send_method: "portal",
-            customer_email: vhcData.customer_email || null,
-            created_at: sendTime,
-            sent_at: sendTime,
-          },
-        ]);
-
-      window.open(`mailto:${vhcData.customer_email || ""}?subject=Your+Vehicle+Health+Check&body=Your VHC is ready: ${portalLink}`, "_blank");
-
-      setVhcData(prev => ({
-        ...prev,
-        status: "Sent",
-        vhc_sent_at: sendTime,
-      }));
-      setFollowUpPopup(true);
-      alert("VHC sent to customer!"); // confirm
-    } catch (error) {
-      console.error("❌ Failed to send VHC:", error);
-      alert("Failed to send VHC. Please try again.");
-    }
-  };
-
-  // ✅ Toggle send to customer for photos/videos
-  const handleToggleSendMedia = (type, mediaId) => {
-    if (type === "photo") {
-      setVhcData(prev => ({
-        ...prev,
-        photos: prev.photos.map(photo => 
-          photo.id === mediaId 
-            ? { ...photo, send_to_customer: !photo.send_to_customer }
-            : photo
-        )
-      }));
-    } else {
-      setVhcData(prev => ({
-        ...prev,
-        videos: prev.videos.map(video => 
-          video.id === mediaId 
-            ? { ...video, send_to_customer: !video.send_to_customer }
-            : video
-        )
-      }));
-    }
-  };
-
-// ✅ Money helpers
-const calculateTotals = (items) => {
-  const net = items.reduce(
-    (sum, item) =>
-      item.part_not_required || item.declined ? sum : sum + parseFloat(item.total_price || 0),
-    0,
-  );
-  const vat = net * VAT_RATE;
-  return { net, vat, gross: net + vat };
-};
-
-const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
-
-  const calculateSelectedTotal = (items) =>
-    items.reduce(
-      (sum, item) =>
-        selectedItems.includes(item.id)
-          ? sum + parseFloat(item.total_price || 0)
-          : sum,
-      0
-    );
-
-  const handleOpenPartsModal = (item) => {
-    const existing = item.part_selection || {};
-    const draft = partsDrafts[item.id];
-    setPartsForm({
-      search: draft?.search || "",
-      selectedPart: draft?.selectedPart || existing.selectedPart || null,
-      costToOrder: draft?.costToOrder !== undefined ? draft.costToOrder : existing.costToOrder ? existing.costToOrder.toString() : "",
-      customerCost: draft?.customerCost !== undefined ? draft.customerCost : existing.customerCost ? existing.customerCost.toString() : "",
-      quantity: draft?.quantity !== undefined ? draft.quantity : existing.quantity || 1,
-      backOrder: draft?.backOrder !== undefined ? draft.backOrder : !!existing.backOrder,
-      location: draft?.location || existing.location || defaultPartsForm.location,
-    });
-    setPartsModal({ open: true, itemId: item.id });
-  };
-
-  const handleClosePartsModal = ({ resetForm = false, clearDraft = false } = {}) => {
-    if (partsModal.itemId) {
-      setPartsDrafts((prev) => {
-        if (clearDraft) {
-          const next = { ...prev };
-          delete next[partsModal.itemId];
-          return next;
-        }
-        return {
-          ...prev,
-          [partsModal.itemId]: partsForm,
-        };
-      });
-    }
-    setPartsModal({ open: false, itemId: null });
-    if (resetForm) {
-      setPartsForm(defaultPartsForm);
-      setPartsSearchResults([]);
-    }
-  };
-
-  const handlePartsSearch = async (term) => {
-    setPartsForm((prev) => ({ ...prev, search: term }));
-    const queryText = term?.trim();
-    if (!queryText) {
-      setPartsSearchResults([]);
-      return;
-    }
-    const { data, error } = await supabase
-      .from("parts_catalog")
-      .select("id, part_number, name, unit_cost, unit_price, supplier, qty_in_stock, qty_on_order")
-      .or(`part_number.ilike.%${queryText}%,name.ilike.%${queryText}%`)
-      .limit(10);
-
-    if (error) {
-      console.error("❌ Parts search error:", error.message);
-      setPartsSearchResults([]);
-      return;
-    }
-    setPartsSearchResults(data || []);
-  };
-
-  const handleSelectPart = (part) => {
-    setPartsForm((prev) => ({
-      ...prev,
-      selectedPart: part,
-      search: part.part_number,
-      customerCost: part.unit_price?.toString() || prev.customerCost,
-      costToOrder: part.unit_cost?.toString() || prev.costToOrder,
-    }));
-  };
-
-  const handleItemFieldChange = (itemId, field, value) => {
-    setVhcData((prev) => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map((item) =>
-        item.id === itemId
-          ? {
-              ...item,
-              [field]: value,
-            }
-          : item,
-      ),
-    }));
-  };
-
-  const updateItemPricing = (item, nextPartsPrice) => {
-    const currentParts = Number.parseFloat(item.parts_price || 0) || 0;
-    const baseOther = Math.max(0, Number.parseFloat(item.total_price || 0) - currentParts);
-    const partsPrice = Number.isFinite(nextPartsPrice) ? nextPartsPrice : 0;
-    const totalPrice = baseOther + partsPrice;
-    return { parts_price: partsPrice.toFixed(2), total_price: totalPrice.toFixed(2) };
-  };
-
-  const handleSavePartsSelection = () => {
-    if (!partsModal.itemId) return;
-    const qty = Math.max(1, parseInt(partsForm.quantity, 10) || 1);
-    const customerCost = Number.parseFloat(partsForm.customerCost || 0) || 0;
-    const costToOrder = Number.parseFloat(partsForm.costToOrder || 0) || 0;
-    const partsPrice = customerCost * qty;
-
-    setVhcData((prev) => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map((item) => {
-        if (item.id !== partsModal.itemId) return item;
-        const prc = updateItemPricing(item, partsPrice);
-        return {
-          ...item,
-          ...prc,
-        part_selection: {
-          selectedPart: partsForm.selectedPart,
-          costToOrder,
-          customerCost,
-          quantity: qty,
-          backOrder: partsForm.backOrder,
-          location: partsForm.location || defaultPartsForm.location,
-        },
-          part_not_required: false,
-        };
-      }),
-    }));
-    setPartsDrafts((prev) => {
-      const next = { ...prev };
-      delete next[partsModal.itemId];
-      return next;
-    });
-    handleClosePartsModal({ resetForm: true, clearDraft: true });
-  };
-
-  const handleClearPartsSelection = () => {
-    if (!partsModal.itemId) return;
-    setVhcData((prev) => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map((item) => {
-        if (item.id !== partsModal.itemId) return item;
-        const prc = updateItemPricing(item, 0);
-        return {
-          ...item,
-          ...prc,
-          part_selection: null,
-        };
-      }),
-    }));
-    setPartsDrafts((prev) => {
-      const next = { ...prev };
-      delete next[partsModal.itemId];
-      return next;
-    });
-    handleClosePartsModal({ resetForm: true, clearDraft: true });
-  };
-
-  const handlePartsNotRequired = async () => {
-    if (!partsModal.itemId) return;
-    const targetId = partsModal.itemId;
-    setVhcData((prev) => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map((item) => {
-        if (item.id !== targetId) return item;
-        const prc = updateItemPricing(item, 0);
-        return {
-          ...item,
-          ...prc,
-          part_selection: null,
-          part_not_required: true,
-        };
-      }),
-    }));
-    try {
-      await supabase
-        .from("vhc_checks")
-        .update({
-          issue_description: "PARTS_NOT_REQUIRED",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("vhc_id", targetId);
-    } catch (error) {
-      console.error("❌ Failed to persist parts not required:", error);
-    }
-    setPartsDrafts((prev) => {
-      const next = { ...prev };
-      delete next[targetId];
-      return next;
-    });
-    handleClosePartsModal({ resetForm: true, clearDraft: true });
-  };
-
-  const handleCustomerDecision = async (item, approve) => {
-    const jobId = vhcData.job_id || vhcData.job?.id || vhcData.id;
-    if (!jobId) {
-      alert("Cannot sync decision without job reference");
-      return;
-    }
-
-    setVhcData((prev) => ({
-      ...prev,
-      vhc_items: prev.vhc_items.map((entry) => {
-        if (entry.id !== item.id) return entry;
-        return {
-          ...entry,
-          authorized: approve,
-          declined: !approve,
-          part_not_required: !approve,
-          decline_reason: !approve ? "Customer declined" : entry.decline_reason,
-        };
-      }),
-    }));
-
-    try {
-      await supabase
-        .from("vhc_checks")
-        .update({ issue_description: approve ? "Customer accepted" : "Customer declined" })
-        .eq("vhc_id", item.id);
-
-      if (approve && item.part_selection?.selectedPart?.id) {
-        const part = item.part_selection.selectedPart;
-        const qty = item.part_selection.quantity || 1;
-        const inStock = part.in_stock || 0;
-        const location = item.part_selection?.location || PART_STORAGE_OPTIONS[0];
-        const status =
-          inStock >= qty && typeof inStock === "number" ? "stock" : "on_order";
-        const severity = typeof item.status === "string" ? item.status.toLowerCase() : "";
-        const origin = severity.includes("amber")
-          ? "vhc_amber"
-          : severity.includes("red")
-          ? "vhc_red"
-          : "vhc";
-        await supabase.from("parts_job_items").insert([
-          {
-            job_id: jobId,
-            part_id: part.id,
-            quantity_requested: qty,
-            status,
-            origin,
-            vhc_item_id: item.id,
-            storage_location: location,
-            request_notes: "Auto-generated from VHC approval",
-            unit_cost: part.unit_cost || 0,
-            unit_price: part.unit_price || 0,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        ]);
-        if (inStock < qty) {
-          setOrderNeededWarning({
-            partNumber: part.part_number,
-            qty,
-            eta: part.expected_eta || null,
-          });
-          await supabase.from("parts_requests").insert([
-            {
-              job_id: jobId,
-              part_id: part.id,
-              quantity: qty,
-              status: "on_order",
-              source: "vhc_auto",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          ]);
-        }
-      }
-    } catch (error) {
-      console.error("❌ Failed to sync customer decision:", error);
-    }
-  };
-
-  // ✅ Shared layout for decline reason dropdowns and bulk action buttons
-  const renderBulkActionControls = (items = []) => {
-    const sectionSelectedIds = selectedItems.filter((id) =>
-      items.some((item) => item.id === id)
-    );
-    const hasSelection = sectionSelectedIds.length > 0;
-    const declineDisabled = !hasSelection; // disable when nothing selected in this section
-    const authorizeDisabled = !hasSelection;
-
+  if (loading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
-          <label style={{ display: "flex", flexDirection: "column", fontSize: "12px", fontWeight: "600", color: "#374151" }}>
-            Decline reason
-            <select
-              value={declineReason}
-              onChange={(e) => setDeclineReason(e.target.value)}
-              style={{
-                padding: "8px 12px",
-                borderRadius: "8px",
-                border: "1px solid #d1d5db",
-                minWidth: "220px",
-                fontSize: "14px",
-                fontWeight: "500",
-                color: declineReason === DECLINE_REASON_OPTIONS[0] ? "#9ca3af" : "#1f2937",
-                backgroundColor: "white"
-              }}
-            >
-              {DECLINE_REASON_OPTIONS.map(option => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
+      <Layout>
+        <div style={{ padding: "24px", color: "#6b7280" }}>Loading VHC details…</div>
+      </Layout>
+    );
+  }
 
-          <label style={{ display: "flex", flexDirection: "column", fontSize: "12px", fontWeight: "600", color: "#374151" }}>
-            Reminder period
-            <select
-              value={declineReminderMonths}
-              onChange={(e) => setDeclineReminderMonths(e.target.value)}
-              style={{
-                padding: "8px 12px",
-                borderRadius: "8px",
-                border: "1px solid #d1d5db",
-                minWidth: "180px",
-                fontSize: "14px",
-                fontWeight: "500",
-                backgroundColor: "white"
-              }}
-            >
-              {DECLINE_REMINDER_MONTH_OPTIONS.map(month => (
-                <option key={month} value={month.toString()}>
-                  {month} {month === 1 ? "month" : "months"}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+  if (error) {
+    return (
+      <Layout>
+        <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+          <p style={{ color: "#ef4444", fontWeight: 600 }}>{error}</p>
           <button
-            onClick={() => handleDeclineSelected(sectionSelectedIds)}
-            disabled={declineDisabled}
+            type="button"
+            onClick={() => router.push("/vhc/dashboard")}
             style={{
-              padding: "10px 20px",
-              backgroundColor: declineDisabled ? "#ccc" : "#ef4444",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: declineDisabled ? "not-allowed" : "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
-              minWidth: "160px"
+              alignSelf: "flex-start",
+              padding: "10px 14px",
+              borderRadius: "10px",
+              border: "1px solid #e5e7eb",
+              background: "#fff",
+              fontWeight: 600,
+              cursor: "pointer",
             }}
           >
-            Decline Selected
-          </button>
-          <button
-            onClick={() => handleAuthorizeSelected(sectionSelectedIds)}
-            disabled={authorizeDisabled}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: authorizeDisabled ? "#ccc" : "#10b981",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: authorizeDisabled ? "not-allowed" : "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
-              minWidth: "160px"
-            }}
-          >
-            Authorize Selected
+            Back to VHC dashboard
           </button>
         </div>
+      </Layout>
+    );
+  }
+
+  if (!jobData) {
+    return (
+      <Layout>
+        <div style={{ padding: "24px" }}>Unable to find the requested job.</div>
+      </Layout>
+    );
+  }
+
+  const { sections, totals } = vhcSummary;
+  const statusColor = STATUS_COLORS[vhcStatus] || "#9ca3af";
+
+  const renderSectionMetrics = (section) => (
+    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+      {section.metrics.red > 0 ? (
+        <span style={{ ...buildBadgeStyle("Red"), fontSize: "10px" }}>
+          {section.metrics.red} Red
+        </span>
+      ) : null}
+      {section.metrics.amber > 0 ? (
+        <span style={{ ...buildBadgeStyle("Amber"), fontSize: "10px" }}>
+          {section.metrics.amber} Amber
+        </span>
+      ) : null}
+      {section.metrics.grey > 0 ? (
+        <span style={{ ...buildBadgeStyle("Neutral"), fontSize: "10px" }}>
+          {section.metrics.grey} Grey
+        </span>
+      ) : null}
+    </div>
+  );
+
+  const renderSectionItem = (item, index) => {
+    const badgeStyle = buildBadgeStyle(item.status || "Neutral");
+    const showBadge = item.status && item.status !== "Neutral";
+    return (
+      <div
+        key={`${item.heading}-${index}`}
+        style={{
+          border: "1px solid #f3f4f6",
+          borderRadius: "10px",
+          backgroundColor: "#fff",
+          padding: "10px 12px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <span style={{ fontSize: "13px", fontWeight: "600", color: "#111827" }}>{item.heading}</span>
+          {showBadge ? <span style={badgeStyle}>{item.status}</span> : null}
+        </div>
+        {item.rows?.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            {item.rows.map((line, lineIdx) => (
+              <span key={`${item.heading}-row-${lineIdx}`} style={{ fontSize: "12px", color: "#4b5563" }}>
+                {line}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        {item.concerns?.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            {item.concerns.map((concern, concernIdx) => (
+              <div
+                key={`${item.heading}-concern-${concernIdx}`}
+                style={{ display: "flex", gap: "6px", alignItems: "flex-start" }}
+              >
+                <span style={{ fontSize: "10px", color: "#d1d5db", lineHeight: "18px" }}>•</span>
+                <span style={{ fontSize: "12px", color: "#4b5563" }}>
+                  <span style={{ fontWeight: "600", color: getConcernColor(concern.status) }}>
+                    {concern.status}:
+                  </span>{" "}
+                  {concern.text}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
     );
   };
 
-  // ✅ Loading state
-  if (loading) {
-    return (
-      <Layout>
-        <div style={{ 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "center", 
-          height: "100%",
-          color: "#6B7280",
-          fontSize: "16px"
-        }}>
-          Loading VHC details...
-        </div>
-      </Layout>
-    );
-  }
-
-  // ✅ No data found
-  if (!vhcData) {
-    return (
-      <Layout>
-        <div style={{ 
-          display: "flex", 
-          flexDirection: "column",
-          alignItems: "center", 
-          justifyContent: "center", 
-          height: "100%",
-          gap: "16px"
-        }}>
-          <p style={{ color: "#6B7280", fontSize: "16px" }}>VHC record not found</p>
-          <button
-            onClick={() => router.push("/vhc/dashboard")}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#d10000",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "500"
-            }}
-          >
-            Back to Dashboard
-          </button>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (isCustomerView) {
-    const customerTotals = calculateTotals(customerViewItems);
-    return (
-      <Layout>
-        <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700" }}>Customer View • Job {jobNumber}</h2>
-            <Link href={`/vhc/details/${jobNumber}`}>
-              <span style={{ color: "#d10000", fontWeight: "700", cursor: "pointer" }}>Back to staff view</span>
-            </Link>
-          </div>
-
-          <div style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "14px" }}>
-            <h3 style={{ marginTop: 0, fontSize: "16px", fontWeight: "700" }}>Red & Amber Items</h3>
-            {customerViewItems.length === 0 ? (
-              <p style={{ color: "#9ca3af", fontSize: "14px" }}>No red or amber items to show.</p>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {customerViewItems.map((item) => (
-                  <div
-                    key={item.id}
-                    style={{
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "10px",
-                      padding: "12px",
-                      display: "grid",
-                      gridTemplateColumns: "2fr 1fr 1fr 1fr",
-                      gap: "10px",
-                      alignItems: "center",
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                        <span
-                          style={{
-                            backgroundColor: item.status === "Red" ? "#ef4444" : "#fbbf24",
-                            color: "white",
-                            padding: "2px 8px",
-                            borderRadius: "6px",
-                            fontSize: "11px",
-                            fontWeight: "700",
-                          }}
-                        >
-                          {item.status}
-                        </span>
-                        <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>
-                          {item.category} - {item.item}
-                        </p>
-                      </div>
-                      <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>{item.notes}</p>
-                    </div>
-                    <div style={{ textAlign: "center", fontSize: "13px", color: "#374151" }}>
-                      <div><strong>Parts:</strong> £{formatMoney(item.parts_price)}</div>
-                      <div><strong>Labour:</strong> {item.labor_hours || 0}h</div>
-                    </div>
-                    <div style={{ textAlign: "center", fontSize: "13px", color: "#374151" }}>
-                      <div><strong>Total:</strong> £{formatMoney(item.total_price)}</div>
-                    </div>
-                    <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
-                      <button
-                        onClick={() => handleCustomerDecision(item, true)}
-                        style={{ padding: "8px 12px", background: "#10b981", color: "white", border: "none", borderRadius: "8px", fontWeight: "700", cursor: "pointer" }}
-                      >
-                        Accept
-                      </button>
-                      <button
-                        onClick={() => handleCustomerDecision(item, false)}
-                        style={{ padding: "8px 12px", background: "#ef4444", color: "white", border: "none", borderRadius: "8px", fontWeight: "700", cursor: "pointer" }}
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "14px" }}>
-            <h4 style={{ marginTop: 0, fontSize: "15px", fontWeight: "700", color: "#111827" }}>Totals</h4>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", fontSize: "13px", color: "#374151" }}>
-              <div><strong>Net:</strong> £{formatMoney(customerTotals.net)}</div>
-              <div><strong>VAT:</strong> £{formatMoney(customerTotals.vat)}</div>
-              <div><strong>Gross:</strong> £{formatMoney(customerTotals.gross)}</div>
-              <div><strong>Items:</strong> {customerViewItems.length}</div>
-            </div>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-  const statusColor = STATUS_COLORS[vhcData.status] || "#9ca3af";
-
-  // Filter items by status (excluding authorized and declined for red/amber sections)
-  const redItems = vhcData.vhc_items.filter(item => item.status === "Red" && !item.authorized && !item.declined);
-  const amberItems = vhcData.vhc_items.filter(item => item.status === "Amber" && !item.authorized && !item.declined);
-  const greenItems = vhcData.vhc_items.filter(item => item.status === "Green");
-  const greyItems = vhcData.vhc_items.filter(item => item.status === "Grey");
-  const authorizedItems = vhcData.vhc_items.filter(item => item.authorized);
-  const declinedItems = vhcData.vhc_items.filter(item => item.declined);
-
-  const allRedSelected = redItems.length > 0 && areAllSelected(redItems); // check whether every red item is selected
-  const allAmberSelected = amberItems.length > 0 && areAllSelected(amberItems); // check whether every amber item is selected
-
   return (
     <Layout>
-      <div style={{ 
-        height: "100%", 
-        display: "flex", 
-        flexDirection: "column", 
-        padding: "16px",
-        overflow: "hidden" 
-      }}>
-        {/* ✅ Header with Back Button and Send VHC Button */}
-        <div style={{ 
-          display: "flex", 
-          justifyContent: "space-between", 
-          alignItems: "center",
-          marginBottom: "16px",
-          flexShrink: 0
-        }}>
+      <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <button
+            type="button"
             onClick={() => router.push("/vhc/dashboard")}
             style={{
-              padding: "8px 16px",
-              backgroundColor: "#fff",
-              border: "1px solid #e0e0e0",
-              borderRadius: "8px",
+              padding: "10px 14px",
+              borderRadius: "10px",
+              border: "1px solid #e5e7eb",
+              background: "#fff",
+              fontWeight: 600,
               cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "500",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              color: "#000000"
             }}
           >
-            ← Back
+            ← Back to VHC dashboard
           </button>
-          
-          <h1 style={{ fontSize: "24px", fontWeight: "700", color: "#1a1a1a" }}>
-            VHC Details -{" "}
-            <Link
-              href={`/job-cards/${vhcData.job_number}`}
-              style={{
-                color: "#d10000",
-                textDecoration: "none",
-                fontWeight: "700",
-                cursor: "pointer"
-              }}
-            >
-              {vhcData.job_number}
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <span style={{ fontSize: "13px", color: "#6b7280" }}>Job #{jobData.jobNumber}</span>
+            <Link href={`/job-cards/${jobData.jobNumber}`} style={{ fontSize: "13px", color: "#d10000", fontWeight: 600 }}>
+              View job card →
             </Link>
-          </h1>
-          
-          <button
-            onClick={handleSendVHC}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#d10000",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "600"
-            }}
-          >
-            Send VHC
-          </button>
-        </div>
-
-        {/* ✅ FIXED - Vehicle Info Card - Always Visible */}
-        <div style={{
-          background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)",
-          border: "1px solid #ffe5e5",
-          borderRadius: "16px",
-          padding: "20px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-          marginBottom: "16px",
-          flexShrink: 0
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            {/* Left side - Vehicle details */}
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-                <div style={{
-                  backgroundColor: statusColor,
-                  color: "white",
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  fontWeight: "600"
-                }}>
-                  {vhcData.status}
-                </div>
-                <h2 style={{ fontSize: "28px", fontWeight: "700", color: "#1a1a1a" }}>
-                  {vhcData.reg}
-                </h2>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <p style={{ fontSize: "16px", color: "#666" }}>
-                  <strong>Make/Model:</strong> {vhcData.vehicle_make} {vhcData.vehicle_model} ({vhcData.vehicle_year})
-                </p>
-                <p style={{ fontSize: "16px", color: "#666" }}>
-                  <strong>Mileage:</strong> {vhcData.mileage.toLocaleString()} miles
-                </p>
-                <p style={{ fontSize: "16px", color: "#666" }}>
-                  <strong>Customer:</strong> {vhcData.customer_name}
-                </p>
-                <p style={{ fontSize: "16px", color: "#666" }}>
-                  <strong>Phone:</strong> {vhcData.customer_phone}
-                </p>
-                <p style={{ fontSize: "16px", color: "#666" }}>
-                  <strong>Email:</strong> {vhcData.customer_email}
-                </p>
-              </div>
-            </div>
-
-            {/* Right side - Dates and team */}
-            <div style={{ textAlign: "right" }}>
-              <p style={{ fontSize: "14px", color: "#666", marginBottom: "8px" }}>
-                <strong>Last Visit:</strong> {vhcData.last_visit}
-              </p>
-              <p style={{ fontSize: "14px", color: "#666", marginBottom: "8px" }}>
-                <strong>Next Service:</strong> {vhcData.next_service}
-              </p>
-              <p style={{ fontSize: "14px", color: "#666", marginBottom: "8px" }}>
-                <strong>MOT Expiry:</strong> {vhcData.mot_expiry}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Order needed warning */}
-        {orderNeededWarning && (
-          <div
-            style={{
-              marginBottom: "16px",
-              padding: "12px 16px",
-              borderRadius: "12px",
-              background: "#fff4e6",
-              border: "1px solid #fbbf24",
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-            }}
-          >
-            <strong style={{ color: "#92400e" }}>Order needed:</strong>
-            <span style={{ fontSize: "14px", color: "#92400e" }}>
-              {orderNeededWarning.qty} × {orderNeededWarning.partNumber} – move to Order Needed.
-              {orderNeededWarning.eta ? (
-                <span style={{ fontSize: "13px", color: "#92400e" }}> ETA: {orderNeededWarning.eta}</span>
-              ) : null}
-            </span>
-          </div>
-        )}
-        {/* ✅ Status and Cost Summary Bar - Updated Layout */}
-        <div style={{
-          background: "white",
-          border: "1px solid #e0e0e0",
-          borderRadius: "16px",
-          padding: "20px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: "12px",
-          marginBottom: "16px",
-          flexShrink: 0,
-          flexWrap: "wrap"
-        }}>
-          {!isCustomerView && (
-            <button
-              onClick={() => window.open(`/vhc/details/${jobNumber}?view=customer`, "_blank")}
-              style={{
-                padding: "10px 14px",
-                backgroundColor: "#f3f4f6",
-                color: "#d10000",
-                border: "1px solid #e5e7eb",
-                borderRadius: "10px",
-                cursor: "pointer",
-                fontWeight: "700"
-              }}
-            >
-              View As Customer
-            </button>
-          )}
-          {/* Left - VHC Status Badge */}
-          <div style={{
-            backgroundColor: statusColor,
-            color: "white",
-            padding: "12px 24px",
-            borderRadius: "8px",
-            fontSize: "15px",
-            fontWeight: "600"
-          }}>
-            VHC Status: {vhcData.status}
-          </div>
-
-          {/* Right - Cost Summary - Spread Out More */}
-          <div style={{ display: "flex", gap: "48px", flexWrap: "wrap" }}>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Red Work (incl VAT)</p>
-              <p style={{ fontSize: "22px", fontWeight: "700", color: "#ef4444" }}>
-                £{formatMoney(vhcData.red_work)}
-              </p>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Amber Work (incl VAT)</p>
-              <p style={{ fontSize: "22px", fontWeight: "700", color: "#fbbf24" }}>
-                £{formatMoney(vhcData.amber_work)}
-              </p>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Authorized (incl VAT)</p>
-              <p style={{ fontSize: "22px", fontWeight: "700", color: "#10b981" }}>
-                £{formatMoney(vhcData.authorized)}
-              </p>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Declined (incl VAT)</p>
-              <p style={{ fontSize: "22px", fontWeight: "700", color: "#ef4444" }}>
-                £{formatMoney(vhcData.declined_work)}
-              </p>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Approved Red (incl VAT)</p>
-              <p style={{ fontSize: "20px", fontWeight: "700", color: "#ef4444" }}>
-                £{formatMoney(approvedSeverityTotals.red.gross)}
-              </p>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Approved Amber (incl VAT)</p>
-              <p style={{ fontSize: "20px", fontWeight: "700", color: "#f59e0b" }}>
-                £{formatMoney(approvedSeverityTotals.amber.gross)}
-              </p>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Parts Total (net)</p>
-              <p style={{ fontSize: "20px", fontWeight: "700", color: "#1f2937" }}>
-                £{formatMoney(computedTotals.partsNet)}
-              </p>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Labour Total (net)</p>
-              <p style={{ fontSize: "20px", fontWeight: "700", color: "#1f2937" }}>
-                £{formatMoney(computedTotals.labourNet)}
-              </p>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Combined (net)</p>
-              <p style={{ fontSize: "20px", fontWeight: "700", color: "#111827" }}>
-                £{formatMoney(computedTotals.net)}
-              </p>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>VAT</p>
-              <p style={{ fontSize: "20px", fontWeight: "700", color: "#111827" }}>
-                £{formatMoney(computedTotals.vat)}
-              </p>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>Grand Total (incl VAT)</p>
-              <p style={{ fontSize: "22px", fontWeight: "700", color: "#111827" }}>
-                £{formatMoney(computedTotals.gross)}
-              </p>
-            </div>
           </div>
         </div>
 
         <div
           style={{
-            background: 'white',
-            border: '1px solid #ffe5e5',
-            borderRadius: '16px',
-            padding: '16px',
-            boxShadow: '0 8px 20px rgba(0,0,0,0.08)',
-            marginBottom: '16px',
+            background: "#fff",
+            borderRadius: "16px",
+            border: "1px solid #f3f4f6",
+            padding: "24px",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "24px",
           }}
         >
-          <div
-            style={{
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              color: '#d10000',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-            }}
-          >
-            Parts Pipeline
-          </div>
-          <div
-            style={{
-              marginTop: '12px',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-              gap: '10px',
-            }}
-          >
-            {pipelineStages.map((stage) => (
-              <div
-                key={stage.id}
-                style={{
-                  padding: '10px',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(209,0,0,0.2)',
-                  background: stage.count > 0 ? '#fff4f4' : '#f9fafb',
-                }}
-              >
-                <div style={{ fontSize: '1.2rem', fontWeight: 600, color: '#d10000' }}>
-                  {stage.count}
-                </div>
-                <div style={{ fontWeight: 600 }}>{stage.label}</div>
-                <p style={{ marginTop: '4px', fontSize: '0.75rem', color: '#4b5563' }}>
-                  {stage.description}
-                </p>
-              </div>
-            ))}
-          </div>
-          <p style={{ marginTop: '12px', fontSize: '0.85rem', color: '#4b5563' }}>
-            Tracking {partsPipelineSummary.totalCount} part line
-            {partsPipelineSummary.totalCount === 1 ? '' : 's'} across these stages.
-          </p>
-        </div>
-        {/* ✅ Tabs Navigation */}
-        <div style={{
-          display: "flex",
-          gap: "8px",
-          marginBottom: "16px",
-          borderBottom: "2px solid #e0e0e0",
-          flexShrink: 0
-        }}>
-          {["summary", "health-check", "parts-identified", "parts-authorized", "parts-on-order", "photos", "videos"].map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <span style={{ fontSize: "12px", color: "#9ca3af", letterSpacing: "0.2em", textTransform: "uppercase" }}>
+              Vehicle
+            </span>
+            <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#111827", margin: 0 }}>
+              {jobData.reg || "—"}
+            </h1>
+            <p style={{ margin: 0, color: "#4b5563" }}>
+              {jobData.makeModel || jobData.vehicle_make_model || "Vehicle details unavailable"}
+            </p>
+            <div
               style={{
-                padding: "12px 20px",
-                backgroundColor: activeTab === tab ? "#d10000" : "transparent",
-                color: activeTab === tab ? "white" : "#666",
-                border: "none",
-                borderBottom: activeTab === tab ? "3px solid #d10000" : "3px solid transparent",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: activeTab === tab ? "600" : "500",
-                textTransform: "capitalize",
-                transition: "all 0.2s"
+                backgroundColor: statusColor,
+                color: "#fff",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "6px 14px",
+                borderRadius: "999px",
+                fontWeight: 600,
+                marginTop: "6px",
               }}
             >
-              {tab.replace("-", " ")}
-            </button>
+              {vhcStatus}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <span style={{ fontSize: "12px", color: "#9ca3af", letterSpacing: "0.2em", textTransform: "uppercase" }}>
+              Customer
+            </span>
+            <p style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>
+              {jobData.customer || "Unknown customer"}
+            </p>
+            <p style={{ margin: 0, color: "#4b5563" }}>{jobData.customerEmail || "No email on record"}</p>
+            <p style={{ margin: 0, color: "#4b5563" }}>{jobData.customerPhone || "No phone on record"}</p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <span style={{ fontSize: "12px", color: "#9ca3af", letterSpacing: "0.2em", textTransform: "uppercase" }}>
+              Workflow milestones
+            </span>
+            {timelineEvents.length === 0 ? (
+              <p style={{ margin: 0, color: "#6b7280" }}>We haven't recorded any VHC milestones yet.</p>
+            ) : (
+              <ul style={{ margin: 0, paddingLeft: "18px", color: "#374151", fontSize: "13px" }}>
+                {timelineEvents.map((event) => (
+                  <li key={`${event.label}-${event.value}`} style={{ marginBottom: "6px" }}>
+                    <strong>{event.label}:</strong> {formatDateTime(event.value)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: "16px",
+            border: "1px solid #f3f4f6",
+            padding: "20px",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "16px",
+          }}
+        >
+          {[
+            { label: "Red issues", value: totals.red, color: "#ef4444" },
+            { label: "Amber issues", value: totals.amber, color: "#f97316" },
+            { label: "Grey / not checked", value: totals.grey, color: "#6b7280" },
+            { label: "Sections captured", value: sections.length, color: "#0f172a" },
+          ].map((card) => (
+            <div
+              key={card.label}
+              style={{
+                flex: "1 1 200px",
+                borderRadius: "12px",
+                border: "1px solid #f3f4f6",
+                padding: "14px 16px",
+                background: "#fff",
+              }}
+            >
+              <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>{card.label}</p>
+              <p style={{ margin: 0, marginTop: "4px", fontSize: "24px", fontWeight: 700, color: card.color }}>
+                {card.value}
+              </p>
+            </div>
           ))}
         </div>
 
-        {/* ✅ Tab Content - Scrollable */}
-        <div style={{ 
-          flex: 1,
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px"
-        }}>
-          
-          {/* ========== SUMMARY TAB ========== */}
-          {activeTab === "summary" && (
-            <>
-              {/* Authorized Work Section */}
-              {authorizedItems.length > 0 && (
-                <div style={{
-                  background: "white",
-                  border: "2px solid #10b981",
-                  borderRadius: "16px",
-                  padding: "20px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#10b981" }}>
-                      ✓ Authorized Work
-                    </h3>
-                    <p style={{ fontSize: "20px", fontWeight: "700", color: "#10b981" }}>
-                      Total: £{formatMoney(calculateTotals(authorizedItems).gross)}
-                    </p>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    {authorizedItems.map(item => (
-                      <div key={item.id} style={{
-                        border: "1px solid #10b98130",
-                        borderRadius: "8px",
-                        padding: "12px",
-                        backgroundColor: "#10b98110",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center"
-                      }}>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                            <div style={{
-                              backgroundColor: item.status === "Red" ? "#ef4444" : "#fbbf24",
-                              color: "white",
-                              padding: "2px 8px",
-                              borderRadius: "4px",
-                              fontSize: "10px",
-                              fontWeight: "600"
-                            }}>
-                              {item.status}
-                            </div>
-                            <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                              {item.category} - {item.item}
-                            </p>
-                          </div>
-                          <p style={{ fontSize: "13px", color: "#666" }}>
-                            {item.notes}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleToggleAuthorize(item.id)}
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor: "#ef4444",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                            fontWeight: "600"
-                          }}
-                        >
-                          Unauthorize
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: "16px",
+            border: "1px solid #f3f4f6",
+            padding: "20px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#111827" }}>VHC sections</h2>
+            <span style={{ fontSize: "13px", color: "#6b7280" }}>
+              {vhcSummary.itemCount} cards captured by technicians
+            </span>
+          </div>
 
-              {/* Red Work Section - Immediate Attention - Only show if items exist */}
-              {redItems.length > 0 && (
-                <div style={{
-                  background: "white",
-                  border: "2px solid #ef4444",
-                  borderRadius: "16px",
-                  padding: "20px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "12px", flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-                      <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#ef4444" }}>
-                        Red - Immediate Attention Required
-                      </h3>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <p style={{ fontSize: "20px", fontWeight: "700", color: "#ef4444" }}>
-                        Section Total: £{formatMoney(calculateTotals(redItems).gross)}
-                      </p>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#991b1b" }}>
-                        Selected Total: £{calculateSelectedTotal(redItems).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Table Header */}
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "2fr 1fr 1fr 1fr 80px 30px",
-                    gap: "12px",
-                    padding: "12px",
-                    backgroundColor: "#f5f5f5",
-                    borderRadius: "8px",
-                    marginBottom: "12px",
-                    fontWeight: "600",
-                    fontSize: "13px"
-                  }}>
-                    <div>Item Details</div>
-                    <div style={{ textAlign: "center" }}>Parts</div>
-                    <div style={{ textAlign: "center" }}>Labor</div>
-                    <div style={{ textAlign: "center" }}>Price</div>
-                    <div style={{ textAlign: "center" }}>Status</div>
-                    <div style={{ display: "flex", justifyContent: "center" }}>
-                      <input
-                        type="checkbox"
-                        checked={allRedSelected}
-                        onChange={() => handleToggleSelectAll(redItems)}
-                        title="Select all red items"
-                        style={{ width: "18px", height: "18px", cursor: "pointer" }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Red Items */}
-                  {redItems.map(item => {
-                    const partsCost = parseFloat(item.parts_price) || 0;
-                    const laborCostGross = (parseFloat(item.labor_hours) || 0) * HOURLY_LABOUR_RATE * (1 + VAT_RATE);
-                    
-                    return (
-                      <div key={item.id} style={{
-                        display: "grid",
-                        gridTemplateColumns: "2fr 1fr 1fr 1fr 80px 30px",
-                        gap: "12px",
-                        padding: "12px",
-                        border: "1px solid #ef444430",
-                        borderRadius: "8px",
-                        backgroundColor: "#ef444410",
-                        marginBottom: "8px",
-                        alignItems: "center"
-                      }}>
-                        <div>
-                          <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                            {item.category} - {item.item}
-                          </p>
-                          <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
-                            {item.notes}
-                          </p>
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <p style={{ fontSize: "14px", fontWeight: "600" }}>£{item.parts_price}</p>
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={item.labor_hours || 0}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9.]/g, '');
-                              handleLaborChange(item.id, value);
-                            }}
-                            style={{
-                              width: "70px",
-                              padding: "6px 10px",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "6px",
-                              textAlign: "center",
-                              fontSize: "14px",
-                              fontWeight: "500"
-                            }}
-                          />
-                          <p style={{ fontSize: "11px", color: "#666", marginTop: "4px" }}>
-                            £{laborCostGross.toFixed(2)}
-                          </p>
-                          <p style={{ fontSize: "10px", color: "#9ca3af", marginTop: "2px" }}>
-                            TODO: auto-calc labour time from parts in future
-                          </p>
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={item.total_price || 0}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9.]/g, '');
-                              handlePriceChange(item.id, value);
-                            }}
-                            style={{
-                              width: "80px",
-                              padding: "6px 10px",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "6px",
-                              textAlign: "center",
-                              fontSize: "15px",
-                              fontWeight: "700"
-                            }}
-                          />
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <div style={{
-                            width: "20px",
-                            height: "20px",
-                            borderRadius: "50%",
-                            backgroundColor: "#fbbf24",
-                            margin: "0 auto"
-                          }}></div>
-                        </div>
-
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.includes(item.id)}
-                          onChange={() => handleSelectItem(item.id)}
-                          style={{ width: "18px", height: "18px", cursor: "pointer" }}
-                        />
-                      </div>
-                    );
-                  })}
-
-                  {/* Action controls with decline reason + reminder selections */}
-                  {renderBulkActionControls(redItems)}
-                </div>
-              )}
-
-              {/* Amber Work Section - Not Urgent - Only show if items exist */}
-              {amberItems.length > 0 && (
-                <div style={{
-                  background: "white",
-                  border: "2px solid #fbbf24",
-                  borderRadius: "16px",
-                  padding: "20px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "12px", flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-                      <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#fbbf24" }}>
-                        Amber - Not Urgent
-                      </h3>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <p style={{ fontSize: "20px", fontWeight: "700", color: "#fbbf24" }}>
-                        Section Total: £{formatMoney(calculateTotals(amberItems).gross)}
-                      </p>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#92400e" }}>
-                        Selected Total: £{calculateSelectedTotal(amberItems).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Table Header */}
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "2fr 1fr 1fr 1fr 80px 30px",
-                    gap: "12px",
-                    padding: "12px",
-                    backgroundColor: "#f5f5f5",
-                    borderRadius: "8px",
-                    marginBottom: "12px",
-                    fontWeight: "600",
-                    fontSize: "13px"
-                  }}>
-                    <div>Item Details</div>
-                    <div style={{ textAlign: "center" }}>Parts</div>
-                    <div style={{ textAlign: "center" }}>Labor</div>
-                    <div style={{ textAlign: "center" }}>Price</div>
-                    <div style={{ textAlign: "center" }}>Status</div>
-                    <div style={{ display: "flex", justifyContent: "center" }}>
-                      <input
-                        type="checkbox"
-                        checked={allAmberSelected}
-                        onChange={() => handleToggleSelectAll(amberItems)}
-                        title="Select all amber items"
-                        style={{ width: "18px", height: "18px", cursor: "pointer" }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Amber Items */}
-                  {amberItems.map(item => {
-                    const partsCost = parseFloat(item.parts_price) || 0;
-                    const laborCostGross = (parseFloat(item.labor_hours) || 0) * HOURLY_LABOUR_RATE * (1 + VAT_RATE);
-                    
-                    return (
-                      <div key={item.id} style={{
-                        display: "grid",
-                        gridTemplateColumns: "2fr 1fr 1fr 1fr 80px 30px",
-                        gap: "12px",
-                        padding: "12px",
-                        border: "1px solid #fbbf2430",
-                        borderRadius: "8px",
-                        backgroundColor: "#fbbf2410",
-                        marginBottom: "8px",
-                        alignItems: "center"
-                      }}>
-                        <div>
-                          <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                            {item.category} - {item.item}
-                          </p>
-                          <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
-                            {item.notes}
-                          </p>
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <p style={{ fontSize: "14px", fontWeight: "600" }}>£{item.parts_price}</p>
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={item.labor_hours || 0}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9.]/g, '');
-                              handleLaborChange(item.id, value);
-                            }}
-                            style={{
-                              width: "70px",
-                              padding: "6px 10px",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "6px",
-                              textAlign: "center",
-                              fontSize: "14px",
-                              fontWeight: "500"
-                            }}
-                          />
-                          <p style={{ fontSize: "11px", color: "#666", marginTop: "4px" }}>
-                            £{laborCostGross.toFixed(2)}
-                          </p>
-                          <p style={{ fontSize: "10px", color: "#9ca3af", marginTop: "2px" }}>
-                            TODO: auto-calc labour time from parts in future
-                          </p>
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={item.total_price || 0}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9.]/g, '');
-                              handlePriceChange(item.id, value);
-                            }}
-                            style={{
-                              width: "80px",
-                              padding: "6px 10px",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "6px",
-                              textAlign: "center",
-                              fontSize: "15px",
-                              fontWeight: "700"
-                            }}
-                          />
-                        </div>
-                        
-                        <div style={{ textAlign: "center" }}>
-                          <div style={{
-                            width: "20px",
-                            height: "20px",
-                            borderRadius: "50%",
-                            backgroundColor: "#fbbf24",
-                            margin: "0 auto"
-                          }}></div>
-                        </div>
-
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.includes(item.id)}
-                          onChange={() => handleSelectItem(item.id)}
-                          style={{ width: "18px", height: "18px", cursor: "pointer" }}
-                        />
-                      </div>
-                    );
-                  })}
-
-                  {/* Action controls with decline reason + reminder selections */}
-                  {renderBulkActionControls(amberItems)}
-                </div>
-              )}
-
-              {/* Declined Work Section - Only show if items exist */}
-              {declinedItems.length > 0 && (
-                <div style={{
-                  background: "white",
-                  border: "2px solid #ef4444",
-                  borderRadius: "16px",
-                  padding: "20px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#ef4444" }}>
-                      ✕ Declined Work
-                    </h3>
-                    <p style={{ fontSize: "20px", fontWeight: "700", color: "#ef4444" }}>
-                      Total: £{formatMoney(calculateTotals(declinedItems).gross)}
-                    </p>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    {declinedItems.map(item => (
-                      <div key={item.id} style={{
-                        border: "1px solid #ef444430",
-                        borderRadius: "8px",
-                        padding: "12px",
-                        backgroundColor: "#ef444410",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center"
-                      }}>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                            <div style={{
-                              backgroundColor: item.status === "Red" ? "#ef4444" : "#fbbf24",
-                              color: "white",
-                              padding: "2px 8px",
-                              borderRadius: "4px",
-                              fontSize: "10px",
-                              fontWeight: "600"
-                            }}>
-                              {item.status}
-                            </div>
-                            <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                              {item.category} - {item.item}
-                            </p>
-                          </div>
-                          <p style={{ fontSize: "13px", color: "#666" }}>
-                            {item.notes}
-                          </p>
-                          <p style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>
-                            Decline reason: {item.decline_reason || "Not provided"}
-                          </p>
-                          <p style={{ fontSize: "12px", color: "#9ca3af" }}>
-                            Reminder set: {item.decline_reminder_months ? `${item.decline_reminder_months} ${item.decline_reminder_months === 1 ? "month" : "months"}` : "None"}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleToggleDecline(item.id)}
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor: "#10b981",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                            fontWeight: "600"
-                          }}
-                        >
-                          Undecline
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* All VHC Items Grid - 4 columns */}
-              <div style={{
-                background: "white",
-                border: "1px solid #e0e0e0",
-                borderRadius: "16px",
-                padding: "20px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-              }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
-                  Full VHC Report
-                </h3>
-                
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "16px"
-                }}>
-                  {/* Red Items First (including all red, not just unactioned) */}
-                  {vhcData.vhc_items.filter(item => item.status === "Red").map(item => (
-                    <div key={item.id} style={{
-                      border: "2px solid #ef4444",
-                      borderRadius: "12px",
-                      padding: "16px",
-                      backgroundColor: "#ef444410"
-                    }}>
-                      <div style={{
-                        backgroundColor: "#ef4444",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        marginBottom: "8px",
-                        display: "inline-block"
-                      }}>
-                        RED
-                      </div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
-                        {item.category}
-                      </p>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {item.item}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#999" }}>
-                        {item.notes}
-                      </p>
-                    </div>
-                  ))}
-                  
-                  {/* Amber Items (including all amber, not just unactioned) */}
-                  {vhcData.vhc_items.filter(item => item.status === "Amber").map(item => (
-                    <div key={item.id} style={{
-                      border: "2px solid #fbbf24",
-                      borderRadius: "12px",
-                      padding: "16px",
-                      backgroundColor: "#fbbf2410"
-                    }}>
-                      <div style={{
-                        backgroundColor: "#fbbf24",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        marginBottom: "8px",
-                        display: "inline-block"
-                      }}>
-                        AMBER
-                      </div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
-                        {item.category}
-                      </p>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {item.item}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#999" }}>
-                        {item.notes}
-                      </p>
-                    </div>
-                  ))}
-                  
-                  {/* Green Items */}
-                  {greenItems.map(item => (
-                    <div key={item.id} style={{
-                      border: "2px solid #10b981",
-                      borderRadius: "12px",
-                      padding: "16px",
-                      backgroundColor: "#10b98110"
-                    }}>
-                      <div style={{
-                        backgroundColor: "#10b981",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        marginBottom: "8px",
-                        display: "inline-block"
-                      }}>
-                        GREEN
-                      </div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
-                        {item.category}
-                      </p>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {item.item}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#999" }}>
-                        {item.notes}
-                      </p>
-                    </div>
-                  ))}
-                  
-                  {/* Grey Items */}
-                  {greyItems.map(item => (
-                    <div key={item.id} style={{
-                      border: "2px solid #9ca3af",
-                      borderRadius: "12px",
-                      padding: "16px",
-                      backgroundColor: "#9ca3af10"
-                    }}>
-                      <div style={{
-                        backgroundColor: "#9ca3af",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        marginBottom: "8px",
-                        display: "inline-block"
-                      }}>
-                        NOT CHECKED
-                      </div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
-                        {item.category}
-                      </p>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {item.item}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#999" }}>
-                        {item.notes}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* ========== HEALTH CHECK TAB ========== */}
-          {activeTab === "health-check" && (
+          {sections.length === 0 ? (
             <div
               style={{
-                background: "white",
-                border: "1px solid #e0e0e0",
-                borderRadius: "16px",
-                padding: "20px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
+                padding: "24px",
+                borderRadius: "12px",
+                border: "1px dashed #e5e7eb",
+                textAlign: "center",
+                color: "#6b7280",
               }}
             >
-              <h3
-                style={{
-                  fontSize: "18px",
-                  fontWeight: "600",
-                  color: "#1a1a1a",
-                  marginBottom: "4px",
-                }}
-              >
-                Vehicle Health Check – Technician Inputs (editable for managers)
-              </h3>
-              <p style={{ fontSize: "13px", color: "#666" }}>Statuses and notes captured by technicians are shown below. Managers can edit fields directly.</p>
-
-              {[
-                { key: "brakes", label: "Brakes" },
-                { key: "tyres", label: "Tyres" },
-                { key: "underside", label: "Underside" },
-                { key: "underBonnet", label: "Under Bonnet" },
-                { key: "cosmetics", label: "Cosmetics" },
-                { key: "electronics", label: "Electronics" },
-              ].map((section) => {
-                const items =
-                  vhcData.vhc_items?.filter((item) =>
-                    SECTION_CATEGORY_MAP[section.key].some((cat) =>
-                      (item.category || "").toLowerCase().includes(cat.toLowerCase()),
-                    ),
-                  ) || [];
-                return (
-                  <div key={section.key} style={{ border: "1px solid #e5e7eb", borderRadius: "12px", padding: "14px", background: "#fafafa" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                      <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#111" }}>{section.label}</h4>
-                      <span style={{ fontSize: "12px", color: "#6b7280" }}>{items.length} items</span>
+              No technician VHC data found for this job yet.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {sections.map((section) => (
+                <div
+                  key={section.key}
+                  style={{
+                    border: "1px solid #f3f4f6",
+                    borderRadius: "12px",
+                    padding: "16px",
+                    backgroundColor: "#fff",
+                    boxShadow: "0 1px 2px rgba(15,23,42,0.05)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600, color: "#111827" }}>{section.title}</h3>
+                      <p style={{ margin: 0, color: "#6b7280", fontSize: "13px" }}>
+                        {section.type === "mandatory" ? "Mandatory section" : "Optional section"}
+                      </p>
                     </div>
-                    {items.length === 0 ? (
-                      <p style={{ fontSize: "12px", color: "#9ca3af", margin: 0 }}>No items recorded in this section.</p>
-                    ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        {items.map((item) => (
-                          <div
-                            key={item.id}
-                            style={{
-                              border: "1px solid #e5e7eb",
-                              borderRadius: "10px",
-                              padding: "12px",
-                              background: "white",
-                              display: "grid",
-                              gridTemplateColumns: "2fr 1fr 1fr",
-                              gap: "12px",
-                              alignItems: "center",
-                            }}
-                          >
-                            <div>
-                              <p style={{ fontSize: "14px", fontWeight: "700", color: "#111827", marginBottom: "4px" }}>
-                                {item.category} - {item.item}
-                              </p>
-                              <textarea
-                                value={item.notes || ""}
-                                onChange={(e) => handleItemFieldChange(item.id, "notes", e.target.value)}
-                                rows={2}
-                                placeholder="Manager note / technician note"
-                                style={{
-                                  width: "100%",
-                                  border: "1px solid #e5e7eb",
-                                  borderRadius: "8px",
-                                  padding: "8px",
-                                  fontSize: "13px",
-                                  color: "#374151",
-                                }}
-                              />
-                            </div>
-                            <div style={{ textAlign: "center" }}>
-                              <label style={{ fontSize: "12px", color: "#6b7280" }}>Status</label>
-                              <select
-                                value={item.status || "Grey"}
-                                onChange={(e) => handleItemFieldChange(item.id, "status", e.target.value)}
-                                style={{
-                                  width: "100%",
-                                  padding: "8px",
-                                  borderRadius: "8px",
-                                  border: "1px solid #e5e7eb",
-                                  fontSize: "13px",
-                                  marginTop: "4px",
-                                }}
-                              >
-                                {["Red", "Amber", "Green", "Grey"].map((opt) => (
-                                  <option key={opt} value={opt}>
-                                    {opt}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <div style={{ textAlign: "center" }}>
-                              <label style={{ fontSize: "12px", color: "#6b7280" }}>Estimated Cost</label>
-                              <input
-                                type="number"
-                                inputMode="decimal"
-                                value={item.total_price || 0}
-                                onChange={(e) => handleItemFieldChange(item.id, "total_price", parseFloat(e.target.value) || 0)}
-                                style={{
-                                  width: "100%",
-                                  padding: "8px",
-                                  borderRadius: "8px",
-                                  border: "1px solid #e5e7eb",
-                                  fontSize: "13px",
-                                  marginTop: "4px",
-                                }}
-                              />
-                              <p style={{ fontSize: "11px", color: "#9ca3af", marginTop: "4px" }}>Tech entry remains visible; managers may override.</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {renderSectionMetrics(section)}
                   </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* ========== PARTS IDENTIFIED TAB ========== */}
-          {activeTab === "parts-identified" && (
-            <div style={{
-              background: "white",
-              border: "1px solid #e0e0e0",
-              borderRadius: "16px",
-              padding: "20px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-            }}>
-              <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
-                Parts Needed
-              </h3>
-              <p style={{ fontSize: "13px", color: "#666", marginBottom: "12px" }}>
-                Select a VHC item to search stock, price parts, and push the figures into the summary.
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {vhcData.vhc_items
-                  .filter(item => (item.status === "Red" || item.status === "Amber") && !item.declined && !item.part_not_required)
-                  .map(item => {
-                    const selection = item.part_selection;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => handleOpenPartsModal(item)}
-                        style={{
-                          border: "1px solid #e0e0e0",
-                          borderRadius: "10px",
-                          padding: "12px",
-                          textAlign: "left",
-                          display: "grid",
-                          gridTemplateColumns: "2fr 1fr 1fr",
-                          gap: "12px",
-                          alignItems: "center",
-                          background: "white",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                            <span style={{
-                              backgroundColor: STATUS_COLORS[item.status] || "#9ca3af",
-                              color: "white",
-                              padding: "2px 8px",
-                              borderRadius: "6px",
-                              fontSize: "11px",
-                              fontWeight: "700"
-                            }}>
-                              {item.status}
-                            </span>
-                            <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                              {item.category} - {item.item}
-                            </p>
-                          </div>
-                          <p style={{ fontSize: "12px", color: "#666" }}>{item.notes}</p>
-                        </div>
-                        <div style={{ fontSize: "13px", color: "#555" }}>
-                          {selection?.selectedPart ? (
-                            <>
-                              <div><strong>Part:</strong> {selection.selectedPart.part_number}</div>
-                              <div><strong>Qty:</strong> {selection.quantity}</div>
-                              <div><strong>Location:</strong> {selection.location || "Auto Pick"}</div>
-                            </>
-                          ) : (
-                            <span style={{ color: "#d10000", fontWeight: "600" }}>Select part</span>
-                          )}
-                        </div>
-                        <div style={{ textAlign: "right", fontSize: "13px", color: "#444" }}>
-                          <div><strong>Cost:</strong> £{selection?.customerCost ? (selection.customerCost * (selection.quantity || 1)).toFixed(2) : "0.00"}</div>
-                          <div><strong>Back Order:</strong> {selection?.backOrder ? "Yes" : "No"}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
-              </div>
-            </div>
-          )}
-
-          {/* ========== PARTS AUTHORIZED TAB ========== */}
-          {activeTab === "parts-authorized" && (
-            <div style={{
-              background: "white",
-              border: "1px solid #e0e0e0",
-              borderRadius: "16px",
-              padding: "20px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-            }}>
-              <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
-                Parts Authorized
-              </h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {vhcData.parts_identified
-                  .filter(part => {
-                    const vhcItem = vhcData.vhc_items.find(item => item.id === part.vhc_item_id);
-                    return vhcItem && vhcItem.authorized;
-                  })
-                  .map(part => (
-                    <div key={part.id} style={{
-                      border: "1px solid #10b98130",
-                      borderRadius: "8px",
-                      padding: "12px",
-                      backgroundColor: "#10b98110",
-                      display: "grid",
-                      gridTemplateColumns: "2fr 1fr 1fr 1fr",
-                      gap: "12px",
-                      alignItems: "center"
-                    }}>
-                      <div>
-                        <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                          {part.part_name}
-                        </p>
-                        <p style={{ fontSize: "12px", color: "#666" }}>
-                          Part #: {part.part_number}
-                        </p>
-                      </div>
-                      <p style={{ fontSize: "13px", color: "#666" }}>
-                        {part.supplier}
-                      </p>
-                      <p style={{ fontSize: "14px", fontWeight: "600", textAlign: "center" }}>
-                        £{part.price}
-                      </p>
-                      <div style={{
-                        backgroundColor: "#10b981",
-                        color: "white",
-                        padding: "6px 12px",
-                        borderRadius: "6px",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        textAlign: "center"
-                      }}>
-                        Authorized
-                      </div>
-                    </div>
-                  ))}
-                {vhcData.parts_identified.filter(part => {
-                  const vhcItem = vhcData.vhc_items.find(item => item.id === part.vhc_item_id);
-                  return vhcItem && vhcItem.authorized;
-                }).length === 0 && (
-                  <p style={{ textAlign: "center", color: "#999", padding: "20px" }}>
-                    No parts have been authorized yet
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ========== PARTS ON ORDER TAB ========== */}
-          {activeTab === "parts-on-order" && (
-            <div style={{
-              background: "white",
-              border: "1px solid #e0e0e0",
-              borderRadius: "16px",
-              padding: "20px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-            }}>
-              <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
-                Parts On Order
-              </h3>
-              {partsOnOrderLoading ? (
-                <p style={{ color: "#666", fontSize: "14px" }}>Loading parts on order…</p>
-              ) : partsOnOrder.length === 0 ? (
-                <p style={{ color: "#9ca3af", fontSize: "14px" }}>No parts on order or awaiting stock for this job.</p>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {partsOnOrder.map((order) => {
-                    const statusLabelMap = {
-                      awaiting_stock: "On Order",
-                      pending: "Waiting Authorisation",
-                      picked: "Pre Picked",
-                      allocated: "In Stock",
-                    };
-                    const statusLabel = statusLabelMap[order.status] || order.status;
-                    return (
-                      <div key={order.id} style={{
-                        border: "1px solid #3b82f630",
-                        borderRadius: "8px",
-                        padding: "12px",
-                        backgroundColor: "#3b82f610",
-                        display: "grid",
-                        gridTemplateColumns: "2fr 1fr 1fr 1fr",
-                        gap: "12px",
-                        alignItems: "center"
-                      }}>
-                        <div>
-                          <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a" }}>
-                            {order.part?.name || "Part"}
-                          </p>
-                          <p style={{ fontSize: "12px", color: "#666" }}>
-                            Part #: {order.part?.number || "N/A"}
-                          </p>
-                          <p style={{ fontSize: "12px", color: "#666" }}>
-                            Supplier: {order.part?.supplier || "N/A"}
-                          </p>
-                        </div>
-                        <p style={{ fontSize: "13px", color: "#666" }}>
-                          Status: {statusLabel}
-                        </p>
-                        {order.status === "awaiting_stock" && (
-                          <span
-                            style={{
-                              display: "inline-block",
-                              marginTop: "4px",
-                              padding: "2px 6px",
-                              background: "#fef3c7",
-                              color: "#92400e",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                            }}
-                          >
-                            Order Needed
-                          </span>
-                        )}
-                        <p style={{ fontSize: "13px", color: "#666", textAlign: "center" }}>
-                          Qty: {order.quantity}
-                        </p>
-                        <p style={{ fontSize: "13px", fontWeight: "600", textAlign: "center" }}>
-                          Stock: {order.part?.in_stock ?? 0} | On Order: {order.part?.on_order ?? 0}
-                        </p>
-                        <p style={{ fontSize: "12px", color: "#1f2937" }}>
-                          Location: {order.storage_location || "Auto Pick"}
-                        </p>
-                      </div>
-                    );
-                  })}
+                  <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+                    {section.items.map((item, idx) => renderSectionItem(item, idx))}
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* ========== PHOTOS TAB ========== */}
-          {activeTab === "photos" && (
-            <div style={{
-              background: "white",
-              border: "1px solid #e0e0e0",
-              borderRadius: "16px",
-              padding: "20px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-            }}>
-              <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
-                Photos
-              </h3>
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-                gap: "16px"
-              }}>
-                {vhcData.photos.map(photo => (
-                  <div key={photo.id} style={{
-                    border: "1px solid #e0e0e0",
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-                  }}>
-                    <img 
-                      src={photo.url} 
-                      alt={photo.caption}
-                      style={{ width: "100%", height: "200px", objectFit: "cover" }}
-                    />
-                    <div style={{ padding: "12px" }}>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {photo.caption}
-                      </p>
-                      <div style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "8px",
-                        backgroundColor: "#f5f5f5",
-                        borderRadius: "6px"
-                      }}>
-                        <span style={{ fontSize: "12px", fontWeight: "600" }}>
-                          Send to Customer
-                        </span>
-                        <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-                          <input
-                            type="checkbox"
-                            checked={photo.send_to_customer}
-                            onChange={() => handleToggleSendMedia("photo", photo.id)}
-                            style={{ width: "18px", height: "18px" }}
-                          />
-                          <span style={{
-                            fontSize: "12px",
-                            color: photo.send_to_customer ? "#10b981" : "#999"
-                          }}>
-                            {photo.send_to_customer ? "Yes" : "No"}
-                          </span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ========== VIDEOS TAB ========== */}
-          {activeTab === "videos" && (
-            <div style={{
-              background: "white",
-              border: "1px solid #e0e0e0",
-              borderRadius: "16px",
-              padding: "20px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-            }}>
-              <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
-                Videos
-              </h3>
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))",
-                gap: "16px"
-              }}>
-                {vhcData.videos.map(video => (
-                  <div key={video.id} style={{
-                    border: "1px solid #e0e0e0",
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-                  }}>
-                    <video 
-                      controls
-                      style={{ width: "100%", height: "250px", backgroundColor: "#000" }}
-                    >
-                      <source src={video.url} type="video/mp4" />
-                      Your browser does not support video playback.
-                    </video>
-                    <div style={{ padding: "12px" }}>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {video.caption}
-                      </p>
-                      <div style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "8px",
-                        backgroundColor: "#f5f5f5",
-                        borderRadius: "6px"
-                      }}>
-                        <span style={{ fontSize: "12px", fontWeight: "600" }}>
-                          Send to Customer
-                        </span>
-                        <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-                          <input
-                            type="checkbox"
-                            checked={video.send_to_customer}
-                            onChange={() => handleToggleSendMedia("video", video.id)}
-                            style={{ width: "18px", height: "18px" }}
-                          />
-                          <span style={{
-                            fontSize: "12px",
-                            color: video.send_to_customer ? "#10b981" : "#999"
-                          }}>
-                            {video.send_to_customer ? "Yes" : "No"}
-                          </span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
           )}
         </div>
-
-        {/* Parts Modal */}
-        {partsModal.open && vhcData?.vhc_items && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              backgroundColor: "rgba(0,0,0,0.45)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 9999,
-              padding: "20px",
-            }}
-            onClick={handleClosePartsModal}
-          >
-            <div
-              style={{
-                background: "white",
-                borderRadius: "12px",
-                padding: "20px",
-                width: "520px",
-                maxHeight: "90vh",
-                overflowY: "auto",
-                border: "1px solid #e5e7eb",
-                boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {(() => {
-                const item = vhcData.vhc_items.find((entry) => entry.id === partsModal.itemId);
-                if (!item) return null;
-                return (
-                  <>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                      <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#111" }}>
-                        Parts for {item.category} - {item.item}
-                      </h3>
-                      <button
-                        onClick={handleClosePartsModal}
-                        style={{
-                          border: "none",
-                          background: "transparent",
-                          fontSize: "16px",
-                          cursor: "pointer",
-                          color: "#666",
-                        }}
-                      >
-                        ✕
-                      </button>
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                      <div>
-                        <label style={{ fontSize: "12px", fontWeight: "600", color: "#444" }}>Search part number or name</label>
-                        <input
-                          type="text"
-                          value={partsForm.search}
-                          onChange={(e) => handlePartsSearch(e.target.value)}
-                          placeholder="Type to search parts catalog"
-                          style={{
-                            width: "100%",
-                            padding: "10px",
-                            borderRadius: "8px",
-                            border: "1px solid #e5e5e5",
-                            marginTop: "6px",
-                          }}
-                        />
-                        {partsSearchResults.length > 0 && (
-                          <div style={{ marginTop: "8px", border: "1px solid #e5e5e5", borderRadius: "8px", maxHeight: "160px", overflowY: "auto" }}>
-                            {partsSearchResults.map((part) => (
-                              <button
-                                key={part.id}
-                                onClick={() => handleSelectPart(part)}
-                                style={{
-                                  display: "flex",
-                                  width: "100%",
-                                  padding: "10px",
-                                  border: "none",
-                                  borderBottom: "1px solid #f0f0f0",
-                                  background: partsForm.selectedPart?.id === part.id ? "#fef2f2" : "white",
-                                  textAlign: "left",
-                                  cursor: "pointer",
-                                  gap: "8px",
-                                }}
-                              >
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontWeight: "700", fontSize: "13px" }}>{part.part_number}</div>
-                                  <div style={{ fontSize: "12px", color: "#555" }}>{part.name}</div>
-                                </div>
-                                <div style={{ fontSize: "12px", color: "#444" }}>
-                                  <div>Cost: £{part.unit_cost ?? "0.00"}</div>
-                                  <div>Sell: £{part.unit_price ?? "0.00"}</div>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {partsForm.selectedPart && (
-                        <div style={{ padding: "10px", borderRadius: "8px", background: "#f9fafb", border: "1px solid #e5e7eb" }}>
-                          <div style={{ fontSize: "13px", fontWeight: "700" }}>
-                            Selected: {partsForm.selectedPart.part_number} — {partsForm.selectedPart.name}
-                          </div>
-                          <div style={{ fontSize: "12px", color: "#555" }}>
-                            Supplier: {partsForm.selectedPart.supplier || "N/A"} | In stock: {partsForm.selectedPart.qty_in_stock ?? 0} | On order: {partsForm.selectedPart.qty_on_order ?? 0}
-                          </div>
-                        </div>
-                      )}
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                        <div>
-                          <label style={{ fontSize: "12px", fontWeight: "600", color: "#444" }}>Cost to order</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={partsForm.costToOrder}
-                            onChange={(e) => setPartsForm((prev) => ({ ...prev, costToOrder: e.target.value }))}
-                            placeholder="0.00"
-                            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e5e5e5", marginTop: "6px" }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ fontSize: "12px", fontWeight: "600", color: "#444" }}>Customer cost</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={partsForm.customerCost}
-                            onChange={(e) => setPartsForm((prev) => ({ ...prev, customerCost: e.target.value }))}
-                            placeholder="0.00"
-                            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e5e5e5", marginTop: "6px" }}
-                          />
-                        </div>
-                      </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", alignItems: "center" }}>
-                        <div>
-                          <label style={{ fontSize: "12px", fontWeight: "600", color: "#444" }}>Quantity</label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={partsForm.quantity}
-                            onChange={(e) => setPartsForm((prev) => ({ ...prev, quantity: e.target.value }))}
-                            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e5e5e5", marginTop: "6px" }}
-                          />
-                        </div>
-                        <label style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "18px", fontSize: "13px", color: "#444" }}>
-                          <input
-                            type="checkbox"
-                            checked={partsForm.backOrder}
-                            onChange={(e) => setPartsForm((prev) => ({ ...prev, backOrder: e.target.checked }))}
-                          />
-                          Back order this part
-                        </label>
-                      </div>
-
-                      <div style={{ marginTop: "10px" }}>
-                        <label style={{ fontSize: "12px", fontWeight: "600", color: "#444" }}>Storage location</label>
-                        <select
-                          value={partsForm.location}
-                          onChange={(e) => setPartsForm((prev) => ({ ...prev, location: e.target.value }))}
-                          style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e5e5e5", marginTop: "6px" }}
-                        >
-                          {PART_STORAGE_OPTIONS.map((option) => (
-                            <option key={option} value={option}>{option}</option>
-                          ))}
-                        </select>
-                        <p style={{ fontSize: "10px", color: "#9ca3af", marginTop: "6px" }}>Default is auto-pick when parts are approved.</p>
-                      </div>
-
-                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px", gap: "8px", flexWrap: "wrap" }}>
-                        <button
-                          onClick={handleSavePartsSelection}
-                          style={{
-                            flex: 1,
-                            padding: "10px 16px",
-                            backgroundColor: "#d10000",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "8px",
-                            fontWeight: "700",
-                            cursor: "pointer",
-                            minWidth: "120px",
-                          }}
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={handleClearPartsSelection}
-                          style={{
-                            flex: 1,
-                            padding: "10px 16px",
-                            backgroundColor: "#f3f4f6",
-                            color: "#1f2937",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "8px",
-                            fontWeight: "700",
-                            cursor: "pointer",
-                            minWidth: "120px",
-                          }}
-                        >
-                          Clear
-                        </button>
-                        <button
-                          onClick={handlePartsNotRequired}
-                          style={{
-                            flex: 1,
-                            padding: "10px 16px",
-                            backgroundColor: "#fef3c7",
-                            color: "#92400e",
-                            border: "1px solid #fcd34d",
-                            borderRadius: "8px",
-                            fontWeight: "700",
-                            cursor: "pointer",
-                            minWidth: "160px",
-                          }}
-                        >
-                          Parts Not Required
-                        </button>
-                        <button
-                          onClick={handleClosePartsModal}
-                          style={{
-                            flex: 1,
-                            padding: "10px 16px",
-                            backgroundColor: "white",
-                            color: "#374151",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "8px",
-                            fontWeight: "700",
-                            cursor: "pointer",
-                            minWidth: "120px",
-                          }}
-                        >
-                          Close
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-        )}
-        {followUpPopup && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              backgroundColor: "rgba(0,0,0,0.35)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 9999,
-              padding: "20px",
-            }}
-          >
-            <div
-              style={{
-                width: "100%",
-                maxWidth: "420px",
-                background: "white",
-                borderRadius: "16px",
-                padding: "24px",
-                boxShadow: "0 16px 40px rgba(0,0,0,0.25)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "14px",
-              }}
-            >
-              <h3 style={{ margin: 0, fontSize: "20px", fontWeight: "700" }}>Follow-up call</h3>
-              <p style={{ margin: 0, fontSize: "14px", color: "#374151" }}>
-                Customer phone: <strong>{vhcData.customer_phone || "Not provided"}</strong>
-              </p>
-              <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>
-                Thank them for reviewing the VHC, confirm expectations, and discuss next steps.
-              </p>
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                <a
-                  href={`tel:${vhcData.customer_phone || ""}`}
-                  style={{
-                    flex: 1,
-                    textAlign: "center",
-                    padding: "10px 14px",
-                    background: "#10b981",
-                    color: "white",
-                    borderRadius: "10px",
-                    fontWeight: "700",
-                    textDecoration: "none",
-                  }}
-                >
-                  Call Customer
-                </a>
-                <button
-                  onClick={() => setFollowUpPopup(false)}
-                  style={{
-                    flex: 1,
-                    padding: "10px 14px",
-                    borderRadius: "10px",
-                    border: "1px solid #e5e7eb",
-                    background: "white",
-                    fontWeight: "700",
-                    cursor: "pointer",
-                  }}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </Layout>
   );
