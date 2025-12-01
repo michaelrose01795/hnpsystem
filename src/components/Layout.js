@@ -18,6 +18,7 @@ import { useRoster } from "@/context/RosterContext";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
+import { roleCategories } from "@/config/users";
 
 const WORKSHOP_SHORTCUT_ROLES = ["workshop manager", "aftersales manager"];
 
@@ -57,6 +58,12 @@ const SERVICE_ACTION_LINKS = [
   { label: "Appointments", href: "/job-cards/appointments" },
   { label: "Check In", href: "/workshop/check-in" },
 ];
+
+const MODE_STORAGE_KEY = "appModeSelection";
+const MODE_ROLE_MAP = {
+  Retail: new Set((roleCategories.Retail || []).map((role) => role.toLowerCase())),
+  Sales: new Set((roleCategories.Sales || []).map((role) => role.toLowerCase())),
+};
 
 export default function Layout({ children, jobNumber }) {
   const { user, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
@@ -106,7 +113,58 @@ export default function Layout({ children, jobNumber }) {
     "valet service",
   ];
 
-  const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const rawUserRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const availableModes = Object.entries(MODE_ROLE_MAP).reduce((acc, [mode, roleSet]) => {
+    if (rawUserRoles.some((role) => roleSet.has(role))) {
+      acc.push(mode);
+    }
+    return acc;
+  }, []);
+  const [selectedMode, setSelectedMode] = useState(() =>
+    availableModes.length === 1 ? availableModes[0] : null
+  );
+  const availableModesKey = availableModes.join("|");
+
+  useEffect(() => {
+    if (availableModes.length === 0) {
+      if (selectedMode !== null) {
+        setSelectedMode(null);
+      }
+      return;
+    }
+    if (availableModes.length === 1) {
+      if (selectedMode !== availableModes[0]) {
+        setSelectedMode(availableModes[0]);
+      }
+      return;
+    }
+    if (selectedMode && availableModes.includes(selectedMode)) {
+      return;
+    }
+    if (typeof window !== "undefined") {
+      const storedMode = window.localStorage.getItem(MODE_STORAGE_KEY);
+      if (storedMode && availableModes.includes(storedMode)) {
+        setSelectedMode(storedMode);
+        return;
+      }
+    }
+    setSelectedMode(availableModes[0]);
+  }, [availableModesKey, selectedMode]);
+
+  useEffect(() => {
+    if (!selectedMode) return;
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(MODE_STORAGE_KEY, selectedMode);
+  }, [selectedMode]);
+
+  const modeRoleSet = selectedMode ? MODE_ROLE_MAP[selectedMode] : null;
+  const scopedRoles =
+    availableModes.length > 1 && modeRoleSet
+      ? rawUserRoles.filter((role) => modeRoleSet.has(role))
+      : rawUserRoles;
+  const userRoles = scopedRoles.length > 0 ? scopedRoles : rawUserRoles;
+  const activeModeLabel = selectedMode || availableModes[0] || null;
+
   const matchesDepartment = (rolesToMatch = []) => {
     if (!rolesToMatch || rolesToMatch.length === 0) return true;
     return rolesToMatch.some((roleName) => userRoles.includes(roleName));
@@ -183,6 +241,11 @@ export default function Layout({ children, jobNumber }) {
     if (urlJobId) {
       setIsAutoJobCleared(true);
     }
+  };
+
+  const handleModeSelect = (mode) => {
+    if (!mode || mode === selectedMode) return;
+    setSelectedMode(mode);
   };
 
   const fetchCurrentJobStatus = async (id) => {
@@ -481,7 +544,12 @@ export default function Layout({ children, jobNumber }) {
           }}
         >
           {isSidebarOpen ? (
-            <Sidebar onToggle={toggleSidebar} extraSections={serviceSidebarSections} />
+            <Sidebar
+              onToggle={toggleSidebar}
+              extraSections={serviceSidebarSections}
+              visibleRoles={userRoles}
+              modeLabel={activeModeLabel}
+            />
           ) : (
             <button
               onClick={toggleSidebar}
@@ -597,6 +665,8 @@ export default function Layout({ children, jobNumber }) {
                     onToggle={closeMobileMenu}
                     isCondensed
                     extraSections={serviceSidebarSections}
+                    visibleRoles={userRoles}
+                    modeLabel={activeModeLabel}
                   />
                 </div>
               </div>
@@ -678,6 +748,54 @@ export default function Layout({ children, jobNumber }) {
                   >
                     Role: {roleDisplay}
                   </span>
+                  {availableModes.length > 0 && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                      }}
+                    >
+                      <span style={{ color: colors.mutedText, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                        Mode
+                      </span>
+                      {availableModes.length > 1 ? (
+                        <select
+                          value={selectedMode || activeModeLabel || ""}
+                          onChange={(event) => handleModeSelect(event.target.value)}
+                          style={{
+                            borderRadius: "999px",
+                            border: "1px solid rgba(209,0,0,0.3)",
+                            padding: "4px 12px",
+                            background: "#fff5f5",
+                            color: colors.accent,
+                            fontWeight: 600,
+                            fontSize: "0.75rem",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {availableModes.map((mode) => (
+                            <option key={mode} value={mode}>
+                              {mode}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span
+                          style={{
+                            padding: "4px 10px",
+                            borderRadius: "999px",
+                            background: "rgba(16,185,129,0.15)",
+                            color: "#047857",
+                          }}
+                        >
+                          {activeModeLabel}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

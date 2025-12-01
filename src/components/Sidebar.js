@@ -23,11 +23,19 @@ const hiddenHrRoutes = new Set([
   "/admin/users",
 ]);
 
-export default function Sidebar({ onToggle, isCondensed = false, extraSections = [] }) {
+export default function Sidebar({
+  onToggle,
+  isCondensed = false,
+  extraSections = [],
+  visibleRoles = null,
+  modeLabel = null,
+}) {
   const pathname = usePathname();
   const { user, logout, dbUserId } = useUser();
   const { unreadCount } = useMessagesBadge(dbUserId);
-  const userRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
+  const derivedRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
+  const userRoles =
+    Array.isArray(visibleRoles) && visibleRoles.length > 0 ? visibleRoles : derivedRoles;
   const partsRoles = new Set(["parts", "parts manager"]);
   const hasPartsSidebarAccess = userRoles.some((role) => partsRoles.has(role));
   const dashboardShortcuts = departmentDashboardShortcuts.filter((shortcut) => {
@@ -156,6 +164,19 @@ export default function Sidebar({ onToggle, isCondensed = false, extraSections =
         <h2 style={{ margin: "6px 0 0", fontSize: "1.4rem", fontWeight: 700 }}>
           Workspace
         </h2>
+        {modeLabel && (
+          <div
+            style={{
+              marginTop: "12px",
+              fontSize: "0.75rem",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              opacity: 0.85,
+            }}
+          >
+            {modeLabel} Mode
+          </div>
+        )}
         {onToggle && (
           <button
             type="button"
