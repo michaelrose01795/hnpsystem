@@ -595,6 +595,14 @@ export default function Appointments() {
     setShowStaffOffPopup(true);
   };
 
+  const handleJobRowClick = useCallback(
+    (jobNumberValue) => {
+      if (!jobNumberValue) return;
+      router.push(`/job-cards/${encodeURIComponent(jobNumberValue)}`);
+    },
+    [router]
+  );
+
   // ---------------- Add / Update Appointment ----------------
   const handleAddAppointment = async (customDate) => {
     const appointmentDate = customDate || (selectedDay ? selectedDay.toISOString().split("T")[0] : null);
@@ -1496,7 +1504,7 @@ export default function Appointments() {
                         transition: "background-color 0.5s",
                         cursor: "pointer"
                       }}
-                      onClick={() => window.open(`/job-cards/${job.jobNumber}`, '_blank')}
+                      onClick={() => handleJobRowClick(job.jobNumber || job.id)}
                       onMouseEnter={(e) => {
                         if (highlightJob !== job.jobNumber) {
                           e.currentTarget.style.backgroundColor = "#f0f0f0";
