@@ -97,7 +97,7 @@ export function useCustomerPortalData() {
         if (normalizedEmail) {
           const { data, error } = await supabase
             .from("customers")
-            .select("id, firstname, lastname, email")
+            .select("id, firstname, lastname, email, mobile, telephone, address, postcode, contact_preference")
             .ilike("email", normalizedEmail)
             .maybeSingle();
 
@@ -108,7 +108,7 @@ export function useCustomerPortalData() {
         if (!customerRow) {
           const { data } = await supabase
             .from("customers")
-            .select("id, firstname, lastname, email")
+            .select("id, firstname, lastname, email, mobile, telephone, address, postcode, contact_preference")
             .order("created_at", { ascending: true })
             .limit(1);
           customerRow = data?.[0] || null;

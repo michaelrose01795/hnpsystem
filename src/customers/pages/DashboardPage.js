@@ -9,10 +9,21 @@ import PartsAccessCard from "@/customers/components/PartsAccessCard";
 import MessagingHub from "@/customers/components/MessagingHub";
 import AppointmentTimeline from "@/customers/components/AppointmentTimeline";
 import CustomerBookingCalendar from "@/customers/components/CustomerBookingCalendar";
+import CustomerDetailsCard from "@/customers/components/CustomerDetailsCard";
 import { useCustomerPortalData } from "@/customers/hooks/useCustomerPortalData";
 
 export default function CustomerDashboardPage() {
-  const { vehicles, vhcSummaries, parts, contacts, timeline, isLoading, error } = useCustomerPortalData();
+  const {
+    vehicles,
+    vhcSummaries,
+    parts,
+    contacts,
+    timeline,
+    customer,
+    isLoading,
+    error,
+    refreshPortalData,
+  } = useCustomerPortalData();
 
   return (
     <CustomerLayout pageTitle="Customer overview">
@@ -31,6 +42,7 @@ export default function CustomerDashboardPage() {
         <div className="lg:col-span-2">
           <CustomerBookingCalendar />
         </div>
+        <CustomerDetailsCard customer={customer} onDetailsSaved={refreshPortalData} />
         <VehicleGarageCard vehicles={vehicles} />
         <VHCSummaryList summaries={vhcSummaries} vehicles={vehicles} />
         <PartsAccessCard parts={parts} />
