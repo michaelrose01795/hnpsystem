@@ -43,6 +43,7 @@ const isMotRole = (role) => {
 
 const STATUS_WAITING_QUEUE = new Set([
   "CHECKED IN",
+  "ACCEPTED IN",
   "WAITING FOR WORKSHOP",
   "AWAITING WORKSHOP",
   "AWAITING TECH",
@@ -74,6 +75,11 @@ const STATUS_COMPLETED = new Set([
 ]);
 
 const toStatusKey = (status) => (status ? String(status).trim().toUpperCase() : "");
+const OUTSTANDING_ALLOWED_STATUSES = new Set(["CHECKED IN", "ACCEPTED IN"]);
+const BLOCKING_STATUS_KEYWORDS = ["MOT", "VALET", "SERVICE MANAGER", "AFTERSALES"];
+const OUTSTANDING_VISIBLE_ROWS = 3;
+const OUTSTANDING_CARD_HEIGHT = 210;
+const OUTSTANDING_GRID_MAX_HEIGHT_PX = `${OUTSTANDING_VISIBLE_ROWS * OUTSTANDING_CARD_HEIGHT}px`;
 
 const formatCheckedInTime = (value) => {
   if (!value) return "Not recorded";
@@ -96,6 +102,74 @@ const formatCustomerStatus = (value) => {
   if (lower.includes("collect")) return "Collection";
   if (lower.includes("wait")) return "Waiting";
   return value;
+};
+
+const isBlockedByDepartment = (status) => {
+  const statusKey = toStatusKey(status);
+  if (!statusKey) return false;
+  return BLOCKING_STATUS_KEYWORDS.some((keyword) => statusKey.includes(keyword));
+};
+
+const getJobRequestsCountFromPayload = (payload) => {
+  if (!payload) return 0;
+  if (Array.isArray(payload)) return payload.length;
+  if (Array.isArray(payload?.items)) return payload.items.length;
+  if (typeof payload === "object") return Object.keys(payload).length;
+  return 0;
+};
+
+const getJobRequestsCount = (job) => {
+  if (typeof job?.jobRequestsCount === "number") return job.jobRequestsCount;
+  return getJobRequestsCountFromPayload(job?.requests);
+};
+
+const formatAppointmentTime = (job) => {
+  const appointment = job?.appointment;
+  if (!appointment) return "No appointment";
+  if (appointment.time) return appointment.time;
+  const isoValue = appointment.scheduledTime || appointment.scheduled_time;
+  if (!isoValue) return "No appointment";
+  try {
+    return new Date(isoValue).toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch (_err) {
+    return "No appointment";
+  }
+};
+
+const JOB_TYPE_KEYWORDS = [
+  { label: "MOT", keywords: ["mot"] },
+  { label: "Service", keywords: ["service", "oil", "inspection", "maintenance"] },
+  { label: "Diagnose", keywords: ["diagnos", "fault", "warning", "investigation", "check"] },
+];
+
+const deriveJobTypeLabel = (job) => {
+  const categories = (job?.jobCategories || []).map((category) => toStatusKey(category));
+  if (categories.some((category) => category.includes("MOT"))) return "MOT";
+  if (categories.some((category) => category.includes("SERVICE"))) return "Service";
+  if (categories.some((category) => category.includes("DIAG"))) return "Diagnose";
+
+  const baseType = toStatusKey(job?.type);
+  if (baseType.includes("MOT")) return "MOT";
+  if (baseType.includes("SERVICE")) return "Service";
+  if (baseType.includes("DIAG")) return "Diagnose";
+
+  const haystack = [
+    job?.description || "",
+    typeof job?.requests === "string" ? job.requests : JSON.stringify(job?.requests || ""),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  for (const mapping of JOB_TYPE_KEYWORDS) {
+    if (mapping.keywords.some((keyword) => haystack.includes(keyword))) {
+      return mapping.label;
+    }
+  }
+
+  return "Other";
 };
 
 export default function NextJobsPage() {
@@ -173,6 +247,18 @@ export default function NextJobsPage() {
 
   const waitingJobs = useMemo(() => jobs.filter(isWaitingJob), [jobs]);
 
+  const outstandingJobs = useMemo(
+    () =>
+      waitingJobs.filter((job) => {
+        const statusKey = toStatusKey(job.status);
+        const allowedStatus = OUTSTANDING_ALLOWED_STATUSES.has(statusKey);
+        const isUnassigned = !job.assignedTech && job.assignedTo == null;
+        const blocked = isBlockedByDepartment(job.status);
+        return allowedStatus && isUnassigned && !blocked;
+      }),
+    [waitingJobs]
+  );
+
   const mapJobFromDatabase = (row) => {
     const customerFirst = row.customer?.firstname?.trim() || "";
     const customerLast = row.customer?.lastname?.trim() || "";
@@ -211,6 +297,13 @@ export default function NextJobsPage() {
       model: row.vehicle?.model || "",
       makeModel: row.vehicle_make_model || row.vehicle?.make_model || "",
       waitingStatus: row.waiting_status || "Neither",
+      jobCategories: Array.isArray(row.job_categories)
+        ? row.job_categories
+        : row.job_categories
+        ? [row.job_categories].flat()
+        : [],
+      requests: row.requests || null,
+      jobRequestsCount: getJobRequestsCountFromPayload(row.requests),
       vhcRequired: Boolean(row.vhc_required),
       assignedTo: row.assigned_to,
       assignedTech,
@@ -229,6 +322,14 @@ export default function NextJobsPage() {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       position: row.position || null,
+      appointment: row.appointments?.[0]
+        ? {
+            appointmentId: row.appointments[0].appointment_id,
+            scheduledTime: row.appointments[0].scheduled_time,
+            status: row.appointments[0].status,
+            notes: row.appointments[0].notes || "",
+          }
+        : null,
     };
   };
 
@@ -246,6 +347,8 @@ export default function NextJobsPage() {
         status,
         assigned_to,
         waiting_status,
+        job_categories,
+        requests,
         vhc_required,
         vehicle_reg,
         vehicle_make_model,
@@ -257,7 +360,8 @@ export default function NextJobsPage() {
         updated_at,
         technician:assigned_to(user_id, first_name, last_name, email, role),
         customer:customer_id(firstname, lastname, name, mobile, telephone, email, address, postcode, contact_preference),
-        vehicle:vehicle_id(registration, reg_number, make, model, make_model)
+        vehicle:vehicle_id(registration, reg_number, make, model, make_model),
+        appointments(appointment_id, scheduled_time, status, notes)
       `
       )
       .order("checked_in_at", { ascending: false })
@@ -421,10 +525,10 @@ export default function NextJobsPage() {
   );
 
   // ✅ Search logic for job cards in the outstanding section
-  const filteredJobs = useMemo(() => {
-    if (!searchTerm.trim()) return waitingJobs; // Return all not-started jobs if no search term
-    const lower = searchTerm.toLowerCase(); // Convert search term to lowercase for case-insensitive search
-    return waitingJobs.filter((job) => {
+  const filteredOutstandingJobs = useMemo(() => {
+    if (!searchTerm.trim()) return outstandingJobs;
+    const lower = searchTerm.toLowerCase();
+    return outstandingJobs.filter((job) => {
       const haystack = [
         job.jobNumber,
         job.customer,
@@ -433,14 +537,13 @@ export default function NextJobsPage() {
         job.reg,
         job.type,
         job.waitingStatus,
-        job.assignedTech?.name,
       ]
         .filter(Boolean)
         .map((value) => value.toString().toLowerCase());
 
       return haystack.some((value) => value.includes(lower));
     });
-  }, [searchTerm, waitingJobs]); // Recalculate when search term or waiting jobs change
+  }, [searchTerm, outstandingJobs]);
 
   // ✅ Group jobs by technician (using assignedTech.name)
   const getJobsForAssignee = (assigneeName) => {
@@ -715,6 +818,14 @@ export default function NextJobsPage() {
     setDragOverJob(null); // Clear job hover
   };
 
+  const handleNavigateToJobCard = useCallback(
+    (jobNumber) => {
+      if (!jobNumber) return;
+      router.push(`/job-cards/${encodeURIComponent(jobNumber)}`);
+    },
+    [router]
+  );
+
   const renderAssigneePanel = (assignee) => {
     const panelKey = assignee.panelKey || assignee.id || assignee.name;
     const shouldScroll = assignee.jobs.length > VISIBLE_JOBS_PER_PANEL;
@@ -942,7 +1053,7 @@ export default function NextJobsPage() {
             padding: "16px",
             display: "flex",
             flexDirection: "column",
-            maxHeight: "360px",
+            minHeight: OUTSTANDING_GRID_MAX_HEIGHT_PX,
             flexShrink: 0,
             transition: "all 0.2s ease",
             backgroundColor: dragOverTarget === "outstanding" ? "#fff5f5" : "#fff" // Highlight entire box
@@ -964,7 +1075,7 @@ export default function NextJobsPage() {
               color: "#1f2937",
               margin: 0
             }}>
-              Outstanding Jobs ({waitingJobs.length})
+              Outstanding Jobs ({outstandingJobs.length})
             </h2>
           </div>
           
@@ -986,70 +1097,141 @@ export default function NextJobsPage() {
             onBlur={(e) => e.currentTarget.style.borderColor = "#e0e0e0"}
           />
 
-          <div style={{ 
-            overflowY: "auto", 
-            flex: 1,
-            paddingBottom: "8px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "10px"
-          }}>
-            {filteredJobs.length === 0 ? (
-              <p style={{ color: "#9ca3af", fontSize: "14px", margin: 0 }}>
-                {searchTerm.trim() ? "No matching jobs found." : "No outstanding jobs."}
-              </p>
-            ) : (
-              filteredJobs.map((job) => (
-                <div
-                  key={job.jobNumber}
-                  draggable={hasAccess}
-                  onDragStart={(e) => handleDragStart(job, e)}
-                  onClick={() => handleOpenJobDetails(job)} // Open job details popup
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "6px",
-                    padding: "12px",
-                    borderRadius: "10px",
-                    border:
-                      draggingJob?.jobNumber === job.jobNumber
-                        ? "2px dashed #d10000"
-                        : "1px solid #f3f4f6",
-                    backgroundColor:
-                      draggingJob?.jobNumber === job.jobNumber ? "#fff5f5" : "#fdf2f2",
-                    cursor: hasAccess ? "grab" : "pointer",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                    transition: "border 0.2s, background-color 0.2s"
-                  }}
-                  title={`${job.jobNumber} - ${job.customer} - ${job.make} ${job.model} - Status: ${job.status}`}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                      <span style={{ fontWeight: 700, fontSize: "15px", color: "#1f2937" }}>
-                        {job.jobNumber} • {job.reg || "No reg"}
-                      </span>
-                      <span style={{ color: "#6b7280", fontSize: "13px" }}>
-                        {job.customer || "Unknown customer"} • {job.makeModel || `${job.make} ${job.model}`.trim()}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
-                      <span style={{ backgroundColor: "#fee2e2", color: "#b91c1c", padding: "4px 8px", borderRadius: "999px", fontSize: "12px", fontWeight: 700 }}>
-                        {job.type || "Service"}
-                      </span>
-                      <span style={{ color: "#374151", fontSize: "12px" }}>
-                        Checked in: {formatCheckedInTime(job.checkedInAt)}
-                      </span>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", fontSize: "12px", color: "#374151" }}>
-                    <span><strong>Status:</strong> {job.status || "–"}</span>
-                    <span><strong>Tech:</strong> {job.assignedTech?.name || "Unassigned"}</span>
-                    <span><strong>Customer Status:</strong> {formatCustomerStatus(job.waitingStatus)}</span>
-                    <span><strong>VHC Required:</strong> {job.vhcRequired ? "Yes" : "No"}</span>
-                  </div>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                maxHeight: OUTSTANDING_GRID_MAX_HEIGHT_PX,
+                paddingRight: "6px",
+              }}
+            >
+              {filteredOutstandingJobs.length === 0 ? (
+                <p style={{ color: "#9ca3af", fontSize: "14px", margin: 0 }}>
+                  {searchTerm.trim() ? "No matching jobs found." : "No outstanding jobs."}
+                </p>
+              ) : (
+                <div className="outstanding-grid">
+                  {filteredOutstandingJobs.map((job) => {
+                    const jobTypeLabel = deriveJobTypeLabel(job);
+                    const customerStatus = formatCustomerStatus(job.waitingStatus);
+                    const requestsCount = getJobRequestsCount(job);
+                    const appointmentDisplay = formatAppointmentTime(job);
+                    return (
+                      <div
+                        key={job.jobNumber}
+                        draggable={hasAccess}
+                        onDragStart={(e) => handleDragStart(job, e)}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          if (draggingJob) return;
+                          handleNavigateToJobCard(job.jobNumber);
+                        }}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                          padding: "14px",
+                          borderRadius: "16px",
+                          border:
+                            draggingJob?.jobNumber === job.jobNumber
+                              ? "2px dashed #d10000"
+                              : "1px solid #f3f4f6",
+                          backgroundColor:
+                            draggingJob?.jobNumber === job.jobNumber ? "#fff5f5" : "#fffafa",
+                          cursor: hasAccess ? "grab" : "pointer",
+                          boxShadow: "0 8px 20px rgba(15,23,42,0.08)",
+                          transition: "border 0.2s, background-color 0.2s, transform 0.2s",
+                        }}
+                        title={`${job.jobNumber} – ${job.customer || "Unknown customer"}`}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "flex-start",
+                            gap: "12px",
+                          }}
+                        >
+                          <div>
+                            <div
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "16px",
+                                color: "#111827",
+                              }}
+                            >
+                              {job.jobNumber}
+                            </div>
+                            <div style={{ fontSize: "13px", color: "#6b7280" }}>
+                              {job.reg || "Reg TBC"}
+                            </div>
+                          </div>
+                          <span
+                            style={{
+                              padding: "4px 10px",
+                              borderRadius: "999px",
+                              backgroundColor: "#fee2e2",
+                              color: "#b91c1c",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {jobTypeLabel}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: "13px", color: "#374151" }}>
+                          {job.customer || "Unknown customer"}
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "8px",
+                            fontSize: "12px",
+                            color: "#4b5563",
+                          }}
+                        >
+                          <span>
+                            <strong>Requests:</strong> {requestsCount}
+                          </span>
+                          <span>
+                            <strong>Appointment:</strong> {appointmentDisplay}
+                          </span>
+                          <span>
+                            <strong>Checked in:</strong> {formatCheckedInTime(job.checkedInAt)}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <span
+                            style={{
+                              padding: "4px 10px",
+                              borderRadius: "12px",
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              backgroundColor: "#e0f2fe",
+                              color: "#0c4a6e",
+                            }}
+                          >
+                            {customerStatus}
+                          </span>
+                          <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                            {job.status || "Status pending"}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))
-            )}
+              )}
+            </div>
           </div>
         </div>
 
@@ -1372,6 +1554,28 @@ export default function NextJobsPage() {
             </div>
           </div>
         )}
+        <style jsx>{`
+          .outstanding-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+          }
+          @media (max-width: 1280px) {
+            .outstanding-grid {
+              grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+          }
+          @media (max-width: 960px) {
+            .outstanding-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+          }
+          @media (max-width: 640px) {
+            .outstanding-grid {
+              grid-template-columns: repeat(1, minmax(0, 1fr));
+            }
+          }
+        `}</style>
       </div>
     </Layout>
   );
