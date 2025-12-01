@@ -20,16 +20,29 @@ import { supabase } from "@/lib/supabaseClient"; // import supabase client for j
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import new customer popup
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
 
+const JOB_TYPE_RULES = [
+  { label: "MOT", keywords: ["mot"] },
+  { label: "Service", keywords: ["service", "oil", "inspection", "interval"] },
+  { label: "Diagnostic", keywords: ["diag", "diagnos", "investigation", "warning", "fault", "code", "scan"] },
+  { label: "Tyres", keywords: ["tyre", "tire", "puncture", "wheel alignment", "wheel balance"] },
+  { label: "Brakes", keywords: ["brake", "pad", "disc", "caliper", "calliper", "abs"] },
+  { label: "Steering", keywords: ["steering", "rack", "column", "tracking", "alignment"] },
+  { label: "Suspension", keywords: ["suspension", "shock", "spring", "damper", "strut"] },
+];
+
 // function to automatically detect job types based on request descriptions
-const detectJobTypes = (requests) => {
+const detectJobTypes = (requests = []) => {
   const detected = new Set(); // use a set to avoid duplicates
-  requests.forEach((description) => {
+  requests.forEach((request) => {
+    const description =
+      typeof request === "string" ? request : request?.text || request?.description || "";
+    if (!description) return;
     const lower = description.toLowerCase(); // convert to lowercase for easier matching
-    if (lower.includes("mot")) detected.add("MOT"); // check if request mentions MOT
-    if (lower.includes("service") || lower.includes("oil") || lower.includes("inspection"))
-      detected.add("Service"); // check for service-related keywords
-    if (lower.includes("diag") || lower.includes("investigation") || lower.includes("check") || lower.includes("warning") || lower.includes("fault"))
-      detected.add("Diagnostic"); // check for diagnostic-related keywords
+    JOB_TYPE_RULES.forEach(({ label, keywords }) => {
+      if (keywords.some((keyword) => lower.includes(keyword))) {
+        detected.add(label);
+      }
+    });
   });
   if (detected.size === 0) detected.add("Other"); // if no types detected, default to "Other"
   return Array.from(detected); // convert set back to array
@@ -1065,6 +1078,12 @@ export default function CreateJobCardPage() {
                 borderRadius: "16px",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
                 border: "1px solid #e0e0e0",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+                maxHeight: "65vh",
+                minHeight: "420px",
+                overflowY: "auto",
               }}
             >
               <h3
@@ -1238,6 +1257,12 @@ export default function CreateJobCardPage() {
                 borderRadius: "16px",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
                 border: "1px solid #e0e0e0",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+                maxHeight: "65vh",
+                minHeight: "420px",
+                overflowY: "auto",
               }}
             >
               <h3
@@ -1444,6 +1469,12 @@ export default function CreateJobCardPage() {
                 borderRadius: "16px",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
                 border: "1px solid #e0e0e0",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+                maxHeight: "65vh",
+                minHeight: "420px",
+                overflowY: "auto",
               }}
             >
               <h3
@@ -2152,6 +2183,8 @@ export default function CreateJobCardPage() {
               style={{
                 width: "520px",
                 maxWidth: "90%",
+                maxHeight: "90vh",
+                overflowY: "auto",
                 backgroundColor: "white",
                 borderRadius: "18px",
                 padding: "28px",

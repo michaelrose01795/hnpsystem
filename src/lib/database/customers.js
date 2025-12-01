@@ -201,7 +201,16 @@ export const getCustomerJobs = async (customerId) => {
 export const addCustomerToDatabase = async (customerData) => {
   console.log("➕ addCustomerToDatabase called with:", customerData); // debug log
   
-  const { firstname, lastname, email, mobile } = customerData;
+  const firstname =
+    (typeof customerData.firstname === "string" && customerData.firstname.trim()) ||
+    (typeof customerData.firstName === "string" && customerData.firstName.trim()) ||
+    "";
+  const lastname =
+    (typeof customerData.lastname === "string" && customerData.lastname.trim()) ||
+    (typeof customerData.lastName === "string" && customerData.lastName.trim()) ||
+    "";
+  const email = customerData.email || null;
+  const mobile = customerData.mobile || null;
 
   try {
     // ✅ Step 1: Check for duplicate by email OR mobile (not both required)
@@ -240,7 +249,7 @@ export const addCustomerToDatabase = async (customerData) => {
       telephone: customerData.telephone || null,
       address: customerData.address || null,
       postcode: customerData.postcode || null,
-      contact_preference: customerData.contact_preference || "email",
+      contact_preference: customerData.contact_preference || customerData.contactPreference || "email",
       created_at: new Date().toISOString(),
     };
 

@@ -10,35 +10,54 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
   const [number, setNumber] = useState("");
   const [street, setStreet] = useState("");
   const [town, setTown] = useState("");
-  const [country, setCountry] = useState("");
+  const [country, setCountry] = useState("United Kingdom");
   const [postcode, setPostcode] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [telephone, setTelephone] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lookupState, setLookupState] = useState({
+    loading: false,
+    error: "",
+    suggestions: [],
+  });
 
   // ✅ Function to handle "Add Customer"
   const handleAdd = async () => {
-    // Combine address fields into one string
-    const address = `${number} ${street}, ${town}, ${country}, ${postcode}`;
+    const nameTrimmed = firstName.trim();
+    const lastTrimmed = lastName.trim();
 
     // Prevent incomplete submission
-    if (!firstName.trim() || !lastName.trim()) {
+    if (!nameTrimmed || !lastTrimmed) {
       alert("Please enter both first and last names.");
       return;
     }
+
+    const addressParts = [
+      `${number}`.trim(),
+      street.trim(),
+      town.trim(),
+      country.trim(),
+      postcode.trim(),
+    ]
+      .filter((segment) => segment && segment !== "undefined")
+      .map((segment) => segment.replace(/\s+/g, " ").trim());
+    const formattedAddress = addressParts.join(", ");
 
     setLoading(true);
 
     try {
       // Call the shared database function
       const newCustomer = await addCustomerToDatabase({
-        firstName,
-        lastName,
-        address,
-        email,
-        mobile,
-        telephone,
+        firstname: nameTrimmed,
+        lastname: lastTrimmed,
+        firstName: nameTrimmed,
+        lastName: lastTrimmed,
+        address: formattedAddress,
+        postcode: postcode.trim() || null,
+        email: email?.trim() || null,
+        mobile: mobile?.trim() || null,
+        telephone: telephone?.trim() || null,
       });
 
       // If insert succeeded, send data to parent
@@ -53,6 +72,62 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
       alert(error.message || "Failed to add customer. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePostcodeChange = (value) => {
+    setPostcode(value.toUpperCase());
+    setLookupState((prev) => ({ ...prev, suggestions: [], error: "" }));
+  };
+
+  const applyAddressSuggestion = (suggestion) => {
+    if (!suggestion) return;
+    const { line1, town: suggestionTown, country: suggestionCountry, postcode: suggestionPostcode } = suggestion;
+    if (line1) {
+      const match = line1.match(/^(\d+[A-Za-z]?)[\s,]*(.*)$/);
+      if (match) {
+        setNumber(match[1] || "");
+        setStreet(match[2] || "");
+      } else {
+        setStreet(line1);
+      }
+    }
+    if (suggestionTown) {
+      setTown(suggestionTown);
+    }
+    if (suggestionCountry) {
+      setCountry(suggestionCountry);
+    }
+    if (suggestionPostcode) {
+      setPostcode(suggestionPostcode.toUpperCase());
+    }
+    setLookupState({ loading: false, error: "", suggestions: [] });
+  };
+
+  const handleAddressLookup = async () => {
+    if (!postcode.trim()) {
+      setLookupState((prev) => ({
+        ...prev,
+        error: "Enter a postcode before searching.",
+        suggestions: [],
+      }));
+      return;
+    }
+
+    setLookupState({ loading: true, error: "", suggestions: [] });
+    try {
+      const response = await fetch(`/api/postcode-lookup?postcode=${encodeURIComponent(postcode)}`);
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || "Unable to find that postcode");
+      }
+      setLookupState({ loading: false, error: "", suggestions: payload.suggestions || [] });
+    } catch (error) {
+      setLookupState({
+        loading: false,
+        error: error.message || "Address lookup failed. Please try again.",
+        suggestions: [],
+      });
     }
   };
 
@@ -86,27 +161,106 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
 
         {/* Form fields */}
         {[
-          ["First Name", firstName, setFirstName],
-          ["Last Name", lastName, setLastName],
-          ["Number", number, setNumber],
-          ["Street", street, setStreet],
-          ["Town/City", town, setTown],
-          ["Country", country, setCountry],
-          ["Postcode", postcode, setPostcode],
-          ["Email", email, setEmail],
-          ["Mobile", mobile, setMobile],
-          ["Telephone", telephone, setTelephone],
-        ].map(([label, value, setter]) => (
-          <div key={label}>
-            <label>{label}:</label>
+          { label: "First Name", value: firstName, setter: setFirstName },
+          { label: "Last Name", value: lastName, setter: setLastName },
+          { label: "Number", value: number, setter: setNumber },
+          { label: "Street", value: street, setter: setStreet },
+          { label: "Town/City", value: town, setter: setTown },
+          { label: "Country", value: country, setter: setCountry },
+          {
+            label: "Postcode",
+            value: postcode,
+            setter: handlePostcodeChange,
+            helper: (
+              <button
+                type="button"
+                onClick={handleAddressLookup}
+                disabled={lookupState.loading}
+                style={{
+                  marginTop: "4px",
+                  padding: "6px 10px",
+                  borderRadius: "6px",
+                  border: "1px solid #d1d5db",
+                  backgroundColor: lookupState.loading ? "#f3f4f6" : "#f9fafb",
+                  color: "#111827",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: lookupState.loading ? "not-allowed" : "pointer",
+                }}
+              >
+                {lookupState.loading ? "Searching…" : "Lookup address"}
+              </button>
+            ),
+          },
+          { label: "Email", value: email, setter: setEmail, type: "email" },
+          { label: "Mobile", value: mobile, setter: setMobile },
+          { label: "Telephone", value: telephone, setter: setTelephone },
+        ].map(({ label, value, setter, type = "text", helper }) => (
+          <div key={label} style={{ marginBottom: "8px" }}>
+            <label style={{ display: "block", marginBottom: "4px", fontWeight: "600" }}>{label}:</label>
             <input
-              type={label === "Email" ? "email" : "text"}
+              type={type}
               value={value}
               onChange={(e) => setter(e.target.value)}
-              style={{ width: "100%", marginBottom: "8px" }}
+              style={{
+                width: "100%",
+                padding: "8px 10px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px",
+              }}
             />
+            {helper}
           </div>
         ))}
+
+        {lookupState.error && (
+          <div
+            style={{
+              marginBottom: "12px",
+              padding: "8px 10px",
+              borderRadius: "8px",
+              border: "1px solid #fecaca",
+              backgroundColor: "#fef2f2",
+              color: "#b91c1c",
+              fontSize: "13px",
+            }}
+          >
+            {lookupState.error}
+          </div>
+        )}
+
+        {lookupState.suggestions.length > 0 && (
+          <div
+            style={{
+              marginBottom: "12px",
+              border: "1px solid #e5e7eb",
+              borderRadius: "10px",
+              maxHeight: "160px",
+              overflowY: "auto",
+            }}
+          >
+            {lookupState.suggestions.map((suggestion) => (
+              <button
+                key={suggestion.id}
+                type="button"
+                onClick={() => applyAddressSuggestion(suggestion)}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "none",
+                  borderBottom: "1px solid #e5e7eb",
+                  textAlign: "left",
+                  backgroundColor: "white",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                }}
+              >
+                {suggestion.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Buttons */}
         <div
