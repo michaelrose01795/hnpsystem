@@ -1,5 +1,5 @@
 // file location: src/components/Layout.js
-// Edit: Restored 50/50 navigation/status button split for mobile, status sidebar defaults to closed
+// Edit: Hide Job Progress Tracker on phone view, make top buttons scroll with page content
 // ✅ Imports converted to use absolute alias "@/"
 import React, { useEffect, useState } from "react"; // import React hooks
 import Link from "next/link"; // import Next.js link component
@@ -83,7 +83,7 @@ export default function Layout({ children, jobNumber }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isTablet = viewportWidth <= 1024;
-  const isMobile = viewportWidth <= 640;
+  const isMobile = viewportWidth <= 640; // phone view cutoff
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   const urlJobId =
@@ -523,6 +523,11 @@ export default function Layout({ children, jobNumber }) {
   const showDesktopSidebar = !hideSidebar && !isTablet;
   const showMobileSidebar = !hideSidebar && isTablet;
 
+  // Show status sidebar on tablet but not on mobile phones
+  const showStatusSidebar = canViewStatusSidebar && !isMobile;
+  // Show status button on tablet but not on mobile phones
+  const showStatusButton = canViewStatusSidebar && !isMobile;
+
   return (
     <div style={layoutStyles}>
       {showDesktopSidebar && (
@@ -588,7 +593,7 @@ export default function Layout({ children, jobNumber }) {
       >
         {showMobileSidebar && (
           <>
-            {/* 50/50 split navigation and status buttons */}
+            {/* 50/50 split navigation and status buttons - scrolls with page content */}
             <div
               style={{
                 display: "flex",
@@ -600,7 +605,7 @@ export default function Layout({ children, jobNumber }) {
                 type="button"
                 onClick={() => setIsMobileMenuOpen(true)}
                 style={{
-                  flex: canViewStatusSidebar ? "1 1 50%" : "1 1 100%", // take 50% if status button present, 100% if not
+                  flex: showStatusButton ? "1 1 50%" : "1 1 100%", // take 50% if status button present, 100% if not
                   padding: "10px 14px",
                   borderRadius: "12px",
                   border: `1px solid ${colors.accent}`,
@@ -617,7 +622,7 @@ export default function Layout({ children, jobNumber }) {
               >
                 <span aria-hidden="true">☰</span> Navigation
               </button>
-              {canViewStatusSidebar && ( // show status button on the right for users with access
+              {showStatusButton && ( // show status button on tablet but hide on mobile phones
                 <button
                   type="button"
                   onClick={() => setIsStatusSidebarOpen((prev) => !prev)} // toggle status sidebar
@@ -1087,8 +1092,8 @@ export default function Layout({ children, jobNumber }) {
         </main>
       </div>
 
-      {/* Status sidebar - shown on right side with toggle button for desktop, controlled by mobile button on mobile */}
-      {canViewStatusSidebar && (
+      {/* Status sidebar - shown on tablet/desktop but hidden on mobile phones */}
+      {showStatusSidebar && (
         <StatusSidebar
           jobId={activeJobId}
           currentStatus={currentJobStatus}
@@ -1098,13 +1103,13 @@ export default function Layout({ children, jobNumber }) {
           onJobClear={handleJobClear}
           hasUrlJobId={hasActiveAutoJob}
           viewportWidth={viewportWidth}
-          isCompact={isTablet}
+          isCompact={isTablet && !isMobile} // compact mode for tablet, but not shown on mobile
           timelineContent={
             timelineJobNumber ? (
               <JobTimeline jobNumber={String(timelineJobNumber)} />
             ) : null
           }
-          showToggleButton={!isTablet} // only show toggle button on desktop, mobile uses the 50/50 split button
+          showToggleButton={!isTablet} // only show toggle button on desktop
         />
       )}
 
