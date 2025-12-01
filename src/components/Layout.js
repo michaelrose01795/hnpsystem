@@ -19,8 +19,10 @@ import HrTabsBar from "@/components/HR/HrTabsBar";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import { roleCategories } from "@/config/users";
 
+// Define roles that should see workshop shortcuts
 const WORKSHOP_SHORTCUT_ROLES = ["workshop manager", "aftersales manager"];
 
+// Define workshop shortcut navigation links
 const WORKSHOP_SHORTCUT_LINKS = [
   {
     label: "⏱️ Clocking",
@@ -31,6 +33,7 @@ const WORKSHOP_SHORTCUT_LINKS = [
   },
 ];
 
+// Group workshop shortcuts into a navigation section
 const WORKSHOP_SHORTCUT_SECTIONS = [
   {
     label: "Workshop Shortcuts",
@@ -39,6 +42,7 @@ const WORKSHOP_SHORTCUT_SECTIONS = [
   },
 ];
 
+// Define roles that should see service action buttons
 const SERVICE_ACTION_ROLES = new Set([
   "service",
   "service department",
@@ -50,15 +54,20 @@ const SERVICE_ACTION_ROLES = new Set([
   "aftersales manager",
 ]);
 
+// Define roles that should have parts navigation access
 const PARTS_NAV_ROLES = new Set(["parts", "parts manager"]);
 
+// Define quick action links for service department
 const SERVICE_ACTION_LINKS = [
   { label: "Create Job Card", href: "/job-cards/create" },
   { label: "Appointments", href: "/job-cards/appointments" },
   { label: "Check In", href: "/workshop/check-in" },
 ];
 
+// Storage key for persisting user's mode selection
 const MODE_STORAGE_KEY = "appModeSelection";
+
+// Map modes to their associated roles
 const MODE_ROLE_MAP = {
   Retail: new Set((roleCategories.Retail || []).map((role) => role.toLowerCase())),
   Sales: new Set((roleCategories.Sales || []).map((role) => role.toLowerCase())),
@@ -66,24 +75,27 @@ const MODE_ROLE_MAP = {
 
 export default function Layout({ children, jobNumber }) {
   const { user, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
-  const { usersByRole } = useRoster();
+  const { usersByRole } = useRoster(); // get roster data for role-based checks
   const router = useRouter();
-  const hideSidebar = router.pathname === "/login";
-  const showHrTabs = router.pathname.startsWith("/hr") || router.pathname.startsWith("/admin/users");
+  const hideSidebar = router.pathname === "/login"; // hide sidebar on login page
+  const showHrTabs = router.pathname.startsWith("/hr") || router.pathname.startsWith("/admin/users"); // show HR tabs on HR pages
 
+  // Get current viewport width for responsive layout
   const getViewportWidth = () =>
     typeof window !== "undefined" && window.innerWidth ? window.innerWidth : 1440;
 
   const [viewportWidth, setViewportWidth] = useState(getViewportWidth());
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false); // job card modal state
+  const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false); // status sidebar toggle state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // mobile menu toggle state
 
+  // Responsive breakpoint checks
   const isTablet = viewportWidth <= 1024;
   const isMobile = viewportWidth <= 640;
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
+  // Extract job ID from various URL query parameters
   const urlJobId =
     router.query.id ||
     router.query.jobId ||
@@ -91,13 +103,14 @@ export default function Layout({ children, jobNumber }) {
     router.query.jobnumber ||
     router.query.job ||
     null;
-  const [searchedJobId, setSearchedJobId] = useState(null);
-  const [isAutoJobCleared, setIsAutoJobCleared] = useState(false);
-  const hasActiveAutoJob = !!(urlJobId && !isAutoJobCleared);
-  const activeJobId = searchedJobId || (hasActiveAutoJob ? urlJobId : null);
-  const timelineJobNumber = jobNumber || activeJobId || currentJob?.jobNumber || null;
-  const [currentJobStatus, setCurrentJobStatus] = useState("booked");
+  const [searchedJobId, setSearchedJobId] = useState(null); // job ID from global search
+  const [isAutoJobCleared, setIsAutoJobCleared] = useState(false); // track if URL job was manually cleared
+  const hasActiveAutoJob = !!(urlJobId && !isAutoJobCleared); // check if URL job is active
+  const activeJobId = searchedJobId || (hasActiveAutoJob ? urlJobId : null); // determine which job to show in status sidebar
+  const timelineJobNumber = jobNumber || activeJobId || currentJob?.jobNumber || null; // determine which job timeline to show
+  const [currentJobStatus, setCurrentJobStatus] = useState("booked"); // current status of active job
 
+  // Define roles that should see status sidebar
   const statusSidebarRoles = [
     "admin manager",
     "service",
@@ -111,18 +124,24 @@ export default function Layout({ children, jobNumber }) {
     "valet service",
   ];
 
+  // Get user's raw roles from context
   const rawUserRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+
+  // Determine which modes are available to this user based on their roles
   const availableModes = Object.entries(MODE_ROLE_MAP).reduce((acc, [mode, roleSet]) => {
     if (rawUserRoles.some((role) => roleSet.has(role))) {
       acc.push(mode);
     }
     return acc;
   }, []);
+
+  // Set initial selected mode (if only one mode available, auto-select it)
   const [selectedMode, setSelectedMode] = useState(() =>
     availableModes.length === 1 ? availableModes[0] : null
   );
-  const availableModesKey = availableModes.join("|");
+  const availableModesKey = availableModes.join("|"); // unique key for mode array to detect changes
 
+  // Handle mode selection logic when available modes change
   useEffect(() => {
     if (availableModes.length === 0) {
       if (selectedMode !== null) {
@@ -149,46 +168,64 @@ export default function Layout({ children, jobNumber }) {
     setSelectedMode(availableModes[0]);
   }, [availableModesKey, selectedMode]);
 
+  // Persist selected mode to localStorage
   useEffect(() => {
     if (!selectedMode) return;
     if (typeof window === "undefined") return;
     window.localStorage.setItem(MODE_STORAGE_KEY, selectedMode);
   }, [selectedMode]);
 
+  // Filter user roles based on selected mode (if multi-mode user)
   const modeRoleSet = selectedMode ? MODE_ROLE_MAP[selectedMode] : null;
   const scopedRoles =
     availableModes.length > 1 && modeRoleSet
       ? rawUserRoles.filter((role) => modeRoleSet.has(role))
       : rawUserRoles;
-  const userRoles = scopedRoles.length > 0 ? scopedRoles : rawUserRoles;
-  const activeModeLabel = selectedMode || availableModes[0] || null;
+  const userRoles = scopedRoles.length > 0 ? scopedRoles : rawUserRoles; // fallback to all roles if no scoped roles
+  const activeModeLabel = selectedMode || availableModes[0] || null; // get active mode label for display
 
+  // Check if user's roles match required department roles
   const matchesDepartment = (rolesToMatch = []) => {
     if (!rolesToMatch || rolesToMatch.length === 0) return true;
     return rolesToMatch.some((roleName) => userRoles.includes(roleName));
   };
+
+  // Filter dashboard shortcuts based on user's department roles
   const dashboardShortcuts = departmentDashboardShortcuts.filter((shortcut) =>
     matchesDepartment(shortcut.roles || [])
   );
+
+  // Check if user can use service action buttons
   const canUseServiceActions = userRoles.some((role) => SERVICE_ACTION_ROLES.has(role));
+
+  // Define roles for retail manager dashboard access
   const retailManagerDashboardRoles = ["service manager", "workshop manager", "after sales director"];
   const hasRetailDashboardAccess = userRoles.some((role) =>
     retailManagerDashboardRoles.includes(role)
   );
+
+  // Get lists of technicians and MOT testers from roster
   const techsList = usersByRole?.["Techs"] || [];
   const motTestersList = usersByRole?.["MOT Tester"] || [];
-  // ⚠️ Mock data found — replacing with Supabase query
-  // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
+
+  // Build set of allowed technician names
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
+
+  // Determine if current user is a technician
   const normalizedUsername = typeof user?.username === "string" ? user.username.trim() : "";
   const hasTechRole = userRoles.some((role) => role.includes("tech") || role.includes("mot"));
   const isTech = (normalizedUsername && allowedTechNames.has(normalizedUsername)) || hasTechRole;
+
+  // Check if user can view status sidebar
   const canViewStatusSidebar = userRoles.some((role) =>
     statusSidebarRoles.includes(role)
   );
+
+  // Check if user has parts department access
   const hasPartsAccess = userRoles.some((role) => PARTS_NAV_ROLES.has(role));
   const isPartsManager = userRoles.includes("parts manager");
 
+  // Update viewport width on window resize
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handleResize = () => setViewportWidth(getViewportWidth());
@@ -197,10 +234,12 @@ export default function Layout({ children, jobNumber }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Close mobile menu when switching to desktop view
   useEffect(() => {
     if (!isTablet) setIsMobileMenuOpen(false);
   }, [isTablet]);
 
+  // Handle escape key to close mobile menu
   useEffect(() => {
     if (typeof window === "undefined" || !isMobileMenuOpen) return;
     const handleKeyDown = (event) => {
@@ -212,16 +251,19 @@ export default function Layout({ children, jobNumber }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isMobileMenuOpen]);
 
+  // Redirect to login if user is not authenticated
   useEffect(() => {
     if (user === null && !hideSidebar) {
       router.replace("/login");
     }
   }, [user, hideSidebar, router]);
 
+  // Fetch job status when active job changes
   useEffect(() => {
     if (activeJobId) fetchCurrentJobStatus(activeJobId);
   }, [activeJobId]);
 
+  // Reset search state when URL job changes
   useEffect(() => {
     if (urlJobId) {
       setSearchedJobId(null);
@@ -229,11 +271,13 @@ export default function Layout({ children, jobNumber }) {
     }
   }, [urlJobId]);
 
+  // Handle job search from global search
   const handleJobSearch = (jobId) => {
     setSearchedJobId(jobId);
     setIsAutoJobCleared(false);
   };
 
+  // Handle clearing active job from status sidebar
   const handleJobClear = () => {
     setSearchedJobId(null);
     if (urlJobId) {
@@ -241,11 +285,13 @@ export default function Layout({ children, jobNumber }) {
     }
   };
 
+  // Handle mode selection from dropdown
   const handleModeSelect = (mode) => {
     if (!mode || mode === selectedMode) return;
     setSelectedMode(mode);
   };
 
+  // Fetch current job status from API
   const fetchCurrentJobStatus = async (id) => {
     try {
       const response = await fetch(`/api/status/getCurrentStatus?jobId=${id}`);
@@ -256,11 +302,10 @@ export default function Layout({ children, jobNumber }) {
     }
   };
 
-    .split(" ")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-
+  // Define roles that can view job cards
   const viewRoles = ["manager", "service", "sales"];
+
+  // Define roles that can access VHC features
   const vhcAccessRoles = new Set([
     "admin",
     "service",
@@ -271,13 +316,20 @@ export default function Layout({ children, jobNumber }) {
     "parts",
     "parts manager",
   ]);
+
+  // Check if current route is active
   const isActive = (path) => router.pathname.startsWith(path);
 
+  // Get theme colors
   const colors = appShellTheme.light;
 
+  // Sidebar open/close state
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Content key for forcing re-render on route change
   const [contentKey, setContentKey] = useState(() => router.asPath || "initial");
 
+  // Initialize sidebar state based on viewport and localStorage
   useEffect(() => {
     if (isTablet) {
       setIsSidebarOpen(false);
@@ -292,15 +344,18 @@ export default function Layout({ children, jobNumber }) {
     }
   }, [isTablet]);
 
+  // Persist sidebar state to localStorage
   useEffect(() => {
     if (typeof window === "undefined" || isTablet) return;
     window.localStorage.setItem("sidebarOpen", isSidebarOpen ? "true" : "false");
   }, [isSidebarOpen, isTablet]);
 
+  // Update content key on route change to force component remount
   useEffect(() => {
     setContentKey(router.asPath || `${router.pathname}-${Date.now()}`);
   }, [router.asPath, router.pathname]);
 
+  // iOS-specific fix for rendering issues on route change
   useEffect(() => {
     if (typeof window === "undefined" || !router?.events) return;
 
@@ -330,15 +385,21 @@ export default function Layout({ children, jobNumber }) {
     };
   }, [router]);
 
+  // Combine sidebar sections with workshop shortcuts
   const serviceSidebarSections = WORKSHOP_SHORTCUT_SECTIONS;
   const combinedSidebarSections = [...sidebarSections, ...serviceSidebarSections];
+
+  // Build navigation items array for global search
   const navigationItems = [];
-  const seenNavItems = new Set();
+  const seenNavItems = new Set(); // track added items to prevent duplicates
+
+  // Check if user's roles match required roles for navigation item
   const roleMatches = (requiredRoles = []) => {
     if (!requiredRoles || requiredRoles.length === 0) return true;
     return requiredRoles.some((role) => userRoles.includes(role.toLowerCase()));
   };
 
+  // Add navigation item to search index
   const addNavItem = (
     label,
     href,
@@ -372,6 +433,7 @@ export default function Layout({ children, jobNumber }) {
     });
   };
 
+  // Add all sidebar section items to navigation search
   combinedSidebarSections.forEach((section) => {
     (section.items || []).forEach((item) => {
       addNavItem(item.label, item.href, {
@@ -383,6 +445,7 @@ export default function Layout({ children, jobNumber }) {
     });
   });
 
+  // Add user profile to navigation
   if (user) {
     addNavItem("🙋 My Profile", "/profile", {
       keywords: ["profile", "employee profile", "my profile"],
@@ -391,6 +454,7 @@ export default function Layout({ children, jobNumber }) {
     });
   }
 
+  // Add technician-specific navigation items
   if (isTech) {
     addNavItem("🧰 My Jobs", "/job-cards/myjobs", {
       keywords: ["my jobs", "jobs", "tech"],
@@ -404,9 +468,10 @@ export default function Layout({ children, jobNumber }) {
       keywords: ["consumables", "request", "supplies"],
       description: "Submit consumable restock requests to management",
       section: "Workshop",
-    }); // expose consumable request tool to technicians via quick search
+    });
   }
 
+  // Add next jobs navigation for managers
   if (
     ["service manager", "workshop manager", "admin manager"].some((roleName) =>
       userRoles.includes(roleName)
@@ -418,14 +483,16 @@ export default function Layout({ children, jobNumber }) {
     });
   }
 
+  // Add consumables tracker for workshop managers
   if (userRoles.includes("workshop manager")) {
     addNavItem("🧾 Consumables Tracker", "/workshop/consumables-tracker", {
       keywords: ["consumables", "tracker", "budget"],
       description: "Monitor consumable spend, reminders, and supplier details",
       section: "Workshop",
-    }); // surface consumable tracker shortcut for workshop managers
+    });
   }
 
+  // Add view job cards for managers/service
   if (viewRoles.some((r) => userRoles.includes(r))) {
     addNavItem("👀 View Job Cards", "/job-cards/view", {
       keywords: ["view job", "job cards"],
@@ -434,6 +501,7 @@ export default function Layout({ children, jobNumber }) {
     });
   }
 
+  // Add parts department navigation items
   if (hasPartsAccess) {
     addNavItem("🧰 Parts Workspace", "/parts", {
       keywords: ["parts", "inventory", "vhc parts"],
@@ -452,6 +520,7 @@ export default function Layout({ children, jobNumber }) {
     });
   }
 
+  // Add parts manager dashboard
   if (isPartsManager) {
     addNavItem("📈 Parts Manager Dashboard", "/parts/manager", {
       keywords: ["parts manager", "stock value", "parts dashboard"],
@@ -460,6 +529,7 @@ export default function Layout({ children, jobNumber }) {
     });
   }
 
+  // Add VHC dashboard for authorized roles
   if (userRoles.some((role) => vhcAccessRoles.has(role))) {
     addNavItem("📝 VHC Dashboard", "/vhc/dashboard", {
       keywords: ["vhc", "vehicle health check", "dashboard"],
@@ -467,6 +537,7 @@ export default function Layout({ children, jobNumber }) {
     });
   }
 
+  // Add HR navigation items based on role
   const hrAccessRoles = ["hr manager", "admin manager", "owner", "admin"];
   if (userRoles.some((role) => hrAccessRoles.includes(role))) {
     addNavItem("👥 HR Dashboard", "/hr", {
@@ -487,6 +558,7 @@ export default function Layout({ children, jobNumber }) {
     });
   }
 
+  // Add valet navigation for authorized roles
   if (
     userRoles.includes("valet service") ||
     userRoles.includes("service manager") ||
@@ -499,8 +571,10 @@ export default function Layout({ children, jobNumber }) {
     });
   }
 
+  // Toggle sidebar open/closed
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
+  // Layout styling
   const mainColumnMaxWidth = "100%";
   const layoutStyles = {
     display: "flex",
@@ -518,11 +592,14 @@ export default function Layout({ children, jobNumber }) {
     boxSizing: "border-box",
     overflow: "hidden",
   };
+
+  // Determine which sidebar to show based on viewport
   const showDesktopSidebar = !hideSidebar && !isTablet;
   const showMobileSidebar = !hideSidebar && isTablet;
 
   return (
     <div style={layoutStyles}>
+      {/* Desktop Sidebar */}
       {showDesktopSidebar && (
         <div
           style={{
@@ -567,6 +644,7 @@ export default function Layout({ children, jobNumber }) {
         </div>
       )}
 
+      {/* Main Content Column */}
       <div
         style={{
           flex: 1,
@@ -584,6 +662,7 @@ export default function Layout({ children, jobNumber }) {
           position: "relative",
         }}
       >
+        {/* Mobile Navigation Buttons */}
         {showMobileSidebar && (
           <>
             <div
@@ -642,6 +721,7 @@ export default function Layout({ children, jobNumber }) {
               )}
             </div>
 
+            {/* Mobile Menu Overlay */}
             {isMobileMenuOpen && (
               <div
                 style={{
@@ -695,7 +775,8 @@ export default function Layout({ children, jobNumber }) {
           </>
         )}
 
-        {!hideSidebar && ( // render the modern compact header when the sidebar is visible
+        {/* Header Section */}
+        {!hideSidebar && (
           <section
             style={{
               background: "rgba(255,255,255,0.95)",
@@ -721,6 +802,7 @@ export default function Layout({ children, jobNumber }) {
                 alignItems: "stretch",
               }}
             >
+              {/* Welcome Section */}
               <div
                 style={{
                   display: "flex",
@@ -818,6 +900,7 @@ export default function Layout({ children, jobNumber }) {
                 </div>
               </div>
 
+              {/* Quick Actions Section */}
               {canUseServiceActions && (
                 <div
                   style={{
@@ -877,6 +960,7 @@ export default function Layout({ children, jobNumber }) {
                 </div>
               )}
 
+              {/* Search and Utilities Section */}
               <div
                 style={{
                   display: "flex",
@@ -959,67 +1043,62 @@ export default function Layout({ children, jobNumber }) {
               </div>
             </div>
 
-            {isTech && ( // show quick status controls for technicians
+            {/* Technician Quick Controls */}
+            {isTech && (
               <div
                 style={{
                   display: "flex",
                   flexWrap: "wrap",
                   gap: "12px",
                   alignItems: "center",
-                  justifyContent: "flex-start", // align controls neatly to the left for readability
+                  justifyContent: "flex-start",
                 }}
               >
-                {(
-                  // quick status dropdown for workshop techs
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    style={{
-                      padding: "5px 12px",
-                      borderRadius: "12px",
-                      border: `1px solid ${colors.accent}`,
-                      backgroundColor: "#ffffff",
-                      color: colors.accent,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      minWidth: isMobile ? "100%" : "150px",
-                      boxShadow: "0 4px 10px rgba(209,0,0,0.12)",
-                    }}
-                  >
-                    <option>Waiting for Job</option>
-                    <option>In Progress</option>
-                    <option>Break</option>
-                    <option>Completed</option>
-                  </select>
-                )}
-                {(
-                  // shortcut button to open the currently assigned job card
-                  <button
-                    type="button"
-                    disabled={!currentJob?.jobNumber}
-                    onClick={() =>
-                      currentJob?.jobNumber && router.push(`/job-cards/myjobs/${currentJob.jobNumber}`)
-                    }
-                    style={{
-                      padding: "5px 14px",
-                      borderRadius: "12px",
-                      border: "none",
-                      background: currentJob?.jobNumber
-                        ? "linear-gradient(135deg, #d10000, #a00000)"
-                        : "#f3f4f6",
-                      color: currentJob?.jobNumber ? "#ffffff" : "#9ca3af",
-                      fontWeight: 600,
-                      cursor: currentJob?.jobNumber ? "pointer" : "not-allowed",
-                      boxShadow: currentJob?.jobNumber
-                        ? "0 8px 18px rgba(209,0,0,0.18)"
-                        : "none",
-                      transition: "all 0.2s ease",
-                      width: isMobile ? "100%" : "auto",
-                    }}
-                  >
-                    {currentJob?.jobNumber ? `Open Job ${currentJob.jobNumber}` : "No Current Job"}
-                  </button>
-                )}
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: "12px",
+                    border: `1px solid ${colors.accent}`,
+                    backgroundColor: "#ffffff",
+                    color: colors.accent,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    minWidth: isMobile ? "100%" : "150px",
+                    boxShadow: "0 4px 10px rgba(209,0,0,0.12)",
+                  }}
+                >
+                  <option>Waiting for Job</option>
+                  <option>In Progress</option>
+                  <option>Break</option>
+                  <option>Completed</option>
+                </select>
+                <button
+                  type="button"
+                  disabled={!currentJob?.jobNumber}
+                  onClick={() =>
+                    currentJob?.jobNumber && router.push(`/job-cards/myjobs/${currentJob.jobNumber}`)
+                  }
+                  style={{
+                    padding: "5px 14px",
+                    borderRadius: "12px",
+                    border: "none",
+                    background: currentJob?.jobNumber
+                      ? "linear-gradient(135deg, #d10000, #a00000)"
+                      : "#f3f4f6",
+                    color: currentJob?.jobNumber ? "#ffffff" : "#9ca3af",
+                    fontWeight: 600,
+                    cursor: currentJob?.jobNumber ? "pointer" : "not-allowed",
+                    boxShadow: currentJob?.jobNumber
+                      ? "0 8px 18px rgba(209,0,0,0.18)"
+                      : "none",
+                    transition: "all 0.2s ease",
+                    width: isMobile ? "100%" : "auto",
+                  }}
+                >
+                  {currentJob?.jobNumber ? `Open Job ${currentJob.jobNumber}` : "No Current Job"}
+                </button>
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(true)}
@@ -1043,6 +1122,7 @@ export default function Layout({ children, jobNumber }) {
           </section>
         )}
 
+        {/* Main Content Area */}
         <main
           style={{
             flex: 1,
@@ -1067,6 +1147,7 @@ export default function Layout({ children, jobNumber }) {
         </main>
       </div>
 
+      {/* Status Sidebar */}
       {canViewStatusSidebar && (
         <StatusSidebar
           jobId={activeJobId}
@@ -1087,9 +1168,12 @@ export default function Layout({ children, jobNumber }) {
         />
       )}
 
+      {/* Job Card Modal for Technicians */}
       {isTech && (
         <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       )}
+
+      {/* Topbar Alerts */}
       <TopbarAlerts />
     </div>
   );
