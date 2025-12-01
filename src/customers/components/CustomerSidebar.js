@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: "/customer/vhc", label: "VHC & Media" },
   { href: "/customer/vehicles", label: "My Vehicles" },
   { href: "/customer/parts", label: "Parts & Accessories" },
+  { href: "/customer/payments", label: "Payments & Billing" },
   { href: "/customer/messages", label: "Messages" },
 ];
 

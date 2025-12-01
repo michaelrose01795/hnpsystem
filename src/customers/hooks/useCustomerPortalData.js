@@ -1,5 +1,5 @@
 // file location: src/customers/hooks/useCustomerPortalData.js
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
@@ -81,16 +81,16 @@ export function useCustomerPortalData() {
     vhcSummaries: [],
     parts: [],
     timeline: [],
+    paymentMethods: [],
+    paymentPlans: [],
+    outstandingInvoices: [],
     contacts: buildContacts(usersByRole),
   });
 
-  useEffect(() => {
+  const loadPortalData = useCallback(async () => {
     if (!user) return;
-    let cancelled = false;
-
-    const load = async () => {
-      setState((prev) => ({ ...prev, isLoading: true, error: null }));
-      try {
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    try {
         const normalizedEmail = user.email?.trim().toLowerCase();
         let customerRow = null;
 
@@ -232,7 +232,80 @@ export function useCustomerPortalData() {
           }
         }
 
-        if (cancelled) return;
+        const { data: paymentMethodsData } = await supabase
+          .from("customer_payment_methods")
+          .select("method_id, nickname, card_brand, last4, expiry_month, expiry_year, is_default, created_at")
+          .eq("customer_id", customerRow.id)
+          .order("created_at", { ascending: false });
+
+        const paymentMethods = (paymentMethodsData || []).map((row) => ({
+          id: row.method_id,
+          nickname: row.nickname || `${row.card_brand || "Card"} •••• ${row.last4}`,
+          brand: row.card_brand || "Card",
+          last4: row.last4,
+          expiryMonth: row.expiry_month,
+          expiryYear: row.expiry_year,
+          isDefault: row.is_default,
+          savedAt: row.created_at,
+        }));
+
+        const { data: paymentPlansData } = await supabase
+          .from("payment_plans")
+          .select("plan_id, name, description, total_amount, balance_due, frequency, next_payment_date, status, job_id, invoice_id, created_at")
+          .eq("customer_id", customerRow.id)
+          .order("created_at", { ascending: false });
+
+        const paymentPlans = (paymentPlansData || []).map((row) => ({
+          id: row.plan_id,
+          name: row.name || "Payment plan",
+          description: row.description || "Staged payments",
+          totalAmount: Number(row.total_amount ?? 0),
+          balanceDue: Number(row.balance_due ?? 0),
+          frequency: row.frequency || "Monthly",
+          nextPaymentDate: row.next_payment_date
+            ? dayjs(row.next_payment_date).format("DD MMM YYYY")
+            : "TBC",
+          status: row.status || "active",
+          jobId: row.job_id,
+          invoiceId: row.invoice_id,
+          createdAt: row.created_at,
+        }));
+
+        const { data: invoiceData } = await supabase
+          .from("invoices")
+          .select("id, job_id, customer_id, total, total_vat, total_parts, total_labour, paid, created_at, updated_at")
+          .eq("customer_id", customerRow.id)
+          .eq("paid", false)
+          .order("created_at", { ascending: false });
+
+        const invoiceIds = (invoiceData || []).map((invoice) => invoice.id);
+        let paymentLinksByInvoice = {};
+        if (invoiceIds.length) {
+          const { data: linkRows } = await supabase
+            .from("payment_links")
+            .select("invoice_id, checkout_url, expires_at")
+            .in("invoice_id", invoiceIds);
+          if (linkRows) {
+            paymentLinksByInvoice = linkRows.reduce((acc, row) => {
+              acc[row.invoice_id] = {
+                checkoutUrl: row.checkout_url,
+                expiresAt: row.expires_at,
+              };
+              return acc;
+            }, {});
+          }
+        }
+
+        const outstandingInvoices = (invoiceData || []).map((invoice) => ({
+          id: invoice.id,
+          jobId: invoice.job_id,
+          total: Number(invoice.total ?? 0),
+          vat: Number(invoice.total_vat ?? 0),
+          createdAt: dayjs(invoice.created_at).format("DD MMM YYYY"),
+          paymentLink: paymentLinksByInvoice[invoice.id]?.checkoutUrl || "",
+          paymentLinkExpiresAt: paymentLinksByInvoice[invoice.id]?.expiresAt || null,
+        }));
+
         setState({
           isLoading: false,
           error: null,
@@ -242,25 +315,25 @@ export function useCustomerPortalData() {
           vhcSummaries,
           parts,
           timeline,
+          paymentMethods,
+          paymentPlans,
+          outstandingInvoices,
           contacts: buildContacts(usersByRole),
         });
       } catch (error) {
-        if (cancelled) return;
         setState((prev) => ({
           ...prev,
           isLoading: false,
           error: error.message || "Unable to load customer data",
         }));
-      }
-    };
-
-    load();
-    return () => {
-      cancelled = true;
-    };
+    }
   }, [user, usersByRole]);
+
+  useEffect(() => {
+    loadPortalData();
+  }, [loadPortalData]);
 
   const contacts = useMemo(() => buildContacts(usersByRole), [usersByRole]);
 
-  return { ...state, contacts };
+  return { ...state, contacts, refreshPortalData: loadPortalData };
 }
