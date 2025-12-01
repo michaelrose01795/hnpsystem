@@ -1117,14 +1117,7 @@ export default function VHCDashboard() {
         const jobs = await getAllJobs(); // fetch jobs from Supabase
         console.log("✅ Jobs fetched:", jobs.length); // debug count
 
-        const vhcEligibleJobs = jobs.filter((job) => {
-          const requiresVhc = job.vhcRequired === true; // job flagged as requiring VHC
-          const hasStandalonePartRequest = !requiresVhc && (
-            (Array.isArray(job.partsRequests) && job.partsRequests.length > 0) ||
-            (Array.isArray(job.partsAllocations) && job.partsAllocations.length > 0)
-          ); // jobs with parts requests still surface for parts team
-          return requiresVhc || hasStandalonePartRequest; // include relevant jobs
-        });
+        const vhcEligibleJobs = jobs.filter((job) => job.vhcRequired === true);
         console.log(
           "✅ Jobs requiring VHC or carrying standalone part requests:",
           vhcEligibleJobs.length,
@@ -1166,7 +1159,7 @@ export default function VHCDashboard() {
           }
         }
 
-        const jobsWithVhc = await Promise.all(
+        const jobsWithVhcRaw = await Promise.all(
           vhcEligibleJobs.map(async (job) => {
             const checks = await getVhcChecksByJob(job.id); // fetch technician VHC records (note: lowercase 'hc')
             let workflow = null;
@@ -1207,6 +1200,14 @@ export default function VHCDashboard() {
               hasChecks: hasBuilderSections || checks.length > 0,
               partsCount,
             }); // resolve dashboard status directly from workflow + job fields
+
+            const statusAllowed = VALID_VHC_STATUSES.includes(vhcStatus);
+            const meetsCheckInRule =
+              Boolean(job.checkedInAt) || vhcStatus !== "VHC not started";
+
+            if (!statusAllowed || !meetsCheckInRule) {
+              return null;
+            }
 
             const severityTotals = computeSeverityTotals({
               builderSummary,
@@ -1258,6 +1259,8 @@ export default function VHCDashboard() {
             };
           }),
         );
+
+        const jobsWithVhc = jobsWithVhcRaw.filter(Boolean);
 
         const scopedJobs = partsOnlyMode
           ? jobsWithVhc.filter((job) => {

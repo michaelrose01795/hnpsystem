@@ -269,6 +269,7 @@ export const getAllJobs = async () => {
       requests,
       cosmetic_notes,
       vhc_required,
+      checked_in_at,
       vhc_completed_at,
       maintenance_info,
       warranty_linked_job_id,
@@ -537,6 +538,7 @@ export const getJobByNumber = async (jobNumber) => {
       requests,
       cosmetic_notes,
       vhc_required,
+      checked_in_at,
       vhc_completed_at,
       maintenance_info,
       warranty_linked_job_id,
@@ -790,6 +792,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
       requests,
       cosmetic_notes,
       vhc_required,
+      checked_in_at,
       maintenance_info,
       created_at,
       updated_at,
@@ -892,6 +895,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
         requests,
         cosmetic_notes,
         vhc_required,
+        checked_in_at,
         maintenance_info,
         created_at,
         updated_at,
@@ -1509,6 +1513,7 @@ const formatJobData = (data) => {
     vhcRequired: normalizeBooleanField(data.vhc_required),
     vhcCompletedAt: data.vhc_completed_at || null,
     maintenanceInfo: data.maintenance_info || {},
+    checkedInAt: data.checked_in_at || null,
     
     // ✅ Technician info
     technician: data.technician
