@@ -8,6 +8,82 @@ import dayjs from "dayjs";
 
 const supabase = getDatabaseClient();
 
+const JOB_NUMBER_PREFIX = "JOB";
+
+const normaliseJobNumberInput = (value) => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed.toUpperCase() : null;
+  }
+
+  return null;
+};
+
+const buildJobNumberFromId = (jobId) => {
+  if (!jobId) {
+    return null;
+  }
+
+  const paddedId = String(jobId).padStart(4, "0");
+  const currentYear = dayjs().format("YYYY");
+  return `${JOB_NUMBER_PREFIX}-${currentYear}-${paddedId}`;
+};
+
+const ensureJobNumberAssigned = async (jobRow, providedJobNumber = null) => {
+  if (!jobRow) {
+    return jobRow;
+  }
+
+  if (providedJobNumber) {
+    // Job number supplied by caller already saved during insert
+    return {
+      ...jobRow,
+      job_number: jobRow.job_number || providedJobNumber,
+    };
+  }
+
+  if (jobRow.job_number) {
+    return jobRow;
+  }
+
+  const fallbackJobNumber = buildJobNumberFromId(jobRow.id);
+  if (!fallbackJobNumber) {
+    return jobRow;
+  }
+
+  try {
+    const { data: updatedRow, error: updateError } = await supabase
+      .from("jobs")
+      .update({ job_number: fallbackJobNumber })
+      .eq("id", jobRow.id)
+      .select("job_number")
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    return {
+      ...jobRow,
+      job_number: updatedRow?.job_number || fallbackJobNumber,
+    };
+  } catch (error) {
+    console.error("⚠️ Unable to persist generated job number, using fallback:", error);
+    return {
+      ...jobRow,
+      job_number: fallbackJobNumber,
+    };
+  }
+};
+
 const formatBulletText = (text = "") => {
   if (!text || typeof text !== "string") {
     return "";
@@ -1602,8 +1678,16 @@ export const addJobToDatabase = async ({
   maintenanceInfo,
 }) => {
   try {
+    const normalizedJobNumber = normaliseJobNumberInput(jobNumber);
+
     console.log("➕ addJobToDatabase called with:", { 
-      regNumber, jobNumber, description, type, assignedTo, customerId, vehicleId,
+      regNumber,
+      jobNumber: normalizedJobNumber || jobNumber,
+      description,
+      type,
+      assignedTo,
+      customerId,
+      vehicleId,
       waitingStatus, jobSource, jobCategories, requests, cosmeticNotes, vhcRequired, maintenanceInfo
     });
 
@@ -1638,7 +1722,7 @@ export const addJobToDatabase = async ({
 
     // ✅ Create the job with ALL fields
     const jobInsert = {
-      job_number: jobNumber,
+      job_number: normalizedJobNumber,
       vehicle_id: finalVehicleId,
       customer_id: customerId || vehicleData?.customer_id || null,
       vehicle_reg: regNumber?.toUpperCase() || "",
@@ -1702,9 +1786,11 @@ export const addJobToDatabase = async ({
       throw jobError;
     }
 
-    console.log("✅ Job successfully added:", job);
+    const jobWithNumber = await ensureJobNumberAssigned(job, normalizedJobNumber);
 
-    return { success: true, data: formatJobData(job) };
+    console.log("✅ Job successfully added:", jobWithNumber);
+
+    return { success: true, data: formatJobData(jobWithNumber) };
   } catch (error) {
     console.error("❌ Error adding job:", error);
     return { 
