@@ -79,7 +79,7 @@ export default function Layout({ children, jobNumber }) {
   const { unreadCount: messagesUnread } = useMessagesBadge(dbUserId);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false); // default closed
+  const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(() => !isTablet); // open on desktop
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isTablet = viewportWidth <= 1024;
@@ -199,6 +199,10 @@ export default function Layout({ children, jobNumber }) {
 
   useEffect(() => {
     if (!isTablet) setIsMobileMenuOpen(false);
+  }, [isTablet]);
+
+  useEffect(() => {
+    setIsStatusSidebarOpen(isTablet ? false : true);
   }, [isTablet]);
 
   useEffect(() => {
@@ -507,8 +511,8 @@ export default function Layout({ children, jobNumber }) {
   const layoutStyles = {
     display: "flex",
     flexDirection: isTablet ? "column" : "row",
-    height: isMobile ? "auto" : "100vh",
-    minHeight: isMobile ? "auto" : "100vh",
+    height: isTablet ? "auto" : "100vh",
+    minHeight: isTablet ? "auto" : "100vh",
     width: "100%",
     fontFamily: 'Inter, "Segoe UI", system-ui, -apple-system, sans-serif',
     background: colors.background || colors.mainBg,
@@ -518,13 +522,14 @@ export default function Layout({ children, jobNumber }) {
     gap: isTablet ? "12px" : "24px",
     padding: hideSidebar ? "0" : isTablet ? "12px" : "0 16px",
     boxSizing: "border-box",
-    overflow: isMobile ? "visible" : "hidden",
+    overflow: isTablet ? "visible" : "hidden",
   };
   const showDesktopSidebar = !hideSidebar && !isTablet;
   const showMobileSidebar = !hideSidebar && isTablet;
 
-  // Show status sidebar on desktop/tablet and allow opening as overlay on phones
-  const showStatusSidebar = canViewStatusSidebar && (!isMobile || isStatusSidebarOpen);
+  // Desktop gets docked sidebar; tablets/phones get overlay
+  const showDockedStatusSidebar = canViewStatusSidebar && !isTablet && isStatusSidebarOpen;
+  const showOverlayStatusSidebar = canViewStatusSidebar && isTablet && isStatusSidebarOpen;
 
   return (
     <div style={layoutStyles}>
@@ -582,9 +587,9 @@ export default function Layout({ children, jobNumber }) {
           gap: hideSidebar ? 0 : isTablet ? "16px" : "20px",
           padding: hideSidebar ? "0" : isTablet ? "16px 12px" : "24px 16px",
           background: colors.mainBg,
-          height: isMobile ? "auto" : "100%",
-          maxHeight: isMobile ? "none" : "100vh",
-          overflowY: isMobile ? "visible" : "auto", // allow full page scroll on phones
+          height: isTablet ? "auto" : "100%",
+          maxHeight: isTablet ? "none" : "100vh",
+          overflowY: isTablet ? "visible" : "auto", // allow full page scroll on tablets/phones
           overflowX: "hidden",
           position: "relative",
         }}
@@ -623,9 +628,7 @@ export default function Layout({ children, jobNumber }) {
               {canViewStatusSidebar && ( // show status button for all users with status access (including mobile)
                 <button
                   type="button"
-                  onClick={() =>
-                    setIsStatusSidebarOpen((prev) => (isMobile ? true : !prev))
-                  } // open overlay on phones, toggle on tablet
+                  onClick={() => setIsStatusSidebarOpen(true)} // open overlay drawer on touch devices
                   style={{
                     flex: "1 1 50%", // 50/50 split with navigation
                     padding: "10px 14px",
@@ -1071,7 +1074,7 @@ export default function Layout({ children, jobNumber }) {
             flex: 1,
             minHeight: 0,
             height: "100%",
-            overflow: isMobile ? "visible" : "auto",
+            overflow: isTablet ? "visible" : "auto",
           }}
         >
           <div
@@ -1083,33 +1086,68 @@ export default function Layout({ children, jobNumber }) {
               border: hideSidebar ? "none" : "1px solid #ffe0e0",
               boxShadow: hideSidebar ? "none" : "0 32px 64px rgba(209,0,0,0.1)",
               padding: hideSidebar ? "0" : isMobile ? "18px 14px" : "32px",
-              overflow: isMobile ? "visible" : "auto",
+              overflow: isTablet ? "visible" : "auto",
             }}
           >
             {showHrTabs && <HrTabsBar />}
             {children}
           </div>
         </main>
+        {showDockedStatusSidebar && (
+          <div
+            style={{
+              width: "260px",
+              padding: "16px 0",
+              alignSelf: "stretch",
+              height: "100%",
+              maxHeight: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "16px",
+            }}
+          >
+            <StatusSidebar
+              jobId={activeJobId}
+              currentStatus={currentJobStatus}
+              isOpen={isStatusSidebarOpen}
+              onToggle={() => {}}
+              onJobSearch={handleJobSearch}
+              onJobClear={handleJobClear}
+              hasUrlJobId={hasActiveAutoJob}
+              viewportWidth={viewportWidth}
+              isCompact={false}
+              timelineContent={
+                timelineJobNumber ? (
+                  <JobTimeline jobNumber={String(timelineJobNumber)} />
+                ) : null
+              }
+              showToggleButton={false}
+              variant="docked"
+              canClose={false}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Status sidebar - always available for allowed roles; opens as overlay on phones */}
-      {showStatusSidebar && (
+      {/* Status sidebar overlay for tablets/phones */}
+      {showOverlayStatusSidebar && (
         <StatusSidebar
           jobId={activeJobId}
           currentStatus={currentJobStatus}
           isOpen={isStatusSidebarOpen}
-          onToggle={() => setIsStatusSidebarOpen(!isStatusSidebarOpen)}
+          onToggle={() => setIsStatusSidebarOpen(false)}
           onJobSearch={handleJobSearch}
           onJobClear={handleJobClear}
           hasUrlJobId={hasActiveAutoJob}
           viewportWidth={viewportWidth}
-          isCompact={isTablet && !isMobile} // compact mode for tablet, but not shown on mobile
+          isCompact={isTablet && !isMobile}
           timelineContent={
             timelineJobNumber ? (
               <JobTimeline jobNumber={String(timelineJobNumber)} />
             ) : null
           }
-          showToggleButton={!isTablet} // only show toggle button on desktop
+          showToggleButton={false}
         />
       )}
 

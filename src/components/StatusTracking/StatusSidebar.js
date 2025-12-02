@@ -21,6 +21,8 @@ export default function StatusSidebar({
   isCompact = false,
   timelineContent = null,
   showToggleButton = true,
+  variant = "overlay",
+  canClose = true,
 }) {
   const [statusHistory, setStatusHistory] = useState([]); // Array of past statuses with timestamps
   const [totalTimeSpent, setTotalTimeSpent] = useState(0); // Total working time in minutes
@@ -28,7 +30,8 @@ export default function StatusSidebar({
   const [searchInput, setSearchInput] = useState(''); // Search input state
   const [searchError, setSearchError] = useState(''); // Error message state
   const safeViewportWidth = typeof viewportWidth === 'number' ? viewportWidth : 1440;
-  const compactMode = isCompact || safeViewportWidth <= 1100;
+  const isDocked = variant === "docked";
+  const compactMode = !isDocked && (isCompact || safeViewportWidth <= 1100);
   const panelWidth = compactMode ? Math.min(Math.max(safeViewportWidth - 32, 280), 420) : 400;
   
   // Fetch status history when component mounts or jobId changes
@@ -175,6 +178,7 @@ export default function StatusSidebar({
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const showFloatingToggle = showToggleButton && !compactMode && !isDocked;
   const toggleButtonStyle = compactMode
     ? {
         width: '56px',
@@ -239,6 +243,19 @@ export default function StatusSidebar({
         flexDirection: 'column',
         overflow: 'hidden'
       }
+    : isDocked
+    ? {
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#ffffff',
+        boxShadow: '0 20px 40px rgba(209,0,0,0.12)',
+        borderRadius: '16px',
+        border: '1px solid #ffe0e0',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }
     : {
         position: 'fixed',
         right: '0',
@@ -260,13 +277,13 @@ export default function StatusSidebar({
       };
 
   const handleToggleMouseEnter = (e) => {
-    if (compactMode) return;
+    if (compactMode || isDocked) return;
     e.currentTarget.style.backgroundColor = '#a00000';
     e.currentTarget.style.transform = 'translateY(-50%) translateX(-2px)';
   };
 
   const handleToggleMouseLeave = (e) => {
-    if (compactMode) return;
+    if (compactMode || isDocked) return;
     e.currentTarget.style.backgroundColor = '#d10000';
     e.currentTarget.style.transform = 'translateY(-50%)';
   };
@@ -274,7 +291,7 @@ export default function StatusSidebar({
   return (
     <>
       {/* Toggle button - desktop only; compact/mobile view uses external controls */}
-      {showToggleButton && !compactMode && (
+      {showFloatingToggle && (
         <button
           aria-label={isOpen ? 'Hide job progress' : 'Show job progress'}
           onClick={(e) => {
@@ -299,28 +316,30 @@ export default function StatusSidebar({
           borderRadius: '0', // Match full-height edge-to-edge layout
           position: 'relative'
         }}>
-          <button
-            aria-label="Close status sidebar"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggle();
-            }}
-            style={{
-              position: 'absolute',
-              top: '16px',
-              right: '16px',
-              background: 'rgba(255,255,255,0.2)',
-              border: '1px solid rgba(255,255,255,0.4)',
-              borderRadius: '999px',
-              color: '#fff',
-              fontWeight: '700',
-              fontSize: '14px',
-              padding: '4px 10px',
-              cursor: 'pointer'
-            }}
-          >
-            ✕
-          </button>
+          {canClose && onToggle && (
+            <button
+              aria-label="Close status sidebar"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle();
+              }}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'rgba(255,255,255,0.2)',
+                border: '1px solid rgba(255,255,255,0.4)',
+                borderRadius: '999px',
+                color: '#fff',
+                fontWeight: '700',
+                fontSize: '14px',
+                padding: '4px 10px',
+                cursor: 'pointer'
+              }}
+            >
+              ✕
+            </button>
+          )}
           <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '12px' }}>
             Job Progress Tracker
           </h2>
