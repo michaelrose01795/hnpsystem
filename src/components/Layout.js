@@ -78,12 +78,11 @@ export default function Layout({ children, jobNumber }) {
   const [viewportWidth, setViewportWidth] = useState(getViewportWidth());
   const { unreadCount: messagesUnread } = useMessagesBadge(dbUserId);
 
+  const isTablet = viewportWidth <= 1024;
+  const isMobile = viewportWidth <= 640; // phone view cutoff
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(() => !isTablet); // open on desktop
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const isTablet = viewportWidth <= 1024;
-  const isMobile = viewportWidth <= 640; // phone view cutoff
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   const urlJobId =
