@@ -81,7 +81,7 @@ export default function Layout({ children, jobNumber }) {
   const isTablet = viewportWidth <= 1024;
   const isMobile = viewportWidth <= 640; // phone view cutoff
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(() => !isTablet); // open on desktop
+  const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
@@ -201,7 +201,27 @@ export default function Layout({ children, jobNumber }) {
   }, [isTablet]);
 
   useEffect(() => {
-    setIsStatusSidebarOpen(isTablet ? false : true);
+    setIsStatusSidebarOpen(false);
+  }, [isTablet]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const htmlEl = document.documentElement;
+    const bodyEl = document.body;
+    if (isTablet) {
+      htmlEl.style.height = "auto";
+      bodyEl.style.height = "auto";
+      bodyEl.style.overflowY = "auto";
+    } else {
+      htmlEl.style.height = "100%";
+      bodyEl.style.height = "100%";
+      bodyEl.style.overflowY = "hidden";
+    }
+    return () => {
+      htmlEl.style.height = "";
+      bodyEl.style.height = "";
+      bodyEl.style.overflowY = "";
+    };
   }, [isTablet]);
 
   useEffect(() => {
@@ -525,10 +545,8 @@ export default function Layout({ children, jobNumber }) {
   };
   const showDesktopSidebar = !hideSidebar && !isTablet;
   const showMobileSidebar = !hideSidebar && isTablet;
-
-  // Desktop gets docked sidebar; tablets/phones get overlay
-  const showDockedStatusSidebar = canViewStatusSidebar && !isTablet && isStatusSidebarOpen;
-  const showOverlayStatusSidebar = canViewStatusSidebar && isTablet && isStatusSidebarOpen;
+  const showDesktopStatusControls = canViewStatusSidebar && !isTablet;
+  const showMobileStatusSidebar = canViewStatusSidebar && isTablet && isStatusSidebarOpen;
 
   return (
     <div style={layoutStyles}>
@@ -1092,18 +1110,50 @@ export default function Layout({ children, jobNumber }) {
             {children}
           </div>
         </main>
-        {showDockedStatusSidebar && (
+      </div>
+
+      {/* Desktop floating status sidebar */}
+      {showDesktopStatusControls && (
+        <>
+          <button
+            type="button"
+            onClick={() => setIsStatusSidebarOpen((prev) => !prev)}
+            style={{
+              position: "fixed",
+              top: "50%",
+              right: isStatusSidebarOpen ? "280px" : "0",
+              transform: "translateY(-50%)",
+              width: "52px",
+              height: "52px",
+              borderRadius: "999px 0 0 999px",
+              border: "none",
+              background: isStatusSidebarOpen
+                ? "linear-gradient(135deg, #b10000, #8b0000)"
+                : "linear-gradient(135deg, #d10000, #a00000)",
+              color: "#ffffff",
+              fontSize: "20px",
+              fontWeight: 700,
+              boxShadow: "0 12px 30px rgba(0,0,0,0.18)",
+              cursor: "pointer",
+              zIndex: 140,
+            }}
+            aria-label={isStatusSidebarOpen ? "Close status sidebar" : "Open status sidebar"}
+          >
+            {isStatusSidebarOpen ? "›" : "‹"}
+          </button>
           <div
             style={{
-              width: "260px",
-              padding: "16px 0",
-              alignSelf: "stretch",
-              height: "100%",
-              maxHeight: "100%",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "16px",
+              position: "fixed",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: "280px",
+              padding: "12px",
+              boxSizing: "border-box",
+              transform: isStatusSidebarOpen ? "translateX(0)" : "translateX(100%)",
+              transition: "transform 0.35s ease",
+              zIndex: 130,
+              pointerEvents: isStatusSidebarOpen ? "auto" : "none",
             }}
           >
             <StatusSidebar
@@ -1126,11 +1176,11 @@ export default function Layout({ children, jobNumber }) {
               canClose={false}
             />
           </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Status sidebar overlay for tablets/phones */}
-      {showOverlayStatusSidebar && (
+      {showMobileStatusSidebar && (
         <StatusSidebar
           jobId={activeJobId}
           currentStatus={currentJobStatus}
