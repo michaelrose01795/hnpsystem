@@ -172,6 +172,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
       onClose={onClose}
       title="External / Drive-in Inspection"
       subtitle="Log exterior and drive-in checks with consistent styling."
+      hideCloseButton
       width="1280px"
       height="780px"
       footer={modalFooter}

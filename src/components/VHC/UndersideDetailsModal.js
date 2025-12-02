@@ -153,6 +153,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
       onClose={onClose}
       title="Underside Inspection"
       subtitle="Match dashboard styling while documenting underside inspections."
+      hideCloseButton
       width="1280px"
       height="780px"
       footer={modalFooter}

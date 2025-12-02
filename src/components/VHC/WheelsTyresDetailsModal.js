@@ -514,6 +514,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
       isOpen={isOpen}
       onClose={onClose}
       title="Wheels & Tyres"
+      hideCloseButton
       width="1280px"
       height="780px"
       footer={footer}

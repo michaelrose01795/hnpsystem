@@ -33,19 +33,148 @@ const statusPillStyles = {
   Green: { background: "rgba(16,185,129,0.16)", color: palette.success, border: "rgba(16,185,129,0.32)" },
 };
 
+const concernTargets = [
+  { key: "service", label: "Service Reminder" },
+  { key: "oil", label: "Oil Level" },
+  ...UNDER_BONNET_ITEMS.map((item) => ({ key: item, label: item })),
+];
+
 export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onClose, onComplete }) {
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "20px",
     height: "100%",
   };
-  const summaryCardStyle = vhcModalContentStyles.summaryCard;
-  const summaryTextBlockStyle = vhcModalContentStyles.summaryTextBlock;
-  const summaryBadgesStyle = vhcModalContentStyles.summaryBadges;
-  const summaryBadgeBase = vhcModalContentStyles.badge;
   const cardShellStyle = {
     ...vhcModalContentStyles.baseCard,
     cursor: "default",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+  };
+  const concernCardStyle = {
+    ...cardShellStyle,
+    padding: "16px 20px",
+  };
+
+  const openConcernFor = (source) => {
+    setActiveConcernTarget(source);
+    setShowConcernModal(true);
+  };
+
+  const concernsBySource = useMemo(() => {
+    const buckets = {
+      service: [],
+      oil: [],
+      underBonnet: [],
+    };
+    concerns.forEach((concernItem) => {
+      if (concernItem.source === "service") {
+        buckets.service.push(concernItem);
+      } else if (concernItem.source === "oil") {
+        buckets.oil.push(concernItem);
+      } else if (UNDER_BONNET_ITEMS.includes(concernItem.source)) {
+        buckets.underBonnet.push(concernItem);
+      }
+    });
+    return buckets;
+  }, [concerns]);
+
+  const ConcernPanel = ({ label, concernsList = [], onAdd, showSource = false }) => {
+    if (!concernsList.length) return null;
+    const redCount = concernsList.filter((concernItem) => concernItem.status === "Red").length;
+    const amberCount = concernsList.filter((concernItem) => concernItem.status === "Amber").length;
+    return (
+      <div style={concernCardStyle}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "12px",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <span style={{ fontSize: "12px", letterSpacing: "0.2em", color: palette.textMuted }}>
+              {label} Concerns
+            </span>
+            <span style={{ fontSize: "18px", fontWeight: 700, color: palette.textPrimary }}>
+              {concernsList.length} issue{concernsList.length === 1 ? "" : "s"} logged
+            </span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={onAdd}
+              style={{ ...createVhcButtonStyle("ghost"), gap: "6px" }}
+            >
+              + Add Concern
+            </button>
+            <span
+              style={{
+                padding: "6px 12px",
+                borderRadius: "999px",
+                background: "#fee2e2",
+                color: palette.danger,
+                fontWeight: 600,
+                fontSize: "12px",
+              }}
+            >
+              Red {redCount}
+            </span>
+            <span
+              style={{
+                padding: "6px 12px",
+                borderRadius: "999px",
+                background: "#fef3c7",
+                color: palette.warning,
+                fontWeight: 600,
+                fontSize: "12px",
+              }}
+            >
+              Amber {amberCount}
+            </span>
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {concernsList.map((concernItem, idx) => (
+            <div
+              key={`${concernItem.source}-${idx}`}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                borderRadius: "12px",
+                border: `1px solid ${palette.border}`,
+                padding: "10px 12px",
+                background: palette.surface,
+                gap: "10px",
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "13px", fontWeight: 600, color: palette.textPrimary }}>
+                  {concernItem.text}
+                </span>
+                {showSource && (
+                  <span style={{ fontSize: "11px", color: palette.textMuted }}>
+                    {concernItem.source}
+                  </span>
+                )}
+              </div>
+              <span
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: concernItem.status === "Red" ? palette.danger : palette.warning,
+                }}
+              >
+                {concernItem.status}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   const [serviceChoice, setServiceChoice] = useState(initialData?.serviceChoice ?? null);
@@ -62,19 +191,6 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
     setOilStatus(initialData.oilStatus ?? null);
     setConcerns(initialData.concerns ?? []);
   }, [initialData]);
-
-  const totals = useMemo(() => {
-    return concerns.reduce(
-      (acc, concern) => {
-        acc.count += 1;
-        if (concern.status === "Red") acc.red += 1;
-        if (concern.status === "Amber") acc.amber += 1;
-        if (concern.status === "Green") acc.green += 1;
-        return acc;
-      },
-      { count: 0, red: 0, amber: 0, green: 0 },
-    );
-  }, [concerns]);
 
   if (!isOpen) return null;
 
@@ -97,6 +213,9 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
   const deleteConcern = (idx) => {
     setConcerns((prev) => prev.filter((_, concernIdx) => concernIdx !== idx));
   };
+
+  const activeConcernLabel =
+    concernTargets.find((target) => target.key === activeConcernTarget)?.label || activeConcernTarget || "selected area";
 
   const canComplete =
     !!serviceChoice &&
@@ -122,68 +241,26 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
     <VHCModalShell
       isOpen={isOpen}
       title="Service Indicator & Under Bonnet"
-      subtitle="Capture service reminder status and under bonnet checks."
       onClose={onClose}
+      hideCloseButton
       width="1280px"
       height="780px"
       footer={footer}
     >
       <div style={contentWrapperStyle}>
-        <div style={summaryCardStyle}>
-          <div style={summaryTextBlockStyle}>
-            <span style={vhcModalContentStyles.summaryTitle}>Concern Summary</span>
-            <span style={vhcModalContentStyles.summaryMetric}>
-              {totals.count} logged across service checks
-            </span>
-          </div>
-          <div style={summaryBadgesStyle}>
-            {["Red", "Amber", "Green"].map((key) => {
-              const value = totals[key.toLowerCase()];
-              if (!value) return null;
-              const map = statusPillStyles[key];
-              return (
-                <div
-                  key={key}
-                  style={{
-                    ...summaryBadgeBase,
-                    background: map.background,
-                    color: map.color,
-                    border: `1px solid ${map.border}`,
-                  }}
-                >
-                  {value} {key}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         <div
           style={{
             flex: 1,
             display: "grid",
-            gridTemplateRows: "1fr 1fr 1.6fr",
+            gridTemplateRows: "1fr 1fr 1.8fr",
             gap: "20px",
             minHeight: 0,
           }}
         >
-          <div style={{ ...cardShellStyle, display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
-                Service Reminder
-              </h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveConcernTarget("service");
-                  setShowConcernModal(true);
-                }}
-                style={{ ...createVhcButtonStyle("ghost"), padding: "6px 14px" }}
-              >
-                + Add Concern
-              </button>
-            </div>
-
+          <div style={cardShellStyle}>
+            <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
+              Service Reminder
+            </h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
               {SERVICE_OPTIONS.map((option) => {
                 const isActive = serviceChoice === option.key;
@@ -221,25 +298,17 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                 );
               })}
             </div>
+            <ConcernPanel
+              label="Service Reminder"
+              concernsList={concernsBySource.service}
+              onAdd={() => openConcernFor("service")}
+            />
           </div>
 
-          <div style={{ ...cardShellStyle, display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
-                Oil Level
-              </h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveConcernTarget("oil");
-                  setShowConcernModal(true);
-                }}
-                style={{ ...createVhcButtonStyle("ghost"), padding: "6px 14px" }}
-              >
-                + Add Concern
-              </button>
-            </div>
-
+          <div style={cardShellStyle}>
+            <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
+              Oil Level
+            </h3>
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               {OIL_OPTIONS.map((option) => {
                 const isActive = oilStatus === option;
@@ -275,23 +344,17 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                 );
               })}
             </div>
+            <ConcernPanel
+              label="Oil Level"
+              concernsList={concernsBySource.oil}
+              onAdd={() => openConcernFor("oil")}
+            />
           </div>
 
-          <div
-            style={{
-              ...cardShellStyle,
-              display: "flex",
-              flexDirection: "column",
-              gap: "16px",
-            }}
-          >
+          <div style={{ ...cardShellStyle, gap: "16px" }}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
               Under Bonnet Items
             </h3>
-            <p style={{ margin: 0, fontSize: "13px", color: palette.textMuted }}>
-              Record additional issues for each item while keeping the layout consistent with the dashboard cards.
-            </p>
-
             <div
               style={{
                 display: "grid",
@@ -312,20 +375,20 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                       setActiveConcernTarget(item);
                       setShowConcernModal(true);
                     }}
-                      style={{
-                        padding: "12px",
-                        borderRadius: "14px",
-                        border: `1px solid ${palette.border}`,
-                        background: palette.surface,
-                        color: palette.textPrimary,
-                        fontWeight: 600,
-                        fontSize: "13px",
-                        textAlign: "left",
-                        position: "relative",
-                        boxShadow: "0 4px 12px rgba(15,23,42,0.08)",
-                        cursor: "pointer",
-                        transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                      }}
+                    style={{
+                      padding: "12px",
+                      borderRadius: "14px",
+                      border: `1px solid ${palette.border}`,
+                      background: palette.surface,
+                      color: palette.textPrimary,
+                      fontWeight: 600,
+                      fontSize: "13px",
+                      textAlign: "left",
+                      position: "relative",
+                      boxShadow: "0 4px 12px rgba(15,23,42,0.08)",
+                      cursor: "pointer",
+                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                    }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = "translateY(-3px)";
                       e.currentTarget.style.boxShadow = "0 12px 24px rgba(209,0,0,0.14)";
@@ -358,6 +421,12 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                 );
               })}
             </div>
+            <ConcernPanel
+              label="Under Bonnet"
+              concernsList={concernsBySource.underBonnet}
+              onAdd={() => openConcernFor(UNDER_BONNET_ITEMS[0])}
+              showSource
+            />
           </div>
         </div>
       </div>
@@ -395,21 +464,23 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
               <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
                 Add Concern
               </h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowConcernModal(false);
-                  setActiveConcernTarget(null);
-                }}
-                style={{ ...createVhcButtonStyle("ghost"), padding: "6px 14px" }}
-              >
+            <button
+              type="button"
+              onClick={() => {
+                setShowConcernModal(false);
+                setActiveConcernTarget(null);
+                setNewConcern("");
+                setConcernStatus("Red");
+              }}
+              style={{ ...createVhcButtonStyle("ghost"), padding: "6px 14px" }}
+            >
                 Close
               </button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <span style={{ fontSize: "13px", color: palette.textMuted }}>
-                Target: {activeConcernTarget === "service" || activeConcernTarget === "oil" ? activeConcernTarget : activeConcernTarget}
+                Target: {activeConcernLabel}
               </span>
 
               <textarea

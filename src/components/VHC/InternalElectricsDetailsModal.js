@@ -153,6 +153,7 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
       onClose={onClose}
       title="Internal Electrics"
       subtitle="Track cabin electronics with the same look and feel as the dashboard."
+      hideCloseButton
       width="1280px"
       height="780px"
       footer={modalFooter}
