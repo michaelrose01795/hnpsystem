@@ -477,6 +477,7 @@ export default function VHCPAGE() {
           <WheelsTyresDetailsModal
             isOpen
             onClose={() => setActiveSection(null)}
+            initialData={vhcData.wheelsTyres}
             onComplete={(data) => handleSectionComplete("wheelsTyres", data)}
           />
         )}

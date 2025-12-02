@@ -1,3 +1,4 @@
+// file location: src/pages/vhc/details/[jobNumber].js
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
