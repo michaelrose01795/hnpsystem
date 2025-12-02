@@ -49,6 +49,22 @@ CREATE TABLE public.appointments (
   CONSTRAINT appointments_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT appointments_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
 );
+CREATE TABLE public.clocking (
+  id bigint NOT NULL DEFAULT nextval('clocking_id_seq'::regclass),
+  user_id integer NOT NULL,
+  date date NOT NULL DEFAULT CURRENT_DATE,
+  clock_in timestamp with time zone,
+  clock_out timestamp with time zone,
+  break_start timestamp with time zone,
+  break_end timestamp with time zone,
+  total_hours numeric,
+  status character varying DEFAULT 'clocked_out'::character varying,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT clocking_pkey PRIMARY KEY (id),
+  CONSTRAINT clocking_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
 CREATE TABLE public.customer_payment_methods (
   method_id uuid NOT NULL DEFAULT gen_random_uuid(),
   customer_id uuid NOT NULL,
