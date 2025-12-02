@@ -224,6 +224,28 @@ const mapActiveClockingRow = (row = {}) => {
   };
 };
 
+const buildJobFromClockingEntry = (entry = {}, technicianName = "") => {
+  const makeModel = entry.makeModel || "";
+  const [make, ...modelParts] = makeModel.split(" ");
+  return {
+    id: entry.jobId ?? null,
+    jobNumber: entry.jobNumber || "Job pending",
+    reg: entry.reg || "Reg TBC",
+    make: make || "",
+    model: modelParts.join(" "),
+    customer: entry.customer || "",
+    description: entry.description || "",
+    status: entry.status || "In Progress",
+    assignedTech:
+      technicianName || entry.userId
+        ? {
+            id: entry.userId ?? null,
+            name: technicianName || "",
+          }
+        : null,
+  };
+};
+
 export default function NextJobsPage() {
   // ✅ Hooks
   const { user } = useUser(); // Current logged-in user
@@ -299,6 +321,16 @@ export default function NextJobsPage() {
   };
 
   const waitingJobs = useMemo(() => jobs.filter(isWaitingJob), [jobs]);
+
+  const jobsByNumber = useMemo(() => {
+    const map = new Map();
+    waitingJobs.forEach((job) => {
+      if (job?.jobNumber) {
+        map.set(job.jobNumber, job);
+      }
+    });
+    return map;
+  }, [waitingJobs]);
 
   const outstandingJobs = useMemo(
     () =>
@@ -682,6 +714,19 @@ export default function NextJobsPage() {
     setSelectedJob(null);
   };
 
+  const handleOpenCurrentClocking = (entry, technicianName) => {
+    if (!entry) return;
+    if (entry.jobNumber) {
+      const knownJob = jobsByNumber.get(entry.jobNumber);
+      if (knownJob) {
+        handleOpenJobDetails(knownJob);
+        return;
+      }
+    }
+    const fallbackJob = buildJobFromClockingEntry(entry, technicianName);
+    handleOpenJobDetails(fallbackJob);
+  };
+
   const handleOpenAssignPopup = () => {
     setFeedbackMessage(null);
     setAssignPopup(true);
@@ -971,7 +1016,9 @@ export default function NextJobsPage() {
           borderRadius: "8px",
           border: currentClocking ? "1px solid #34d399" : "1px dashed #d1d5db",
           backgroundColor: currentClocking ? "#ecfdf5" : "#f9fafb",
+          cursor: currentClocking ? "pointer" : "default",
         }}
+        onClick={() => handleOpenCurrentClocking(currentClocking, assignee.name)}
       >
         <p
           style={{
