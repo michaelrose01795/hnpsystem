@@ -123,6 +123,185 @@ const generateDummyVHCDetail = (jobNumber) => {
   };
 };
 
+const SECTION_CATEGORY_MAP = {
+  brakes: ["Brakes", "Hubs", "Discs", "Pads"],
+  tyres: ["Tyres", "Wheels"],
+  underside: ["Underside", "Suspension", "Exhaust"],
+  underBonnet: ["Fluid Levels", "Engine", "Under Bonnet"],
+  cosmetics: ["Cosmetics", "Bodywork", "Interior", "Exterior"],
+  electronics: ["Electronics", "Lights", "Electrical"],
+};
+
+const SECTION_LABELS = {
+  brakes: "Brakes & Hubs",
+  tyres: "Tyres",
+  underside: "Underside",
+  underBonnet: "Under Bonnet",
+  cosmetics: "Cosmetics & Body",
+  electronics: "Electrics & Lighting",
+};
+
+const POSITION_LABELS = {
+  NSF: "Nearside Front",
+  OSF: "Offside Front",
+  NSR: "Nearside Rear",
+  OSR: "Offside Rear",
+};
+
+const getFirstValue = (source = {}, keys = []) => {
+  for (const key of keys) {
+    const value = source?.[key];
+    if (value !== undefined && value !== null && value !== "") {
+      return value;
+    }
+  }
+  return null;
+};
+
+const formatDepthValue = (value) => {
+  if (value === null || value === undefined || value === "") return "—";
+  const text = value.toString().trim();
+  if (!text) return "—";
+  return text.endsWith("mm") ? text : `${text}mm`;
+};
+
+const prettifyLabel = (label = "") => {
+  if (!label) return "";
+  return label
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (match) => match.toUpperCase())
+    .trim();
+};
+
+const normalizeWheelEntries = (input) => {
+  if (!input) return [];
+  if (Array.isArray(input)) {
+    return input.map((entry, index) => ({ key: entry?.id || index, label: entry?.label || `Tyre ${index + 1}`, ...entry }));
+  }
+  if (typeof input === "object") {
+    return Object.entries(input)
+      .filter(([, value]) => value && typeof value === "object")
+      .map(([position, value]) => ({ key: position, position, ...value }));
+  }
+  return [];
+};
+
+const extractTyreDetails = (vhcData = {}) => {
+  const source = vhcData.tyre_details || vhcData.tyres || vhcData.wheelsTyres;
+  let entries = normalizeWheelEntries(source);
+  if (entries.length === 0) {
+    const tyreItems = (vhcData.vhc_items || []).filter((item) =>
+      (item.category || "").toLowerCase().includes("tyre"),
+    );
+    entries = tyreItems.map((item) => ({
+      key: item.id,
+      label: item.item || item.category || "Tyre",
+      make: getFirstValue(item, ["manufacturer", "make", "brand"]),
+      size: getFirstValue(item, ["size", "tyre_size", "dimension"]),
+      load: getFirstValue(item, ["load", "load_index"]),
+      speed: getFirstValue(item, ["speed"]),
+      tread: {
+        outer: getFirstValue(item, ["tread_outer", "outer", "outer_depth"]),
+        middle: getFirstValue(item, ["tread_middle", "middle", "middle_depth"]),
+        inner: getFirstValue(item, ["tread_inner", "inner", "inner_depth"]),
+      },
+    }));
+  }
+
+  return entries.map((entry) => ({
+    id: entry.key,
+    label: POSITION_LABELS[entry.position] || entry.label || entry.position || "Tyre",
+    make: getFirstValue(entry, ["manufacturer", "make", "brand"]),
+    size: getFirstValue(entry, ["size", "tyreSize", "dimension"]),
+    load: getFirstValue(entry, ["load", "loadIndex"]),
+    speed: getFirstValue(entry, ["speed"]),
+    tread: entry.tread || {
+      outer: getFirstValue(entry, ["outer", "treadOuter"]),
+      middle: getFirstValue(entry, ["middle", "treadMiddle"]),
+      inner: getFirstValue(entry, ["inner", "treadInner"]),
+    },
+  }));
+};
+
+const normalizeBrakeEntries = (source) => {
+  if (!source) return [];
+  if (Array.isArray(source)) {
+    return source;
+  }
+  if (typeof source === "object") {
+    return Object.entries(source)
+      .filter(([, value]) => value && typeof value === "object")
+      .map(([key, value]) => ({ id: key, label: prettifyLabel(key), ...value }));
+  }
+  return [];
+};
+
+const extractBrakeDetails = (vhcData = {}) => {
+  let entries = normalizeBrakeEntries(vhcData.brakes?.entries || vhcData.brakesHubs);
+  if (entries.length === 0) {
+    const brakeItems = (vhcData.vhc_items || []).filter((item) =>
+      (item.category || "").toLowerCase().includes("brake"),
+    );
+    entries = brakeItems.map((item) => ({
+      id: item.id,
+      label: item.item || item.category,
+      measurement: item.measurement || item.notes,
+      status: item.status,
+      pads: item.pads || null,
+      discs: item.discs || null,
+      notes: item.notes,
+    }));
+  }
+  return entries.map((entry) => ({
+    id: entry.id || entry.label,
+    label: entry.label ? prettifyLabel(entry.label) : "Brake",
+    pads: entry.pads || entry.padMeasurements || entry.measurements || null,
+    discs: entry.discs || entry.discMeasurements || entry.measurements || null,
+    measurement: entry.measurement || entry.measurements || null,
+    status: entry.status || null,
+    notes: entry.notes || entry.summary || "",
+  }));
+};
+
+const resolveSectionName = (item = {}) => {
+  const category = (item.category || "").toLowerCase();
+  const sectionTitle = (item.section || "").toLowerCase();
+  for (const [key, values] of Object.entries(SECTION_CATEGORY_MAP)) {
+    if (
+      values.some((value) =>
+        category.includes(value.toLowerCase()) || sectionTitle.includes(value.toLowerCase()),
+      )
+    ) {
+      return SECTION_LABELS[key] || item.category || "VHC Section";
+    }
+  }
+  return item.category || item.section || "VHC Section";
+};
+
+const buildSeverityBuckets = (items = []) => {
+  const buckets = { red: new Map(), amber: new Map() };
+  items.forEach((item) => {
+    if (!item) return;
+    const status = (item.status || "").toLowerCase();
+    const bucket = status === "red" ? buckets.red : status === "amber" ? buckets.amber : null;
+    if (!bucket) return;
+    const sectionName = resolveSectionName(item);
+    const existing = bucket.get(sectionName) || [];
+    existing.push(item);
+    bucket.set(sectionName, existing);
+  });
+  return buckets;
+};
+
+const formatItemSummaryText = (item = {}) => {
+  const segments = [];
+  if (item.item) segments.push(item.item);
+  if (item.notes) segments.push(item.notes);
+  if (item.measurement) segments.push(item.measurement);
+  return segments.length > 0 ? segments.join(" – ") : item.category || "VHC item";
+};
+
 // ✅ VHC Details Page Component
 export default function VHCDetails() {
   const router = useRouter(); // router for navigation and params
@@ -161,14 +340,12 @@ const partsPipelineSummary = useMemo(
 );
 const pipelineStages = partsPipelineSummary.stageSummary || [];
 const [orderNeededWarning, setOrderNeededWarning] = useState(null); // order-needed notification
-const SECTION_CATEGORY_MAP = {
-  brakes: ["Brakes", "Hubs", "Discs", "Pads"],
-  tyres: ["Tyres", "Wheels"],
-  underside: ["Underside", "Suspension", "Exhaust"],
-  underBonnet: ["Fluid Levels", "Engine", "Under Bonnet"],
-  cosmetics: ["Cosmetics", "Bodywork", "Interior", "Exterior"],
-  electronics: ["Electronics", "Lights", "Electrical"],
-};
+const tyreDetails = useMemo(() => extractTyreDetails(vhcData || {}), [vhcData]);
+const brakeDetails = useMemo(() => extractBrakeDetails(vhcData || {}), [vhcData]);
+const severityBuckets = useMemo(
+  () => buildSeverityBuckets(vhcData?.vhc_items || []),
+  [vhcData?.vhc_items],
+);
 
   // ✅ Fetch VHC details from Supabase (or use dummy data)
   useEffect(() => {
@@ -977,6 +1154,175 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
     );
   };
 
+  const renderTyreSummarySection = () => {
+    if (!tyreDetails || tyreDetails.length === 0) return null;
+    return (
+      <div
+        style={{
+          background: "white",
+          border: "1px solid #e0e0e0",
+          borderRadius: "16px",
+          padding: "20px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+        }}
+      >
+        <div>
+          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#111827" }}>Tyres</h3>
+          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>
+            Size, load, manufacturer, and tread depths for every wheel.
+          </p>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "12px" }}>
+          {tyreDetails.map((detail) => (
+            <div key={detail.id || detail.label} style={{ border: "1px solid #f3f4f6", borderRadius: "12px", padding: "12px", background: "#fff" }}>
+              <div style={{ fontSize: "13px", fontWeight: 700, color: "#111827", marginBottom: "8px" }}>{detail.label}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(80px, 1fr))", gap: "8px" }}>
+                {[
+                  { label: "Make", value: detail.make || "—" },
+                  { label: "Size", value: detail.size || "—" },
+                  { label: "Load", value: detail.load || "—" },
+                  { label: "Speed", value: detail.speed || "—" },
+                ].map((meta) => (
+                  <div key={`${detail.id}-${meta.label}`} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                    <span style={{ fontSize: "11px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em" }}>{meta.label}</span>
+                    <strong style={{ fontSize: "14px", color: "#111827" }}>{meta.value}</strong>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: "12px" }}>
+                <span style={{ fontSize: "11px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em" }}>Depths</span>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(60px, 1fr))", gap: "8px", marginTop: "6px" }}>
+                  {["outer", "middle", "inner"].map((segment) => (
+                    <div key={`${detail.id}-${segment}`} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontSize: "11px", color: "#6b7280" }}>{segment.toUpperCase()}</span>
+                      <strong style={{ fontSize: "13px", color: "#111827" }}>{formatDepthValue(detail?.tread?.[segment])}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderBrakeSummarySection = () => {
+    if (!brakeDetails || brakeDetails.length === 0) return null;
+
+    const renderMeasurement = (label, value) => {
+      if (!value) return null;
+      let text = value;
+      if (Array.isArray(value)) {
+        text = value.filter(Boolean).join(" / ");
+      } else if (typeof value === "object") {
+        text = Object.values(value).filter(Boolean).join(" / ");
+      }
+      if (!text) return null;
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span style={{ fontSize: "11px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</span>
+          <strong style={{ fontSize: "13px", color: "#111827" }}>{text}</strong>
+        </div>
+      );
+    };
+
+    return (
+      <div
+        style={{
+          background: "white",
+          border: "1px solid #e0e0e0",
+          borderRadius: "16px",
+          padding: "20px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+        }}
+      >
+        <div>
+          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#111827" }}>Brakes</h3>
+          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>
+            Pad/disc measurements and technician condition notes.
+          </p>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px" }}>
+          {brakeDetails.map((detail) => (
+            <div key={detail.id} style={{ border: "1px solid #f3f4f6", borderRadius: "12px", padding: "12px", background: "#fff" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{detail.label}</span>
+                {detail.status ? (
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      padding: "2px 8px",
+                      borderRadius: "999px",
+                      background: detail.status === "Red" ? "#fee2e2" : detail.status === "Amber" ? "#fef3c7" : "#ecfdf5",
+                      color: detail.status === "Red" ? "#b91c1c" : detail.status === "Amber" ? "#92400e" : "#065f46",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {detail.status}
+                  </span>
+                ) : null}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {renderMeasurement("Pads", detail.pads || detail.measurement)}
+                {renderMeasurement("Discs", detail.discs)}
+                {detail.notes ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                    <span style={{ fontSize: "11px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em" }}>Condition</span>
+                    <p style={{ margin: 0, fontSize: "13px", color: "#4b5563" }}>{detail.notes}</p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderSeveritySummarySection = (label, bucket, accent) => {
+    if (!bucket || bucket.size === 0) return null;
+    return (
+      <div
+        style={{
+          background: "white",
+          border: `1px solid ${accent}33`,
+          borderRadius: "16px",
+          padding: "20px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+        }}
+      >
+        <div>
+          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: accent }}>{label} summary</h3>
+          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>
+            Grouped by the original section so advisors can prioritise follow-ups.
+          </p>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {Array.from(bucket.entries()).map(([sectionName, items]) => (
+            <div key={sectionName} style={{ border: "1px solid #f3f4f6", borderRadius: "12px", padding: "12px", background: "#fff" }}>
+              <h4 style={{ margin: "0 0 8px", fontSize: "14px", fontWeight: 700, color: "#111827" }}>{sectionName}</h4>
+              <ul style={{ margin: 0, paddingLeft: "18px", color: "#374151", fontSize: "13px" }}>
+                {items.map((item) => (
+                  <li key={`${sectionName}-${item.id || item.item}`}>{formatItemSummaryText(item)}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   // ✅ Loading state
   if (loading) {
     return (
@@ -1316,6 +1662,147 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
               View As Customer
             </button>
           )}
+
+          {activeTab === "full-vhc-report" && (
+            <div style={{
+              background: "white",
+              border: "1px solid #e0e0e0",
+              borderRadius: "16px",
+              padding: "20px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+            }}>
+              <div>
+                <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#1a1a1a" }}>Full VHC Report</h3>
+                <p style={{ fontSize: "13px", color: "#666", marginTop: "4px" }}>
+                  All reported items grouped by status – include greens for traceability.
+                </p>
+              </div>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: "16px"
+              }}>
+                {vhcData.vhc_items.filter(item => item.status === "Red").map(item => (
+                  <div key={`red-${item.id}`} style={{
+                    border: "2px solid #ef4444",
+                    borderRadius: "12px",
+                    padding: "16px",
+                    backgroundColor: "#ef444410"
+                  }}>
+                    <div style={{
+                      backgroundColor: "#ef4444",
+                      color: "white",
+                      padding: "4px 8px",
+                      borderRadius: "6px",
+                      fontSize: "11px",
+                      fontWeight: "600",
+                      marginBottom: "8px",
+                      display: "inline-block"
+                    }}>
+                      RED
+                    </div>
+                    <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
+                      {item.category}
+                    </p>
+                    <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
+                      {item.item}
+                    </p>
+                    <p style={{ fontSize: "12px", color: "#999" }}>{item.notes}</p>
+                  </div>
+                ))}
+
+                {vhcData.vhc_items.filter(item => item.status === "Amber").map(item => (
+                  <div key={`amber-${item.id}`} style={{
+                    border: "2px solid #fbbf24",
+                    borderRadius: "12px",
+                    padding: "16px",
+                    backgroundColor: "#fbbf2410"
+                  }}>
+                    <div style={{
+                      backgroundColor: "#fbbf24",
+                      color: "white",
+                      padding: "4px 8px",
+                      borderRadius: "6px",
+                      fontSize: "11px",
+                      fontWeight: "600",
+                      marginBottom: "8px",
+                      display: "inline-block"
+                    }}>
+                      AMBER
+                    </div>
+                    <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
+                      {item.category}
+                    </p>
+                    <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
+                      {item.item}
+                    </p>
+                    <p style={{ fontSize: "12px", color: "#999" }}>{item.notes}</p>
+                  </div>
+                ))}
+
+                {greenItems.map(item => (
+                  <div key={`green-${item.id}`} style={{
+                    border: "2px solid #10b981",
+                    borderRadius: "12px",
+                    padding: "16px",
+                    backgroundColor: "#10b98110"
+                  }}>
+                    <div style={{
+                      backgroundColor: "#10b981",
+                      color: "white",
+                      padding: "4px 8px",
+                      borderRadius: "6px",
+                      fontSize: "11px",
+                      fontWeight: "600",
+                      marginBottom: "8px",
+                      display: "inline-block"
+                    }}>
+                      GREEN
+                    </div>
+                    <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
+                      {item.category}
+                    </p>
+                    <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
+                      {item.item}
+                    </p>
+                    <p style={{ fontSize: "12px", color: "#999" }}>{item.notes}</p>
+                  </div>
+                ))}
+
+                {greyItems.map(item => (
+                  <div key={`grey-${item.id}`} style={{
+                    border: "2px solid #9ca3af",
+                    borderRadius: "12px",
+                    padding: "16px",
+                    backgroundColor: "#9ca3af10"
+                  }}>
+                    <div style={{
+                      backgroundColor: "#9ca3af",
+                      color: "white",
+                      padding: "4px 8px",
+                      borderRadius: "6px",
+                      fontSize: "11px",
+                      fontWeight: "600",
+                      marginBottom: "8px",
+                      display: "inline-block"
+                    }}>
+                      NOT CHECKED
+                    </div>
+                    <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
+                      {item.category}
+                    </p>
+                    <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
+                      {item.item}
+                    </p>
+                    <p style={{ fontSize: "12px", color: "#999" }}>{item.notes}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {/* Left - VHC Status Badge */}
           <div style={{
             backgroundColor: statusColor,
@@ -1461,7 +1948,7 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
           borderBottom: "2px solid #e0e0e0",
           flexShrink: 0
         }}>
-          {["summary", "health-check", "parts-identified", "parts-authorized", "parts-on-order", "photos", "videos"].map(tab => (
+          {["summary", "full-vhc-report", "health-check", "parts-identified", "parts-authorized", "parts-on-order", "photos", "videos"].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -1478,7 +1965,9 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
                 transition: "all 0.2s"
               }}
             >
-              {tab.replace("-", " ")}
+              {tab
+                .replace(/-/g, " ")
+                .replace(/\b\w/g, (char) => char.toUpperCase())}
             </button>
           ))}
         </div>
@@ -1495,6 +1984,10 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
           {/* ========== SUMMARY TAB ========== */}
           {activeTab === "summary" && (
             <>
+              {renderTyreSummarySection()}
+              {renderBrakeSummarySection()}
+              {renderSeveritySummarySection("Red", severityBuckets.red, "#ef4444")}
+              {renderSeveritySummarySection("Amber", severityBuckets.amber, "#f59e0b")}
               {/* Authorized Work Section */}
               {authorizedItems.length > 0 && (
                 <div style={{
@@ -1951,152 +2444,6 @@ const formatMoney = (value = 0) => Number.parseFloat(value || 0).toFixed(2);
                 </div>
               )}
 
-              {/* All VHC Items Grid - 4 columns */}
-              <div style={{
-                background: "white",
-                border: "1px solid #e0e0e0",
-                borderRadius: "16px",
-                padding: "20px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-              }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", color: "#1a1a1a" }}>
-                  Full VHC Report
-                </h3>
-                
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "16px"
-                }}>
-                  {/* Red Items First (including all red, not just unactioned) */}
-                  {vhcData.vhc_items.filter(item => item.status === "Red").map(item => (
-                    <div key={item.id} style={{
-                      border: "2px solid #ef4444",
-                      borderRadius: "12px",
-                      padding: "16px",
-                      backgroundColor: "#ef444410"
-                    }}>
-                      <div style={{
-                        backgroundColor: "#ef4444",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        marginBottom: "8px",
-                        display: "inline-block"
-                      }}>
-                        RED
-                      </div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
-                        {item.category}
-                      </p>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {item.item}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#999" }}>
-                        {item.notes}
-                      </p>
-                    </div>
-                  ))}
-                  
-                  {/* Amber Items (including all amber, not just unactioned) */}
-                  {vhcData.vhc_items.filter(item => item.status === "Amber").map(item => (
-                    <div key={item.id} style={{
-                      border: "2px solid #fbbf24",
-                      borderRadius: "12px",
-                      padding: "16px",
-                      backgroundColor: "#fbbf2410"
-                    }}>
-                      <div style={{
-                        backgroundColor: "#fbbf24",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        marginBottom: "8px",
-                        display: "inline-block"
-                      }}>
-                        AMBER
-                      </div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
-                        {item.category}
-                      </p>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {item.item}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#999" }}>
-                        {item.notes}
-                      </p>
-                    </div>
-                  ))}
-                  
-                  {/* Green Items */}
-                  {greenItems.map(item => (
-                    <div key={item.id} style={{
-                      border: "2px solid #10b981",
-                      borderRadius: "12px",
-                      padding: "16px",
-                      backgroundColor: "#10b98110"
-                    }}>
-                      <div style={{
-                        backgroundColor: "#10b981",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        marginBottom: "8px",
-                        display: "inline-block"
-                      }}>
-                        GREEN
-                      </div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
-                        {item.category}
-                      </p>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {item.item}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#999" }}>
-                        {item.notes}
-                      </p>
-                    </div>
-                  ))}
-                  
-                  {/* Grey Items */}
-                  {greyItems.map(item => (
-                    <div key={item.id} style={{
-                      border: "2px solid #9ca3af",
-                      borderRadius: "12px",
-                      padding: "16px",
-                      backgroundColor: "#9ca3af10"
-                    }}>
-                      <div style={{
-                        backgroundColor: "#9ca3af",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        marginBottom: "8px",
-                        display: "inline-block"
-                      }}>
-                        NOT CHECKED
-                      </div>
-                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a1a", marginBottom: "4px" }}>
-                        {item.category}
-                      </p>
-                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                        {item.item}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#999" }}>
-                        {item.notes}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </>
           )}
 

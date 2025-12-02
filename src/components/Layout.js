@@ -507,8 +507,8 @@ export default function Layout({ children, jobNumber }) {
   const layoutStyles = {
     display: "flex",
     flexDirection: isTablet ? "column" : "row",
-    height: "100vh",
-    minHeight: "100vh",
+    height: isMobile ? "auto" : "100vh",
+    minHeight: isMobile ? "auto" : "100vh",
     width: "100%",
     fontFamily: 'Inter, "Segoe UI", system-ui, -apple-system, sans-serif',
     background: colors.background || colors.mainBg,
@@ -518,13 +518,13 @@ export default function Layout({ children, jobNumber }) {
     gap: isTablet ? "12px" : "24px",
     padding: hideSidebar ? "0" : isTablet ? "12px" : "0 16px",
     boxSizing: "border-box",
-    overflow: "hidden",
+    overflow: isMobile ? "visible" : "hidden",
   };
   const showDesktopSidebar = !hideSidebar && !isTablet;
   const showMobileSidebar = !hideSidebar && isTablet;
 
-  // Show status sidebar on tablet but not on mobile phones
-  const showStatusSidebar = canViewStatusSidebar && !isMobile;
+  // Show status sidebar on desktop/tablet and allow opening as overlay on phones
+  const showStatusSidebar = canViewStatusSidebar && (!isMobile || isStatusSidebarOpen);
 
   return (
     <div style={layoutStyles}>
@@ -582,9 +582,9 @@ export default function Layout({ children, jobNumber }) {
           gap: hideSidebar ? 0 : isTablet ? "16px" : "20px",
           padding: hideSidebar ? "0" : isTablet ? "16px 12px" : "24px 16px",
           background: colors.mainBg,
-          height: "100%",
-          maxHeight: "100vh",
-          overflowY: "auto", // this makes everything scroll
+          height: isMobile ? "auto" : "100%",
+          maxHeight: isMobile ? "none" : "100vh",
+          overflowY: isMobile ? "visible" : "auto", // allow full page scroll on phones
           overflowX: "hidden",
           position: "relative",
         }}
@@ -623,7 +623,9 @@ export default function Layout({ children, jobNumber }) {
               {canViewStatusSidebar && ( // show status button for all users with status access (including mobile)
                 <button
                   type="button"
-                  onClick={() => setIsStatusSidebarOpen((prev) => !prev)} // toggle status sidebar
+                  onClick={() =>
+                    setIsStatusSidebarOpen((prev) => (isMobile ? true : !prev))
+                  } // open overlay on phones, toggle on tablet
                   style={{
                     flex: "1 1 50%", // 50/50 split with navigation
                     padding: "10px 14px",
@@ -1069,7 +1071,7 @@ export default function Layout({ children, jobNumber }) {
             flex: 1,
             minHeight: 0,
             height: "100%",
-            overflow: "auto",
+            overflow: isMobile ? "visible" : "auto",
           }}
         >
           <div
@@ -1081,7 +1083,7 @@ export default function Layout({ children, jobNumber }) {
               border: hideSidebar ? "none" : "1px solid #ffe0e0",
               boxShadow: hideSidebar ? "none" : "0 32px 64px rgba(209,0,0,0.1)",
               padding: hideSidebar ? "0" : isMobile ? "18px 14px" : "32px",
-              overflow: "auto",
+              overflow: isMobile ? "visible" : "auto",
             }}
           >
             {showHrTabs && <HrTabsBar />}
@@ -1090,7 +1092,7 @@ export default function Layout({ children, jobNumber }) {
         </main>
       </div>
 
-      {/* Status sidebar - shown on tablet/desktop but hidden on mobile phones */}
+      {/* Status sidebar - always available for allowed roles; opens as overlay on phones */}
       {showStatusSidebar && (
         <StatusSidebar
           jobId={activeJobId}
