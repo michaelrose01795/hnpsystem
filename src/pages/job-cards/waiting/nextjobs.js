@@ -172,6 +172,58 @@ const deriveJobTypeLabel = (job) => {
   return "Other";
 };
 
+const formatClockInTime = (value) => {
+  if (!value) return "";
+  try {
+    return new Date(value).toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch (_err) {
+    return "";
+  }
+};
+
+const toUserIdKey = (value) => {
+  if (value === null || value === undefined) return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? String(numeric) : null;
+};
+
+const mapActiveClockingRow = (row = {}) => {
+  const job = row.job || {};
+  const vehicle = job.vehicle || {};
+  const customer = job.customer || {};
+  const reg =
+    job.vehicle_reg ||
+    vehicle.registration ||
+    vehicle.reg_number ||
+    "";
+  const makeModel =
+    job.vehicle_make_model ||
+    vehicle.make_model ||
+    [vehicle.make, vehicle.model].filter(Boolean).join(" ").trim();
+  const customerFirst = (customer.firstname || "").trim();
+  const customerLast = (customer.lastname || "").trim();
+  const customerName =
+    customer.name ||
+    [customerFirst, customerLast].filter(Boolean).join(" ").trim();
+
+  return {
+    clockingId: row.id ?? null,
+    userId: row.user_id ?? null,
+    jobId: row.job_id ?? null,
+    jobNumber: row.job_number || job.job_number || "",
+    clockIn: row.clock_in || null,
+    workType: row.work_type || "initial",
+    reg,
+    makeModel,
+    customer: customerName,
+    status: job.status || "",
+    description: job.description || "",
+  };
+};
+
 export default function NextJobsPage() {
   // ✅ Hooks
   const { user } = useUser(); // Current logged-in user
@@ -188,6 +240,7 @@ export default function NextJobsPage() {
   const [dragOverJob, setDragOverJob] = useState(null); // Track which specific job is being hovered over
   const [feedbackMessage, setFeedbackMessage] = useState(null); // Success/error feedback
   const [loading, setLoading] = useState(true); // Loading state
+  const [activeClockingsByUser, setActiveClockingsByUser] = useState({});
 
   // ✅ Manager access check
   const username = user?.username;
@@ -397,11 +450,64 @@ export default function NextJobsPage() {
     }
   }, []);
 
+  const fetchActiveClockings = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("job_clocking")
+        .select(
+          `
+          id,
+          user_id,
+          job_id,
+          job_number,
+          clock_in,
+          work_type,
+          job:job_id(
+            job_number,
+            description,
+            vehicle_reg,
+            vehicle_make_model,
+            status,
+            customer:customer_id(firstname, lastname, name),
+            vehicle:vehicle_id(registration, reg_number, make, model, make_model)
+          )
+        `
+        )
+        .is("clock_out", null);
+
+      if (error) {
+        throw error;
+      }
+
+      const byUser = {};
+      (data || []).forEach((row) => {
+        const entry = mapActiveClockingRow(row);
+        if (!entry.userId) return;
+        const key = String(entry.userId);
+        const existing = byUser[key];
+        if (!existing) {
+          byUser[key] = entry;
+          return;
+        }
+        const existingTime = existing.clockIn ? Date.parse(existing.clockIn) : 0;
+        const candidateTime = entry.clockIn ? Date.parse(entry.clockIn) : 0;
+        if (candidateTime >= existingTime) {
+          byUser[key] = entry;
+        }
+      });
+
+      setActiveClockingsByUser(byUser);
+    } catch (err) {
+      console.error("❌ Error fetching active technician clockings:", err);
+    }
+  }, []);
+
   // ✅ Fetch jobs and technicians from Supabase on component mount
   useEffect(() => { // Kick off initial data fetch
     fetchJobs(); // Load waiting jobs
     fetchTechnicians(); // Load staff lists
-  }, [fetchJobs, fetchTechnicians]);
+    fetchActiveClockings(); // Load current clocking per technician
+  }, [fetchJobs, fetchTechnicians, fetchActiveClockings]);
 
   useEffect(() => { // Subscribe to Supabase changes for live updates
     const channel = supabase
@@ -419,6 +525,23 @@ export default function NextJobsPage() {
       supabase.removeChannel(channel);
     };
   }, [fetchJobs]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("nextjobs-active-clocking")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "job_clocking" },
+        () => {
+          fetchActiveClockings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchActiveClockings]);
 
   const staffDirectory = useMemo(() => {
     const map = new Map();
@@ -800,6 +923,13 @@ export default function NextJobsPage() {
   const renderAssigneePanel = (assignee) => {
     const panelKey = assignee.panelKey || assignee.id || assignee.name;
     const shouldScroll = assignee.jobs.length > VISIBLE_JOBS_PER_PANEL;
+    const userIdKey = toUserIdKey(assignee.id);
+    const currentClocking = userIdKey ? activeClockingsByUser[userIdKey] : null;
+    const clockingSubtitleParts = [];
+    if (currentClocking?.reg) clockingSubtitleParts.push(currentClocking.reg);
+    if (currentClocking?.customer) clockingSubtitleParts.push(currentClocking.customer);
+    const clockingSubtitle = clockingSubtitleParts.join(" • ");
+    const clockInLabel = currentClocking ? formatClockInTime(currentClocking.clockIn) : "";
     return (
       <div
         key={panelKey}
@@ -834,6 +964,73 @@ export default function NextJobsPage() {
       }}>
         {assignee.name} ({assignee.jobs.length})
       </p>
+      <div
+        style={{
+          marginBottom: "12px",
+          padding: "12px",
+          borderRadius: "8px",
+          border: currentClocking ? "1px solid #34d399" : "1px dashed #d1d5db",
+          backgroundColor: currentClocking ? "#ecfdf5" : "#f9fafb",
+        }}
+      >
+        <p
+          style={{
+            margin: "0 0 4px 0",
+            fontSize: "11px",
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            color: "#6b7280",
+          }}
+        >
+          Current clocking
+        </p>
+        {currentClocking ? (
+          <>
+            <p
+              style={{
+                margin: "0 0 4px 0",
+                fontSize: "14px",
+                fontWeight: 600,
+                color: "#065f46",
+              }}
+            >
+              {currentClocking.jobNumber || "Job pending"}
+            </p>
+            {clockingSubtitle && (
+              <p
+                style={{
+                  margin: "0 0 4px 0",
+                  fontSize: "12px",
+                  color: "#047857",
+                }}
+              >
+                {clockingSubtitle}
+              </p>
+            )}
+            <p
+              style={{
+                margin: 0,
+                fontSize: "12px",
+                color: "#047857",
+              }}
+            >
+              {clockInLabel
+                ? `Clocked in at ${clockInLabel}`
+                : "Clock-in time not recorded"}
+            </p>
+          </>
+        ) : (
+          <p
+            style={{
+              margin: 0,
+              fontSize: "13px",
+              color: "#6b7280",
+            }}
+          >
+            Not clocked into a job
+          </p>
+        )}
+      </div>
       <div style={{
         flex: 1,
         minHeight: JOB_LIST_MAX_HEIGHT_PX,
