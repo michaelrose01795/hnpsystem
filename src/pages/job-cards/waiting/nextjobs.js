@@ -77,7 +77,7 @@ const STATUS_COMPLETED = new Set([
 const toStatusKey = (status) => (status ? String(status).trim().toUpperCase() : "");
 const OUTSTANDING_ALLOWED_STATUSES = new Set(["CHECKED IN", "ACCEPTED IN"]);
 const BLOCKING_STATUS_KEYWORDS = ["MOT", "VALET", "SERVICE MANAGER", "AFTERSALES"];
-const OUTSTANDING_VISIBLE_ROWS = 3;
+const OUTSTANDING_VISIBLE_ROWS = 2;
 const OUTSTANDING_CARD_HEIGHT = 210;
 const OUTSTANDING_GRID_MAX_HEIGHT_PX = `${OUTSTANDING_VISIBLE_ROWS * OUTSTANDING_CARD_HEIGHT}px`;
 
@@ -464,46 +464,12 @@ export default function NextJobsPage() {
     const motSource = dbMotTesters.length > 0 ? dbMotTesters : fallbackMot;
     motSource.forEach((person, index) => mergePerson(person, "mot", index, "mot"));
 
-    waitingJobs.forEach((job) => {
-      const rawName =
-        job.assignedTech?.name ||
-        job.technician ||
-        (typeof job.assignedTo === "string" ? job.assignedTo : "");
-
-      const normalized = normalizeDisplayName(rawName);
-      if (!normalized) return;
-
-      const roleHint =
-        job.assignedTech?.role ||
-        job.technicianRole ||
-        job.technician?.role ||
-        "";
-
-      let inferredRole = null;
-      if (isMotRole(roleHint)) inferredRole = "mot";
-      else if (isTechRole(roleHint)) inferredRole = "tech";
-
-      if (!inferredRole) return;
-
-      const existing = map.get(normalized) || {
-        id: job.assignedTech?.id || `db-${inferredRole}-${normalized}`,
-        name: rawName?.trim() || "Unnamed Staff",
-        email: job.assignedTech?.email || "",
-        roles: new Set(),
-      };
-
-      if (!existing.name && rawName) existing.name = rawName.trim();
-      if (!existing.email && job.assignedTech?.email) existing.email = job.assignedTech.email;
-      existing.roles.add(inferredRole);
-      map.set(normalized, existing);
-    });
-
     return Array.from(map.entries()).map(([normalized, entry]) => ({
       ...entry,
       normalizedName: normalized,
       roles: Array.from(entry.roles),
     }));
-  }, [waitingJobs, dbTechnicians, dbMotTesters, fallbackTechs, fallbackMot]);
+  }, [dbTechnicians, dbMotTesters, fallbackTechs, fallbackMot]);
 
   const techPanelList = useMemo(
     () => staffDirectory.filter((person) => person.roles.includes("tech")),
@@ -523,6 +489,34 @@ export default function NextJobsPage() {
       })),
     [staffDirectory]
   );
+
+  const technicianTableRows = useMemo(() => {
+    const source = dbTechnicians.length > 0 ? dbTechnicians : fallbackTechs;
+    return source.map((person, index) => ({
+      id: person.id ?? person.user_id ?? `tech-row-${index}`,
+      name:
+        person.name ||
+        `${person.firstName || ""} ${person.lastName || ""}`.trim() ||
+        "Unnamed Technician",
+      role: person.role || "Technician",
+      email: person.email || "",
+      phone: person.phone || "",
+    }));
+  }, [dbTechnicians, fallbackTechs]);
+
+  const motTesterTableRows = useMemo(() => {
+    const source = dbMotTesters.length > 0 ? dbMotTesters : fallbackMot;
+    return source.map((person, index) => ({
+      id: person.id ?? person.user_id ?? `mot-row-${index}`,
+      name:
+        person.name ||
+        `${person.firstName || ""} ${person.lastName || ""}`.trim() ||
+        "Unnamed MOT Tester",
+      role: person.role || "MOT Tester",
+      email: person.email || "",
+      phone: person.phone || "",
+    }));
+  }, [dbMotTesters, fallbackMot]);
 
   // ✅ Search logic for job cards in the outstanding section
   const filteredOutstandingJobs = useMemo(() => {
@@ -602,6 +596,11 @@ export default function NextJobsPage() {
   const handleEditJob = () => {
     if (!selectedJob) return;
     router.push(`/job-cards/create?edit=${selectedJob.id}`);
+  };
+
+  const handleViewSelectedJobCard = () => {
+    if (!selectedJob?.jobNumber) return;
+    router.push(`/job-cards/${encodeURIComponent(selectedJob.jobNumber)}`);
   };
 
   // ✅ Assign technician to a job (save to Supabase)
@@ -976,6 +975,79 @@ export default function NextJobsPage() {
     );
   };
 
+  const renderStaffTable = (title, rows, emptyMessage) => (
+    <div style={{ width: "100%" }}>
+      <h3
+        style={{
+          margin: "0 0 8px 0",
+          fontSize: "16px",
+          fontWeight: "600",
+          color: "#1f2937",
+        }}
+      >
+        {title}
+      </h3>
+      {rows.length === 0 ? (
+        <p style={{ margin: 0, color: "#9ca3af", fontSize: "14px" }}>{emptyMessage}</p>
+      ) : (
+        <div
+          style={{
+            border: "1px solid #f3f4f6",
+            borderRadius: "8px",
+            overflow: "hidden",
+            backgroundColor: "#fff",
+          }}
+        >
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead style={{ backgroundColor: "#fff5f5" }}>
+              <tr>
+                {["Name", "Role", "Email", "Phone"].map((header) => (
+                  <th
+                    key={header}
+                    style={{
+                      textAlign: "left",
+                      padding: "10px 12px",
+                      fontSize: "12px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      color: "#b91c1c",
+                    }}
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, index) => (
+                <tr
+                  key={row.id || `${title}-${index}`}
+                  style={{
+                    borderTop: "1px solid #f3f4f6",
+                    backgroundColor: index % 2 === 0 ? "#fff" : "#fffafa",
+                  }}
+                >
+                  <td style={{ padding: "10px 12px", fontSize: "14px", color: "#111827" }}>
+                    {row.name}
+                  </td>
+                  <td style={{ padding: "10px 12px", fontSize: "14px", color: "#374151" }}>
+                    {row.role || "—"}
+                  </td>
+                  <td style={{ padding: "10px 12px", fontSize: "14px", color: "#374151" }}>
+                    {row.email || "—"}
+                  </td>
+                  <td style={{ padding: "10px 12px", fontSize: "14px", color: "#374151" }}>
+                    {row.phone || "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+
   // ✅ Access check
   if (rosterLoading) {
     return (
@@ -1125,7 +1197,7 @@ export default function NextJobsPage() {
                         onClick={(event) => {
                           event.preventDefault();
                           if (draggingJob) return;
-                          handleNavigateToJobCard(job.jobNumber);
+                          handleOpenJobDetails(job);
                         }}
                         style={{
                           display: "flex",
@@ -1232,6 +1304,55 @@ export default function NextJobsPage() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* ✅ Technician directory table view */}
+        <div
+          style={{
+            marginBottom: "12px",
+            background: "#fff",
+            borderRadius: "8px",
+            border: "1px solid #ffe5e5",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+            padding: "20px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+          }}
+        >
+          <div>
+            <h2
+              style={{
+                fontSize: "18px",
+                fontWeight: "600",
+                color: "#1f2937",
+                margin: "0 0 4px 0",
+              }}
+            >
+              Technician Directory
+            </h2>
+            <p style={{ margin: 0, color: "#6b7280", fontSize: "13px" }}>
+              Live lists pulled directly from your users table. Only staff with a technician or MOT tester role appear here.
+            </p>
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: "16px",
+            }}
+          >
+            {renderStaffTable(
+              "Workshop Technicians",
+              technicianTableRows,
+              "No technicians found in the database."
+            )}
+            {renderStaffTable(
+              "MOT Testers",
+              motTesterTableRows,
+              "No MOT testers found in the database."
+            )}
           </div>
         </div>
 
@@ -1388,14 +1509,15 @@ export default function NextJobsPage() {
                 )}
               </div>
 
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: "12px"
-              }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: `repeat(${selectedJob?.assignedTech ? 4 : 3}, minmax(0, 1fr))`,
+                  gap: "12px"
+                }}
+              >
                 <button
                   style={{
-                    flex: 1,
                     backgroundColor: "#6c757d",
                     color: "white",
                     padding: "12px 16px",
@@ -1412,10 +1534,27 @@ export default function NextJobsPage() {
                 >
                   Assign Tech
                 </button>
+                <button
+                  style={{
+                    backgroundColor: "#2563eb",
+                    color: "white",
+                    padding: "12px 16px",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    border: "none",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    transition: "background-color 0.2s"
+                  }}
+                  onClick={handleViewSelectedJobCard}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
+                >
+                  View Job Card
+                </button>
                 {selectedJob.assignedTech && (
                   <button
                     style={{
-                      flex: 1,
                       backgroundColor: "#f59e0b",
                       color: "white",
                       padding: "12px 16px",
@@ -1435,7 +1574,6 @@ export default function NextJobsPage() {
                 )}
                 <button
                   style={{
-                    flex: 1,
                     backgroundColor: "#d10000",
                     color: "white",
                     padding: "12px 16px",
