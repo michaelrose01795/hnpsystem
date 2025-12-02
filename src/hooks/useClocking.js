@@ -13,6 +13,12 @@ export const useClocking = () => {
 
   // fetch today's clocking status and hours
   const fetchClocking = async () => {
+    if (!userId) {
+      setClockedIn(false);
+      setHoursWorked(0);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
@@ -55,6 +61,10 @@ export const useClocking = () => {
 
   // clock in function
   const clockIn = async () => {
+    if (!userId) {
+      console.warn("Clock in attempted without a resolved workshop user id");
+      return;
+    }
     setLoading(true);
     try {
       const today = new Date().toISOString().split("T")[0];
@@ -74,6 +84,10 @@ export const useClocking = () => {
 
   // clock out function
   const clockOut = async () => {
+    if (!userId) {
+      console.warn("Clock out attempted without a resolved workshop user id");
+      return;
+    }
     setLoading(true);
     try {
       const today = new Date().toISOString().split("T")[0];

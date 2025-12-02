@@ -237,7 +237,7 @@ export default function VhcDetailsPage() {
   const { jobNumber } = router.query;
 
   const [job, setJob] = useState(null);
-  const [submission, setSubmission] = useState(null);
+  const [workflow, setWorkflow] = useState(null);
   const [builderData, setBuilderData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -254,30 +254,44 @@ export default function VhcDetailsPage() {
           .from("jobs")
           .select(
             `*,
-            customer:customers(*),
-            vehicle:vehicles(*),
-            assigned_technician:profiles(*)`
+            customer:customer_id(*),
+            vehicle:vehicle_id(*),
+            technician:assigned_to(user_id, first_name, last_name, email, role, phone),
+            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at)`
           )
           .eq("job_number", jobNumber)
-          .single();
+          .maybeSingle();
 
-        const vhcPromise = supabase
-          .from("vhc_submissions")
+        const workflowPromise = supabase
+          .from("vhc_workflow_status")
           .select("*")
           .eq("job_number", jobNumber)
-          .single();
+          .maybeSingle();
 
-        const [{ data: jobRow, error: jobError }, { data: vhcRow, error: vhcError }] = await Promise.all([
+        const [{ data: jobRow, error: jobError }, { data: workflowRow, error: workflowError }] = await Promise.all([
           jobPromise,
-          vhcPromise,
+          workflowPromise,
         ]);
 
         if (jobError) throw jobError;
-        if (vhcError && vhcError.message !== "Row not found") throw vhcError;
+        if (workflowError && workflowError.message !== "Row not found") throw workflowError;
 
-        setJob(jobRow || null);
-        setSubmission(vhcRow || null);
-        setBuilderData(safeJsonParse(vhcRow?.builder_payload));
+        if (!jobRow) {
+          setError("Job not found for the supplied job number.");
+          setJob(null);
+          setBuilderData(null);
+          setWorkflow(workflowRow || null);
+          return;
+        }
+
+        const { vhc_checks = [], ...jobFields } = jobRow;
+        setJob(jobFields);
+        setWorkflow(workflowRow || null);
+
+        const builderRecord = vhc_checks.find(
+          (check) => check.section === "VHC_CHECKSHEET"
+        );
+        setBuilderData(safeJsonParse(builderRecord?.issue_description || builderRecord?.data));
       } catch (err) {
         console.error("Failed to load VHC details", err);
         setError("Unable to load VHC details for this job.");
@@ -525,7 +539,7 @@ export default function VhcDetailsPage() {
       </div>
       <div>
         <div style={{ fontSize: "12px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.16em" }}>Submitted</div>
-        <div style={{ fontSize: "15px", fontWeight: 600 }}>{formatDateTime(submission?.submitted_at || job?.created_at)}</div>
+        <div style={{ fontSize: "15px", fontWeight: 600 }}>{formatDateTime(workflow?.vhc_sent_at || workflow?.last_sent_at || job?.created_at)}</div>
       </div>
       <div style={{ justifySelf: "end" }}>
         <span
@@ -538,7 +552,7 @@ export default function VhcDetailsPage() {
             textTransform: "capitalize",
           }}
         >
-          {submission?.status || "—"}
+          {workflow?.status || job?.status || "—"}
         </span>
       </div>
     </div>

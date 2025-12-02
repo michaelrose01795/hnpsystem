@@ -7,6 +7,7 @@ const db = getDatabaseClient(); // Cache the Supabase client so every function c
 const CHECKS_TABLE = "vhc_checks"; // Table storing individual VHC findings.
 const WORKFLOW_TABLE = "vhc_workflow_status"; // Table summarizing per-job VHC workflow metrics.
 const SEND_HISTORY_TABLE = "vhc_send_history"; // Table logging each time VHC results are sent to customers.
+const JOBS_TABLE = "jobs"; // Jobs table used for resolving identifiers.
 
 
 const DECLINATIONS_TABLE = "vhc_declinations"; // Table capturing declinations recorded against VHC recommendations.
@@ -98,14 +99,41 @@ const mapSendHistoryRow = (row = {}) => ({ // Normalize send history rows.
   createdAt: row.created_at, // Log creation timestamp.
 }); // Close mapper helper.
 
-export const listVhcChecks = async ({ jobId, limit = 100, offset = 0 } = {}) => { // Fetch VHC checks optionally scoped to a job.
+const resolveJobId = async (jobIdentifier) => { // Normalise job identifiers into numeric jobs.id keys.
+  if (typeof jobIdentifier === "number" && Number.isInteger(jobIdentifier)) { // Already a numeric id.
+    return jobIdentifier;
+  }
+  if (typeof jobIdentifier === "string" && jobIdentifier.trim().length > 0) { // Could be a job number string.
+    const trimmed = jobIdentifier.trim();
+    const parsed = Number(trimmed);
+    if (!Number.isNaN(parsed) && Number.isInteger(parsed)) { // Handle numeric strings like "12".
+      return parsed;
+    }
+    const { data, error } = await db
+      .from(JOBS_TABLE)
+      .select("id")
+      .eq("job_number", trimmed)
+      .maybeSingle();
+    if (error && error.code !== "PGRST116") {
+      throw new Error(`Failed to resolve job number ${trimmed}: ${error.message}`);
+    }
+    return data?.id ?? null;
+  }
+  return null;
+};
+
+export const listVhcChecks = async ({ jobId, jobNumber, limit = 100, offset = 0 } = {}) => { // Fetch VHC checks optionally scoped to a job.
+  let resolvedJobId = jobId;
+  if (typeof resolvedJobId !== "number" && jobNumber) { // Allow callers to pass job numbers directly.
+    resolvedJobId = await resolveJobId(jobNumber);
+  }
   let query = db // Build Supabase query.
     .from(CHECKS_TABLE) // Target the vhc_checks table.
     .select(CHECK_COLUMNS, { count: "exact" }) // Fetch canonical columns and a total count for pagination.
     .order("created_at", { ascending: false }) // Order newest first unless overridden.
     .range(offset, offset + limit - 1); // Apply pagination slice.
-  if (typeof jobId === "number") { // Apply optional job filter when provided.
-    query = query.eq("job_id", jobId); // Restrict results to the job.
+  if (typeof resolvedJobId === "number") { // Apply optional job filter when provided.
+    query = query.eq("job_id", resolvedJobId); // Restrict results to the job.
   } // Close guard.
   const { data, error, count } = await query; // Execute query and collect metadata.
   if (error) { // Handle database errors.
@@ -117,17 +145,18 @@ export const listVhcChecks = async ({ jobId, limit = 100, offset = 0 } = {}) => 
   }; // Close return payload.
 }; // End listVhcChecks.
 
-export const getVhcChecksByJob = async (jobId) => { // Fetch all VHC checks for a single job ordered chronologically.
-  if (typeof jobId !== "number") { // Validate presence and type.
+export const getVhcChecksByJob = async (jobIdentifier) => { // Fetch all VHC checks for a single job ordered chronologically.
+  const resolvedJobId = await resolveJobId(jobIdentifier);
+  if (typeof resolvedJobId !== "number") { // Validate presence and type.
     throw new Error("getVhcChecksByJob requires a numeric jobId."); // Provide descriptive validation error.
   } // Close guard.
   const { data, error } = await db // Execute select query.
     .from(CHECKS_TABLE) // Target vhc_checks.
     .select(CHECK_COLUMNS) // Fetch canonical columns.
-    .eq("job_id", jobId) // Restrict to requested job.
+    .eq("job_id", resolvedJobId) // Restrict to requested job.
     .order("created_at", { ascending: true }); // Order oldest first for timeline views.
   if (error) { // Handle errors.
-    throw new Error(`Failed to load VHC checks for job ${jobId}: ${error.message}`); // Provide diagnostics.
+    throw new Error(`Failed to load VHC checks for job ${resolvedJobId}: ${error.message}`); // Provide diagnostics.
   } // Close guard.
   return (data || []).map(mapCheckRow); // Return mapped rows.
 }; // End getVhcChecksByJob.

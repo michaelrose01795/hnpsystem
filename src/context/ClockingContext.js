@@ -10,14 +10,19 @@ const ClockingContext = createContext();
 
 // Provider
 export const ClockingProvider = ({ children }) => {
-  const { user } = useUser(); // logged-in user
+  const { user, dbUserId } = useUser(); // logged-in user + real users.user_id
   const [clockedIn, setClockedIn] = useState(false);
   const [hoursWorked, setHoursWorked] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // Fetch today's clocking info
   const fetchClockingStatus = async () => {
-    if (!user) return;
+    if (!dbUserId) {
+      setClockedIn(false);
+      setHoursWorked(0);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
@@ -25,7 +30,7 @@ export const ClockingProvider = ({ children }) => {
         // ⚠️ Verify: table or column not found in Supabase schema
         .from("clocking")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", dbUserId)
         .eq("date", today)
         .order("clock_in", { ascending: true });
 
@@ -55,18 +60,23 @@ export const ClockingProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    if (user) fetchClockingStatus();
-  }, [user]);
+    if (dbUserId) {
+      fetchClockingStatus();
+    }
+  }, [dbUserId]);
 
   // Clock in
   const clockIn = async () => {
-    if (!user) return;
+    if (!dbUserId) {
+      console.warn("Clock in attempted without resolved users.user_id");
+      return;
+    }
     setLoading(true);
     try {
       const today = new Date().toISOString().split("T")[0];
       // ⚠️ Verify: table or column not found in Supabase schema
       const { error } = await supabase.from("clocking").insert([
-        { user_id: user.id, date: today, clock_in: new Date().toISOString() },
+        { user_id: dbUserId, date: today, clock_in: new Date().toISOString() },
       ]);
       if (error) throw error;
       setClockedIn(true);
@@ -80,7 +90,10 @@ export const ClockingProvider = ({ children }) => {
 
   // Clock out
   const clockOut = async () => {
-    if (!user) return;
+    if (!dbUserId) {
+      console.warn("Clock out attempted without resolved users.user_id");
+      return;
+    }
     setLoading(true);
     try {
       const today = new Date().toISOString().split("T")[0];
@@ -88,7 +101,7 @@ export const ClockingProvider = ({ children }) => {
         // ⚠️ Verify: table or column not found in Supabase schema
         .from("clocking")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", dbUserId)
         .eq("date", today)
         .is("clock_out", null)
         .order("clock_in", { ascending: false })
@@ -119,7 +132,7 @@ export const ClockingProvider = ({ children }) => {
 
   return (
     <ClockingContext.Provider
-      value={{ clockedIn, hoursWorked, loading, clockIn, clockOut, userId: user?.id }}
+      value={{ clockedIn, hoursWorked, loading, clockIn, clockOut, userId: dbUserId }}
     >
       {children}
     </ClockingContext.Provider>
