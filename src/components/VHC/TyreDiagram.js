@@ -173,37 +173,6 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
         Spare / Kit
       </button>
 
-      <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap", color: palette.textPrimary }}>
-        {[
-          { label: "Not Checked", status: "unknown" },
-          { label: "0–2.5 mm", status: "danger" },
-          { label: "2.6–3.5 mm", status: "advisory" },
-          { label: "3.6 mm+", status: "good" },
-        ].map(({ label, status }) => (
-          <div
-            key={status}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontSize: "12px",
-              fontWeight: 600,
-              color: palette.textPrimary,
-            }}
-          >
-            <span
-              style={{
-                width: "16px",
-                height: "16px",
-                borderRadius: "4px",
-                backgroundColor: statusPalette[status].fill,
-                display: "inline-block",
-              }}
-            />
-            {label}
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

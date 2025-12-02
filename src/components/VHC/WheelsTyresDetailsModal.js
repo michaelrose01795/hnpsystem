@@ -484,15 +484,12 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
   };
 
   const currentTyre = tyres[activeWheel];
+  const showSpareLookup = activeWheel !== "Spare" || ["spare", "space_saver"].includes(tyres.Spare?.type);
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "20px",
     height: "100%",
   };
-  const summaryCardStyle = vhcModalContentStyles.summaryCard;
-  const summaryTextBlockStyle = vhcModalContentStyles.summaryTextBlock;
-  const summaryBadgesStyle = vhcModalContentStyles.summaryBadges;
-  const summaryBadgeBase = vhcModalContentStyles.badge;
 
   const footer = (
     <>
@@ -517,39 +514,11 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
       isOpen={isOpen}
       onClose={onClose}
       title="Wheels & Tyres"
-      subtitle="Detailed tyre measurements and concerns styled to mirror the dashboard."
       width="1280px"
       height="780px"
       footer={footer}
     >
       <div style={contentWrapperStyle}>
-        <div style={summaryCardStyle}>
-          <div style={summaryTextBlockStyle}>
-            <span style={vhcModalContentStyles.summaryTitle}>Concern Summary</span>
-            <span style={vhcModalContentStyles.summaryMetric}>{allConcerns} tyre issues logged</span>
-          </div>
-          <div style={summaryBadgesStyle}>
-            {["Red", "Amber"].map((status) => {
-              const value = concernStatusTotals[status];
-              if (!value) return null;
-              const color = statusColors[status];
-              return (
-                <div
-                  key={status}
-                  style={{
-                    ...summaryBadgeBase,
-                    backgroundColor: color.background,
-                    color: color.text,
-                    border: `1px solid ${color.border}`,
-                  }}
-                >
-                  {value} {status}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
           <div
             style={{
               display: "flex",
@@ -624,11 +593,13 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                 minHeight: 0,
               }}
             >
-              <TyresSection
-                contextLabel={`${activeWheel === "Spare" ? "Spare Tyre Lookup" : `${activeWheel} Tyre Lookup`}`}
-                selectedTyre={selectedLookupTyre}
-                onTyreSelected={handleTyreLookupSelect}
-              />
+              {showSpareLookup && (
+                <TyresSection
+                  contextLabel={`${activeWheel === "Spare" ? "Spare Tyre Lookup" : `${activeWheel} Tyre Lookup`}`}
+                  selectedTyre={selectedLookupTyre}
+                  onTyreSelected={handleTyreLookupSelect}
+                />
+              )}
               {activeWheel !== "Spare" ? (
                 <>
                   <div style={sectionCardStyle}>

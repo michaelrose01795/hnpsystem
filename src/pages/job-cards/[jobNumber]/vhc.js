@@ -2,7 +2,7 @@
 // ✅ File location: src/pages/job-cards/[jobNumber]/vhc.js
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import themeConfig, {
@@ -185,6 +185,24 @@ export default function VHCPAGE() {
 
   const optionalKeys = ["externalInspection", "internalElectrics", "underside"];
 
+  const tyreConcernTotals = useMemo(() => {
+    const tyres = vhcData?.wheelsTyres;
+    if (!tyres || typeof tyres !== "object") {
+      return { total: 0, amber: 0, red: 0 };
+    }
+    let amber = 0;
+    let red = 0;
+    Object.values(tyres).forEach((entry) => {
+      const concerns = Array.isArray(entry?.concerns) ? entry.concerns : [];
+      concerns.forEach((concern) => {
+        const status = (concern?.status || "").toString().trim().toLowerCase();
+        if (status === "amber") amber += 1;
+        if (status === "red") red += 1;
+      });
+    });
+    return { total: amber + red, amber, red };
+  }, [vhcData?.wheelsTyres]);
+
   const getOptionalCount = (section) => {
     const value = vhcData[section];
     if (!value) return 0;
@@ -193,26 +211,6 @@ export default function VHCPAGE() {
       (sum, entry) => sum + (entry?.concerns?.length || 0),
       0
     );
-  };
-
-  const getMandatorySubtitle = (key) => {
-    switch (key) {
-      case "wheelsTyres":
-        return vhcData.wheelsTyres ? "Details captured" : "Awaiting inspection";
-      case "brakesHubs":
-        return `${vhcData.brakesHubs.length} checks recorded`;
-      case "serviceIndicator":
-        return `${vhcData.serviceIndicator.length} checks recorded`;
-      default:
-        return "";
-    }
-  };
-
-  const getOptionalSubtitle = (key) => {
-    const count = getOptionalCount(key);
-    if (count === 0) return "No concerns logged yet";
-    if (count === 1) return "1 concern recorded";
-    return `${count} concerns recorded`;
   };
 
   const getBadgeState = (stateKey) =>
@@ -225,7 +223,7 @@ export default function VHCPAGE() {
     persistVhcData(next, { quiet: true, ...options });
   };
 
-  const SectionCard = ({ title, subtitle, badgeState, onClick }) => {
+  const SectionCard = ({ title, badgeState, onClick }) => {
     const badgeStyles = {
       ...styles.badge,
       backgroundColor: badgeState.background,
@@ -250,7 +248,6 @@ export default function VHCPAGE() {
         <span style={badgeStyles}>{badgeState.label}</span>
         <div>
           <p style={styles.cardTitle}>{title}</p>
-          <p style={styles.cardSubtitle}>{subtitle}</p>
         </div>
         <span
           aria-hidden="true"
@@ -401,30 +398,72 @@ export default function VHCPAGE() {
         </div>
 
         <div style={styles.mainCard}>
-          <div style={styles.sectionHeader}>
-            <h2 style={styles.sectionTitle}>Mandatory Sections</h2>
-            <p style={styles.sectionSubtitle}>
-              These must be filled out before you can complete the VHC.
-            </p>
+        <div style={styles.sectionHeader}>
+          <h2 style={styles.sectionTitle}>Mandatory Sections</h2>
+        </div>
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: "16px",
+            padding: "16px",
+            marginBottom: "16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "16px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>Tyre concerns</p>
+            <strong style={{ fontSize: "16px", color: "#111827" }}>
+              {tyreConcernTotals.total
+                ? `${tyreConcernTotals.total} amber/red concern${tyreConcernTotals.total === 1 ? "" : "s"}`
+                : "No amber/red concerns recorded"}
+            </strong>
           </div>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <span
+              style={{
+                background: "#fee2e2",
+                color: themeConfig.palette.danger,
+                padding: "6px 12px",
+                borderRadius: "999px",
+                fontWeight: 600,
+                fontSize: "12px",
+              }}
+            >
+              Red {tyreConcernTotals.red}
+            </span>
+            <span
+              style={{
+                background: "#fef3c7",
+                color: themeConfig.palette.warning,
+                padding: "6px 12px",
+                borderRadius: "999px",
+                fontWeight: 600,
+                fontSize: "12px",
+              }}
+            >
+              Amber {tyreConcernTotals.amber}
+            </span>
+          </div>
+        </div>
           <div style={styles.sectionsGrid}>
             {Object.keys(mandatoryStates).map((key) => (
               <SectionCard
                 key={key}
                 title={SECTION_TITLES[key]}
-                subtitle={getMandatorySubtitle(key)}
                 badgeState={getBadgeState(mandatoryStates[key] ? "complete" : "pending")}
                 onClick={() => setActiveSection(key)}
               />
             ))}
           </div>
 
-          <div style={styles.sectionHeader}>
-            <h2 style={styles.sectionTitle}>Additional Checks</h2>
-            <p style={styles.sectionSubtitle}>
-              Optional sections help highlight advisory work and follow-up opportunities.
-            </p>
-          </div>
+        <div style={styles.sectionHeader}>
+          <h2 style={styles.sectionTitle}>Additional Checks</h2>
+        </div>
           <div style={styles.sectionsGrid}>
             {optionalKeys.map((key) => {
               const count = getOptionalCount(key);
@@ -432,7 +471,6 @@ export default function VHCPAGE() {
                 <SectionCard
                   key={key}
                   title={SECTION_TITLES[key]}
-                  subtitle={getOptionalSubtitle(key)}
                   badgeState={getBadgeState(count > 0 ? "inProgress" : "pending")}
                   onClick={() => setActiveSection(key)}
                 />
