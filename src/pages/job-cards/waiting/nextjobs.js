@@ -1253,8 +1253,7 @@ export default function NextJobsPage() {
         display: "flex", 
         flexDirection: "column", 
         padding: "8px 16px",
-        gap: "12px",
-        overflowY: "auto" 
+        gap: "12px"
       }}>
         
         {/* ✅ Outstanding Jobs Section with Drop Zone */}
