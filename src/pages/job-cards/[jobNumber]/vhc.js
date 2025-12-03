@@ -73,7 +73,6 @@ export default function VHCPAGE() {
   const { jobNumber } = router.query;
   const embedModeParam = typeof router.query?.embed === "string" ? router.query.embed : null;
   const isEmbeddedView = Boolean(embedModeParam);
-  const embedSectionsOnly = embedModeParam === "sections";
   const isEmbed = router?.query?.embed === "1";
 
   // ✅ Initial VHC data structure
@@ -467,7 +466,7 @@ export default function VHCPAGE() {
             <div style={styles.progressTrack}>
               <div style={{ ...styles.progressFill, width: progressWidth }} />
             </div>
-            {!embedSectionsOnly && (
+            {!isEmbeddedView && (
               <button
                 type="button"
                 onClick={() => setShowSummaryModal(true)}
@@ -582,7 +581,7 @@ export default function VHCPAGE() {
           </div>
         </div>
 
-        {!embedSectionsOnly && showSummaryModal && (
+        {!isEmbeddedView && showSummaryModal && (
           <div
             style={{
               position: "fixed",
