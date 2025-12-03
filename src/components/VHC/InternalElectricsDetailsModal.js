@@ -1,5 +1,5 @@
 // file location: src/components/VHC/InternalElectricsDetailsModal.js
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
 import themeConfig, { createVhcButtonStyle, vhcModalContentStyles } from "@/styles/appTheme";
 
@@ -46,9 +46,6 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
     gap: "24px",
     height: "100%",
   };
-  const summaryCardStyle = vhcModalContentStyles.summaryCard;
-  const summaryTextBlockStyle = vhcModalContentStyles.summaryTextBlock;
-  const summaryBadgesStyle = vhcModalContentStyles.summaryBadges;
   const summaryBadgeBase = vhcModalContentStyles.badge;
   const baseCardStyle = {
     ...vhcModalContentStyles.baseCard,
@@ -57,7 +54,7 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
   };
   const cardGridStyle = {
     ...vhcModalContentStyles.cardGrid,
-    gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
     gridAutoRows: "minmax(0, 1fr)",
     alignContent: "stretch",
   };
@@ -90,19 +87,6 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
     category: "",
     temp: { issue: "", status: "Red" },
   });
-
-  const totals = useMemo(
-    () =>
-      CATEGORY_ORDER.reduce(
-        (acc, key) => ({
-          count: acc.count + (data[key]?.concerns.length || 0),
-          red: acc.red + (data[key]?.concerns.filter((c) => c.status === "Red").length || 0),
-          amber: acc.amber + (data[key]?.concerns.filter((c) => c.status === "Amber").length || 0),
-        }),
-        { count: 0, red: 0, amber: 0 },
-      ),
-    [data],
-  );
 
   const enableConcern = (category) => {
     setActiveConcern({ open: true, category, temp: { issue: "", status: "Red" } });
@@ -152,32 +136,12 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
       isOpen={isOpen}
       onClose={onClose}
       title="Internal Electrics"
-      subtitle="Track cabin electronics with the same look and feel as the dashboard."
       hideCloseButton
       width="1280px"
       height="780px"
       footer={modalFooter}
     >
       <div style={contentWrapperStyle}>
-        <div style={summaryCardStyle}>
-          <div style={summaryTextBlockStyle}>
-            <span style={vhcModalContentStyles.summaryTitle}>Concerns Logged</span>
-            <span style={vhcModalContentStyles.summaryMetric}>
-              {totals.count} interior electrical issues tracked
-            </span>
-          </div>
-          <div style={summaryBadgesStyle}>
-            <div style={summaryBadgeBase}>
-              <span style={{ width: "10px", height: "10px", borderRadius: "999px", background: palette.danger }} />
-              {totals.red} Red
-            </div>
-            <div style={summaryBadgeBase}>
-              <span style={{ width: "10px", height: "10px", borderRadius: "999px", background: palette.warning }} />
-              {totals.amber} Amber
-            </div>
-          </div>
-        </div>
-
         <div
           style={{
             flex: 1,
@@ -194,18 +158,17 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
               minHeight: 0,
             }}
           >
-          {CATEGORY_ORDER.map((category, idx) => {
+          {CATEGORY_ORDER.map((category) => {
             const concerns = data[category]?.concerns ?? [];
             const redCount = concerns.filter((c) => c.status === "Red").length;
             const amberCount = concerns.filter((c) => c.status === "Amber").length;
-            const span = idx < 3 ? 2 : idx < 5 ? 3 : 6;
 
             return (
               <button
                 key={category}
                 type="button"
                 onClick={() => enableConcern(category)}
-                style={{ ...baseCardStyle, gridColumn: `span ${span}` }}
+                style={baseCardStyle}
                 onMouseEnter={(e) => setCardHoverState(e.currentTarget, true)}
                 onMouseLeave={(e) => setCardHoverState(e.currentTarget, false)}
               >

@@ -1,5 +1,5 @@
 // file location: src/components/VHC/UndersideDetailsModal.js
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
 import themeConfig, { createVhcButtonStyle, vhcModalContentStyles } from "@/styles/appTheme";
 
@@ -46,9 +46,6 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
     gap: "24px",
     height: "100%",
   };
-  const summaryCardStyle = vhcModalContentStyles.summaryCard;
-  const summaryTextBlockStyle = vhcModalContentStyles.summaryTextBlock;
-  const summaryBadgesStyle = vhcModalContentStyles.summaryBadges;
   const summaryBadgeBase = vhcModalContentStyles.badge;
   const baseCardStyle = {
     ...vhcModalContentStyles.baseCard,
@@ -90,19 +87,6 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
     category: "",
     temp: { issue: "", status: "Red" },
   });
-
-  const totals = useMemo(
-    () =>
-      CATEGORY_ORDER.reduce(
-        (acc, key) => ({
-          count: acc.count + (data[key]?.concerns.length || 0),
-          red: acc.red + (data[key]?.concerns.filter((c) => c.status === "Red").length || 0),
-          amber: acc.amber + (data[key]?.concerns.filter((c) => c.status === "Amber").length || 0),
-        }),
-        { count: 0, red: 0, amber: 0 },
-      ),
-    [data],
-  );
 
   const enableConcern = (category) => {
     setActiveConcern({ open: true, category, temp: { issue: "", status: "Red" } });
@@ -152,32 +136,12 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
       isOpen={isOpen}
       onClose={onClose}
       title="Underside Inspection"
-      subtitle="Match dashboard styling while documenting underside inspections."
       hideCloseButton
       width="1280px"
       height="780px"
       footer={modalFooter}
     >
       <div style={contentWrapperStyle}>
-        <div style={summaryCardStyle}>
-          <div style={summaryTextBlockStyle}>
-            <span style={vhcModalContentStyles.summaryTitle}>Concerns Logged</span>
-            <span style={vhcModalContentStyles.summaryMetric}>
-              {totals.count} underside issues captured
-            </span>
-          </div>
-          <div style={summaryBadgesStyle}>
-            <div style={summaryBadgeBase}>
-              <span style={{ width: "10px", height: "10px", borderRadius: "999px", background: palette.danger }} />
-              {totals.red} Red
-            </div>
-            <div style={summaryBadgeBase}>
-              <span style={{ width: "10px", height: "10px", borderRadius: "999px", background: palette.warning }} />
-              {totals.amber} Amber
-            </div>
-          </div>
-        </div>
-
         <div
           style={{
             flex: 1,
