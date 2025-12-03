@@ -21,6 +21,7 @@ import {
   mapCustomerJobsToHistory
 } from "@/lib/jobcards/utils";
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
+import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
 
 const deriveVhcSeverity = (check = {}) => {
   const fields = [
@@ -1419,7 +1420,7 @@ export default function JobCardDetailPage() {
 
           {/* VHC Tab */}
           {activeTab === "vhc" && (
-            <VHCTab jobNumber={jobNumber} jobData={jobData} />
+            <VHCTab jobNumber={jobNumber} />
           )}
 
           {/* Warranty Tab */}
@@ -4055,227 +4056,8 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
 }
 
 // ✅ VHC Tab
-function VHCTab({ jobNumber, jobData }) {
-  const router = useRouter();
-  if (!jobData) {
-    return (
-      <div>
-        <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
-          Vehicle Health Check
-        </h2>
-        <p style={{ color: "#6b7280" }}>VHC data is still loading.</p>
-      </div>
-    );
-  }
-  const vhcChecks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
-  const groupedIssues = { red: [], amber: [], grey: [] };
-
-  vhcChecks.forEach((check) => {
-    const severity = resolveVhcSeverity(check);
-    if (!groupedIssues[severity]) {
-      groupedIssues[severity] = [];
-    }
-    groupedIssues[severity].push(check);
-  });
-
-  const vhcParts = (Array.isArray(jobData?.partsAllocations) ? jobData.partsAllocations : []).filter(
-    (item) => (item.origin || "").toLowerCase() === "vhc"
-  );
-  const totalPartsRequested = vhcParts.reduce(
-    (sum, part) => sum + (part.quantityRequested ?? part.quantityAllocated ?? 0),
-    0
-  );
-
-  const authorizations = Array.isArray(jobData?.vhcAuthorizations)
-    ? jobData.vhcAuthorizations
-    : [];
-  const latestAuthorization = authorizations[0] || null;
-
-  let approvalLabel = "Awaiting VHC";
-  let approvalDescription = "Technicians are still completing the VHC on this job.";
-
-  if (!jobData?.vhcRequired) {
-    approvalLabel = "VHC Not Required";
-    approvalDescription = "This job has been marked as not requiring a VHC.";
-  } else if (latestAuthorization) {
-    approvalLabel = "Customer Approved";
-    approvalDescription = `Authorized by ${latestAuthorization.authorizedBy} on ${new Date(
-      latestAuthorization.authorizedAt || latestAuthorization.createdAt
-    ).toLocaleString()}`;
-    if (latestAuthorization.customerNotes) {
-      approvalDescription += ` — "${latestAuthorization.customerNotes}"`;
-    }
-  } else if (groupedIssues.red.length || groupedIssues.amber.length) {
-    approvalLabel = "Pending Customer Approval";
-    approvalDescription = "Red or amber items need customer authorization before work can proceed.";
-  } else if (vhcChecks.length > 0) {
-    approvalLabel = "No Authorization Needed";
-    approvalDescription = "No red or amber items have been flagged.";
-  }
-
-  const renderIssueList = (title, color, items) => (
-    <div style={{
-      padding: "16px",
-      borderRadius: "12px",
-      border: "1px solid #e5e7eb",
-      backgroundColor: "#fff",
-      boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-      flex: 1,
-      minWidth: "240px"
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color }}>{title}</h3>
-        <span style={{ fontSize: "13px", color: "#6b7280" }}>{items.length} item{items.length === 1 ? "" : "s"}</span>
-      </div>
-      {items.length === 0 ? (
-        <p style={{ marginTop: "12px", fontSize: "13px", color: "#9ca3af" }}>No items logged.</p>
-      ) : (
-        <ul style={{ margin: "12px 0 0 0", paddingLeft: "16px", color: "#374151", fontSize: "13px", lineHeight: 1.5 }}>
-          {items.slice(0, 4).map((issue) => (
-            <li key={issue.vhc_id}>
-              <strong>{issue.issue_title || issue.section || "VHC Item"}</strong>
-              {issue.issue_description && (
-                <span style={{ display: "block", color: "#6b7280" }}>{issue.issue_description}</span>
-              )}
-            </li>
-          ))}
-          {items.length > 4 && (
-            <li style={{ listStyle: "none", color: "#6b7280", marginTop: "6px" }}>
-              +{items.length - 4} more item{items.length - 4 === 1 ? "" : "s"}
-            </li>
-          )}
-        </ul>
-      )}
-    </div>
-  );
-
-  return (
-    <div>
-      <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
-        Vehicle Health Check
-      </h2>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-        <p style={{ margin: 0, color: "#6b7280", fontSize: "14px" }}>
-          Read-only snapshot of the VHC. Use the VHC page to make changes.
-        </p>
-        <button
-          onClick={() => router.push(`/vhc/details/${jobNumber}`)}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: "#d10000",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: "600",
-            fontSize: "14px"
-          }}
-        >
-          🔍 Open VHC Page
-        </button>
-      </div>
-
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
-        gap: "12px",
-        marginBottom: "24px"
-      }}>
-        {[
-          { label: "Red Items", count: groupedIssues.red.length, color: "#dc2626" },
-          { label: "Amber Items", count: groupedIssues.amber.length, color: "#d97706" },
-          { label: "Grey Items", count: groupedIssues.grey.length, color: "#6b7280" },
-          { label: "Parts Required", count: vhcParts.length, color: "#0ea5e9", sub: `${totalPartsRequested} total qty` }
-        ].map((card) => (
-          <div key={card.label} style={{
-            padding: "16px",
-            borderRadius: "12px",
-            border: "1px solid #e5e7eb",
-            backgroundColor: "#fff",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
-          }}>
-            <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>{card.label}</p>
-            <div style={{ fontSize: "28px", fontWeight: "700", color: card.color }}>
-              {card.count}
-            </div>
-            {card.sub && <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#9ca3af" }}>{card.sub}</p>}
-          </div>
-        ))}
-        <div style={{
-          padding: "16px",
-          borderRadius: "12px",
-          border: "1px solid #e5e7eb",
-          backgroundColor: "#fff",
-          boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
-        }}>
-          <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>Customer Approval</p>
-          <div style={{ fontSize: "16px", fontWeight: "600", color: "#111827", marginTop: "4px" }}>
-            {approvalLabel}
-          </div>
-          <p style={{ margin: "6px 0 0 0", color: "#6b7280", fontSize: "13px" }}>{approvalDescription}</p>
-        </div>
-      </div>
-
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginBottom: "24px" }}>
-        {renderIssueList("Red Items", "#dc2626", groupedIssues.red)}
-        {renderIssueList("Amber Items", "#d97706", groupedIssues.amber)}
-        {renderIssueList("Grey Items", "#6b7280", groupedIssues.grey)}
-      </div>
-
-      <div style={{
-        padding: "20px",
-        borderRadius: "12px",
-        border: "1px solid #e5e7eb",
-        backgroundColor: "#fff",
-        boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "#1f2937" }}>Parts Required</h3>
-          <span style={{ fontSize: "13px", color: "#6b7280" }}>{vhcParts.length} linked part{vhcParts.length === 1 ? "" : "s"}</span>
-        </div>
-        {vhcParts.length === 0 ? (
-          <p style={{ marginTop: "12px", fontSize: "14px", color: "#9ca3af" }}>
-            No VHC-derived parts have been requested for this job yet.
-          </p>
-        ) : (
-          <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
-            {vhcParts.slice(0, 4).map((part) => (
-              <div key={part.id} style={{
-                padding: "12px",
-                borderRadius: "10px",
-                border: "1px solid #e5e7eb",
-                backgroundColor: "#f9fafb"
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontSize: "13px", color: "#6b7280" }}>{part.part?.partNumber || "Custom Part"}</div>
-                    <strong style={{ color: "#111827" }}>{part.part?.name || "Unnamed Part"}</strong>
-                  </div>
-                  <span style={{ fontSize: "13px", color: "#6b7280" }}>
-                    Qty: {part.quantityRequested ?? part.quantityAllocated ?? 0}
-                  </span>
-                </div>
-                {part.requestNotes && (
-                  <p style={{ margin: "8px 0 0 0", fontSize: "13px", color: "#6b7280" }}>
-                    {part.requestNotes}
-                  </p>
-                )}
-              </div>
-            ))}
-            {vhcParts.length > 4 && (
-              <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                +{vhcParts.length - 4} more linked part{vhcParts.length - 4 === 1 ? "" : "s"}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <p style={{ marginTop: "16px", fontSize: "13px", color: "#9ca3af" }}>
-        Editing is disabled here. Use the dedicated VHC page to update findings, approvals, and parts.
-      </p>
-    </div>
-  );
+function VHCTab({ jobNumber }) {
+  return <VhcDetailsPanel jobNumber={jobNumber} showNavigation={false} />;
 }
 
 // ✅ Messages Tab

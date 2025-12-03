@@ -133,9 +133,9 @@ export default function ViewJobCards() {
     today: "",
     carryOver: "",
   });
-  const [statusFilters, setStatusFilters] = useState({
-    today: new Set(),
-    carryOver: new Set(),
+  const [activeStatusFilters, setActiveStatusFilters] = useState({
+    today: "All",
+    carryOver: "All",
   });
   const [activeTab, setActiveTab] = useState("today"); // track active tab
   const [loading, setLoading] = useState(true); // loading state
@@ -242,22 +242,10 @@ export default function ViewJobCards() {
     setSearchValues((prev) => ({ ...prev, [tab]: value }));
   };
 
-  const handleStatusToggle = (tab, status) => {
-    setStatusFilters((prev) => {
-      const nextSet = new Set(prev[tab]);
-      if (nextSet.has(status)) {
-        nextSet.delete(status);
-      } else {
-        nextSet.add(status);
-      }
-      return { ...prev, [tab]: nextSet };
-    });
-  };
-
-  const resetStatuses = (tab) => {
-    setStatusFilters((prev) => ({
+  const handleStatusFilterChange = (tab, status) => {
+    setActiveStatusFilters((prev) => ({
       ...prev,
-      [tab]: new Set(),
+      [tab]: status,
     }));
   };
 
@@ -270,18 +258,19 @@ export default function ViewJobCards() {
     [todayJobs, carryOverJobs]
   );
   const statusOptions = statusOptionsMap[activeTab];
+  const statusTabs = ["All", ...statusOptions];
   const statusCounts =
     activeTab === "today" ? todayStatusCounts : carryStatusCounts;
-  const disabledStatuses = statusFilters[activeTab];
+  const activeStatusFilter = activeStatusFilters[activeTab];
   const searchValue = searchValues[activeTab]?.trim().toLowerCase() || "";
 
-  const filteredByStatus = baseJobs.filter((job) => {
-    const jobStatus = job.status || "Unknown";
-    if (!statusOptions.includes(jobStatus)) {
-      return true;
-    }
-    return !disabledStatuses.has(jobStatus);
-  });
+  const filteredByStatus =
+    activeStatusFilter === "All"
+      ? baseJobs
+      : baseJobs.filter((job) => {
+          const jobStatus = job.status || "Unknown";
+          return jobStatus === activeStatusFilter;
+        });
 
   const filteredJobs = searchValue
     ? filteredByStatus.filter((job) => matchesSearchTerm(job, searchValue))
@@ -314,11 +303,11 @@ export default function ViewJobCards() {
     return "Not scheduled";
   };
 
-  const renderVhcBadge = (job) => {
-    if (!job.vhcRequired) {
-      return (
-        <span
-          style={{
+const renderVhcBadge = (job) => {
+  if (!job.vhcRequired) {
+    return (
+      <span
+        style={{
             display: "inline-flex",
             alignItems: "center",
             gap: "6px",
@@ -369,6 +358,14 @@ export default function ViewJobCards() {
     }
     return Array.from(union);
   }, [popupJob]);
+
+  const handleQuickView = (job) => {
+    setPopupJob(job);
+  };
+
+  const handleCardNavigation = (jobNumber) => {
+    goToJobCard(jobNumber);
+  };
 
   /* ================================
      Loading State
@@ -525,65 +522,42 @@ export default function ViewJobCards() {
                 boxShadow: "inset 0 1px 2px rgba(0,0,0,0.05)",
               }}
             />
-            <button
-              type="button"
-              onClick={() => resetStatuses(activeTab)}
-              style={{
-                padding: "8px 14px",
-                borderRadius: "999px",
-                border: "1px solid #ffe0e0",
-                backgroundColor: "white",
-                color: "#b91c1c",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              All statuses
-            </button>
           </div>
 
           <div
             style={{
               display: "flex",
-              flexWrap: "wrap",
-              gap: "8px",
+              gap: "12px",
+              overflowX: "auto",
+              paddingBottom: "4px",
               marginBottom: "12px",
             }}
           >
-            {statusOptions.map((status) => {
-              const count = statusCounts[status] || 0;
-              const isActive = !disabledStatuses.has(status);
+            {statusTabs.map((status) => {
+              const isActive = activeStatusFilter === status;
+              const count =
+                status === "All" ? baseJobs.length : statusCounts[status] || 0;
               return (
                 <button
                   key={status}
                   type="button"
-                  onClick={() => handleStatusToggle(activeTab, status)}
+                  onClick={() => handleStatusFilterChange(activeTab, status)}
                   style={{
-                    padding: "6px 12px",
-                    borderRadius: "999px",
-                    border: isActive ? "1px solid #d10000" : "1px solid #e5e7eb",
-                    backgroundColor: isActive ? "#fff5f5" : "white",
-                    color: isActive ? "#b91c1c" : "#4b5563",
-                    fontSize: "12px",
-                    fontWeight: 600,
+                    padding: "8px 16px",
+                    border: isActive ? "2px solid #d10000" : "1px solid #d10000",
+                    backgroundColor: isActive ? "#d10000" : "white",
+                    color: isActive ? "white" : "#d10000",
+                    borderRadius: "12px",
                     cursor: "pointer",
-                    display: "inline-flex",
+                    fontWeight: isActive ? 600 : 500,
+                    fontSize: "13px",
+                    display: "flex",
                     alignItems: "center",
-                    gap: "8px",
+                    gap: "10px",
                   }}
                 >
                   <span>{status}</span>
-                  <span
-                    style={{
-                      backgroundColor: isActive ? "#fee2e2" : "#f3f4f6",
-                      color: isActive ? "#b91c1c" : "#6b7280",
-                      borderRadius: "999px",
-                      padding: "0 8px",
-                      fontSize: "11px",
-                    }}
-                  >
-                    {count}
-                  </span>
+                  <span style={{ fontSize: "12px", opacity: 0.75 }}>({count})</span>
                 </button>
               );
             })}
@@ -595,126 +569,44 @@ export default function ViewJobCards() {
               overflow: "hidden",
               borderRadius: "16px",
               border: "1px solid #f1f5f9",
+              background: "#fff",
+              padding: "12px",
             }}
           >
-            <div style={{ overflowY: "auto", height: "100%" }}>
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  fontSize: "13px",
-                }}
-              >
-                <thead>
-                  <tr
-                    style={{
-                      background: "#f8fafc",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.04em",
-                      fontSize: "11px",
-                      color: "#64748b",
-                    }}
-                  >
-                    {[
-                      "Job #",
-                      "Reg",
-                      "Customer",
-                      "Customer Status",
-                      "Job Type",
-                      "Status",
-                      "Appointment",
-                      "Requests",
-                      "VHC",
-                    ].map((header) => (
-                      <th
-                        key={header}
-                        style={{
-                          textAlign: "left",
-                          padding: "12px 16px",
-                          borderBottom: "1px solid #e2e8f0",
-                          position: "sticky",
-                          top: 0,
-                          background: "#f8fafc",
-                        }}
-                      >
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedJobs.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={9}
-                        style={{
-                          padding: "32px",
-                          textAlign: "center",
-                          color: "#94a3b8",
-                        }}
-                      >
-                        {searchValue
-                          ? "No jobs match your search."
-                          : "No jobs in this status group."}
-                      </td>
-                    </tr>
-                  ) : (
-                    sortedJobs.map((job) => (
-                      <tr
-                        key={job.jobNumber}
-                        onClick={() => setPopupJob(job)}
-                        style={{
-                          cursor: "pointer",
-                          transition: "background-color 0.15s",
-                        }}
-                        onMouseEnter={(event) => {
-                          event.currentTarget.style.backgroundColor = "#fff7ed";
-                        }}
-                        onMouseLeave={(event) => {
-                          event.currentTarget.style.backgroundColor = "transparent";
-                        }}
-                      >
-                        <td style={{ padding: "12px 16px", fontWeight: 600 }}>
-                          {job.jobNumber}
-                        </td>
-                        <td style={{ padding: "12px 16px", color: "#475569" }}>
-                          {job.reg || "—"}
-                        </td>
-                        <td style={{ padding: "12px 16px", color: "#111827" }}>
-                          {job.customer || "Unknown customer"}
-                        </td>
-                        <td style={{ padding: "12px 16px", color: "#475569" }}>
-                          <span
-                            style={{
-                              padding: "4px 10px",
-                              borderRadius: "999px",
-                              backgroundColor: "#e0f2fe",
-                              color: "#0c4a6e",
-                              fontWeight: 600,
-                              fontSize: "12px",
-                            }}
-                          >
-                            {formatCustomerStatusLabel(job.waitingStatus)}
-                          </span>
-                        </td>
-                        <td style={{ padding: "12px 16px", color: "#111827" }}>
-                          {deriveJobType(job)}
-                        </td>
-                        <td style={{ padding: "12px 16px", color: "#111827" }}>
-                          {job.status || "Status pending"}
-                        </td>
-                        <td style={{ padding: "12px 16px", color: "#475569" }}>
-                          {getAppointmentDisplay(job)}
-                        </td>
-                        <td style={{ padding: "12px 16px", color: "#475569" }}>
-                          {getRequestsCount(job.requests)}
-                        </td>
-                        <td style={{ padding: "12px 16px" }}>{renderVhcBadge(job)}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+            <div
+              style={{
+                height: "100%",
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              {sortedJobs.length === 0 ? (
+                <div
+                  style={{
+                    padding: "32px",
+                    textAlign: "center",
+                    color: "#94a3b8",
+                    border: "1px dashed #e5e7eb",
+                    borderRadius: "12px",
+                    background: "#f9fafb",
+                  }}
+                >
+                  {searchValue
+                    ? "No jobs match your search."
+                    : "No jobs in this status group."}
+                </div>
+              ) : (
+                sortedJobs.map((job) => (
+                  <JobListCard
+                    key={job.jobNumber}
+                    job={job}
+                    onNavigate={() => handleCardNavigation(job.jobNumber)}
+                    onQuickView={() => handleQuickView(job)}
+                  />
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -1052,3 +944,172 @@ export default function ViewJobCards() {
     </Layout>
   );
 }
+
+const JobListCard = ({ job, onNavigate, onQuickView }) => {
+  const jobType = deriveJobType(job);
+  const appointmentLabel = getAppointmentDisplay(job);
+  const jobDate = getJobDate(job);
+  const requestsCount = getRequestsCount(job.requests);
+  const waitingLabel = formatCustomerStatusLabel(job.waitingStatus);
+  const assignedTechName =
+    job.assignedTech?.fullName ||
+    job.assignedTech?.name ||
+    job.technician ||
+    "Unassigned";
+  const createdStamp = job.createdAt
+    ? new Date(job.createdAt).toLocaleString([], {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : "Unknown";
+  const jobStatus = job.status || "Status pending";
+  const jobSourceLabel = job.jobSource || "Retail";
+
+  const infoBlocks = [
+    { label: "Customer", value: job.customer || "Unknown customer" },
+    { label: "Technician", value: assignedTechName },
+    { label: "Job Type", value: jobType },
+    { label: "Appointment", value: appointmentLabel },
+    { label: "Customer Status", value: waitingLabel },
+    { label: "Requests", value: `${requestsCount} item${requestsCount === 1 ? "" : "s"}` },
+  ];
+
+  return (
+    <div
+      onClick={onNavigate}
+      style={{
+        border: "1px solid #ffe5e5",
+        padding: "18px",
+        borderRadius: "16px",
+        backgroundColor: "white",
+        boxShadow: "0 2px 6px rgba(209,0,0,0.04)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "16px",
+        cursor: "pointer",
+        transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+      }}
+      onMouseEnter={(event) => {
+        event.currentTarget.style.transform = "translateY(-2px)";
+        event.currentTarget.style.boxShadow = "0 6px 16px rgba(209,0,0,0.12)";
+        event.currentTarget.style.borderColor = "#ffb3b3";
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.transform = "translateY(0)";
+        event.currentTarget.style.boxShadow = "0 2px 6px rgba(209,0,0,0.04)";
+        event.currentTarget.style.borderColor = "#ffe5e5";
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "12px",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "18px", fontWeight: 700, color: "#1f2937" }}>{job.jobNumber}</span>
+            <span
+              style={{
+                fontSize: "12px",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                color: "#9ca3af",
+              }}
+            >
+              {jobSourceLabel}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "baseline" }}>
+            <span style={{ fontSize: "20px", fontWeight: 700, color: "#d10000" }}>{job.reg || "—"}</span>
+            <span style={{ fontSize: "14px", color: "#6b7280" }}>{job.makeModel || "Vehicle pending"}</span>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+          <span
+            style={{
+              padding: "6px 12px",
+              borderRadius: "999px",
+              backgroundColor: "#fee2e2",
+              color: "#b91c1c",
+              fontWeight: 600,
+              fontSize: "13px",
+              textTransform: "capitalize",
+            }}
+          >
+            {jobStatus}
+          </span>
+          {onQuickView ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onQuickView();
+              }}
+              style={{
+                padding: "8px 14px",
+                borderRadius: "10px",
+                border: "1px solid #e5e7eb",
+                backgroundColor: "white",
+                color: "#374151",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              ⚡ Quick actions
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+          gap: "12px",
+        }}
+      >
+        {infoBlocks.map((block) => (
+          <div
+            key={block.label}
+            style={{
+              border: "1px solid #f3f4f6",
+              borderRadius: "12px",
+              padding: "12px",
+              backgroundColor: "#fdf2f2",
+            }}
+          >
+            <div style={{ fontSize: "11px", color: "#b45309", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              {block.label}
+            </div>
+            <div style={{ fontSize: "14px", fontWeight: 600, color: "#1f2937", marginTop: "4px" }}>{block.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "12px",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <div style={{ fontSize: "13px", color: "#6b7280" }}>
+          Scheduled: <strong>{jobDate || "Not scheduled"}</strong>
+        </div>
+        <div style={{ fontSize: "13px", color: "#6b7280" }}>
+          Created: <strong>{createdStamp}</strong>
+        </div>
+        <div>{renderVhcBadge(job)}</div>
+      </div>
+    </div>
+  );
+};
