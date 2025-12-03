@@ -638,6 +638,32 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     setLastSectionSavedAt(null);
   }, [resolvedJobNumber]);
 
+  useEffect(() => {
+    if (!job?.id) return;
+    const channel = supabase
+      .channel(`vhc-checksheet-${job.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "vhc_checks",
+          filter: `job_id=eq.${job.id}`,
+        },
+        (payload) => {
+          const record = payload.new || payload.old;
+          if (!record || record.section !== "VHC_CHECKSHEET") return;
+          const parsed = safeJsonParse(record.issue_description || record.data);
+          if (!parsed) return;
+          setVhcData(buildVhcPayload(parsed));
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [job?.id]);
+
   const jobParts = useMemo(
     () =>
       Array.isArray(job?.parts_job_items)
