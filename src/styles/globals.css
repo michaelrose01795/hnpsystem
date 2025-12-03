@@ -20,7 +20,8 @@ body {
   color: #222;
   line-height: 1.35;
   min-height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   transition: background-color 0.3s, color 0.3s;
 }
 
