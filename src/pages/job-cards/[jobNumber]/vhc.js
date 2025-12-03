@@ -246,23 +246,51 @@ export default function VHCPAGE() {
 
   const optionalKeys = ["externalInspection", "internalElectrics", "underside"];
 
-  const tyreConcernTotals = useMemo(() => {
-    const tyres = vhcData?.wheelsTyres;
-    if (!tyres || typeof tyres !== "object") {
-      return { total: 0, amber: 0, red: 0 };
-    }
-    let amber = 0;
-    let red = 0;
-    Object.values(tyres).forEach((entry) => {
-      const concerns = Array.isArray(entry?.concerns) ? entry.concerns : [];
-      concerns.forEach((concern) => {
-        const status = (concern?.status || "").toString().trim().toLowerCase();
-        if (status === "amber") amber += 1;
-        if (status === "red") red += 1;
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [showGreenSummary, setShowGreenSummary] = useState(false);
+
+  const concernSummary = useMemo(() => {
+    const items = [];
+
+    const getSectionLabel = (sectionKey) => SECTION_TITLES[sectionKey] || sectionKey;
+
+    const collectConcerns = (sectionKey, value, pathLabel = "") => {
+      if (!value || typeof value !== "object") return;
+      const label = pathLabel || getSectionLabel(sectionKey);
+      if (Array.isArray(value.concerns)) {
+        value.concerns.forEach((concern, index) => {
+          items.push({
+            section: label,
+            status: (concern.status || "").toLowerCase(),
+            text: concern.text || concern.issue || `Concern ${index + 1}`,
+          });
+        });
+      }
+      Object.entries(value).forEach(([key, nested]) => {
+        if (!nested || typeof nested !== "object" || Array.isArray(nested)) return;
+        collectConcerns(sectionKey, nested, `${label} - ${key}`);
       });
+    };
+
+    Object.entries(vhcData || {}).forEach(([sectionKey, value]) => {
+      if (value && typeof value === "object") {
+        collectConcerns(sectionKey, value);
+      }
     });
-    return { total: amber + red, amber, red };
-  }, [vhcData?.wheelsTyres]);
+
+    return items;
+  }, [vhcData]);
+
+  const summaryBuckets = useMemo(() => {
+    const buckets = { red: [], amber: [], green: [] };
+    concernSummary.forEach((item) => {
+      const status = item.status || "green";
+      if (status.includes("red")) buckets.red.push(item);
+      else if (status.includes("amber")) buckets.amber.push(item);
+      else buckets.green.push(item);
+    });
+    return buckets;
+  }, [concernSummary]);
 
   const getOptionalCount = (section) => {
     const value = vhcData[section];
@@ -439,6 +467,25 @@ export default function VHCPAGE() {
             <div style={styles.progressTrack}>
               <div style={{ ...styles.progressFill, width: progressWidth }} />
             </div>
+            <button
+              type="button"
+              onClick={() => setShowSummaryModal(true)}
+              style={{
+                marginTop: "10px",
+                alignSelf: "flex-start",
+                padding: "8px 14px",
+                borderRadius: "12px",
+                border: "1px solid #e5e7eb",
+                background: "#fff",
+                color: themeConfig.palette.accent,
+                fontWeight: 700,
+                fontSize: "12px",
+                boxShadow: "0 6px 14px rgba(0,0,0,0.06)",
+                cursor: "pointer",
+              }}
+            >
+              Summary
+            </button>
             {saveStatusMessage && (
               <span
                 style={{
@@ -471,55 +518,6 @@ export default function VHCPAGE() {
         <div style={styles.mainCard}>
         <div style={styles.sectionHeader}>
           <h2 style={styles.sectionTitle}>Mandatory Sections</h2>
-        </div>
-        <div
-          style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
-            borderRadius: "16px",
-            padding: "16px",
-            marginBottom: "16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "16px",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>Tyre concerns</p>
-            <strong style={{ fontSize: "16px", color: "#111827" }}>
-              {tyreConcernTotals.total
-                ? `${tyreConcernTotals.total} amber/red concern${tyreConcernTotals.total === 1 ? "" : "s"}`
-                : "No amber/red concerns recorded"}
-            </strong>
-          </div>
-          <div style={{ display: "flex", gap: "10px" }}>
-            <span
-              style={{
-                background: "#fee2e2",
-                color: themeConfig.palette.danger,
-                padding: "6px 12px",
-                borderRadius: "999px",
-                fontWeight: 600,
-                fontSize: "12px",
-              }}
-            >
-              Red {tyreConcernTotals.red}
-            </span>
-            <span
-              style={{
-                background: "#fef3c7",
-                color: themeConfig.palette.warning,
-                padding: "6px 12px",
-                borderRadius: "999px",
-                fontWeight: 600,
-                fontSize: "12px",
-              }}
-            >
-              Amber {tyreConcernTotals.amber}
-            </span>
-          </div>
         </div>
           <div style={styles.sectionsGrid}>
             {MANDATORY_SECTION_KEYS.map((key) => (
@@ -581,6 +579,138 @@ export default function VHCPAGE() {
             </button>
           </div>
         </div>
+
+        {showSummaryModal && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(15,23,42,0.55)",
+              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 200,
+              padding: "16px",
+            }}
+          >
+            <div
+              style={{
+                width: "min(720px, 100%)",
+                maxHeight: "90vh",
+                overflow: "hidden",
+                background: "#fff",
+                borderRadius: "20px",
+                border: "1px solid #e5e7eb",
+                boxShadow: "0 20px 50px rgba(0,0,0,0.18)",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "16px 20px",
+                  borderBottom: "1px solid #e5e7eb",
+                  gap: "12px",
+                }}
+              >
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#111827" }}>Concern Summary</h3>
+                  <p style={{ margin: 0, color: "#6b7280", fontSize: "13px" }}>
+                    Quick snapshot of reported issues across the VHC.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSummaryModal(false)}
+                  style={{
+                    border: "none",
+                    background: "#f3f4f6",
+                    color: "#111827",
+                    padding: "8px 12px",
+                    borderRadius: "10px",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+
+              <div style={{ padding: "12px 20px", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: "10px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#374151", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={showGreenSummary}
+                    onChange={(e) => setShowGreenSummary(e.target.checked)}
+                  />
+                  Show green items
+                </label>
+              </div>
+
+              <div style={{ padding: "16px 20px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: "16px" }}>
+                {["red", "amber", "green"].map((statusKey) => {
+                  if (statusKey === "green" && !showGreenSummary) return null;
+                  const items = summaryBuckets[statusKey] || [];
+                  const colors =
+                    statusKey === "red"
+                      ? { bg: "#fef2f2", text: "#b91c1c", badge: "#fee2e2" }
+                      : statusKey === "amber"
+                      ? { bg: "#fffbeb", text: "#92400e", badge: "#fef3c7" }
+                      : { bg: "#ecfdf3", text: "#065f46", badge: "#d1fae5" };
+                  return (
+                    <div key={statusKey} style={{ background: colors.bg, borderRadius: "14px", border: `1px solid ${colors.badge}`, padding: "12px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                        <span
+                          style={{
+                            padding: "4px 10px",
+                            borderRadius: "999px",
+                            background: colors.badge,
+                            color: colors.text,
+                            fontWeight: 700,
+                            fontSize: "12px",
+                          }}
+                        >
+                          {statusKey.toUpperCase()} ({items.length})
+                        </span>
+                      </div>
+                      {items.length === 0 ? (
+                        <p style={{ margin: 0, color: "#6b7280", fontSize: "13px" }}>No items.</p>
+                      ) : (
+                        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+                          {items.map((item, idx) => (
+                            <li
+                              key={`${statusKey}-${idx}`}
+                              style={{
+                                background: "#fff",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "12px",
+                                padding: "10px 12px",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "6px",
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
+                                <span style={{ fontWeight: 700, fontSize: "14px", color: "#111827" }}>
+                                  {item.section}
+                                </span>
+                              </div>
+                              <span style={{ color: "#374151", fontSize: "13px" }}>{item.text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {activeSection === "wheelsTyres" && (
           <WheelsTyresDetailsModal
