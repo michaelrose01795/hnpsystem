@@ -99,6 +99,9 @@ const normaliseBrakesState = (initialData = {}) => {
     rearDiscs,
     rearDrums: {
       status: source.rearDrums?.status || "",
+      concerns: Array.isArray(source.rearDrums?.concerns)
+        ? source.rearDrums.concerns
+        : [],
     },
   };
 
@@ -106,6 +109,14 @@ const normaliseBrakesState = (initialData = {}) => {
 
   return { data, showDrum };
 };
+
+const ALL_CONCERN_TARGETS = [
+  { key: "frontPads", label: "Front Pads" },
+  { key: "rearPads", label: "Rear Pads" },
+  { key: "frontDiscs", label: "Front Discs" },
+  { key: "rearDiscs", label: "Rear Discs" },
+  { key: "rearDrums", label: "Rear Drum" },
+];
 
 const getPadStatus = (value) => {
   const reading = typeof value === "number" ? value : parseFloat(value);
@@ -260,17 +271,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     category: "frontPads",
     tempConcern: { issue: "", status: "Red" },
   });
-  const resetConcernPopup = () =>
-    setConcernPopup({
-      open: false,
-      category: "frontPads",
-      tempConcern: { issue: "", status: "Red" },
-    });
-  const handleClose = () => {
-    resetConcernPopup();
-    if (!onClose) return;
-    onClose(data);
-  };
 
   useEffect(() => {
     setData(normalisedInitial.data);
@@ -292,6 +292,75 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     gap: "12px",
     alignItems: "stretch",
     cursor: "default",
+  };
+
+  const activeConcernKeySet = useMemo(() => {
+    if (activeSide === "front") return ["frontPads", "frontDiscs"];
+    if (showDrum) return ["rearDrums"];
+    return ["rearPads", "rearDiscs"];
+  }, [activeSide, showDrum]);
+
+  const availableConcernTargets = useMemo(
+    () => ALL_CONCERN_TARGETS.filter((target) => activeConcernKeySet.includes(target.key)),
+    [activeConcernKeySet],
+  );
+
+  const defaultConcernCategory =
+    availableConcernTargets[0]?.key || activeConcernKeySet[0] || "frontPads";
+
+  const concernOptions =
+    availableConcernTargets.length > 0 ? availableConcernTargets : ALL_CONCERN_TARGETS;
+
+  const areaLabels = {
+    ...padLabels,
+    ...discLabels,
+    rearDrums: "Rear Drum",
+  };
+
+  const activeSideLabel = activeSide === "front" ? "Front" : showDrum ? "Rear Drums" : "Rear";
+
+  const activeIssueEntries = useMemo(() => {
+    return activeConcernKeySet.flatMap((key) => {
+      const concerns = data[key]?.concerns ?? [];
+      return concerns.map((concern) => ({
+        ...concern,
+        area: areaLabels[key] || key,
+      }));
+    });
+  }, [activeConcernKeySet, data, areaLabels]);
+
+  const severityBadgeStyle = (status) => ({
+    padding: "4px 10px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: 700,
+    background: status === "Red" ? "#fee2e2" : "#fef3c7",
+    color: status === "Red" ? palette.danger : palette.warning,
+  });
+
+  const resetConcernPopup = () =>
+    setConcernPopup({
+      open: false,
+      category: defaultConcernCategory,
+      tempConcern: { issue: "", status: "Red" },
+    });
+
+  const openConcernPopup = () =>
+    setConcernPopup({
+      open: true,
+      category: defaultConcernCategory,
+      tempConcern: { issue: "", status: "Red" },
+    });
+
+  useEffect(() => {
+    if (concernPopup.open) return;
+    setConcernPopup((prev) => ({ ...prev, category: defaultConcernCategory }));
+  }, [defaultConcernCategory, concernPopup.open]);
+
+  const handleClose = () => {
+    resetConcernPopup();
+    if (!onClose) return;
+    onClose(data);
   };
 
   const severityPriority = { Green: 1, Amber: 2, Red: 3 };
@@ -342,13 +411,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       },
     };
   };
-
-  const concernTargets = [
-    { key: "frontPads", label: "Front Pads" },
-    { key: "rearPads", label: "Rear Pads" },
-    { key: "frontDiscs", label: "Front Discs" },
-    { key: "rearDiscs", label: "Rear Discs" },
-  ];
 
   const fieldLabelStyle = {
     fontSize: "12px",
@@ -488,6 +550,9 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       const nextConcerns = [...section.concerns, concern];
       const severity = getHighestConcernSeverity(nextConcerns);
       let nextSection = { ...section, concerns: nextConcerns };
+      if (category === "rearDrums") {
+        return { ...prev, rearDrums: nextSection };
+      }
       if (severity) {
         nextSection =
           category === "frontPads" || category === "rearPads"
@@ -506,6 +571,9 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       nextConcerns[index] = { ...nextConcerns[index], status };
       const severity = getHighestConcernSeverity(nextConcerns);
       let nextSection = { ...section, concerns: nextConcerns };
+      if (category === "rearDrums") {
+        return { ...prev, rearDrums: nextSection };
+      }
       if (severity) {
         nextSection =
           category === "frontPads" || category === "rearPads"
@@ -593,38 +661,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     return next;
   };
 
-  const concernTotals = useMemo(() => {
-    const targets = ["frontPads", "rearPads", "frontDiscs", "rearDiscs"];
-    let total = 0;
-    let red = 0;
-    let amber = 0;
-    targets.forEach((key) => {
-      const concerns = data[key]?.concerns ?? [];
-      total += concerns.length;
-      concerns.forEach(({ status }) => {
-        if (status === "Red") red += 1;
-        if (status === "Amber") amber += 1;
-      });
-    });
-    return { total, red, amber };
-  }, [data]);
-
-  const concernGroups = useMemo(() => {
-    const entries = [
-      { key: "frontPads", label: padLabels.frontPads },
-      { key: "rearPads", label: padLabels.rearPads },
-      { key: "frontDiscs", label: discLabels.frontDiscs },
-      { key: "rearDiscs", label: discLabels.rearDiscs },
-    ];
-    return entries
-      .map(({ key, label }) => ({
-        key,
-        label,
-        concerns: data[key]?.concerns ?? [],
-      }))
-      .filter(({ concerns }) => concerns.length > 0);
-  }, [data]);
-
   const parsePadValue = (measurement) => {
     const first = (measurement || "")
       .split(/[, ]+/)
@@ -683,14 +719,11 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
     return (
       <div style={sectionPanelBase}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
-            {title}
-          </h3>
-          <span style={{ fontSize: "12px", fontWeight: 600, color: palette.textMuted }}>
-            {padData.status || "Status"}
-          </span>
-        </div>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
+          {title}
+        </h3>
+      </div>
 
         <label style={fieldLabelStyle}>Pad Measurement (mm)</label>
         <AutoCompleteInput
@@ -779,16 +812,11 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
     return (
       <div style={sectionPanelBase}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
-            {title}
-          </h3>
-          <span style={{ fontSize: "12px", fontWeight: 600, color: palette.textMuted }}>
-            {discData.tab === "measurements"
-              ? discData.measurements.status || "Status"
-              : discData.visual.status || "Status"}
-          </span>
-        </div>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
+          {title}
+        </h3>
+      </div>
 
         <div style={tabWrapperStyle}>
           {["measurements", "visual"].map((tab) => (
@@ -918,9 +946,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
         Drum Brakes
       </h3>
-      <p style={{ fontSize: "13px", color: palette.textMuted, margin: 0 }}>
-        Select the observation that best matches the rear drum condition.
-      </p>
 
       <div
         style={{
@@ -937,7 +962,13 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
               key={label}
               type="button"
               onClick={() =>
-                setData((prev) => ({ ...prev, rearDrums: { status: label } }))
+        setData((prev) => ({
+          ...prev,
+          rearDrums: {
+            ...prev.rearDrums,
+            status: label,
+          },
+        }))
               }
               style={{
                 ...createVhcButtonStyle(active ? "primary" : "ghost"),
@@ -1065,12 +1096,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                 </>
               )}
 
-              {activeSide === "rear" && showDrum && (
-                <>
-                  <PadsSection category="rearPads" />
-                  <DrumBrakesSection />
-                </>
-              )}
+              {activeSide === "rear" && showDrum && <DrumBrakesSection />}
 
               <div style={{ ...sectionPanelBase, flex: "0 0 auto" }}>
                 <div
@@ -1082,115 +1108,39 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                     gap: "12px",
                   }}
                 >
-                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <span style={{ fontSize: "13px", color: palette.textMuted, letterSpacing: "0.1em" }}>
-                      Concern Summary
-                    </span>
-                    <span style={{ fontSize: "20px", fontWeight: 700, color: palette.textPrimary }}>
-                      {concernTotals.total} issue{concernTotals.total === 1 ? "" : "s"} logged
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const defaultCategory = activeSide === "front" ? "frontPads" : "rearPads";
-                        setConcernPopup({
-                          open: true,
-                          category: defaultCategory,
-                          tempConcern: { issue: "", status: "Red" },
-                        });
-                      }}
-                      style={{ ...buildModalButton("ghost"), gap: "8px" }}
-                    >
-                      + Add Concern
-                    </button>
-                    <div
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: "999px",
-                        background: "#fee2e2",
-                        color: palette.danger,
-                        fontWeight: 600,
-                        fontSize: "12px",
-                      }}
-                    >
-                      Red {concernTotals.red}
-                    </div>
-                    <div
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: "999px",
-                        background: "#fef3c7",
-                        color: palette.warning,
-                        fontWeight: 600,
-                        fontSize: "12px",
-                      }}
-                    >
-                      Amber {concernTotals.amber}
-                    </div>
-                  </div>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>
+                    {activeSideLabel} Issues Logged
+                  </h3>
+                  <button type="button" onClick={openConcernPopup} style={{ ...buildModalButton("ghost"), gap: "8px" }}>
+                    + Add Concern
+                  </button>
                 </div>
-                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "10px" }}>
-                  {concernGroups.length === 0 ? (
-                    <span style={{ fontSize: "13px", color: palette.textMuted }}>
-                      No concerns recorded yet. Use the “+ Add Concern” button to track issues.
-                    </span>
-                  ) : (
-                    concernGroups.map(({ key, label, concerns }) => (
+                {activeIssueEntries.length === 0 ? (
+                  <span style={{ fontSize: "13px", color: palette.textMuted, marginTop: "10px" }}>
+                    No concerns recorded for {activeSideLabel.toLowerCase()}.
+                  </span>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "12px" }}>
+                    {activeIssueEntries.map((issue, idx) => (
                       <div
-                        key={key}
+                        key={`${issue.area}-${idx}`}
                         style={{
-                          ...vhcModalContentStyles.badge,
-                          backgroundColor: palette.surface,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          borderRadius: "12px",
                           border: `1px solid ${palette.border}`,
-                          color: palette.textPrimary,
+                          padding: "10px 12px",
+                          background: palette.surface,
                         }}
                       >
-                        {label}: {concerns.length}
-                      </div>
-                    ))
-                  )}
-                </div>
-                {concernGroups.length > 0 && (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "10px",
-                      maxHeight: "200px",
-                      overflowY: "auto",
-                      marginTop: "12px",
-                    }}
-                  >
-                    {concernGroups.map(({ key, label, concerns }) => (
-                      <div key={key} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <span style={{ fontSize: "13px", fontWeight: 600, color: palette.textPrimary }}>{label}</span>
-                        {concerns.map((c, idx) => (
-                          <div
-                            key={`${key}-${idx}`}
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              borderRadius: "12px",
-                              border: `1px solid ${palette.border}`,
-                              padding: "10px 12px",
-                              background: palette.surface,
-                            }}
-                          >
-                            <span style={{ fontSize: "13px", color: palette.textPrimary }}>{c.issue}</span>
-                            <span
-                              style={{
-                                fontSize: "12px",
-                                fontWeight: 700,
-                                color: c.status === "Red" ? palette.danger : palette.warning,
-                              }}
-                            >
-                              {c.status}
-                            </span>
-                          </div>
-                        ))}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <span style={{ fontSize: "13px", color: palette.textPrimary }}>{issue.text || issue.issue}</span>
+                          <span style={{ fontSize: "11px", color: palette.textMuted }}>
+                            {issue.area}
+                          </span>
+                        </div>
+                        <span style={severityBadgeStyle(issue.status)}>{issue.status}</span>
                       </div>
                     ))}
                   </div>
@@ -1218,7 +1168,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                     onFocus={enhanceFocus}
                     onBlur={resetFocus}
                   >
-                    {concernTargets.map((target) => (
+                    {concernOptions.map((target) => (
                       <option key={target.key} value={target.key}>
                         {target.label}
                       </option>
@@ -1262,17 +1212,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                   </select>
 
                   <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "16px" }}>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setConcernPopup({
-                          open: false,
-                          category: "frontPads",
-                          tempConcern: { issue: "", status: "Red" },
-                        })
-                      }
-                      style={buildModalButton("ghost")}
-                    >
+                    <button type="button" onClick={resetConcernPopup} style={buildModalButton("ghost")}>
                       Cancel
                     </button>
                     <button
@@ -1280,11 +1220,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                       onClick={() => {
                         if (!concernPopup.tempConcern.issue.trim()) return;
                         addConcern(concernPopup.category, concernPopup.tempConcern);
-                        setConcernPopup({
-                          open: false,
-                          category: "frontPads",
-                          tempConcern: { issue: "", status: "Red" },
-                        });
+                        resetConcernPopup();
                       }}
                       style={buildModalButton("primary")}
                     >

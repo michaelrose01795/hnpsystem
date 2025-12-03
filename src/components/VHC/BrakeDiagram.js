@@ -64,18 +64,6 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
         aria-label="Brake pad and disc overview diagram"
         style={{ width: "100%", height: "auto", maxWidth: "360px" }}
       >
-        <text
-          x="154"
-          y="28"
-          textAnchor="middle"
-          fontSize="16"
-          fontWeight="700"
-          fill={palette.accent}
-          letterSpacing="1.2"
-        >
-          Brake Pad / Disc Overview
-        </text>
-
         <rect
           x="60"
           y="46"
@@ -96,12 +84,6 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
         </text>
         <text x="154" y="282" textAnchor="middle" fontSize="11" fill={palette.textMuted} letterSpacing="2">
           REAR
-        </text>
-        <text x="14" y="170" textAnchor="middle" fontSize="11" fill={palette.textMuted} transform="rotate(-90 14 170)">
-          N / S · LEFT
-        </text>
-        <text x="294" y="170" textAnchor="middle" fontSize="11" fill={palette.textMuted} transform="rotate(90 294 170)">
-          O / S · RIGHT
         </text>
 
         {BRAKE_KEYS.map(({ key, label, position }) => {
