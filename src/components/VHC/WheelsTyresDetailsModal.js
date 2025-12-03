@@ -461,9 +461,16 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
     }
   };
 
+  const isCopyReady = () => {
+    const source = tyres[activeWheel];
+    if (!source) return false;
+    return Boolean(source.manufacturer && source.size && source.load && source.speed);
+  };
+
   const copyToAll = () => {
-    setCopyActive((prev) => !prev);
     if (copyActive) return;
+    if (!isCopyReady()) return;
+    setCopyActive(true);
 
     const source = tyres[activeWheel];
     setTyres((prev) => {
@@ -599,7 +606,16 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
               <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
                 {activeWheel !== "Spare" ? (
                   <>
-                    <button type="button" onClick={copyToAll} style={pillButton({ active: copyActive })}>
+                    <button
+                      type="button"
+                      onClick={copyToAll}
+                      disabled={!isCopyReady()}
+                      style={{
+                        ...pillButton({ active: copyActive }),
+                        opacity: !isCopyReady() || copyActive ? 0.6 : 1,
+                        cursor: !isCopyReady() || copyActive ? "not-allowed" : "pointer",
+                      }}
+                    >
                       Copy To All
                     </button>
                     <button type="button" onClick={toggleRunFlat} style={pillButton({ active: currentTyre.runFlat })}>
@@ -641,12 +657,15 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                     <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Tyre Details</span>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "18px", marginTop: "10px" }}>
                       <div style={{ flex: "1 1 220px", minWidth: "220px" }}>
-                        <AutoCompleteInput
-                          value={currentTyre.manufacturer}
-                          onChange={(value) => updateTyre("manufacturer", value)}
-                          options={tyreBrands}
-                          placeholder="Select manufacturer"
-                        />
+                        <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
+                          <span style={{ fontWeight: 700, color: palette.textPrimary }}>Make</span>
+                          <AutoCompleteInput
+                            value={currentTyre.manufacturer}
+                            onChange={(value) => updateTyre("manufacturer", value)}
+                            options={tyreBrands}
+                            placeholder="Select manufacturer"
+                          />
+                        </label>
                       </div>
                       <div
                         style={{
@@ -686,9 +705,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                         </label>
                       </div>
                     </div>
-                    <span style={{ fontSize: "12px", color: palette.textMuted, marginTop: "10px", display: "block" }}>
-                      Tap a tyre on the diagram to switch wheels instantly.
-                    </span>
                   </div>
 
                   <div style={sectionCardStyle}>

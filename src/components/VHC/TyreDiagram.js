@@ -73,18 +73,6 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
         aria-label="Vehicle tyre overview diagram"
         style={{ width: "100%", height: "auto", maxWidth: "360px" }}
       >
-        <text
-          x={DIAGRAM_WIDTH / 2}
-          y="30"
-          textAnchor="middle"
-          fontSize="16"
-          fontWeight="700"
-          fill={palette.accent}
-          letterSpacing="1.2"
-        >
-          Vehicle Tyre Overview
-        </text>
-
         <rect
           x="58"
           y="46"
