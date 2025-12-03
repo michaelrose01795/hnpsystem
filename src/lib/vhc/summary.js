@@ -458,13 +458,18 @@ const buildBrakesSection = (brakes) => {
 
 // ✅ Build a service indicator/under bonnet section
 const buildServiceIndicatorSection = (serviceSection) => {
-  if (!Array.isArray(serviceSection) || serviceSection.length === 0) return null;
+  const entries = Array.isArray(serviceSection)
+    ? serviceSection
+    : serviceSection && typeof serviceSection === "object"
+    ? [serviceSection]
+    : [];
+  if (entries.length === 0) return null;
   const items = [];
   let red = 0;
   let amber = 0;
   let grey = 0;
 
-  serviceSection.forEach((service) => {
+  entries.forEach((service) => {
     if (!service || typeof service !== "object") return;
     const badgeStatus = normaliseStatus(service.status) || determineDominantStatus([service.serviceChoice]);
     const rows = [];

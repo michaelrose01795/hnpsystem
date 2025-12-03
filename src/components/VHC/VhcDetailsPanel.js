@@ -1,10 +1,17 @@
 // file location: src/components/VHC/VhcDetailsPanel.js
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabaseClient";
 import { summariseTechnicianVhc } from "@/lib/vhc/summary";
+import { saveChecksheet } from "@/lib/database/jobs";
+import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
+import BrakesHubsDetailsModal from "@/components/VHC/BrakesHubsDetailsModal";
+import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetailsModal";
+import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
+import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal";
+import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 
 const STATUS_BADGES = {
   red: "#ef4444",
@@ -55,6 +62,72 @@ const HEALTH_SECTION_CONFIG = [
     description: "Suspension, steering, exhaust, and leak inspections underneath the vehicle.",
   },
 ];
+
+const createDefaultInternalElectrics = () => ({
+  "Lights Front": { concerns: [] },
+  "Lights Rear": { concerns: [] },
+  "Lights Interior": { concerns: [] },
+  "Horn/Washers/Wipers": { concerns: [] },
+  "Air Con/Heating/Ventilation": { concerns: [] },
+  "Warning Lamps": { concerns: [] },
+  Seatbelt: { concerns: [] },
+  Miscellaneous: { concerns: [] },
+});
+
+const createDefaultUnderside = () => ({
+  "Exhaust System/Catalyst": { concerns: [] },
+  Steering: { concerns: [] },
+  "Front Suspension": { concerns: [] },
+  "Rear Suspension": { concerns: [] },
+  "Driveshafts/Oil Leaks": { concerns: [] },
+  Miscellaneous: { concerns: [] },
+});
+
+const baseVhcPayload = () => ({
+  wheelsTyres: null,
+  brakesHubs: [],
+  serviceIndicator: { serviceChoice: "", oilStatus: "", concerns: [] },
+  externalInspection: [],
+  internalElectrics: createDefaultInternalElectrics(),
+  underside: createDefaultUnderside(),
+});
+
+const ensureArray = (value) => (Array.isArray(value) ? value : []);
+
+const normaliseConcernEntries = (list) =>
+  ensureArray(list).map((entry) => ({
+    ...entry,
+    concerns: ensureArray(entry?.concerns),
+  }));
+
+const mergeEntries = (baseEntries, source) => {
+  const next = { ...baseEntries };
+  if (source && typeof source === "object") {
+    Object.entries(source).forEach(([key, entry]) => {
+      next[key] = {
+        ...(entry || {}),
+        concerns: ensureArray(entry?.concerns),
+      };
+    });
+  }
+  return next;
+};
+
+const buildVhcPayload = (source = {}) => {
+  const base = baseVhcPayload();
+  return {
+    wheelsTyres: source.wheelsTyres || null,
+    brakesHubs: normaliseConcernEntries(source.brakesHubs),
+    serviceIndicator: {
+      serviceChoice: source.serviceIndicator?.serviceChoice || "",
+      oilStatus: source.serviceIndicator?.oilStatus || "",
+      concerns: ensureArray(source.serviceIndicator?.concerns),
+    },
+    externalInspection: normaliseConcernEntries(source.externalInspection),
+    internalElectrics: mergeEntries(base.internalElectrics, source.internalElectrics),
+    underside: mergeEntries(base.underside, source.underside),
+  };
+};
 
 const CATEGORY_DEFINITIONS = [
   {
@@ -214,7 +287,7 @@ const mapRows = (rows = []) => {
   return rows.filter((entry) => typeof entry === "string" && entry.trim().length > 0);
 };
 
-const HealthSectionCard = ({ config, section }) => {
+const HealthSectionCard = ({ config, section, onOpen }) => {
   const metrics = section?.metrics || {};
   const severity = deriveSectionSeverity(metrics);
   const severityLabel = severity
@@ -253,6 +326,7 @@ const HealthSectionCard = ({ config, section }) => {
           justifyContent: "space-between",
           gap: "16px",
           flexWrap: "wrap",
+          alignItems: "center",
         }}
       >
         <div style={{ flex: 1, minWidth: "220px" }}>
@@ -264,7 +338,15 @@ const HealthSectionCard = ({ config, section }) => {
           </h3>
           <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>{config.description}</p>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "flex-end" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            alignItems: "flex-end",
+            minWidth: "200px",
+          }}
+        >
           <span
             style={{
               ...headerBadgeBase,
@@ -277,6 +359,23 @@ const HealthSectionCard = ({ config, section }) => {
           <span style={headerBadgeBase}>
             {(metrics.total ?? 0).toString()} item{(metrics.total ?? 0) === 1 ? "" : "s"}
           </span>
+          <button
+            type="button"
+            onClick={() => onOpen && onOpen(config.key)}
+            style={{
+              padding: "8px 14px",
+              borderRadius: "10px",
+              border: "1px solid #d10000",
+              background: "#d10000",
+              color: "#fff",
+              fontWeight: 600,
+              cursor: onOpen ? "pointer" : "not-allowed",
+              opacity: onOpen ? 1 : 0.6,
+            }}
+            disabled={!onOpen}
+          >
+            Open Section
+          </button>
         </div>
       </div>
 
@@ -396,16 +495,45 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
   const [job, setJob] = useState(null);
   const [workflow, setWorkflow] = useState(null);
-  const [builderData, setBuilderData] = useState(null);
+  const [vhcData, setVhcData] = useState(baseVhcPayload());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("summary");
   const [itemEntries, setItemEntries] = useState({});
   const [categorySelections, setCategorySelections] = useState({});
+  const [activeSection, setActiveSection] = useState(null);
+  const [sectionSaveStatus, setSectionSaveStatus] = useState("idle");
+  const [sectionSaveError, setSectionSaveError] = useState("");
+  const [lastSectionSavedAt, setLastSectionSavedAt] = useState(null);
 
   const containerPadding = showNavigation ? "24px" : "0";
   const renderStatusMessage = (message, color = "#6b7280") => (
     <div style={{ padding: containerPadding, color }}>{message}</div>
+  );
+
+  const persistVhcSections = useCallback(
+    async (payload) => {
+      if (!resolvedJobNumber) return false;
+      try {
+        setSectionSaveStatus("saving");
+        setSectionSaveError("");
+        const result = await saveChecksheet(resolvedJobNumber, payload);
+        if (!result?.success) {
+          setSectionSaveStatus("error");
+          setSectionSaveError(result?.error?.message || "Failed to save VHC data.");
+          return false;
+        }
+        setSectionSaveStatus("saved");
+        setLastSectionSavedAt(new Date());
+        return true;
+      } catch (err) {
+        console.error("Failed to save VHC sections", err);
+        setSectionSaveStatus("error");
+        setSectionSaveError(err.message || "Failed to save VHC data.");
+        return false;
+      }
+    },
+    [resolvedJobNumber]
   );
 
   useEffect(() => {
@@ -486,7 +614,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
         const builderRecord = vhc_checks.find(
           (check) => check.section === "VHC_CHECKSHEET"
         );
-        setBuilderData(safeJsonParse(builderRecord?.issue_description || builderRecord?.data));
+        const parsedPayload = safeJsonParse(builderRecord?.issue_description || builderRecord?.data) || {};
+        setVhcData(buildVhcPayload(parsedPayload));
       } catch (err) {
         console.error("Failed to load VHC details", err);
         setError("Unable to load VHC details for this job.");
@@ -501,6 +630,12 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   useEffect(() => {
     setItemEntries({});
     setCategorySelections({});
+  }, [resolvedJobNumber]);
+
+  useEffect(() => {
+    setSectionSaveStatus("idle");
+    setSectionSaveError("");
+    setLastSectionSavedAt(null);
   }, [resolvedJobNumber]);
 
   const jobParts = useMemo(
@@ -541,8 +676,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     [job]
   );
   const builderSummary = useMemo(
-    () => summariseTechnicianVhc(builderData || {}),
-    [builderData]
+    () => summariseTechnicianVhc(vhcData || {}),
+    [vhcData]
   );
   const sections = builderSummary.sections || [];
   const orderedHealthSections = useMemo(() => {
@@ -566,6 +701,46 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
         ({ data }) => Array.isArray(data?.items) && data.items.length > 0
       ),
     [orderedHealthSections]
+  );
+  const sectionSaveMessage = useMemo(() => {
+    if (sectionSaveStatus === "saving") return "Saving section…";
+    if (sectionSaveStatus === "saved") {
+      if (!lastSectionSavedAt) return "Saved";
+      return `Saved ${lastSectionSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    }
+    if (sectionSaveStatus === "error") {
+      return sectionSaveError || "Failed to save";
+    }
+    return "";
+  }, [sectionSaveStatus, lastSectionSavedAt, sectionSaveError]);
+  const sectionSaveColor =
+    sectionSaveStatus === "error"
+      ? "#b91c1c"
+      : sectionSaveStatus === "saving"
+      ? "#d97706"
+      : "#6b7280";
+  const handleOpenSection = useCallback((sectionKey) => {
+    setActiveSection(sectionKey);
+  }, []);
+
+  const handleSectionDismiss = useCallback(
+    (sectionKey, draftData) => {
+      setActiveSection(null);
+      if (!sectionKey || draftData === undefined || draftData === null) return;
+      setVhcData((prev) => ({ ...prev, [sectionKey]: draftData }));
+    },
+    []
+  );
+
+  const handleSectionComplete = useCallback(
+    async (sectionKey, sectionPayload) => {
+      if (!sectionKey) return;
+      const next = { ...vhcData, [sectionKey]: sectionPayload };
+      setVhcData(next);
+      setActiveSection(null);
+      await persistVhcSections(next);
+    },
+    [vhcData, persistVhcSections]
   );
   const summaryItems = useMemo(() => {
     const items = [];
@@ -1117,52 +1292,35 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
         <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
           <div
             style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: "16px",
-              padding: "18px",
-              background: "#fff",
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center",
               gap: "16px",
               flexWrap: "wrap",
+              alignItems: "flex-start",
             }}
           >
             <div style={{ flex: 1, minWidth: "240px" }}>
-              <p style={{ margin: 0, fontSize: "13px", color: "#9ca3af", letterSpacing: "0.16em" }}>
-                Technician Workspace
-              </p>
-              <h3 style={{ margin: "4px 0 6px", fontSize: "18px", fontWeight: 700, color: "#111827" }}>
-                Live health check overview
+              <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "#111827" }}>
+                Health check sections
               </h3>
-              <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>
-                Review each section gathered from the VHC builder without leaving the job card.
+              <p style={{ margin: "6px 0 0", fontSize: "13px", color: "#6b7280" }}>
+                Open a section to review the full technician modal and make adjustments without leaving this job card.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() =>
-                resolvedJobNumber
-                  ? router.push(`/job-cards/${encodeURIComponent(resolvedJobNumber)}/vhc`)
-                  : null
-              }
-              style={{
-                padding: "10px 18px",
-                borderRadius: "12px",
-                border: "1px solid #d10000",
-                background: resolvedJobNumber ? "#d10000" : "#f3f4f6",
-                color: resolvedJobNumber ? "#fff" : "#9ca3af",
-                fontWeight: 600,
-                cursor: resolvedJobNumber ? "pointer" : "not-allowed",
-              }}
-              disabled={!resolvedJobNumber}
-            >
-              Open VHC Workspace
-            </button>
+            {sectionSaveMessage ? (
+              <span style={{ fontSize: "12px", fontWeight: 600, color: sectionSaveColor }}>
+                {sectionSaveMessage}
+              </span>
+            ) : null}
           </div>
 
           {orderedHealthSections.map(({ config, data }) => (
-            <HealthSectionCard key={config.key} config={config} section={data} />
+            <HealthSectionCard
+              key={config.key}
+              config={config}
+              section={data}
+              onOpen={handleOpenSection}
+            />
           ))}
 
           {!hasHealthData && (
@@ -1177,8 +1335,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                 textAlign: "center",
               }}
             >
-              Technicians have not recorded any VHC data yet. Use the button above to open the full builder view and
-              start a health check for this job.
+              Technicians have not recorded any VHC data yet. Use the section buttons above to open the full builder
+              forms and start a health check for this job.
             </div>
           )}
         </div>
@@ -1201,6 +1359,55 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
       {activeTab === "videos" &&
         renderFileGallery("Videos", videoFiles, "No customer-facing videos have been attached.", "video")}
+
+      {activeSection === "wheelsTyres" && (
+        <WheelsTyresDetailsModal
+          isOpen
+          initialData={vhcData.wheelsTyres}
+          onClose={(draft) => handleSectionDismiss("wheelsTyres", draft)}
+          onComplete={(data) => handleSectionComplete("wheelsTyres", data)}
+        />
+      )}
+      {activeSection === "brakesHubs" && (
+        <BrakesHubsDetailsModal
+          isOpen
+          initialData={vhcData.brakesHubs}
+          onClose={(draft) => handleSectionDismiss("brakesHubs", draft)}
+          onComplete={(data) => handleSectionComplete("brakesHubs", data)}
+        />
+      )}
+      {activeSection === "serviceIndicator" && (
+        <ServiceIndicatorDetailsModal
+          isOpen
+          initialData={vhcData.serviceIndicator}
+          onClose={(draft) => handleSectionDismiss("serviceIndicator", draft)}
+          onComplete={(data) => handleSectionComplete("serviceIndicator", data)}
+        />
+      )}
+      {activeSection === "externalInspection" && (
+        <ExternalDetailsModal
+          isOpen
+          initialData={vhcData.externalInspection}
+          onClose={() => setActiveSection(null)}
+          onComplete={(data) => handleSectionComplete("externalInspection", data)}
+        />
+      )}
+      {activeSection === "internalElectrics" && (
+        <InternalElectricsDetailsModal
+          isOpen
+          initialData={vhcData.internalElectrics}
+          onClose={() => setActiveSection(null)}
+          onComplete={(data) => handleSectionComplete("internalElectrics", data)}
+        />
+      )}
+      {activeSection === "underside" && (
+        <UndersideDetailsModal
+          isOpen
+          initialData={vhcData.underside}
+          onClose={() => setActiveSection(null)}
+          onComplete={(data) => handleSectionComplete("underside", data)}
+        />
+      )}
     </div>
   );
 }
