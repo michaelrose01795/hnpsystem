@@ -64,6 +64,7 @@ const MODE_ROLE_MAP = {
   Retail: new Set((roleCategories.Retail || []).map((role) => role.toLowerCase())),
   Sales: new Set((roleCategories.Sales || []).map((role) => role.toLowerCase())),
 };
+const NAV_DRAWER_WIDTH = 260;
 
 export default function Layout({ children, jobNumber }) {
   const { user, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
@@ -82,8 +83,8 @@ export default function Layout({ children, jobNumber }) {
   const isMobile = viewportWidth <= 640; // phone view cutoff
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const closeMobileMenu = () => setIsMobileMenuOpen(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const closeSidebar = () => setIsSidebarOpen(false);
 
   const urlJobId =
     router.query.id ||
@@ -197,43 +198,19 @@ export default function Layout({ children, jobNumber }) {
   }, []);
 
   useEffect(() => {
-    if (!isTablet) setIsMobileMenuOpen(false);
-  }, [isTablet]);
-
-  useEffect(() => {
     setIsStatusSidebarOpen(false);
   }, [isTablet]);
 
   useEffect(() => {
-    if (typeof document === "undefined") return;
-    const htmlEl = document.documentElement;
-    const bodyEl = document.body;
-    if (isTablet) {
-      htmlEl.style.height = "auto";
-      bodyEl.style.height = "auto";
-      bodyEl.style.overflowY = "auto";
-    } else {
-      htmlEl.style.height = "100%";
-      bodyEl.style.height = "100%";
-      bodyEl.style.overflowY = "hidden";
-    }
-    return () => {
-      htmlEl.style.height = "";
-      bodyEl.style.height = "";
-      bodyEl.style.overflowY = "";
-    };
-  }, [isTablet]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !isMobileMenuOpen) return;
+    if (typeof window === "undefined" || !isTablet || !isSidebarOpen) return;
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
-        setIsMobileMenuOpen(false);
+        setIsSidebarOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isMobileMenuOpen]);
+  }, [isSidebarOpen, isTablet]);
 
   useEffect(() => {
     if (user === null && !hideSidebar) {
@@ -299,8 +276,6 @@ export default function Layout({ children, jobNumber }) {
   const isActive = (path) => router.pathname.startsWith(path);
 
   const colors = appShellTheme.light;
-
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [contentKey, setContentKey] = useState(() => router.asPath || "initial");
 
   useEffect(() => {
@@ -530,8 +505,8 @@ export default function Layout({ children, jobNumber }) {
   const layoutStyles = {
     display: "flex",
     flexDirection: isTablet ? "column" : "row",
-    height: isTablet ? "auto" : "100vh",
-    minHeight: isTablet ? "auto" : "100vh",
+    height: "auto",
+    minHeight: "100vh",
     width: "100%",
     fontFamily: 'Inter, "Segoe UI", system-ui, -apple-system, sans-serif',
     background: colors.background || colors.mainBg,
@@ -541,55 +516,45 @@ export default function Layout({ children, jobNumber }) {
     gap: isTablet ? "12px" : "24px",
     padding: hideSidebar ? "0" : isTablet ? "12px" : "0 16px",
     boxSizing: "border-box",
-    overflow: isTablet ? "visible" : "hidden",
+    overflow: "visible",
   };
   const showDesktopSidebar = !hideSidebar && !isTablet;
   const showMobileSidebar = !hideSidebar && isTablet;
   const showDesktopStatusControls = canViewStatusSidebar && !isTablet;
   const showMobileStatusSidebar = canViewStatusSidebar && isTablet && isStatusSidebarOpen;
+  const mobileDrawerWidth = Math.min(420, viewportWidth);
+  const navDrawerTargetWidth = isTablet ? mobileDrawerWidth : NAV_DRAWER_WIDTH;
+  const navButtonPaddingOffset = !isTablet && !hideSidebar ? 16 : 0;
+  const navToggleButtonLeft = isSidebarOpen
+    ? `${navDrawerTargetWidth + navButtonPaddingOffset}px`
+    : "0px";
+  const showNavToggleButton = !hideSidebar;
 
   return (
     <div style={layoutStyles}>
       {showDesktopSidebar && (
         <div
           style={{
-            width: isSidebarOpen ? "260px" : "64px",
+            width: isSidebarOpen ? `${NAV_DRAWER_WIDTH}px` : "0px",
             padding: "16px 0",
             alignSelf: "stretch",
-            height: "100%",
-            maxHeight: "100%",
+            height: "auto",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             gap: "16px",
             transition: "width 0.25s ease",
             position: "relative",
+            overflow: "hidden",
           }}
         >
-          {isSidebarOpen ? (
+          {isSidebarOpen && (
             <Sidebar
-              onToggle={toggleSidebar}
+              onToggle={!isTablet ? undefined : closeSidebar}
               extraSections={serviceSidebarSections}
               visibleRoles={userRoles}
               modeLabel={activeModeLabel}
             />
-          ) : (
-            <button
-              onClick={toggleSidebar}
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "10px",
-                border: "1px solid rgba(209,0,0,0.25)",
-                backgroundColor: "#ffffff",
-                color: colors.accent,
-                fontWeight: 700,
-                cursor: "pointer",
-                boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
-              }}
-            >
-              ⟩
-            </button>
           )}
         </div>
       )}
@@ -604,50 +569,27 @@ export default function Layout({ children, jobNumber }) {
           gap: hideSidebar ? 0 : isTablet ? "16px" : "20px",
           padding: hideSidebar ? "0" : isTablet ? "16px 12px" : "24px 16px",
           background: colors.mainBg,
-          height: isTablet ? "auto" : "100%",
-          maxHeight: isTablet ? "none" : "100vh",
-          overflowY: isTablet ? "visible" : "auto", // allow full page scroll on tablets/phones
+          height: "auto",
+          maxHeight: "none",
+          overflowY: "visible", // allow full page scroll across breakpoints
           overflowX: "hidden",
           position: "relative",
         }}
       >
         {showMobileSidebar && (
           <>
-            {/* Navigation and status buttons - scrolls with page content */}
-            <div
-              style={{
-                display: "flex",
-                gap: "10px",
-                width: "100%",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setIsMobileMenuOpen(true)}
+            {canViewStatusSidebar && (
+              <div
                 style={{
-                  flex: canViewStatusSidebar ? "1 1 50%" : "1 1 100%", // 50/50 split when status access, full width otherwise
-                  padding: "10px 14px",
-                  borderRadius: "12px",
-                  border: `1px solid ${colors.accent}`,
-                  background: "linear-gradient(90deg, #ffffff, #fff5f5)",
-                  fontWeight: 600,
-                  color: colors.accent,
-                  boxShadow: "0 6px 14px rgba(0,0,0,0.08)",
-                  cursor: "pointer",
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "6px",
+                  width: "100%",
                 }}
               >
-                <span aria-hidden="true">☰</span> Navigation
-              </button>
-              {canViewStatusSidebar && ( // show status button for all users with status access (including mobile)
                 <button
                   type="button"
-                  onClick={() => setIsStatusSidebarOpen(true)} // open overlay drawer on touch devices
+                  onClick={() => setIsStatusSidebarOpen(true)}
                   style={{
-                    flex: "1 1 50%", // 50/50 split with navigation
+                    flex: 1,
                     padding: "10px 14px",
                     borderRadius: "12px",
                     border: `1px solid ${colors.accent}`,
@@ -667,22 +609,22 @@ export default function Layout({ children, jobNumber }) {
                   </span>
                   Status
                 </button>
-              )}
-            </div>
+              </div>
+            )}
 
-            {isMobileMenuOpen && (
+            {isSidebarOpen && (
               <div
                 style={{
                   position: "fixed",
                   inset: 0,
-                  zIndex: 120,
+                  zIndex: 150,
                   display: "flex",
-                  justifyContent: "flex-end",
+                  justifyContent: "flex-start",
                   alignItems: "stretch",
                 }}
               >
                 <div
-                  onClick={closeMobileMenu}
+                  onClick={closeSidebar}
                   style={{
                     position: "absolute",
                     inset: 0,
@@ -696,13 +638,13 @@ export default function Layout({ children, jobNumber }) {
                   style={{
                     position: "relative",
                     zIndex: 1,
-                    width: "min(420px, 100%)",
+                    width: `${mobileDrawerWidth}px`,
                     maxWidth: "100%",
                     height: "100%",
                     background: colors.mainBg,
-                    borderTopLeftRadius: "28px",
-                    borderBottomLeftRadius: "28px",
-                    boxShadow: "-20px 0 40px rgba(0,0,0,0.35)",
+                    borderTopRightRadius: "28px",
+                    borderBottomRightRadius: "28px",
+                    boxShadow: "20px 0 40px rgba(0,0,0,0.35)",
                     padding: "24px 20px",
                     display: "flex",
                     flexDirection: "column",
@@ -711,7 +653,7 @@ export default function Layout({ children, jobNumber }) {
                   }}
                 >
                   <Sidebar
-                    onToggle={closeMobileMenu}
+                    onToggle={closeSidebar}
                     isCondensed
                     extraSections={serviceSidebarSections}
                     visibleRoles={userRoles}
@@ -1090,8 +1032,8 @@ export default function Layout({ children, jobNumber }) {
           style={{
             flex: 1,
             minHeight: 0,
-            height: "100%",
-            overflow: isTablet ? "visible" : "auto",
+            height: "auto",
+            overflow: "visible",
           }}
         >
           <div
@@ -1103,7 +1045,7 @@ export default function Layout({ children, jobNumber }) {
               border: hideSidebar ? "none" : "1px solid #ffe0e0",
               boxShadow: hideSidebar ? "none" : "0 32px 64px rgba(209,0,0,0.1)",
               padding: hideSidebar ? "0" : isMobile ? "18px 14px" : "32px",
-              overflow: isTablet ? "visible" : "auto",
+              overflow: "visible",
             }}
           >
             {showHrTabs && <HrTabsBar />}
@@ -1111,6 +1053,35 @@ export default function Layout({ children, jobNumber }) {
           </div>
         </main>
       </div>
+
+      {showNavToggleButton && (
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          style={{
+            position: "fixed",
+            top: "50%",
+            left: navToggleButtonLeft,
+            transform: "translateY(-50%)",
+            width: "52px",
+            height: "52px",
+            borderRadius: "0 999px 999px 0",
+            border: "none",
+            background: isSidebarOpen
+              ? "linear-gradient(135deg, #8b0000, #b10000)"
+              : "linear-gradient(135deg, #d10000, #a00000)",
+            color: "#ffffff",
+            fontSize: "20px",
+            fontWeight: 700,
+            boxShadow: "0 12px 30px rgba(0,0,0,0.18)",
+            cursor: "pointer",
+            zIndex: 160,
+          }}
+          aria-label={isSidebarOpen ? "Close navigation sidebar" : "Open navigation sidebar"}
+        >
+          {isSidebarOpen ? "‹" : "›"}
+        </button>
+      )}
 
       {/* Desktop floating status sidebar */}
       {showDesktopStatusControls && (

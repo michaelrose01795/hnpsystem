@@ -4,10 +4,10 @@ import themeConfig from "@/styles/appTheme";
 const { palette, shadows } = themeConfig;
 
 const BRAKE_KEYS = [
-  { key: "nsf", label: "", position: { x: 36, y: 76 } },
-  { key: "osf", label: "", position: { x: 228, y: 76 } },
-  { key: "nsr", label: "", position: { x: 36, y: 186 } },
-  { key: "osr", label: "", position: { x: 228, y: 186 } },
+  { key: "nsf", label: "NSF", position: { x: 36, y: 76 } },
+  { key: "osf", label: "OSF", position: { x: 228, y: 76 } },
+  { key: "nsr", label: "NSR", position: { x: 36, y: 186 } },
+  { key: "osr", label: "OSR", position: { x: 228, y: 186 } },
 ];
 
 const PAD_WIDTH = 44;

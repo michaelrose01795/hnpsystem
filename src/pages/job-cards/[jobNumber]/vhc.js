@@ -32,6 +32,39 @@ const SECTION_TITLES = {
   underside: "Underside",
 };
 
+const MANDATORY_SECTION_KEYS = ["wheelsTyres", "brakesHubs", "serviceIndicator"];
+const trackedSectionKeys = new Set(MANDATORY_SECTION_KEYS);
+
+const createDefaultSectionStatus = () =>
+  MANDATORY_SECTION_KEYS.reduce((acc, key) => {
+    acc[key] = "pending";
+    return acc;
+  }, {});
+
+const hasServiceIndicatorEntries = (indicator = {}) =>
+  Boolean(indicator?.serviceChoice) ||
+  Boolean(indicator?.oilStatus) ||
+  (Array.isArray(indicator?.concerns) && indicator.concerns.length > 0);
+
+const deriveSectionStatusFromSavedData = (savedData = {}) => {
+  const derived = createDefaultSectionStatus();
+  if (savedData.wheelsTyres && typeof savedData.wheelsTyres === "object") {
+    derived.wheelsTyres = "complete";
+  }
+  const brakesData = savedData.brakesHubs;
+  const hasBrakesContent =
+    brakesData &&
+    typeof brakesData === "object" &&
+    Object.keys(brakesData).length > 0;
+  if (hasBrakesContent) {
+    derived.brakesHubs = "complete";
+  }
+  if (hasServiceIndicatorEntries(savedData.serviceIndicator || {})) {
+    derived.serviceIndicator = "complete";
+  }
+  return derived;
+};
+
 // 🎨 Shared VHC design tokens so dashboard + tech view stay aligned
 const styles = vhcLayoutStyles;
 
@@ -65,6 +98,7 @@ export default function VHCPAGE() {
       Miscellaneous: { concerns: [] },
     },
   });
+  const [sectionStatus, setSectionStatus] = useState(createDefaultSectionStatus);
 
   const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | error
   const [saveError, setSaveError] = useState("");
@@ -73,6 +107,26 @@ export default function VHCPAGE() {
 
   const [activeSection, setActiveSection] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const markSectionState = useCallback((sectionKey, nextState) => {
+    if (!trackedSectionKeys.has(sectionKey)) return;
+    setSectionStatus((prev) => {
+      const current = prev[sectionKey] || "pending";
+      if (current === nextState) return prev;
+      if (nextState === "inProgress" && current === "complete") {
+        return prev;
+      }
+      return { ...prev, [sectionKey]: nextState };
+    });
+  }, []);
+
+  const openSection = useCallback(
+    (sectionKey) => {
+      markSectionState(sectionKey, "inProgress");
+      setActiveSection(sectionKey);
+    },
+    [markSectionState]
+  );
 
   /* ============================================
      LOAD EXISTING VHC DATA IF IT EXISTS
@@ -93,6 +147,9 @@ export default function VHCPAGE() {
             serviceIndicator:
               job.vhcChecks[0].data.serviceIndicator || prev.serviceIndicator,
           }));
+          setSectionStatus(deriveSectionStatusFromSavedData(job.vhcChecks[0].data));
+        } else {
+          setSectionStatus(createDefaultSectionStatus());
         }
       } catch (err) {
         console.error("❌ Error loading VHC:", err);
@@ -175,17 +232,12 @@ export default function VHCPAGE() {
     );
   };
 
-  const mandatoryStates = {
-    wheelsTyres: Boolean(vhcData.wheelsTyres),
-    brakesHubs: vhcData.brakesHubs.length > 0,
-    serviceIndicator:
-      Boolean(vhcData.serviceIndicator?.serviceChoice) ||
-      Boolean(vhcData.serviceIndicator?.oilStatus) ||
-      (Array.isArray(vhcData.serviceIndicator?.concerns) &&
-        vhcData.serviceIndicator.concerns.length > 0),
-  };
+  const mandatoryStates = MANDATORY_SECTION_KEYS.reduce((acc, key) => {
+    acc[key] = sectionStatus[key] === "complete";
+    return acc;
+  }, {});
 
-  const totalMandatorySections = Object.keys(mandatoryStates).length;
+  const totalMandatorySections = MANDATORY_SECTION_KEYS.length;
   const completedMandatorySections = Object.values(mandatoryStates).filter(Boolean).length;
   const mandatoryComplete = completedMandatorySections === totalMandatorySections;
   const mandatoryProgress = Math.round(
@@ -225,11 +277,15 @@ export default function VHCPAGE() {
   const getBadgeState = (stateKey) =>
     vhcCardStates[stateKey] || vhcCardStates.pending;
 
-  const handleSectionComplete = (sectionKey, sectionData, options = {}) => {
+  const handleSectionComplete = async (sectionKey, sectionData, options = {}) => {
     const next = { ...vhcData, [sectionKey]: sectionData };
     setVhcData(next);
     setActiveSection(null);
-    persistVhcData(next, { quiet: true, ...options });
+    const success = await persistVhcData(next, { quiet: true, ...options });
+    if (success) {
+      markSectionState(sectionKey, "complete");
+    }
+    return success;
   };
 
   const handleSectionDismiss = (sectionKey, draftData) => {
@@ -466,12 +522,12 @@ export default function VHCPAGE() {
           </div>
         </div>
           <div style={styles.sectionsGrid}>
-            {Object.keys(mandatoryStates).map((key) => (
+            {MANDATORY_SECTION_KEYS.map((key) => (
               <SectionCard
                 key={key}
                 title={SECTION_TITLES[key]}
-                badgeState={getBadgeState(mandatoryStates[key] ? "complete" : "pending")}
-                onClick={() => setActiveSection(key)}
+                badgeState={getBadgeState(sectionStatus[key] || "pending")}
+                onClick={() => openSection(key)}
               />
             ))}
           </div>
@@ -487,7 +543,7 @@ export default function VHCPAGE() {
                   key={key}
                   title={SECTION_TITLES[key]}
                   badgeState={getBadgeState(count > 0 ? "inProgress" : "pending")}
-                  onClick={() => setActiveSection(key)}
+                  onClick={() => openSection(key)}
                 />
               );
             })}
