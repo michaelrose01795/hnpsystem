@@ -4057,7 +4057,64 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
 
 // ✅ VHC Tab
 function VHCTab({ jobNumber }) {
-  return <VhcDetailsPanel jobNumber={jobNumber} showNavigation={false} />;
+  const router = useRouter();
+  const [hasPreviewed, setHasPreviewed] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (router.query?.vhcPreview === "1" && !hasPreviewed) {
+      setHasPreviewed(true);
+      const nextQuery = { ...router.query };
+      delete nextQuery.vhcPreview;
+      router.replace({ pathname: router.pathname, query: nextQuery }, undefined, { shallow: true });
+    }
+  }, [router, router.isReady, router.query, hasPreviewed]);
+
+  const handleCustomerAction = async () => {
+    if (!hasPreviewed) {
+      const returnTo = `/job-cards/${jobNumber}?vhcPreview=1`;
+      router.push(`/vhc/customer-view/${jobNumber}?returnTo=${encodeURIComponent(returnTo)}`);
+      return;
+    }
+    try {
+      setSending(true);
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      alert("Customer link sent successfully.");
+    } catch (error) {
+      console.error("Failed to notify customer", error);
+      alert("Unable to send customer link right now.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const buttonLabel = hasPreviewed ? (sending ? "Sending…" : "Send") : "Customer View";
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
+        <button
+          type="button"
+          onClick={handleCustomerAction}
+          disabled={sending}
+          style={{
+            padding: "10px 16px",
+            borderRadius: "10px",
+            border: "1px solid #d10000",
+            backgroundColor: hasPreviewed ? "#10b981" : "#d10000",
+            color: "#fff",
+            fontWeight: 600,
+            cursor: sending ? "not-allowed" : "pointer",
+            minWidth: "160px",
+          }}
+        >
+          {buttonLabel}
+        </button>
+      </div>
+      <VhcDetailsPanel jobNumber={jobNumber} showNavigation={false} />
+    </div>
+  );
 }
 
 // ✅ Messages Tab

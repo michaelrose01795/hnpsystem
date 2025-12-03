@@ -22,7 +22,11 @@ const TYRE_POSITIONS = [
 const TAB_OPTIONS = [
   { id: "summary", label: "Summary" },
   { id: "health-check", label: "Health Check" },
-  { id: "full-vhc-report", label: "Full VHC Report" },
+  { id: "parts-identified", label: "Parts Identified" },
+  { id: "parts-authorized", label: "Parts Authorized" },
+  { id: "parts-on-order", label: "Parts On Order" },
+  { id: "photos", label: "Photos" },
+  { id: "videos", label: "Videos" },
 ];
 
 const COLOUR_CLASS = {
@@ -261,7 +265,33 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true }) {
             customer:customer_id(*),
             vehicle:vehicle_id(*),
             technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at)`
+            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at),
+            parts_job_items(
+              id,
+              part_id,
+              quantity_requested,
+              quantity_allocated,
+              quantity_fitted,
+              status,
+              origin,
+              request_notes,
+              created_at,
+              updated_at,
+              part:part_id(
+                id,
+                part_number,
+                name
+              )
+            ),
+            job_files(
+              file_id,
+              file_name,
+              file_url,
+              file_type,
+              folder,
+              uploaded_at,
+              uploaded_by
+            )`
           )
           .eq("job_number", resolvedJobNumber)
           .maybeSingle();
@@ -288,8 +318,12 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true }) {
           return;
         }
 
-        const { vhc_checks = [], ...jobFields } = jobRow;
-        setJob(jobFields);
+        const { vhc_checks = [], parts_job_items = [], job_files = [], ...jobFields } = jobRow;
+        setJob({
+          ...jobFields,
+          parts_job_items: parts_job_items || [],
+          job_files: job_files || [],
+        });
         setWorkflow(workflowRow || null);
 
         const builderRecord = vhc_checks.find(
@@ -311,6 +345,64 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true }) {
   const brakeDetails = useMemo(() => extractBrakes(builderData), [builderData]);
   const sections = useMemo(() => builderData?.sections || [], [builderData]);
   const severityBuckets = useMemo(() => buildSeverityGroups(sections), [sections]);
+  const jobParts = useMemo(
+    () =>
+      Array.isArray(job?.parts_job_items)
+        ? job.parts_job_items.filter(Boolean)
+        : [],
+    [job]
+  );
+  const normalisePartStatus = (value = "") =>
+    value.toString().toLowerCase();
+  const partsIdentified = useMemo(
+    () =>
+      jobParts.filter((part) =>
+        normalisePartStatus(part.origin).includes("vhc")
+      ),
+    [jobParts]
+  );
+  const partsAuthorized = useMemo(
+    () =>
+      jobParts.filter((part) => {
+        const status = normalisePartStatus(part.status);
+        return status.includes("authorized") || status.includes("approved");
+      }),
+    [jobParts]
+  );
+  const partsOnOrder = useMemo(
+    () =>
+      jobParts.filter((part) => {
+        const status = normalisePartStatus(part.status);
+        return status.includes("order");
+      }),
+    [jobParts]
+  );
+  const jobFiles = useMemo(
+    () =>
+      Array.isArray(job?.job_files) ? job.job_files.filter(Boolean) : [],
+    [job]
+  );
+  const photoFiles = useMemo(() => {
+    const isImage = (file = {}) => {
+      const type = (file.file_type || "").toLowerCase();
+      const name = (file.file_name || "").toLowerCase();
+      return (
+        type.startsWith("image") ||
+        /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(name)
+      );
+    };
+    return jobFiles.filter((file) => isImage(file));
+  }, [jobFiles]);
+  const videoFiles = useMemo(() => {
+    const isVideo = (file = {}) => {
+      const type = (file.file_type || "").toLowerCase();
+      const name = (file.file_name || "").toLowerCase();
+      return (
+        type.startsWith("video") || /\.(mp4|mov|avi|mkv|webm)$/i.test(name)
+      );
+    };
+    return jobFiles.filter((file) => isVideo(file));
+  }, [jobFiles]);
 
   const customerName = useMemo(() => {
     if (!job?.customer) return "—";
@@ -500,6 +592,137 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true }) {
     );
   };
 
+  const renderPartsPanel = (title, items, emptyCopy) => (
+    <div
+      style={{
+        background: "#fff",
+        border: "1px solid #e5e7eb",
+        borderRadius: "16px",
+        padding: "20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+      }}
+    >
+      <div>
+        <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>{title}</h3>
+        <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>Directly linked to technician VHC findings.</p>
+      </div>
+      {items.length === 0 ? (
+        <p style={{ margin: "12px 0 0", color: "#9ca3af", fontStyle: "italic" }}>{emptyCopy}</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {items.map((part) => (
+            <div
+              key={part.id}
+              style={{
+                border: "1px solid #f3f4f6",
+                borderRadius: "12px",
+                padding: "12px",
+                background: "#fafafa",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontSize: "12px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    {part.part?.part_number || "Part #"}
+                  </div>
+                  <strong style={{ fontSize: "16px", color: "#1f2937" }}>{part.part?.name || "Untitled Part"}</strong>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: "12px", color: "#9ca3af" }}>Qty requested</div>
+                  <div style={{ fontSize: "16px", fontWeight: 700 }}>{part.quantity_requested ?? part.quantity_allocated ?? 0}</div>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
+                <span
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: "999px",
+                    backgroundColor: "#fff5f5",
+                    color: "#b45309",
+                    fontWeight: 600,
+                    fontSize: "12px",
+                  }}
+                >
+                  {part.status ? part.status : "Pending"}
+                </span>
+                {part.request_notes ? <span style={{ fontSize: "13px", color: "#4b5563" }}>{part.request_notes}</span> : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderFileGallery = (title, files, emptyCopy, type) => (
+    <div
+      style={{
+        background: "#fff",
+        border: "1px solid #e5e7eb",
+        borderRadius: "16px",
+        padding: "20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>{title}</h3>
+          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>Captured for customer transparency.</p>
+        </div>
+      </div>
+      {files.length === 0 ? (
+        <p style={{ margin: "12px 0 0", color: "#9ca3af", fontStyle: "italic" }}>{emptyCopy}</p>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "16px",
+          }}
+        >
+          {files.map((file) => (
+            <div
+              key={file.file_id}
+              style={{
+                border: "1px solid #f3f4f6",
+                borderRadius: "12px",
+                padding: "12px",
+                background: "#fafafa",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
+            >
+              {type === "photo" ? (
+                <a href={file.file_url} target="_blank" rel="noreferrer" style={{ display: "block", borderRadius: "10px", overflow: "hidden" }}>
+                  <img
+                    src={file.file_url}
+                    alt={file.file_name || "Customer photo"}
+                    style={{ width: "100%", height: "150px", objectFit: "cover" }}
+                  />
+                </a>
+              ) : (
+                <video
+                  src={file.file_url}
+                  controls
+                  style={{ width: "100%", borderRadius: "10px", maxHeight: "180px", background: "#000" }}
+                />
+              )}
+              <div style={{ fontSize: "13px", color: "#4b5563" }}>{file.file_name || `Uploaded ${formatDateTime(file.uploaded_at)}`}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   const jobHeader = (
     <div
       style={{
@@ -637,48 +860,20 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true }) {
         </div>
       )}
 
-      {activeTab === "full-vhc-report" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div
-            style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: "12px",
-              background: "#fff",
-              padding: "18px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px",
-            }}
-          >
-            <div style={{ fontSize: "14px", fontWeight: 600 }}>Technician submissions</div>
-            <p style={{ margin: 0, color: "#6b7280", fontSize: "13px" }}>
-              Full detail extracted from VHC builder: tyres, brakes, technician notes, rectification requests, and attachments.
-            </p>
-          </div>
-          {builderData ? (
-            <pre
-              style={{
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                background: "#0f172a",
-                color: "#e2e8f0",
-                padding: "20px",
-                borderRadius: "12px",
-                border: "1px solid #1e293b",
-                fontSize: "13px",
-                maxHeight: "420px",
-                overflow: "auto",
-              }}
-            >
-              {JSON.stringify(builderData, null, 2)}
-            </pre>
-          ) : (
-            <div style={{ padding: "24px", borderRadius: "12px", border: "1px dashed #e5e7eb", textAlign: "center", color: "#9ca3af" }}>
-              No VHC builder payload detected.
-            </div>
-          )}
-        </div>
-      )}
+      {activeTab === "parts-identified" &&
+        renderPartsPanel("Parts Identified", partsIdentified, "No VHC-linked parts have been identified yet.")}
+
+      {activeTab === "parts-authorized" &&
+        renderPartsPanel("Parts Authorized", partsAuthorized, "No parts awaiting authorization or approvals recorded.")}
+
+      {activeTab === "parts-on-order" &&
+        renderPartsPanel("Parts On Order", partsOnOrder, "No parts have been raised with the parts department yet.")}
+
+      {activeTab === "photos" &&
+        renderFileGallery("Photos", photoFiles, "No customer-facing photos have been attached.", "photo")}
+
+      {activeTab === "videos" &&
+        renderFileGallery("Videos", videoFiles, "No customer-facing videos have been attached.", "video")}
     </div>
   );
 }
