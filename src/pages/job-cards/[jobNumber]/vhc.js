@@ -741,7 +741,7 @@ export default function VHCPAGE() {
           <ExternalDetailsModal
             isOpen
             initialData={vhcData.externalInspection}
-            onClose={() => setActiveSection(null)}
+            onClose={(draft) => handleSectionDismiss("externalInspection", draft)}
             onComplete={(data) => handleSectionComplete("externalInspection", data)}
           />
         )}
@@ -749,7 +749,7 @@ export default function VHCPAGE() {
           <InternalElectricsDetailsModal
             isOpen
             initialData={vhcData.internalElectrics}
-            onClose={() => setActiveSection(null)}
+            onClose={(draft) => handleSectionDismiss("internalElectrics", draft)}
             onComplete={(data) => handleSectionComplete("internalElectrics", data)}
           />
         )}
@@ -757,7 +757,7 @@ export default function VHCPAGE() {
           <UndersideDetailsModal
             isOpen
             initialData={vhcData.underside}
-            onClose={() => setActiveSection(null)}
+            onClose={(draft) => handleSectionDismiss("underside", draft)}
             onComplete={(data) => handleSectionComplete("underside", data)}
           />
         )}

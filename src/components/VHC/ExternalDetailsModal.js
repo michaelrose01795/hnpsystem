@@ -149,11 +149,17 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
     }));
   };
 
+  const handleClose = () => {
+    if (typeof onClose === "function") {
+      onClose(data);
+    }
+  };
+
   const modalFooter = (
     <>
       <button
         type="button"
-        onClick={onClose}
+        onClick={handleClose}
         style={buildModalButton("ghost")}
       >
         Close
@@ -171,7 +177,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
   return (
     <VHCModalShell
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="External"
       hideCloseButton
       width="1280px"

@@ -120,9 +120,15 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
     }));
   };
 
+  const handleClose = () => {
+    if (typeof onClose === "function") {
+      onClose(data);
+    }
+  };
+
   const modalFooter = (
     <>
-      <button type="button" onClick={onClose} style={buildModalButton("ghost")}>
+      <button type="button" onClick={handleClose} style={buildModalButton("ghost")}>
         Close
       </button>
       <button type="button" onClick={() => onComplete(data)} style={buildModalButton("primary")}>
@@ -134,7 +140,7 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
   return (
     <VHCModalShell
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Internal Electrics"
       hideCloseButton
       width="1280px"

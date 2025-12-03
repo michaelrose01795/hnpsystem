@@ -831,17 +831,24 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
           return;
         }
         const id = item.vhc_id || `${sectionName}-${index}`;
-        const category = resolveCategoryForItem(sectionName, item.label || item.issue_title);
+        const heading =
+          item.heading || item.label || item.issue_title || item.name || item.title || sectionName;
+        const category = resolveCategoryForItem(sectionName, heading);
         const location = resolveLocationKey(item);
+        const concerns = Array.isArray(item.concerns) ? item.concerns : [];
+        const primaryConcern =
+          concerns.find((concern) => normaliseColour(concern.status) === severity) || concerns[0] || null;
         items.push({
           id: String(id),
-          label: item.label || item.issue_title || "Recorded item",
+          label: heading || "Recorded item",
           notes: item.notes || item.issue_description || "",
           measurement: formatMeasurement(item.measurement),
+          concernText: primaryConcern?.text || "",
           sectionName,
           category,
           location,
           rawSeverity: severity,
+          concerns,
         });
       });
     });
@@ -1090,6 +1097,12 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                 const isChecked = selectedSet.has(item.id);
                 const rowSeverity = item.displaySeverity || severity;
                 const rowTheme = SEVERITY_THEME[rowSeverity] || {};
+                const detailLabel = item.label || item.sectionName || "Recorded item";
+                const concernDetail = item.concernText || "";
+                const detailContent = concernDetail || item.notes || "";
+                const severityLabel =
+                  item.rawSeverity ? item.rawSeverity.charAt(0).toUpperCase() + item.rawSeverity.slice(1) : null;
+                const severityBadge = severityLabel ? buildSeverityBadgeStyles(item.rawSeverity) : null;
 
                 return (
                   <tr
@@ -1104,14 +1117,34 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                       <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#9ca3af" }}>
                         {item.categoryLabel || "Recorded Section"}
                       </div>
-                      <div style={{ fontWeight: 700, fontSize: "14px", color: "#111827", marginTop: "2px" }}>
-                        {item.label || item.sectionName || "Recorded item"}
-                        {item.measurement ? (
-                          <span style={{ fontWeight: 500, color: "#4b5563", marginLeft: "6px" }}>· {item.measurement}</span>
+                      <div style={{ fontWeight: 700, fontSize: "14px", color: "#111827", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                        <span>{detailLabel}</span>
+                        {detailContent ? (
+                          <span style={{ fontWeight: 500, color: "#374151" }}>- {detailContent}</span>
                         ) : null}
                       </div>
-                      {item.notes ? (
-                        <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>{item.notes}</div>
+                      {severityBadge ? (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            marginTop: "4px",
+                            borderRadius: "999px",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            padding: "2px 10px",
+                            background: severityBadge.background,
+                            color: severityBadge.color,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.08em",
+                          }}
+                        >
+                          {severityLabel}
+                        </span>
+                      ) : null}
+                      {item.measurement ? (
+                        <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>Measurement: {item.measurement}</div>
                       ) : null}
                       {locationLabel ? (
                         <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>Location: {locationLabel}</div>
@@ -1555,7 +1588,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
         <ExternalDetailsModal
           isOpen
           initialData={vhcData.externalInspection}
-          onClose={() => setActiveSection(null)}
+          onClose={(draft) => handleSectionDismiss("externalInspection", draft)}
           onComplete={(data) => handleSectionComplete("externalInspection", data)}
         />
       )}
@@ -1563,7 +1596,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
         <InternalElectricsDetailsModal
           isOpen
           initialData={vhcData.internalElectrics}
-          onClose={() => setActiveSection(null)}
+          onClose={(draft) => handleSectionDismiss("internalElectrics", draft)}
           onComplete={(data) => handleSectionComplete("internalElectrics", data)}
         />
       )}
@@ -1571,7 +1604,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
         <UndersideDetailsModal
           isOpen
           initialData={vhcData.underside}
-          onClose={() => setActiveSection(null)}
+          onClose={(draft) => handleSectionDismiss("underside", draft)}
           onComplete={(data) => handleSectionComplete("underside", data)}
         />
       )}
