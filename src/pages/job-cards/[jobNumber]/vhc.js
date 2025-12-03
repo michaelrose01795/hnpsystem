@@ -456,9 +456,6 @@ export default function VHCPAGE() {
               <h1 style={styles.headerTitle}>
                 Job {jobMeta.jobNumber || jobNumber || "Loading..."}
               </h1>
-              <p style={styles.headerSubtitle}>
-                Complete each mandatory section before handing back to the service advisor.
-              </p>
             </div>
             <div style={styles.progressWrapper}>
               <span style={styles.progressLabel}>
@@ -652,34 +649,33 @@ export default function VHCPAGE() {
               </div>
 
               <div style={{ padding: "16px 20px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: "16px" }}>
-                {["red", "amber", "green"].map((statusKey) => {
-                  if (statusKey === "green" && !showGreenSummary) return null;
-                  const items = summaryBuckets[statusKey] || [];
-                  const colors =
-                    statusKey === "red"
-                      ? { bg: "#fef2f2", text: "#b91c1c", badge: "#fee2e2" }
-                      : statusKey === "amber"
-                      ? { bg: "#fffbeb", text: "#92400e", badge: "#fef3c7" }
-                      : { bg: "#ecfdf3", text: "#065f46", badge: "#d1fae5" };
-                  return (
-                    <div key={statusKey} style={{ background: colors.bg, borderRadius: "14px", border: `1px solid ${colors.badge}`, padding: "12px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                        <span
-                          style={{
-                            padding: "4px 10px",
-                            borderRadius: "999px",
-                            background: colors.badge,
-                            color: colors.text,
-                            fontWeight: 700,
-                            fontSize: "12px",
-                          }}
-                        >
-                          {statusKey.toUpperCase()} ({items.length})
-                        </span>
-                      </div>
-                      {items.length === 0 ? (
-                        <p style={{ margin: 0, color: "#6b7280", fontSize: "13px" }}>No items.</p>
-                      ) : (
+                {(() => {
+                  const blocks = [];
+                  const renderSection = (statusKey) => {
+                    const items = summaryBuckets[statusKey] || [];
+                    if (items.length === 0) return null;
+                    const colors =
+                      statusKey === "red"
+                        ? { bg: "#fef2f2", text: "#b91c1c", badge: "#fee2e2" }
+                        : statusKey === "amber"
+                        ? { bg: "#fffbeb", text: "#92400e", badge: "#fef3c7" }
+                        : { bg: "#ecfdf3", text: "#065f46", badge: "#d1fae5" };
+                    return (
+                      <div key={statusKey} style={{ background: colors.bg, borderRadius: "14px", border: `1px solid ${colors.badge}`, padding: "12px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                          <span
+                            style={{
+                              padding: "4px 10px",
+                              borderRadius: "999px",
+                              background: colors.badge,
+                              color: colors.text,
+                              fontWeight: 700,
+                              fontSize: "12px",
+                            }}
+                          >
+                            {statusKey.toUpperCase()} ({items.length})
+                          </span>
+                        </div>
                         <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
                           {items.map((item, idx) => (
                             <li
@@ -703,10 +699,26 @@ export default function VHCPAGE() {
                             </li>
                           ))}
                         </ul>
-                      )}
-                    </div>
-                  );
-                })}
+                      </div>
+                    );
+                  };
+
+                  const redBlock = renderSection("red");
+                  const amberBlock = renderSection("amber");
+                  const greenBlock = showGreenSummary ? renderSection("green") : null;
+                  if (redBlock) blocks.push(redBlock);
+                  if (amberBlock) blocks.push(amberBlock);
+                  if (greenBlock) blocks.push(greenBlock);
+
+                  if (blocks.length === 0) {
+                    return (
+                      <p style={{ margin: 0, color: "#6b7280", fontSize: "13px" }}>
+                        No concerns reported.
+                      </p>
+                    );
+                  }
+                  return blocks;
+                })()}
               </div>
             </div>
           </div>
