@@ -590,7 +590,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true }) {
         </div>
       ) : null}
 
-      {jobHeader}
+      {showNavigation && jobHeader}
 
       <div style={{ display: "flex", borderBottom: "1px solid #e5e7eb", gap: "8px" }}>
         {TAB_OPTIONS.map((tab) => {
