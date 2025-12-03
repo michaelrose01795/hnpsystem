@@ -57,6 +57,21 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
     padding: "16px 20px",
   };
 
+  const [serviceChoice, setServiceChoice] = useState(initialData?.serviceChoice ?? null);
+  const [oilStatus, setOilStatus] = useState(initialData?.oilStatus ?? null);
+  const [concerns, setConcerns] = useState(() => initialData?.concerns ?? []);
+  const [showConcernModal, setShowConcernModal] = useState(false);
+  const [activeConcernTarget, setActiveConcernTarget] = useState(null);
+  const [newConcern, setNewConcern] = useState("");
+  const [concernStatus, setConcernStatus] = useState("Red");
+
+  useEffect(() => {
+    if (!initialData) return;
+    setServiceChoice(initialData.serviceChoice ?? null);
+    setOilStatus(initialData.oilStatus ?? null);
+    setConcerns(initialData.concerns ?? []);
+  }, [initialData]);
+
   const openConcernFor = (source) => {
     setActiveConcernTarget(source);
     setShowConcernModal(true);
@@ -176,21 +191,6 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
       </div>
     );
   };
-
-  const [serviceChoice, setServiceChoice] = useState(initialData?.serviceChoice ?? null);
-  const [oilStatus, setOilStatus] = useState(initialData?.oilStatus ?? null);
-  const [concerns, setConcerns] = useState(() => initialData?.concerns ?? []);
-  const [showConcernModal, setShowConcernModal] = useState(false);
-  const [activeConcernTarget, setActiveConcernTarget] = useState(null);
-  const [newConcern, setNewConcern] = useState("");
-  const [concernStatus, setConcernStatus] = useState("Red");
-
-  useEffect(() => {
-    if (!initialData) return;
-    setServiceChoice(initialData.serviceChoice ?? null);
-    setOilStatus(initialData.oilStatus ?? null);
-    setConcerns(initialData.concerns ?? []);
-  }, [initialData]);
 
   if (!isOpen) return null;
 
