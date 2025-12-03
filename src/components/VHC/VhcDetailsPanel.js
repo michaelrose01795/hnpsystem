@@ -3,7 +3,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
 const STATUS_BADGES = {
@@ -554,7 +553,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true }) {
   return (
     <div style={{ padding: containerPadding, display: "flex", flexDirection: "column", gap: "16px" }}>
       {showNavigation ? (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
           <button
             type="button"
             onClick={() => router.push("/vhc/dashboard")}
@@ -569,9 +568,25 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true }) {
           >
             ← Back
           </button>
-          <Link href={job?.job_number ? `/job-cards/${job.job_number}` : "/job-cards"} style={{ fontWeight: 600, color: "#d10000" }}>
+          <button
+            type="button"
+            onClick={() => {
+              const target = job?.job_number ? `/job-cards/${encodeURIComponent(job.job_number)}` : "/job-cards";
+              router.push(target);
+            }}
+            style={{
+              border: "1px solid #d10000",
+              borderRadius: "10px",
+              padding: "8px 18px",
+              background: "#d10000",
+              color: "white",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+            disabled={!job?.job_number}
+          >
             View job card →
-          </Link>
+          </button>
         </div>
       ) : null}
 
