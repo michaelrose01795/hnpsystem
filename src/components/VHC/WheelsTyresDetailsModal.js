@@ -246,6 +246,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
   const [concernTarget, setConcernTarget] = useState(null);
   const [concernInput, setConcernInput] = useState("");
   const [concernStatus, setConcernStatus] = useState("Amber");
+  const [concernEditIndex, setConcernEditIndex] = useState(null);
 
   const allConcerns = useMemo(() => {
     return Object.keys(tyres).reduce(
@@ -509,15 +510,45 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
       const updated = { ...prev };
       const targetWheel = updated[concernTarget];
       const existing = targetWheel.concerns ?? [];
+      const next = { text: concernInput.trim(), status: concernStatus };
+      const nextConcerns =
+        concernEditIndex === null
+          ? [...existing, next]
+          : existing.map((c, idx) => (idx === concernEditIndex ? next : c));
       updated[concernTarget] = {
         ...targetWheel,
-        concerns: [...existing, { text: concernInput.trim(), status: concernStatus }],
+        concerns: nextConcerns,
       };
       return updated;
     });
     setConcernInput("");
     setConcernStatus("Amber");
     setConcernTarget(null);
+    setConcernEditIndex(null);
+  };
+
+  const deleteConcern = () => {
+    if (concernTarget === null || concernEditIndex === null) {
+      setConcernTarget(null);
+      setConcernInput("");
+      setConcernStatus("Amber");
+      setConcernEditIndex(null);
+      return;
+    }
+    setTyres((prev) => {
+      const updated = { ...prev };
+      const targetWheel = updated[concernTarget];
+      const existing = targetWheel.concerns ?? [];
+      updated[concernTarget] = {
+        ...targetWheel,
+        concerns: existing.filter((_, idx) => idx !== concernEditIndex),
+      };
+      return updated;
+    });
+    setConcernInput("");
+    setConcernStatus("Amber");
+    setConcernTarget(null);
+    setConcernEditIndex(null);
   };
 
   const currentTyre = tyres[activeWheel];
@@ -894,7 +925,12 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                     <button
                       type="button"
-                      onClick={() => setConcernTarget(activeWheel)}
+                      onClick={() => {
+                        setConcernTarget(activeWheel);
+                        setConcernInput("");
+                        setConcernStatus("Amber");
+                        setConcernEditIndex(null);
+                      }}
                       style={createVhcButtonStyle("ghost")}
                     >
                       + Add Concern
@@ -950,6 +986,13 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                           padding: "12px 16px",
                           background: palette.surface,
                           boxShadow: "0 6px 18px rgba(15,23,42,0.08)",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => {
+                          setConcernTarget(activeWheel);
+                          setConcernInput(concern.text || "");
+                          setConcernStatus(concern.status || "Amber");
+                          setConcernEditIndex(idx);
                         }}
                       >
                         <span style={{ fontSize: "13px", fontWeight: 600, color: palette.textPrimary }}>{concern.text}</span>
@@ -993,23 +1036,10 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
               gap: "16px",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
-                  {concernTarget} Concern
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setConcernTarget(null);
-                    setConcernInput("");
-                    setConcernStatus("Amber");
-                  }}
-                  style={{ ...createVhcButtonStyle("ghost"), padding: "6px 14px" }}
-                >
-                  Close
-                </button>
-              </div>
+            <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
+              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
+                {concernTarget} Concern
+              </h3>
             </div>
 
             <input
@@ -1040,21 +1070,37 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
               ))}
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "6px" }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setConcernTarget(null);
-                  setConcernInput("");
-                  setConcernStatus("Amber");
-                }}
-                style={{ ...createVhcButtonStyle("ghost") }}
-              >
-                Close
-              </button>
-              <button type="button" onClick={addConcern} style={{ ...createVhcButtonStyle("primary") }}>
-                Add Concern
-              </button>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginTop: "6px", flexWrap: "wrap" }}>
+              {concernEditIndex !== null && (
+                <button
+                  type="button"
+                  onClick={deleteConcern}
+                  style={{ ...createVhcButtonStyle("ghost"), color: palette.danger }}
+                >
+                  Delete
+                </button>
+              )}
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConcernTarget(null);
+                    setConcernInput("");
+                    setConcernStatus("Amber");
+                    setConcernEditIndex(null);
+                  }}
+                  style={{ ...createVhcButtonStyle("ghost") }}
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={addConcern}
+                  style={{ ...createVhcButtonStyle("primary") }}
+                >
+                  {concernEditIndex !== null ? "Save" : "Add Concern"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

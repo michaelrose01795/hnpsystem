@@ -168,98 +168,6 @@ const computeAxleSeverityRank = (padSection, discSection) => {
   );
 };
 
-// ✅ Autocomplete small component
-function AutoCompleteInput({ value, onChange, options }) {
-  const [filtered, setFiltered] = useState([]);
-  const handleChange = (val) => {
-    const sanitized = sanitizeNumericListInput(val);
-    onChange(sanitized);
-    const segments = sanitized.split(/[, ]+/);
-    const lastSegment = segments[segments.length - 1] || "";
-    const numericFilter = lastSegment.replace(/[^0-9]/g, "");
-    const nextFiltered =
-      numericFilter.length === 0
-        ? []
-        : options.filter((opt) => opt.toString().includes(numericFilter));
-    setFiltered(nextFiltered);
-  };
-  return (
-    <div style={{ position: "relative", width: "100%" }}>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => handleChange(e.target.value)}
-        style={{
-          width: "100%",
-          padding: "10px 12px",
-          borderRadius: "12px",
-          border: `1px solid ${palette.border}`,
-          backgroundColor: palette.surface,
-          fontSize: "14px",
-          color: palette.textPrimary,
-          outline: "none",
-          boxShadow: "inset 0 1px 3px rgba(15,23,42,0.04)",
-        }}
-        onFocus={(e) => {
-          e.target.style.borderColor = palette.accent;
-          e.target.style.boxShadow = "0 0 0 3px rgba(209,0,0,0.12)";
-        }}
-        onBlur={(e) => {
-          e.target.style.borderColor = palette.border;
-          e.target.style.boxShadow = "inset 0 1px 3px rgba(15,23,42,0.04)";
-        }}
-      />
-      {filtered.length > 0 && (
-        <div
-          style={{
-            position: "absolute",
-            top: "calc(100% + 6px)",
-            left: 0,
-            right: 0,
-            background: palette.surface,
-            border: `1px solid ${palette.border}`,
-            borderRadius: "12px",
-            boxShadow: "0 12px 32px rgba(15,23,42,0.18)",
-            maxHeight: "160px",
-            overflowY: "auto",
-            zIndex: 20,
-            padding: "6px 0",
-          }}
-        >
-          {filtered.map((opt, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => {
-                onChange(opt);
-                setFiltered([]);
-              }}
-              style={{
-                width: "100%",
-                background: "transparent",
-                border: "none",
-                textAlign: "left",
-                padding: "10px 16px",
-                cursor: "pointer",
-                fontSize: "13px",
-                color: palette.textPrimary,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = palette.accentSurface;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, initialData }) {
   const normalisedInitial = useMemo(() => normaliseBrakesState(initialData), [initialData]);
 
@@ -270,6 +178,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     open: false,
     category: "frontPads",
     tempConcern: { issue: "", status: "Red" },
+    editIndex: null,
   });
 
   useEffect(() => {
@@ -277,7 +186,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     setShowDrum(normalisedInitial.showDrum);
   }, [normalisedInitial]);
 
-  const padOptions = Array.from({ length: 15 }, (_, i) => i);
   const padLabels = { frontPads: "Front Pads", rearPads: "Rear Pads" };
   const discLabels = { frontDiscs: "Front Discs", rearDiscs: "Rear Discs" };
 
@@ -317,9 +225,11 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   const activeIssueEntries = useMemo(() => {
     return activeConcernKeySet.flatMap((key) => {
       const concerns = data[key]?.concerns ?? [];
-      return concerns.map((concern) => ({
+      return concerns.map((concern, idx) => ({
         ...concern,
         area: areaLabels[key] || key,
+        categoryKey: key,
+        index: idx,
       }));
     });
   }, [activeConcernKeySet, data, areaLabels]);
@@ -338,6 +248,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       open: false,
       category: defaultConcernCategory,
       tempConcern: { issue: "", status: "Red" },
+      editIndex: null,
     });
 
   const openConcernPopup = () =>
@@ -345,6 +256,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       open: true,
       category: defaultConcernCategory,
       tempConcern: { issue: "", status: "Red" },
+      editIndex: null,
     });
 
   useEffect(() => {
@@ -538,11 +450,36 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     });
   };
 
-  const addConcern = (category, concern) => {
+  const addConcern = (category, concern, index = null) => {
     setData((prev) => {
       const section = prev[category];
       if (!section) return prev;
-      const nextConcerns = [...section.concerns, concern];
+      const existing = section.concerns || [];
+      const nextConcerns =
+        index === null
+          ? [...existing, concern]
+          : existing.map((c, idx) => (idx === index ? concern : c));
+      const severity = getHighestConcernSeverity(nextConcerns);
+      let nextSection = { ...section, concerns: nextConcerns };
+      if (category === "rearDrums") {
+        return { ...prev, rearDrums: nextSection };
+      }
+      if (severity) {
+        nextSection =
+          category === "frontPads" || category === "rearPads"
+            ? escalatePadSeverity(nextSection, severity)
+            : escalateDiscSeverity(nextSection, severity);
+      }
+      return { ...prev, [category]: nextSection };
+    });
+  };
+
+  const deleteConcern = (category, index) => {
+    setData((prev) => {
+      const section = prev[category];
+      if (!section) return prev;
+      const existing = section.concerns || [];
+      const nextConcerns = existing.filter((_, idx) => idx !== index);
       const severity = getHighestConcernSeverity(nextConcerns);
       let nextSection = { ...section, concerns: nextConcerns };
       if (category === "rearDrums") {
@@ -681,10 +618,25 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       </div>
 
         <label style={fieldLabelStyle}>Pad Measurement (mm)</label>
-        <AutoCompleteInput
+        <input
+          type="text"
+          inputMode="decimal"
           value={padData.measurement}
-          onChange={(val) => updatePadMeasurement(category, val)}
-          options={padOptions}
+          onChange={(e) => updatePadMeasurement(category, e.target.value)}
+          placeholder="Enter readings (e.g. 6.0, 5.5, 5.0)"
+          style={{
+            width: "100%",
+            padding: "10px 12px",
+            borderRadius: "12px",
+            border: `1px solid ${palette.border}`,
+            backgroundColor: palette.surface,
+            fontSize: "14px",
+            color: palette.textPrimary,
+            outline: "none",
+            boxShadow: "inset 0 1px 3px rgba(15,23,42,0.04)",
+          }}
+          onFocus={enhanceFocus}
+          onBlur={resetFocus}
         />
 
         <label style={fieldLabelStyle}>Status</label>
@@ -1014,7 +966,16 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                           border: `1px solid ${palette.border}`,
                           padding: "10px 12px",
                           background: palette.surface,
+                          cursor: "pointer",
                         }}
+                        onClick={() =>
+                          setConcernPopup({
+                            open: true,
+                            category: issue.categoryKey,
+                            tempConcern: { issue: issue.text || issue.issue || "", status: issue.status || "Red" },
+                            editIndex: issue.index ?? idx,
+                          })
+                        }
                       >
                         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                           <span style={{ fontSize: "13px", color: palette.textPrimary }}>{issue.text || issue.issue}</span>
@@ -1031,76 +992,90 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             </div>
           </div>
 
-            {concernPopup.open && (
-              <div style={popupOverlayStyle}>
-                <div style={popupCardStyle}>
-                  <h4 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
-                    Add Concern
-                  </h4>
-                  <span style={{ ...fieldLabelStyle, display: "block" }}>
-                    Area:{" "}
-                    <strong style={{ color: palette.textPrimary }}>
-                      {activeSide === "front" ? "Front" : showDrum ? "Rear Drums" : "Rear"}
-                    </strong>
-                  </span>
-                  <label style={fieldLabelStyle}>Concern</label>
-                  <input
-                    type="text"
-                    value={concernPopup.tempConcern.issue}
-                    onChange={(e) =>
-                      setConcernPopup((prev) => ({
-                        ...prev,
-                        tempConcern: { ...prev.tempConcern, issue: e.target.value },
-                      }))
-                    }
-                    placeholder="Describe the issue…"
-                    style={{
-                      ...selectBaseStyle,
-                      width: "100%",
-                      boxShadow: "inset 0 1px 3px rgba(15,23,42,0.04)",
-                    }}
-                    onFocus={enhanceFocus}
-                    onBlur={resetFocus}
-                  />
+          {concernPopup.open && (
+            <div style={popupOverlayStyle}>
+              <div style={popupCardStyle}>
+                <h4 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
+                  {concernPopup.editIndex !== null ? "Edit Concern" : "Add Concern"}
+                </h4>
+                <span style={{ ...fieldLabelStyle, display: "block" }}>
+                  Area:{" "}
+                  <strong style={{ color: palette.textPrimary }}>
+                    {areaLabels[concernPopup.category] || concernPopup.category}
+                  </strong>
+                </span>
+                <label style={fieldLabelStyle}>Concern</label>
+                <input
+                  type="text"
+                  value={concernPopup.tempConcern.issue}
+                  onChange={(e) =>
+                    setConcernPopup((prev) => ({
+                      ...prev,
+                      tempConcern: { ...prev.tempConcern, issue: e.target.value },
+                    }))
+                  }
+                  placeholder="Describe the issue…"
+                  style={{
+                    ...selectBaseStyle,
+                    width: "100%",
+                    boxShadow: "inset 0 1px 3px rgba(15,23,42,0.04)",
+                  }}
+                  onFocus={enhanceFocus}
+                  onBlur={resetFocus}
+                />
 
-                  <label style={fieldLabelStyle}>Severity</label>
-                  <select
-                    value={concernPopup.tempConcern.status}
-                    onChange={(e) =>
-                      setConcernPopup((prev) => ({
-                        ...prev,
-                        tempConcern: { ...prev.tempConcern, status: e.target.value },
-                      }))
-                    }
-                    style={{ ...selectBaseStyle, width: "100%" }}
-                    onFocus={enhanceFocus}
-                    onBlur={resetFocus}
-                  >
-                    <option>Red</option>
-                    <option>Amber</option>
-                  </select>
+                <label style={fieldLabelStyle}>Severity</label>
+                <select
+                  value={concernPopup.tempConcern.status}
+                  onChange={(e) =>
+                    setConcernPopup((prev) => ({
+                      ...prev,
+                      tempConcern: { ...prev.tempConcern, status: e.target.value },
+                    }))
+                  }
+                  style={{ ...selectBaseStyle, width: "100%" }}
+                  onFocus={enhanceFocus}
+                  onBlur={resetFocus}
+                >
+                  <option>Red</option>
+                  <option>Amber</option>
+                </select>
 
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", marginTop: "16px", flexWrap: "wrap" }}>
+                  {concernPopup.editIndex !== null && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        deleteConcern(concernPopup.category, concernPopup.editIndex);
+                        resetConcernPopup();
+                      }}
+                      style={{ ...buildModalButton("ghost"), color: palette.danger }}
+                    >
+                      Delete
+                    </button>
+                  )}
+                  <div style={{ display: "flex", gap: "10px" }}>
                     <button type="button" onClick={resetConcernPopup} style={buildModalButton("ghost")}>
                       Cancel
                     </button>
                     <button
                       type="button"
-                    onClick={() => {
-                      if (!concernPopup.tempConcern.issue.trim()) return;
-                      addConcern(defaultConcernCategory, concernPopup.tempConcern);
-                      resetConcernPopup();
-                    }}
-                    style={buildModalButton("primary")}
-                  >
-                    Add Concern
+                      onClick={() => {
+                        if (!concernPopup.tempConcern.issue.trim()) return;
+                        addConcern(concernPopup.category, concernPopup.tempConcern, concernPopup.editIndex);
+                        resetConcernPopup();
+                      }}
+                      style={buildModalButton("primary")}
+                    >
+                      {concernPopup.editIndex !== null ? "Save" : "Add Concern"}
                     </button>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
+      </div>
     </VHCModalShell>
   );
 }

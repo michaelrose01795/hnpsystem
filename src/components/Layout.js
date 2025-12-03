@@ -955,7 +955,7 @@ export default function Layout({ children, jobNumber }) {
                 style={{
                   display: "flex",
                   flexWrap: "wrap",
-                  gap: "12px",
+                  gap: "8px",
                   alignItems: "center",
                   justifyContent: "flex-start",
                 }}
@@ -964,15 +964,16 @@ export default function Layout({ children, jobNumber }) {
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
                   style={{
-                    padding: "5px 12px",
-                    borderRadius: "12px",
+                    padding: "4px 10px",
+                    borderRadius: "10px",
                     border: `1px solid ${colors.accent}`,
                     backgroundColor: "#ffffff",
                     color: colors.accent,
                     fontWeight: 600,
                     cursor: "pointer",
-                    minWidth: isMobile ? "100%" : "150px",
+                    minWidth: isMobile ? "100%" : "120px",
                     boxShadow: "0 4px 10px rgba(209,0,0,0.12)",
+                    fontSize: "0.9rem",
                   }}
                 >
                   <option>Waiting for Job</option>
@@ -987,8 +988,8 @@ export default function Layout({ children, jobNumber }) {
                     currentJob?.jobNumber && router.push(`/job-cards/myjobs/${currentJob.jobNumber}`)
                   }
                   style={{
-                    padding: "5px 14px",
-                    borderRadius: "12px",
+                    padding: "6px 12px",
+                    borderRadius: "10px",
                     border: "none",
                     background: currentJob?.jobNumber
                       ? "linear-gradient(135deg, #d10000, #a00000)"
@@ -1009,8 +1010,8 @@ export default function Layout({ children, jobNumber }) {
                   type="button"
                   onClick={() => setIsModalOpen(true)}
                   style={{
-                    padding: "5px 14px",
-                    borderRadius: "12px",
+                    padding: "6px 12px",
+                    borderRadius: "10px",
                     border: "1px solid #d10000",
                     background: "#ffffff",
                     color: "#d10000",
