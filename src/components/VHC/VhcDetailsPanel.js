@@ -12,13 +12,6 @@ const STATUS_BADGES = {
   grey: "#6b7280",
 };
 
-const TYRE_POSITIONS = [
-  { key: "frontLeft", label: "Nearside Front" },
-  { key: "frontRight", label: "Offside Front" },
-  { key: "rearLeft", label: "Nearside Rear" },
-  { key: "rearRight", label: "Offside Rear" },
-];
-
 const TAB_OPTIONS = [
   { id: "summary", label: "Summary" },
   { id: "health-check", label: "Health Check" },
@@ -29,11 +22,96 @@ const TAB_OPTIONS = [
   { id: "videos", label: "Videos" },
 ];
 
+const CATEGORY_DEFINITIONS = [
+  {
+    id: "wheels_tyres",
+    label: "Wheels & Tyres",
+    keywords: ["wheel", "tyre", "tire", "rim", "alloy", "wheels", "tyres"],
+  },
+  {
+    id: "brakes_hubs",
+    label: "Brakes & Hubs",
+    keywords: ["brake", "pad", "disc", "hub", "caliper"],
+  },
+  {
+    id: "service_indicator",
+    label: "Service Indicator & Under Bonnet",
+    keywords: ["service indicator", "under bonnet", "bonnet", "engine", "under-bonnet"],
+  },
+  {
+    id: "external_inspection",
+    label: "External / Drive-in Inspection",
+    keywords: ["external", "drive-in", "drive in", "bodywork", "exterior"],
+  },
+  {
+    id: "internal_electrics",
+    label: "Internal / Lamps / Electrics",
+    keywords: ["internal", "lamp", "lamp", "electrics", "interior", "dashboard"],
+  },
+  {
+    id: "underside",
+    label: "Underside",
+    keywords: ["underside", "under side", "underbody", "under-body"],
+  },
+];
+
+const LOCATION_TOKENS = [
+  { key: "front_left", terms: ["front left", "nearside front", "nsf", "left front"] },
+  { key: "front_right", terms: ["front right", "offside front", "osf", "right front"] },
+  { key: "rear_left", terms: ["rear left", "nearside rear", "nsr", "left rear"] },
+  { key: "rear_right", terms: ["rear right", "offside rear", "osr", "right rear"] },
+  { key: "front", terms: ["front"] },
+  { key: "rear", terms: ["rear"] },
+];
+const LOCATION_LABELS = {
+  front_left: "Nearside Front",
+  front_right: "Offside Front",
+  rear_left: "Nearside Rear",
+  rear_right: "Offside Rear",
+  front: "Front",
+  rear: "Rear",
+};
+
+const SEVERITY_RANK = { red: 3, amber: 2, grey: 1, green: 0 };
+const LABOUR_RATE = 155;
+const SEVERITY_META = {
+  red: { title: "Red Repairs", description: "Critical safety issues that require immediate authorization.", accent: "#b91c1c" },
+  amber: { title: "Amber Repairs", description: "Advisory items that should be considered soon.", accent: "#d97706" },
+};
+
 const COLOUR_CLASS = {
   red: "#fee2e2",
   amber: "#fef3c7",
   green: "#ecfdf5",
   grey: "#f3f4f6",
+};
+
+const normalizeText = (value = "") => value.toString().toLowerCase();
+
+const resolveCategoryForItem = (sectionName = "", itemLabel = "") => {
+  const reference = normalizeText(`${sectionName} ${itemLabel}`);
+  for (const definition of CATEGORY_DEFINITIONS) {
+    if (definition.keywords.some((keyword) => reference.includes(keyword))) {
+      return { id: definition.id, label: definition.label };
+    }
+  }
+  const fallbackId = normalizeText(sectionName).replace(/\s+/g, "-") || "general";
+  return {
+    id: `general-${fallbackId}`,
+    label: sectionName || "General",
+  };
+};
+
+const resolveLocationKey = (item = {}) => {
+  const haystack = normalizeText(
+    `${item.label || ""} ${item.issue_title || ""} ${item.notes || item.issue_description || ""}`
+  );
+  for (const token of LOCATION_TOKENS) {
+    if (token.terms.some((term) => haystack.includes(term))) {
+      return token.key;
+    }
+  }
+  return null;
 };
 
 const formatDateTime = (value) => {
@@ -79,77 +157,6 @@ const formatMeasurement = (value) => {
     return merged || null;
   }
   return value.toString();
-};
-
-const extractTyres = (builderData) => {
-  if (!builderData) return [];
-  const source = builderData.wheels || builderData.tyres || {};
-  return TYRE_POSITIONS.map(({ key, label }) => {
-    const entry = source[key] || source[label] || {};
-    const condition = normaliseColour(entry.condition || entry.colour || entry.status);
-    return {
-      key,
-      label,
-      make: entry.make || entry.brand || entry.manufacturer || null,
-      size: entry.size || entry.tyreSize || null,
-      load: entry.load || entry.loadIndex || entry.load_index || null,
-      speed: entry.speed || entry.speedRating || entry.speed_rating || null,
-      tread: {
-        outer: entry.outer || entry.treadOuter || entry.tread?.outer || entry.depth?.outer || null,
-        middle: entry.middle || entry.treadMiddle || entry.tread?.middle || entry.depth?.middle || null,
-        inner: entry.inner || entry.treadInner || entry.tread?.inner || entry.depth?.inner || null,
-      },
-      condition,
-    };
-  });
-};
-
-const extractBrakes = (builderData) => {
-  if (!builderData) return [];
-  const brakes = builderData.brakes || builderData.brakesHubs || [];
-  if (Array.isArray(brakes)) {
-    return brakes.map((entry, index) => ({
-      key: entry.id || index,
-      label: entry.position || entry.label || `Brake ${index + 1}`,
-      pads: entry.padMeasurement || entry.padMeasurements || entry.pads || entry.measurement || null,
-      discs: entry.discMeasurement || entry.discMeasurements || entry.discs || null,
-      status: normaliseColour(entry.condition || entry.status),
-      notes: entry.notes || entry.description || null,
-    }));
-  }
-  return Object.entries(brakes).map(([key, entry]) => ({
-    key,
-    label: entry.label || key,
-    pads: entry.padMeasurement || entry.padMeasurements || entry.pads || entry.measurement || null,
-    discs: entry.discMeasurement || entry.discMeasurements || entry.discs || null,
-    status: normaliseColour(entry.condition || entry.status),
-    notes: entry.notes || entry.description || null,
-  }));
-};
-
-const buildSeverityGroups = (sections = []) => {
-  const buckets = { red: new Map(), amber: new Map() };
-  sections.forEach((section) => {
-    const title = section.name || section.title || "Vehicle Health Check";
-    (section.items || []).forEach((item) => {
-      const colour = normaliseColour(item.colour || item.status || section.colour);
-      if (colour === "red" || colour === "amber") {
-        const bucket = buckets[colour];
-        const next = bucket.get(title) || [];
-        next.push(item);
-        bucket.set(title, next);
-      }
-    });
-  });
-  return buckets;
-};
-
-const formatSectionItem = (item) => {
-  const parts = [];
-  if (item.label) parts.push(item.label);
-  if (item.measurement) parts.push(item.measurement);
-  if (item.notes) parts.push(item.notes);
-  return parts.length > 0 ? parts.join(" – ") : "Recorded item";
 };
 
 const HealthCheckSection = ({ section }) => {
@@ -235,7 +242,7 @@ const HealthCheckSection = ({ section }) => {
   );
 };
 
-export default function VhcDetailsPanel({ jobNumber, showNavigation = true }) {
+export default function VhcDetailsPanel({ jobNumber, showNavigation = true, readOnly = false }) {
   const router = useRouter();
   const resolvedJobNumber = jobNumber || router.query?.jobNumber;
 
@@ -245,6 +252,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("summary");
+  const [itemEntries, setItemEntries] = useState({});
+  const [categorySelections, setCategorySelections] = useState({});
 
   const containerPadding = showNavigation ? "24px" : "0";
   const renderStatusMessage = (message, color = "#6b7280") => (
@@ -341,10 +350,12 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true }) {
     fetchData();
   }, [resolvedJobNumber]);
 
-  const tyreDetails = useMemo(() => extractTyres(builderData), [builderData]);
-  const brakeDetails = useMemo(() => extractBrakes(builderData), [builderData]);
+  useEffect(() => {
+    setItemEntries({});
+    setCategorySelections({});
+  }, [resolvedJobNumber]);
+
   const sections = useMemo(() => builderData?.sections || [], [builderData]);
-  const severityBuckets = useMemo(() => buildSeverityGroups(sections), [sections]);
   const jobParts = useMemo(
     () =>
       Array.isArray(job?.parts_job_items)
@@ -382,6 +393,372 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true }) {
       Array.isArray(job?.job_files) ? job.job_files.filter(Boolean) : [],
     [job]
   );
+  const summaryItems = useMemo(() => {
+    const items = [];
+    sections.forEach((section) => {
+      const sectionName = section.name || section.title || "Vehicle Health Check";
+      (section.items || []).forEach((item, index) => {
+        const severity = normaliseColour(item.colour || item.status || section.colour);
+        if (!severity || (severity !== "red" && severity !== "amber")) {
+          return;
+        }
+        const id = item.vhc_id || `${sectionName}-${index}`;
+        const category = resolveCategoryForItem(sectionName, item.label || item.issue_title);
+        const location = resolveLocationKey(item);
+        items.push({
+          id: String(id),
+          label: item.label || item.issue_title || "Recorded item",
+          notes: item.notes || item.issue_description || "",
+          measurement: formatMeasurement(item.measurement),
+          sectionName,
+          category,
+          location,
+          rawSeverity: severity,
+        });
+      });
+    });
+
+    const locationRanks = new Map();
+    items.forEach((item) => {
+      if (!item.location) return;
+      const rank = SEVERITY_RANK[item.rawSeverity] || 0;
+      const prev = locationRanks.get(item.location) || 0;
+      if (rank > prev) {
+        locationRanks.set(item.location, rank);
+      }
+    });
+
+    items.forEach((item) => {
+      if (!item.location) {
+        item.displaySeverity = item.rawSeverity;
+        return;
+      }
+      const locRank = locationRanks.get(item.location) || 0;
+      const itemRank = SEVERITY_RANK[item.rawSeverity] || 0;
+      item.displaySeverity = locRank > itemRank ? "red" : item.rawSeverity;
+    });
+
+    return items;
+  }, [sections]);
+
+  const severitySections = useMemo(() => {
+    const base = { red: new Map(), amber: new Map() };
+    summaryItems.forEach((item) => {
+      const severity = item.displaySeverity;
+      if (!base[severity]) return;
+      const categoryId = item.category.id;
+      if (!base[severity].has(categoryId)) {
+        base[severity].set(categoryId, { category: item.category, items: [] });
+      }
+      base[severity].get(categoryId).items.push(item);
+    });
+    return base;
+  }, [summaryItems]);
+  const ensureEntryValue = (state, itemId) =>
+    state[itemId] || { partsCost: "", laborHours: "", totalOverride: "", status: null };
+
+  const updateEntryValue = (itemId, field, value) => {
+    setItemEntries((prev) => ({
+      ...prev,
+      [itemId]: { ...ensureEntryValue(prev, itemId), [field]: value },
+    }));
+  };
+
+  const getEntryForItem = (itemId) => ensureEntryValue(itemEntries, itemId);
+
+  const parseNumericValue = (value) => {
+    const num = parseFloat(value);
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  const computeLabourCost = (hours) => parseNumericValue(hours) * LABOUR_RATE;
+
+  const computeRowTotal = (entry) => {
+    if (entry.totalOverride !== "" && entry.totalOverride !== null) {
+      const override = parseNumericValue(entry.totalOverride);
+      if (override > 0) {
+        return override;
+      }
+    }
+    return parseNumericValue(entry.partsCost) + computeLabourCost(entry.laborHours);
+  };
+
+  const determineStatusColor = (entry) => {
+    if (entry.status === "authorized") return "#16a34a";
+    if (entry.status === "declined") return "#dc2626";
+    const hasLabour = parseNumericValue(entry.laborHours) > 0;
+    const hasCosts =
+      parseNumericValue(entry.partsCost) > 0 || parseNumericValue(entry.totalOverride) > 0;
+    if (!hasLabour || !hasCosts) return "#ea580c";
+    return "#facc15";
+  };
+
+  const toggleRowSelection = (blockKey, itemId) => {
+    setCategorySelections((prev) => {
+      const existing = new Set(prev[blockKey] || []);
+      if (existing.has(itemId)) {
+        existing.delete(itemId);
+      } else {
+        existing.add(itemId);
+      }
+      return { ...prev, [blockKey]: Array.from(existing) };
+    });
+  };
+
+  const handleSelectAll = (blockKey, items, checked) => {
+    setCategorySelections((prev) => ({
+      ...prev,
+      [blockKey]: checked ? items.map((item) => item.id) : [],
+    }));
+  };
+
+  const handleBulkStatus = (blockKey, status) => {
+    const selectedIds = categorySelections[blockKey] || [];
+    if (selectedIds.length === 0) return;
+    setItemEntries((prev) => {
+      const next = { ...prev };
+      selectedIds.forEach((id) => {
+        const current = ensureEntryValue(next, id);
+        next[id] = { ...current, status };
+      });
+      return next;
+    });
+    setCategorySelections((prev) => ({ ...prev, [blockKey]: [] }));
+  };
+
+  const renderCategoryTable = (severity, category, items) => {
+    const blockKey = `${severity}:${category.id}`;
+    const selectedIds = categorySelections[blockKey] || [];
+    const selectedSet = new Set(selectedIds);
+    const allChecked = items.length > 0 && selectedSet.size === items.length;
+    const selectionEnabled = !readOnly;
+    return (
+      <div
+        key={blockKey}
+        style={{
+          border: "1px solid #f1f5f9",
+          borderRadius: "16px",
+          background: "#fff",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "16px",
+            borderBottom: "1px solid #f1f5f9",
+            flexWrap: "wrap",
+            gap: "12px",
+          }}
+        >
+          <div>
+            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700 }}>{category.label}</h3>
+            <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>
+              Concerns grouped under {category.label.toLowerCase()}.
+            </p>
+          </div>
+          {selectionEnabled && (
+            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#374151" }}>
+              <input
+                type="checkbox"
+                checked={allChecked}
+                onChange={(event) => handleSelectAll(blockKey, items, event.target.checked)}
+              />
+              Select all
+            </label>
+          )}
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+            <thead>
+              <tr
+                style={{
+                  background: "#f9fafb",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  color: "#94a3b8",
+                  fontSize: "11px",
+                }}
+              >
+                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "220px" }}>Item Details</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "180px" }}>Parts (Cost £)</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "160px" }}>Labour</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "160px" }}>Total</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "130px" }}>Status</th>
+                {selectionEnabled && (
+                  <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "90px" }}>Select</th>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => {
+                const entry = getEntryForItem(item.id);
+                const labourCost = computeLabourCost(entry.laborHours);
+                const totalCost = computeRowTotal(entry);
+                const statusColor = determineStatusColor(entry);
+                const locationLabel = item.location
+                  ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
+                  : null;
+                const isChecked = selectedSet.has(item.id);
+
+                return (
+                  <tr key={item.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "12px 16px", color: "#111827" }}>
+                      <div style={{ fontWeight: 600 }}>{item.label}</div>
+                      {item.notes ? (
+                        <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>{item.notes}</div>
+                      ) : null}
+                      {item.measurement ? (
+                        <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>{item.measurement}</div>
+                      ) : null}
+                      {locationLabel ? (
+                        <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>Location: {locationLabel}</div>
+                      ) : null}
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={entry.partsCost ?? ""}
+                          onChange={(event) => updateEntryValue(item.id, "partsCost", event.target.value)}
+                          placeholder="0.00"
+                          style={{
+                            width: "160px",
+                            padding: "8px",
+                            borderRadius: "8px",
+                            border: "1px solid #e5e7eb",
+                          }}
+                          disabled={readOnly}
+                        />
+                        <a href="#parts-identified" style={{ fontSize: "12px", color: "#b45309", textDecoration: "none" }}>
+                          View parts tab
+                        </a>
+                      </div>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          value={entry.laborHours ?? ""}
+                          onChange={(event) => updateEntryValue(item.id, "laborHours", event.target.value)}
+                          placeholder="0.0"
+                          style={{
+                            width: "140px",
+                            padding: "8px",
+                            borderRadius: "8px",
+                            border: "1px solid #e5e7eb",
+                          }}
+                          disabled={readOnly}
+                        />
+                        <span style={{ fontSize: "12px", color: "#9ca3af" }}>
+                          = £{labourCost.toFixed(2)} ({entry.laborHours || 0}h × £{LABOUR_RATE} after VAT)
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={entry.totalOverride ?? ""}
+                          onChange={(event) => updateEntryValue(item.id, "totalOverride", event.target.value)}
+                          placeholder="Override total"
+                          style={{
+                            width: "160px",
+                            padding: "8px",
+                            borderRadius: "8px",
+                            border: "1px solid #e5e7eb",
+                          }}
+                          disabled={readOnly}
+                        />
+                        <span style={{ fontSize: "12px", color: "#9ca3af" }}>Calculated: £{totalCost.toFixed(2)}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span
+                          style={{
+                            width: "14px",
+                            height: "14px",
+                            borderRadius: "999px",
+                            backgroundColor: statusColor,
+                            display: "inline-block",
+                          }}
+                        />
+                        <span style={{ fontSize: "12px", color: "#4b5563" }}>
+                          {entry.status ? entry.status.charAt(0).toUpperCase() + entry.status.slice(1) : "Pending"}
+                        </span>
+                      </div>
+                    </td>
+                    {selectionEnabled && (
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleRowSelection(blockKey, item.id)}
+                        />
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {selectionEnabled && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "12px",
+              padding: "16px",
+              borderTop: "1px solid #f1f5f9",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => handleBulkStatus(blockKey, "declined")}
+              disabled={selectedSet.size === 0}
+              style={{
+                padding: "10px 16px",
+                borderRadius: "10px",
+                border: "1px solid #dc2626",
+                backgroundColor: selectedSet.size === 0 ? "#fee2e2" : "#fff",
+                color: "#dc2626",
+                fontWeight: 600,
+                cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
+              }}
+            >
+              Decline
+            </button>
+            <button
+              type="button"
+              onClick={() => handleBulkStatus(blockKey, "authorized")}
+              disabled={selectedSet.size === 0}
+              style={{
+                padding: "10px 16px",
+                borderRadius: "10px",
+                border: "1px solid #16a34a",
+                backgroundColor: selectedSet.size === 0 ? "#dcfce7" : "#16a34a",
+                color: selectedSet.size === 0 ? "#16a34a" : "#fff",
+                fontWeight: 600,
+                cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
+              }}
+            >
+              Authorise
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
   const photoFiles = useMemo(() => {
     const isImage = (file = {}) => {
       const type = (file.file_type || "").toLowerCase();
@@ -424,304 +801,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true }) {
   if (error) {
     return renderStatusMessage(error, "#b91c1c");
   }
-
-  const tyreGrid = (
-    <div
-      style={{
-        background: "#fff",
-        border: "1px solid #e5e7eb",
-        borderRadius: "16px",
-        padding: "18px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-      }}
-    >
-      <div>
-        <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>Tyres</h3>
-        <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>Both axles shown with live measurements and load data.</p>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
-        {tyreDetails.map((tyre) => {
-          const bg = COLOUR_CLASS[tyre.condition] || "#fff";
-          const borderColour = STATUS_BADGES[tyre.condition] || "#e5e7eb";
-          return (
-            <div
-              key={tyre.key}
-              style={{
-                border: `1px solid ${borderColour}`,
-                borderRadius: "12px",
-                padding: "12px",
-                background: bg,
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <strong>{tyre.label}</strong>
-                {tyre.condition ? (
-                  <span style={{ fontSize: "12px", fontWeight: 600, color: STATUS_BADGES[tyre.condition] }}>{tyre.condition}</span>
-                ) : (
-                  <span style={{ fontSize: "12px", color: "#9ca3af" }}>No data</span>
-                )}
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(80px, 1fr))", gap: "8px" }}>
-                <div>
-                  <div style={{ fontSize: "11px", textTransform: "uppercase", color: "#9ca3af" }}>Make</div>
-                  <div style={{ fontWeight: 600 }}>{emptyPlaceholder(tyre.make)}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "11px", textTransform: "uppercase", color: "#9ca3af" }}>Size</div>
-                  <div style={{ fontWeight: 600 }}>{emptyPlaceholder(tyre.size)}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "11px", textTransform: "uppercase", color: "#9ca3af" }}>Load</div>
-                  <div style={{ fontWeight: 600 }}>{emptyPlaceholder(tyre.load)}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "11px", textTransform: "uppercase", color: "#9ca3af" }}>Speed</div>
-                  <div style={{ fontWeight: 600 }}>{emptyPlaceholder(tyre.speed)}</div>
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: "11px", textTransform: "uppercase", color: "#9ca3af" }}>Tread depths</div>
-                <div style={{ display: "flex", gap: "8px", marginTop: "4px", fontWeight: 600 }}>
-                  <span>Outer: {emptyPlaceholder(tyre.tread.outer)}</span>
-                  <span>Middle: {emptyPlaceholder(tyre.tread.middle)}</span>
-                  <span>Inner: {emptyPlaceholder(tyre.tread.inner)}</span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  const brakesGrid = (
-    <div
-      style={{
-        background: "#fff",
-        border: "1px solid #e5e7eb",
-        borderRadius: "16px",
-        padding: "18px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-      }}
-    >
-      <div>
-        <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>Brakes</h3>
-        <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>Pad and disc measurements recorded during the inspection.</p>
-      </div>
-      {brakeDetails.length === 0 ? (
-        <p style={{ margin: 0, color: "#9ca3af", fontStyle: "italic" }}>No brake measurements recorded.</p>
-      ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px" }}>
-          {brakeDetails.map((brake) => (
-            <div
-              key={brake.key}
-              style={{
-                border: `1px solid ${STATUS_BADGES[brake.status] || "#e5e7eb"}`,
-                borderRadius: "12px",
-                padding: "12px",
-                background: COLOUR_CLASS[brake.status] || "#fff",
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <strong>{brake.label}</strong>
-                {brake.status ? (
-                  <span style={{ fontSize: "12px", fontWeight: 600, color: STATUS_BADGES[brake.status] }}>{brake.status}</span>
-                ) : null}
-              </div>
-              {formatMeasurement(brake.pads) ? (
-                <div>
-                  <div style={{ fontSize: "11px", color: "#9ca3af", textTransform: "uppercase" }}>Pads</div>
-                  <div style={{ fontWeight: 600 }}>{formatMeasurement(brake.pads)}</div>
-                </div>
-              ) : null}
-              {formatMeasurement(brake.discs) ? (
-                <div>
-                  <div style={{ fontSize: "11px", color: "#9ca3af", textTransform: "uppercase" }}>Discs</div>
-                  <div style={{ fontWeight: 600 }}>{formatMeasurement(brake.discs)}</div>
-                </div>
-              ) : null}
-              {brake.notes ? (
-                <p style={{ margin: 0, fontSize: "12px", color: "#4b5563" }}>{brake.notes}</p>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
-  const renderSeverityPanel = (label, bucket, accent) => {
-    if (!bucket || bucket.size === 0) return null;
-    return (
-      <div
-        style={{
-          background: "#fff",
-          border: `1px solid ${accent}33`,
-          borderRadius: "16px",
-          padding: "20px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-        }}
-      >
-        <div>
-          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: accent }}>{label}</h3>
-          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>Grouped by technician section.</p>
-        </div>
-        {Array.from(bucket.entries()).map(([sectionName, items]) => (
-          <div key={sectionName} style={{ border: "1px solid #f3f4f6", borderRadius: "12px", padding: "12px", background: "#fafafa" }}>
-            <h4 style={{ margin: 0, fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>{sectionName}</h4>
-            <ul style={{ margin: 0, paddingLeft: "18px", color: "#374151", fontSize: "13px" }}>
-              {items.map((item, index) => (
-                <li key={`${sectionName}-${index}`}>{formatSectionItem(item)}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const renderPartsPanel = (title, items, emptyCopy) => (
-    <div
-      style={{
-        background: "#fff",
-        border: "1px solid #e5e7eb",
-        borderRadius: "16px",
-        padding: "20px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-      }}
-    >
-      <div>
-        <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>{title}</h3>
-        <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>Directly linked to technician VHC findings.</p>
-      </div>
-      {items.length === 0 ? (
-        <p style={{ margin: "12px 0 0", color: "#9ca3af", fontStyle: "italic" }}>{emptyCopy}</p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {items.map((part) => (
-            <div
-              key={part.id}
-              style={{
-                border: "1px solid #f3f4f6",
-                borderRadius: "12px",
-                padding: "12px",
-                background: "#fafafa",
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-                <div>
-                  <div style={{ fontSize: "12px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                    {part.part?.part_number || "Part #"}
-                  </div>
-                  <strong style={{ fontSize: "16px", color: "#1f2937" }}>{part.part?.name || "Untitled Part"}</strong>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "12px", color: "#9ca3af" }}>Qty requested</div>
-                  <div style={{ fontSize: "16px", fontWeight: 700 }}>{part.quantity_requested ?? part.quantity_allocated ?? 0}</div>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
-                <span
-                  style={{
-                    padding: "4px 10px",
-                    borderRadius: "999px",
-                    backgroundColor: "#fff5f5",
-                    color: "#b45309",
-                    fontWeight: 600,
-                    fontSize: "12px",
-                  }}
-                >
-                  {part.status ? part.status : "Pending"}
-                </span>
-                {part.request_notes ? <span style={{ fontSize: "13px", color: "#4b5563" }}>{part.request_notes}</span> : null}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
-  const renderFileGallery = (title, files, emptyCopy, type) => (
-    <div
-      style={{
-        background: "#fff",
-        border: "1px solid #e5e7eb",
-        borderRadius: "16px",
-        padding: "20px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>{title}</h3>
-          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>Captured for customer transparency.</p>
-        </div>
-      </div>
-      {files.length === 0 ? (
-        <p style={{ margin: "12px 0 0", color: "#9ca3af", fontStyle: "italic" }}>{emptyCopy}</p>
-      ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          {files.map((file) => (
-            <div
-              key={file.file_id}
-              style={{
-                border: "1px solid #f3f4f6",
-                borderRadius: "12px",
-                padding: "12px",
-                background: "#fafafa",
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px",
-              }}
-            >
-              {type === "photo" ? (
-                <a href={file.file_url} target="_blank" rel="noreferrer" style={{ display: "block", borderRadius: "10px", overflow: "hidden" }}>
-                  <img
-                    src={file.file_url}
-                    alt={file.file_name || "Customer photo"}
-                    style={{ width: "100%", height: "150px", objectFit: "cover" }}
-                  />
-                </a>
-              ) : (
-                <video
-                  src={file.file_url}
-                  controls
-                  style={{ width: "100%", borderRadius: "10px", maxHeight: "180px", background: "#000" }}
-                />
-              )}
-              <div style={{ fontSize: "13px", color: "#4b5563" }}>{file.file_name || `Uploaded ${formatDateTime(file.uploaded_at)}`}</div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 
   const jobHeader = (
     <div
@@ -840,11 +919,23 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true }) {
       </div>
 
       {activeTab === "summary" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {renderSeverityPanel("Red items", severityBuckets.red, "#ef4444")}
-          {renderSeverityPanel("Amber items", severityBuckets.amber, "#f59e0b")}
-          {tyreGrid}
-          {brakesGrid}
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          {["red", "amber"].map((severity) => {
+            const section = severitySections[severity];
+            if (!section || section.size === 0) return null;
+            const meta = SEVERITY_META[severity];
+            return (
+              <div key={severity} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
+                  <p style={{ margin: "4px 0 0", color: "#6b7280" }}>{meta.description}</p>
+                </div>
+                {Array.from(section.values()).map(({ category, items }) =>
+                  renderCategoryTable(severity, category, items)
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -860,8 +951,11 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true }) {
         </div>
       )}
 
-      {activeTab === "parts-identified" &&
-        renderPartsPanel("Parts Identified", partsIdentified, "No VHC-linked parts have been identified yet.")}
+      {activeTab === "parts-identified" && (
+        <div id="parts-identified">
+          {renderPartsPanel("Parts Identified", partsIdentified, "No VHC-linked parts have been identified yet.")}
+        </div>
+      )}
 
       {activeTab === "parts-authorized" &&
         renderPartsPanel("Parts Authorized", partsAuthorized, "No parts awaiting authorization or approvals recorded.")}

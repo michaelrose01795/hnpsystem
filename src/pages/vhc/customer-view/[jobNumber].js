@@ -64,7 +64,7 @@ export default function VhcCustomerViewPage() {
           <div style={{ fontSize: "14px", color: "#9ca3af" }}>Read-only customer preview</div>
         </div>
 
-        <VhcDetailsPanel jobNumber={jobNumber} showNavigation={false} />
+        <VhcDetailsPanel jobNumber={jobNumber} showNavigation={false} readOnly />
       </div>
     </Layout>
   );

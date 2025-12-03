@@ -4062,6 +4062,10 @@ function VHCTab({ jobNumber }) {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
+    setHasPreviewed(false);
+  }, [jobNumber]);
+
+  useEffect(() => {
     if (!router.isReady) return;
     if (router.query?.vhcPreview === "1" && !hasPreviewed) {
       setHasPreviewed(true);
