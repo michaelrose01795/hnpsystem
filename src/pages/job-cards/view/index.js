@@ -122,6 +122,64 @@ const matchesSearchTerm = (job, value) => {
     .map((entry) => entry.toLowerCase());
   return haystack.some((entry) => entry.includes(value));
 };
+const getAppointmentDisplay = (job) => {
+  if (job?.appointment?.date && job?.appointment?.time) {
+    return `${job.appointment.date} · ${job.appointment.time}`;
+  }
+  if (job?.appointment?.date) {
+    return job.appointment.date;
+  }
+  return "Not scheduled";
+};
+
+const renderVhcBadge = (job) => {
+  if (!job.vhcRequired) {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "6px",
+          fontSize: "12px",
+          color: "#9ca3af",
+        }}
+      >
+        <span
+          style={{
+            width: "10px",
+            height: "10px",
+            borderRadius: "50%",
+            backgroundColor: "#d1d5db",
+          }}
+        />
+        Not required
+      </span>
+    );
+  }
+  const completed = Boolean(job.vhcCompletedAt);
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "6px",
+        fontSize: "12px",
+        color: completed ? "#15803d" : "#b45309",
+      }}
+    >
+      <span
+        style={{
+          width: "10px",
+          height: "10px",
+          borderRadius: "50%",
+          backgroundColor: completed ? "#22c55e" : "#f97316",
+        }}
+      />
+      {completed ? "VHC complete" : "VHC pending"}
+    </span>
+  );
+};
+
 
 /* ================================
    Main component: ViewJobCards
@@ -292,64 +350,6 @@ export default function ViewJobCards() {
   const sortedJobs = filteredJobs
     .slice()
     .sort((a, b) => getSortValue(a) - getSortValue(b));
-
-  const getAppointmentDisplay = (job) => {
-    if (job?.appointment?.date && job?.appointment?.time) {
-      return `${job.appointment.date} · ${job.appointment.time}`;
-    }
-    if (job?.appointment?.date) {
-      return job.appointment.date;
-    }
-    return "Not scheduled";
-  };
-
-const renderVhcBadge = (job) => {
-  if (!job.vhcRequired) {
-    return (
-      <span
-        style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            fontSize: "12px",
-            color: "#9ca3af",
-          }}
-        >
-          <span
-            style={{
-              width: "10px",
-              height: "10px",
-              borderRadius: "50%",
-              backgroundColor: "#d1d5db",
-            }}
-          />
-          Not required
-        </span>
-      );
-    }
-    const completed = Boolean(job.vhcCompletedAt);
-    return (
-      <span
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "6px",
-          fontSize: "12px",
-          color: completed ? "#15803d" : "#b45309",
-        }}
-      >
-        <span
-          style={{
-            width: "10px",
-            height: "10px",
-            borderRadius: "50%",
-            backgroundColor: completed ? "#22c55e" : "#f97316",
-          }}
-        />
-        {completed ? "VHC complete" : "VHC pending"}
-      </span>
-    );
-  };
 
   const combinedStatusOptions = useMemo(() => {
     const union = new Set([...TODAY_STATUSES, ...CARRY_OVER_STATUSES]);
