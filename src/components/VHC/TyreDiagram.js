@@ -3,15 +3,19 @@ import themeConfig from "@/styles/appTheme";
 
 const { palette, shadows } = themeConfig;
 
-const TYRE_KEYS = [
-  { key: "nsf", label: "N/S/F", position: { x: 38, y: 78 } },
-  { key: "osf", label: "O/S/F", position: { x: 226, y: 78 } },
-  { key: "nsr", label: "N/S/R", position: { x: 38, y: 186 } },
-  { key: "osr", label: "O/S/R", position: { x: 226, y: 186 } },
-];
-
+const DIAGRAM_WIDTH = 308;
+const DIAGRAM_HEIGHT = 380;
+const FRONT_Y = 70;
+const REAR_Y = 230; // widened vertical gap so labels don't crowd other content
 const TYRE_WIDTH = 42;
 const TYRE_HEIGHT = 90;
+
+const TYRE_KEYS = [
+  { key: "nsf", label: "N/S/F", position: { x: 38, y: FRONT_Y } },
+  { key: "osf", label: "O/S/F", position: { x: 226, y: FRONT_Y } },
+  { key: "nsr", label: "N/S/R", position: { x: 38, y: REAR_Y } },
+  { key: "osr", label: "O/S/R", position: { x: 226, y: REAR_Y } },
+];
 
 const statusPalette = {
   unknown: { fill: "#9E9E9E", text: "#0F172A", label: "#E5E7EB" },
@@ -64,14 +68,14 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
   return (
     <div style={containerStyle}>
       <svg
-        viewBox="0 0 306 300"
+        viewBox={`0 0 ${DIAGRAM_WIDTH} ${DIAGRAM_HEIGHT}`}
         role="img"
         aria-label="Vehicle tyre overview diagram"
         style={{ width: "100%", height: "auto", maxWidth: "360px" }}
       >
         <text
-          x="153"
-          y="28"
+          x={DIAGRAM_WIDTH / 2}
+          y="30"
           textAnchor="middle"
           fontSize="16"
           fontWeight="700"
@@ -85,7 +89,7 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
           x="58"
           y="46"
           width="190"
-          height="220"
+          height="260"
           rx="48"
           fill={bodyFill}
           stroke={palette.border}
@@ -93,9 +97,9 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
           strokeDasharray="10 8"
           opacity="0.9"
         />
-        <rect x="82" y="72" width="142" height="168" rx="34" fill={cabinFill} stroke={palette.border} strokeWidth="1" opacity="0.8" />
-        <line x1="58" y1="148" x2="248" y2="148" stroke={axleColor} strokeWidth="5" strokeLinecap="round" />
-        <line x1="58" y1="198" x2="248" y2="198" stroke={axleColor} strokeWidth="5" strokeLinecap="round" />
+        <rect x="82" y="72" width="142" height="208" rx="34" fill={cabinFill} stroke={palette.border} strokeWidth="1" opacity="0.8" />
+        <line x1="58" y1={FRONT_Y + TYRE_HEIGHT / 2} x2="248" y2={FRONT_Y + TYRE_HEIGHT / 2} stroke={axleColor} strokeWidth="5" strokeLinecap="round" />
+        <line x1="58" y1={REAR_Y + TYRE_HEIGHT / 2} x2="248" y2={REAR_Y + TYRE_HEIGHT / 2} stroke={axleColor} strokeWidth="5" strokeLinecap="round" />
 
         {TYRE_KEYS.map(({ key, label, position }) => {
           const entry = tyres?.[key];
@@ -147,16 +151,16 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
           );
         })}
 
-        <text x="153" y="60" textAnchor="middle" fontSize="11" fill={svgMuted} letterSpacing="2">
+        <text x={DIAGRAM_WIDTH / 2} y="60" textAnchor="middle" fontSize="11" fill={svgMuted} letterSpacing="2">
           FRONT
         </text>
-        <text x="153" y="282" textAnchor="middle" fontSize="11" fill={svgMuted} letterSpacing="2">
+        <text x={DIAGRAM_WIDTH / 2} y={DIAGRAM_HEIGHT - 20} textAnchor="middle" fontSize="11" fill={svgMuted} letterSpacing="2">
           REAR
         </text>
-        <text x="20" y="170" textAnchor="middle" fontSize="11" fill={svgMuted} transform="rotate(-90 20 170)">
+        <text x="20" y={DIAGRAM_HEIGHT / 2} textAnchor="middle" fontSize="11" fill={svgMuted} transform={`rotate(-90 20 ${DIAGRAM_HEIGHT / 2})`}>
           N / S · LEFT
         </text>
-        <text x="286" y="170" textAnchor="middle" fontSize="11" fill={svgMuted} transform="rotate(90 286 170)">
+        <text x={DIAGRAM_WIDTH - 22} y={DIAGRAM_HEIGHT / 2} textAnchor="middle" fontSize="11" fill={svgMuted} transform={`rotate(90 ${DIAGRAM_WIDTH - 22} ${DIAGRAM_HEIGHT / 2})`}>
           O / S · RIGHT
         </text>
 

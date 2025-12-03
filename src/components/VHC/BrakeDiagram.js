@@ -3,15 +3,19 @@ import themeConfig from "@/styles/appTheme";
 
 const { palette, shadows } = themeConfig;
 
-const BRAKE_KEYS = [
-  { key: "nsf", label: "NSF", position: { x: 36, y: 76 } },
-  { key: "osf", label: "OSF", position: { x: 228, y: 76 } },
-  { key: "nsr", label: "NSR", position: { x: 36, y: 186 } },
-  { key: "osr", label: "OSR", position: { x: 228, y: 186 } },
-];
-
+const DIAGRAM_WIDTH = 308;
+const DIAGRAM_HEIGHT = 380;
+const FRONT_Y = 70;
+const REAR_Y = 230; // widened vertical gap to mirror tyre diagram spacing
 const PAD_WIDTH = 44;
 const PAD_HEIGHT = 90;
+
+const BRAKE_KEYS = [
+  { key: "nsf", label: "NSF", position: { x: 36, y: FRONT_Y } },
+  { key: "osf", label: "OSF", position: { x: 228, y: FRONT_Y } },
+  { key: "nsr", label: "NSR", position: { x: 36, y: REAR_Y } },
+  { key: "osr", label: "OSR", position: { x: 228, y: REAR_Y } },
+];
 
 const statusPalette = {
   critical: { fill: "#E53935", text: "#FDECEE", label: "#F87171" },
@@ -40,6 +44,8 @@ const resolveBrakeEntry = (entry) => {
 
 export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
   const activeKey = activeBrake?.toLowerCase();
+  const isFrontActive = activeKey === "front" || activeKey === "nsf" || activeKey === "osf";
+  const isRearActive = activeKey === "rear" || activeKey === "nsr" || activeKey === "osr";
 
   const containerStyle = {
     width: "100%",
@@ -59,7 +65,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
   return (
     <div style={containerStyle}>
       <svg
-        viewBox="0 0 308 300"
+        viewBox={`0 0 ${DIAGRAM_WIDTH} ${DIAGRAM_HEIGHT}`}
         role="img"
         aria-label="Brake pad and disc overview diagram"
         style={{ width: "100%", height: "auto", maxWidth: "360px" }}
@@ -68,7 +74,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
           x="60"
           y="46"
           width="188"
-          height="220"
+          height="260"
           rx="48"
           fill={palette.accentSurface}
           stroke={palette.border}
@@ -76,28 +82,30 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
           strokeDasharray="10 8"
           opacity="0.6"
         />
-        <line x1="60" y1="148" x2="248" y2="148" stroke={palette.border} strokeWidth="4" strokeLinecap="round" />
-        <line x1="60" y1="198" x2="248" y2="198" stroke={palette.border} strokeWidth="4" strokeLinecap="round" />
+        <line x1="60" y1={FRONT_Y + PAD_HEIGHT / 2} x2="248" y2={FRONT_Y + PAD_HEIGHT / 2} stroke={palette.border} strokeWidth="4" strokeLinecap="round" />
+        <line x1="60" y1={REAR_Y + PAD_HEIGHT / 2} x2="248" y2={REAR_Y + PAD_HEIGHT / 2} stroke={palette.border} strokeWidth="4" strokeLinecap="round" />
 
-        <text x="154" y="60" textAnchor="middle" fontSize="11" fill={palette.textMuted} letterSpacing="2">
+        <text x={DIAGRAM_WIDTH / 2} y="60" textAnchor="middle" fontSize="11" fill={palette.textMuted} letterSpacing="2">
           FRONT
         </text>
-        <text x="154" y="282" textAnchor="middle" fontSize="11" fill={palette.textMuted} letterSpacing="2">
+        <text x={DIAGRAM_WIDTH / 2} y={DIAGRAM_HEIGHT - 20} textAnchor="middle" fontSize="11" fill={palette.textMuted} letterSpacing="2">
           REAR
         </text>
 
-        {BRAKE_KEYS.map(({ key, label, position }) => {
+        {BRAKE_KEYS.map(({ key, position }) => {
           const entry = brakes?.[key];
           const { measurement, overrideStatus } = resolveBrakeEntry(entry);
           const { text, status: baseStatus } = getPadStatus(measurement);
           const status = overrideStatus || baseStatus;
           const colors = statusPalette[status] || statusPalette.unknown;
-          const isActive = activeKey === key;
+          const isFrontWheel = key === "nsf" || key === "osf";
+          const isRearWheel = key === "nsr" || key === "osr";
+          const isActive = (isFrontWheel && isFrontActive) || (isRearWheel && isRearActive);
 
           return (
             <g
               key={key}
-              onClick={() => onSelect?.(key)}
+              onClick={() => onSelect?.(isFrontWheel ? "front" : "rear")}
               style={{ cursor: onSelect ? "pointer" : "default" }}
             >
               <rect
@@ -121,16 +129,6 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
                 fontWeight="700"
               >
                 {text}
-              </text>
-              <text
-                x={position.x + PAD_WIDTH / 2}
-                y={position.y + PAD_HEIGHT + 20}
-                textAnchor="middle"
-                fontSize="12"
-                fontWeight="700"
-                fill={isActive ? palette.accent : colors.label}
-              >
-                {label}
               </text>
             </g>
           );

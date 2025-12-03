@@ -1044,12 +1044,12 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           >
             <BrakeDiagram
               brakes={brakeDiagramValues}
-              activeBrake={activeSide === "front" ? "nsf" : "nsr"}
-              onSelect={(key) => {
-                if (["nsf", "osf"].includes(key)) {
+              activeBrake={activeSide}
+              onSelect={(side) => {
+                if (side === "front") {
                   setActiveSide("front");
                   setShowDrum(false);
-                } else if (["nsr", "osr"].includes(key)) {
+                } else {
                   setActiveSide("rear");
                 }
               }}
