@@ -1040,9 +1040,22 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
               ))}
             </div>
 
-            <button type="button" onClick={addConcern} style={{ ...createVhcButtonStyle("primary"), alignSelf: "flex-end" }}>
-              Add Concern
-            </button>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "6px" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setConcernTarget(null);
+                  setConcernInput("");
+                  setConcernStatus("Amber");
+                }}
+                style={{ ...createVhcButtonStyle("ghost") }}
+              >
+                Close
+              </button>
+              <button type="button" onClick={addConcern} style={{ ...createVhcButtonStyle("primary") }}>
+                Add Concern
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

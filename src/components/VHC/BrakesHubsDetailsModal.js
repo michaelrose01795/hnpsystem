@@ -300,24 +300,19 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     return ["rearPads", "rearDiscs"];
   }, [activeSide, showDrum]);
 
-  const availableConcernTargets = useMemo(
-    () => ALL_CONCERN_TARGETS.filter((target) => activeConcernKeySet.includes(target.key)),
-    [activeConcernKeySet],
-  );
+  const resolveActiveConcernCategory = () => {
+    if (activeSide === "front") return "frontPads";
+    if (showDrum) return "rearDrums";
+    return "rearPads";
+  };
 
-  const defaultConcernCategory =
-    availableConcernTargets[0]?.key || activeConcernKeySet[0] || "frontPads";
-
-  const concernOptions =
-    availableConcernTargets.length > 0 ? availableConcernTargets : ALL_CONCERN_TARGETS;
+  const defaultConcernCategory = resolveActiveConcernCategory();
 
   const areaLabels = {
     ...padLabels,
     ...discLabels,
     rearDrums: "Rear Drum",
   };
-
-  const activeSideLabel = activeSide === "front" ? "Front" : showDrum ? "Rear Drums" : "Rear";
 
   const activeIssueEntries = useMemo(() => {
     return activeConcernKeySet.flatMap((key) => {
@@ -486,13 +481,13 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
   const updatePadMeasurement = (category, value) => {
     const sanitized = sanitizeNumericListInput(value);
-    const cleaned = sanitized.replace(/[,\s]+$/g, "");
     setData((prev) => ({
       ...prev,
-      [category]: { ...prev[category], measurement: cleaned },
+      [category]: { ...prev[category], measurement: sanitized },
     }));
 
-    const numbers = cleaned
+    const numbers = sanitized
+      .replace(/[,\s]+$/g, "")
       .split(/[, ]+/)
       .map((v) => parseFloat(v.trim()))
       .filter((v) => !Number.isNaN(v));
@@ -584,14 +579,13 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     });
   };
 
-  const handleDiscMeasurementValue = (category, index, value) => {
-    const sanitized = sanitizeDecimalInput(value);
+  const handleDiscMeasurementValue = (category, value) => {
+    const sanitized = sanitizeNumericListInput(value);
     setData((prev) => {
       const section = prev[category];
       if (!section) return prev;
-      const nextValues = [...section.measurements.values];
-      nextValues[index] = sanitized;
-      const thickness = nextValues.filter((item) => item !== "").join(", ");
+      const nextValues = [sanitized];
+      const thickness = sanitized.replace(/[,\s]+$/g, "");
       return {
         ...prev,
         [category]: {
@@ -600,45 +594,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             ...section.measurements,
             values: nextValues,
             thickness,
-          },
-        },
-      };
-    });
-  };
-
-  const addDiscMeasurement = (category) => {
-    setData((prev) => {
-      const section = prev[category];
-      if (!section) return prev;
-      const nextValues = [...section.measurements.values, ""];
-      return {
-        ...prev,
-        [category]: {
-          ...section,
-          measurements: {
-            ...section.measurements,
-            values: nextValues,
-            thickness: nextValues.filter((item) => item !== "").join(", "),
-          },
-        },
-      };
-    });
-  };
-
-  const removeDiscMeasurement = (category, index) => {
-    setData((prev) => {
-      const section = prev[category];
-      if (!section) return prev;
-      const nextValues = section.measurements.values.filter((_, idx) => idx !== index);
-      if (nextValues.length === 0) nextValues.push("");
-      return {
-        ...prev,
-        [category]: {
-          ...section,
-          measurements: {
-            ...section.measurements,
-            values: nextValues,
-            thickness: nextValues.filter((item) => item !== "").join(", "),
           },
         },
       };
@@ -654,7 +609,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
         ...next[category],
         measurements: {
           ...next[category].measurements,
-          thickness: values.filter((item) => item !== "").join(", "),
+          thickness: values[0] ? values[0].replace(/[,\s]+$/g, "") : "",
         },
       };
     });
@@ -745,28 +700,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           <option>Green</option>
         </select>
 
-        {padData.concerns?.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {padData.concerns.map((c, idx) => (
-              <div key={idx} style={concernItemStyle}>
-                <span style={{ flex: 1, fontSize: "13px", color: palette.textPrimary }}>
-                  {c.issue}
-                </span>
-                <select
-                  value={c.status}
-                  onChange={(e) => updateConcernStatus(category, idx, e.target.value)}
-                  style={{ ...selectBaseStyle, width: "120px" }}
-                  onFocus={enhanceFocus}
-                  onBlur={resetFocus}
-                >
-                  <option>Red</option>
-                  <option>Amber</option>
-                </select>
-              </div>
-            ))}
-          </div>
-        )}
-
         {showDrumButton && (
           <button
             type="button"
@@ -840,43 +773,15 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           <>
             <label style={fieldLabelStyle}>Disc Thickness (mm)</label>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {discData.measurements.values.map((reading, idx) => (
-                <div
-                  key={`${category}-reading-${idx}`}
-                  style={{ display: "flex", gap: "8px", alignItems: "center" }}
-                >
-                  <input
-                    value={reading}
-                    onChange={(e) => handleDiscMeasurementValue(category, idx, e.target.value)}
-                    placeholder={`Reading ${idx + 1}`}
-                    inputMode="decimal"
-                    style={inputStyle}
-                    onFocus={enhanceFocus}
-                    onBlur={resetFocus}
-                  />
-                  {discData.measurements.values.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeDiscMeasurement(category, idx)}
-                      style={{
-                        ...createVhcButtonStyle("ghost"),
-                        padding: "6px 14px",
-                        color: palette.danger,
-                        borderColor: palette.border,
-                      }}
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => addDiscMeasurement(category)}
-                style={{ ...createVhcButtonStyle("ghost"), alignSelf: "flex-start", padding: "8px 16px" }}
-              >
-                + Add Reading
-              </button>
+              <input
+                value={discData.measurements.values?.[0] || ""}
+                onChange={(e) => handleDiscMeasurementValue(category, e.target.value)}
+                placeholder="Enter readings separated by commas or spaces"
+                inputMode="decimal"
+                style={inputStyle}
+                onFocus={enhanceFocus}
+                onBlur={resetFocus}
+              />
             </div>
 
             <label style={fieldLabelStyle}>Status</label>
@@ -915,27 +820,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           </>
         )}
 
-        {discData.concerns?.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {discData.concerns.map((c, idx) => (
-              <div key={idx} style={concernItemStyle}>
-                <span style={{ flex: 1, fontSize: "13px", color: palette.textPrimary }}>
-                  {c.issue}
-                </span>
-                <select
-                  value={c.status}
-                  onChange={(e) => updateConcernStatus(category, idx, e.target.value)}
-                  style={{ ...selectBaseStyle, width: "120px" }}
-                  onFocus={enhanceFocus}
-                  onBlur={resetFocus}
-                >
-                  <option>Red</option>
-                  <option>Amber</option>
-                </select>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     );
   };
@@ -1108,16 +992,14 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                     gap: "12px",
                   }}
                 >
-                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>
-                    {activeSideLabel} Issues Logged
-                  </h3>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>Issues Logged</h3>
                   <button type="button" onClick={openConcernPopup} style={{ ...buildModalButton("ghost"), gap: "8px" }}>
                     + Add Concern
                   </button>
                 </div>
                 {activeIssueEntries.length === 0 ? (
                   <span style={{ fontSize: "13px", color: palette.textMuted, marginTop: "10px" }}>
-                    No concerns recorded for {activeSideLabel.toLowerCase()}.
+                    No concerns recorded yet.
                   </span>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "12px" }}>
@@ -1155,25 +1037,12 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                   <h4 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
                     Add Concern
                   </h4>
-                  <label style={fieldLabelStyle}>Area</label>
-                  <select
-                    value={concernPopup.category}
-                    onChange={(e) =>
-                      setConcernPopup((prev) => ({
-                        ...prev,
-                        category: e.target.value,
-                      }))
-                    }
-                    style={selectBaseStyle}
-                    onFocus={enhanceFocus}
-                    onBlur={resetFocus}
-                  >
-                    {concernOptions.map((target) => (
-                      <option key={target.key} value={target.key}>
-                        {target.label}
-                      </option>
-                    ))}
-                  </select>
+                  <span style={{ ...fieldLabelStyle, display: "block" }}>
+                    Area:{" "}
+                    <strong style={{ color: palette.textPrimary }}>
+                      {activeSide === "front" ? "Front" : showDrum ? "Rear Drums" : "Rear"}
+                    </strong>
+                  </span>
                   <label style={fieldLabelStyle}>Concern</label>
                   <input
                     type="text"
@@ -1217,14 +1086,14 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        if (!concernPopup.tempConcern.issue.trim()) return;
-                        addConcern(concernPopup.category, concernPopup.tempConcern);
-                        resetConcernPopup();
-                      }}
-                      style={buildModalButton("primary")}
-                    >
-                      Add Concern
+                    onClick={() => {
+                      if (!concernPopup.tempConcern.issue.trim()) return;
+                      addConcern(defaultConcernCategory, concernPopup.tempConcern);
+                      resetConcernPopup();
+                    }}
+                    style={buildModalButton("primary")}
+                  >
+                    Add Concern
                     </button>
                   </div>
                 </div>
