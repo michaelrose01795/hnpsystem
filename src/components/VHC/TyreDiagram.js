@@ -146,10 +146,10 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
           REAR
         </text>
         <text x="20" y={DIAGRAM_HEIGHT / 2} textAnchor="middle" fontSize="11" fill={svgMuted} transform={`rotate(-90 20 ${DIAGRAM_HEIGHT / 2})`}>
-          N / S · LEFT
+          
         </text>
         <text x={DIAGRAM_WIDTH - 22} y={DIAGRAM_HEIGHT / 2} textAnchor="middle" fontSize="11" fill={svgMuted} transform={`rotate(90 ${DIAGRAM_WIDTH - 22} ${DIAGRAM_HEIGHT / 2})`}>
-          O / S · RIGHT
+          
         </text>
 
         <defs>
