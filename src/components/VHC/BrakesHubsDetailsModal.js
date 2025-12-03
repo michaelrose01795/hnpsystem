@@ -107,6 +107,48 @@ const normaliseBrakesState = (initialData = {}) => {
   return { data, showDrum };
 };
 
+const DIAGRAM_SEVERITY_RANK = {
+  Red: 1,
+  Amber: 2,
+  Green: 3,
+  critical: 1,
+  advisory: 2,
+  good: 3,
+  unknown: 4,
+};
+
+const RANK_TO_DIAGRAM_STATUS = {
+  1: "critical",
+  2: "advisory",
+  3: "good",
+  4: "unknown",
+};
+
+const resolveDiagramRank = (value) => DIAGRAM_SEVERITY_RANK[value] ?? 4;
+const mapRankToDiagramStatus = (rank) => RANK_TO_DIAGRAM_STATUS[rank] ?? "unknown";
+const getConcernRank = (concerns = []) =>
+  (concerns ?? []).reduce((minRank, concern) => {
+    return Math.min(minRank, resolveDiagramRank(concern.status));
+  }, 4);
+
+const computeAxleSeverityRank = (padSection, discSection) => {
+  const measurementStatus = getPadStatus(padSection.measurement).status;
+  const measurementRank = resolveDiagramRank(measurementStatus);
+  const padRank = resolveDiagramRank(padSection.status);
+  const padConcernRank = getConcernRank(padSection.concerns);
+  const discMeasurementRank = resolveDiagramRank(discSection.measurements.status);
+  const discVisualRank = resolveDiagramRank(discSection.visual.status);
+  const discConcernRank = getConcernRank(discSection.concerns);
+  return Math.min(
+    measurementRank,
+    padRank,
+    padConcernRank,
+    discMeasurementRank,
+    discVisualRank,
+    discConcernRank,
+  );
+};
+
 // ✅ Autocomplete small component
 function AutoCompleteInput({ value, onChange, options }) {
   const [filtered, setFiltered] = useState([]);
@@ -205,7 +247,22 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   const [data, setData] = useState(normalisedInitial.data);
   const [showDrum, setShowDrum] = useState(normalisedInitial.showDrum);
   const [activeSide, setActiveSide] = useState("front");
-  const [concernPopup, setConcernPopup] = useState({ open: false, category: "frontPads", tempConcern: { issue: "", status: "Red" } });
+  const [concernPopup, setConcernPopup] = useState({
+    open: false,
+    category: "frontPads",
+    tempConcern: { issue: "", status: "Red" },
+  });
+  const resetConcernPopup = () =>
+    setConcernPopup({
+      open: false,
+      category: "frontPads",
+      tempConcern: { issue: "", status: "Red" },
+    });
+  const handleClose = () => {
+    resetConcernPopup();
+    if (!onClose) return;
+    onClose(data);
+  };
 
   useEffect(() => {
     setData(normalisedInitial.data);
@@ -569,15 +626,18 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     return Number.isFinite(parsed) ? parsed : null;
   };
 
-  const brakeDiagramValues = useMemo(
-    () => ({
-      nsf: parsePadValue(data.frontPads.measurement),
-      osf: parsePadValue(data.frontPads.measurement),
-      nsr: parsePadValue(data.rearPads.measurement),
-      osr: parsePadValue(data.rearPads.measurement),
-    }),
-    [data.frontPads.measurement, data.rearPads.measurement],
-  );
+  const brakeDiagramValues = useMemo(() => {
+    const frontSeverityRank = computeAxleSeverityRank(data.frontPads, data.frontDiscs);
+    const rearSeverityRank = computeAxleSeverityRank(data.rearPads, data.rearDiscs);
+    const frontValue = parsePadValue(data.frontPads.measurement);
+    const rearValue = parsePadValue(data.rearPads.measurement);
+    return {
+      nsf: { value: frontValue, severity: mapRankToDiagramStatus(frontSeverityRank) },
+      osf: { value: frontValue, severity: mapRankToDiagramStatus(frontSeverityRank) },
+      nsr: { value: rearValue, severity: mapRankToDiagramStatus(rearSeverityRank) },
+      osr: { value: rearValue, severity: mapRankToDiagramStatus(rearSeverityRank) },
+    };
+  }, [data]);
 
   // ✅ New completion logic
   const isCompleteEnabled = () => {
@@ -907,13 +967,10 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       width="1280px"
       height="780px"
       hideCloseButton
-      onClose={() => {
-        setConcernPopup({ open: false, category: "frontPads", tempConcern: { issue: "", status: "Red" } });
-        onClose();
-      }}
+      onClose={handleClose}
       footer={
         <>
-          <button type="button" onClick={onClose} style={buildModalButton("secondary")}>
+          <button type="button" onClick={handleClose} style={buildModalButton("secondary")}>
             Close
           </button>
           <button

@@ -28,6 +28,16 @@ const getPadStatus = (value) => {
   return { text: `${reading.toFixed(1)} mm`, status: "good" };
 };
 
+const resolveBrakeEntry = (entry) => {
+  if (entry && typeof entry === "object" && !(entry instanceof Array)) {
+    return {
+      measurement: entry.value,
+      overrideStatus: entry.severity,
+    };
+  }
+  return { measurement: entry, overrideStatus: null };
+};
+
 export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
   const activeKey = activeBrake?.toLowerCase();
 
@@ -95,9 +105,11 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
         </text>
 
         {BRAKE_KEYS.map(({ key, label, position }) => {
-          const value = brakes?.[key];
-          const { text, status } = getPadStatus(value);
-          const colors = statusPalette[status];
+          const entry = brakes?.[key];
+          const { measurement, overrideStatus } = resolveBrakeEntry(entry);
+          const { text, status: baseStatus } = getPadStatus(measurement);
+          const status = overrideStatus || baseStatus;
+          const colors = statusPalette[status] || statusPalette.unknown;
           const isActive = activeKey === key;
 
           return (

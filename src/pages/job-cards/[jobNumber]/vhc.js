@@ -44,7 +44,7 @@ export default function VHCPAGE() {
   const [vhcData, setVhcData] = useState({
     wheelsTyres: null,
     brakesHubs: [],
-    serviceIndicator: [],
+    serviceIndicator: { serviceChoice: "", oilStatus: "", concerns: [] },
     externalInspection: [],
     internalElectrics: {
       "Lights Front": { concerns: [] },
@@ -87,7 +87,12 @@ export default function VHCPAGE() {
           setJobInfo(job);
         }
         if (job?.vhcChecks?.length > 0 && job.vhcChecks[0].data) {
-          setVhcData(job.vhcChecks[0].data);
+          setVhcData((prev) => ({
+            ...prev,
+            ...job.vhcChecks[0].data,
+            serviceIndicator:
+              job.vhcChecks[0].data.serviceIndicator || prev.serviceIndicator,
+          }));
         }
       } catch (err) {
         console.error("❌ Error loading VHC:", err);
@@ -173,7 +178,11 @@ export default function VHCPAGE() {
   const mandatoryStates = {
     wheelsTyres: Boolean(vhcData.wheelsTyres),
     brakesHubs: vhcData.brakesHubs.length > 0,
-    serviceIndicator: vhcData.serviceIndicator.length > 0,
+    serviceIndicator:
+      Boolean(vhcData.serviceIndicator?.serviceChoice) ||
+      Boolean(vhcData.serviceIndicator?.oilStatus) ||
+      (Array.isArray(vhcData.serviceIndicator?.concerns) &&
+        vhcData.serviceIndicator.concerns.length > 0),
   };
 
   const totalMandatorySections = Object.keys(mandatoryStates).length;
@@ -221,6 +230,12 @@ export default function VHCPAGE() {
     setVhcData(next);
     setActiveSection(null);
     persistVhcData(next, { quiet: true, ...options });
+  };
+
+  const handleSectionDismiss = (sectionKey, draftData) => {
+    setActiveSection(null);
+    if (!draftData) return;
+    setVhcData((prev) => ({ ...prev, [sectionKey]: draftData }));
   };
 
   const SectionCard = ({ title, badgeState, onClick }) => {
@@ -514,8 +529,8 @@ export default function VHCPAGE() {
         {activeSection === "wheelsTyres" && (
           <WheelsTyresDetailsModal
             isOpen
-            onClose={() => setActiveSection(null)}
             initialData={vhcData.wheelsTyres}
+            onClose={(draft) => handleSectionDismiss("wheelsTyres", draft)}
             onComplete={(data) => handleSectionComplete("wheelsTyres", data)}
           />
         )}
@@ -523,7 +538,7 @@ export default function VHCPAGE() {
           <BrakesHubsDetailsModal
             isOpen
             initialData={vhcData.brakesHubs}
-            onClose={() => setActiveSection(null)}
+            onClose={(draft) => handleSectionDismiss("brakesHubs", draft)}
             onComplete={(data) => handleSectionComplete("brakesHubs", data)}
           />
         )}
@@ -531,7 +546,7 @@ export default function VHCPAGE() {
           <ServiceIndicatorDetailsModal
             isOpen
             initialData={vhcData.serviceIndicator}
-            onClose={() => setActiveSection(null)}
+            onClose={(draft) => handleSectionDismiss("serviceIndicator", draft)}
             onComplete={(data) => handleSectionComplete("serviceIndicator", data)}
           />
         )}

@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
 import themeConfig, { createVhcButtonStyle, vhcModalContentStyles } from "@/styles/appTheme";
-import TyreDiagram from "@/components/VHC/TyreDiagram";
+import TyreDiagram, { getReadingStatus } from "@/components/VHC/TyreDiagram";
 import TyresSection from "@/components/VHC/TyresSection"; // Import shared tyre search component
 
 const palette = themeConfig.palette;
@@ -24,6 +24,26 @@ const SPARE_TYPES = [
 ];
 
 const CONCERN_STATUS_OPTIONS = ["Amber", "Red"];
+
+const TYRE_SEVERITY_RANK = {
+  Red: 1,
+  Amber: 2,
+  Green: 3,
+  danger: 1,
+  advisory: 2,
+  good: 3,
+  unknown: 4,
+};
+
+const RANK_TO_TYRE_STATUS = {
+  1: "danger",
+  2: "advisory",
+  3: "good",
+  4: "unknown",
+};
+
+const resolveTyreRank = (value) => TYRE_SEVERITY_RANK[value] ?? 4;
+const mapRankToTyreStatus = (rank) => RANK_TO_TYRE_STATUS[rank] ?? "unknown";
 
 const tyreBrands = [
   "Unknown",
@@ -234,15 +254,25 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
     );
   }, [tyres]);
 
-  const tyreDiagramReadings = useMemo(
-    () => ({
-      nsf: getAverageTreadDepth(tyres.NSF?.tread),
-      osf: getAverageTreadDepth(tyres.OSF?.tread),
-      nsr: getAverageTreadDepth(tyres.NSR?.tread),
-      osr: getAverageTreadDepth(tyres.OSR?.tread),
-    }),
-    [tyres],
-  );
+  const tyreDiagramReadings = useMemo(() => {
+    const diagramState = {};
+    WHEELS.forEach((wheel) => {
+      const entry = tyres[wheel] ?? {};
+      const depth = getAverageTreadDepth(entry.tread);
+      const measurementStatus = getReadingStatus(depth).status;
+      const measurementRank = resolveTyreRank(measurementStatus);
+      const concernRank = (entry.concerns ?? []).reduce(
+        (minRank, concern) => Math.min(minRank, resolveTyreRank(concern.status)),
+        4,
+      );
+      const severityRank = Math.min(measurementRank, concernRank);
+      diagramState[wheel.toLowerCase()] = {
+        depth,
+        severity: mapRankToTyreStatus(severityRank),
+      };
+    });
+    return diagramState;
+  }, [tyres]);
 
   const concernStatusTotals = useMemo(() => {
     const totals = Object.keys(statusColors).reduce((acc, key) => ({ ...acc, [key]: 0 }), {});
@@ -484,6 +514,10 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
   };
 
   const currentTyre = tyres[activeWheel];
+  const handleClose = () => {
+    if (!onClose) return;
+    onClose(tyres);
+  };
   const showSpareLookup = activeWheel !== "Spare" || ["spare", "space_saver"].includes(tyres.Spare?.type);
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
@@ -493,7 +527,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
 
   const footer = (
     <>
-      <button type="button" onClick={onClose} style={buildModalButton("ghost")}>
+      <button type="button" onClick={handleClose} style={buildModalButton("ghost")}>
         Close
       </button>
       <button
@@ -512,7 +546,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
   return (
     <VHCModalShell
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Wheels & Tyres"
       hideCloseButton
       width="1280px"

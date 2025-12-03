@@ -221,9 +221,14 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
     !!serviceChoice &&
     (oilStatus === "Yes" || oilStatus === "EV" || (oilStatus === "No" && concerns.some((c) => c.source === "oil")));
 
+  const handleClose = () => {
+    if (!onClose) return;
+    onClose({ serviceChoice, oilStatus, concerns });
+  };
+
   const footer = (
     <>
-      <button type="button" onClick={onClose} style={buildModalButton("ghost")}>
+      <button type="button" onClick={handleClose} style={buildModalButton("ghost")}>
         Close
       </button>
       <button
@@ -241,7 +246,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
     <VHCModalShell
       isOpen={isOpen}
       title="Service Indicator & Under Bonnet"
-      onClose={onClose}
+      onClose={handleClose}
       hideCloseButton
       width="1280px"
       height="780px"

@@ -20,12 +20,22 @@ const statusPalette = {
   good: { fill: "#43A047", text: "#E6F4EA", label: "#4ADE80" },
 };
 
-const getReadingStatus = (value) => {
+export const getReadingStatus = (value) => {
   const reading = typeof value === "number" ? value : parseFloat(value);
   if (Number.isNaN(reading)) return { readingText: "–", status: "unknown" };
   if (reading <= 2.5) return { readingText: `${reading.toFixed(1)} mm`, status: "danger" };
   if (reading <= 3.5) return { readingText: `${reading.toFixed(1)} mm`, status: "advisory" };
   return { readingText: `${reading.toFixed(1)} mm`, status: "good" };
+};
+
+const resolveTyreEntry = (value) => {
+  if (value && typeof value === "object" && !(value instanceof Array)) {
+    return {
+      depth: value.depth,
+      overrideStatus: value.severity,
+    };
+  }
+  return { depth: value, overrideStatus: null };
 };
 
 export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareActive = false, onSpareSelect }) {
@@ -88,9 +98,11 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
         <line x1="58" y1="198" x2="248" y2="198" stroke={axleColor} strokeWidth="5" strokeLinecap="round" />
 
         {TYRE_KEYS.map(({ key, label, position }) => {
-          const value = tyres?.[key];
-          const { readingText, status } = getReadingStatus(value);
-          const colors = statusPalette[status];
+          const entry = tyres?.[key];
+          const { depth, overrideStatus } = resolveTyreEntry(entry);
+          const { readingText, status: baseStatus } = getReadingStatus(depth);
+          const status = overrideStatus || baseStatus;
+          const colors = statusPalette[status] || statusPalette.unknown;
           const isActive = activeKey === key;
 
           return (
