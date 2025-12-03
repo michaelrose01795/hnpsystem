@@ -181,6 +181,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
             const concerns = data[category]?.concerns ?? [];
             const redCount = concerns.filter((c) => c.status === "Red").length;
             const amberCount = concerns.filter((c) => c.status === "Amber").length;
+            const loggedCount = redCount + amberCount;
 
             return (
               <button
@@ -198,19 +199,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                   Tap to log observations or review existing issues.
                 </span>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                  <div style={summaryBadgeBase}>
-                    {concerns.length} logged
-                  </div>
-                  {redCount > 0 ? (
-                    <div style={{ ...summaryBadgeBase, color: palette.danger, borderColor: palette.danger }}>
-                      {redCount} Red
-                    </div>
-                  ) : null}
-                  {amberCount > 0 ? (
-                    <div style={{ ...summaryBadgeBase, color: palette.warning, borderColor: palette.warning }}>
-                      {amberCount} Amber
-                    </div>
-                  ) : null}
+                  <div style={summaryBadgeBase}>{loggedCount} logged</div>
                 </div>
               </button>
             );
