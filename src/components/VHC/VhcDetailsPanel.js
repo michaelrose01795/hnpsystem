@@ -962,7 +962,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
             <iframe
               title="Live VHC Health Check"
               key={resolvedJobNumber}
-              src={`/job-cards/${encodeURIComponent(resolvedJobNumber)}/vhc?embed=1`}
+              src={`/job-cards/${encodeURIComponent(resolvedJobNumber)}/vhc?embed=sections`}
               style={{
                 width: "100%",
                 minHeight: "80vh",

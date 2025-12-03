@@ -71,6 +71,9 @@ const styles = vhcLayoutStyles;
 export default function VHCPAGE() {
   const router = useRouter();
   const { jobNumber } = router.query;
+  const embedModeParam = typeof router.query?.embed === "string" ? router.query.embed : null;
+  const isEmbeddedView = Boolean(embedModeParam);
+  const embedSectionsOnly = embedModeParam === "sections";
   const isEmbed = router?.query?.embed === "1";
 
   // ✅ Initial VHC data structure
@@ -464,25 +467,27 @@ export default function VHCPAGE() {
             <div style={styles.progressTrack}>
               <div style={{ ...styles.progressFill, width: progressWidth }} />
             </div>
-            <button
-              type="button"
-              onClick={() => setShowSummaryModal(true)}
-              style={{
-                marginTop: "10px",
-                alignSelf: "flex-start",
-                padding: "8px 14px",
-                borderRadius: "12px",
-                border: "1px solid #e5e7eb",
-                background: "#fff",
-                color: themeConfig.palette.accent,
-                fontWeight: 700,
-                fontSize: "12px",
-                boxShadow: "0 6px 14px rgba(0,0,0,0.06)",
-                cursor: "pointer",
-              }}
-            >
-              Summary
-            </button>
+            {!embedSectionsOnly && (
+              <button
+                type="button"
+                onClick={() => setShowSummaryModal(true)}
+                style={{
+                  marginTop: "10px",
+                  alignSelf: "flex-start",
+                  padding: "8px 14px",
+                  borderRadius: "12px",
+                  border: "1px solid #e5e7eb",
+                  background: "#fff",
+                  color: themeConfig.palette.accent,
+                  fontWeight: 700,
+                  fontSize: "12px",
+                  boxShadow: "0 6px 14px rgba(0,0,0,0.06)",
+                  cursor: "pointer",
+                }}
+              >
+                Summary
+              </button>
+            )}
             {saveStatusMessage && (
               <span
                 style={{
@@ -577,7 +582,7 @@ export default function VHCPAGE() {
           </div>
         </div>
 
-        {showSummaryModal && (
+        {!embedSectionsOnly && showSummaryModal && (
           <div
             style={{
               position: "fixed",
@@ -760,12 +765,20 @@ export default function VHCPAGE() {
     </div>
   );
 
-  if (isEmbed) {
-    return (
-      <div style={{ padding: "16px", background: "#f8fafc", minHeight: "100vh" }}>
-        {pageContent}
-      </div>
-    );
+  const wrappedContent = (
+    <div
+      style={{
+        padding: isEmbeddedView ? "16px" : "0",
+        background: isEmbeddedView ? "#f8fafc" : "transparent",
+        minHeight: isEmbeddedView ? "100vh" : "auto",
+      }}
+    >
+      {pageContent}
+    </div>
+  );
+
+  if (isEmbeddedView) {
+    return wrappedContent;
   }
 
   return <Layout>{pageContent}</Layout>;
