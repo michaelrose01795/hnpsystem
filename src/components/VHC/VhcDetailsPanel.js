@@ -4,6 +4,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabaseClient";
+import { summariseTechnicianVhc } from "@/lib/vhc/summary";
 
 const STATUS_BADGES = {
   red: "#ef4444",
@@ -20,6 +21,39 @@ const TAB_OPTIONS = [
   { id: "parts-on-order", label: "Parts On Order" },
   { id: "photos", label: "Photos" },
   { id: "videos", label: "Videos" },
+];
+
+const HEALTH_SECTION_CONFIG = [
+  {
+    key: "wheelsTyres",
+    label: "Wheels & Tyres",
+    description: "Tyre tread readings, wheel condition, and spare/repair kit notes.",
+  },
+  {
+    key: "brakesHubs",
+    label: "Brakes & Hubs",
+    description: "Pad and disc measurements along with hub inspection comments.",
+  },
+  {
+    key: "serviceIndicator",
+    label: "Service Indicator & Under Bonnet",
+    description: "Service reminders, oil level/condition, and under-bonnet checks.",
+  },
+  {
+    key: "externalInspection",
+    label: "External / Drive-in Inspection",
+    description: "Bodywork, glass, and drive-in observations recorded by the technician.",
+  },
+  {
+    key: "internalElectrics",
+    label: "Internal Electrics",
+    description: "Interior lighting, horn, wipers, HVAC, and warning lamp checks.",
+  },
+  {
+    key: "underside",
+    label: "Underside Inspection",
+    description: "Suspension, steering, exhaust, and leak inspections underneath the vehicle.",
+  },
 ];
 
 const CATEGORY_DEFINITIONS = [
@@ -159,83 +193,197 @@ const formatMeasurement = (value) => {
   return value.toString();
 };
 
-const HealthCheckSection = ({ section }) => {
-  const colour = normaliseColour(section.colour);
+const deriveSectionSeverity = (metrics = {}) => {
+  if ((metrics.red || 0) > 0) return "red";
+  if ((metrics.amber || 0) > 0) return "amber";
+  if ((metrics.grey || 0) > 0) return "grey";
+  if ((metrics.total || 0) > 0) return "green";
+  return null;
+};
+
+const buildSeverityBadgeStyles = (status) => {
+  const colour = normaliseColour(status);
+  return {
+    background: COLOUR_CLASS[colour] || "#f3f4f6",
+    color: STATUS_BADGES[colour] || "#374151",
+  };
+};
+
+const mapRows = (rows = []) => {
+  if (!Array.isArray(rows)) return [];
+  return rows.filter((entry) => typeof entry === "string" && entry.trim().length > 0);
+};
+
+const HealthSectionCard = ({ config, section }) => {
+  const metrics = section?.metrics || {};
+  const severity = deriveSectionSeverity(metrics);
+  const severityLabel = severity
+    ? `${severity.charAt(0).toUpperCase()}${severity.slice(1)} ${
+        severity === "green" ? "status" : "issues"
+      }`
+    : "No status";
+  const items = Array.isArray(section?.items) ? section.items : [];
+  const hasItems = items.length > 0;
+
+  const headerBadgeBase = {
+    padding: "4px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: 600,
+    border: "1px solid #e5e7eb",
+    background: "#f9fafb",
+    color: "#4b5563",
+  };
+
   return (
     <div
       style={{
         border: "1px solid #e5e7eb",
-        borderRadius: "12px",
-        padding: "16px",
+        borderRadius: "16px",
         background: "#fff",
+        padding: "20px",
         display: "flex",
         flexDirection: "column",
-        gap: "8px",
+        gap: "16px",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h4 style={{ margin: 0, fontSize: "16px", fontWeight: 700 }}>{section.name || section.title || "Section"}</h4>
-        {colour ? (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: "16px",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ flex: 1, minWidth: "220px" }}>
+          <p style={{ margin: 0, fontSize: "13px", color: "#9ca3af", letterSpacing: "0.16em" }}>
+            Section
+          </p>
+          <h3 style={{ margin: "4px 0 6px", fontSize: "18px", fontWeight: 700, color: "#111827" }}>
+            {config.label}
+          </h3>
+          <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>{config.description}</p>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "flex-end" }}>
           <span
             style={{
-              padding: "4px 10px",
-              borderRadius: "999px",
-              background: COLOUR_CLASS[colour] || "#f3f4f6",
-              color: STATUS_BADGES[colour] || "#374151",
-              fontSize: "12px",
-              fontWeight: 600,
+              ...headerBadgeBase,
+              ...(severity ? buildSeverityBadgeStyles(severity) : {}),
               textTransform: "capitalize",
             }}
           >
-            {colour}
+            {severity ? severityLabel : "No issues"}
           </span>
-        ) : null}
+          <span style={headerBadgeBase}>
+            {(metrics.total ?? 0).toString()} item{(metrics.total ?? 0) === 1 ? "" : "s"}
+          </span>
+        </div>
       </div>
-      {(section.items || []).length === 0 ? (
-        <p style={{ margin: 0, color: "#9ca3af", fontStyle: "italic" }}>No items recorded.</p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          {(section.items || []).map((item, index) => {
-            const itemColour = normaliseColour(item.colour || item.status);
+
+      {hasItems ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          {items.map((item, idx) => {
+            const rows = mapRows(item.rows);
+            const concerns = Array.isArray(item.concerns) ? item.concerns.filter(Boolean) : [];
             return (
               <div
-                key={`${section.name || "section"}-${index}`}
+                key={`${config.key}-${idx}-${item.heading || item.label || "item"}`}
                 style={{
                   border: "1px solid #f3f4f6",
-                  borderRadius: "8px",
-                  padding: "12px",
-                  background: "#fafafa",
+                  borderRadius: "12px",
+                  padding: "14px",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "6px",
+                  gap: "10px",
+                  background: "#f9fafb",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: 600 }}>{item.label || "Item"}</span>
-                  {itemColour ? (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div style={{ minWidth: "200px" }}>
+                    <strong style={{ color: "#111827", fontSize: "14px" }}>
+                      {item.heading || item.label || `Item ${idx + 1}`}
+                    </strong>
+                    {item.notes ? (
+                      <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "13px" }}>{item.notes}</p>
+                    ) : null}
+                  </div>
+                  {item.status ? (
                     <span
                       style={{
-                        fontSize: "11px",
-                        padding: "2px 8px",
+                        padding: "4px 10px",
                         borderRadius: "999px",
-                        background: COLOUR_CLASS[itemColour] || "#f3f4f6",
-                        color: STATUS_BADGES[itemColour] || "#374151",
+                        fontSize: "12px",
+                        fontWeight: 600,
                         textTransform: "capitalize",
+                        ...buildSeverityBadgeStyles(item.status),
                       }}
                     >
-                      {itemColour}
+                      {normaliseColour(item.status) || item.status}
                     </span>
                   ) : null}
                 </div>
-                {item.measurement ? (
-                  <p style={{ margin: 0, fontSize: "13px", color: "#374151" }}>{item.measurement}</p>
+                {rows.length > 0 ? (
+                  <ul style={{ margin: 0, paddingLeft: "18px", color: "#374151", fontSize: "13px" }}>
+                    {rows.map((row, rowIdx) => (
+                      <li key={`${config.key}-${idx}-row-${rowIdx}`} style={{ marginBottom: "4px" }}>
+                        {row}
+                      </li>
+                    ))}
+                  </ul>
                 ) : null}
-                {item.notes ? (
-                  <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>{item.notes}</p>
+                {concerns.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {concerns.map((concern, concernIdx) => (
+                      <div
+                        key={`${config.key}-${idx}-concern-${concernIdx}`}
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          alignItems: "flex-start",
+                          fontSize: "13px",
+                          color: "#374151",
+                        }}
+                      >
+                        <span
+                          style={{
+                            padding: "2px 8px",
+                            borderRadius: "8px",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            textTransform: "capitalize",
+                            ...buildSeverityBadgeStyles(concern.status),
+                          }}
+                        >
+                          {normaliseColour(concern.status) || concern.status || "note"}
+                        </span>
+                        <span>{concern.text || concern.notes || "Concern recorded"}</span>
+                      </div>
+                    ))}
+                  </div>
                 ) : null}
               </div>
             );
           })}
+        </div>
+      ) : (
+        <div
+          style={{
+            border: "1px dashed #cbd5f5",
+            borderRadius: "12px",
+            padding: "16px",
+            background: "#f8fafc",
+            color: "#64748b",
+            fontSize: "13px",
+          }}
+        >
+          No technician entries have been captured for this section yet.
         </div>
       )}
     </div>
@@ -355,7 +503,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     setCategorySelections({});
   }, [resolvedJobNumber]);
 
-  const sections = useMemo(() => builderData?.sections || [], [builderData]);
   const jobParts = useMemo(
     () =>
       Array.isArray(job?.parts_job_items)
@@ -392,6 +539,33 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     () =>
       Array.isArray(job?.job_files) ? job.job_files.filter(Boolean) : [],
     [job]
+  );
+  const builderSummary = useMemo(
+    () => summariseTechnicianVhc(builderData || {}),
+    [builderData]
+  );
+  const sections = builderSummary.sections || [];
+  const orderedHealthSections = useMemo(() => {
+    const keyedSections = new Map();
+    sections.forEach((section) => {
+      if (section?.key) {
+        keyedSections.set(section.key, section);
+      }
+    });
+    return HEALTH_SECTION_CONFIG.map((config) => ({
+      config,
+      data:
+        keyedSections.get(config.key) ||
+        sections.find((section) => section.title === config.label) ||
+        null,
+    }));
+  }, [sections]);
+  const hasHealthData = useMemo(
+    () =>
+      orderedHealthSections.some(
+        ({ data }) => Array.isArray(data?.items) && data.items.length > 0
+      ),
+    [orderedHealthSections]
   );
   const summaryItems = useMemo(() => {
     const items = [];
@@ -940,42 +1114,74 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       )}
 
       {activeTab === "health-check" && (
-        readOnly ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            {(builderData?.sections || []).length === 0 ? (
-              <div style={{ padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", background: "#fff" }}>
-                <p style={{ margin: 0, color: "#9ca3af" }}>No structured health check data available.</p>
-              </div>
-            ) : (
-              (builderData.sections || []).map((section) => <HealthCheckSection key={section.name || section.title} section={section} />)
-            )}
-          </div>
-        ) : resolvedJobNumber ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
           <div
             style={{
               border: "1px solid #e5e7eb",
               borderRadius: "16px",
-              overflow: "hidden",
-              minHeight: "80vh",
+              padding: "18px",
+              background: "#fff",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "16px",
+              flexWrap: "wrap",
             }}
           >
-            <iframe
-              title="Live VHC Health Check"
-              key={resolvedJobNumber}
-              src={`/job-cards/${encodeURIComponent(resolvedJobNumber)}/vhc?embed=sections`}
+            <div style={{ flex: 1, minWidth: "240px" }}>
+              <p style={{ margin: 0, fontSize: "13px", color: "#9ca3af", letterSpacing: "0.16em" }}>
+                Technician Workspace
+              </p>
+              <h3 style={{ margin: "4px 0 6px", fontSize: "18px", fontWeight: 700, color: "#111827" }}>
+                Live health check overview
+              </h3>
+              <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>
+                Review each section gathered from the VHC builder without leaving the job card.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                resolvedJobNumber
+                  ? router.push(`/job-cards/${encodeURIComponent(resolvedJobNumber)}/vhc`)
+                  : null
+              }
               style={{
-                width: "100%",
-                minHeight: "80vh",
-                border: "none",
-                background: "#f8fafc",
+                padding: "10px 18px",
+                borderRadius: "12px",
+                border: "1px solid #d10000",
+                background: resolvedJobNumber ? "#d10000" : "#f3f4f6",
+                color: resolvedJobNumber ? "#fff" : "#9ca3af",
+                fontWeight: 600,
+                cursor: resolvedJobNumber ? "pointer" : "not-allowed",
               }}
-            />
+              disabled={!resolvedJobNumber}
+            >
+              Open VHC Workspace
+            </button>
           </div>
-        ) : (
-          <div style={{ padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", background: "#fff" }}>
-            <p style={{ margin: 0, color: "#9ca3af" }}>Loading live health check…</p>
-          </div>
-        )
+
+          {orderedHealthSections.map(({ config, data }) => (
+            <HealthSectionCard key={config.key} config={config} section={data} />
+          ))}
+
+          {!hasHealthData && (
+            <div
+              style={{
+                border: "1px dashed #e5e7eb",
+                borderRadius: "14px",
+                padding: "20px",
+                background: "#fff",
+                color: "#6b7280",
+                fontSize: "13px",
+                textAlign: "center",
+              }}
+            >
+              Technicians have not recorded any VHC data yet. Use the button above to open the full builder view and
+              start a health check for this job.
+            </div>
+          )}
+        </div>
       )}
 
       {activeTab === "parts-identified" && (
