@@ -35,31 +35,37 @@ const HEALTH_SECTION_CONFIG = [
     key: "wheelsTyres",
     label: "Wheels & Tyres",
     description: "Tyre tread readings, wheel condition, and spare/repair kit notes.",
+    aliases: ["Wheels & Tyres"],
   },
   {
     key: "brakesHubs",
     label: "Brakes & Hubs",
     description: "Pad and disc measurements along with hub inspection comments.",
+    aliases: ["Brakes & Hubs"],
   },
   {
     key: "serviceIndicator",
     label: "Service Indicator & Under Bonnet",
     description: "Service reminders, oil level/condition, and under-bonnet checks.",
+    aliases: ["Service Indicator & Under Bonnet"],
   },
   {
     key: "externalInspection",
     label: "External / Drive-in Inspection",
     description: "Bodywork, glass, and drive-in observations recorded by the technician.",
+    aliases: ["External / Drive-in Inspection"],
   },
   {
     key: "internalElectrics",
     label: "Internal Electrics",
     description: "Interior lighting, horn, wipers, HVAC, and warning lamp checks.",
+    aliases: ["Internal / Lamps / Electrics"],
   },
   {
     key: "underside",
     label: "Underside Inspection",
     description: "Suspension, steering, exhaust, and leak inspections underneath the vehicle.",
+    aliases: ["Underside", "Underside Inspection"],
   },
 ];
 
@@ -193,6 +199,13 @@ const COLOUR_CLASS = {
   grey: "#f3f4f6",
 };
 
+const SEVERITY_THEME = {
+  red: { background: "#fef2f2", border: "#fecaca", text: "#b91c1c" },
+  amber: { background: "#fffbeb", border: "#fde68a", text: "#92400e" },
+  green: { background: "#ecfdf5", border: "#a7f3d0", text: "#047857" },
+  grey: { background: "#f3f4f6", border: "#e5e7eb", text: "#374151" },
+};
+
 const normalizeText = (value = "") => value.toString().toLowerCase();
 
 const resolveCategoryForItem = (sectionName = "", itemLabel = "") => {
@@ -277,14 +290,25 @@ const deriveSectionSeverity = (metrics = {}) => {
 const buildSeverityBadgeStyles = (status) => {
   const colour = normaliseColour(status);
   return {
-    background: COLOUR_CLASS[colour] || "#f3f4f6",
-    color: STATUS_BADGES[colour] || "#374151",
+    background: (colour && SEVERITY_THEME[colour]?.background) || COLOUR_CLASS[colour] || "#f3f4f6",
+    color: (colour && SEVERITY_THEME[colour]?.text) || STATUS_BADGES[colour] || "#374151",
   };
 };
 
 const mapRows = (rows = []) => {
   if (!Array.isArray(rows)) return [];
   return rows.filter((entry) => typeof entry === "string" && entry.trim().length > 0);
+};
+
+const determineItemSeverity = (item = {}) => {
+  const direct = normaliseColour(item.status);
+  if (direct === "red" || direct === "amber") return direct;
+  const concernSeverity = (item.concerns || [])
+    .map((concern) => normaliseColour(concern?.status))
+    .find((status) => status === "red" || status === "amber");
+  if (concernSeverity) return concernSeverity;
+  if (direct) return direct;
+  return null;
 };
 
 const HealthSectionCard = ({ config, section, onOpen }) => {
@@ -384,17 +408,19 @@ const HealthSectionCard = ({ config, section, onOpen }) => {
           {items.map((item, idx) => {
             const rows = mapRows(item.rows);
             const concerns = Array.isArray(item.concerns) ? item.concerns.filter(Boolean) : [];
+            const itemSeverity = determineItemSeverity(item);
+            const theme = itemSeverity ? SEVERITY_THEME[itemSeverity] : null;
             return (
               <div
                 key={`${config.key}-${idx}-${item.heading || item.label || "item"}`}
                 style={{
-                  border: "1px solid #f3f4f6",
+                  border: `1px solid ${theme?.border || "#f3f4f6"}`,
                   borderRadius: "12px",
                   padding: "14px",
                   display: "flex",
                   flexDirection: "column",
                   gap: "10px",
-                  background: "#f9fafb",
+                  background: theme?.background || "#f9fafb",
                 }}
               >
                 <div
@@ -448,6 +474,9 @@ const HealthSectionCard = ({ config, section, onOpen }) => {
                           alignItems: "flex-start",
                           fontSize: "13px",
                           color: "#374151",
+                          background: SEVERITY_THEME[normaliseColour(concern.status)]?.background || "#fff",
+                          borderRadius: "10px",
+                          padding: "8px 10px",
                         }}
                       >
                         <span
@@ -728,6 +757,17 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       ),
     [orderedHealthSections]
   );
+  const sectionLabelMap = useMemo(() => {
+    const map = new Map();
+    HEALTH_SECTION_CONFIG.forEach(({ key, label, aliases = [] }) => {
+      map.set(key.toLowerCase(), key);
+      [label, ...aliases].forEach((entry) => {
+        if (!entry) return;
+        map.set(entry.toLowerCase(), key);
+      });
+    });
+    return map;
+  }, []);
   const sectionSaveMessage = useMemo(() => {
     if (sectionSaveStatus === "saving") return "Saving section…";
     if (sectionSaveStatus === "saved") {
@@ -748,6 +788,15 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const handleOpenSection = useCallback((sectionKey) => {
     setActiveSection(sectionKey);
   }, []);
+
+  const openSectionFromSummary = useCallback(
+    (sectionKey) => {
+      if (!sectionKey) return;
+      setActiveTab("health-check");
+      handleOpenSection(sectionKey);
+    },
+    [handleOpenSection]
+  );
 
   const handleSectionDismiss = useCallback(
     (sectionKey, draftData) => {
@@ -829,6 +878,35 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     });
     return base;
   }, [summaryItems]);
+  const resolveSectionKeyForItem = useCallback(
+    (item) => {
+      const candidates = [
+        item?.sectionName,
+        item?.category?.label,
+        item?.category?.id,
+      ]
+        .filter(Boolean)
+        .map((value) => value.toString().toLowerCase());
+      for (const candidate of candidates) {
+        if (sectionLabelMap.has(candidate)) {
+          return sectionLabelMap.get(candidate);
+        }
+      }
+      return null;
+    },
+    [sectionLabelMap]
+  );
+
+  const handleSummaryItemNavigate = useCallback(
+    (item) => {
+      if (readOnly) return;
+      const sectionKey = resolveSectionKeyForItem(item);
+      if (sectionKey) {
+        openSectionFromSummary(sectionKey);
+      }
+    },
+    [readOnly, resolveSectionKeyForItem, openSectionFromSummary]
+  );
   const ensureEntryValue = (state, itemId) =>
     state[itemId] || { partsCost: "", laborHours: "", totalOverride: "", status: null };
 
@@ -901,17 +979,18 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     setCategorySelections((prev) => ({ ...prev, [blockKey]: [] }));
   };
 
-  const renderCategoryTable = (severity, category, items) => {
+  const renderCategoryTable = (severity, category, items, onItemNavigate) => {
     const blockKey = `${severity}:${category.id}`;
     const selectedIds = categorySelections[blockKey] || [];
     const selectedSet = new Set(selectedIds);
     const allChecked = items.length > 0 && selectedSet.size === items.length;
     const selectionEnabled = !readOnly;
+    const blockTheme = SEVERITY_THEME[severity] || { border: "#f1f5f9" };
     return (
       <div
         key={blockKey}
         style={{
-          border: "1px solid #f1f5f9",
+          border: `1px solid ${blockTheme.border}`,
           borderRadius: "16px",
           background: "#fff",
           overflow: "hidden",
@@ -977,16 +1056,37 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                   ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
                   : null;
                 const isChecked = selectedSet.has(item.id);
+                const rowSeverity = item.displaySeverity || severity;
+                const rowTheme = SEVERITY_THEME[rowSeverity] || {};
+                const isClickable = typeof onItemNavigate === "function" && !readOnly;
 
                 return (
-                  <tr key={item.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "12px 16px", color: "#111827" }}>
-                      <div style={{ fontWeight: 600 }}>{item.label}</div>
+                  <tr
+                    key={item.id}
+                    onClick={() => {
+                      if (isClickable) {
+                        onItemNavigate(item);
+                      }
+                    }}
+                    style={{
+                      borderBottom: "1px solid #f1f5f9",
+                      background: rowTheme.background || "#fff",
+                      cursor: isClickable ? "pointer" : "default",
+                      transition: "background 0.2s ease",
+                    }}
+                  >
+                    <td style={{ padding: "12px 16px", color: "#111827", width: "32%" }}>
+                      <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#9ca3af" }}>
+                        {category.label}
+                      </div>
+                      <div style={{ fontWeight: 700, fontSize: "14px", color: "#111827", marginTop: "2px" }}>
+                        {item.label || item.sectionName || "Recorded item"}
+                        {item.measurement ? (
+                          <span style={{ fontWeight: 500, color: "#4b5563", marginLeft: "6px" }}>· {item.measurement}</span>
+                        ) : null}
+                      </div>
                       {item.notes ? (
                         <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>{item.notes}</div>
-                      ) : null}
-                      {item.measurement ? (
-                        <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>{item.measurement}</div>
                       ) : null}
                       {locationLabel ? (
                         <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>Location: {locationLabel}</div>
@@ -1299,14 +1399,32 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
             const section = severitySections[severity];
             if (!section || section.size === 0) return null;
             const meta = SEVERITY_META[severity];
+            const severityTheme = SEVERITY_THEME[severity] || { border: "#f1f5f9", background: "#fff8f8" };
             return (
-              <div key={severity} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div>
+              <div
+                key={severity}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                  border: `2px solid ${severityTheme.border}`,
+                  borderRadius: "18px",
+                  padding: "18px",
+                  background: "#fff",
+                  boxShadow: "0 12px 30px rgba(15,23,42,0.08)",
+                }}
+              >
+                <div
+                  style={{
+                    borderBottom: `1px solid ${severityTheme.border}`,
+                    paddingBottom: "10px",
+                  }}
+                >
                   <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
                   <p style={{ margin: "4px 0 0", color: "#6b7280" }}>{meta.description}</p>
                 </div>
                 {Array.from(section.values()).map(({ category, items }) =>
-                  renderCategoryTable(severity, category, items)
+                  renderCategoryTable(severity, category, items, handleSummaryItemNavigate)
                 )}
               </div>
             );
