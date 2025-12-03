@@ -71,6 +71,7 @@ const styles = vhcLayoutStyles;
 export default function VHCPAGE() {
   const router = useRouter();
   const { jobNumber } = router.query;
+  const isEmbed = router?.query?.embed === "1";
 
   // ✅ Initial VHC data structure
   const [jobInfo, setJobInfo] = useState(null);
@@ -446,9 +447,8 @@ export default function VHCPAGE() {
       ? themeConfig.palette.accent
       : themeConfig.palette.textMuted;
 
-  return (
-    <Layout>
-      <div style={styles.page}>
+  const pageContent = (
+    <div style={styles.page}>
         <div style={styles.headerCard}>
           <div style={styles.headerTopRow}>
             <div style={styles.headerTitleBlock}>
@@ -757,7 +757,16 @@ export default function VHCPAGE() {
             onComplete={(data) => handleSectionComplete("underside", data)}
           />
         )}
-      </div>
-    </Layout>
+    </div>
   );
+
+  if (isEmbed) {
+    return (
+      <div style={{ padding: "16px", background: "#f8fafc", minHeight: "100vh" }}>
+        {pageContent}
+      </div>
+    );
+  }
+
+  return <Layout>{pageContent}</Layout>;
 }

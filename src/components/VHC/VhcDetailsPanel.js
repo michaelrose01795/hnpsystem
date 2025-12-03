@@ -940,15 +940,42 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       )}
 
       {activeTab === "health-check" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {(builderData?.sections || []).length === 0 ? (
-            <div style={{ padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", background: "#fff" }}>
-              <p style={{ margin: 0, color: "#9ca3af" }}>No structured health check data available.</p>
-            </div>
-          ) : (
-            (builderData.sections || []).map((section) => <HealthCheckSection key={section.name || section.title} section={section} />)
-          )}
-        </div>
+        readOnly ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {(builderData?.sections || []).length === 0 ? (
+              <div style={{ padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", background: "#fff" }}>
+                <p style={{ margin: 0, color: "#9ca3af" }}>No structured health check data available.</p>
+              </div>
+            ) : (
+              (builderData.sections || []).map((section) => <HealthCheckSection key={section.name || section.title} section={section} />)
+            )}
+          </div>
+        ) : resolvedJobNumber ? (
+          <div
+            style={{
+              border: "1px solid #e5e7eb",
+              borderRadius: "16px",
+              overflow: "hidden",
+              minHeight: "80vh",
+            }}
+          >
+            <iframe
+              title="Live VHC Health Check"
+              key={resolvedJobNumber}
+              src={`/job-cards/${encodeURIComponent(resolvedJobNumber)}/vhc?embed=1`}
+              style={{
+                width: "100%",
+                minHeight: "80vh",
+                border: "none",
+                background: "#f8fafc",
+              }}
+            />
+          </div>
+        ) : (
+          <div style={{ padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", background: "#fff" }}>
+            <p style={{ margin: 0, color: "#9ca3af" }}>Loading live health check…</p>
+          </div>
+        )
       )}
 
       {activeTab === "parts-identified" && (
