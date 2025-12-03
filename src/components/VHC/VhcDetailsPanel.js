@@ -186,6 +186,12 @@ const LOCATION_LABELS = {
 };
 
 const SEVERITY_RANK = { red: 3, amber: 2, grey: 1, green: 0 };
+const RANK_TO_SEVERITY = {
+  3: "red",
+  2: "amber",
+  1: "grey",
+  0: "green",
+};
 const LABOUR_RATE = 155;
 const SEVERITY_META = {
   red: { title: "Red Repairs", description: "Critical safety issues that require immediate authorization.", accent: "#b91c1c" },
@@ -529,7 +535,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("summary");
   const [itemEntries, setItemEntries] = useState({});
-  const [categorySelections, setCategorySelections] = useState({});
+  const [severitySelections, setSeveritySelections] = useState({ red: [], amber: [] });
   const [activeSection, setActiveSection] = useState(null);
   const [sectionSaveStatus, setSectionSaveStatus] = useState("idle");
   const [sectionSaveError, setSectionSaveError] = useState("");
@@ -658,7 +664,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
   useEffect(() => {
     setItemEntries({});
-    setCategorySelections({});
+    setSeveritySelections({ red: [], amber: [] });
   }, [resolvedJobNumber]);
 
   useEffect(() => {
@@ -757,17 +763,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       ),
     [orderedHealthSections]
   );
-  const sectionLabelMap = useMemo(() => {
-    const map = new Map();
-    HEALTH_SECTION_CONFIG.forEach(({ key, label, aliases = [] }) => {
-      map.set(key.toLowerCase(), key);
-      [label, ...aliases].forEach((entry) => {
-        if (!entry) return;
-        map.set(entry.toLowerCase(), key);
-      });
-    });
-    return map;
-  }, []);
   const sectionSaveMessage = useMemo(() => {
     if (sectionSaveStatus === "saving") return "Saving section…";
     if (sectionSaveStatus === "saved") {
@@ -788,15 +783,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const handleOpenSection = useCallback((sectionKey) => {
     setActiveSection(sectionKey);
   }, []);
-
-  const openSectionFromSummary = useCallback(
-    (sectionKey) => {
-      if (!sectionKey) return;
-      setActiveTab("health-check");
-      handleOpenSection(sectionKey);
-    },
-    [handleOpenSection]
-  );
 
   const handleSectionDismiss = useCallback(
     (sectionKey, draftData) => {
@@ -862,6 +848,28 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       item.displaySeverity = locRank > itemRank ? "red" : item.rawSeverity;
     });
 
+    const categoryRanks = new Map();
+    items.forEach((item) => {
+      const categoryId = item.category?.id;
+      if (!categoryId) return;
+      const rank = SEVERITY_RANK[item.displaySeverity || item.rawSeverity] ?? 0;
+      const prev = categoryRanks.get(categoryId) ?? -1;
+      if (rank > prev) {
+        categoryRanks.set(categoryId, rank);
+      }
+    });
+
+    items.forEach((item) => {
+      const categoryId = item.category?.id;
+      if (!categoryId) return;
+      const categoryRank = categoryRanks.get(categoryId);
+      if (typeof categoryRank !== "number") return;
+      const currentRank = SEVERITY_RANK[item.displaySeverity || item.rawSeverity] ?? -1;
+      if (categoryRank > currentRank) {
+        item.displaySeverity = RANK_TO_SEVERITY[categoryRank] || item.displaySeverity || "red";
+      }
+    });
+
     return items;
   }, [sections]);
 
@@ -878,35 +886,23 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     });
     return base;
   }, [summaryItems]);
-  const resolveSectionKeyForItem = useCallback(
-    (item) => {
-      const candidates = [
-        item?.sectionName,
-        item?.category?.label,
-        item?.category?.id,
-      ]
-        .filter(Boolean)
-        .map((value) => value.toString().toLowerCase());
-      for (const candidate of candidates) {
-        if (sectionLabelMap.has(candidate)) {
-          return sectionLabelMap.get(candidate);
-        }
-      }
-      return null;
-    },
-    [sectionLabelMap]
-  );
-
-  const handleSummaryItemNavigate = useCallback(
-    (item) => {
-      if (readOnly) return;
-      const sectionKey = resolveSectionKeyForItem(item);
-      if (sectionKey) {
-        openSectionFromSummary(sectionKey);
-      }
-    },
-    [readOnly, resolveSectionKeyForItem, openSectionFromSummary]
-  );
+  const severityLists = useMemo(() => {
+    const lists = { red: [], amber: [] };
+    ["red", "amber"].forEach((severity) => {
+      const section = severitySections[severity];
+      if (!section) return;
+      Array.from(section.values()).forEach(({ category, items }) => {
+        items.forEach((item) => {
+          lists[severity].push({
+            ...item,
+            categoryLabel: category.label,
+            categoryId: category.id,
+          });
+        });
+      });
+    });
+    return lists;
+  }, [severitySections]);
   const ensureEntryValue = (state, itemId) =>
     state[itemId] || { partsCost: "", laborHours: "", totalOverride: "", status: null };
 
@@ -946,84 +942,77 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     return "#facc15";
   };
 
-  const toggleRowSelection = (blockKey, itemId) => {
-    setCategorySelections((prev) => {
-      const existing = new Set(prev[blockKey] || []);
+  const toggleRowSelection = (severity, itemId) => {
+    if (readOnly) return;
+    setSeveritySelections((prev) => {
+      const existing = new Set(prev[severity] || []);
       if (existing.has(itemId)) {
         existing.delete(itemId);
       } else {
         existing.add(itemId);
       }
-      return { ...prev, [blockKey]: Array.from(existing) };
+      return { ...prev, [severity]: Array.from(existing) };
     });
   };
 
-  const handleSelectAll = (blockKey, items, checked) => {
-    setCategorySelections((prev) => ({
+  const handleSelectAll = (severity, items, checked) => {
+    if (readOnly) return;
+    setSeveritySelections((prev) => ({
       ...prev,
-      [blockKey]: checked ? items.map((item) => item.id) : [],
+      [severity]: checked ? items.map((item) => item.id) : [],
     }));
   };
 
-  const handleBulkStatus = (blockKey, status) => {
-    const selectedIds = categorySelections[blockKey] || [];
-    if (selectedIds.length === 0) return;
-    setItemEntries((prev) => {
-      const next = { ...prev };
-      selectedIds.forEach((id) => {
-        const current = ensureEntryValue(next, id);
-        next[id] = { ...current, status };
+  const handleBulkStatus = useCallback(
+    (severity, status) => {
+      const selectedIds = severitySelections[severity] || [];
+      if (selectedIds.length === 0) return;
+      setItemEntries((prev) => {
+        const next = { ...prev };
+        selectedIds.forEach((id) => {
+          const current = ensureEntryValue(next, id);
+          next[id] = { ...current, status };
+        });
+        return next;
       });
-      return next;
-    });
-    setCategorySelections((prev) => ({ ...prev, [blockKey]: [] }));
-  };
+      setSeveritySelections((prev) => ({ ...prev, [severity]: [] }));
+    },
+    [severitySelections]
+  );
 
-  const renderCategoryTable = (severity, category, items, onItemNavigate) => {
-    const blockKey = `${severity}:${category.id}`;
-    const selectedIds = categorySelections[blockKey] || [];
+  const renderSeverityTable = (severity) => {
+    const items = severityLists[severity] || [];
+    if (items.length === 0) {
+      return (
+        <div
+          style={{
+            padding: "18px",
+            border: "1px solid #f1f5f9",
+            borderRadius: "12px",
+            background: "#f8fafc",
+            color: "#64748b",
+            fontSize: "13px",
+          }}
+        >
+          No {severity} items recorded.
+        </div>
+      );
+    }
+    const selectionEnabled = !readOnly;
+    const selectedIds = severitySelections[severity] || [];
     const selectedSet = new Set(selectedIds);
     const allChecked = items.length > 0 && selectedSet.size === items.length;
-    const selectionEnabled = !readOnly;
-    const blockTheme = SEVERITY_THEME[severity] || { border: "#f1f5f9" };
+    const theme = SEVERITY_THEME[severity] || { border: "#f1f5f9" };
+
     return (
       <div
-        key={blockKey}
         style={{
-          border: `1px solid ${blockTheme.border}`,
+          border: `1px solid ${theme.border}`,
           borderRadius: "16px",
           background: "#fff",
           overflow: "hidden",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "16px",
-            borderBottom: "1px solid #f1f5f9",
-            flexWrap: "wrap",
-            gap: "12px",
-          }}
-        >
-          <div>
-            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700 }}>{category.label}</h3>
-            <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>
-              Concerns grouped under {category.label.toLowerCase()}.
-            </p>
-          </div>
-          {selectionEnabled && (
-            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#374151" }}>
-              <input
-                type="checkbox"
-                checked={allChecked}
-                onChange={(event) => handleSelectAll(blockKey, items, event.target.checked)}
-              />
-              Select all
-            </label>
-          )}
-        </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
             <thead>
@@ -1036,13 +1025,19 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                   fontSize: "11px",
                 }}
               >
-                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "220px" }}>Item Details</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "260px" }}>Item Details</th>
                 <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "180px" }}>Parts (Cost £)</th>
                 <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "160px" }}>Labour</th>
                 <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "160px" }}>Total</th>
                 <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "130px" }}>Status</th>
                 {selectionEnabled && (
-                  <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "90px" }}>Select</th>
+                  <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "90px" }}>
+                    <input
+                      type="checkbox"
+                      checked={allChecked}
+                      onChange={(event) => handleSelectAll(severity, items, event.target.checked)}
+                    />
+                  </th>
                 )}
               </tr>
             </thead>
@@ -1058,26 +1053,19 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                 const isChecked = selectedSet.has(item.id);
                 const rowSeverity = item.displaySeverity || severity;
                 const rowTheme = SEVERITY_THEME[rowSeverity] || {};
-                const isClickable = typeof onItemNavigate === "function" && !readOnly;
 
                 return (
                   <tr
                     key={item.id}
-                    onClick={() => {
-                      if (isClickable) {
-                        onItemNavigate(item);
-                      }
-                    }}
                     style={{
                       borderBottom: "1px solid #f1f5f9",
                       background: rowTheme.background || "#fff",
-                      cursor: isClickable ? "pointer" : "default",
                       transition: "background 0.2s ease",
                     }}
                   >
                     <td style={{ padding: "12px 16px", color: "#111827", width: "32%" }}>
                       <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#9ca3af" }}>
-                        {category.label}
+                        {item.categoryLabel || "Recorded Section"}
                       </div>
                       <div style={{ fontWeight: 700, fontSize: "14px", color: "#111827", marginTop: "2px" }}>
                         {item.label || item.sectionName || "Recorded item"}
@@ -1177,7 +1165,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                         <input
                           type="checkbox"
                           checked={isChecked}
-                          onChange={() => toggleRowSelection(blockKey, item.id)}
+                          onChange={() => toggleRowSelection(severity, item.id)}
                         />
                       </td>
                     )}
@@ -1199,7 +1187,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
           >
             <button
               type="button"
-              onClick={() => handleBulkStatus(blockKey, "declined")}
+              onClick={() => handleBulkStatus(severity, "declined")}
               disabled={selectedSet.size === 0}
               style={{
                 padding: "10px 16px",
@@ -1215,7 +1203,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
             </button>
             <button
               type="button"
-              onClick={() => handleBulkStatus(blockKey, "authorized")}
+              onClick={() => handleBulkStatus(severity, "authorized")}
               disabled={selectedSet.size === 0}
               style={{
                 padding: "10px 16px",
@@ -1423,9 +1411,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                   <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
                   <p style={{ margin: "4px 0 0", color: "#6b7280" }}>{meta.description}</p>
                 </div>
-                {Array.from(section.values()).map(({ category, items }) =>
-                  renderCategoryTable(severity, category, items, handleSummaryItemNavigate)
-                )}
+                {renderSeverityTable(severity)}
               </div>
             );
           })}
