@@ -107,6 +107,14 @@ const normaliseBrakesState = (initialData = {}) => {
   return { data, showDrum };
 };
 
+const getPadStatus = (value) => {
+  const reading = typeof value === "number" ? value : parseFloat(value);
+  if (Number.isNaN(reading)) return { text: "–", status: "unknown" };
+  if (reading <= 2) return { text: `${reading.toFixed(1)} mm`, status: "critical" };
+  if (reading <= 4) return { text: `${reading.toFixed(1)} mm`, status: "advisory" };
+  return { text: `${reading.toFixed(1)} mm`, status: "good" };
+};
+
 const DIAGRAM_SEVERITY_RANK = {
   Red: 1,
   Amber: 2,
