@@ -40,9 +40,18 @@ const getTodayDate = () => {
   return `${yyyy}-${mm}-${dd}`; // return formatted date
 };
 
-const STATUS_GROUPS = {
+const BASE_STATUS_OPTIONS = {
   today: TODAY_STATUSES,
   carryOver: CARRY_OVER_STATUSES,
+};
+
+const buildStatusOptions = (jobs, baseStatuses) => {
+  const statusSet = new Set(baseStatuses);
+  jobs.forEach((job) => {
+    const label = job?.status || "Unknown";
+    statusSet.add(label);
+  });
+  return Array.from(statusSet);
 };
 
 const normalizeString = (value) =>
@@ -125,8 +134,8 @@ export default function ViewJobCards() {
     carryOver: "",
   });
   const [statusFilters, setStatusFilters] = useState({
-    today: new Set(TODAY_STATUSES),
-    carryOver: new Set(CARRY_OVER_STATUSES),
+    today: new Set(),
+    carryOver: new Set(),
   });
   const [activeTab, setActiveTab] = useState("today"); // track active tab
   const [loading, setLoading] = useState(true); // loading state
@@ -205,9 +214,8 @@ export default function ViewJobCards() {
   const todayJobs = useMemo(
     () =>
       jobs.filter((job) => {
-        const status = job.status || "";
         const jobDate = jobDateLookup[job.id];
-        return jobDate === today && TODAY_STATUSES.includes(status);
+        return jobDate === today;
       }),
     [jobs, today, jobDateLookup]
   );
@@ -215,9 +223,8 @@ export default function ViewJobCards() {
   const carryOverJobs = useMemo(
     () =>
       jobs.filter((job) => {
-        const status = job.status || "";
         const jobDate = jobDateLookup[job.id];
-        return jobDate !== today && CARRY_OVER_STATUSES.includes(status);
+        return jobDate !== today;
       }),
     [jobs, today, jobDateLookup]
   );
@@ -250,23 +257,30 @@ export default function ViewJobCards() {
   const resetStatuses = (tab) => {
     setStatusFilters((prev) => ({
       ...prev,
-      [tab]: new Set(STATUS_GROUPS[tab]),
+      [tab]: new Set(),
     }));
   };
 
   const baseJobs = activeTab === "today" ? todayJobs : carryOverJobs;
-  const statusOptions = STATUS_GROUPS[activeTab];
+  const statusOptionsMap = useMemo(
+    () => ({
+      today: buildStatusOptions(todayJobs, BASE_STATUS_OPTIONS.today),
+      carryOver: buildStatusOptions(carryOverJobs, BASE_STATUS_OPTIONS.carryOver),
+    }),
+    [todayJobs, carryOverJobs]
+  );
+  const statusOptions = statusOptionsMap[activeTab];
   const statusCounts =
     activeTab === "today" ? todayStatusCounts : carryStatusCounts;
-  const activeStatuses = statusFilters[activeTab];
+  const disabledStatuses = statusFilters[activeTab];
   const searchValue = searchValues[activeTab]?.trim().toLowerCase() || "";
 
   const filteredByStatus = baseJobs.filter((job) => {
-    if (statusOptions.length && !statusOptions.includes(job.status || "")) {
-      return false;
+    const jobStatus = job.status || "Unknown";
+    if (!statusOptions.includes(jobStatus)) {
+      return true;
     }
-    if (activeStatuses.size === 0) return true;
-    return activeStatuses.has(job.status);
+    return !disabledStatuses.has(jobStatus);
   });
 
   const filteredJobs = searchValue
@@ -538,7 +552,7 @@ export default function ViewJobCards() {
           >
             {statusOptions.map((status) => {
               const count = statusCounts[status] || 0;
-              const isActive = activeStatuses.has(status);
+              const isActive = !disabledStatuses.has(status);
               return (
                 <button
                   key={status}
