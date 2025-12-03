@@ -51,9 +51,9 @@ const HEALTH_SECTION_CONFIG = [
   },
   {
     key: "externalInspection",
-    label: "External / Drive-in Inspection",
+    label: "External",
     description: "Bodywork, glass, and drive-in observations recorded by the technician.",
-    aliases: ["External / Drive-in Inspection"],
+    aliases: ["External", "External / Drive-in Inspection"],
   },
   {
     key: "internalElectrics",
@@ -153,7 +153,7 @@ const CATEGORY_DEFINITIONS = [
   },
   {
     id: "external_inspection",
-    label: "External / Drive-in Inspection",
+    label: "External",
     keywords: ["external", "drive-in", "drive in", "bodywork", "exterior"],
   },
   {
@@ -194,7 +194,7 @@ const RANK_TO_SEVERITY = {
 };
 const LABOUR_RATE = 155;
 const SEVERITY_META = {
-  red: { title: "Red Repairs", description: "Critical safety issues that require immediate authorization.", accent: "#b91c1c" },
+  red: { title: "Red Repairs", description: "", accent: "#b91c1c" },
   amber: { title: "Amber Repairs", description: "Advisory items that should be considered soon.", accent: "#d97706" },
 };
 
@@ -594,13 +594,17 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
               quantity_fitted,
               status,
               origin,
+              vhc_item_id,
+              unit_cost,
+              unit_price,
               request_notes,
               created_at,
               updated_at,
               part:part_id(
                 id,
                 part_number,
-                name
+                name,
+                unit_price
               )
             ),
             job_files(
@@ -731,6 +735,20 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       }),
     [jobParts]
   );
+  const partsCostByVhcItem = useMemo(() => {
+    const map = new Map();
+    partsIdentified.forEach((part) => {
+      if (!part?.vhc_item_id) return;
+      const qtyValue = Number(part.quantity_requested);
+      const resolvedQty = Number.isFinite(qtyValue) && qtyValue > 0 ? qtyValue : 1;
+      const unitPriceValue = Number(part.unit_price ?? part.part?.unit_price ?? 0);
+      if (!Number.isFinite(unitPriceValue)) return;
+      const key = String(part.vhc_item_id);
+      const subtotal = resolvedQty * unitPriceValue;
+      map.set(key, (map.get(key) || 0) + subtotal);
+    });
+    return map;
+  }, [partsIdentified]);
   const jobFiles = useMemo(
     () =>
       Array.isArray(job?.job_files) ? job.job_files.filter(Boolean) : [],
@@ -922,22 +940,34 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
   const computeLabourCost = (hours) => parseNumericValue(hours) * LABOUR_RATE;
 
-  const computeRowTotal = (entry) => {
+  const resolvePartsCost = (itemId, entry) => {
+    if (partsCostByVhcItem.has(itemId)) {
+      return partsCostByVhcItem.get(itemId);
+    }
+    if (entry.partsCost !== "" && entry.partsCost !== null && entry.partsCost !== undefined) {
+      return parseNumericValue(entry.partsCost);
+    }
+    return undefined;
+  };
+
+  const computeRowTotal = (entry, resolvedPartsCost) => {
     if (entry.totalOverride !== "" && entry.totalOverride !== null) {
       const override = parseNumericValue(entry.totalOverride);
       if (override > 0) {
         return override;
       }
     }
-    return parseNumericValue(entry.partsCost) + computeLabourCost(entry.laborHours);
+    const partsCost =
+      resolvedPartsCost !== undefined ? resolvedPartsCost : parseNumericValue(entry.partsCost);
+    return partsCost + computeLabourCost(entry.laborHours);
   };
 
-  const determineStatusColor = (entry) => {
+  const determineStatusColor = (entry, resolvedPartsCost) => {
     if (entry.status === "authorized") return "#16a34a";
     if (entry.status === "declined") return "#dc2626";
     const hasLabour = parseNumericValue(entry.laborHours) > 0;
     const hasCosts =
-      parseNumericValue(entry.partsCost) > 0 || parseNumericValue(entry.totalOverride) > 0;
+      (resolvedPartsCost ?? parseNumericValue(entry.partsCost)) > 0 || parseNumericValue(entry.totalOverride) > 0;
     if (!hasLabour || !hasCosts) return "#ea580c";
     return "#facc15";
   };
@@ -1044,9 +1074,16 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
             <tbody>
               {items.map((item) => {
                 const entry = getEntryForItem(item.id);
+                const resolvedPartsCost = resolvePartsCost(item.id, entry);
                 const labourCost = computeLabourCost(entry.laborHours);
-                const totalCost = computeRowTotal(entry);
-                const statusColor = determineStatusColor(entry);
+                const totalCost = computeRowTotal(entry, resolvedPartsCost);
+                const totalDisplayValue =
+                  entry.totalOverride !== "" && entry.totalOverride !== null
+                    ? entry.totalOverride
+                    : totalCost.toFixed(2);
+                const partsDisplayValue =
+                  resolvedPartsCost !== undefined ? resolvedPartsCost.toFixed(2) : "";
+                const statusColor = determineStatusColor(entry, resolvedPartsCost);
                 const locationLabel = item.location
                   ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
                   : null;
@@ -1086,16 +1123,17 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                           type="number"
                           min="0"
                           step="0.01"
-                          value={entry.partsCost ?? ""}
-                          onChange={(event) => updateEntryValue(item.id, "partsCost", event.target.value)}
-                          placeholder="0.00"
+                          value={partsDisplayValue}
+                          placeholder="Add via parts tab"
                           style={{
                             width: "160px",
                             padding: "8px",
                             borderRadius: "8px",
                             border: "1px solid #e5e7eb",
+                            backgroundColor: "#f8fafc",
                           }}
-                          disabled={readOnly}
+                          disabled
+                          readOnly
                         />
                         <a href="#parts-identified" style={{ fontSize: "12px", color: "#b45309", textDecoration: "none" }}>
                           View parts tab
@@ -1119,9 +1157,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                           }}
                           disabled={readOnly}
                         />
-                        <span style={{ fontSize: "12px", color: "#9ca3af" }}>
-                          = £{labourCost.toFixed(2)} ({entry.laborHours || 0}h × £{LABOUR_RATE} after VAT)
-                        </span>
+                        <span style={{ fontSize: "12px", color: "#9ca3af" }}>£{labourCost.toFixed(2)}</span>
                       </div>
                     </td>
                     <td style={{ padding: "12px 16px" }}>
@@ -1130,7 +1166,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                           type="number"
                           min="0"
                           step="0.01"
-                          value={entry.totalOverride ?? ""}
+                          value={totalDisplayValue}
                           onChange={(event) => updateEntryValue(item.id, "totalOverride", event.target.value)}
                           placeholder="Override total"
                           style={{
@@ -1141,7 +1177,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                           }}
                           disabled={readOnly}
                         />
-                        <span style={{ fontSize: "12px", color: "#9ca3af" }}>Calculated: £{totalCost.toFixed(2)}</span>
                       </div>
                     </td>
                     <td style={{ padding: "12px 16px" }}>
@@ -1409,7 +1444,9 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                   }}
                 >
                   <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
-                  <p style={{ margin: "4px 0 0", color: "#6b7280" }}>{meta.description}</p>
+                  {meta.description ? (
+                    <p style={{ margin: "4px 0 0", color: "#6b7280" }}>{meta.description}</p>
+                  ) : null}
                 </div>
                 {renderSeverityTable(severity)}
               </div>

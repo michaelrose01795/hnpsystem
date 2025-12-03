@@ -5,16 +5,26 @@ import themeConfig, { createVhcButtonStyle, vhcModalContentStyles } from "@/styl
 
 const palette = themeConfig.palette;
 
+const HORN_LEGACY_LABEL = "Horn/Washers/Wipers";
+const HORN_LABEL = "Wipers/Washers/Horn";
+
 const CATEGORY_ORDER = [
-  "Horn/Washers/Wipers",
+  HORN_LABEL,
   "Front Lights",
   "Rear lights",
   "Wheel Trim",
   "Clutch/Transmission operations",
   "Number plates",
   "Doors",
+  "Trims",
   "Miscellaneous",
 ];
+
+const createDefaultCategoryData = () =>
+  CATEGORY_ORDER.reduce((acc, key) => {
+    acc[key] = { concerns: [] };
+    return acc;
+  }, {});
 
 const STATUS_OPTIONS = ["Red", "Amber"];
 
@@ -74,17 +84,25 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
     });
   };
 
-  const [data, setData] = useState(() => ({
-    "Horn/Washers/Wipers": { concerns: [] },
-    "Front Lights": { concerns: [] },
-    "Rear lights": { concerns: [] },
-    "Wheel Trim": { concerns: [] },
-    "Clutch/Transmission operations": { concerns: [] },
-    "Number plates": { concerns: [] },
-    "Doors": { concerns: [] },
-    "Miscellaneous": { concerns: [] },
-    ...initialData,
-  }));
+  const buildInitialData = (incoming) => {
+    const defaults = createDefaultCategoryData();
+    if (!incoming || typeof incoming !== "object" || Array.isArray(incoming)) {
+      return defaults;
+    }
+
+    Object.entries(incoming).forEach(([rawKey, value]) => {
+      const targetKey = rawKey === HORN_LEGACY_LABEL ? HORN_LABEL : rawKey;
+      const concerns = Array.isArray(value?.concerns) ? value.concerns : [];
+      defaults[targetKey] = {
+        ...(value || {}),
+        concerns,
+      };
+    });
+
+    return defaults;
+  };
+
+  const [data, setData] = useState(() => buildInitialData(initialData));
 
   const [activeConcern, setActiveConcern] = useState({
     open: false,
@@ -154,7 +172,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
     <VHCModalShell
       isOpen={isOpen}
       onClose={onClose}
-      title="External / Drive-in Inspection"
+      title="External"
       hideCloseButton
       width="1280px"
       height="780px"

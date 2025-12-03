@@ -27,7 +27,7 @@ const SECTION_TITLES = {
   wheelsTyres: "Wheels & Tyres",
   brakesHubs: "Brakes & Hubs",
   serviceIndicator: "Service Indicator & Under Bonnet",
-  externalInspection: "External / Drive-in Inspection",
+  externalInspection: "External",
   internalElectrics: "Internal / Lamps / Electrics",
   underside: "Underside",
 };
