@@ -101,23 +101,14 @@ export default function LoginPage() {
   return (
     <Layout>
       <div className="min-h-screen w-full bg-gradient-to-b from-white via-slate-50 to-slate-100 flex flex-col items-center justify-center px-4 py-12 space-y-10">
-        <div className="w-full max-w-xl">
+        <div className="w-full max-w-sm">
           <Section
-            title="Access your workspace"
+            title="Login"
             bgColor="#ffffff"
             textColor="#0f172a"
-            className="border border-slate-200/70 shadow-xl ring-1 ring-black/5"
+            className="border border-slate-200/70 shadow-xl ring-1 ring-black/5 rounded-3xl"
           >
             <div className="space-y-6">
-              <div className="text-center space-y-2">
-                <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">
-                  Secure Login
-                </p>
-                <p className="text-base text-slate-500">
-                  Use the credentials saved in the DMS to get back to your tools.
-                </p>
-              </div>
-
               <form onSubmit={handleDbLogin} className="space-y-5">
                 <div className="space-y-2">
                   <label htmlFor="email" className="text-sm font-medium text-slate-600">
@@ -174,11 +165,6 @@ export default function LoginPage() {
             className="border border-slate-200/70 shadow-lg ring-1 ring-black/5"
           >
             <div className="space-y-6">
-              <p className="text-sm text-slate-500">
-                Quickly mirror the experience for Retail, Sales, Customers, or internal departments to
-                verify permissions and scoped dashboards.
-              </p>
-
               <LoginDropdown
                 selectedCategory={selectedCategory}
                 setSelectedCategory={setSelectedCategory}
@@ -205,9 +191,6 @@ export default function LoginPage() {
               )}
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-xs text-slate-400">
-                  Choose an area, department, and user to impersonate.
-                </div>
                 <button
                   onClick={handleDevLogin}
                   className="w-full rounded-lg bg-slate-900 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-slate-800 sm:w-auto sm:px-6"
