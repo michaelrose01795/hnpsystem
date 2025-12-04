@@ -172,7 +172,7 @@ const renderVhcBadge = (job) => {
           width: "10px",
           height: "10px",
           borderRadius: "50%",
-          backgroundColor: completed ? "var(--success)" : "var(--danger)",
+    backgroundColor: completed ? "var(--success)" : "var(--primary)",
         }}
       />
       {completed ? "VHC complete" : "VHC pending"}
@@ -479,9 +479,9 @@ export default function ViewJobCards() {
                     minWidth: "130px",
                     padding: "10px 16px",
                     borderRadius: "16px",
-                    background: "var(--danger)",
-                    border: "1px solid var(--danger-surface)",
-                    color: "var(--danger-dark)",
+                    background: "var(--primary)",
+                    border: "1px solid var(--primary-light)",
+                    color: "var(--text-inverse)",
                     textAlign: "center",
                   }}
                 >
@@ -495,23 +495,23 @@ export default function ViewJobCards() {
                 onClick={fetchJobs}
                 style={{
                   padding: "12px 28px",
-                  background: "var(--danger)",
-                  color: "white",
+                  background: "var(--primary)",
+                  color: "var(--text-inverse)",
                   border: "none",
                   borderRadius: "16px",
                   cursor: "pointer",
                   fontSize: "15px",
                   fontWeight: "600",
-                  boxShadow: "0 15px 35px rgba(var(--danger-rgb), 0.35)",
+                  boxShadow: "0 15px 35px rgba(var(--primary-rgb), 0.35)",
                   transition: "transform 0.2s ease, box-shadow 0.2s ease",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-1px)";
-                  e.currentTarget.style.boxShadow = "0 20px 45px rgba(var(--danger-rgb), 0.45)";
+                  e.currentTarget.style.boxShadow = "0 20px 45px rgba(var(--primary-rgb), 0.45)";
                 }}
                 onMouseLeave={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 15px 35px rgba(var(--danger-rgb), 0.35)";
+              e.currentTarget.style.boxShadow = "0 15px 35px rgba(var(--primary-rgb), 0.35)";
             }}
           >
             Refresh
@@ -547,7 +547,7 @@ export default function ViewJobCards() {
                   border: "none",
                   borderRadius: "999px",
                   background: activeTab === "today" ? "var(--primary)" : "transparent",
-                  color: activeTab === "today" ? "white" : "var(--danger-dark)",
+                  color: activeTab === "today" ? "white" : "var(--accent-purple)",
                   fontWeight: 600,
                   cursor: "pointer",
                   transition: "all 0.2s ease",
@@ -562,7 +562,7 @@ export default function ViewJobCards() {
                   border: "none",
                   borderRadius: "999px",
                   background: activeTab === "carryOver" ? "var(--primary)" : "transparent",
-                  color: activeTab === "carryOver" ? "white" : "var(--danger-dark)",
+                  color: activeTab === "carryOver" ? "white" : "var(--accent-purple)",
                   fontWeight: 600,
                   cursor: "pointer",
                   transition: "all 0.2s ease",
@@ -634,8 +634,8 @@ export default function ViewJobCards() {
                   padding: "12px 18px",
                   borderRadius: "18px",
                   border: "1px solid var(--surface-light)",
-                  background: "var(--danger-surface)",
-                  color: "var(--danger)",
+                  background: "var(--accent-purple-surface)",
+                  color: "var(--accent-purple)",
                   fontSize: "13px",
                   fontWeight: 600,
                   display: "flex",
@@ -675,8 +675,8 @@ export default function ViewJobCards() {
                       borderRadius: "14px",
                       border: "1px solid",
                       borderColor: isActive ? "transparent" : "rgba(var(--primary-rgb), 0.3)",
-                      background: isActive ? "var(--danger)" : "rgba(var(--surface-rgb), 0.9)",
-                      color: isActive ? "white" : "var(--danger)",
+                      background: isActive ? "var(--primary)" : "rgba(var(--surface-rgb), 0.9)",
+                      color: isActive ? "white" : "var(--accent-purple)",
                       cursor: "pointer",
                       fontWeight: 600,
                       fontSize: "13px",
@@ -699,7 +699,7 @@ export default function ViewJobCards() {
                         backgroundColor: isActive
                           ? "rgba(var(--surface-rgb), 0.25)"
                           : "rgba(var(--primary-rgb), 0.1)",
-                        color: isActive ? "white" : "var(--danger)",
+                            color: isActive ? "white" : "var(--accent-purple)",
                       }}
                     >
                       {count}
@@ -927,7 +927,7 @@ export default function ViewJobCards() {
                 </div>
                 <div style={{
                   backgroundColor: "var(--warning-surface)",
-                  color: "var(--danger-dark)",
+                  color: "var(--accent-purple)",
                   padding: "8px 16px",
                   borderRadius: "8px",
                   fontSize: "13px",
@@ -948,8 +948,8 @@ export default function ViewJobCards() {
                 {/* ✅ Files Badge */}
                 {popupJob.files && popupJob.files.length > 0 && (
                   <div style={{
-                    backgroundColor: "var(--danger-surface)",
-                    color: "var(--danger)",
+                    backgroundColor: "var(--accent-purple-surface)",
+                    color: "var(--accent-purple)",
                     padding: "8px 16px",
                     borderRadius: "8px",
                     fontSize: "13px",
@@ -962,7 +962,7 @@ export default function ViewJobCards() {
                 {popupJob.vhcRequired && (
                   <div style={{
                     backgroundColor: "var(--surface-light)",
-                    color: "var(--danger)",
+                    color: "var(--accent-purple)",
                     padding: "8px 16px",
                     borderRadius: "8px",
                     fontSize: "13px",
@@ -1026,7 +1026,7 @@ export default function ViewJobCards() {
                   style={{
                     flex: 1,
                     padding: "12px 20px",
-                    backgroundColor: "var(--danger)",
+                    backgroundColor: "var(--primary)",
                     color: "white",
                     border: "none",
                     borderRadius: "8px",
@@ -1035,8 +1035,8 @@ export default function ViewJobCards() {
                     fontWeight: "600",
                     transition: "background-color 0.2s"
                   }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger)"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "var(--danger)"}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "var(--primary)"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "var(--primary)"}
                 >
                   View VHC
                 </button>
@@ -1139,7 +1139,7 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
       onMouseEnter={(event) => {
         event.currentTarget.style.transform = "translateY(-2px)";
         event.currentTarget.style.boxShadow = "0 6px 16px rgba(var(--primary-rgb),0.12)";
-        event.currentTarget.style.borderColor = "var(--danger)";
+        event.currentTarget.style.borderColor = "var(--primary)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
@@ -1176,17 +1176,17 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
           </div>
         </div>
         <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-          <span
-            style={{
-              padding: "6px 12px",
-              borderRadius: "999px",
-              backgroundColor: "var(--danger-surface)",
-              color: "var(--danger)",
-              fontWeight: 600,
-              fontSize: "13px",
-              textTransform: "capitalize",
-            }}
-          >
+              <span
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "999px",
+                  backgroundColor: "var(--accent-purple-surface)",
+                  color: "var(--accent-purple)",
+                  fontWeight: 600,
+                  fontSize: "13px",
+                  textTransform: "capitalize",
+                }}
+              >
             {jobStatus}
           </span>
           {onQuickView ? (
@@ -1229,7 +1229,7 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
               border: "1px solid var(--info-surface)",
               borderRadius: "12px",
               padding: "12px",
-              backgroundColor: "var(--danger-surface)",
+              backgroundColor: "var(--surface)",
             }}
           >
             <div style={{ fontSize: "11px", color: "var(--warning)", textTransform: "uppercase", letterSpacing: "0.08em" }}>

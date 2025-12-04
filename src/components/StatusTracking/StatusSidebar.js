@@ -187,7 +187,7 @@ export default function StatusSidebar({
         right: '16px',
         bottom: '16px',
         backgroundColor: 'var(--primary)',
-        color: 'white',
+        color: 'var(--text-inverse)',
         border: 'none',
         borderRadius: '50%',
         boxShadow: '0 12px 24px rgba(var(--shadow-rgb),0.2)',
@@ -208,7 +208,7 @@ export default function StatusSidebar({
         top: '50%',
         transform: 'translateY(-50%)',
         backgroundColor: 'var(--primary)',
-        color: 'white',
+        color: 'var(--text-inverse)',
         border: 'none',
         borderTopLeftRadius: '8px',
         borderBottomLeftRadius: '8px',
@@ -312,10 +312,10 @@ export default function StatusSidebar({
       <div style={panelStyle}>
         {/* Header */}
         <div style={{
-          background: 'var(--primary)', // Red gradient
-          color: 'white',
+          background: 'var(--primary)',
+          color: 'var(--text-inverse)',
           padding: '20px',
-          borderRadius: '0', // Match full-height edge-to-edge layout
+          borderRadius: '0',
           position: 'relative'
         }}>
           {canClose && onToggle && (
@@ -330,9 +330,9 @@ export default function StatusSidebar({
                 top: '16px',
                 right: '16px',
                 background: 'rgba(var(--surface-rgb), 0.2)',
-                border: '1px solid rgba(var(--surface-rgb), 0.4)',
+                border: '1px solid rgba(var(--surface-rgb), 0.35)',
                 borderRadius: '999px',
-                color: 'var(--surface)',
+                color: 'var(--text-inverse)',
                 fontWeight: '700',
                 fontSize: '14px',
                 padding: '4px 10px',
@@ -342,7 +342,7 @@ export default function StatusSidebar({
               ✕
             </button>
           )}
-          <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '12px', color: 'var(--text-inverse)' }}>
             Job Progress Tracker
           </h2>
           
@@ -372,7 +372,7 @@ export default function StatusSidebar({
                   style={{
                     padding: '10px 16px',
                     backgroundColor: 'var(--surface)',
-                    color: 'var(--primary)',
+                    color: 'var(--accent-purple)',
                     border: 'none',
                     borderRadius: '6px',
                     fontWeight: '600',
@@ -387,7 +387,7 @@ export default function StatusSidebar({
                     e.currentTarget.style.boxShadow = '0 4px 8px rgba(var(--shadow-rgb),0.15)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'white';
+                    e.currentTarget.style.backgroundColor = 'var(--surface)';
                     e.currentTarget.style.transform = 'translateY(0)';
                     e.currentTarget.style.boxShadow = '0 2px 6px rgba(var(--shadow-rgb),0.1)';
                   }}
@@ -399,8 +399,8 @@ export default function StatusSidebar({
                 <div style={{
                   marginTop: '8px',
                   fontSize: '12px',
-                  color: 'var(--surface)',
-                  backgroundColor: 'rgba(var(--surface-rgb), 0.2)',
+                  color: 'var(--text-inverse)',
+                  backgroundColor: 'rgba(var(--surface-rgb), 0.15)',
                   padding: '6px 10px',
                   borderRadius: '6px',
                   border: '1px solid rgba(var(--surface-rgb), 0.3)'
@@ -421,8 +421,8 @@ export default function StatusSidebar({
                   style={{
                     marginLeft: '8px',
                     padding: '4px 10px',
-                    backgroundColor: 'rgba(var(--surface-rgb), 0.2)',
-                    color: 'white',
+                    backgroundColor: 'rgba(var(--surface-rgb), 0.15)',
+                    color: 'var(--text-inverse)',
                     border: '1px solid rgba(var(--surface-rgb), 0.3)',
                     borderRadius: '6px',
                     fontSize: '12px',
@@ -502,7 +502,7 @@ export default function StatusSidebar({
                 boxShadow: '0 8px 16px rgba(var(--shadow-rgb),0.08), 0 0 20px rgba(var(--danger-rgb), 0.05)',
                 transition: 'all 0.3s ease'
               }}>
-                <h3 style={{ fontWeight: 'bold', color: 'var(--primary)', marginBottom: '10px', fontSize: '16px' }}>
+                <h3 style={{ fontWeight: 'bold', color: 'var(--accent-purple)', marginBottom: '10px', fontSize: '16px' }}>
                   Current Status
                 </h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

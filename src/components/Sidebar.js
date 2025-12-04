@@ -265,8 +265,8 @@ export default function Sidebar({
                     cursor: "pointer",
                     border: isActive ? "none" : "1px solid var(--surface-light)",
                     boxShadow: isActive
-                      ? "0 12px 20px rgba(var(--danger-rgb), 0.25)"
-                      : "0 4px 12px rgba(var(--shadow-rgb), 0.05)",
+                      ? "0 12px 20px rgba(var(--primary-rgb), 0.28)"
+                      : "0 4px 12px rgba(var(--primary-rgb), 0.15)",
                     textDecoration: "none",
                   }}
                 >
@@ -320,8 +320,8 @@ export default function Sidebar({
                     cursor: "pointer",
                     border: isActive ? "none" : "1px solid var(--surface-light)",
                     boxShadow: isActive
-                      ? "0 12px 20px rgba(var(--danger-rgb), 0.25)"
-                      : "0 4px 12px rgba(var(--shadow-rgb), 0.05)",
+                      ? "0 12px 20px rgba(var(--primary-rgb), 0.28)"
+                      : "0 4px 12px rgba(var(--primary-rgb), 0.15)",
                     textDecoration: "none",
                   }}
                 >
