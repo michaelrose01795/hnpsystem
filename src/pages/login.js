@@ -2,7 +2,6 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: /src/pages/login.js
 import React, { useState, useEffect } from "react";
-import { signIn } from "next-auth/react";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router";
@@ -51,6 +50,7 @@ export default function LoginPage() {
   // Supabase email/password login
   const handleDbLogin = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
     try {
       const response = await supabase
         .from("users")
@@ -100,61 +100,85 @@ export default function LoginPage() {
 
   return (
     <Layout>
-      <div className="flex justify-center items-center h-full">
-        <div className="w-full max-w-md">
+      <div className="min-h-screen w-full bg-gradient-to-b from-white via-slate-50 to-slate-100 flex flex-col items-center justify-center px-4 py-12 space-y-10">
+        <div className="w-full max-w-xl">
           <Section
-            title="Login to H&P System"
+            title="Access your workspace"
             bgColor="#ffffff"
-            borderColor="#d10000"
-            textColor="#222222"
+            textColor="#0f172a"
+            className="border border-slate-200/70 shadow-xl ring-1 ring-black/5"
           >
-            <div className="flex flex-col space-y-4">
-              {/* Keycloak login */}
-              <button
-                onClick={() => signIn("keycloak")}
-                className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-white"
-              >
-                Login with SSO
-              </button>
+            <div className="space-y-6">
+              <div className="text-center space-y-2">
+                <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">
+                  Secure Login
+                </p>
+                <p className="text-base text-slate-500">
+                  Use the credentials saved in the DMS to get back to your tools.
+                </p>
+              </div>
 
-              <hr className="border-gray-300" />
+              <form onSubmit={handleDbLogin} className="space-y-5">
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium text-slate-600">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="you@hpautomotive.co.uk"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    required
+                  />
+                </div>
 
-              {/* Database email/password login */}
-              <form onSubmit={handleDbLogin} className="flex flex-col space-y-2">
-                <h3 className="text-lg font-semibold">Database Login</h3>
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="border p-2 rounded"
-                  required
-                />
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="border p-2 rounded"
-                  required
-                />
-                {errorMessage && <p className="text-red-600">{errorMessage}</p>}
+                <div className="space-y-2">
+                  <label htmlFor="password" className="text-sm font-medium text-slate-600">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    required
+                  />
+                </div>
+
+                {errorMessage && (
+                  <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600" role="alert">
+                    {errorMessage}
+                  </p>
+                )}
+
                 <button
                   type="submit"
-                  className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-white"
+                  className="w-full rounded-lg bg-gradient-to-r from-red-600 to-red-500 py-3 text-base font-semibold text-white shadow-lg shadow-red-500/30 transition hover:from-red-700 hover:to-red-600 focus:outline-none focus:ring-2 focus:ring-red-200"
                 >
                   Login
                 </button>
               </form>
+            </div>
+          </Section>
+        </div>
 
-              <hr className="border-gray-300" />
-
-              {/* Developer login */}
-              <h3 className="text-lg font-semibold">Developer Login</h3>
-              <p className="text-sm text-gray-600">
-                Switch between Retail, Sales, and the new Customer view to mirror what each user group
-                sees inside the platform.
+        <div className="w-full max-w-4xl">
+          <Section
+            title="Developer Login"
+            bgColor="#ffffff"
+            textColor="#0f172a"
+            className="border border-slate-200/70 shadow-lg ring-1 ring-black/5"
+          >
+            <div className="space-y-6">
+              <p className="text-sm text-slate-500">
+                Quickly mirror the experience for Retail, Sales, Customers, or internal departments to
+                verify permissions and scoped dashboards.
               </p>
+
               <LoginDropdown
                 selectedCategory={selectedCategory}
                 setSelectedCategory={setSelectedCategory}
@@ -165,22 +189,32 @@ export default function LoginPage() {
                 usersByRole={usersByRole}
                 roleCategories={roleCategories}
               />
+
               {(loadingDevUsers || rosterLoading) && (
-                <p className="text-xs text-gray-500">Loading database users for dev login...</p>
+                <p className="text-xs text-slate-400">Loading database users for dev login...</p>
               )}
+
               {selectedCategory === "Customers" && (
-                <CustomerViewPreview
-                  portalUrl={CUSTOMER_PORTAL_URL}
-                  selectedPersona={selectedUser?.name || ""}
-                  selectedDepartment={selectedDepartment}
-                />
+                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                  <CustomerViewPreview
+                    portalUrl={CUSTOMER_PORTAL_URL}
+                    selectedPersona={selectedUser?.name || ""}
+                    selectedDepartment={selectedDepartment}
+                  />
+                </div>
               )}
-              <button
-                onClick={handleDevLogin}
-                className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-white"
-              >
-                Dev Login
-              </button>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-xs text-slate-400">
+                  Choose an area, department, and user to impersonate.
+                </div>
+                <button
+                  onClick={handleDevLogin}
+                  className="w-full rounded-lg bg-slate-900 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-slate-800 sm:w-auto sm:px-6"
+                >
+                  Dev Login
+                </button>
+              </div>
             </div>
           </Section>
         </div>

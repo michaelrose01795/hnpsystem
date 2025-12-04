@@ -129,6 +129,9 @@ const buildVhcPayload = (source = {}) => {
   };
 };
 
+const WHEEL_POSITION_KEYS = ["NSF", "OSF", "NSR", "OSR"];
+const ISOLATED_SUMMARY_CATEGORIES = new Set(["wheels_tyres"]);
+
 const CATEGORY_DEFINITIONS = [
   {
     id: "wheels_tyres",
@@ -261,6 +264,22 @@ const normaliseColour = (value) => {
   if (colour.includes("green")) return "green";
   if (colour.includes("grey") || colour.includes("gray")) return "grey";
   return null;
+};
+
+const formatPlainTreadReadings = (tread = {}) => {
+  const segments = ["outer", "middle", "inner"].map((key) => {
+    const reading = tread?.[key];
+    if (reading === null || reading === undefined || reading === "") return null;
+    const numeric = Number.parseFloat(reading);
+    if (Number.isFinite(numeric)) {
+      const fixed = numeric.toFixed(1).replace(/\.0$/, "");
+      return `${fixed}mm`;
+    }
+    const text = reading.toString().trim();
+    if (!text) return null;
+    return text.endsWith("mm") ? text : `${text}mm`;
+  });
+  return segments.filter(Boolean);
 };
 
 const formatMeasurement = (value) => {
@@ -794,6 +813,20 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     [vhcData]
   );
   const sections = builderSummary.sections || [];
+  const wheelTreadLookup = useMemo(() => {
+    const lookup = new Map();
+    const tyres = vhcData?.wheelsTyres;
+    if (!tyres || typeof tyres !== "object") return lookup;
+    WHEEL_POSITION_KEYS.forEach((key) => {
+      const entry = tyres?.[key];
+      if (!entry || typeof entry !== "object") return;
+      const readings = formatPlainTreadReadings(entry.tread || {});
+      if (readings.length > 0) {
+        lookup.set(key.toUpperCase(), readings.join(" "));
+      }
+    });
+    return lookup;
+  }, [vhcData]);
   const orderedHealthSections = useMemo(() => {
     const keyedSections = new Map();
     sections.forEach((section) => {
@@ -885,6 +918,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
           location,
           rawSeverity: severity,
           concerns,
+          wheelKey: item.wheelKey || null,
         });
       });
     });
@@ -912,7 +946,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     const categoryRanks = new Map();
     items.forEach((item) => {
       const categoryId = item.category?.id;
-      if (!categoryId) return;
+      if (!categoryId || ISOLATED_SUMMARY_CATEGORIES.has(categoryId)) return;
       const rank = SEVERITY_RANK[item.displaySeverity || item.rawSeverity] ?? 0;
       const prev = categoryRanks.get(categoryId) ?? -1;
       if (rank > prev) {
@@ -922,7 +956,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
     items.forEach((item) => {
       const categoryId = item.category?.id;
-      if (!categoryId) return;
+      if (!categoryId || ISOLATED_SUMMARY_CATEGORIES.has(categoryId)) return;
       const categoryRank = categoryRanks.get(categoryId);
       if (typeof categoryRank !== "number") return;
       const currentRank = SEVERITY_RANK[item.displaySeverity || item.rawSeverity] ?? -1;
@@ -931,8 +965,19 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       }
     });
 
+    items.forEach((item) => {
+      if (item.category?.id !== "wheels_tyres") return;
+      const wheelKey = (item.wheelKey || "").toString().toUpperCase();
+      const treadLabel = wheelKey ? wheelTreadLookup.get(wheelKey) : null;
+      if (wheelKey && treadLabel) {
+        item.label = `${wheelKey} - ${treadLabel}`;
+      } else if (wheelKey) {
+        item.label = wheelKey;
+      }
+    });
+
     return items;
-  }, [sections]);
+  }, [sections, wheelTreadLookup]);
 
   const severitySections = useMemo(() => {
     const base = { red: new Map(), amber: new Map() };

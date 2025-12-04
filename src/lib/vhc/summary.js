@@ -328,6 +328,7 @@ const buildTyreSection = (tyres) => {
       status: status || (rows.length > 0 ? "Green" : null),
       rows,
       concerns,
+      wheelKey,
     });
   };
 

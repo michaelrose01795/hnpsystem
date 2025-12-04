@@ -1,5 +1,5 @@
 // file location: /src/components/LoginDropdown.js
-import React from "react";
+import React, { useEffect, useMemo } from "react";
 
 /**
  * LoginDropdown
@@ -62,9 +62,19 @@ export default function LoginDropdown({
           }
     );
 
-  const userOptions = selectedDepartment
-    ? getUsersForDepartment(selectedDepartment)
-    : [];
+  const userOptions = useMemo(() => {
+    if (!selectedDepartment) return [];
+    return getUsersForDepartment(selectedDepartment);
+  }, [selectedDepartment, usersByRole]);
+
+  useEffect(() => {
+    if (!selectedDepartment || userOptions.length !== 1) return;
+    const onlyUser = userOptions[0];
+    if (!onlyUser) return;
+    if (!selectedUser || selectedUser.id !== onlyUser.id) {
+      setSelectedUser(onlyUser);
+    }
+  }, [selectedDepartment, userOptions, selectedUser, setSelectedUser]);
 
   return (
     <div className="flex flex-col space-y-2">
