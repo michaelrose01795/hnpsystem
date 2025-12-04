@@ -279,7 +279,42 @@ const formatMeasurement = (value) => {
   return value.toString();
 };
 
-const deriveSectionSeverity = (section = {}) => {
+const collectStatusesFromItems = (items = []) => {
+  const statuses = [];
+  items.forEach((item) => {
+    const itemStatus = normaliseColour(item?.status);
+    if (itemStatus) statuses.push(itemStatus);
+    (Array.isArray(item?.concerns) ? item.concerns : []).forEach((concern) => {
+      const concernStatus = normaliseColour(concern?.status);
+      if (concernStatus) statuses.push(concernStatus);
+    });
+  });
+  return statuses;
+};
+
+const collectStatusesFromRawData = (rawData) => {
+  if (!rawData) return [];
+  const entries = Array.isArray(rawData)
+    ? rawData
+    : typeof rawData === "object"
+    ? Array.isArray(rawData.concerns)
+      ? [rawData]
+      : Object.values(rawData)
+    : [];
+  const statuses = [];
+  entries.forEach((entry) => {
+    if (!entry || typeof entry !== "object") return;
+    const entryStatus = normaliseColour(entry.status);
+    if (entryStatus) statuses.push(entryStatus);
+    (Array.isArray(entry.concerns) ? entry.concerns : []).forEach((concern) => {
+      const concernStatus = normaliseColour(concern?.status);
+      if (concernStatus) statuses.push(concernStatus);
+    });
+  });
+  return statuses;
+};
+
+const deriveSectionSeverity = (section = {}, rawData = null) => {
   const metrics = section?.metrics || {};
   if ((metrics.red || 0) > 0) return "red";
   if ((metrics.amber || 0) > 0) return "amber";
@@ -287,22 +322,14 @@ const deriveSectionSeverity = (section = {}) => {
   if ((metrics.total || 0) > 0) return "green";
 
   const items = Array.isArray(section?.items) ? section.items : [];
-  if (items.length === 0) return null;
-
-  const statuses = [];
-  items.forEach((item) => {
-    const itemStatus = normaliseColour(item.status);
-    if (itemStatus) statuses.push(itemStatus);
-    (item.concerns || []).forEach((concern) => {
-      const concernStatus = normaliseColour(concern?.status);
-      if (concernStatus) statuses.push(concernStatus);
-    });
-  });
+  const statuses = [...collectStatusesFromItems(items), ...collectStatusesFromRawData(rawData)];
+  if (statuses.length === 0) return null;
 
   if (statuses.includes("red")) return "red";
   if (statuses.includes("amber")) return "amber";
   if (statuses.includes("grey")) return "grey";
-  return "green";
+  if (statuses.includes("green")) return "green";
+  return null;
 };
 
 const buildSeverityBadgeStyles = (status) => {
@@ -329,9 +356,9 @@ const determineItemSeverity = (item = {}) => {
   return null;
 };
 
-const HealthSectionCard = ({ config, section, onOpen }) => {
+const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
   const metrics = section?.metrics || {};
-  const severity = deriveSectionSeverity(section);
+  const severity = deriveSectionSeverity(section, rawData);
   const severityLabel = severity
     ? `${severity.charAt(0).toUpperCase()}${severity.slice(1)} ${
         severity === "green" ? "status" : "issues"
@@ -780,8 +807,9 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
         keyedSections.get(config.key) ||
         sections.find((section) => section.title === config.label) ||
         null,
+      rawData: vhcData?.[config.key] || null,
     }));
-  }, [sections]);
+  }, [sections, vhcData]);
   const hasHealthData = useMemo(
     () =>
       orderedHealthSections.some(
@@ -1519,11 +1547,12 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
             ) : null}
           </div>
 
-          {orderedHealthSections.map(({ config, data }) => (
+          {orderedHealthSections.map(({ config, data, rawData }) => (
             <HealthSectionCard
               key={config.key}
               config={config}
               section={data}
+              rawData={rawData}
               onOpen={handleOpenSection}
             />
           ))}
