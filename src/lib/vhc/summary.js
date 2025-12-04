@@ -546,20 +546,43 @@ const buildOptionalConcernSection = (data, title, key) => {
     : [];
 
   entryList.forEach((entry) => {
+    const baseHeading = entry.heading || entry.title || entry.name || "Inspection item";
+    const baseRows = [];
+    if (entry.notes) {
+      const text = entry.notes.toString().trim();
+      if (text) baseRows.push(text);
+    }
+
     const rawConcerns = Array.isArray(entry?.concerns) ? entry.concerns : [];
     const concerns = rawConcerns.map(normaliseConcern).filter((concern) => concern);
-    if (concerns.length === 0) return;
-    concerns.forEach((concern) => {
-      if (concern.status === "Red") red += 1;
-      if (concern.status === "Amber") amber += 1;
-      if (concern.status === "Grey") grey += 1;
-    });
-    items.push({
-      heading: entry.heading || entry.title || entry.name || "Inspection item",
-      status: determineDominantStatus(concerns.map((concern) => concern.status)) || "Amber",
-      rows: [],
-      concerns,
-    });
+
+    if (concerns.length > 0) {
+      concerns.forEach((concern) => {
+        if (concern.status === "Red") red += 1;
+        if (concern.status === "Amber") amber += 1;
+        if (concern.status === "Grey") grey += 1;
+        items.push({
+          heading: baseHeading,
+          status: concern.status,
+          rows: baseRows,
+          concerns: [concern],
+        });
+      });
+      return;
+    }
+
+    const derivedStatus = normaliseStatus(entry.status) || null;
+    if (derivedStatus) {
+      if (derivedStatus === "Red") red += 1;
+      if (derivedStatus === "Amber") amber += 1;
+      if (derivedStatus === "Grey") grey += 1;
+      items.push({
+        heading: baseHeading,
+        status: derivedStatus,
+        rows: baseRows,
+        concerns: [],
+      });
+    }
   });
 
   if (items.length === 0) return null;

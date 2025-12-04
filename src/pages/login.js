@@ -100,8 +100,8 @@ export default function LoginPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen w-full bg-gradient-to-b from-white via-slate-50 to-slate-100 flex flex-col items-center justify-center px-4 py-12 space-y-10">
-        <div className="w-full max-w-sm">
+      <div className="min-h-screen w-full bg-gradient-to-b from-white via-slate-50 to-slate-100 flex flex-col items-center justify-center px-4 py-12 space-y-10 max-w-5xl mx-auto">
+        <div className="w-full max-w-sm mx-auto">
           <Section
             title="Login"
             bgColor="#ffffff"
@@ -157,7 +157,7 @@ export default function LoginPage() {
           </Section>
         </div>
 
-        <div className="w-full max-w-4xl">
+        <div className="w-full max-w-3xl mx-auto">
           <Section
             title="Developer Login"
             bgColor="#ffffff"
