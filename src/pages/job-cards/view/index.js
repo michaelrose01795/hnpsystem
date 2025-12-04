@@ -207,7 +207,7 @@ export default function ViewJobCards() {
   const fetchJobs = async () => {
     setLoading(true); // show loading state
     const jobsFromSupabase = await getAllJobs(); // get all jobs from database with full data
-    console.log("📋 Fetched jobs:", jobsFromSupabase); // debug log
+    console.log("Fetched jobs:", jobsFromSupabase); // debug log
     setJobs(jobsFromSupabase); // update state
     setLoading(false); // hide loading state
   };
@@ -510,14 +510,14 @@ export default function ViewJobCards() {
                   e.currentTarget.style.boxShadow = "0 20px 45px rgba(var(--danger-rgb), 0.45)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 15px 35px rgba(var(--danger-rgb), 0.35)";
-                }}
-              >
-                🔄 Refresh
-              </button>
-            </div>
-          </div>
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 15px 35px rgba(var(--danger-rgb), 0.35)";
+            }}
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
 
           <div
             style={{
@@ -553,7 +553,7 @@ export default function ViewJobCards() {
                   transition: "all 0.2s ease",
                 }}
               >
-                ☀️ Today&apos;s workload
+                Today&apos;s workload
               </button>
               <button
                 onClick={() => setActiveTab("carryOver")}
@@ -568,7 +568,7 @@ export default function ViewJobCards() {
                   transition: "all 0.2s ease",
                 }}
               >
-                🌙 Carry over
+                Carry over
               </button>
             </div>
           </div>
@@ -1018,7 +1018,7 @@ export default function ViewJobCards() {
                   onMouseEnter={(e) => e.target.style.backgroundColor = "var(--primary-dark)"}
                   onMouseLeave={(e) => e.target.style.backgroundColor = "var(--primary)"}
                 >
-                  📝 View Full Details
+                  View Full Details
                 </button>
 
                 <button
@@ -1038,7 +1038,7 @@ export default function ViewJobCards() {
                   onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger)"}
                   onMouseLeave={(e) => e.target.style.backgroundColor = "var(--danger)"}
                 >
-                  🔍 View VHC
+                  View VHC
                 </button>
 
                 <button
@@ -1058,7 +1058,7 @@ export default function ViewJobCards() {
                   onMouseEnter={(e) => e.target.style.backgroundColor = "var(--info-dark)"}
                   onMouseLeave={(e) => e.target.style.backgroundColor = "var(--info)"}
                 >
-                  ✍️ Write-Up
+                  Write-Up
                 </button>
               </div>
 
@@ -1209,7 +1209,7 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
                 gap: "6px",
               }}
             >
-              ⚡ Quick actions
+              Quick actions
             </button>
           ) : null}
         </div>

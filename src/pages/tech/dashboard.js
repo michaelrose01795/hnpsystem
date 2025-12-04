@@ -335,7 +335,7 @@ export default function TechsDashboard() {
               color: "var(--primary)",
               marginBottom: "16px"
             }}>
-              🔧 Currently Working On
+              Currently Working On
             </h2>
             <div style={{
               display: "grid",
@@ -397,7 +397,7 @@ export default function TechsDashboard() {
               color: "var(--text-secondary)",
               marginBottom: "16px"
             }}>
-              📋 Next Job Assigned
+              Next Job Assigned
             </h2>
             <div style={{
               display: "grid",
@@ -464,7 +464,7 @@ export default function TechsDashboard() {
               color: "var(--text-secondary)",
               margin: 0
             }}>
-              📝 My Assigned Jobs ({myJobs.length})
+              My Assigned Jobs ({myJobs.length})
             </h2>
             <button
               onClick={() => router.push("/job-cards/myjobs")}

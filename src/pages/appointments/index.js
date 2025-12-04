@@ -316,20 +316,20 @@ export default function Appointments() {
 
   // ---------------- Fetch Jobs ----------------
   const fetchJobs = async () => {
-    console.log("📋 Fetching all jobs...");
+    console.log("Fetching all jobs...");
     setIsLoading(true);
     
     try {
       const jobsFromDb = await getAllJobs();
-      console.log("✅ Jobs fetched:", jobsFromDb.length);
+      console.log("Jobs fetched:", jobsFromDb.length);
       
       // ✅ Filter only jobs with appointments
       const jobsWithAppointments = jobsFromDb.filter(job => job.appointment);
-      console.log("✅ Jobs with appointments:", jobsWithAppointments.length);
+      console.log("Jobs with appointments:", jobsWithAppointments.length);
       
       setJobs(jobsWithAppointments);
     } catch (error) {
-      console.error("❌ Error fetching jobs:", error);
+      console.error("Error fetching jobs:", error);
       alert("Failed to load appointments. Please refresh the page.");
     } finally {
       setIsLoading(false);
@@ -362,7 +362,7 @@ export default function Appointments() {
 
       setJobRequestHours(aggregated);
     } catch (error) {
-      console.error("❌ Error fetching job request hours:", error);
+      console.error("Error fetching job request hours:", error);
     }
   }, []);
 
@@ -427,7 +427,7 @@ export default function Appointments() {
 
       setJobVhcLabourHours(aggregated);
     } catch (error) {
-      console.error("❌ Error fetching VHC labour hours:", error);
+      console.error("Error fetching VHC labour hours:", error);
     }
   }, []);
 
@@ -466,7 +466,7 @@ export default function Appointments() {
       const availabilityMap = buildTechAvailabilityMap(data || []);
       setTechAvailability(availabilityMap);
     } catch (error) {
-      console.error("❌ Error fetching tech availability:", error);
+      console.error("Error fetching tech availability:", error);
       setTechAvailabilityError("Unable to load live tech availability.");
     } finally {
       setIsTechAvailabilityLoading(false);
@@ -505,7 +505,7 @@ export default function Appointments() {
       const map = buildStaffAbsenceMap(data || [], dates[0], dates[dates.length - 1]);
       setStaffAbsences(map);
     } catch (error) {
-      console.error("❌ Error fetching staff absences:", error);
+      console.error("Error fetching staff absences:", error);
       setStaffAbsences({});
     }
   }, [dates]);
@@ -609,15 +609,15 @@ export default function Appointments() {
 
     // ✅ Validation
     if (!jobNumber || jobNumber.trim() === "") {
-      alert("❌ Error: Job number is required");
+      alert("Error: Job number is required");
       return;
     }
     if (!appointmentDate) {
-      alert("❌ Error: Please select a date");
+      alert("Error: Please select a date");
       return;
     }
     if (!time || time === "") {
-      alert("❌ Error: Please select a time");
+      alert("Error: Please select a time");
       return;
     }
 
@@ -625,7 +625,7 @@ export default function Appointments() {
 
     try {
       const normalizedJobNumber = jobNumber.toString().trim();
-      console.log("🔍 Attempting to book appointment for job:", normalizedJobNumber);
+      console.log("Attempting to book appointment for job:", normalizedJobNumber);
 
       // ✅ Look for job in local state first
       let job = jobs.find((j) => 
@@ -635,21 +635,21 @@ export default function Appointments() {
 
       // ✅ If not found locally, fetch from database
       if (!job) {
-        console.log(`📡 Job ${normalizedJobNumber} not found locally, fetching from DB...`);
+        console.log(`Job ${normalizedJobNumber} not found locally, fetching from DB...`);
         const fetchedJob = await getJobByNumberOrReg(normalizedJobNumber);
         
         if (!fetchedJob) {
-          alert(`❌ Error: Job ${normalizedJobNumber} does not exist in the system.\n\nPlease create the job card first before booking an appointment.`);
+          alert(`Error: Job ${normalizedJobNumber} does not exist in the system.\n\nPlease create the job card first before booking an appointment.`);
           setIsLoading(false);
           return;
         }
         
         job = fetchedJob;
-        console.log("✅ Job fetched from database:", job);
+        console.log("Job fetched from database:", job);
       }
 
       // ✅ Create or update appointment using job number
-      console.log("📅 Creating appointment with:", {
+      console.log("Creating appointment with:", {
         jobNumber: job.jobNumber,
         date: appointmentDate,
         time: time
@@ -664,13 +664,13 @@ export default function Appointments() {
 
       if (!appointmentResult.success) {
         const errorMessage = appointmentResult.error?.message || "Unknown error occurred";
-        console.error("❌ Appointment booking failed:", errorMessage);
-        alert(`❌ Error booking appointment:\n\n${errorMessage}\n\nPlease check the job number and try again.`);
+        console.error("Appointment booking failed:", errorMessage);
+        alert(`Error booking appointment:\n\n${errorMessage}\n\nPlease check the job number and try again.`);
         setIsLoading(false);
         return;
       }
 
-      console.log("✅ Appointment booked successfully:", appointmentResult);
+      console.log("Appointment booked successfully:", appointmentResult);
 
       // ✅ Update local state with new appointment data
       const updatedJob = {
@@ -701,7 +701,7 @@ export default function Appointments() {
 
       // ✅ Success notification
       alert(
-        `✅ Appointment booked successfully!\n\n` +
+        `Appointment booked successfully!\n\n` +
         `Job Number: ${job.jobNumber}\n` +
         `Customer: ${job.customer}\n` +
         `Vehicle: ${job.reg}\n` +
@@ -715,8 +715,8 @@ export default function Appointments() {
       setCurrentNote("");
 
     } catch (error) {
-      console.error("❌ Unexpected error booking appointment:", error);
-      alert(`❌ Unexpected error:\n\n${error.message}\n\nPlease try again or contact support.`);
+      console.error("Unexpected error booking appointment:", error);
+      alert(`Unexpected error:\n\n${error.message}\n\nPlease try again or contact support.`);
     } finally {
       setIsLoading(false);
     }
@@ -990,7 +990,7 @@ export default function Appointments() {
             onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = "var(--danger)")}
             onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = "var(--primary)")}
           >
-            📝 Add Note
+            Add Note
           </button>
 
           <input 
@@ -1066,7 +1066,7 @@ export default function Appointments() {
             onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = "var(--danger)")}
             onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = "var(--primary)")}
           >
-            {isLoading ? "Booking..." : "📅 Book Appointment"}
+            {isLoading ? "Booking..." : "Book Appointment"}
           </button>
         </div>
 
@@ -1294,7 +1294,7 @@ export default function Appointments() {
               onMouseEnter={(e) => e.target.style.backgroundColor = "var(--surface)"}
               onMouseLeave={(e) => e.target.style.backgroundColor = showTechHoursEditor ? "var(--surface-light)" : "white"}
             >
-              ⚙️ Tech Hours
+              Tech Hours
             </button>
           </div>
 
@@ -1619,7 +1619,7 @@ export default function Appointments() {
               onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger)"}
               onMouseLeave={(e) => e.target.style.backgroundColor = "var(--primary)"}
             >
-              💾 Save Note
+              Save Note
             </button>
             <button 
               onClick={() => setShowNotePopup(false)} 

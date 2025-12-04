@@ -270,10 +270,10 @@ body.dark-mode .overlay,
 body.dark-mode [class*="popup"],
 body.dark-mode [class*="modal"],
 body.dark-mode [class*="dialog"] {
-  background-color: var(--text-primary) !important;
-  color: var(--surface-light) !important;
-  border: 1px solid var(--text-secondary) !important;
-  box-shadow: 0 4px 12px rgba(var(--shadow-rgb), 0.6) !important;
+  background-color: var(--surface) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 12px 28px rgba(var(--shadow-rgb), 0.35) !important;
 }
 
 /* Buttons in dark mode */
@@ -290,9 +290,9 @@ body.dark-mode button:hover {
 body.dark-mode input,
 body.dark-mode textarea,
 body.dark-mode select {
-  background-color: var(--text-primary) !important;
-  color: var(--surface-light) !important;
-  border-color: var(--text-secondary) !important;
+  background-color: var(--surface) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
   box-shadow: none !important;
 }
 
@@ -306,7 +306,7 @@ body.dark-mode a:hover {
 
 /* Labels in dark mode */
 body.dark-mode label {
-  color: var(--background) !important;
+  color: var(--text-primary) !important;
 }
 
 /* ========================================================= */
