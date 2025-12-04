@@ -239,6 +239,20 @@ const calculateAverageTread = (tread = {}) => {
   return average.toFixed(1);
 };
 
+const determineTreadSeverity = (tread = {}) => {
+  const readings = ["outer", "middle", "inner"]
+    .map((key) => {
+      const value = Number.parseFloat(tread?.[key]);
+      return Number.isFinite(value) ? value : null;
+    })
+    .filter((value) => value !== null);
+  if (readings.length === 0) return null;
+  const averageDepth = readings.reduce((sum, value) => sum + value, 0) / readings.length;
+  if (averageDepth <= 2.5) return "Red";
+  if (averageDepth <= 3.5) return "Amber";
+  return "Green";
+};
+
 // ✅ Convert tread readings into a labelled bullet string
 const formatTreadSegments = (tread = {}) => {
   const segments = [
@@ -303,7 +317,11 @@ const buildTyreSection = (tyres) => {
       if (concern.status === "Amber") amber += 1;
       if (concern.status === "Grey") grey += 1;
     });
-    const status = determineDominantStatus(concerns.map((concern) => concern.status));
+    const treadSeverity = determineTreadSeverity(tyre.tread);
+    const status = determineDominantStatus([
+      treadSeverity,
+      ...concerns.map((concern) => concern.status),
+    ]);
     if (rows.length === 0 && concerns.length === 0) return;
     items.push({
       heading: WHEEL_LABELS[wheelKey] || `${wheelKey} Wheel`,
