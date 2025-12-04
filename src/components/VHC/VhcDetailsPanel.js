@@ -214,6 +214,28 @@ const SEVERITY_THEME = {
   grey: { background: "var(--info-surface)", border: "var(--accent-purple-surface)", text: "var(--info-dark)" },
 };
 
+const PANEL_SECTION_STYLE = {
+  background: "var(--surface)",
+  borderRadius: "18px",
+  border: "1px solid var(--surface-light)",
+  boxShadow: "0 16px 30px rgba(var(--shadow-rgb),0.08)",
+  padding: "24px",
+  display: "flex",
+  flexDirection: "column",
+  gap: "18px",
+};
+const TAB_ROW_STYLE = {
+  display: "flex",
+  borderBottom: "1px solid var(--accent-purple-surface)",
+  gap: "8px",
+  flexWrap: "wrap",
+};
+const TAB_CONTENT_STYLE = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "24px",
+};
+
 const normalizeText = (value = "") => value.toString().toLowerCase();
 
 const resolveCategoryForItem = (sectionName = "", itemLabel = "") => {
@@ -1422,14 +1444,11 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const jobHeader = (
     <div
       style={{
-        background: "var(--surface)",
-        border: "1px solid var(--accent-purple-surface)",
-        borderRadius: "16px",
-        padding: "16px",
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
         gap: "12px",
         alignItems: "center",
+        width: "100%",
       }}
     >
       <div>
@@ -1469,180 +1488,191 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     </div>
   );
 
+  const pageWrapperStyle = {
+    padding: containerPadding,
+    display: "flex",
+    flexDirection: "column",
+    gap: "20px",
+  };
+
   return (
-    <div style={{ padding: containerPadding, display: "flex", flexDirection: "column", gap: "16px" }}>
-      {showNavigation ? (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-          <button
-            type="button"
-            onClick={() => router.push("/vhc/dashboard")}
-            style={{
-              border: "1px solid var(--accent-purple-surface)",
-              borderRadius: "10px",
-              padding: "8px 14px",
-              background: "var(--surface)",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            ← Back
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const target = job?.job_number ? `/job-cards/${encodeURIComponent(job.job_number)}` : "/job-cards";
-              router.push(target);
-            }}
-            style={{
-              border: "1px solid var(--primary)",
-              borderRadius: "10px",
-              padding: "8px 18px",
-              background: "var(--primary)",
-              color: "white",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-            disabled={!job?.job_number}
-          >
-            View job card →
-          </button>
-        </div>
-      ) : null}
-
-      {showNavigation && jobHeader}
-
-      <div style={{ display: "flex", borderBottom: "1px solid var(--accent-purple-surface)", gap: "8px" }}>
-        {TAB_OPTIONS.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
+    <div style={pageWrapperStyle}>
+      <div style={PANEL_SECTION_STYLE}>
+        {showNavigation ? (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <button
-              key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => router.push("/vhc/dashboard")}
               style={{
-                border: "none",
-                background: "transparent",
-                padding: "10px 14px",
-                borderBottom: isActive ? "3px solid var(--primary)" : "3px solid transparent",
-                color: isActive ? "var(--accent-purple)" : "var(--info)",
-                fontWeight: isActive ? 700 : 500,
+                border: "1px solid var(--accent-purple-surface)",
+                borderRadius: "10px",
+                padding: "8px 14px",
+                background: "var(--surface)",
+                fontWeight: 600,
                 cursor: "pointer",
               }}
             >
-              {tab.label}
+              ← Back
             </button>
-          );
-        })}
+            <button
+              type="button"
+              onClick={() => {
+                const target = job?.job_number ? `/job-cards/${encodeURIComponent(job.job_number)}` : "/job-cards";
+                router.push(target);
+              }}
+              style={{
+                border: "1px solid var(--primary)",
+                borderRadius: "10px",
+                padding: "8px 18px",
+                background: "var(--primary)",
+                color: "white",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+              disabled={!job?.job_number}
+            >
+              View job card →
+            </button>
+          </div>
+        ) : null}
+        {jobHeader}
       </div>
 
-      {activeTab === "summary" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-          {["red", "amber"].map((severity) => {
-            const section = severitySections[severity];
-            if (!section || section.size === 0) return null;
-            const meta = SEVERITY_META[severity];
-            const severityTheme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--danger-surface)" };
+      <div style={PANEL_SECTION_STYLE}>
+        <div style={TAB_ROW_STYLE}>
+          {TAB_OPTIONS.map((tab) => {
+            const isActive = activeTab === tab.id;
             return (
-              <div
-                key={severity}
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
                 style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "16px",
-                  border: `2px solid ${severityTheme.border}`,
-                  borderRadius: "18px",
-                  padding: "18px",
-                  background: "var(--surface)",
-                  boxShadow: "0 12px 30px rgba(var(--shadow-rgb),0.08)",
+                  border: "none",
+                  background: "transparent",
+                  padding: "10px 14px",
+                  borderBottom: isActive ? "3px solid var(--primary)" : "3px solid transparent",
+                  color: isActive ? "var(--accent-purple)" : "var(--info)",
+                  fontWeight: isActive ? 700 : 500,
+                  cursor: "pointer",
                 }}
               >
-                <div
-                  style={{
-                    borderBottom: `1px solid ${severityTheme.border}`,
-                    paddingBottom: "10px",
-                  }}
-                >
-                  <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
-                  {meta.description ? (
-                    <p style={{ margin: "4px 0 0", color: "var(--info)" }}>{meta.description}</p>
-                  ) : null}
-                </div>
-                {renderSeverityTable(severity)}
-              </div>
+                {tab.label}
+              </button>
             );
           })}
         </div>
-      )}
-
-      {activeTab === "health-check" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: "16px",
-              flexWrap: "wrap",
-              alignItems: "flex-start",
-            }}
-          >
-            <div style={{ flex: 1, minWidth: "240px" }}>
-              <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--accent-purple)" }}>
-                Health check
-              </h3>
-            </div>
-            {sectionSaveMessage ? (
-              <span style={{ fontSize: "12px", fontWeight: 600, color: sectionSaveColor }}>
-                {sectionSaveMessage}
-              </span>
-            ) : null}
-          </div>
-
-          {orderedHealthSections.map(({ config, data, rawData }) => (
-            <HealthSectionCard
-              key={config.key}
-              config={config}
-              section={data}
-              rawData={rawData}
-              onOpen={handleOpenSection}
-            />
-          ))}
-
-          {!hasHealthData && (
-            <div
-              style={{
-                border: "1px dashed var(--accent-purple-surface)",
-                borderRadius: "14px",
-                padding: "20px",
-                background: "var(--surface)",
-                color: "var(--info)",
-                fontSize: "13px",
-                textAlign: "center",
-              }}
-            >
-              Technicians have not recorded any VHC data yet. Use the section buttons above to open the full builder
-              forms and start a health check for this job.
+        <div style={TAB_CONTENT_STYLE}>
+          {activeTab === "summary" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              {["red", "amber"].map((severity) => {
+                const section = severitySections[severity];
+                if (!section || section.size === 0) return null;
+                const meta = SEVERITY_META[severity];
+                const severityTheme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--danger-surface)" };
+                return (
+                  <div
+                    key={severity}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "16px",
+                      border: `2px solid ${severityTheme.border}`,
+                      borderRadius: "18px",
+                      padding: "18px",
+                      background: "var(--surface)",
+                      boxShadow: "0 12px 30px rgba(var(--shadow-rgb),0.08)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        borderBottom: `1px solid ${severityTheme.border}`,
+                        paddingBottom: "10px",
+                      }}
+                    >
+                      <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
+                      {meta.description ? (
+                        <p style={{ margin: "4px 0 0", color: "var(--info)" }}>{meta.description}</p>
+                      ) : null}
+                    </div>
+                    {renderSeverityTable(severity)}
+                  </div>
+                );
+              })}
             </div>
           )}
+
+          {activeTab === "health-check" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "16px",
+                  flexWrap: "wrap",
+                  alignItems: "flex-start",
+                }}
+              >
+                <div style={{ flex: 1, minWidth: "240px" }}>
+                  <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--accent-purple)" }}>
+                    Health check
+                  </h3>
+                </div>
+                {sectionSaveMessage ? (
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: sectionSaveColor }}>
+                    {sectionSaveMessage}
+                  </span>
+                ) : null}
+              </div>
+
+              {orderedHealthSections.map(({ config, data, rawData }) => (
+                <HealthSectionCard
+                  key={config.key}
+                  config={config}
+                  section={data}
+                  rawData={rawData}
+                  onOpen={handleOpenSection}
+                />
+              ))}
+
+              {!hasHealthData && (
+                <div
+                  style={{
+                    border: "1px dashed var(--accent-purple-surface)",
+                    borderRadius: "14px",
+                    padding: "20px",
+                    background: "var(--surface)",
+                    color: "var(--info)",
+                    fontSize: "13px",
+                    textAlign: "center",
+                  }}
+                >
+                  Technicians have not recorded any VHC data yet. Use the section buttons above to open the full builder
+                  forms and start a health check for this job.
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "parts-identified" && (
+            <div id="parts-identified">
+              {renderPartsPanel("Parts Identified", partsIdentified, "No VHC-linked parts have been identified yet.")}
+            </div>
+          )}
+
+          {activeTab === "parts-authorized" &&
+            renderPartsPanel("Parts Authorized", partsAuthorized, "No parts awaiting authorization or approvals recorded.")}
+
+          {activeTab === "parts-on-order" &&
+            renderPartsPanel("Parts On Order", partsOnOrder, "No parts have been raised with the parts department yet.")}
+
+          {activeTab === "photos" &&
+            renderFileGallery("Photos", photoFiles, "No customer-facing photos have been attached.", "photo")}
+
+          {activeTab === "videos" &&
+            renderFileGallery("Videos", videoFiles, "No customer-facing videos have been attached.", "video")}
         </div>
-      )}
-
-      {activeTab === "parts-identified" && (
-        <div id="parts-identified">
-          {renderPartsPanel("Parts Identified", partsIdentified, "No VHC-linked parts have been identified yet.")}
-        </div>
-      )}
-
-      {activeTab === "parts-authorized" &&
-        renderPartsPanel("Parts Authorized", partsAuthorized, "No parts awaiting authorization or approvals recorded.")}
-
-      {activeTab === "parts-on-order" &&
-        renderPartsPanel("Parts On Order", partsOnOrder, "No parts have been raised with the parts department yet.")}
-
-      {activeTab === "photos" &&
-        renderFileGallery("Photos", photoFiles, "No customer-facing photos have been attached.", "photo")}
-
-      {activeTab === "videos" &&
-        renderFileGallery("Videos", videoFiles, "No customer-facing videos have been attached.", "video")}
+      </div>
 
       {activeSection === "wheelsTyres" && (
         <WheelsTyresDetailsModal

@@ -428,7 +428,7 @@ export default function Layout({ children, jobNumber }) {
   }
 
   if (viewRoles.some((r) => userRoles.includes(r))) {
-    addNavItem("View Job Cards", "/job-cards/view", {
+    addNavItem("Job Cards", "/job-cards/view", {
       keywords: ["view job", "job cards"],
       description: "Browse all job cards",
       section: "Workshop",

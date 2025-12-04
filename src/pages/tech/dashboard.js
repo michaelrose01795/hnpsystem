@@ -9,10 +9,12 @@ import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { getAllJobs } from "@/lib/database/jobs";
 import { getClockingStatus, clockIn, clockOut } from "@/lib/database/clocking";
+import { useConfirmation } from "@/context/ConfirmationContext";
 
 export default function TechsDashboard() {
   const router = useRouter();
   const { user } = useUser();
+  const { confirm } = useConfirmation();
   const { usersByRole, isLoading: rosterLoading } = useRoster();
   const [jobs, setJobs] = useState([]);
   const [myJobs, setMyJobs] = useState([]);
@@ -99,7 +101,7 @@ export default function TechsDashboard() {
   const handleClockOut = async () => {
     if (!username) return;
 
-    const confirmed = confirm("Are you sure you want to clock out?");
+    const confirmed = await confirm("Are you sure you want to clock out?");
     if (!confirmed) return;
 
     const result = await clockOut(username);

@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
+import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/supabaseClient";
 
 const STATUS_META = {
@@ -74,6 +75,7 @@ export default function DeliveryRoutePage() {
   const { deliveryId } = router.query;
   const isReady = router.isReady;
   const { user, dbUserId } = useUser();
+  const { confirm } = useConfirmation();
   const roles = (user?.roles || []).map((role) => String(role).toLowerCase());
   const hasAccess = roles.includes("parts") || roles.includes("parts manager");
 
@@ -662,9 +664,8 @@ export default function DeliveryRoutePage() {
   const handleDeleteStop = useCallback(
     async (stopId) => {
       if (!stopId) return;
-      if (typeof window !== "undefined" && !window.confirm("Remove this stop from the route?")) {
-        return;
-      }
+      const confirmed = await confirm("Remove this stop from the route?");
+      if (!confirmed) return;
       setActionLoading(true);
       setError("");
       try {
@@ -684,7 +685,7 @@ export default function DeliveryRoutePage() {
         setActionLoading(false);
       }
     },
-    [orderedStops, persistStopNumbers, loadDelivery]
+    [orderedStops, persistStopNumbers, loadDelivery, confirm]
   );
 
   if (!hasAccess) {

@@ -7,6 +7,7 @@ import CustomerLayout from "@/customers/components/CustomerLayout";
 import AppointmentTimeline from "@/customers/components/AppointmentTimeline";
 import { useCustomerPortalData } from "@/customers/hooks/useCustomerPortalData";
 import { useUser } from "@/context/UserContext";
+import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/supabaseClient";
 
 const STAFF_ROLE_ALLOWLIST = new Set([
@@ -74,6 +75,7 @@ const parseSlashCommandMetadata = (text = "", customer, vehicles = []) => {
 export default function CustomerMessagesPage() {
   const { timeline, customer, vehicles, isLoading, error } = useCustomerPortalData();
   const { dbUserId } = useUser();
+  const { confirm } = useConfirmation();
 
   // Composer state
   const [composerOpen, setComposerOpen] = useState(false);
@@ -292,7 +294,7 @@ export default function CustomerMessagesPage() {
   const handleSaveMessage = useCallback(
     async (message) => {
       if (!message?.id || typeof window === "undefined") return;
-      const confirmed = window.confirm(
+      const confirmed = await confirm(
         "Save this message forever? It will be excluded from auto cleanup."
       );
       if (!confirmed) return;
@@ -320,7 +322,7 @@ export default function CustomerMessagesPage() {
         setSavingMessageId(null);
       }
     },
-    [fetchThreads]
+    [fetchThreads, confirm]
   );
 
   // Effect: Load composer users when composer opens

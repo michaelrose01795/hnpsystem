@@ -16,6 +16,7 @@ import {
 } from "@/lib/database/jobs"; // DB functions
 import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService"; // Shared status transition helper
 import supabase from "@/lib/supabaseClient"; // Supabase client for live tech availability
+import { useConfirmation } from "@/context/ConfirmationContext";
 
 const TECH_AVAILABILITY_TABLE = "job_clocking"; // Source table for tech availability data
 
@@ -294,6 +295,7 @@ export default function Appointments() {
     : router.query.jobNumber;
   const { user } = useUser();
   const { triggerNextAction } = useNextAction();
+  const { confirm } = useConfirmation();
 
   // ---------------- States ----------------
   const [jobs, setJobs] = useState([]);
@@ -735,7 +737,7 @@ export default function Appointments() {
       return;
     }
 
-    const confirmed = confirm(
+    const confirmed = await confirm(
       `Check in customer?\n\n` +
         `Job: ${job.jobNumber || job.id}\n` +
         `Customer: ${job.customer || "N/A"}\n` +
@@ -772,9 +774,11 @@ export default function Appointments() {
         setJobs((prevJobs) =>
           prevJobs.map((existing) => {
             if (existing.id !== job.id) return existing;
+            const nextAppointment = updatedJob.appointment ?? existing.appointment;
             return {
               ...existing,
               ...updatedJob,
+              appointment: nextAppointment,
               status: updatedJob.status || "Checked In",
               checked_in_at: updatedJob.checked_in_at || new Date().toISOString(),
             };

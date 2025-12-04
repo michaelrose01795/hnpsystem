@@ -41,7 +41,7 @@ export const sidebarSections = [
         roles: ["admin manager"],
       },
       {
-        label: "View Job Card",
+        label: "Job Cards",
         href: "/job-cards/view",
         roles: ["admin manager"],
       },
@@ -87,7 +87,7 @@ export const sidebarSections = [
     category: "departments",
     items: [
       {
-        label: "View Job Cards",
+        label: "Job Cards",
         href: "/job-cards/view",
         roles: ["service"],
       },
@@ -108,7 +108,7 @@ export const sidebarSections = [
         roles: ["service manager"],
       },
       {
-        label: "View Job Cards",
+        label: "Job Cards",
         href: "/job-cards/view",
         roles: ["service manager"],
       },
@@ -129,7 +129,7 @@ export const sidebarSections = [
         roles: ["workshop manager"],
       },
       {
-        label: "View Job Cards",
+        label: "Job Cards",
         href: "/job-cards/view",
         roles: ["workshop manager"],
       },
@@ -155,7 +155,7 @@ export const sidebarSections = [
         roles: ["aftersales manager"],
       },
       {
-        label: "View Job Cards",
+        label: "Job Cards",
         href: "/job-cards/view",
         roles: ["aftersales manager"],
       },
@@ -198,7 +198,7 @@ export const sidebarSections = [
     category: "departments",
     items: [
       {
-        label: "View Job Cards",
+        label: "Job Cards",
         href: "/job-cards/view",
         roles: ["parts"],
       },
@@ -229,7 +229,7 @@ export const sidebarSections = [
     category: "departments",
     items: [
       {
-        label: "View Job Cards",
+        label: "Job Cards",
         href: "/job-cards/view",
         roles: ["parts manager"],
       },

@@ -10,10 +10,12 @@ import { useNextAction } from "@/context/NextActionContext"; // Next action disp
 import { getAllJobs } from "@/lib/database/jobs"; // Get all jobs
 import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService"; // Auto check-in function
 import { supabaseClient } from "@/lib/supabaseClient"; // Supabase client for live counters
+import { useConfirmation } from "@/context/ConfirmationContext";
 
 export default function CheckInPage() {
   const { user } = useUser(); // Get logged-in user
   const { triggerNextAction } = useNextAction(); // Hook to queue next action prompts
+  const { confirm } = useConfirmation();
   const [jobs, setJobs] = useState([]); // All jobs for today
   const [loading, setLoading] = useState(true); // Loading state
   const [searchTerm, setSearchTerm] = useState(""); // Search filter
@@ -165,7 +167,7 @@ export default function CheckInPage() {
   // ✅ Handle check-in
   const handleCheckIn = async (job) => {
     // Confirm check-in
-    const confirmed = confirm(
+    const confirmed = await confirm(
       `Check in customer?\n\n` +
       `Job: ${job.jobNumber}\n` +
       `Customer: ${job.customer}\n` +

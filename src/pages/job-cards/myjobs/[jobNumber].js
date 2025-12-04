@@ -8,6 +8,7 @@ import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { useNextAction } from "@/context/NextActionContext";
 import { useRoster } from "@/context/RosterContext";
+import { useConfirmation } from "@/context/ConfirmationContext";
 import { getJobByNumber, updateJobStatus } from "@/lib/database/jobs";
 import { getVHCChecksByJob } from "@/lib/database/vhc";
 import { getClockingStatus } from "@/lib/database/clocking";
@@ -95,6 +96,7 @@ export default function TechJobDetailPage() {
   const { user, dbUserId, setStatus, refreshCurrentJob, setCurrentJob } = useUser();
   const { usersByRole, isLoading: rosterLoading } = useRoster();
   const { triggerNextAction } = useNextAction();
+  const { confirm } = useConfirmation();
 
   // State management
   const [jobData, setJobData] = useState(null);
@@ -295,7 +297,7 @@ export default function TechJobDetailPage() {
       return;
     }
 
-    const confirmed = confirm(`Clock out from Job ${jobCardNumber}?`);
+    const confirmed = await confirm(`Clock out from Job ${jobCardNumber}?`);
     if (!confirmed) return;
 
     setClockOutLoading(true);
@@ -337,6 +339,7 @@ export default function TechJobDetailPage() {
     refreshClockingStatus,
     syncJobStatus,
     jobData?.jobCard?.status,
+    confirm,
   ]);
 
   // Callback: Handle job clock in
@@ -484,7 +487,7 @@ export default function TechJobDetailPage() {
     const jobCardId = jobData?.jobCard?.id;
     if (!jobCardId) return;
 
-    const confirmed = confirm(`Update job status to "${newStatus}"?`);
+    const confirmed = await confirm(`Update job status to "${newStatus}"?`);
     if (!confirmed) return;
 
     const result = await updateJobStatus(jobCardId, newStatus);

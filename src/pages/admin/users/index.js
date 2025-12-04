@@ -5,9 +5,11 @@ import Layout from "@/components/Layout";
 import AdminUserForm from "@/components/Admin/AdminUserForm";
 import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
 import { useRoster } from "@/context/RosterContext";
+import { useConfirmation } from "@/context/ConfirmationContext";
 
 export default function AdminUserManagement() {
   const { usersByRole, usersByRoleDetailed, allUsers, isLoading: rosterLoading } = useRoster();
+  const { confirm } = useConfirmation();
   const [activeUser, setActiveUser] = useState(null);
   const [dbUsers, setDbUsers] = useState([]);
   const [dbLoading, setDbLoading] = useState(true);
@@ -111,7 +113,7 @@ export default function AdminUserManagement() {
   const handleUserDelete = async (userId, name) => {
     if (!userId) return;
     const label = name ? `${name}` : "this user";
-    const confirmed = window.confirm(
+    const confirmed = await confirm(
       `Are you sure you want to remove ${label} from the system? All linked records will be deleted.`
     );
     if (!confirmed) return;

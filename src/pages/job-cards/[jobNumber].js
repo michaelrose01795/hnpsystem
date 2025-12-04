@@ -7,6 +7,7 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import InvoiceBuilderPopup from "@/components/popups/InvoiceBuilderPopup";
 import { useUser } from "@/context/UserContext";
+import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/supabaseClient";
 import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile } from "@/lib/database/jobs";
 import {
@@ -154,6 +155,7 @@ export default function JobCardDetailPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
   const { user, dbUserId } = useUser();
+  const { confirm } = useConfirmation();
 
   // ✅ State Management
   const [jobData, setJobData] = useState(null);
@@ -831,7 +833,7 @@ export default function JobCardDetailPage() {
   const handleDeleteDocument = useCallback(
     async (file) => {
       if (!canManageDocuments || !file?.id) return;
-      const confirmDelete = confirm(`Delete ${file.name || "this file"}?`);
+      const confirmDelete = await confirm(`Delete ${file.name || "this file"}?`);
       if (!confirmDelete) return;
 
       try {
@@ -862,7 +864,7 @@ export default function JobCardDetailPage() {
         alert(deleteError?.message || "Failed to delete document");
       }
     },
-    [canManageDocuments]
+    [canManageDocuments, confirm]
   );
 
   const saveSharedNote = useCallback(
@@ -967,7 +969,7 @@ export default function JobCardDetailPage() {
     if (!canEdit || !jobData?.id) return;
 
     if (!nextValue) {
-      const confirmed = confirm(
+      const confirmed = await confirm(
         "Mark the VHC as not required for this job? Technicians will see this immediately."
       );
       if (!confirmed) return;

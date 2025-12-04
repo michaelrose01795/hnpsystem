@@ -11,9 +11,11 @@ import {
   switchJob
 } from "@/lib/database/jobClocking"; // Import clocking functions
 import { getAllJobs } from "@/lib/database/jobs"; // Import jobs function
+import { useConfirmation } from "@/context/ConfirmationContext";
 
 export default function JobClockingCard() {
   const { user, setStatus, refreshCurrentJob, setCurrentJob, dbUserId } = useUser(); // Get logged-in user and helpers
+  const { confirm } = useConfirmation();
   const [activeJobs, setActiveJobs] = useState([]); // Jobs user is currently clocked into
   const [availableJobs, setAvailableJobs] = useState([]); // Jobs available to clock into
   const [dailySummary, setDailySummary] = useState(null); // Daily hours summary
@@ -116,7 +118,7 @@ export default function JobClockingCard() {
   // ✅ Handle clock out from job
   const handleClockOut = async (jobId, jobNumber, clockingId) => {
     const workshopUserId = dbUserId ?? user?.id;
-    const confirmed = confirm(`Clock out from Job ${jobNumber}?`);
+    const confirmed = await confirm(`Clock out from Job ${jobNumber}?`);
     if (!confirmed) return;
     
     setLoading(true);
@@ -164,7 +166,7 @@ export default function JobClockingCard() {
     
     const currentJob = activeJobs[0]; // Assume switching from first active job
     
-    const confirmed = confirm(
+    const confirmed = await confirm(
       `Switch from Job ${currentJob.jobNumber} to Job ${newJobNumber}?`
     );
     

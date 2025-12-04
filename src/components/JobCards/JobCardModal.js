@@ -4,6 +4,7 @@
 import React, { useState, useRef, useEffect } from "react"; // React hooks for state/effects/refs
 import { useRouter } from "next/router"; // Next.js router for navigation
 import { useUser } from "@/context/UserContext"; // Custom user context (dev auth user)
+import { useConfirmation } from "@/context/ConfirmationContext";
 import { // Job clocking functions to start/stop time on jobs
   clockInToJob,
   clockOutFromJob,
@@ -17,6 +18,7 @@ import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
 export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" }) { // Main modal component - now accepts prefilledJobNumber prop
   const router = useRouter(); // Router for page navigation
   const { user, setStatus, refreshCurrentJob, setCurrentJob } = useUser(); // Dev auth user & helpers from context
+  const { confirm } = useConfirmation();
   const [jobNumber, setJobNumber] = useState(""); // Input state for job number
   const [error, setError] = useState(""); // Error banner text
   const [loading, setLoading] = useState(false); // Loading flag
@@ -178,7 +180,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
       setError("Could not resolve your workshop user id. Please reopen this modal."); // Message
       return; // Stop
     }
-    const ok = confirm(`Clock out from Job ${jobNumText}?`); // Confirm action
+    const ok = await confirm(`Clock out from Job ${jobNumText}?`); // Confirm action
     if (!ok) return; // Cancelled
 
     setLoading(true); // Start loader
