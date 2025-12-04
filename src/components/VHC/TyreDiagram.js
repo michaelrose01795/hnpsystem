@@ -1,3 +1,4 @@
+// file location: src/components/VHC/TyreDiagram.js
 import React from "react";
 import themeConfig from "@/styles/appTheme";
 

@@ -279,12 +279,30 @@ const formatMeasurement = (value) => {
   return value.toString();
 };
 
-const deriveSectionSeverity = (metrics = {}) => {
+const deriveSectionSeverity = (section = {}) => {
+  const metrics = section?.metrics || {};
   if ((metrics.red || 0) > 0) return "red";
   if ((metrics.amber || 0) > 0) return "amber";
   if ((metrics.grey || 0) > 0) return "grey";
   if ((metrics.total || 0) > 0) return "green";
-  return null;
+
+  const items = Array.isArray(section?.items) ? section.items : [];
+  if (items.length === 0) return null;
+
+  const statuses = [];
+  items.forEach((item) => {
+    const itemStatus = normaliseColour(item.status);
+    if (itemStatus) statuses.push(itemStatus);
+    (item.concerns || []).forEach((concern) => {
+      const concernStatus = normaliseColour(concern?.status);
+      if (concernStatus) statuses.push(concernStatus);
+    });
+  });
+
+  if (statuses.includes("red")) return "red";
+  if (statuses.includes("amber")) return "amber";
+  if (statuses.includes("grey")) return "grey";
+  return "green";
 };
 
 const buildSeverityBadgeStyles = (status) => {
@@ -313,7 +331,7 @@ const determineItemSeverity = (item = {}) => {
 
 const HealthSectionCard = ({ config, section, onOpen }) => {
   const metrics = section?.metrics || {};
-  const severity = deriveSectionSeverity(metrics);
+  const severity = deriveSectionSeverity(section);
   const severityLabel = severity
     ? `${severity.charAt(0).toUpperCase()}${severity.slice(1)} ${
         severity === "green" ? "status" : "issues"
