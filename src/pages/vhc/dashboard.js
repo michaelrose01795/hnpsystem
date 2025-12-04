@@ -495,15 +495,15 @@ export default function VHCDashboard() {
   useEffect(() => {
     const fetchVhcJobs = async () => {
       setLoading(true); // start loading state
-      console.log("📋 Fetching VHC dashboard data..."); // debug log
+      console.log("Fetching VHC dashboard data..."); // debug log
 
       try {
         const jobs = await getAllJobs(); // fetch jobs from Supabase
-        console.log("✅ Jobs fetched:", jobs.length); // debug count
+        console.log("Jobs fetched:", jobs.length); // debug count
 
         const vhcEligibleJobs = jobs.filter((job) => job.vhcRequired === true);
         console.log(
-          "✅ Jobs requiring VHC or carrying standalone part requests:",
+          "Jobs requiring VHC or carrying standalone part requests:",
           vhcEligibleJobs.length,
         ); // debug filtered count
 
@@ -527,7 +527,7 @@ export default function VHCDashboard() {
             .in("job_id", allJobIds);
 
           if (historyError) {
-            console.error("❌ Error loading VHC send history:", historyError);
+            console.error("Error loading VHC send history:", historyError);
           } else {
             regLastVhcMap = historyRows.reduce((map, row) => {
               const reg = jobIdToReg.get(row.job_id);
@@ -550,7 +550,7 @@ export default function VHCDashboard() {
             try {
               workflow = await getVhcWorkflowStatus(job.id); // pull workflow snapshot so statuses mirror job card + appointments
             } catch (workflowError) {
-              console.error("❌ Failed to load VHC workflow status", workflowError);
+              console.error("Failed to load VHC workflow status", workflowError);
             }
 
             const allocationCount = Array.isArray(job.partsAllocations)
@@ -665,10 +665,10 @@ export default function VHCDashboard() {
             })
           : jobsWithVhc; // workshop roles see all filtered jobs
 
-        console.log("✅ VHC data processed for", scopedJobs.length, "jobs"); // debug log
+        console.log("VHC data processed for", scopedJobs.length, "jobs"); // debug log
         setVhcJobs(scopedJobs); // update state with processed data
       } catch (error) {
-        console.error("❌ Error fetching VHC data:", error); // log fetch failure
+        console.error("Error fetching VHC data:", error); // log fetch failure
       } finally {
         setLoading(false); // stop loading state
       }
@@ -824,7 +824,6 @@ export default function VHCDashboard() {
               color: "var(--danger-dark)",
             }}
           >
-            <span style={{ fontSize: "20px" }}>🧰</span>
             <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               <strong>Parts-focused VHC view</strong>
               <span style={{ fontSize: "13px" }}>
@@ -860,7 +859,6 @@ export default function VHCDashboard() {
                 gap: "16px",
               }}
             >
-              <div style={{ fontSize: "64px" }}>🔍</div>
               <p style={{ color: "var(--grey-accent)", fontSize: "18px", fontWeight: "600" }}>
                 No VHC reports found
               </p>

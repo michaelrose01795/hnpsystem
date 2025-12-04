@@ -975,23 +975,23 @@ export default function NextJobsPage() {
     if (currentClocking?.customer) clockingSubtitleParts.push(currentClocking.customer);
     const clockingSubtitle = clockingSubtitleParts.join(" • ");
     const clockInLabel = currentClocking ? formatClockInTime(currentClocking.clockIn) : "";
-    return (
-      <div
-        key={panelKey}
-        style={{
-          background: "var(--surface)",
-          border: dragOverTarget === assignee.name ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
-          borderRadius: "8px",
-          padding: "16px",
-          display: "flex",
-          flexDirection: "column",
-          height: PANEL_HEIGHT_PX,
-          minHeight: PANEL_HEIGHT_PX,
-          maxHeight: PANEL_HEIGHT_PX,
-          boxShadow: dragOverTarget === assignee.name ? "0 4px 12px rgba(var(--primary-rgb),0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
-          transition: "all 0.2s ease",
-          backgroundColor: dragOverTarget === assignee.name ? "var(--surface-light)" : "white"
-      }}
+        return (
+          <div
+            key={panelKey}
+            style={{
+              background: "var(--surface)",
+              border: dragOverTarget === assignee.name ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
+              borderRadius: "8px",
+              padding: "16px",
+              display: "flex",
+              flexDirection: "column",
+              height: PANEL_HEIGHT_PX,
+              minHeight: PANEL_HEIGHT_PX,
+              maxHeight: PANEL_HEIGHT_PX,
+              boxShadow: dragOverTarget === assignee.name ? "0 4px 12px rgba(var(--primary-rgb),0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.14)",
+              transition: "all 0.2s ease",
+              backgroundColor: dragOverTarget === assignee.name ? "var(--surface-light)" : "var(--surface)"
+            }}
       onDragOver={handleDragOver}
       onDragEnter={(e) => handleDragEnterSection(assignee.name, e)}
       onDragLeave={handleDragLeave}
@@ -999,12 +999,12 @@ export default function NextJobsPage() {
         e.preventDefault();
         handleDropOnTech(null, assignee);
       }}
-    >
+      >
       <p style={{
         fontWeight: "600",
         marginBottom: "12px",
         fontSize: "16px",
-        color: "var(--info-dark)",
+        color: "var(--accent-purple)",
         flexShrink: 0
       }}>
         {assignee.name} ({assignee.jobs.length})
@@ -1026,7 +1026,7 @@ export default function NextJobsPage() {
             fontSize: "11px",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
-            color: "var(--info)",
+            color: "var(--accent-purple)",
           }}
         >
           Current clocking
@@ -1038,7 +1038,7 @@ export default function NextJobsPage() {
                 margin: "0 0 4px 0",
                 fontSize: "14px",
                 fontWeight: 600,
-                color: "var(--info-dark)",
+                color: "var(--text-primary)",
               }}
             >
               {currentClocking.jobNumber || "Job pending"}
@@ -1046,19 +1046,19 @@ export default function NextJobsPage() {
             {clockingSubtitle && (
               <p
                 style={{
-                  margin: "0 0 4px 0",
-                  fontSize: "12px",
-                  color: "var(--info-dark)",
-                }}
-              >
-                {clockingSubtitle}
-              </p>
+                margin: "0 0 4px 0",
+                fontSize: "12px",
+                color: "var(--text-primary)",
+              }}
+            >
+              {clockingSubtitle}
+            </p>
             )}
             <p
               style={{
                 margin: 0,
                 fontSize: "12px",
-                color: "var(--info-dark)",
+                color: "var(--text-primary)",
               }}
             >
               {clockInLabel
@@ -1085,9 +1085,9 @@ export default function NextJobsPage() {
         overflowY: shouldScroll ? "auto" : "hidden",
         paddingRight: shouldScroll ? "8px" : "4px"
       }}>
-        {assignee.jobs.length === 0 ? (
-          <p style={{
-            color: "var(--info)",
+            {assignee.jobs.length === 0 ? (
+              <p style={{
+            color: "var(--text-primary)",
             fontSize: "14px",
             margin: 0
           }}>
@@ -1124,20 +1124,20 @@ export default function NextJobsPage() {
                   padding: "10px",
                   marginBottom: "8px",
                   backgroundColor:
-                    draggingJob?.jobNumber === job.jobNumber ? "var(--surface-light)" : "var(--surface-light)",
+                    draggingJob?.jobNumber === job.jobNumber ? "var(--surface-light)" : "var(--surface)",
                   cursor: hasAccess ? "grab" : "pointer",
                   transition: "all 0.2s",
                   opacity: draggingJob?.jobNumber === job.jobNumber ? 0.5 : 1
                 }}
                 onMouseEnter={(e) => {
                   if (draggingJob?.jobNumber !== job.jobNumber) {
-                    e.currentTarget.style.backgroundColor = "var(--surface-light)";
+                  e.currentTarget.style.backgroundColor = "var(--surface-light)";
                     e.currentTarget.style.boxShadow = "0 2px 6px rgba(var(--primary-rgb),0.12)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (draggingJob?.jobNumber !== job.jobNumber) {
-                    e.currentTarget.style.backgroundColor = "var(--surface-light)";
+                    e.currentTarget.style.backgroundColor = "var(--surface)";
                     e.currentTarget.style.boxShadow = "none";
                   }
                 }}
