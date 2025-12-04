@@ -321,11 +321,6 @@ export default function ViewJobCards() {
     activeTab === "today" ? todayStatusCounts : carryStatusCounts;
   const activeStatusFilter = activeStatusFilters[activeTab];
   const searchValue = searchValues[activeTab]?.trim().toLowerCase() || "";
-  const overviewStats = [
-    { label: "Today's Jobs", value: todayJobs.length },
-    { label: "Carry Over", value: carryOverJobs.length },
-    { label: "Total Jobs", value: jobs.length },
-  ];
   const activeFilterLabel =
     activeStatusFilter === "All"
       ? "Showing every status"
@@ -437,95 +432,6 @@ export default function ViewJobCards() {
               gap: "16px",
               alignItems: "center",
               justifyContent: "space-between",
-              background: "var(--surface)",
-              borderRadius: "24px",
-              padding: "24px 28px",
-              border: "1px solid var(--surface-light)",
-              boxShadow: "0 24px 65px rgba(var(--primary-rgb),0.08)",
-            }}
-          >
-            <div style={{ flex: "1 1 320px" }}>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "13px",
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "var(--warning)",
-                }}
-              >
-                Job Overview
-              </p>
-              <h1 style={{ fontSize: "28px", margin: "6px 0", color: "var(--accent-purple)" }}>
-                Workshop workload
-              </h1>
-              <p style={{ margin: 0, color: "var(--info)", fontSize: "15px" }}>
-                Monitor today&apos;s progress and outstanding carry overs in one glance.
-              </p>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                flexWrap: "wrap",
-                alignItems: "center",
-                justifyContent: "flex-end",
-              }}
-            >
-              {overviewStats.map((stat) => (
-                <div
-                  key={stat.label}
-                  style={{
-                    minWidth: "130px",
-                    padding: "10px 16px",
-                    borderRadius: "16px",
-                    background: "var(--primary)",
-                    border: "1px solid var(--primary-light)",
-                    color: "var(--text-inverse)",
-                    textAlign: "center",
-                  }}
-                >
-                  <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                    {stat.label}
-                  </div>
-                  <div style={{ fontSize: "20px", fontWeight: 700 }}>{stat.value}</div>
-                </div>
-              ))}
-              <button
-                onClick={fetchJobs}
-                style={{
-                  padding: "12px 28px",
-                  background: "var(--primary)",
-                  color: "var(--text-inverse)",
-                  border: "none",
-                  borderRadius: "16px",
-                  cursor: "pointer",
-                  fontSize: "15px",
-                  fontWeight: "600",
-                  boxShadow: "0 15px 35px rgba(var(--primary-rgb), 0.35)",
-                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-1px)";
-                  e.currentTarget.style.boxShadow = "0 20px 45px rgba(var(--primary-rgb), 0.45)";
-                }}
-                onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 15px 35px rgba(var(--primary-rgb), 0.35)";
-            }}
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "16px",
-              alignItems: "center",
-              justifyContent: "space-between",
             }}
           >
             <div
@@ -609,7 +515,6 @@ export default function ViewJobCards() {
                   boxShadow: "inset 0 1px 1px rgba(var(--shadow-rgb),0.05)",
                 }}
               >
-                <span style={{ fontSize: "18px", color: "var(--info)" }}>🔍</span>
                 <input
                   type="text"
                   placeholder="Search job number, registration, or customer"
