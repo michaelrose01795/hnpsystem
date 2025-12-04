@@ -239,6 +239,29 @@ body.dark-mode aside {
   color: inherit !important;
 }
 
+/* Strip gradients in dark mode for sections, cards, tabs, and buttons */
+body.dark-mode [style*="linear-gradient"],
+body.dark-mode [class*="bg-gradient"] {
+  background-image: none !important;
+}
+
+body.dark-mode section[style*="linear-gradient"],
+body.dark-mode div[style*="linear-gradient"],
+body.dark-mode main[style*="linear-gradient"],
+body.dark-mode header[style*="linear-gradient"],
+body.dark-mode aside[style*="linear-gradient"] {
+  background-color: var(--surface) !important;
+}
+
+body.dark-mode button[style*="linear-gradient"],
+body.dark-mode a[style*="linear-gradient"],
+body.dark-mode .tab[style*="linear-gradient"],
+body.dark-mode .tab-button[style*="linear-gradient"] {
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: var(--text-inverse) !important;
+}
+
 /* Popups & modals */
 body.dark-mode .popup,
 body.dark-mode .modal,
