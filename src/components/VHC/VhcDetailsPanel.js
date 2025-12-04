@@ -130,7 +130,12 @@ const buildVhcPayload = (source = {}) => {
 };
 
 const WHEEL_POSITION_KEYS = ["NSF", "OSF", "NSR", "OSR"];
-const ISOLATED_SUMMARY_CATEGORIES = new Set(["wheels_tyres"]);
+const ISOLATED_SUMMARY_CATEGORIES = new Set([
+  "wheels_tyres",
+  "external_inspection",
+  "internal_electrics",
+  "underside",
+]);
 
 const CATEGORY_DEFINITIONS = [
   {
