@@ -141,7 +141,7 @@ const renderVhcBadge = (job) => {
           alignItems: "center",
           gap: "6px",
           fontSize: "12px",
-          color: "#9ca3af",
+          color: "var(--info)",
         }}
       >
         <span
@@ -149,7 +149,7 @@ const renderVhcBadge = (job) => {
             width: "10px",
             height: "10px",
             borderRadius: "50%",
-            backgroundColor: "#d1d5db",
+            backgroundColor: "var(--info)",
           }}
         />
         Not required
@@ -164,7 +164,7 @@ const renderVhcBadge = (job) => {
         alignItems: "center",
         gap: "6px",
         fontSize: "12px",
-        color: completed ? "#15803d" : "#b45309",
+        color: completed ? "var(--success-dark)" : "var(--warning)",
       }}
     >
       <span
@@ -172,7 +172,7 @@ const renderVhcBadge = (job) => {
           width: "10px",
           height: "10px",
           borderRadius: "50%",
-          backgroundColor: completed ? "#22c55e" : "#f97316",
+          backgroundColor: completed ? "var(--success)" : "var(--danger)",
         }}
       />
       {completed ? "VHC complete" : "VHC pending"}
@@ -392,12 +392,12 @@ export default function ViewJobCards() {
             <div style={{ 
               fontSize: "18px", 
               fontWeight: "600", 
-              color: "#d10000",
+              color: "var(--primary)",
               marginBottom: "12px"
             }}>
               Loading Job Cards...
             </div>
-            <div style={{ fontSize: "14px", color: "#666" }}>
+            <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
               Please wait while we fetch your data
             </div>
           </div>
@@ -416,7 +416,7 @@ export default function ViewJobCards() {
           minHeight: "100vh",
           width: "100%",
           padding: "32px 24px 40px",
-          background: "linear-gradient(180deg,#fff5f5 0%,#ffffff 45%,#f8fafc 100%)",
+          background: "linear-gradient(180deg,var(--surface-light) 0%,var(--surface) 45%,var(--info-surface) 100%)",
           display: "flex",
           justifyContent: "center",
         }}
@@ -440,8 +440,8 @@ export default function ViewJobCards() {
               background: "white",
               borderRadius: "24px",
               padding: "24px 28px",
-              border: "1px solid #ffe4e6",
-              boxShadow: "0 24px 65px rgba(209,0,0,0.08)",
+              border: "1px solid var(--surface-light)",
+              boxShadow: "0 24px 65px rgba(var(--primary-rgb),0.08)",
             }}
           >
             <div style={{ flex: "1 1 320px" }}>
@@ -451,15 +451,15 @@ export default function ViewJobCards() {
                   fontSize: "13px",
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
-                  color: "#b45309",
+                  color: "var(--warning)",
                 }}
               >
                 Job Overview
               </p>
-              <h1 style={{ fontSize: "28px", margin: "6px 0", color: "#0f172a" }}>
+              <h1 style={{ fontSize: "28px", margin: "6px 0", color: "var(--accent-purple)" }}>
                 Workshop workload
               </h1>
-              <p style={{ margin: 0, color: "#64748b", fontSize: "15px" }}>
+              <p style={{ margin: 0, color: "var(--info)", fontSize: "15px" }}>
                 Monitor today&apos;s progress and outstanding carry overs in one glance.
               </p>
             </div>
@@ -479,9 +479,9 @@ export default function ViewJobCards() {
                     minWidth: "130px",
                     padding: "10px 16px",
                     borderRadius: "16px",
-                    background: "linear-gradient(135deg,#fee2e2,#fecdd3)",
-                    border: "1px solid #fecaca",
-                    color: "#7f1d1d",
+                    background: "linear-gradient(135deg,var(--danger-surface),var(--danger))",
+                    border: "1px solid var(--danger-surface)",
+                    color: "var(--danger-dark)",
                     textAlign: "center",
                   }}
                 >
@@ -495,23 +495,23 @@ export default function ViewJobCards() {
                 onClick={fetchJobs}
                 style={{
                   padding: "12px 28px",
-                  background: "linear-gradient(135deg,#e11d48,#b91c1c)",
+                  background: "linear-gradient(135deg,var(--danger),var(--danger))",
                   color: "white",
                   border: "none",
                   borderRadius: "16px",
                   cursor: "pointer",
                   fontSize: "15px",
                   fontWeight: "600",
-                  boxShadow: "0 15px 35px rgba(190,18,60,0.35)",
+                  boxShadow: "0 15px 35px rgba(var(--danger-rgb), 0.35)",
                   transition: "transform 0.2s ease, box-shadow 0.2s ease",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-1px)";
-                  e.currentTarget.style.boxShadow = "0 20px 45px rgba(190,18,60,0.45)";
+                  e.currentTarget.style.boxShadow = "0 20px 45px rgba(var(--danger-rgb), 0.45)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 15px 35px rgba(190,18,60,0.35)";
+                  e.currentTarget.style.boxShadow = "0 15px 35px rgba(var(--danger-rgb), 0.35)";
                 }}
               >
                 🔄 Refresh
@@ -536,8 +536,8 @@ export default function ViewJobCards() {
                 padding: "4px",
                 borderRadius: "999px",
                 backgroundColor: "white",
-                border: "1px solid rgba(209,0,0,0.2)",
-                boxShadow: "0 18px 40px rgba(209,0,0,0.08)",
+                border: "1px solid rgba(var(--primary-rgb),0.2)",
+                boxShadow: "0 18px 40px rgba(var(--primary-rgb),0.08)",
               }}
             >
               <button
@@ -548,9 +548,9 @@ export default function ViewJobCards() {
                   borderRadius: "999px",
                   background:
                     activeTab === "today"
-                      ? "linear-gradient(135deg,#d10000,#a10000)"
+                      ? "linear-gradient(135deg,var(--primary),var(--primary-dark))"
                       : "transparent",
-                  color: activeTab === "today" ? "white" : "#7f1d1d",
+                  color: activeTab === "today" ? "white" : "var(--danger-dark)",
                   fontWeight: 600,
                   cursor: "pointer",
                   transition: "all 0.2s ease",
@@ -566,9 +566,9 @@ export default function ViewJobCards() {
                   borderRadius: "999px",
                   background:
                     activeTab === "carryOver"
-                      ? "linear-gradient(135deg,#d10000,#a10000)"
+                      ? "linear-gradient(135deg,var(--primary),var(--primary-dark))"
                       : "transparent",
-                  color: activeTab === "carryOver" ? "white" : "#7f1d1d",
+                  color: activeTab === "carryOver" ? "white" : "var(--danger-dark)",
                   fontWeight: 600,
                   cursor: "pointer",
                   transition: "all 0.2s ease",
@@ -586,8 +586,8 @@ export default function ViewJobCards() {
               flexDirection: "column",
               background: "white",
               borderRadius: "28px",
-              border: "1px solid #f3f4f6",
-              boxShadow: "0 24px 65px rgba(15,23,42,0.08)",
+              border: "1px solid var(--info-surface)",
+              boxShadow: "0 24px 65px rgba(var(--shadow-rgb),0.08)",
               padding: "24px",
               minHeight: "0",
             }}
@@ -610,12 +610,12 @@ export default function ViewJobCards() {
                   gap: "12px",
                   padding: "12px 18px",
                   borderRadius: "18px",
-                  border: "1px solid #e2e8f0",
-                  background: "#f8fafc",
-                  boxShadow: "inset 0 1px 1px rgba(15,23,42,0.05)",
+                  border: "1px solid var(--info-surface)",
+                  background: "var(--info-surface)",
+                  boxShadow: "inset 0 1px 1px rgba(var(--shadow-rgb),0.05)",
                 }}
               >
-                <span style={{ fontSize: "18px", color: "#94a3b8" }}>🔍</span>
+                <span style={{ fontSize: "18px", color: "var(--info)" }}>🔍</span>
                 <input
                   type="text"
                   placeholder="Search job number, registration, or customer"
@@ -629,7 +629,7 @@ export default function ViewJobCards() {
                     outline: "none",
                     background: "transparent",
                     fontSize: "15px",
-                    color: "#0f172a",
+                    color: "var(--accent-purple)",
                   }}
                 />
               </div>
@@ -639,9 +639,9 @@ export default function ViewJobCards() {
                   minWidth: "200px",
                   padding: "12px 18px",
                   borderRadius: "18px",
-                  border: "1px solid #ffe4e6",
-                  background: "#fff1f2",
-                  color: "#be123c",
+                  border: "1px solid var(--surface-light)",
+                  background: "var(--danger-surface)",
+                  color: "var(--danger)",
                   fontSize: "13px",
                   fontWeight: 600,
                   display: "flex",
@@ -661,10 +661,10 @@ export default function ViewJobCards() {
                 gap: "10px",
                 padding: "12px",
                 marginBottom: "16px",
-                background: "linear-gradient(135deg,rgba(255,255,255,0.95),rgba(255,240,240,0.9))",
+                background: "linear-gradient(135deg,rgba(var(--surface-rgb), 0.95),rgba(var(--danger-rgb), 0.9))",
                 borderRadius: "18px",
-                border: "1px solid #ffe4e6",
-                boxShadow: "inset 0 1px 1px rgba(255,255,255,0.8)",
+                border: "1px solid var(--surface-light)",
+                boxShadow: "inset 0 1px 1px rgba(var(--surface-rgb), 0.8)",
               }}
             >
               {statusTabs.map((status) => {
@@ -680,11 +680,11 @@ export default function ViewJobCards() {
                       padding: "10px 18px",
                       borderRadius: "14px",
                       border: "1px solid",
-                      borderColor: isActive ? "transparent" : "rgba(220,38,38,0.3)",
+                      borderColor: isActive ? "transparent" : "rgba(var(--primary-rgb), 0.3)",
                       background: isActive
-                        ? "linear-gradient(135deg,#f87171,#dc2626)"
-                        : "rgba(255,255,255,0.9)",
-                      color: isActive ? "white" : "#b91c1c",
+                        ? "linear-gradient(135deg,var(--danger),var(--danger))"
+                        : "rgba(var(--surface-rgb), 0.9)",
+                      color: isActive ? "white" : "var(--danger)",
                       cursor: "pointer",
                       fontWeight: 600,
                       fontSize: "13px",
@@ -692,8 +692,8 @@ export default function ViewJobCards() {
                       alignItems: "center",
                       gap: "10px",
                       boxShadow: isActive
-                        ? "0 10px 25px rgba(220,38,38,0.25)"
-                        : "0 6px 16px rgba(220,38,38,0.08)",
+                        ? "0 10px 25px rgba(var(--primary-rgb), 0.25)"
+                        : "0 6px 16px rgba(var(--primary-rgb), 0.08)",
                       transition: "all 0.2s ease",
                     }}
                   >
@@ -705,9 +705,9 @@ export default function ViewJobCards() {
                         padding: "2px 10px",
                         borderRadius: "999px",
                         backgroundColor: isActive
-                          ? "rgba(255,255,255,0.25)"
-                          : "rgba(220,38,38,0.1)",
-                        color: isActive ? "white" : "#b91c1c",
+                          ? "rgba(var(--surface-rgb), 0.25)"
+                          : "rgba(var(--primary-rgb), 0.1)",
+                        color: isActive ? "white" : "var(--danger)",
                       }}
                     >
                       {count}
@@ -722,8 +722,8 @@ export default function ViewJobCards() {
                 flex: 1,
                 overflow: "hidden",
                 borderRadius: "16px",
-                border: "1px solid #f1f5f9",
-                background: "#fff",
+                border: "1px solid var(--info-surface)",
+                background: "var(--surface)",
                 padding: "12px",
               }}
             >
@@ -741,10 +741,10 @@ export default function ViewJobCards() {
                     style={{
                       padding: "32px",
                       textAlign: "center",
-                      color: "#94a3b8",
-                      border: "1px dashed #e5e7eb",
+                      color: "var(--info)",
+                      border: "1px dashed var(--accent-purple-surface)",
                       borderRadius: "12px",
-                      background: "#f9fafb",
+                      background: "var(--info-surface)",
                     }}
                   >
                     {searchValue
@@ -774,7 +774,7 @@ export default function ViewJobCards() {
               left: 0,
               width: "100%",
               height: "100%",
-              backgroundColor: "rgba(0,0,0,0.5)",
+              backgroundColor: "rgba(var(--shadow-rgb),0.5)",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -792,23 +792,23 @@ export default function ViewJobCards() {
                   width: "90%",
                   maxHeight: "85vh",
                   overflowY: "auto",
-                  boxShadow: "0 20px 60px rgba(0,0,0,0.3)"
+                  boxShadow: "0 20px 60px rgba(var(--shadow-rgb),0.3)"
                 }}
               >
               {/* Popup Header */}
               <div style={{ marginBottom: "24px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>
-                    <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#1a1a1a", marginBottom: "4px" }}>
+                    <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "4px" }}>
                       {popupJob.jobNumber}
                     </h2>
-                    <p style={{ fontSize: "16px", color: "#666", margin: 0 }}>
+                    <p style={{ fontSize: "16px", color: "var(--grey-accent)", margin: 0 }}>
                       {popupJob.customer}
                     </p>
                   </div>
                   {/* ✅ Job Source Badge */}
                   <div style={{
-                    backgroundColor: popupJob.jobSource === "Warranty" ? "#ff8800" : "#4CAF50",
+                    backgroundColor: popupJob.jobSource === "Warranty" ? "var(--warning)" : "var(--success)",
                     color: "white",
                     padding: "8px 16px",
                     borderRadius: "8px",
@@ -822,39 +822,39 @@ export default function ViewJobCards() {
 
               {/* ✅ Job Details - Enhanced */}
               <div style={{ 
-                background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)",
-                border: "1px solid #ffe5e5",
+                background: "linear-gradient(to bottom right, white, var(--danger-surface), var(--surface-light))",
+                border: "1px solid var(--surface-light)",
                 borderRadius: "12px",
                 padding: "16px",
                 marginBottom: "20px"
               }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <div style={{ fontSize: "14px", color: "#666" }}>
+                  <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
                     <strong>Registration:</strong> {popupJob.reg}
                   </div>
                   {popupJob.makeModel && (
-                    <div style={{ fontSize: "14px", color: "#666" }}>
+                    <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
                       <strong>Vehicle:</strong> {popupJob.makeModel}
                     </div>
                   )}
                   {popupJob.vin && (
-                    <div style={{ fontSize: "14px", color: "#666" }}>
+                    <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
                       <strong>VIN:</strong> {popupJob.vin}
                     </div>
                   )}
                   {popupJob.mileage && (
-                    <div style={{ fontSize: "14px", color: "#666" }}>
+                    <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
                       <strong>Mileage:</strong> {popupJob.mileage.toLocaleString()} miles
                     </div>
                   )}
                   {/* ✅ Waiting Status */}
                   {popupJob.waitingStatus && popupJob.waitingStatus !== "Neither" && (
-                    <div style={{ fontSize: "14px", color: "#666" }}>
+                    <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
                       <strong>Customer Status:</strong> {popupJob.waitingStatus}
                     </div>
                   )}
                   {popupJob.appointment && (
-                    <div style={{ fontSize: "14px", color: "#666" }}>
+                    <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
                       <strong>Appointment:</strong> {popupJob.appointment.date} at {popupJob.appointment.time}
                     </div>
                   )}
@@ -863,14 +863,14 @@ export default function ViewJobCards() {
                 {/* ✅ Job Categories */}
                 {popupJob.jobCategories && popupJob.jobCategories.length > 0 && (
                   <div style={{ marginTop: "12px" }}>
-                    <strong style={{ fontSize: "14px", color: "#666" }}>Job Types:</strong>
+                    <strong style={{ fontSize: "14px", color: "var(--grey-accent)" }}>Job Types:</strong>
                     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "6px" }}>
                       {popupJob.jobCategories.map((category, idx) => (
                         <span
                           key={idx}
                           style={{
-                            backgroundColor: "#e0e0e0",
-                            color: "#333",
+                            backgroundColor: "var(--surface-light)",
+                            color: "var(--text-secondary)",
                             padding: "4px 10px",
                             borderRadius: "6px",
                             fontSize: "12px",
@@ -887,16 +887,16 @@ export default function ViewJobCards() {
                 {/* ✅ Job Requests */}
                 {popupJob.requests && popupJob.requests.length > 0 && (
                   <div style={{ marginTop: "12px" }}>
-                    <strong style={{ fontSize: "14px", color: "#666" }}>Customer Requests:</strong>
+                    <strong style={{ fontSize: "14px", color: "var(--grey-accent)" }}>Customer Requests:</strong>
                     <ul style={{ margin: "6px 0 0 0", paddingLeft: "20px" }}>
                       {popupJob.requests.map((req, idx) => (
-                        <li key={idx} style={{ fontSize: "13px", color: "#666", marginBottom: "4px" }}>
+                        <li key={idx} style={{ fontSize: "13px", color: "var(--grey-accent)", marginBottom: "4px" }}>
                           {req.text || req} 
-                          {req.time && <span style={{ color: "#999" }}> ({req.time}h)</span>}
+                          {req.time && <span style={{ color: "var(--grey-accent-light)" }}> ({req.time}h)</span>}
                           {req.paymentType && req.paymentType !== "Customer" && (
                             <span style={{ 
                               marginLeft: "8px", 
-                              backgroundColor: "#fff3cd", 
+                              backgroundColor: "var(--warning-surface)", 
                               padding: "2px 6px", 
                               borderRadius: "4px",
                               fontSize: "11px"
@@ -913,8 +913,8 @@ export default function ViewJobCards() {
                 {/* ✅ Cosmetic Notes */}
                 {popupJob.cosmeticNotes && (
                   <div style={{ marginTop: "12px" }}>
-                    <strong style={{ fontSize: "14px", color: "#666" }}>Cosmetic Damage:</strong>
-                    <p style={{ fontSize: "13px", color: "#666", margin: "4px 0 0 0" }}>
+                    <strong style={{ fontSize: "14px", color: "var(--grey-accent)" }}>Cosmetic Damage:</strong>
+                    <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "4px 0 0 0" }}>
                       {popupJob.cosmeticNotes}
                     </p>
                   </div>
@@ -924,8 +924,8 @@ export default function ViewJobCards() {
               {/* Status Badges */}
               <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
                 <div style={{
-                  backgroundColor: "#f0f9ff",
-                  color: "#0369a1",
+                  backgroundColor: "var(--info-surface)",
+                  color: "var(--info-dark)",
                   padding: "8px 16px",
                   borderRadius: "8px",
                   fontSize: "13px",
@@ -934,8 +934,8 @@ export default function ViewJobCards() {
                   VHC Checks: {popupJob.vhcChecks?.length || 0}
                 </div>
                 <div style={{
-                  backgroundColor: "#fef3c7",
-                  color: "#92400e",
+                  backgroundColor: "var(--warning-surface)",
+                  color: "var(--danger-dark)",
                   padding: "8px 16px",
                   borderRadius: "8px",
                   fontSize: "13px",
@@ -944,8 +944,8 @@ export default function ViewJobCards() {
                   Parts Requests: {popupJob.partsRequests?.length || 0}
                 </div>
                 <div style={{
-                  backgroundColor: "#f0fdf4",
-                  color: "#166534",
+                  backgroundColor: "var(--success-surface)",
+                  color: "var(--success-dark)",
                   padding: "8px 16px",
                   borderRadius: "8px",
                   fontSize: "13px",
@@ -956,8 +956,8 @@ export default function ViewJobCards() {
                 {/* ✅ Files Badge */}
                 {popupJob.files && popupJob.files.length > 0 && (
                   <div style={{
-                    backgroundColor: "#fef3f2",
-                    color: "#991b1b",
+                    backgroundColor: "var(--danger-surface)",
+                    color: "var(--danger)",
                     padding: "8px 16px",
                     borderRadius: "8px",
                     fontSize: "13px",
@@ -969,8 +969,8 @@ export default function ViewJobCards() {
                 {/* ✅ VHC Required Badge */}
                 {popupJob.vhcRequired && (
                   <div style={{
-                    backgroundColor: "#ffe4e6",
-                    color: "#be123c",
+                    backgroundColor: "var(--surface-light)",
+                    color: "var(--danger)",
                     padding: "8px 16px",
                     borderRadius: "8px",
                     fontSize: "13px",
@@ -983,7 +983,7 @@ export default function ViewJobCards() {
 
               {/* Status Dropdown */}
               <div style={{ marginBottom: "20px" }}>
-                <label style={{ fontSize: "13px", fontWeight: "600", color: "#666", display: "block", marginBottom: "8px" }}>
+                <label style={{ fontSize: "13px", fontWeight: "600", color: "var(--grey-accent)", display: "block", marginBottom: "8px" }}>
                   Update Status
                 </label>
                 <select
@@ -994,7 +994,7 @@ export default function ViewJobCards() {
                     padding: "10px 12px",
                     fontSize: "14px",
                     borderRadius: "8px",
-                    border: "1px solid #e0e0e0",
+                    border: "1px solid var(--surface-light)",
                     backgroundColor: "white",
                     cursor: "pointer",
                   }}
@@ -1014,7 +1014,7 @@ export default function ViewJobCards() {
                   style={{
                     flex: 1,
                     padding: "12px 20px",
-                    backgroundColor: "#d10000",
+                    backgroundColor: "var(--primary)",
                     color: "white",
                     border: "none",
                     borderRadius: "8px",
@@ -1023,8 +1023,8 @@ export default function ViewJobCards() {
                     fontWeight: "600",
                     transition: "background-color 0.2s"
                   }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "var(--primary-dark)"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "var(--primary)"}
                 >
                   📝 View Full Details
                 </button>
@@ -1034,7 +1034,7 @@ export default function ViewJobCards() {
                   style={{
                     flex: 1,
                     padding: "12px 20px",
-                    backgroundColor: "#ef4444",
+                    backgroundColor: "var(--danger)",
                     color: "white",
                     border: "none",
                     borderRadius: "8px",
@@ -1043,8 +1043,8 @@ export default function ViewJobCards() {
                     fontWeight: "600",
                     transition: "background-color 0.2s"
                   }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "#dc2626"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "#ef4444"}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger)"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "var(--danger)"}
                 >
                   🔍 View VHC
                 </button>
@@ -1054,7 +1054,7 @@ export default function ViewJobCards() {
                   style={{
                     flex: 1,
                     padding: "12px 20px",
-                    backgroundColor: "#10b981",
+                    backgroundColor: "var(--info)",
                     color: "white",
                     border: "none",
                     borderRadius: "8px",
@@ -1063,8 +1063,8 @@ export default function ViewJobCards() {
                     fontWeight: "600",
                     transition: "background-color 0.2s"
                   }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "#059669"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "#10b981"}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "var(--info-dark)"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "var(--info)"}
                 >
                   ✍️ Write-Up
                 </button>
@@ -1077,8 +1077,8 @@ export default function ViewJobCards() {
                   width: "100%",
                   marginTop: "16px",
                   padding: "12px 20px",
-                  backgroundColor: "#f5f5f5",
-                  color: "#666",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--grey-accent)",
                   border: "none",
                   borderRadius: "8px",
                   cursor: "pointer",
@@ -1086,8 +1086,8 @@ export default function ViewJobCards() {
                   fontWeight: "600",
                   transition: "background-color 0.2s"
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = "#e0e0e0"}
-                onMouseLeave={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+                onMouseEnter={(e) => e.target.style.backgroundColor = "var(--surface-light)"}
+                onMouseLeave={(e) => e.target.style.backgroundColor = "var(--surface)"}
               >
                 Close
               </button>
@@ -1133,11 +1133,11 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
     <div
       onClick={onNavigate}
       style={{
-        border: "1px solid #ffe5e5",
+        border: "1px solid var(--surface-light)",
         padding: "18px",
         borderRadius: "16px",
         backgroundColor: "white",
-        boxShadow: "0 2px 6px rgba(209,0,0,0.04)",
+        boxShadow: "0 2px 6px rgba(var(--primary-rgb),0.04)",
         display: "flex",
         flexDirection: "column",
         gap: "16px",
@@ -1146,13 +1146,13 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
       }}
       onMouseEnter={(event) => {
         event.currentTarget.style.transform = "translateY(-2px)";
-        event.currentTarget.style.boxShadow = "0 6px 16px rgba(209,0,0,0.12)";
-        event.currentTarget.style.borderColor = "#ffb3b3";
+        event.currentTarget.style.boxShadow = "0 6px 16px rgba(var(--primary-rgb),0.12)";
+        event.currentTarget.style.borderColor = "var(--danger)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "0 2px 6px rgba(209,0,0,0.04)";
-        event.currentTarget.style.borderColor = "#ffe5e5";
+        event.currentTarget.style.boxShadow = "0 2px 6px rgba(var(--primary-rgb),0.04)";
+        event.currentTarget.style.borderColor = "var(--surface-light)";
       }}
     >
       <div
@@ -1166,21 +1166,21 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "18px", fontWeight: 700, color: "#1f2937" }}>{job.jobNumber}</span>
+            <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--info-dark)" }}>{job.jobNumber}</span>
             <span
               style={{
                 fontSize: "12px",
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
-                color: "#9ca3af",
+                color: "var(--info)",
               }}
             >
               {jobSourceLabel}
             </span>
           </div>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "baseline" }}>
-            <span style={{ fontSize: "20px", fontWeight: 700, color: "#d10000" }}>{job.reg || "—"}</span>
-            <span style={{ fontSize: "14px", color: "#6b7280" }}>{job.makeModel || "Vehicle pending"}</span>
+            <span style={{ fontSize: "20px", fontWeight: 700, color: "var(--primary)" }}>{job.reg || "—"}</span>
+            <span style={{ fontSize: "14px", color: "var(--info)" }}>{job.makeModel || "Vehicle pending"}</span>
           </div>
         </div>
         <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
@@ -1188,8 +1188,8 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
             style={{
               padding: "6px 12px",
               borderRadius: "999px",
-              backgroundColor: "#fee2e2",
-              color: "#b91c1c",
+              backgroundColor: "var(--danger-surface)",
+              color: "var(--danger)",
               fontWeight: 600,
               fontSize: "13px",
               textTransform: "capitalize",
@@ -1207,9 +1207,9 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
               style={{
                 padding: "8px 14px",
                 borderRadius: "10px",
-                border: "1px solid #e5e7eb",
+                border: "1px solid var(--accent-purple-surface)",
                 backgroundColor: "white",
-                color: "#374151",
+                color: "var(--info-dark)",
                 fontWeight: 600,
                 cursor: "pointer",
                 display: "inline-flex",
@@ -1234,16 +1234,16 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
           <div
             key={block.label}
             style={{
-              border: "1px solid #f3f4f6",
+              border: "1px solid var(--info-surface)",
               borderRadius: "12px",
               padding: "12px",
-              backgroundColor: "#fdf2f2",
+              backgroundColor: "var(--danger-surface)",
             }}
           >
-            <div style={{ fontSize: "11px", color: "#b45309", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            <div style={{ fontSize: "11px", color: "var(--warning)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
               {block.label}
             </div>
-            <div style={{ fontSize: "14px", fontWeight: 600, color: "#1f2937", marginTop: "4px" }}>{block.value}</div>
+            <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--info-dark)", marginTop: "4px" }}>{block.value}</div>
           </div>
         ))}
       </div>
@@ -1257,10 +1257,10 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
           justifyContent: "space-between",
         }}
       >
-        <div style={{ fontSize: "13px", color: "#6b7280" }}>
+        <div style={{ fontSize: "13px", color: "var(--info)" }}>
           Scheduled: <strong>{jobDate || "Not scheduled"}</strong>
         </div>
-        <div style={{ fontSize: "13px", color: "#6b7280" }}>
+        <div style={{ fontSize: "13px", color: "var(--info)" }}>
           Created: <strong>{createdStamp}</strong>
         </div>
         <div>{renderVhcBadge(job)}</div>

@@ -51,17 +51,17 @@ export default function VhcCustomerViewPage() {
             type="button"
             onClick={handleBack}
             style={{
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--accent-purple-surface)",
               borderRadius: "10px",
               padding: "8px 16px",
-              background: "#fff",
+              background: "var(--surface)",
               fontWeight: 600,
               cursor: "pointer",
             }}
           >
             ← Back to workshop view
           </button>
-          <div style={{ fontSize: "14px", color: "#9ca3af" }}>Read-only customer preview</div>
+          <div style={{ fontSize: "14px", color: "var(--info)" }}>Read-only customer preview</div>
         </div>
 
         <VhcDetailsPanel jobNumber={jobNumber} showNavigation={false} readOnly />

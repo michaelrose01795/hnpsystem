@@ -112,7 +112,7 @@ export default function NextActionPrompt() {
           padding: "8px 16px",
           borderRadius: "14px",
           border: "none",
-          background: "linear-gradient(135deg, #ef4444, #b91c1c)",
+          background: "linear-gradient(135deg, var(--danger), var(--danger))",
           color: "white",
           fontWeight: 700,
           fontSize: "0.85rem",
@@ -120,7 +120,7 @@ export default function NextActionPrompt() {
           alignItems: "center",
           gap: "8px",
           cursor: "pointer",
-          boxShadow: "0 12px 24px rgba(239,68,68,0.35)",
+          boxShadow: "0 12px 24px rgba(var(--danger-rgb), 0.35)",
         }}
       >
         <span role="img" aria-label="Next action">🔔</span>
@@ -132,7 +132,7 @@ export default function NextActionPrompt() {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(15,23,42,0.55)",
+            background: "rgba(var(--shadow-rgb),0.55)",
             backdropFilter: "blur(4px)",
             display: "flex",
             alignItems: "center",
@@ -150,16 +150,16 @@ export default function NextActionPrompt() {
               display: "flex",
               flexDirection: "column",
               gap: "18px",
-              boxShadow: "0 24px 48px rgba(15,23,42,0.18)",
+              boxShadow: "0 24px 48px rgba(var(--shadow-rgb),0.18)",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
               <div>
-                <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "#ef4444" }}>
+                <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--danger)" }}>
                   Next Action Required
                 </p>
-                <h2 style={{ margin: "4px 0 0", color: "#1f2937" }}>{nextAction.title}</h2>
-                <p style={{ margin: "8px 0 0", color: "#4b5563", lineHeight: 1.5 }}>{nextAction.instruction}</p>
+                <h2 style={{ margin: "4px 0 0", color: "var(--info-dark)" }}>{nextAction.title}</h2>
+                <p style={{ margin: "8px 0 0", color: "var(--info-dark)", lineHeight: 1.5 }}>{nextAction.instruction}</p>
               </div>
               <button
                 type="button"
@@ -167,7 +167,7 @@ export default function NextActionPrompt() {
                 style={{
                   border: "none",
                   background: "transparent",
-                  color: "#6b7280",
+                  color: "var(--info)",
                   fontSize: "1.5rem",
                   cursor: "pointer",
                   lineHeight: 1,
@@ -182,31 +182,31 @@ export default function NextActionPrompt() {
               style={{
                 padding: "16px",
                 borderRadius: "16px",
-                background: "linear-gradient(135deg, rgba(248,113,113,0.1), rgba(239,68,68,0.05))",
-                border: "1px solid rgba(239,68,68,0.25)",
+                background: "linear-gradient(135deg, rgba(var(--danger-rgb), 0.1), rgba(var(--danger-rgb), 0.05))",
+                border: "1px solid rgba(var(--danger-rgb), 0.25)",
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
                 gap: "12px",
               }}
             >
               <div>
-                <p style={{ margin: 0, fontSize: "0.7rem", color: "#9ca3af", letterSpacing: "0.08em" }}>Job Number</p>
-                <strong style={{ fontSize: "1rem", color: "#ef4444" }}>{nextAction.jobNumber || "Unknown"}</strong>
+                <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--info)", letterSpacing: "0.08em" }}>Job Number</p>
+                <strong style={{ fontSize: "1rem", color: "var(--danger)" }}>{nextAction.jobNumber || "Unknown"}</strong>
               </div>
               <div>
-                <p style={{ margin: 0, fontSize: "0.7rem", color: "#9ca3af", letterSpacing: "0.08em" }}>Registration</p>
-                <strong style={{ fontSize: "1rem", color: "#1f2937" }}>{nextAction.vehicleReg || "N/A"}</strong>
+                <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--info)", letterSpacing: "0.08em" }}>Registration</p>
+                <strong style={{ fontSize: "1rem", color: "var(--info-dark)" }}>{nextAction.vehicleReg || "N/A"}</strong>
               </div>
               <div>
-                <p style={{ margin: 0, fontSize: "0.7rem", color: "#9ca3af", letterSpacing: "0.08em" }}>Suggested Status</p>
-                <strong style={{ fontSize: "1rem", color: "#1f2937" }}>
+                <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--info)", letterSpacing: "0.08em" }}>Suggested Status</p>
+                <strong style={{ fontSize: "1rem", color: "var(--info-dark)" }}>
                   {statusLabelForAction(nextAction.actionType, nextAction.defaultVehicleStatus)}
                 </strong>
               </div>
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "#1f2937", fontWeight: 600 }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--info-dark)", fontWeight: 600 }}>
                 Key Location
                 <select
                   value={keyLocation}
@@ -214,9 +214,9 @@ export default function NextActionPrompt() {
                   style={{
                     padding: "10px 12px",
                     borderRadius: "12px",
-                    border: "1px solid rgba(239,68,68,0.3)",
-                    background: "#fff",
-                    color: "#1f2937",
+                    border: "1px solid rgba(var(--danger-rgb), 0.3)",
+                    background: "var(--surface)",
+                    color: "var(--info-dark)",
                     fontWeight: 600,
                   }}
                 >
@@ -228,7 +228,7 @@ export default function NextActionPrompt() {
                 </select>
               </label>
 
-              <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "#1f2937", fontWeight: 600 }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--info-dark)", fontWeight: 600 }}>
                 Vehicle Location
                 <select
                   value={vehicleLocation}
@@ -236,9 +236,9 @@ export default function NextActionPrompt() {
                   style={{
                     padding: "10px 12px",
                     borderRadius: "12px",
-                    border: "1px solid rgba(239,68,68,0.3)",
-                    background: "#fff",
-                    color: "#1f2937",
+                    border: "1px solid rgba(var(--danger-rgb), 0.3)",
+                    background: "var(--surface)",
+                    color: "var(--info-dark)",
                     fontWeight: 600,
                   }}
                 >
@@ -250,7 +250,7 @@ export default function NextActionPrompt() {
                 </select>
               </label>
 
-              <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "#1f2937", fontWeight: 600 }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--info-dark)", fontWeight: 600 }}>
                 Additional Notes
                 <textarea
                   value={notes}
@@ -260,7 +260,7 @@ export default function NextActionPrompt() {
                   style={{
                     padding: "10px 12px",
                     borderRadius: "12px",
-                    border: "1px solid rgba(148,163,184,0.35)",
+                    border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
                     resize: "vertical",
                     fontFamily: "inherit",
                   }}
@@ -272,8 +272,8 @@ export default function NextActionPrompt() {
                   style={{
                     padding: "10px 12px",
                     borderRadius: "12px",
-                    backgroundColor: feedback.type === "success" ? "#dcfce7" : "#fee2e2",
-                    color: feedback.type === "success" ? "#166534" : "#b91c1c",
+                    backgroundColor: feedback.type === "success" ? "var(--success-surface)" : "var(--danger-surface)",
+                    color: feedback.type === "success" ? "var(--success-dark)" : "var(--danger)",
                     fontWeight: 600,
                   }}
                 >
@@ -288,9 +288,9 @@ export default function NextActionPrompt() {
                   style={{
                     padding: "10px 16px",
                     borderRadius: "12px",
-                    border: "1px solid #d1d5db",
+                    border: "1px solid var(--info)",
                     background: "white",
-                    color: "#374151",
+                    color: "var(--info-dark)",
                     fontWeight: 600,
                     cursor: "pointer",
                   }}
@@ -305,12 +305,12 @@ export default function NextActionPrompt() {
                     borderRadius: "12px",
                     border: "none",
                     background: isSubmitting
-                      ? "linear-gradient(135deg, #fca5a5, #f87171)"
-                      : "linear-gradient(135deg, #ef4444, #b91c1c)",
+                      ? "linear-gradient(135deg, var(--danger), var(--danger))"
+                      : "linear-gradient(135deg, var(--danger), var(--danger))",
                     color: "white",
                     fontWeight: 700,
                     cursor: isSubmitting ? "wait" : "pointer",
-                    boxShadow: "0 18px 28px rgba(239,68,68,0.35)",
+                    boxShadow: "0 18px 28px rgba(var(--danger-rgb), 0.35)",
                     minWidth: "140px",
                   }}
                 >

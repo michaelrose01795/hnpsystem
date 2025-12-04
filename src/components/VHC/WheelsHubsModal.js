@@ -55,7 +55,7 @@ export default function WheelsHubsModal({
       style={{
         position: "fixed", // Overlay over the whole viewport
         inset: 0, // Stretch across the viewport
-        backgroundColor: "rgba(15,23,42,0.45)", // Dim background behind modal
+        backgroundColor: "rgba(var(--shadow-rgb),0.45)", // Dim background behind modal
         display: "flex", // Use flexbox for centring
         alignItems: "center", // Vertically centre modal
         justifyContent: "center", // Horizontally centre modal
@@ -70,9 +70,9 @@ export default function WheelsHubsModal({
           width: "min(780px, 100%)", // Limit modal width for readability
           maxHeight: "90vh", // Prevent overflow from exceeding viewport height
           overflowY: "auto", // Allow scrolling when content is tall
-          backgroundColor: "#ffffff", // Use white modal background
+          backgroundColor: "var(--surface)", // Use white modal background
           borderRadius: "20px", // Rounded modal corners
-          boxShadow: "0 24px 60px rgba(15,23,42,0.25)", // Strong elevation shadow
+          boxShadow: "0 24px 60px rgba(var(--shadow-rgb),0.25)", // Strong elevation shadow
           padding: "28px", // Internal padding for modal content
           display: "flex", // Use flex layout for vertical stacking
           flexDirection: "column", // Stack children vertically
@@ -102,9 +102,9 @@ export default function WheelsHubsModal({
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
             gap: "16px",
-            backgroundColor: "#fff5f5",
+            backgroundColor: "var(--surface-light)",
             borderRadius: "14px",
-            border: "1px solid #ffd6d6",
+            border: "1px solid var(--surface-light)",
             padding: "16px",
           }}
         >
@@ -127,7 +127,7 @@ export default function WheelsHubsModal({
               padding: "12px 14px",
               borderRadius: "12px",
               border: `1px solid ${palette.border}`,
-              backgroundColor: "#fff",
+              backgroundColor: "var(--surface)",
               fontSize: "14px",
               color: palette.textPrimary,
             }}
@@ -151,7 +151,7 @@ export default function WheelsHubsModal({
               border: `1px solid ${palette.border}`,
               borderRadius: "14px",
               padding: "16px",
-              background: "#f9fafb",
+              background: "var(--info-surface)",
             }}
           >
             <Detail label="Make" value={selectedTyre.make} />
@@ -172,7 +172,7 @@ export default function WheelsHubsModal({
               padding: "12px 18px",
               borderRadius: "12px",
               border: `1px solid ${palette.border}`,
-              backgroundColor: "#fff",
+              backgroundColor: "var(--surface)",
               color: palette.textPrimary,
               fontWeight: 600,
               cursor: "pointer",
@@ -188,10 +188,10 @@ export default function WheelsHubsModal({
               borderRadius: "12px",
               border: "none",
               backgroundColor: palette.accent,
-              color: "#fff",
+              color: "var(--surface)",
               fontWeight: 700,
               cursor: "pointer",
-              boxShadow: "0 18px 28px rgba(209,0,0,0.25)",
+              boxShadow: "0 18px 28px rgba(var(--primary-rgb),0.25)",
             }}
           >
             Order Tyre
@@ -205,10 +205,10 @@ export default function WheelsHubsModal({
 function Detail({ label, value }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#b91c1c", fontWeight: 700 }}>
+      <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--danger)", fontWeight: 700 }}>
         {label}
       </span>
-      <span style={{ fontSize: "14px", fontWeight: 600, color: "#1f2937" }}>{value || "-"}</span>
+      <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--info-dark)" }}>{value || "-"}</span>
     </div>
   );
 }

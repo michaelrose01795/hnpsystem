@@ -23,14 +23,14 @@ export default function HrTrainingQualifications() {
     <Layout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header>
-          <p style={{ color: "#6B7280", marginTop: "6px" }}>
+          <p style={{ color: "var(--info)", marginTop: "6px" }}>
             Monitor mandatory training, certificate uploads, and renewal reminders.
           </p>
         </header>
 
         {isLoading && (
           <SectionCard title="Loading training data" subtitle="Fetching renewals and directory.">
-            <span style={{ color: "#6B7280" }}>
+            <span style={{ color: "var(--info)" }}>
               Retrieving placeholder training records to validate the UI flow.
             </span>
           </SectionCard>
@@ -38,7 +38,7 @@ export default function HrTrainingQualifications() {
 
         {error && (
           <SectionCard title="Unable to load training data" subtitle="Mock API returned an error.">
-            <span style={{ color: "#B91C1C" }}>{error.message}</span>
+            <span style={{ color: "var(--danger)" }}>{error.message}</span>
           </SectionCard>
         )}
 
@@ -56,7 +56,7 @@ export default function HrTrainingQualifications() {
               >
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
-                    <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                    <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                       <th style={{ textAlign: "left", paddingBottom: "10px" }}>Course</th>
                       <th>Employee</th>
                       <th>Due Date</th>
@@ -72,7 +72,7 @@ export default function HrTrainingQualifications() {
                           ? "warning"
                           : "default";
                       return (
-                        <tr key={record.id} style={{ borderTop: "1px solid #E5E7EB" }}>
+                        <tr key={record.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
                           <td style={{ padding: "12px 0", fontWeight: 600 }}>{record.course}</td>
                           <td>{record.employee}</td>
                           <td>{new Date(record.dueDate).toLocaleDateString()}</td>
@@ -97,7 +97,7 @@ export default function HrTrainingQualifications() {
               >
                 <ul style={{ margin: 0, paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
                   {placeholderCourses.map((course) => (
-                    <li key={course.id} style={{ color: "#374151" }}>
+                    <li key={course.id} style={{ color: "var(--info-dark)" }}>
                       <strong>{course.name}</strong> — {course.duration}{" "}
                       {course.mandatory ? "(Mandatory)" : "(Optional)"}
                     </li>
@@ -170,7 +170,7 @@ export default function HrTrainingQualifications() {
                 <ComplianceCard title="Sales" percent={91} status="On Track" />
                 <ComplianceCard title="Valet" percent={64} status="Behind" />
               </div>
-              <p style={{ color: "#6B7280", marginTop: "16px" }}>
+              <p style={{ color: "var(--info)", marginTop: "16px" }}>
                 These percentages use placeholder data for UI verification. Replace with real metrics once Supabase views are
                 ready.
               </p>
@@ -192,14 +192,14 @@ function ComplianceCard({ title, percent, status }) {
         background: "white",
         padding: "18px",
         borderRadius: "12px",
-        boxShadow: "0 10px 24px rgba(15, 23, 42, 0.08)",
+        boxShadow: "0 10px 24px rgba(var(--accent-purple-rgb), 0.08)",
         display: "flex",
         flexDirection: "column",
         gap: "8px",
       }}
     >
-      <span style={{ fontWeight: 600, color: "#111827" }}>{title}</span>
-      <span style={{ fontSize: "2rem", fontWeight: 700, color: "#0EA5E9" }}>{percent}%</span>
+      <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{title}</span>
+      <span style={{ fontSize: "2rem", fontWeight: 700, color: "var(--info)" }}>{percent}%</span>
       <StatusTag label={status} tone={tone} />
     </div>
   );
@@ -209,7 +209,7 @@ const buttonStylePrimary = {
   padding: "10px 18px",
   borderRadius: "10px",
   border: "none",
-  background: "#F97316",
+  background: "var(--danger)",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",
@@ -218,9 +218,9 @@ const buttonStylePrimary = {
 const buttonStyleSecondary = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px solid #FED7AA",
+  border: "1px solid var(--warning)",
   background: "white",
-  color: "#EA580C",
+  color: "var(--danger)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -230,7 +230,7 @@ const buttonStyleGhost = {
   borderRadius: "10px",
   border: "1px solid transparent",
   background: "transparent",
-  color: "#EA580C",
+  color: "var(--danger)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -239,7 +239,7 @@ const labelStyle = {
   display: "flex",
   flexDirection: "column",
   gap: "6px",
-  color: "#374151",
+  color: "var(--info-dark)",
   fontSize: "0.85rem",
   fontWeight: 600,
 };
@@ -248,8 +248,8 @@ const inputStyle = {
   width: "100%",
   padding: "10px 12px",
   borderRadius: "10px",
-  border: "1px solid #E5E7EB",
+  border: "1px solid var(--accent-purple-surface)",
   background: "white",
-  color: "#111827",
+  color: "var(--accent-purple)",
   fontSize: "0.9rem",
 };

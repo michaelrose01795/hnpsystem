@@ -22,11 +22,11 @@ export default function HrTabsBar() {
   return (
     <div
       style={{
-        background: "#ffffff",
+        background: "var(--surface)",
         borderRadius: "18px",
         padding: "14px",
-        border: "1px solid #e5e7eb",
-        boxShadow: "0 16px 30px rgba(15, 23, 42, 0.04)",
+        border: "1px solid var(--accent-purple-surface)",
+        boxShadow: "0 16px 30px rgba(var(--accent-purple-rgb), 0.04)",
         marginBottom: "20px",
       }}
     >
@@ -53,14 +53,14 @@ export default function HrTabsBar() {
                 alignItems: "center",
                 justifyContent: "center",
                 padding: "10px 12px",
-                backgroundColor: isActive ? "#0f172a" : "#f8fafc",
+                backgroundColor: isActive ? "var(--accent-purple)" : "var(--info-surface)",
                 borderRadius: "12px",
-                color: isActive ? "#ffffff" : "#0f172a",
+                color: isActive ? "var(--surface)" : "var(--accent-purple)",
                 fontWeight: 600,
                 fontSize: "0.85rem",
                 textDecoration: "none",
-                border: isActive ? "1px solid #0f172a" : "1px solid #e5e7eb",
-                boxShadow: isActive ? "0 6px 16px rgba(15, 23, 42, 0.25)" : "inset 0 -1px 0 rgba(15, 23, 42, 0.05)",
+                border: isActive ? "1px solid var(--accent-purple)" : "1px solid var(--accent-purple-surface)",
+                boxShadow: isActive ? "0 6px 16px rgba(var(--accent-purple-rgb), 0.25)" : "inset 0 -1px 0 rgba(var(--accent-purple-rgb), 0.05)",
                 transition: "background-color 0.2s ease, color 0.2s ease",
                 textAlign: "center",
               }}

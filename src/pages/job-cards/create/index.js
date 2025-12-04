@@ -189,22 +189,22 @@ export default function CreateJobCardPage() {
 
   // function to determine background color based on waiting status and job source
   const getBackgroundColor = (status, source) => {
-    let baseColor = "#f9fafb"; // light grey background
+    let baseColor = "var(--info-surface)"; // light grey background
     switch (status) {
       case "Waiting":
-        baseColor = "#fef2f2"; // red tint for waiting
+        baseColor = "var(--danger-surface)"; // red tint for waiting
         break;
       case "Loan Car":
-        baseColor = "#eff6ff"; // blue tint for loan car
+        baseColor = "var(--info-surface)"; // blue tint for loan car
         break;
       case "Collection":
-        baseColor = "#f0fdf4"; // green tint for collection
+        baseColor = "var(--success-surface)"; // green tint for collection
         break;
       default:
-        baseColor = "#f9fafb"; // default background
+        baseColor = "var(--info-surface)"; // default background
     }
     if (source === "Warranty") { // check if job source is warranty
-      if (baseColor === "#f9fafb") return "#fff7ed"; // add orange tint when neutral
+      if (baseColor === "var(--info-surface)") return "var(--warning-surface)"; // add orange tint when neutral
       return baseColor; // keep existing tint otherwise
     }
     return baseColor; // return computed background
@@ -1022,7 +1022,7 @@ export default function CreateJobCardPage() {
               style={{
                 margin: 0,
                 fontSize: "14px",
-                color: "#666",
+                color: "var(--grey-accent)",
                 fontWeight: "500",
                 marginBottom: "4px",
               }}
@@ -1034,23 +1034,23 @@ export default function CreateJobCardPage() {
             onClick={handleSaveJob}
             style={{
               padding: "12px 28px",
-              backgroundColor: "#10b981",
+              backgroundColor: "var(--info)",
               color: "white",
               border: "none",
               borderRadius: "8px",
               fontWeight: "600",
               fontSize: "15px",
               cursor: "pointer",
-              boxShadow: "0 4px 8px rgba(16,185,129,0.2)",
+              boxShadow: "0 4px 8px rgba(var(--info-rgb), 0.2)",
               transition: "all 0.2s",
             }}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = "#059669";
-              e.target.style.boxShadow = "0 6px 12px rgba(16,185,129,0.3)";
+              e.target.style.backgroundColor = "var(--info-dark)";
+              e.target.style.boxShadow = "0 6px 12px rgba(var(--info-rgb), 0.3)";
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = "#10b981";
-              e.target.style.boxShadow = "0 4px 8px rgba(16,185,129,0.2)";
+              e.target.style.backgroundColor = "var(--info)";
+              e.target.style.boxShadow = "0 4px 8px rgba(var(--info-rgb), 0.2)";
             }}
           >
             Save Job Card
@@ -1076,8 +1076,8 @@ export default function CreateJobCardPage() {
                 background: "white",
                 padding: "20px",
                 borderRadius: "16px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                border: "1px solid #e0e0e0",
+                boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+                border: "1px solid var(--surface-light)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
@@ -1090,7 +1090,7 @@ export default function CreateJobCardPage() {
                 style={{
                   fontSize: "16px",
                   fontWeight: "600",
-                  color: "#1a1a1a",
+                  color: "var(--text-primary)",
                   marginTop: 0,
                   marginBottom: "16px",
                 }}
@@ -1103,7 +1103,7 @@ export default function CreateJobCardPage() {
                   style={{
                     fontSize: "13px",
                     fontWeight: "600",
-                    color: "#666",
+                    color: "var(--grey-accent)",
                     display: "block",
                     marginBottom: "8px",
                   }}
@@ -1121,8 +1121,8 @@ export default function CreateJobCardPage() {
                         cursor: "pointer",
                         padding: "8px 12px",
                         borderRadius: "8px",
-                        border: waitingStatus === status ? "2px solid #d10000" : "2px solid #e0e0e0",
-                        backgroundColor: waitingStatus === status ? "#fff5f5" : "white",
+                        border: waitingStatus === status ? "2px solid var(--primary)" : "2px solid var(--surface-light)",
+                        backgroundColor: waitingStatus === status ? "var(--surface-light)" : "white",
                         transition: "all 0.2s",
                       }}
                     >
@@ -1145,7 +1145,7 @@ export default function CreateJobCardPage() {
                   style={{
                     fontSize: "13px",
                     fontWeight: "600",
-                    color: "#666",
+                    color: "var(--grey-accent)",
                     display: "block",
                     marginBottom: "8px",
                   }}
@@ -1163,8 +1163,8 @@ export default function CreateJobCardPage() {
                         cursor: "pointer",
                         padding: "8px 12px",
                         borderRadius: "8px",
-                        border: jobSource === src ? "2px solid #d10000" : "2px solid #e0e0e0",
-                        backgroundColor: jobSource === src ? "#fff5f5" : "white",
+                        border: jobSource === src ? "2px solid var(--primary)" : "2px solid var(--surface-light)",
+                        backgroundColor: jobSource === src ? "var(--surface-light)" : "white",
                         transition: "all 0.2s",
                       }}
                     >
@@ -1187,7 +1187,7 @@ export default function CreateJobCardPage() {
                   style={{
                     fontSize: "13px",
                     fontWeight: "600",
-                    color: "#666",
+                    color: "var(--grey-accent)",
                     display: "block",
                     marginBottom: "8px",
                   }}
@@ -1199,7 +1199,7 @@ export default function CreateJobCardPage() {
                     <span
                       key={index}
                       style={{
-                        backgroundColor: "#d10000",
+                        backgroundColor: "var(--primary)",
                         color: "white",
                         padding: "6px 14px",
                         borderRadius: "20px",
@@ -1218,7 +1218,7 @@ export default function CreateJobCardPage() {
                   style={{
                     fontSize: "13px",
                     fontWeight: "500",
-                    color: "#666",
+                    color: "var(--grey-accent)",
                     display: "block",
                     marginBottom: "6px",
                   }}
@@ -1232,17 +1232,17 @@ export default function CreateJobCardPage() {
                   style={{
                     width: "100%",
                     padding: "10px 12px",
-                    border: "1px solid #e0e0e0",
+                    border: "1px solid var(--surface-light)",
                     borderRadius: "8px",
                     fontSize: "14px",
                     outline: "none",
                     transition: "border-color 0.2s",
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = "#d10000";
+                    e.target.style.borderColor = "var(--primary)";
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = "#e0e0e0";
+                    e.target.style.borderColor = "var(--surface-light)";
                   }}
                 />
               </div>
@@ -1255,8 +1255,8 @@ export default function CreateJobCardPage() {
                 background: "white",
                 padding: "20px",
                 borderRadius: "16px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                border: "1px solid #e0e0e0",
+                boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+                border: "1px solid var(--surface-light)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
@@ -1269,7 +1269,7 @@ export default function CreateJobCardPage() {
                 style={{
                   fontSize: "16px",
                   fontWeight: "600",
-                  color: "#1a1a1a",
+                  color: "var(--text-primary)",
                   marginTop: 0,
                   marginBottom: "16px",
                 }}
@@ -1283,9 +1283,9 @@ export default function CreateJobCardPage() {
                     padding: "12px 16px",
                     marginBottom: "16px",
                     borderRadius: "8px",
-                    backgroundColor: vehicleNotification.type === "success" ? "#d4edda" : "#f8d7da",
-                    border: `1px solid ${vehicleNotification.type === "success" ? "#c3e6cb" : "#f5c6cb"}`,
-                    color: vehicleNotification.type === "success" ? "#155724" : "#721c24",
+                    backgroundColor: vehicleNotification.type === "success" ? "var(--success)" : "var(--danger-surface)",
+                    border: `1px solid ${vehicleNotification.type === "success" ? "var(--success)" : "var(--danger)"}`,
+                    color: vehicleNotification.type === "success" ? "var(--success-dark)" : "var(--danger-dark)",
                     fontSize: "13px",
                     fontWeight: "500",
                     display: "flex",
@@ -1315,7 +1315,7 @@ export default function CreateJobCardPage() {
                   style={{
                     fontSize: "13px",
                     fontWeight: "500",
-                    color: "#666",
+                    color: "var(--grey-accent)",
                     display: "block",
                     marginBottom: "6px",
                   }}
@@ -1331,7 +1331,7 @@ export default function CreateJobCardPage() {
                     style={{
                       flex: 1,
                       padding: "10px 12px",
-                      border: "1px solid #e0e0e0",
+                      border: "1px solid var(--surface-light)",
                       borderRadius: "8px",
                       fontSize: "14px",
                       textTransform: "uppercase",
@@ -1339,10 +1339,10 @@ export default function CreateJobCardPage() {
                       transition: "border-color 0.2s",
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = "#d10000";
+                      e.target.style.borderColor = "var(--primary)";
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = "#e0e0e0";
+                      e.target.style.borderColor = "var(--surface-light)";
                     }}
                   />
                   <button
@@ -1350,7 +1350,7 @@ export default function CreateJobCardPage() {
                     disabled={isLoadingVehicle}
                     style={{
                       padding: "10px 20px",
-                      backgroundColor: isLoadingVehicle ? "#ccc" : "#d10000",
+                      backgroundColor: isLoadingVehicle ? "var(--background)" : "var(--primary)",
                       color: "white",
                       border: "none",
                       borderRadius: "8px",
@@ -1360,10 +1360,10 @@ export default function CreateJobCardPage() {
                       transition: "all 0.2s",
                     }}
                     onMouseEnter={(e) => {
-                      if (!isLoadingVehicle) e.target.style.backgroundColor = "#b00000";
+                      if (!isLoadingVehicle) e.target.style.backgroundColor = "var(--primary-dark)";
                     }}
                     onMouseLeave={(e) => {
-                      if (!isLoadingVehicle) e.target.style.backgroundColor = "#d10000";
+                      if (!isLoadingVehicle) e.target.style.backgroundColor = "var(--primary)";
                     }}
                   >
                     {isLoadingVehicle ? "Loading..." : "Fetch Data"}
@@ -1375,12 +1375,12 @@ export default function CreateJobCardPage() {
                 <div
                   style={{
                     fontSize: "12px",
-                    color: "#dc3545",
+                    color: "var(--danger)",
                     marginBottom: "12px",
                     padding: "10px 12px",
-                    backgroundColor: "#f8d7da",
+                    backgroundColor: "var(--danger-surface)",
                     borderRadius: "8px",
-                    border: "1px solid #f5c6cb",
+                    border: "1px solid var(--danger)",
                   }}
                 >
                   {error}
@@ -1401,7 +1401,7 @@ export default function CreateJobCardPage() {
                         style={{
                           fontSize: "13px",
                           fontWeight: "500",
-                          color: "#666",
+                          color: "var(--grey-accent)",
                           display: "block",
                           marginBottom: "4px",
                         }}
@@ -1411,10 +1411,10 @@ export default function CreateJobCardPage() {
                       <div
                         style={{
                           padding: "10px 12px",
-                          backgroundColor: "#f5f5f5",
+                          backgroundColor: "var(--surface)",
                           borderRadius: "8px",
                           fontSize: "14px",
-                          color: vehicle[key] ? "#1a1a1a" : "#999",
+                          color: vehicle[key] ? "var(--text-primary)" : "var(--grey-accent-light)",
                         }}
                       >
                         {vehicle[key] || "Not available"}
@@ -1428,7 +1428,7 @@ export default function CreateJobCardPage() {
                     style={{
                       fontSize: "13px",
                       fontWeight: "500",
-                      color: "#666",
+                      color: "var(--grey-accent)",
                       display: "block",
                       marginBottom: "6px",
                     }}
@@ -1443,17 +1443,17 @@ export default function CreateJobCardPage() {
                     style={{
                       width: "100%",
                       padding: "10px 12px",
-                      border: "1px solid #e0e0e0",
+                      border: "1px solid var(--surface-light)",
                       borderRadius: "8px",
                       fontSize: "14px",
                       outline: "none",
                       transition: "border-color 0.2s",
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = "#d10000";
+                      e.target.style.borderColor = "var(--primary)";
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = "#e0e0e0";
+                      e.target.style.borderColor = "var(--surface-light)";
                     }}
                   />
                 </div>
@@ -1467,8 +1467,8 @@ export default function CreateJobCardPage() {
                 background: "white",
                 padding: "20px",
                 borderRadius: "16px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                border: "1px solid #e0e0e0",
+                boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+                border: "1px solid var(--surface-light)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
@@ -1481,7 +1481,7 @@ export default function CreateJobCardPage() {
                 style={{
                   fontSize: "16px",
                   fontWeight: "600",
-                  color: "#1a1a1a",
+                  color: "var(--text-primary)",
                   marginTop: 0,
                   marginBottom: "16px",
                 }}
@@ -1495,9 +1495,9 @@ export default function CreateJobCardPage() {
                     padding: "12px 16px",
                     marginBottom: "16px",
                     borderRadius: "8px",
-                    backgroundColor: customerNotification.type === "success" ? "#d4edda" : "#f8d7da",
-                    border: `1px solid ${customerNotification.type === "success" ? "#c3e6cb" : "#f5c6cb"}`,
-                    color: customerNotification.type === "success" ? "#155724" : "#721c24",
+                    backgroundColor: customerNotification.type === "success" ? "var(--success)" : "var(--danger-surface)",
+                    border: `1px solid ${customerNotification.type === "success" ? "var(--success)" : "var(--danger)"}`,
+                    color: customerNotification.type === "success" ? "var(--success-dark)" : "var(--danger-dark)",
                     fontSize: "13px",
                     fontWeight: "500",
                     display: "flex",
@@ -1539,7 +1539,7 @@ export default function CreateJobCardPage() {
                         style={{
                           fontSize: "13px",
                           fontWeight: "500",
-                          color: "#666",
+                          color: "var(--grey-accent)",
                           display: "block",
                           marginBottom: "6px",
                         }}
@@ -1556,19 +1556,19 @@ export default function CreateJobCardPage() {
                           style={{
                             width: "100%",
                             padding: "10px 12px",
-                            border: "1px solid #e0e0e0",
+                            border: "1px solid var(--surface-light)",
                             borderRadius: "8px",
                             fontSize: "14px",
                             outline: "none",
                             transition: "border-color 0.2s",
-                            backgroundColor: isCustomerEditing && !isSavingCustomer ? "white" : "#f5f5f5",
+                            backgroundColor: isCustomerEditing && !isSavingCustomer ? "white" : "var(--surface)",
                             resize: "vertical",
                           }}
                           onFocus={(e) => {
-                            e.target.style.borderColor = "#d10000";
+                            e.target.style.borderColor = "var(--primary)";
                           }}
                           onBlur={(e) => {
-                            e.target.style.borderColor = "#e0e0e0";
+                            e.target.style.borderColor = "var(--surface-light)";
                           }}
                         />
                       ) : (
@@ -1581,18 +1581,18 @@ export default function CreateJobCardPage() {
                           style={{
                             width: "100%",
                             padding: "10px 12px",
-                            border: "1px solid #e0e0e0",
+                            border: "1px solid var(--surface-light)",
                             borderRadius: "8px",
                             fontSize: "14px",
                             outline: "none",
                             transition: "border-color 0.2s",
-                            backgroundColor: isCustomerEditing && !isSavingCustomer ? "white" : "#f5f5f5",
+                            backgroundColor: isCustomerEditing && !isSavingCustomer ? "white" : "var(--surface)",
                           }}
                           onFocus={(e) => {
-                            e.target.style.borderColor = "#d10000";
+                            e.target.style.borderColor = "var(--primary)";
                           }}
                           onBlur={(e) => {
-                            e.target.style.borderColor = "#e0e0e0";
+                            e.target.style.borderColor = "var(--surface-light)";
                           }}
                         />
                       )}
@@ -1609,7 +1609,7 @@ export default function CreateJobCardPage() {
                             flex: 1,
                             padding: "12px",
                             fontSize: "14px",
-                            backgroundColor: "#10b981",
+                            backgroundColor: "var(--info)",
                             color: "white",
                             border: "none",
                             borderRadius: "8px",
@@ -1620,11 +1620,11 @@ export default function CreateJobCardPage() {
                           }}
                           onMouseEnter={(e) => {
                             if (!isSavingCustomer) {
-                              e.target.style.backgroundColor = "#059669";
+                              e.target.style.backgroundColor = "var(--info-dark)";
                             }
                           }}
                           onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = "#10b981";
+                            e.target.style.backgroundColor = "var(--info)";
                           }}
                         >
                           {isSavingCustomer ? "Saving..." : "Save Changes"}
@@ -1636,7 +1636,7 @@ export default function CreateJobCardPage() {
                             flex: 1,
                             padding: "12px",
                             fontSize: "14px",
-                            backgroundColor: "#6b7280",
+                            backgroundColor: "var(--info)",
                             color: "white",
                             border: "none",
                             borderRadius: "8px",
@@ -1647,11 +1647,11 @@ export default function CreateJobCardPage() {
                           }}
                           onMouseEnter={(e) => {
                             if (!isSavingCustomer) {
-                              e.target.style.backgroundColor = "#4b5563";
+                              e.target.style.backgroundColor = "var(--info-dark)";
                             }
                           }}
                           onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = "#6b7280";
+                            e.target.style.backgroundColor = "var(--info)";
                           }}
                         >
                           Cancel
@@ -1664,7 +1664,7 @@ export default function CreateJobCardPage() {
                           width: "100%",
                           padding: "12px",
                           fontSize: "14px",
-                          backgroundColor: "#3b82f6",
+                          backgroundColor: "var(--info)",
                           color: "white",
                           border: "none",
                           borderRadius: "8px",
@@ -1673,10 +1673,10 @@ export default function CreateJobCardPage() {
                           transition: "all 0.2s",
                         }}
                         onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = "#2563eb";
+                          e.target.style.backgroundColor = "var(--accent-purple)";
                         }}
                         onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = "#3b82f6";
+                          e.target.style.backgroundColor = "var(--info)";
                         }}
                       >
                         Edit Customer
@@ -1691,7 +1691,7 @@ export default function CreateJobCardPage() {
                       width: "100%",
                       padding: "12px",
                       fontSize: "14px",
-                      backgroundColor: "#ef4444",
+                      backgroundColor: "var(--danger)",
                       color: "white",
                       border: "none",
                       borderRadius: "8px",
@@ -1702,11 +1702,11 @@ export default function CreateJobCardPage() {
                     }}
                     onMouseEnter={(e) => {
                       if (!isSavingCustomer) {
-                        e.target.style.backgroundColor = "#dc2626";
+                        e.target.style.backgroundColor = "var(--danger)";
                       }
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "#ef4444";
+                      e.target.style.backgroundColor = "var(--danger)";
                     }}
                   >
                     Clear Customer
@@ -1719,7 +1719,7 @@ export default function CreateJobCardPage() {
                     style={{
                       padding: "16px",
                       fontSize: "14px",
-                      backgroundColor: "#d10000",
+                      backgroundColor: "var(--primary)",
                       color: "white",
                       border: "none",
                       borderRadius: "8px",
@@ -1728,10 +1728,10 @@ export default function CreateJobCardPage() {
                       transition: "all 0.2s",
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = "#b00000";
+                      e.target.style.backgroundColor = "var(--primary-dark)";
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "#d10000";
+                      e.target.style.backgroundColor = "var(--primary)";
                     }}
                   >
                     + New Customer
@@ -1741,7 +1741,7 @@ export default function CreateJobCardPage() {
                     style={{
                       padding: "16px",
                       fontSize: "14px",
-                      backgroundColor: "#ef4444",
+                      backgroundColor: "var(--danger)",
                       color: "white",
                       border: "none",
                       borderRadius: "8px",
@@ -1750,10 +1750,10 @@ export default function CreateJobCardPage() {
                       transition: "all 0.2s",
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = "#dc2626";
+                      e.target.style.backgroundColor = "var(--danger)";
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "#ef4444";
+                      e.target.style.backgroundColor = "var(--danger)";
                     }}
                   >
                     Search Existing Customer
@@ -1769,15 +1769,15 @@ export default function CreateJobCardPage() {
               background: "white",
               padding: "20px",
               borderRadius: "16px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              border: "1px solid #e0e0e0",
+              boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+              border: "1px solid var(--surface-light)",
             }}
           >
             <h3
               style={{
                 fontSize: "16px",
                 fontWeight: "600",
-                color: "#1a1a1a",
+                color: "var(--text-primary)",
                 marginTop: 0,
                 marginBottom: "16px",
               }}
@@ -1788,18 +1788,18 @@ export default function CreateJobCardPage() {
               <div
                 key={i}
                 style={{
-                  border: "1px solid #e0e0e0",
+                  border: "1px solid var(--surface-light)",
                   borderRadius: "12px",
                   marginBottom: "12px",
                   padding: "16px",
-                  backgroundColor: "#fafafa",
+                  backgroundColor: "var(--surface)",
                 }}
               >
                 <div
                   style={{
                     fontSize: "13px",
                     fontWeight: "600",
-                    color: "#666",
+                    color: "var(--grey-accent)",
                     marginBottom: "12px",
                   }}
                 >
@@ -1815,17 +1815,17 @@ export default function CreateJobCardPage() {
                       flex: 2,
                       minWidth: "250px",
                       padding: "10px 12px",
-                      border: "1px solid #e0e0e0",
+                      border: "1px solid var(--surface-light)",
                       borderRadius: "8px",
                       fontSize: "14px",
                       outline: "none",
                       transition: "border-color 0.2s",
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = "#d10000";
+                      e.target.style.borderColor = "var(--primary)";
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = "#e0e0e0";
+                      e.target.style.borderColor = "var(--surface-light)";
                     }}
                   />
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -1839,23 +1839,23 @@ export default function CreateJobCardPage() {
                       style={{
                         width: "90px",
                         padding: "10px 12px",
-                        border: "1px solid #e0e0e0",
+                        border: "1px solid var(--surface-light)",
                         borderRadius: "8px",
                         fontSize: "14px",
                         outline: "none",
                         transition: "border-color 0.2s",
                       }}
                       onFocus={(e) => {
-                        e.target.style.borderColor = "#d10000";
+                        e.target.style.borderColor = "var(--primary)";
                       }}
                       onBlur={(e) => {
-                        e.target.style.borderColor = "#e0e0e0";
+                        e.target.style.borderColor = "var(--surface-light)";
                       }}
                     />
                     <span
                       style={{
                         fontSize: "13px",
-                        color: "#666",
+                        color: "var(--grey-accent)",
                         fontWeight: "500",
                         minWidth: "30px",
                       }}
@@ -1868,7 +1868,7 @@ export default function CreateJobCardPage() {
                     onChange={(e) => handlePaymentTypeChange(i, e.target.value)}
                     style={{
                       padding: "10px 12px",
-                      border: "1px solid #e0e0e0",
+                      border: "1px solid var(--surface-light)",
                       borderRadius: "8px",
                       fontSize: "14px",
                       cursor: "pointer",
@@ -1877,10 +1877,10 @@ export default function CreateJobCardPage() {
                       width: "160px",
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = "#d10000";
+                      e.target.style.borderColor = "var(--primary)";
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = "#e0e0e0";
+                      e.target.style.borderColor = "var(--surface-light)";
                     }}
                   >
                     <option value="Customer">Customer</option>
@@ -1895,7 +1895,7 @@ export default function CreateJobCardPage() {
                   <button
                     onClick={() => handleRemoveRequest(i)}
                     style={{
-                      backgroundColor: "#ef4444",
+                      backgroundColor: "var(--danger)",
                       color: "white",
                       border: "none",
                       borderRadius: "8px",
@@ -1906,10 +1906,10 @@ export default function CreateJobCardPage() {
                       transition: "all 0.2s",
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = "#dc2626";
+                      e.target.style.backgroundColor = "var(--danger)";
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "#ef4444";
+                      e.target.style.backgroundColor = "var(--danger)";
                     }}
                   >
                     Remove
@@ -1920,7 +1920,7 @@ export default function CreateJobCardPage() {
             <button
               onClick={handleAddRequest}
               style={{
-                backgroundColor: "#d10000",
+                backgroundColor: "var(--primary)",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
@@ -1931,10 +1931,10 @@ export default function CreateJobCardPage() {
                 transition: "all 0.2s",
               }}
               onMouseEnter={(e) => {
-                e.target.style.backgroundColor = "#b00000";
+                e.target.style.backgroundColor = "var(--primary-dark)";
               }}
               onMouseLeave={(e) => {
-                e.target.style.backgroundColor = "#d10000";
+                e.target.style.backgroundColor = "var(--primary)";
               }}
             >
               + Add Request
@@ -1949,15 +1949,15 @@ export default function CreateJobCardPage() {
                 background: "white",
                 padding: "16px",
                 borderRadius: "16px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                border: "1px solid #e0e0e0",
+                boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+                border: "1px solid var(--surface-light)",
               }}
             >
               <h4
                 style={{
                   fontSize: "14px",
                   fontWeight: "600",
-                  color: "#1a1a1a",
+                  color: "var(--text-primary)",
                   marginTop: 0,
                   marginBottom: "12px",
                 }}
@@ -1965,7 +1965,7 @@ export default function CreateJobCardPage() {
                 Cosmetic Damage
               </h4>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px", gap: "12px" }}>
-                <span style={{ fontSize: "13px", fontWeight: "500", color: "#666" }}>Damage Present?</span>
+                <span style={{ fontSize: "13px", fontWeight: "500", color: "var(--grey-accent)" }}>Damage Present?</span>
                 <div style={{ display: "flex", gap: "8px" }}>
                   {[true, false].map((choice) => (
                     <button
@@ -1976,9 +1976,9 @@ export default function CreateJobCardPage() {
                         padding: "8px 14px",
                         borderRadius: "999px",
                         border: "1px solid",
-                        borderColor: cosmeticDamagePresent === choice ? "#d10000" : "#e5e7eb",
-                        backgroundColor: cosmeticDamagePresent === choice ? "#fee2e2" : "white",
-                        color: "#1a1a1a",
+                        borderColor: cosmeticDamagePresent === choice ? "var(--primary)" : "var(--accent-purple-surface)",
+                        backgroundColor: cosmeticDamagePresent === choice ? "var(--danger-surface)" : "white",
+                        color: "var(--text-primary)",
                         fontSize: "13px",
                         fontWeight: "600",
                         cursor: "pointer",
@@ -1999,21 +1999,21 @@ export default function CreateJobCardPage() {
                   width: "100%",
                   height: "80px",
                   padding: "10px 12px",
-                  border: "1px solid #e0e0e0",
+                  border: "1px solid var(--surface-light)",
                   borderRadius: "8px",
                   resize: "none",
                   fontFamily: "inherit",
                   fontSize: "13px",
                   outline: "none",
                   transition: "border-color 0.2s",
-                  backgroundColor: cosmeticDamagePresent ? "white" : "#f3f4f6",
-                  color: cosmeticDamagePresent ? "#1a1a1a" : "#9ca3af",
+                  backgroundColor: cosmeticDamagePresent ? "white" : "var(--info-surface)",
+                  color: cosmeticDamagePresent ? "var(--text-primary)" : "var(--info)",
                 }}
                 onFocus={(e) => {
-                  e.target.style.borderColor = "#d10000";
+                  e.target.style.borderColor = "var(--primary)";
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = "#e0e0e0";
+                  e.target.style.borderColor = "var(--surface-light)";
                 }}
               />
             </div>
@@ -2023,8 +2023,8 @@ export default function CreateJobCardPage() {
                 background: "white",
                 padding: "16px",
                 borderRadius: "16px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                border: "1px solid #e0e0e0",
+                boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+                border: "1px solid var(--surface-light)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "12px",
@@ -2034,7 +2034,7 @@ export default function CreateJobCardPage() {
                 style={{
                   fontSize: "14px",
                   fontWeight: "600",
-                  color: "#1a1a1a",
+                  color: "var(--text-primary)",
                   marginTop: 0,
                   marginBottom: "4px",
                 }}
@@ -2045,7 +2045,7 @@ export default function CreateJobCardPage() {
                 style={{
                   margin: 0,
                   fontSize: "13px",
-                  color: "#6b7280",
+                  color: "var(--info)",
                   lineHeight: 1.4,
                 }}
               >
@@ -2062,9 +2062,9 @@ export default function CreateJobCardPage() {
                       padding: "10px",
                       borderRadius: "8px",
                       border: "2px solid",
-                      borderColor: vhcRequired === choice ? "#d10000" : "#e5e7eb",
-                      backgroundColor: vhcRequired === choice ? "#fff1f2" : "#f9fafb",
-                      color: "#111827",
+                      borderColor: vhcRequired === choice ? "var(--primary)" : "var(--accent-purple-surface)",
+                      backgroundColor: vhcRequired === choice ? "var(--danger-surface)" : "var(--info-surface)",
+                      color: "var(--accent-purple)",
                       fontWeight: "600",
                       fontSize: "13px",
                       cursor: "pointer",
@@ -2078,7 +2078,7 @@ export default function CreateJobCardPage() {
               <div
                 style={{
                   fontSize: "12px",
-                  color: "#9ca3af",
+                  color: "var(--info)",
                   lineHeight: 1.4,
                 }}
               >
@@ -2093,8 +2093,8 @@ export default function CreateJobCardPage() {
                 background: "white",
                 padding: "16px",
                 borderRadius: "16px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                border: "1px solid #e0e0e0",
+                boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+                border: "1px solid var(--surface-light)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "12px",
@@ -2106,7 +2106,7 @@ export default function CreateJobCardPage() {
                   style={{
                     fontSize: "14px",
                     fontWeight: "600",
-                    color: "#1a1a1a",
+                    color: "var(--text-primary)",
                     marginTop: 0,
                     marginBottom: "6px",
                   }}
@@ -2117,7 +2117,7 @@ export default function CreateJobCardPage() {
                   style={{
                     margin: 0,
                     fontSize: "13px",
-                    color: "#6b7280",
+                    color: "var(--info)",
                     lineHeight: 1.4,
                   }}
                 >
@@ -2132,20 +2132,20 @@ export default function CreateJobCardPage() {
                   padding: "10px 18px",
                   borderRadius: "10px",
                   border: "none",
-                  backgroundColor: "#d10000",
+                  backgroundColor: "var(--primary)",
                   color: "white",
                   fontWeight: "600",
                   fontSize: "14px",
                   cursor: "pointer",
                   transition: "background-color 0.2s, transform 0.2s",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                  boxShadow: "0 4px 12px rgba(var(--shadow-rgb),0.12)",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#b00000";
+                  e.currentTarget.style.backgroundColor = "var(--primary-dark)";
                   e.currentTarget.style.transform = "translateY(-1px)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#d10000";
+                  e.currentTarget.style.backgroundColor = "var(--primary)";
                   e.currentTarget.style.transform = "translateY(0)";
                 }}
               >
@@ -2170,7 +2170,7 @@ export default function CreateJobCardPage() {
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: "rgba(0,0,0,0.55)",
+              backgroundColor: "rgba(var(--shadow-rgb),0.55)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -2188,7 +2188,7 @@ export default function CreateJobCardPage() {
                 backgroundColor: "white",
                 borderRadius: "18px",
                 padding: "28px",
-                boxShadow: "0 24px 60px rgba(15,23,42,0.35)",
+                boxShadow: "0 24px 60px rgba(var(--shadow-rgb),0.35)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
@@ -2196,8 +2196,8 @@ export default function CreateJobCardPage() {
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "#0f172a" }}>Upload Documents</h3>
-                  <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#64748b" }}>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "var(--accent-purple)" }}>Upload Documents</h3>
+                  <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--info)" }}>
                     Attach PDFs or images now. Files stay queued until the job is saved.
                   </p>
                 </div>
@@ -2208,7 +2208,7 @@ export default function CreateJobCardPage() {
                     background: "transparent",
                     fontSize: "22px",
                     cursor: "pointer",
-                    color: "#94a3b8",
+                    color: "var(--info)",
                   }}
                 >
                   ×
@@ -2218,13 +2218,13 @@ export default function CreateJobCardPage() {
               <label
                 htmlFor="documents-input"
                 style={{
-                  border: "2px dashed #c7d2fe",
+                  border: "2px dashed var(--accent-purple)",
                   borderRadius: "16px",
                   padding: "28px",
                   textAlign: "center",
                   cursor: "pointer",
-                  backgroundColor: "#eef2ff",
-                  color: "#312e81",
+                  backgroundColor: "var(--accent-purple-surface)",
+                  color: "var(--accent-purple)",
                   fontWeight: "600",
                   fontSize: "14px",
                 }}
@@ -2250,7 +2250,7 @@ export default function CreateJobCardPage() {
                   style={{
                     maxHeight: "220px",
                     overflowY: "auto",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid var(--info-surface)",
                     borderRadius: "12px",
                     padding: "12px",
                   }}
@@ -2263,12 +2263,12 @@ export default function CreateJobCardPage() {
                         alignItems: "center",
                         justifyContent: "space-between",
                         padding: "8px",
-                        borderBottom: "1px solid #f1f5f9",
+                        borderBottom: "1px solid var(--info-surface)",
                       }}
                     >
                       <div>
-                        <div style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}>{file.name}</div>
-                        <div style={{ fontSize: "12px", color: "#475569" }}>{(file.size / 1024).toFixed(1)} KB</div>
+                        <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--accent-purple)" }}>{file.name}</div>
+                        <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>{(file.size / 1024).toFixed(1)} KB</div>
                       </div>
                       <button
                         onClick={() =>
@@ -2277,7 +2277,7 @@ export default function CreateJobCardPage() {
                         style={{
                           border: "none",
                           background: "transparent",
-                          color: "#ef4444",
+                          color: "var(--danger)",
                           fontSize: "13px",
                           cursor: "pointer",
                         }}
@@ -2293,29 +2293,29 @@ export default function CreateJobCardPage() {
                 style={{
                   marginTop: "12px",
                   padding: "16px",
-                  border: "1px solid #e2e8f0",
+                  border: "1px solid var(--info-surface)",
                   borderRadius: "14px",
-                  backgroundColor: "#f8fafc",
+                  backgroundColor: "var(--info-surface)",
                   display: "flex",
                   flexDirection: "column",
                   gap: "12px",
                 }}
               >
                 <div>
-                  <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "#0f172a" }}>Check-Sheet Builder</h4>
-                  <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#64748b" }}>
+                  <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--accent-purple)" }}>Check-Sheet Builder</h4>
+                  <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
                     Upload a check-sheet image/PDF then click the preview to place interactive checkboxes.
                   </p>
                 </div>
                 <label
                   htmlFor="checksheet-input"
                   style={{
-                    border: "1px solid #cbd5f5",
+                    border: "1px solid var(--accent-purple)",
                     borderRadius: "10px",
                     padding: "10px 14px",
                     fontSize: "13px",
                     fontWeight: "600",
-                    color: "#312e81",
+                    color: "var(--accent-purple)",
                     cursor: "pointer",
                     backgroundColor: "white",
                     width: "fit-content",
@@ -2341,10 +2341,10 @@ export default function CreateJobCardPage() {
                     position: "relative",
                     width: "100%",
                     minHeight: "260px",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid var(--info-surface)",
                     borderRadius: "12px",
                     overflow: "hidden",
-                    backgroundColor: "#fff",
+                    backgroundColor: "var(--surface)",
                     cursor: checkSheetFile ? "crosshair" : "not-allowed",
                   }}
                 >
@@ -2366,8 +2366,8 @@ export default function CreateJobCardPage() {
                             width: "20px",
                             height: "20px",
                             borderRadius: "4px",
-                            border: "2px solid #d10000",
-                            backgroundColor: "rgba(209,0,0,0.2)",
+                            border: "2px solid var(--primary)",
+                            backgroundColor: "rgba(var(--primary-rgb),0.2)",
                           }}
                         />
                       ))}
@@ -2377,7 +2377,7 @@ export default function CreateJobCardPage() {
                             position: "absolute",
                             bottom: "12px",
                             right: "12px",
-                            backgroundColor: "rgba(15,23,42,0.85)",
+                            backgroundColor: "rgba(var(--shadow-rgb),0.85)",
                             color: "white",
                             padding: "6px 10px",
                             borderRadius: "8px",
@@ -2389,11 +2389,11 @@ export default function CreateJobCardPage() {
                       )}
                     </>
                   ) : checkSheetFile ? (
-                    <div style={{ padding: "24px", textAlign: "center", color: "#94a3b8", fontSize: "13px" }}>
+                    <div style={{ padding: "24px", textAlign: "center", color: "var(--info)", fontSize: "13px" }}>
                       PDF preview not available. Coordinates will still be recorded when you click this box.
                     </div>
                   ) : (
-                    <div style={{ padding: "24px", textAlign: "center", color: "#94a3b8", fontSize: "13px" }}>
+                    <div style={{ padding: "24px", textAlign: "center", color: "var(--info)", fontSize: "13px" }}>
                       Select a check-sheet file above to start placing checkboxes.
                     </div>
                   )}
@@ -2416,13 +2416,13 @@ export default function CreateJobCardPage() {
                           onChange={(e) => handleCheckboxLabelChange(box.id, e.target.value)}
                           style={{
                             flex: 1,
-                            border: "1px solid #cbd5f5",
+                            border: "1px solid var(--accent-purple)",
                             borderRadius: "8px",
                             padding: "8px 10px",
                             fontSize: "13px",
                           }}
                         />
-                        <span style={{ fontSize: "11px", color: "#94a3b8", width: "120px" }}>
+                        <span style={{ fontSize: "11px", color: "var(--info)", width: "120px" }}>
                           {Math.round(box.x * 100)}% / {Math.round(box.y * 100)}%
                         </span>
                         <button
@@ -2430,7 +2430,7 @@ export default function CreateJobCardPage() {
                           style={{
                             border: "none",
                             background: "transparent",
-                            color: "#ef4444",
+                            color: "var(--danger)",
                             cursor: "pointer",
                             fontSize: "12px",
                           }}
@@ -2445,7 +2445,7 @@ export default function CreateJobCardPage() {
                 <div
                   style={{
                     padding: "14px",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid var(--info-surface)",
                     borderRadius: "12px",
                     backgroundColor: "white",
                     display: "flex",
@@ -2454,20 +2454,20 @@ export default function CreateJobCardPage() {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: "13px", fontWeight: "600", color: "#0f172a" }}>Signature on File</div>
-                    <div style={{ fontSize: "12px", color: "#64748b" }}>
+                    <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--accent-purple)" }}>Signature on File</div>
+                    <div style={{ fontSize: "12px", color: "var(--info)" }}>
                       {userSignature?.file_url ? "Will auto-fill on the check-sheet" : "Upload a signature image to auto-fill"}
                     </div>
                   </div>
                   <label
                     htmlFor="signature-input"
                     style={{
-                      border: "1px solid #cbd5f5",
+                      border: "1px solid var(--accent-purple)",
                       borderRadius: "8px",
                       padding: "8px 12px",
                       fontSize: "12px",
                       fontWeight: "600",
-                      color: "#4338ca",
+                      color: "var(--accent-purple)",
                       cursor: "pointer",
                       opacity: isUploadingSignature ? 0.6 : 1,
                     }}
@@ -2497,9 +2497,9 @@ export default function CreateJobCardPage() {
                     flex: 1,
                     padding: "12px",
                     borderRadius: "10px",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid var(--info-surface)",
                     backgroundColor: "white",
-                    color: "#334155",
+                    color: "var(--info-dark)",
                     fontWeight: "600",
                     cursor: "pointer",
                   }}
@@ -2520,11 +2520,11 @@ export default function CreateJobCardPage() {
                     padding: "12px",
                     borderRadius: "10px",
                     border: "none",
-                    background: "linear-gradient(135deg, #6366f1, #4338ca)",
+                    background: "linear-gradient(135deg, var(--accent-purple), var(--accent-purple))",
                     color: "white",
                     fontWeight: "600",
                     cursor: isUploadingDocuments ? "not-allowed" : "pointer",
-                    boxShadow: "0 10px 20px rgba(99,102,241,0.25)",
+                    boxShadow: "0 10px 20px rgba(var(--accent-purple-rgb), 0.25)",
                     opacity: isUploadingDocuments ? 0.7 : 1,
                   }}
                 >

@@ -14,27 +14,27 @@ const retailManagerRoles = (roleCategories?.Retail || [])
 const SectionCard = ({ title, subtitle, children }) => (
   <section
     style={{
-      background: "#fff",
+      background: "var(--surface)",
       borderRadius: "18px",
       padding: "20px",
-      border: "1px solid #ffe0e0",
-      boxShadow: "0 18px 35px rgba(209,0,0,0.08)",
+      border: "1px solid var(--surface-light)",
+      boxShadow: "0 18px 35px rgba(var(--primary-rgb),0.08)",
       display: "flex",
       flexDirection: "column",
       gap: "14px",
     }}
   >
     <div>
-      <h2 style={{ margin: 0, fontSize: "1.1rem", color: "#a00000" }}>{title}</h2>
+      <h2 style={{ margin: 0, fontSize: "1.1rem", color: "var(--primary-dark)" }}>{title}</h2>
       {subtitle && (
-        <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "0.9rem" }}>{subtitle}</p>
+        <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.9rem" }}>{subtitle}</p>
       )}
     </div>
     {children}
   </section>
 );
 
-const MetricPill = ({ label, value, accent = "#a00000", helper }) => (
+const MetricPill = ({ label, value, accent = "var(--primary-dark)", helper }) => (
   <div
     style={{
       borderRadius: "14px",
@@ -46,13 +46,13 @@ const MetricPill = ({ label, value, accent = "#a00000", helper }) => (
       gap: "6px",
     }}
   >
-    <span style={{ color: "#6b7280", fontSize: "0.8rem", letterSpacing: "0.05em" }}>{label}</span>
+    <span style={{ color: "var(--info)", fontSize: "0.8rem", letterSpacing: "0.05em" }}>{label}</span>
     <strong style={{ fontSize: "1.4rem", color: accent }}>{value}</strong>
-    {helper && <span style={{ color: "#6b7280", fontSize: "0.85rem" }}>{helper}</span>}
+    {helper && <span style={{ color: "var(--info)", fontSize: "0.85rem" }}>{helper}</span>}
   </div>
 );
 
-const LinearTrend = ({ data, accent = "#d10000" }) => (
+const LinearTrend = ({ data, accent = "var(--primary)" }) => (
   <div style={{ display: "flex", gap: "8px", alignItems: "flex-end", width: "100%" }}>
     {data.map((point) => (
       <div key={point.label} style={{ flex: 1, textAlign: "center" }}>
@@ -61,10 +61,10 @@ const LinearTrend = ({ data, accent = "#d10000" }) => (
             height: `${Math.max(8, point.jobs * 3)}px`,
             background: accent,
             borderRadius: "8px 8px 4px 4px",
-            boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
+            boxShadow: "0 4px 10px rgba(var(--shadow-rgb),0.08)",
           }}
         />
-        <small style={{ color: "#6b7280" }}>{point.label}</small>
+        <small style={{ color: "var(--info)" }}>{point.label}</small>
       </div>
     ))}
   </div>
@@ -380,22 +380,22 @@ export default function RetailManagersDashboard({ user }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px" }}>
       <header
         style={{
-          background: "linear-gradient(120deg, #ffdddd, #ffecec)",
+          background: "linear-gradient(120deg, var(--surface-light), var(--surface-light))",
           borderRadius: "18px",
           padding: "24px",
           display: "flex",
           flexDirection: "column",
           gap: "8px",
-          border: "1px solid #ffd4d4",
+          border: "1px solid var(--surface-light)",
         }}
       >
-        <span style={{ textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.8rem", color: "#a00000" }}>
+        <span style={{ textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.8rem", color: "var(--primary-dark)" }}>
           Retail Workshop Control Room
         </span>
-        <h1 style={{ margin: 0, color: "#a00000", fontSize: "1.6rem" }}>
+        <h1 style={{ margin: 0, color: "var(--primary-dark)", fontSize: "1.6rem" }}>
           {user?.username ? `${user.username}'s Dashboard` : "Retail Dashboard"}
         </h1>
-        <p style={{ margin: 0, color: "#6b7280" }}>Live view for retail managers · {todayLabel}</p>
+        <p style={{ margin: 0, color: "var(--info)" }}>Live view for retail managers · {todayLabel}</p>
       </header>
 
       <SectionCard
@@ -403,7 +403,7 @@ export default function RetailManagersDashboard({ user }) {
         subtitle="Live workshop snapshot aggregated from Supabase"
       >
         {snapshot.error && (
-          <div style={{ color: "#B91C1C", marginBottom: "12px", fontWeight: 600 }}>
+          <div style={{ color: "var(--danger)", marginBottom: "12px", fontWeight: 600 }}>
             {snapshot.error}
           </div>
         )}
@@ -422,7 +422,7 @@ export default function RetailManagersDashboard({ user }) {
           <MetricPill label="Upsell Pipeline" value={`£${displayMetrics.estUpsell.toLocaleString()}`} helper="Awaiting authorisation" />
         </div>
         <div style={{ marginTop: "12px" }}>
-          <p style={{ color: "#6b7280", marginBottom: "8px" }}>Throughput progression</p>
+          <p style={{ color: "var(--info)", marginBottom: "8px" }}>Throughput progression</p>
           <LinearTrend data={throughputData} />
         </div>
       </SectionCard>
@@ -433,49 +433,49 @@ export default function RetailManagersDashboard({ user }) {
             <div
               key={panel.role}
               style={{
-                border: "1px solid #ffd4d4",
+                border: "1px solid var(--surface-light)",
                 borderRadius: "16px",
                 padding: "18px",
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
-                background: "#fff7f7",
+                background: "var(--danger-surface)",
               }}
             >
               <div>
-                <h3 style={{ margin: 0, color: "#a00000" }}>{panel.role}</h3>
+                <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>{panel.role}</h3>
                 {panel.owners.length > 0 && (
-                  <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "0.85rem" }}>
+                  <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
                     Owners: {panel.owners.join(", ")}
                   </p>
                 )}
               </div>
-              <p style={{ margin: 0, color: "#374151", fontWeight: 600 }}>{panel.focus}</p>
+              <p style={{ margin: 0, color: "var(--info-dark)", fontWeight: 600 }}>{panel.focus}</p>
               <div style={{ display: "flex", gap: "10px" }}>
                 {Object.entries(panel.kpis).map(([label, value]) => (
                   <div key={label} style={{ flex: 1 }}>
-                    <span style={{ color: "#6b7280", fontSize: "0.75rem", textTransform: "uppercase" }}>{label}</span>
-                    <p style={{ margin: 0, fontWeight: 700, color: "#a00000" }}>
+                    <span style={{ color: "var(--info)", fontSize: "0.75rem", textTransform: "uppercase" }}>{label}</span>
+                    <p style={{ margin: 0, fontWeight: 700, color: "var(--primary-dark)" }}>
                       {typeof value === "number" && value < 1 ? value.toFixed(1) : `${value}%`}
                     </p>
                   </div>
                 ))}
               </div>
               <div>
-                <span style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#9ca3af" }}>
+                <span style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                   Risks
                 </span>
-                <ul style={{ margin: "6px 0 0", paddingLeft: "18px", color: "#374151" }}>
+                <ul style={{ margin: "6px 0 0", paddingLeft: "18px", color: "var(--info-dark)" }}>
                   {panel.risks.map((risk) => (
                     <li key={risk}>{risk}</li>
                   ))}
                 </ul>
               </div>
               <div>
-                <span style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#9ca3af" }}>
+                <span style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                   Actions
                 </span>
-                <ul style={{ margin: "6px 0 0", paddingLeft: "18px", color: "#374151" }}>
+                <ul style={{ margin: "6px 0 0", paddingLeft: "18px", color: "var(--info-dark)" }}>
                   {panel.actions.map((action) => (
                     <li key={action}>{action}</li>
                   ))}
@@ -494,7 +494,7 @@ export default function RetailManagersDashboard({ user }) {
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {utilisationData.map((team) => (
               <div key={team.team} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", color: "#374151" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", color: "var(--info-dark)" }}>
                   <span>{team.team}</span>
                   <strong>{team.utilisation}%</strong>
                 </div>
@@ -502,7 +502,7 @@ export default function RetailManagersDashboard({ user }) {
                   style={{
                     height: "10px",
                     borderRadius: "999px",
-                    background: "#ffe0e0",
+                    background: "var(--surface-light)",
                     overflow: "hidden",
                   }}
                 >
@@ -510,11 +510,11 @@ export default function RetailManagersDashboard({ user }) {
                     style={{
                       width: `${team.utilisation}%`,
                       height: "100%",
-                      background: "linear-gradient(90deg, #d10000, #a00000)",
+                      background: "linear-gradient(90deg, var(--primary), var(--primary-dark))",
                     }}
                   />
                 </div>
-                <small style={{ color: "#6b7280" }}>
+                <small style={{ color: "var(--info)" }}>
                   {team.clockedIn}/{team.total} clocked in
                 </small>
               </div>
@@ -525,24 +525,24 @@ export default function RetailManagersDashboard({ user }) {
         <SectionCard title="Red priority jobs" subtitle="Jobs requiring manager attention">
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {redJobs.length === 0 && (
-              <span style={{ color: "#6B7280" }}>No red-priority jobs at the moment.</span>
+              <span style={{ color: "var(--info)" }}>No red-priority jobs at the moment.</span>
             )}
             {redJobs.map((job) => (
               <div
                 key={job.jobNumber}
                 style={{
-                  border: "1px solid #ffc9c9",
+                  border: "1px solid var(--danger)",
                   borderRadius: "12px",
                   padding: "12px",
-                  background: "#fff5f5",
+                  background: "var(--surface-light)",
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                  <strong style={{ color: "#a00000" }}>{job.jobNumber}</strong>
-                  <span style={{ color: "#6b7280", fontSize: "0.85rem" }}>{job.eta}</span>
+                  <strong style={{ color: "var(--primary-dark)" }}>{job.jobNumber}</strong>
+                  <span style={{ color: "var(--info)", fontSize: "0.85rem" }}>{job.eta}</span>
                 </div>
-                <p style={{ margin: 0, color: "#374151" }}>{job.concern}</p>
-                <small style={{ color: "#6b7280" }}>Owner: {job.owner}</small>
+                <p style={{ margin: 0, color: "var(--info-dark)" }}>{job.concern}</p>
+                <small style={{ color: "var(--info)" }}>Owner: {job.owner}</small>
               </div>
             ))}
           </div>

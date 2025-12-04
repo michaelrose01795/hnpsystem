@@ -7,36 +7,36 @@ import { getServiceDashboardData } from "@/lib/database/dashboard/service";
 const MetricCard = ({ label, value, helper }) => (
   <div
     style={{
-      border: "1px solid #ffe0e0",
+      border: "1px solid var(--surface-light)",
       borderRadius: "16px",
       padding: "18px",
-      background: "#fff",
+      background: "var(--surface)",
       minWidth: 160,
-      boxShadow: "0 8px 20px rgba(0,0,0,0.05)",
+      boxShadow: "0 8px 20px rgba(var(--shadow-rgb),0.05)",
     }}
   >
-    <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "#a00000" }}>{label}</p>
+    <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--primary-dark)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.8rem", fontWeight: 600 }}>{value}</p>
-    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "#6b7280" }}>{helper}</p>}
+    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
   </div>
 );
 
 const Section = ({ title, subtitle, children }) => (
   <section
     style={{
-      background: "#fff",
+      background: "var(--surface)",
       borderRadius: "18px",
       padding: "24px",
-      border: "1px solid #ffe0e0",
-      boxShadow: "0 16px 30px rgba(0,0,0,0.05)",
+      border: "1px solid var(--surface-light)",
+      boxShadow: "0 16px 30px rgba(var(--shadow-rgb),0.05)",
       display: "flex",
       flexDirection: "column",
       gap: "12px",
     }}
   >
     <div>
-      <h2 style={{ margin: 0, fontSize: "1.2rem", color: "#a00000" }}>{title}</h2>
-      {subtitle && <p style={{ margin: "6px 0 0", color: "#6b7280" }}>{subtitle}</p>}
+      <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>{title}</h2>
+      {subtitle && <p style={{ margin: "6px 0 0", color: "var(--info)" }}>{subtitle}</p>}
     </div>
     {children}
   </section>
@@ -45,21 +45,21 @@ const Section = ({ title, subtitle, children }) => (
 const PieChart = ({ breakdown }) => {
   const total = breakdown.waiting + breakdown.loan + breakdown.collection || 1;
   const segments = [
-    { label: "Waiting", value: breakdown.waiting, color: "#f97316" },
-    { label: "Loan car", value: breakdown.loan, color: "#2563eb" },
-    { label: "Collection", value: breakdown.collection, color: "#0ea5e9" },
+    { label: "Waiting", value: breakdown.waiting, color: "var(--danger)" },
+    { label: "Loan car", value: breakdown.loan, color: "var(--accent-purple)" },
+    { label: "Collection", value: breakdown.collection, color: "var(--info)" },
   ];
 
   return (
     <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
       {segments.map((segment) => (
         <div key={segment.label} style={{ minWidth: 140 }}>
-          <p style={{ margin: 0, fontSize: "0.75rem", color: "#6b7280" }}>{segment.label}</p>
+          <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--info)" }}>{segment.label}</p>
           <div
             style={{
               height: 12,
               width: "100%",
-              background: "#f5f5f5",
+              background: "var(--surface)",
               borderRadius: 6,
               overflow: "hidden",
             }}
@@ -72,7 +72,7 @@ const PieChart = ({ breakdown }) => {
               }}
             />
           </div>
-          <strong style={{ color: "#a00000" }}>{segment.value}</strong>
+          <strong style={{ color: "var(--primary-dark)" }}>{segment.value}</strong>
         </div>
       ))}
     </div>
@@ -88,25 +88,25 @@ const TrendBlock = ({ data }) => {
         flexDirection: "column",
         gap: "8px",
         padding: "12px",
-        border: "1px solid #efe5e5",
+        border: "1px solid var(--danger-surface)",
         borderRadius: "12px",
-        background: "#fff",
+        background: "var(--surface)",
       }}
     >
       {(data || []).map((point) => (
         <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ width: 35, fontSize: "0.85rem", color: "#6b7280" }}>{point.label}</span>
-          <div style={{ flex: 1, height: 8, background: "#f5f5f5", borderRadius: 4 }}>
+          <span style={{ width: 35, fontSize: "0.85rem", color: "var(--info)" }}>{point.label}</span>
+          <div style={{ flex: 1, height: 8, background: "var(--surface)", borderRadius: 4 }}>
             <div
               style={{
                 width: `${Math.round((point.count / max) * 100)}%`,
                 height: "100%",
-                background: "#22c55e",
+                background: "var(--success)",
                 borderRadius: 4,
               }}
             />
           </div>
-          <strong style={{ color: "#a00000" }}>{point.count}</strong>
+          <strong style={{ color: "var(--primary-dark)" }}>{point.count}</strong>
         </div>
       ))}
     </div>
@@ -117,16 +117,16 @@ const ProgressBar = ({ completed, target }) => {
   const percentage = Math.min(100, Math.round((completed / target) * 100));
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "#6b7280" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--info)" }}>
         <span>Completed</span>
         <span>{percentage}%</span>
       </div>
-      <div style={{ width: "100%", height: 10, background: "#f5f5f5", borderRadius: 5 }}>
+      <div style={{ width: "100%", height: 10, background: "var(--surface)", borderRadius: 5 }}>
         <div
           style={{
             width: `${percentage}%`,
             height: "100%",
-            background: "#ea580c",
+            background: "var(--danger)",
             borderRadius: 5,
           }}
         />
@@ -141,19 +141,19 @@ const QueueItem = ({ job }) => (
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
-      border: "1px solid #ffe0e0",
+      border: "1px solid var(--surface-light)",
       borderRadius: "12px",
       padding: "12px 14px",
-      background: "#fff",
+      background: "var(--surface)",
     }}
   >
     <div>
-      <strong style={{ color: "#a00000" }}>{job.job_number || "—"}</strong>
-      <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "0.85rem" }}>
+      <strong style={{ color: "var(--primary-dark)" }}>{job.job_number || "—"}</strong>
+      <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
         {job.vehicle_reg || "Plate missing"}
       </p>
     </div>
-    <span style={{ fontSize: "0.85rem", color: "#374151" }}>{job.status || "Status unknown"}</span>
+    <span style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>{job.status || "Status unknown"}</span>
   </div>
 );
 
@@ -196,27 +196,27 @@ export default function ServiceDashboard() {
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
         <header
           style={{
-            background: "#fff5f5",
+            background: "var(--surface-light)",
             borderRadius: "18px",
             padding: "24px",
-            border: "1px solid #ffd6d6",
-            boxShadow: "0 16px 30px rgba(0,0,0,0.08)",
+            border: "1px solid var(--surface-light)",
+            boxShadow: "0 16px 30px rgba(var(--shadow-rgb),0.08)",
           }}
         >
-          <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "#a00000" }}>
+          <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--primary-dark)" }}>
             Service dashboard
           </p>
-          <h1 style={{ margin: "6px 0 0", color: "#a00000" }}>Advisor cockpit</h1>
-          <p style={{ margin: "6px 0 0", color: "#6b7280" }}>
+          <h1 style={{ margin: "6px 0 0", color: "var(--primary-dark)" }}>Advisor cockpit</h1>
+          <p style={{ margin: "6px 0 0", color: "var(--info)" }}>
             Appointment throughput, customer status, and VHC approvals all in one pane.
           </p>
         </header>
 
         <Section title="Appointments today">
           {loading ? (
-            <p style={{ color: "#6b7280" }}>Counting today&apos;s arrivals…</p>
+            <p style={{ color: "var(--info)" }}>Counting today&apos;s arrivals…</p>
           ) : error ? (
-            <p style={{ color: "#ff4040" }}>{error}</p>
+            <p style={{ color: "var(--primary)" }}>{error}</p>
           ) : (
             <MetricCard
               label="Appointments today"
@@ -240,7 +240,7 @@ export default function ServiceDashboard() {
 
         <Section title="Upcoming jobs">
           {data.upcomingJobs.length === 0 ? (
-            <p style={{ margin: 0, color: "#6b7280" }}>No upcoming jobs right now.</p>
+            <p style={{ margin: 0, color: "var(--info)" }}>No upcoming jobs right now.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {data.upcomingJobs.map((job) => (
@@ -252,15 +252,15 @@ export default function ServiceDashboard() {
 
         <Section title="VHC severity" subtitle="Weekly breakdown">
           {data.vhcSeverityTrend.length === 0 ? (
-            <p style={{ margin: 0, color: "#6b7280" }}>No VHC data for the week yet.</p>
+            <p style={{ margin: 0, color: "var(--info)" }}>No VHC data for the week yet.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {data.vhcSeverityTrend.map((point) => {
                 const total = point.red + point.amber + point.green || 1;
                 return (
                   <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ width: 35, fontSize: "0.85rem", color: "#6b7280" }}>{point.label}</span>
-                    <div style={{ flex: 1, height: 8, background: "#f5f5f5", borderRadius: 4 }}>
+                    <span style={{ width: 35, fontSize: "0.85rem", color: "var(--info)" }}>{point.label}</span>
+                    <div style={{ flex: 1, height: 8, background: "var(--surface)", borderRadius: 4 }}>
                       <div
                         style={{
                           position: "relative",
@@ -274,24 +274,24 @@ export default function ServiceDashboard() {
                         <div
                           style={{
                             width: `${Math.round((point.red / total) * 100)}%`,
-                            background: "#dc2626",
+                            background: "var(--danger)",
                           }}
                         />
                         <div
                           style={{
                             width: `${Math.round((point.amber / total) * 100)}%`,
-                            background: "#f59e0b",
+                            background: "var(--warning)",
                           }}
                         />
                         <div
                           style={{
                             width: `${Math.round((point.green / total) * 100)}%`,
-                            background: "#16a34a",
+                            background: "var(--success)",
                           }}
                         />
                       </div>
                     </div>
-                    <strong style={{ color: "#a00000", fontSize: "0.85rem" }}>{total}</strong>
+                    <strong style={{ color: "var(--primary-dark)", fontSize: "0.85rem" }}>{total}</strong>
                   </div>
                 );
               })}
@@ -301,7 +301,7 @@ export default function ServiceDashboard() {
 
         <Section title="VHCs awaiting approval">
           {data.awaitingVhc.length === 0 ? (
-            <p style={{ margin: 0, color: "#6b7280" }}>No pending VHC approvals.</p>
+            <p style={{ margin: 0, color: "var(--info)" }}>No pending VHC approvals.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {data.awaitingVhc.map((job) => (

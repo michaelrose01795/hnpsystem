@@ -262,7 +262,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
       style={{
         position: "fixed", // Full-screen overlay
         inset: 0, // Cover viewport
-        backgroundColor: "rgba(0,0,0,0.6)", // Dim backdrop
+        backgroundColor: "rgba(var(--shadow-rgb),0.6)", // Dim backdrop
         display: "flex", // Center content
         justifyContent: "center", // Horizontally centered
         alignItems: "center", // Vertically centered
@@ -280,14 +280,14 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           maxWidth: "600px", // Max width
           maxHeight: "90vh", // Constrain height
           overflowY: "auto", // Scroll content
-          boxShadow: "0 8px 32px rgba(0,0,0,0.2)" // Shadow
+          boxShadow: "0 8px 32px rgba(var(--shadow-rgb),0.2)" // Shadow
         }}
         onClick={(e) => e.stopPropagation()} // Prevent overlay close when clicking inside
       >
         <h2
           style={{
             marginBottom: "20px", // Space under heading
-            color: "#FF4040", // Red brand accent
+            color: "var(--primary)", // Red brand accent
             fontSize: "24px", // Large title
             fontWeight: "700", // Bold
             textAlign: "center" // Centered
@@ -302,16 +302,16 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
             style={{
               marginBottom: "24px", // Space below
               padding: "16px", // Inner padding
-              backgroundColor: "#fff5f5", // Light red bg
+              backgroundColor: "var(--surface-light)", // Light red bg
               borderRadius: "8px", // Rounded
-              border: "2px solid #FF4040" // Accent border
+              border: "2px solid var(--primary)" // Accent border
             }}
           >
             <h3
               style={{
                 fontSize: "16px", // Heading size
                 fontWeight: "600", // Bold
-                color: "#FF4040", // Accent
+                color: "var(--primary)", // Accent
                 marginBottom: "12px" // Space under
               }}
             >
@@ -335,8 +335,8 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                   border: "1px solid transparent" // ✅ NEW: Invisible border for hover
                 }}
                 onMouseEnter={(e) => { // ✅ NEW: Hover effect
-                  e.currentTarget.style.backgroundColor = "#f9f9f9";
-                  e.currentTarget.style.borderColor = "#FF4040";
+                  e.currentTarget.style.backgroundColor = "var(--surface)";
+                  e.currentTarget.style.borderColor = "var(--primary)";
                 }}
                 onMouseLeave={(e) => { // ✅ NEW: Remove hover effect
                   e.currentTarget.style.backgroundColor = "white";
@@ -347,13 +347,13 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                   <div
                     style={{
                       fontWeight: "600", // Bold
-                      color: "#FF4040", // Accent
+                      color: "var(--primary)", // Accent
                       marginBottom: "4px" // Tight spacing
                     }}
                   >
                     Job {job.jobNumber} - {job.reg} {/* Job label */}
                   </div>
-                  <div style={{ fontSize: "13px", color: "#666" }}> {/* Meta */}
+                  <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}> {/* Meta */}
                     {job.makeModel} • {job.hoursWorked}h worked {/* Info */}
                   </div>
                 </div>
@@ -366,7 +366,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                   disabled={loading || dbUserId == null} // Disable if busy or unmapped
                 style={{
                   padding: "8px 16px", // Button padding
-                  backgroundColor: loading ? "#ccc" : "#ef4444", // Grey when loading
+                  backgroundColor: loading ? "var(--background)" : "var(--danger)", // Grey when loading
                   color: "white", // Text colour
                   border: "none", // No border
                   borderRadius: "6px", // Rounded
@@ -391,7 +391,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               marginBottom: "8px", // Gap below
               fontSize: "14px", // Label size
               fontWeight: "600", // Bold
-              color: "#333" // Text colour
+              color: "var(--text-secondary)" // Text colour
             }}
           >
             Enter Job Number: {/* Label text */}
@@ -413,7 +413,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               padding: "12px", // Comfortable size
               marginBottom: "12px", // Gap below
               borderRadius: "6px", // Rounded
-              border: "1px solid #e0e0e0", // Subtle border
+              border: "1px solid var(--surface-light)", // Subtle border
               fontSize: "16px", // Readable size
               outline: "none" // No outline
             }}
@@ -429,7 +429,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               padding: "12px", // Padding
               marginBottom: "12px", // Gap
               borderRadius: "6px", // Rounded
-              border: "1px solid #e0e0e0", // Subtle border
+              border: "1px solid var(--surface-light)", // Subtle border
               fontSize: "14px", // Text size
               cursor: "pointer" // Pointer cursor
             }}
@@ -442,11 +442,11 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           {error && (
             <p
               style={{
-                color: "#ef4444", // Red text
+                color: "var(--danger)", // Red text
                 marginBottom: "12px", // Gap
                 fontSize: "14px", // Size
                 padding: "8px", // Inner padding
-                backgroundColor: "#fee", // Light bg
+                backgroundColor: "var(--danger-surface)", // Light bg
                 borderRadius: "4px" // Rounded
               }}
             >
@@ -461,7 +461,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               width: "100%", // Full width
               padding: "12px", // Button padding
               backgroundColor:
-                loading || !jobNumber.trim() || dbUserId == null ? "#ccc" : "#FF4040", // Grey when disabled
+                loading || !jobNumber.trim() || dbUserId == null ? "var(--background)" : "var(--primary)", // Grey when disabled
               color: "white", // Text colour
               border: "none", // No border
               borderRadius: "6px", // Rounded
@@ -485,9 +485,9 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
             style={{
               width: "100%", // Full width
               padding: "10px", // Padding
-              backgroundColor: showAvailableJobs ? "#FF4040" : "#f5f5f5", // Accent when open
-              color: showAvailableJobs ? "white" : "#666", // Contrast
-              border: "1px solid #e0e0e0", // Border
+              backgroundColor: showAvailableJobs ? "var(--primary)" : "var(--surface)", // Accent when open
+              color: showAvailableJobs ? "white" : "var(--grey-accent)", // Contrast
+              border: "1px solid var(--surface-light)", // Border
               borderRadius: "6px", // Rounded
               cursor: "pointer", // Pointer
               fontSize: "14px", // Size
@@ -512,7 +512,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                 padding: "10px", // Padding
                 marginBottom: "12px", // Gap
                 borderRadius: "6px", // Rounded
-                border: "1px solid #e0e0e0", // Border
+                border: "1px solid var(--surface-light)", // Border
                 fontSize: "14px" // Size
               }}
             />
@@ -521,7 +521,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               style={{
                 maxHeight: "300px", // Scroll area height
                 overflowY: "auto", // Vertical scroll
-                border: "1px solid #e0e0e0", // Border
+                border: "1px solid var(--surface-light)", // Border
                 borderRadius: "6px" // Rounded
               }}
             >
@@ -530,7 +530,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                   style={{
                     padding: "20px", // Inner padding
                     textAlign: "center", // Center text
-                    color: "#999" // Muted
+                    color: "var(--grey-accent-light)" // Muted
                   }}
                 >
                   No jobs found {/* Empty state */}
@@ -542,29 +542,29 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                     onClick={() => handleSelectJob(job)} // Choose job
                     style={{
                       padding: "12px", // Row padding
-                      borderBottom: "1px solid #f0f0f0", // Divider
+                      borderBottom: "1px solid var(--surface)", // Divider
                       cursor: "pointer", // Clickable
                       transition: "background-color 0.2s" // Smooth hover
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f9fafb")} // Hover in
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--info-surface)")} // Hover in
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")} // Hover out
                   >
                     <div
                       style={{
                         fontWeight: "600", // Bold
-                        color: "#FF4040", // Accent
+                        color: "var(--primary)", // Accent
                         marginBottom: "4px" // Gap
                       }}
                     >
                       Job {job.jobNumber} - {job.reg} {/* Job label */}
                     </div>
-                    <div style={{ fontSize: "13px", color: "#666" }}> {/* Meta */}
+                    <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}> {/* Meta */}
                       {job.makeModel} • {job.customer} {/* Info */}
                     </div>
                     <div
                       style={{
                         fontSize: "12px", // Small
-                        color: "#999", // Muted
+                        color: "var(--grey-accent-light)", // Muted
                         marginTop: "4px" // Gap
                       }}
                     >
@@ -585,8 +585,8 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
             width: "100%", // Full width
             marginTop: "16px", // Gap
             padding: "10px", // Padding
-            backgroundColor: "#f5f5f5", // Neutral bg
-            color: "#666", // Muted text
+            backgroundColor: "var(--surface)", // Neutral bg
+            color: "var(--grey-accent)", // Muted text
             border: "none", // No border
             borderRadius: "6px", // Rounded
             fontWeight: "600", // Bold

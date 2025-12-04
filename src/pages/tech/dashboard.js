@@ -132,7 +132,7 @@ export default function TechsDashboard() {
   if (rosterLoading) {
     return (
       <Layout>
-        <div style={{ padding: "40px", textAlign: "center", color: "#6B7280" }}>
+        <div style={{ padding: "40px", textAlign: "center", color: "var(--info)" }}>
           Loading roster…
         </div>
       </Layout>
@@ -144,8 +144,8 @@ export default function TechsDashboard() {
       <Layout>
         <div style={{ padding: "40px", textAlign: "center" }}>
           <div style={{ fontSize: "60px", marginBottom: "20px" }}>⚠️</div>
-          <h2 style={{ color: "#FF4040", marginBottom: "10px" }}>Access Denied</h2>
-          <p style={{ color: "#666" }}>This page is only for Technicians.</p>
+          <h2 style={{ color: "var(--primary)", marginBottom: "10px" }}>Access Denied</h2>
+          <p style={{ color: "var(--grey-accent)" }}>This page is only for Technicians.</p>
         </div>
       </Layout>
     );
@@ -166,12 +166,12 @@ export default function TechsDashboard() {
           <div style={{
             width: "60px",
             height: "60px",
-            border: "4px solid #f3f3f3",
-            borderTop: "4px solid #FF4040",
+            border: "4px solid var(--surface)",
+            borderTop: "4px solid var(--primary)",
             borderRadius: "50%",
             animation: "spin 1s linear infinite"
           }}></div>
-          <p style={{ color: "#666", fontSize: "16px" }}>Loading dashboard...</p>
+          <p style={{ color: "var(--grey-accent)", fontSize: "16px" }}>Loading dashboard...</p>
           <style jsx>{`
             @keyframes spin {
               0% { transform: rotate(0deg); }
@@ -201,14 +201,14 @@ export default function TechsDashboard() {
         }}>
           <div>
             <h1 style={{ 
-              color: "#FF4040", 
+              color: "var(--primary)", 
               fontSize: "32px", 
               fontWeight: "700",
               margin: "0 0 8px 0"
             }}>
               Welcome back, {username}
             </h1>
-            <p style={{ color: "#666", fontSize: "14px", margin: 0 }}>
+            <p style={{ color: "var(--grey-accent)", fontSize: "14px", margin: 0 }}>
               {displayDate}
             </p>
           </div>
@@ -218,23 +218,23 @@ export default function TechsDashboard() {
             onClick={clockingStatus ? handleClockOut : handleClockIn}
             style={{
               padding: "14px 28px",
-              backgroundColor: clockingStatus ? "#ef4444" : "#10b981",
+              backgroundColor: clockingStatus ? "var(--danger)" : "var(--info)",
               color: "white",
               border: "none",
               borderRadius: "12px",
               cursor: "pointer",
               fontSize: "16px",
               fontWeight: "600",
-              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+              boxShadow: "0 4px 6px rgba(var(--shadow-rgb),0.1)",
               transition: "all 0.2s"
             }}
             onMouseEnter={(e) => {
               e.target.style.transform = "translateY(-2px)";
-              e.target.style.boxShadow = "0 6px 12px rgba(0,0,0,0.15)";
+              e.target.style.boxShadow = "0 6px 12px rgba(var(--shadow-rgb),0.15)";
             }}
             onMouseLeave={(e) => {
               e.target.style.transform = "translateY(0)";
-              e.target.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+              e.target.style.boxShadow = "0 4px 6px rgba(var(--shadow-rgb),0.1)";
             }}
           >
             {clockingStatus ? "⏱️ Clock Out" : "⏱️ Clock In"}
@@ -252,34 +252,34 @@ export default function TechsDashboard() {
             backgroundColor: "white",
             padding: "24px",
             borderRadius: "16px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            border: "1px solid #e0e0e0"
+            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            border: "1px solid var(--surface-light)"
           }}>
-            <div style={{ fontSize: "36px", fontWeight: "700", color: "#0369a1", marginBottom: "8px" }}>
+            <div style={{ fontSize: "36px", fontWeight: "700", color: "var(--info-dark)", marginBottom: "8px" }}>
               {myJobs.length}
             </div>
-            <div style={{ fontSize: "14px", color: "#666", fontWeight: "500" }}>
+            <div style={{ fontSize: "14px", color: "var(--grey-accent)", fontWeight: "500" }}>
               Jobs Assigned
             </div>
           </div>
 
           {/* Clocking Status */}
           <div style={{
-            backgroundColor: clockingStatus ? "#dcfce7" : "#fef2f2",
+            backgroundColor: clockingStatus ? "var(--success-surface)" : "var(--danger-surface)",
             padding: "24px",
             borderRadius: "16px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            border: `1px solid ${clockingStatus ? "#86efac" : "#fecaca"}`
+            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            border: `1px solid ${clockingStatus ? "var(--success)" : "var(--danger-surface)"}`
           }}>
             <div style={{ 
               fontSize: "16px", 
               fontWeight: "600", 
-              color: clockingStatus ? "#166534" : "#991b1b",
+              color: clockingStatus ? "var(--success-dark)" : "var(--danger)",
               marginBottom: "8px" 
             }}>
               {clockingStatus ? "Clocked In" : "Clocked Out"}
             </div>
-            <div style={{ fontSize: "13px", color: "#666" }}>
+            <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>
               {clockingStatus 
                 ? `Since ${new Date(clockingStatus.clock_in).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`
                 : "Not currently working"
@@ -292,13 +292,13 @@ export default function TechsDashboard() {
             backgroundColor: "white",
             padding: "24px",
             borderRadius: "16px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            border: "1px solid #e0e0e0"
+            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            border: "1px solid var(--surface-light)"
           }}>
-            <div style={{ fontSize: "16px", fontWeight: "600", color: "#333", marginBottom: "8px" }}>
+            <div style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "8px" }}>
               Current Job
             </div>
-            <div style={{ fontSize: "20px", fontWeight: "700", color: "#FF4040" }}>
+            <div style={{ fontSize: "20px", fontWeight: "700", color: "var(--primary)" }}>
               {currentJob ? currentJob.jobNumber : "None"}
             </div>
           </div>
@@ -308,13 +308,13 @@ export default function TechsDashboard() {
             backgroundColor: "white",
             padding: "24px",
             borderRadius: "16px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            border: "1px solid #e0e0e0"
+            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            border: "1px solid var(--surface-light)"
           }}>
-            <div style={{ fontSize: "36px", fontWeight: "700", color: "#7c3aed", marginBottom: "8px" }}>
+            <div style={{ fontSize: "36px", fontWeight: "700", color: "var(--accent-purple)", marginBottom: "8px" }}>
               {clockingStatus ? calculateHoursWorked(clockingStatus.clock_in) : "0.0"}h
             </div>
-            <div style={{ fontSize: "14px", color: "#666", fontWeight: "500" }}>
+            <div style={{ fontSize: "14px", color: "var(--grey-accent)", fontWeight: "500" }}>
               Hours Today
             </div>
           </div>
@@ -326,13 +326,13 @@ export default function TechsDashboard() {
             backgroundColor: "white",
             padding: "24px",
             borderRadius: "16px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            border: "2px solid #FF4040"
+            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            border: "2px solid var(--primary)"
           }}>
             <h2 style={{ 
               fontSize: "20px", 
               fontWeight: "700", 
-              color: "#FF4040",
+              color: "var(--primary)",
               marginBottom: "16px"
             }}>
               🔧 Currently Working On
@@ -344,16 +344,16 @@ export default function TechsDashboard() {
               alignItems: "center"
             }}>
               <div>
-                <p style={{ fontSize: "24px", fontWeight: "700", color: "#1a1a1a", margin: "0 0 8px 0" }}>
+                <p style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)", margin: "0 0 8px 0" }}>
                   {currentJob.jobNumber}
                 </p>
-                <p style={{ fontSize: "16px", color: "#666", margin: "0 0 4px 0" }}>
+                <p style={{ fontSize: "16px", color: "var(--grey-accent)", margin: "0 0 4px 0" }}>
                   <strong>Customer:</strong> {currentJob.customer}
                 </p>
-                <p style={{ fontSize: "16px", color: "#666", margin: "0 0 4px 0" }}>
+                <p style={{ fontSize: "16px", color: "var(--grey-accent)", margin: "0 0 4px 0" }}>
                   <strong>Vehicle:</strong> {currentJob.reg} - {currentJob.makeModel}
                 </p>
-                <p style={{ fontSize: "14px", color: "#999", margin: "8px 0 0 0" }}>
+                <p style={{ fontSize: "14px", color: "var(--grey-accent-light)", margin: "8px 0 0 0" }}>
                   {currentJob.description}
                 </p>
               </div>
@@ -362,18 +362,18 @@ export default function TechsDashboard() {
                   onClick={() => handleStartJob(currentJob)}
                   style={{
                     padding: "14px 28px",
-                    backgroundColor: "#10b981",
+                    backgroundColor: "var(--info)",
                     color: "white",
                     border: "none",
                     borderRadius: "8px",
                     cursor: "pointer",
                     fontSize: "15px",
                     fontWeight: "600",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                    boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.1)",
                     transition: "all 0.2s"
                   }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "#059669"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "#10b981"}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "var(--info-dark)"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "var(--info)"}
                 >
                   Continue Job →
                 </button>
@@ -388,13 +388,13 @@ export default function TechsDashboard() {
             backgroundColor: "white",
             padding: "24px",
             borderRadius: "16px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            border: "1px solid #e0e0e0"
+            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            border: "1px solid var(--surface-light)"
           }}>
             <h2 style={{ 
               fontSize: "20px", 
               fontWeight: "700", 
-              color: "#333",
+              color: "var(--text-secondary)",
               marginBottom: "16px"
             }}>
               📋 Next Job Assigned
@@ -406,16 +406,16 @@ export default function TechsDashboard() {
               alignItems: "center"
             }}>
               <div>
-                <p style={{ fontSize: "24px", fontWeight: "700", color: "#FF4040", margin: "0 0 8px 0" }}>
+                <p style={{ fontSize: "24px", fontWeight: "700", color: "var(--primary)", margin: "0 0 8px 0" }}>
                   {nextJob.jobNumber}
                 </p>
-                <p style={{ fontSize: "16px", color: "#666", margin: "0 0 4px 0" }}>
+                <p style={{ fontSize: "16px", color: "var(--grey-accent)", margin: "0 0 4px 0" }}>
                   <strong>Customer:</strong> {nextJob.customer}
                 </p>
-                <p style={{ fontSize: "16px", color: "#666", margin: "0 0 4px 0" }}>
+                <p style={{ fontSize: "16px", color: "var(--grey-accent)", margin: "0 0 4px 0" }}>
                   <strong>Vehicle:</strong> {nextJob.reg} - {nextJob.makeModel}
                 </p>
-                <p style={{ fontSize: "14px", color: "#999", margin: "8px 0 0 0" }}>
+                <p style={{ fontSize: "14px", color: "var(--grey-accent-light)", margin: "8px 0 0 0" }}>
                   {nextJob.description}
                 </p>
               </div>
@@ -424,18 +424,18 @@ export default function TechsDashboard() {
                   onClick={() => handleStartJob(nextJob)}
                   style={{
                     padding: "14px 28px",
-                    backgroundColor: "#FF4040",
+                    backgroundColor: "var(--primary)",
                     color: "white",
                     border: "none",
                     borderRadius: "8px",
                     cursor: "pointer",
                     fontSize: "15px",
                     fontWeight: "600",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                    boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.1)",
                     transition: "all 0.2s"
                   }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "#cc0000"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "#FF4040"}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger)"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "var(--primary)"}
                 >
                   Start Job →
                 </button>
@@ -449,8 +449,8 @@ export default function TechsDashboard() {
           backgroundColor: "white",
           padding: "24px",
           borderRadius: "16px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-          border: "1px solid #e0e0e0"
+          boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+          border: "1px solid var(--surface-light)"
         }}>
           <div style={{ 
             display: "flex", 
@@ -461,7 +461,7 @@ export default function TechsDashboard() {
             <h2 style={{ 
               fontSize: "20px", 
               fontWeight: "700", 
-              color: "#333",
+              color: "var(--text-secondary)",
               margin: 0
             }}>
               📝 My Assigned Jobs ({myJobs.length})
@@ -470,7 +470,7 @@ export default function TechsDashboard() {
               onClick={() => router.push("/job-cards/myjobs")}
               style={{
                 padding: "8px 16px",
-                backgroundColor: "#007bff",
+                backgroundColor: "var(--info)",
                 color: "white",
                 border: "none",
                 borderRadius: "6px",
@@ -487,7 +487,7 @@ export default function TechsDashboard() {
             <div style={{ 
               textAlign: "center", 
               padding: "40px",
-              color: "#999"
+              color: "var(--grey-accent-light)"
             }}>
               <div style={{ fontSize: "48px", marginBottom: "16px" }}>📭</div>
               <p style={{ fontSize: "16px" }}>No jobs assigned yet</p>
@@ -503,20 +503,20 @@ export default function TechsDashboard() {
                   key={job.id}
                   onClick={() => handleStartJob(job)}
                   style={{
-                    border: "1px solid #e0e0e0",
+                    border: "1px solid var(--surface-light)",
                     borderRadius: "8px",
                     padding: "16px",
                     cursor: "pointer",
                     transition: "all 0.2s",
-                    backgroundColor: "#fafafa"
+                    backgroundColor: "var(--surface)"
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "#f0f0f0";
-                    e.currentTarget.style.borderColor = "#FF4040";
+                    e.currentTarget.style.backgroundColor = "var(--surface)";
+                    e.currentTarget.style.borderColor = "var(--primary)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "#fafafa";
-                    e.currentTarget.style.borderColor = "#e0e0e0";
+                    e.currentTarget.style.backgroundColor = "var(--surface)";
+                    e.currentTarget.style.borderColor = "var(--surface-light)";
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -524,28 +524,28 @@ export default function TechsDashboard() {
                       <p style={{ 
                         fontSize: "16px", 
                         fontWeight: "700", 
-                        color: "#FF4040",
+                        color: "var(--primary)",
                         margin: "0 0 4px 0"
                       }}>
                         {job.jobNumber}
                       </p>
-                      <p style={{ fontSize: "14px", color: "#666", margin: "0 0 4px 0" }}>
+                      <p style={{ fontSize: "14px", color: "var(--grey-accent)", margin: "0 0 4px 0" }}>
                         {job.customer} | {job.reg}
                       </p>
-                      <p style={{ fontSize: "13px", color: "#999", margin: 0 }}>
+                      <p style={{ fontSize: "13px", color: "var(--grey-accent-light)", margin: 0 }}>
                         {job.makeModel}
                       </p>
                     </div>
                     <div style={{
                       padding: "6px 12px",
                       backgroundColor: 
-                        job.status === "In Progress" ? "#dbeafe" :
-                        job.status === "Complete" ? "#dcfce7" :
-                        "#fef3c7",
+                        job.status === "In Progress" ? "var(--info-surface)" :
+                        job.status === "Complete" ? "var(--success-surface)" :
+                        "var(--warning-surface)",
                       color:
-                        job.status === "In Progress" ? "#1e40af" :
-                        job.status === "Complete" ? "#166534" :
-                        "#92400e",
+                        job.status === "In Progress" ? "var(--accent-purple)" :
+                        job.status === "Complete" ? "var(--success-dark)" :
+                        "var(--danger-dark)",
                       borderRadius: "12px",
                       fontSize: "12px",
                       fontWeight: "600"
@@ -570,24 +570,24 @@ export default function TechsDashboard() {
             style={{
               padding: "20px",
               backgroundColor: "white",
-              border: "1px solid #e0e0e0",
+              border: "1px solid var(--surface-light)",
               borderRadius: "12px",
               cursor: "pointer",
               textAlign: "center",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+              boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)",
               transition: "all 0.2s"
             }}
             onMouseEnter={(e) => {
               e.target.style.transform = "translateY(-2px)";
-              e.target.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
+              e.target.style.boxShadow = "0 4px 8px rgba(var(--shadow-rgb),0.1)";
             }}
             onMouseLeave={(e) => {
               e.target.style.transform = "translateY(0)";
-              e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.05)";
+              e.target.style.boxShadow = "0 2px 4px rgba(var(--shadow-rgb),0.05)";
             }}
           >
             <div style={{ fontSize: "32px", marginBottom: "8px" }}>📋</div>
-            <div style={{ fontSize: "16px", fontWeight: "600", color: "#333" }}>
+            <div style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-secondary)" }}>
               View All Jobs
             </div>
           </button>
@@ -597,24 +597,24 @@ export default function TechsDashboard() {
             style={{
               padding: "20px",
               backgroundColor: "white",
-              border: "1px solid #e0e0e0",
+              border: "1px solid var(--surface-light)",
               borderRadius: "12px",
               cursor: "pointer",
               textAlign: "center",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+              boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)",
               transition: "all 0.2s"
             }}
             onMouseEnter={(e) => {
               e.target.style.transform = "translateY(-2px)";
-              e.target.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
+              e.target.style.boxShadow = "0 4px 8px rgba(var(--shadow-rgb),0.1)";
             }}
             onMouseLeave={(e) => {
               e.target.style.transform = "translateY(0)";
-              e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.05)";
+              e.target.style.boxShadow = "0 2px 4px rgba(var(--shadow-rgb),0.05)";
             }}
           >
             <div style={{ fontSize: "32px", marginBottom: "8px" }}>⏱️</div>
-            <div style={{ fontSize: "16px", fontWeight: "600", color: "#333" }}>
+            <div style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-secondary)" }}>
               Time Tracking
             </div>
           </button>
@@ -624,24 +624,24 @@ export default function TechsDashboard() {
             style={{
               padding: "20px",
               backgroundColor: "white",
-              border: "1px solid #e0e0e0",
+              border: "1px solid var(--surface-light)",
               borderRadius: "12px",
               cursor: "pointer",
               textAlign: "center",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+              boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)",
               transition: "all 0.2s"
             }}
             onMouseEnter={(e) => {
               e.target.style.transform = "translateY(-2px)";
-              e.target.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
+              e.target.style.boxShadow = "0 4px 8px rgba(var(--shadow-rgb),0.1)";
             }}
             onMouseLeave={(e) => {
               e.target.style.transform = "translateY(0)";
-              e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.05)";
+              e.target.style.boxShadow = "0 2px 4px rgba(var(--shadow-rgb),0.05)";
             }}
           >
             <div style={{ fontSize: "32px", marginBottom: "8px" }}>🔧</div>
-            <div style={{ fontSize: "16px", fontWeight: "600", color: "#333" }}>
+            <div style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-secondary)" }}>
               Request Parts
             </div>
           </button>

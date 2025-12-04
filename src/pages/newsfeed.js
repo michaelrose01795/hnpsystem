@@ -55,7 +55,7 @@ export default function NewsFeed() {
             <button
               onClick={() => alert("Manager post creation coming soon")}
               className="px-5 py-2 font-semibold text-white rounded-xl shadow-sm hover:shadow-lg transition-all hover:-translate-y-0.5"
-              style={{ backgroundColor: "#d10000" }}
+              style={{ backgroundColor: "var(--primary)" }}
             >
               + Add Update
             </button>
@@ -72,11 +72,11 @@ export default function NewsFeed() {
           {Object.keys(groupedUpdates).map((dept) => (
             <section
               key={dept}
-              className="rounded-3xl shadow-lg p-8 border border-[#ffe5e5] transition-all duration-300 bg-gradient-to-br from-white via-[#fff9f9] to-[#ffecec] hover:shadow-2xl"
+              className="rounded-3xl shadow-lg p-8 border border-[var(--surface-light)] transition-all duration-300 bg-gradient-to-br from-white via-[var(--danger-surface)] to-[var(--surface-light)] hover:shadow-2xl"
             >
               <h2
-                className="text-2xl font-semibold mb-6 pb-2 border-b border-[#ffd6d6]"
-                style={{ color: "#d10000" }}
+                className="text-2xl font-semibold mb-6 pb-2 border-b border-[var(--surface-light)]"
+                style={{ color: "var(--primary)" }}
               >
                 {dept} Department
               </h2>
@@ -85,7 +85,7 @@ export default function NewsFeed() {
                 {groupedUpdates[dept].map((post) => (
                   <div
                     key={post.id}
-                    className="rounded-2xl bg-white shadow-md p-6 border border-[#ffe5e5] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-[#ffb3b3]"
+                    className="rounded-2xl bg-white shadow-md p-6 border border-[var(--surface-light)] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-[var(--danger)]"
                   >
                     {/* Title and Department Tag */}
                     <div className="flex justify-between items-start mb-3">
@@ -95,8 +95,8 @@ export default function NewsFeed() {
                       <span
                         className="text-xs font-medium px-3 py-1 rounded-full"
                         style={{
-                          backgroundColor: "#fff0f0",
-                          color: "#d10000",
+                          backgroundColor: "var(--surface-light)",
+                          color: "var(--primary)",
                         }}
                       >
                         {post.department}

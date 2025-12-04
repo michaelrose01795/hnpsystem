@@ -52,7 +52,7 @@ export default function HrRecruitment() {
     <Layout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header>
-          <p style={{ color: "#6B7280", marginTop: "6px" }}>
+          <p style={{ color: "var(--info)", marginTop: "6px" }}>
             Manage job listings, applicant pipelines, interview scheduling, and onboarding checklists.
           </p>
         </header>
@@ -69,7 +69,7 @@ export default function HrRecruitment() {
           >
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                   <th style={{ textAlign: "left", paddingBottom: "10px" }}>Role</th>
                   <th>Department</th>
                   <th>Applicants</th>
@@ -79,7 +79,7 @@ export default function HrRecruitment() {
               </thead>
               <tbody>
                 {placeholderJobListings.map((job) => (
-                  <tr key={job.id} style={{ borderTop: "1px solid #E5E7EB" }}>
+                  <tr key={job.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
                     <td style={{ padding: "12px 0", fontWeight: 600 }}>{job.title}</td>
                     <td>{job.department}</td>
                     <td>{job.applicants}</td>
@@ -106,13 +106,13 @@ export default function HrRecruitment() {
             }
           >
             <ul style={{ margin: 0, paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
-              <li style={{ color: "#374151" }}>
+              <li style={{ color: "var(--info-dark)" }}>
                 Schedule second interview for <strong>Senior Technician</strong> role.
               </li>
-              <li style={{ color: "#374151" }}>
+              <li style={{ color: "var(--info-dark)" }}>
                 Prepare onboarding checklist for upcoming <strong>Sales</strong> hire.
               </li>
-              <li style={{ color: "#374151" }}>
+              <li style={{ color: "var(--info-dark)" }}>
                 Review screening notes for <strong>Service Advisor</strong> applicants.
               </li>
             </ul>
@@ -131,7 +131,7 @@ export default function HrRecruitment() {
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                   <th style={{ textAlign: "left", paddingBottom: "10px" }}>Applicant</th>
                   <th>Applied For</th>
                   <th>Stage</th>
@@ -141,7 +141,7 @@ export default function HrRecruitment() {
               </thead>
               <tbody>
                 {placeholderApplicants.map((applicant) => (
-                  <tr key={applicant.id} style={{ borderTop: "1px solid #E5E7EB" }}>
+                  <tr key={applicant.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
                     <td style={{ padding: "12px 0", fontWeight: 600 }}>{applicant.name}</td>
                     <td>{applicant.appliedFor}</td>
                     <td>
@@ -170,12 +170,12 @@ export default function HrRecruitment() {
           subtitle="Tasks to complete once a candidate accepts an offer."
         >
           <ul style={{ margin: 0, paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
-            <li style={{ color: "#374151" }}>Provision IT access (email, DMS login, clocking badge).</li>
-            <li style={{ color: "#374151" }}>Assign uniform and workshop PPE.</li>
-            <li style={{ color: "#374151" }}>Schedule induction and health & safety briefing.</li>
-            <li style={{ color: "#374151" }}>Add to mandatory training list (Hybrid Safety, Customer Experience).</li>
+            <li style={{ color: "var(--info-dark)" }}>Provision IT access (email, DMS login, clocking badge).</li>
+            <li style={{ color: "var(--info-dark)" }}>Assign uniform and workshop PPE.</li>
+            <li style={{ color: "var(--info-dark)" }}>Schedule induction and health & safety briefing.</li>
+            <li style={{ color: "var(--info-dark)" }}>Add to mandatory training list (Hybrid Safety, Customer Experience).</li>
           </ul>
-          <p style={{ color: "#6B7280", marginTop: "12px" }}>
+          <p style={{ color: "var(--info)", marginTop: "12px" }}>
             Placeholder checklist for design review. Replace with dynamic onboarding templates before launch.
           </p>
         </SectionCard>
@@ -188,7 +188,7 @@ const buttonStylePrimary = {
   padding: "8px 14px",
   borderRadius: "10px",
   border: "none",
-  background: "#22C55E",
+  background: "var(--success)",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",
@@ -197,9 +197,9 @@ const buttonStylePrimary = {
 const buttonStyleSecondary = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px solid #BBF7D0",
+  border: "1px solid var(--success)",
   background: "white",
-  color: "#16A34A",
+  color: "var(--success)",
   fontWeight: 600,
   cursor: "pointer",
 };

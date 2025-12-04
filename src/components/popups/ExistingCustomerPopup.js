@@ -48,7 +48,7 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
         left: 0,
         width: "100%",
         height: "100%",
-        backgroundColor: "rgba(0,0,0,0.5)",
+        backgroundColor: "rgba(var(--shadow-rgb),0.5)",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
@@ -83,7 +83,7 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
               maxHeight: "200px",
               overflowY: "auto",
               marginBottom: "12px",
-              border: "1px solid #ddd",
+              border: "1px solid var(--surface-light)",
               borderRadius: "6px",
             }}
           >
@@ -95,8 +95,8 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
                   padding: "8px",
                   cursor: "pointer",
                   backgroundColor:
-                    selectedCustomer?.id === c.id ? "#f8f8f8" : "white",
-                  borderBottom: "1px solid #eee",
+                    selectedCustomer?.id === c.id ? "var(--surface)" : "white",
+                  borderBottom: "1px solid var(--surface-light)",
                 }}
               >
                 {c.firstname} {c.lastname}
@@ -137,7 +137,7 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
             disabled={!selectedCustomer}
             style={{
               padding: "8px 16px",
-              backgroundColor: "#FF4040",
+              backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "4px",

@@ -72,7 +72,7 @@ export default function Clocking() {
   return (
     <Layout>
       <div style={{ padding: "20px" }}>
-        <h1 style={{ color: "#FF4040", marginBottom: "20px" }}>
+        <h1 style={{ color: "var(--primary)", marginBottom: "20px" }}>
           Workshop Clocking
         </h1>
 
@@ -89,19 +89,19 @@ export default function Clocking() {
             <div
               key={tech.id}
               style={{
-                backgroundColor: "#FFF0F0",
-                border: "1px solid #FFCCCC",
+                backgroundColor: "var(--surface-light)",
+                border: "1px solid var(--danger)",
                 borderRadius: "8px",
                 padding: "16px",
                 textAlign: "center",
                 fontWeight: "500",
-                color: "#FF4040",
+                color: "var(--primary)",
               }}
             >
               <div>
                 {tech.first_name} {tech.last_name}
               </div>
-              <div style={{ marginTop: "10px", color: "#FF8080" }}>
+              <div style={{ marginTop: "10px", color: "var(--primary-light)" }}>
                 Status: {statuses[tech.id] || "Loading..."}
               </div>
             </div>
@@ -120,13 +120,13 @@ export default function Clocking() {
             <div
               key={i}
               style={{
-                backgroundColor: "#FFF8F8",
-                border: "1px solid #FFCCCC",
+                backgroundColor: "var(--danger-surface)",
+                border: "1px solid var(--danger)",
                 borderRadius: "8px",
                 padding: "16px",
                 textAlign: "center",
                 fontWeight: "500",
-                color: "#FF4040",
+                color: "var(--primary)",
               }}
             >
               {feat}

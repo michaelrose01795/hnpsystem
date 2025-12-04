@@ -6,9 +6,9 @@ import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 
 const STATUS_META = {
-  planned: { label: "Planned", background: "rgba(251, 191, 36, 0.15)", color: "#92400e" },
-  en_route: { label: "En Route", background: "rgba(59, 130, 246, 0.15)", color: "#1d4ed8" },
-  delivered: { label: "Delivered", background: "rgba(16, 185, 129, 0.25)", color: "#047857" },
+  planned: { label: "Planned", background: "rgba(var(--warning-rgb), 0.15)", color: "var(--danger-dark)" },
+  en_route: { label: "En Route", background: "rgba(var(--info-rgb), 0.15)", color: "var(--accent-purple)" },
+  delivered: { label: "Delivered", background: "rgba(var(--info-rgb), 0.25)", color: "var(--info-dark)" },
 };
 
 const formatCurrency = (value) => {
@@ -25,10 +25,10 @@ const formatCurrency = (value) => {
 
 const stopCardStyle = {
   borderRadius: "18px",
-  border: "1px solid #ffe0e0",
-  background: "#ffffff",
+  border: "1px solid var(--surface-light)",
+  background: "var(--surface)",
   padding: "18px",
-  boxShadow: "0 12px 30px rgba(0, 0, 0, 0.08)",
+  boxShadow: "0 12px 30px rgba(var(--shadow-rgb), 0.08)",
 };
 
 const buttonStyle = {
@@ -690,7 +690,7 @@ export default function DeliveryRoutePage() {
   if (!hasAccess) {
     return (
       <Layout>
-        <div style={{ padding: "48px", textAlign: "center", color: "#a00000" }}>
+        <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
           You do not have access to delivery planning.
         </div>
       </Layout>
@@ -713,10 +713,10 @@ export default function DeliveryRoutePage() {
     <Layout>
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "22px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-          <Link href="/parts/deliveries" style={{ color: "#a00000", fontWeight: 600 }}>
+          <Link href="/parts/deliveries" style={{ color: "var(--primary-dark)", fontWeight: 600 }}>
             ← Back to deliveries
           </Link>
-          <p style={{ margin: 0, color: "#6b7280" }}>
+          <p style={{ margin: 0, color: "var(--info)" }}>
             Delivery ID: {delivery?.id || deliveryId || "—"}
           </p>
         </div>
@@ -724,19 +724,19 @@ export default function DeliveryRoutePage() {
         <section
           style={{
             borderRadius: "20px",
-            border: "1px solid #ffe1e1",
-            background: "#ffffff",
+            border: "1px solid var(--surface-light)",
+            background: "var(--surface)",
             padding: "22px",
-            boxShadow: "0 12px 30px rgba(0, 0, 0, 0.08)",
+            boxShadow: "0 12px 30px rgba(var(--shadow-rgb), 0.08)",
             display: "flex",
             flexDirection: "column",
             gap: "10px",
           }}
         >
-          <p style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.08em", color: "#a00000" }}>
+          <p style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--primary-dark)" }}>
             Route overview
           </p>
-          <h1 style={{ margin: "4px 0 0", color: "#d10000" }}>Stops & delivery details</h1>
+          <h1 style={{ margin: "4px 0 0", color: "var(--primary)" }}>Stops & delivery details</h1>
           <div
             style={{
               display: "grid",
@@ -745,27 +745,27 @@ export default function DeliveryRoutePage() {
             }}
           >
             <div>
-              <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>Driver</p>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--info)" }}>Driver</p>
               <p style={{ margin: "4px 0 0", fontWeight: 600 }}>{driverLabel}</p>
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>Vehicle</p>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--info)" }}>Vehicle</p>
               <p style={{ margin: "4px 0 0", fontWeight: 600 }}>{vehicleLabel}</p>
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>Fuel type</p>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--info)" }}>Fuel type</p>
               <p style={{ margin: "4px 0 0", fontWeight: 600 }}>
                 {delivery?.fuel_type || "Not specified"}
               </p>
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>Diesel price</p>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--info)" }}>Diesel price</p>
               <p style={{ margin: "4px 0 0", fontWeight: 600 }}>
                 {formatCurrency(dieselPricePerLitre)} / L
               </p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>Vehicle MPG</p>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--info)" }}>Vehicle MPG</p>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <input
                   type="number"
@@ -776,7 +776,7 @@ export default function DeliveryRoutePage() {
                   placeholder="e.g. 28"
                   style={{
                     borderRadius: "10px",
-                    border: "1px solid #ffd1d1",
+                    border: "1px solid var(--surface-light)",
                     padding: "8px 10px",
                     width: "100px",
                   }}
@@ -787,8 +787,8 @@ export default function DeliveryRoutePage() {
                   disabled={actionLoading}
                   style={{
                     ...buttonStyle,
-                    background: "#0f766e",
-                    color: "#ffffff",
+                    background: "var(--info-dark)",
+                    color: "var(--surface)",
                     padding: "8px 12px",
                     minWidth: "80px",
                     opacity: actionLoading ? 0.6 : 1,
@@ -799,17 +799,17 @@ export default function DeliveryRoutePage() {
               </div>
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>Stops planned</p>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--info)" }}>Stops planned</p>
               <p style={{ margin: "4px 0 0", fontWeight: 600 }}>{stopsCount}</p>
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>Total mileage</p>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--info)" }}>Total mileage</p>
               <p style={{ margin: "4px 0 0", fontWeight: 600 }}>
                 {totalMileage.toLocaleString()} km
               </p>
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>Fuel estimate</p>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--info)" }}>Fuel estimate</p>
               <p style={{ margin: "4px 0 0", fontWeight: 600 }}>
                 {formatCurrency(totalFuelCost)}
               </p>
@@ -831,14 +831,14 @@ export default function DeliveryRoutePage() {
             onClick={handleAddStopClick}
             style={{
               ...buttonStyle,
-              background: "#d10000",
-              color: "#ffffff",
-              border: "1px solid #d10000",
+              background: "var(--primary)",
+              color: "var(--surface)",
+              border: "1px solid var(--primary)",
             }}
           >
             Add Stop
           </button>
-          <span style={{ color: "#6b7280", fontSize: "0.85rem" }}>
+          <span style={{ color: "var(--info)", fontSize: "0.85rem" }}>
             Drag stops to reorder and keep mileage accurate.
           </span>
         </div>
@@ -848,7 +848,7 @@ export default function DeliveryRoutePage() {
             style={{
               position: "fixed",
               inset: 0,
-              background: "rgba(15, 23, 42, 0.6)",
+              background: "rgba(var(--accent-purple-rgb), 0.6)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -858,13 +858,13 @@ export default function DeliveryRoutePage() {
           >
             <div
               style={{
-                background: "#ffffff",
+                background: "var(--surface)",
                 borderRadius: "18px",
                 width: "min(540px, 100%)",
                 maxHeight: "90vh",
                 overflowY: "auto",
                 padding: "24px",
-                boxShadow: "0 20px 40px rgba(0, 0, 0, 0.25)",
+                boxShadow: "0 20px 40px rgba(var(--shadow-rgb), 0.25)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
@@ -878,14 +878,14 @@ export default function DeliveryRoutePage() {
                   gap: "12px",
                 }}
               >
-                <h2 style={{ margin: 0, color: "#d10000", fontSize: "1.3rem" }}>Add stop</h2>
+                <h2 style={{ margin: 0, color: "var(--primary)", fontSize: "1.3rem" }}>Add stop</h2>
                 <button
                   type="button"
                   onClick={handleCloseModal}
                   style={{
                     border: "none",
                     background: "transparent",
-                    color: "#6b7280",
+                    color: "var(--info)",
                     cursor: "pointer",
                     fontWeight: 600,
                   }}
@@ -893,7 +893,7 @@ export default function DeliveryRoutePage() {
                   Close
                 </button>
               </div>
-              <label style={{ fontWeight: 600, color: "#6b7280" }}>Search customer</label>
+              <label style={{ fontWeight: 600, color: "var(--info)" }}>Search customer</label>
               <input
                 type="text"
                 placeholder="Type name or company"
@@ -901,11 +901,11 @@ export default function DeliveryRoutePage() {
                 onChange={(event) => setCustomerQuery(event.target.value)}
                 style={{
                   borderRadius: "12px",
-                  border: "1px solid #ffd1d1",
+                  border: "1px solid var(--surface-light)",
                   padding: "10px 12px",
                 }}
               />
-              {customerSearchLoading && <p style={{ margin: 0, color: "#6b7280" }}>Searching…</p>}
+              {customerSearchLoading && <p style={{ margin: 0, color: "var(--info)" }}>Searching…</p>}
               {customerResults.length > 0 && (
                 <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
                   {customerResults.map((customer) => {
@@ -921,13 +921,13 @@ export default function DeliveryRoutePage() {
                           style={{
                             width: "100%",
                             textAlign: "left",
-                            background: "#fff7f7",
-                            border: "1px solid #ffd1d1",
+                            background: "var(--danger-surface)",
+                            border: "1px solid var(--surface-light)",
                             borderRadius: "10px",
                             padding: "10px 12px",
                             cursor: "pointer",
                             fontWeight: 600,
-                            color: "#a00000",
+                            color: "var(--primary-dark)",
                           }}
                         >
                           {label}
@@ -936,7 +936,7 @@ export default function DeliveryRoutePage() {
                               display: "block",
                               fontSize: "0.8rem",
                               fontWeight: 400,
-                              color: "#6b7280",
+                              color: "var(--info)",
                             }}
                           >
                             {customer.address || "Address not stored"}
@@ -947,7 +947,7 @@ export default function DeliveryRoutePage() {
                   })}
                 </ul>
               )}
-              <label style={{ fontWeight: 600, color: "#6b7280" }}>Job number (optional)</label>
+              <label style={{ fontWeight: 600, color: "var(--info)" }}>Job number (optional)</label>
               <input
                 type="text"
                 value={jobNumberInput}
@@ -955,11 +955,11 @@ export default function DeliveryRoutePage() {
                 placeholder="e.g. JOB-12345"
                 style={{
                   borderRadius: "12px",
-                  border: "1px solid #ffd1d1",
+                  border: "1px solid var(--surface-light)",
                   padding: "10px 12px",
                 }}
               />
-              <label style={{ fontWeight: 600, color: "#6b7280" }}>Address</label>
+              <label style={{ fontWeight: 600, color: "var(--info)" }}>Address</label>
               <textarea
                 rows={3}
                 value={addressInput}
@@ -967,12 +967,12 @@ export default function DeliveryRoutePage() {
                 placeholder="Customer address…"
                 style={{
                   borderRadius: "12px",
-                  border: "1px solid #ffd1d1",
+                  border: "1px solid var(--surface-light)",
                   padding: "10px 12px",
                   resize: "vertical",
                 }}
               />
-              <label style={{ fontWeight: 600, color: "#6b7280" }}>Postcode</label>
+              <label style={{ fontWeight: 600, color: "var(--info)" }}>Postcode</label>
               <input
                 type="text"
                 value={postcodeInput}
@@ -980,20 +980,20 @@ export default function DeliveryRoutePage() {
                 placeholder="Postcode"
                 style={{
                   borderRadius: "12px",
-                  border: "1px solid #ffd1d1",
+                  border: "1px solid var(--surface-light)",
                   padding: "10px 12px",
                 }}
               />
-              {modalError && <p style={{ color: "#b91c1c", margin: 0 }}>{modalError}</p>}
+              {modalError && <p style={{ color: "var(--danger)", margin: 0 }}>{modalError}</p>}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", flexWrap: "wrap" }}>
                 <button
                   type="button"
                   onClick={handleCloseModal}
                   style={{
                     ...buttonStyle,
-                    background: "#ffffff",
-                    border: "1px solid #ffd1d1",
-                    color: "#a00000",
+                    background: "var(--surface)",
+                    border: "1px solid var(--surface-light)",
+                    color: "var(--primary-dark)",
                   }}
                 >
                   Cancel
@@ -1004,8 +1004,8 @@ export default function DeliveryRoutePage() {
                   disabled={savingStop}
                   style={{
                     ...buttonStyle,
-                    background: "#0f766e",
-                    color: "#ffffff",
+                    background: "var(--info-dark)",
+                    color: "var(--surface)",
                     opacity: savingStop ? 0.6 : 1,
                   }}
                 >
@@ -1024,9 +1024,9 @@ export default function DeliveryRoutePage() {
               disabled={actionLoading || !nextPlannedStop}
               style={{
                 ...buttonStyle,
-                background: "#ffffff",
-                border: "1px solid #ffd1d1",
-                color: "#a00000",
+                background: "var(--surface)",
+                border: "1px solid var(--surface-light)",
+                color: "var(--primary-dark)",
                 opacity: actionLoading || !nextPlannedStop ? 0.6 : 1,
               }}
             >
@@ -1038,8 +1038,8 @@ export default function DeliveryRoutePage() {
               disabled={actionLoading || (!activeStop && !nextPlannedStop)}
               style={{
                 ...buttonStyle,
-                background: "#d10000",
-                color: "#ffffff",
+                background: "var(--primary)",
+                color: "var(--surface)",
                 opacity: actionLoading || (!activeStop && !nextPlannedStop) ? 0.6 : 1,
               }}
             >
@@ -1051,21 +1051,21 @@ export default function DeliveryRoutePage() {
               disabled={actionLoading || orderedStops.every((stop) => stop.status === "delivered")}
               style={{
                 ...buttonStyle,
-                background: "#0f766e",
-                color: "#ffffff",
+                background: "var(--info-dark)",
+                color: "var(--surface)",
                 opacity: actionLoading || orderedStops.every((stop) => stop.status === "delivered") ? 0.6 : 1,
               }}
             >
               Complete Route
             </button>
           </div>
-          {error && <p style={{ color: "#b91c1c", margin: 0 }}>{error}</p>}
+          {error && <p style={{ color: "var(--danger)", margin: 0 }}>{error}</p>}
         </section>
 
-        {loading && <p style={{ color: "#6b7280" }}>Loading route stops…</p>}
+        {loading && <p style={{ color: "var(--info)" }}>Loading route stops…</p>}
 
         {!loading && !orderedStops.length && (
-          <p style={{ color: "#6b7280" }}>No stops have been planned for this route yet.</p>
+          <p style={{ color: "var(--info)" }}>No stops have been planned for this route yet.</p>
         )}
 
         {!loading && orderedStops.length > 0 && (
@@ -1091,7 +1091,7 @@ export default function DeliveryRoutePage() {
                   <div
                     style={{
                       ...stopCardStyle,
-                      borderColor: isDropTarget ? "#d10000" : "#ffe0e0",
+                      borderColor: isDropTarget ? "var(--primary)" : "var(--surface-light)",
                       opacity: isDragging ? 0.7 : 1,
                     }}
                   >
@@ -1107,10 +1107,10 @@ export default function DeliveryRoutePage() {
                         <p style={{ margin: 0, fontWeight: 600, fontSize: "0.95rem" }}>
                           {stop.stop_number}. {customerName}
                         </p>
-                        <p style={{ margin: "4px 0 0", color: "#6b7280" }}>
+                        <p style={{ margin: "4px 0 0", color: "var(--info)" }}>
                           {stop.customer?.address || stop.address || "Address TBC"}
                         </p>
-                        <p style={{ margin: "2px 0 0", color: "#6b7280" }}>
+                        <p style={{ margin: "2px 0 0", color: "var(--info)" }}>
                           {stop.customer?.postcode || stop.postcode || "Postcode TBC"}
                         </p>
                       </div>
@@ -1132,10 +1132,10 @@ export default function DeliveryRoutePage() {
                           onClick={() => handleDeleteStop(stop.id)}
                           style={{
                             borderRadius: "8px",
-                            border: "1px solid #ffe0e0",
+                            border: "1px solid var(--surface-light)",
                             padding: "6px 10px",
-                            background: "#fff",
-                            color: "#d10000",
+                            background: "var(--surface)",
+                            color: "var(--primary)",
                             fontWeight: 600,
                             cursor: "pointer",
                           }}
@@ -1153,7 +1153,7 @@ export default function DeliveryRoutePage() {
                         flexWrap: "wrap",
                       }}
                     >
-                      <label style={{ margin: 0, fontSize: "0.8rem", color: "#6b7280", fontWeight: 600 }}>
+                      <label style={{ margin: 0, fontSize: "0.8rem", color: "var(--info)", fontWeight: 600 }}>
                         Update status
                       </label>
                       <select
@@ -1161,12 +1161,12 @@ export default function DeliveryRoutePage() {
                         onChange={(event) => handleStatusUpdate([stop.id], event.target.value)}
                         style={{
                           borderRadius: "10px",
-                          border: "1px solid #ffd1d1",
+                          border: "1px solid var(--surface-light)",
                           padding: "8px 12px",
                           fontWeight: 600,
-                          color: "#a00000",
+                          color: "var(--primary-dark)",
                           minWidth: "160px",
-                          background: "#fff",
+                          background: "var(--surface)",
                         }}
                       >
                         <option value="planned">Planned</option>
@@ -1180,9 +1180,9 @@ export default function DeliveryRoutePage() {
                         onClick={() => handleStatusUpdate([stop.id], "delivered")}
                         style={{
                           borderRadius: "8px",
-                          border: "1px solid #ffe0e0",
-                          background: "#d10000",
-                          color: "#fff",
+                          border: "1px solid var(--surface-light)",
+                          background: "var(--primary)",
+                          color: "var(--surface)",
                           padding: "6px 12px",
                           fontWeight: 600,
                           cursor: "pointer",
@@ -1195,9 +1195,9 @@ export default function DeliveryRoutePage() {
                         onClick={() => startNoteEditing(stop)}
                         style={{
                           borderRadius: "8px",
-                          border: "1px solid #ffd1d1",
-                          background: "#ffffff",
-                          color: "#a00000",
+                          border: "1px solid var(--surface-light)",
+                          background: "var(--surface)",
+                          color: "var(--primary-dark)",
                           padding: "6px 12px",
                           fontWeight: 600,
                           cursor: "pointer",
@@ -1212,9 +1212,9 @@ export default function DeliveryRoutePage() {
                           disabled={stop.status === "delivered" || actionLoading}
                           style={{
                             borderRadius: "8px",
-                            border: "1px solid #2563eb",
-                            background: "#2563eb",
-                            color: "#ffffff",
+                            border: "1px solid var(--accent-purple)",
+                            background: "var(--accent-purple)",
+                            color: "var(--surface)",
                             padding: "6px 12px",
                             fontWeight: 600,
                             cursor: stop.status === "delivered" ? "default" : "pointer",
@@ -1231,7 +1231,7 @@ export default function DeliveryRoutePage() {
                         display: "grid",
                         gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
                         gap: "10px",
-                        color: "#4b5563",
+                        color: "var(--info-dark)",
                       }}
                     >
                       {stop.job?.job_number && (
@@ -1254,7 +1254,7 @@ export default function DeliveryRoutePage() {
                       </div>
                     </div>
                     {stop.notes && noteEditingId !== stop.id && (
-                      <p style={{ marginTop: "12px", color: "#4b5563", fontSize: "0.9rem" }}>
+                      <p style={{ marginTop: "12px", color: "var(--info-dark)", fontSize: "0.9rem" }}>
                         <strong>Note:</strong> {stop.notes}
                       </p>
                     )}
@@ -1267,7 +1267,7 @@ export default function DeliveryRoutePage() {
                           placeholder="Capture delivery notes…"
                           style={{
                             borderRadius: "12px",
-                            border: "1px solid #ffd1d1",
+                            border: "1px solid var(--surface-light)",
                             padding: "10px",
                             resize: "vertical",
                             width: "100%",
@@ -1280,8 +1280,8 @@ export default function DeliveryRoutePage() {
                             disabled={noteSaving}
                             style={{
                               ...buttonStyle,
-                              background: "#0f766e",
-                              color: "#fff",
+                              background: "var(--info-dark)",
+                              color: "var(--surface)",
                               padding: "6px 12px",
                               opacity: noteSaving ? 0.6 : 1,
                             }}
@@ -1293,9 +1293,9 @@ export default function DeliveryRoutePage() {
                             onClick={cancelNoteEditing}
                             style={{
                               ...buttonStyle,
-                              background: "#fff",
-                              border: "1px solid #ffd1d1",
-                              color: "#a00000",
+                              background: "var(--surface)",
+                              border: "1px solid var(--surface-light)",
+                              color: "var(--primary-dark)",
                               padding: "6px 12px",
                             }}
                           >

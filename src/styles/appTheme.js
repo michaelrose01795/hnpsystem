@@ -2,22 +2,22 @@
 // Centralised styling tokens for the VHC workspace and broader app shell.
 
 const palette = {
-  accent: "#d10000",
-  accentHover: "#ab0808",
-  accentSoft: "#ffe0e0",
-  accentSurface: "#fff5f5",
-  backgroundGradient: "linear-gradient(to bottom right, #ffffff, #fff5f5, #ffecec)",
-  modalGradient: "linear-gradient(150deg, #ffffff, #fff7f7)",
-  surface: "#ffffff",
-  surfaceAlt: "#fff9f9",
-  border: "#ffe0e0",
-  textPrimary: "#1f2937",
-  textMuted: "#6b7280",
-  overlay: "rgba(15, 23, 42, 0.55)",
-  success: "#10b981",
-  warning: "#f59e0b",
-  danger: "#ef4444",
-  info: "#0ea5e9",
+  accent: "var(--primary)",
+  accentHover: "var(--primary-dark)",
+  accentSoft: "var(--surface-light)",
+  accentSurface: "var(--surface-light)",
+  backgroundGradient: "var(--surface-gradient)",
+  modalGradient: "linear-gradient(150deg, var(--surface), var(--surface-light))",
+  surface: "var(--surface)",
+  surfaceAlt: "var(--surface-light)",
+  border: "var(--border)",
+  textPrimary: "var(--text-primary)",
+  textMuted: "var(--text-secondary)",
+  overlay: "var(--overlay)",
+  success: "var(--success)",
+  warning: "var(--warning)",
+  danger: "var(--danger)",
+  info: "var(--info)",
 };
 
 const radii = {
@@ -29,29 +29,29 @@ const radii = {
 };
 
 const shadows = {
-  sm: "0 4px 12px rgba(209,0,0,0.08)",
-  md: "0 8px 20px rgba(209,0,0,0.12)",
-  lg: "0 16px 36px rgba(209,0,0,0.16)",
+  sm: "0 4px 12px rgba(var(--shadow-rgb), 0.08)",
+  md: "0 8px 20px rgba(var(--shadow-rgb), 0.12)",
+  lg: "0 16px 36px rgba(var(--shadow-rgb), 0.16)",
 };
 
 export const vhcCardStates = {
   complete: {
     label: "Complete",
-    background: "#dcfce7",
-    color: "#047857",
-    border: "#bbf7d0",
+    background: "var(--success-surface)",
+    color: "var(--success-dark)",
+    border: "var(--success)",
   },
   inProgress: {
     label: "In Progress",
-    background: "#fffbeb",
-    color: "#b45309",
-    border: "#fde68a",
+    background: "var(--warning-surface)",
+    color: "var(--warning-dark)",
+    border: "var(--warning)",
   },
   pending: {
     label: "Not Started",
-    background: "#f3f4f6",
-    color: "#4b5563",
-    border: "#e5e7eb",
+    background: "var(--surface-light)",
+    color: "var(--grey-accent-dark)",
+    border: "var(--border)",
   },
 };
 
@@ -88,8 +88,8 @@ export const createVhcButtonStyle = (variant = "primary", { disabled = false } =
 
   return {
     ...base,
-    backgroundColor: disabled ? "#f3f4f6" : palette.accent,
-    color: disabled ? palette.textMuted : "#ffffff",
+    backgroundColor: disabled ? "var(--surface-light)" : palette.accent,
+    color: disabled ? palette.textMuted : "var(--text-inverse)",
   };
 };
 
@@ -155,7 +155,7 @@ export const vhcLayoutStyles = {
   progressFill: {
     height: "100%",
     borderRadius: radii.pill,
-    background: "linear-gradient(90deg, #d10000, #f97316)",
+    background: "linear-gradient(90deg, var(--primary), var(--warning))",
     transition: "width 0.3s ease",
   },
   metaRow: {
@@ -175,7 +175,7 @@ export const vhcLayoutStyles = {
   metaLabel: {
     fontSize: "11px",
     fontWeight: "700",
-    color: "#b91c1c",
+    color: "var(--danger-dark)",
     letterSpacing: "0.4px",
     textTransform: "uppercase",
   },
@@ -192,7 +192,7 @@ export const vhcLayoutStyles = {
     padding: "24px",
     borderRadius: "24px",
     border: `1px solid ${palette.border}`,
-    background: "linear-gradient(to bottom right, #ffffff, #fff9f9, #ffecec)",
+    background: "var(--surface-gradient)",
     boxShadow: shadows.sm,
     overflow: "hidden",
   },
@@ -347,7 +347,7 @@ export const vhcModalContentStyles = {
     borderRadius: radii.lg,
     border: `1px solid ${palette.border}`,
     background: palette.accentSurface,
-    boxShadow: "0 6px 16px rgba(209,0,0,0.12)",
+    boxShadow: "0 6px 16px rgba(var(--primary-rgb),0.12)",
   },
   summaryTextBlock: {
     display: "flex",
@@ -416,28 +416,28 @@ export const appShellTheme = {
   radii,
   shadows,
   light: {
-    background: palette.backgroundGradient,
-    mainBg: palette.backgroundGradient,
-    sidebarBg: "#fff2f2",
-    sidebarBorder: palette.border,
-    sidebarText: palette.textPrimary,
-    accent: palette.accent,
-    headerBg: palette.surface,
-    cardBg: palette.surfaceAlt,
-    text: palette.textPrimary,
-    mutedText: palette.textMuted,
+    background: "var(--surface-gradient)",
+    mainBg: "var(--surface-gradient)",
+    sidebarBg: "var(--surface-light)",
+    sidebarBorder: "var(--border)",
+    sidebarText: "var(--text-primary)",
+    accent: "var(--primary)",
+    headerBg: "var(--surface)",
+    cardBg: "var(--surface-light)",
+    text: "var(--text-primary)",
+    mutedText: "var(--text-secondary)",
   },
   dark: {
-    background: "#0f172a",
-    mainBg: "#0f172a",
-    sidebarBg: "#111827",
-    sidebarBorder: "#1f2937",
-    sidebarText: "#e5e7eb",
-    accent: "#f87171",
-    headerBg: "#1f2937",
-    cardBg: "#111827",
-    text: "#e5e7eb",
-    mutedText: "#9ca3af",
+    background: "var(--background)",
+    mainBg: "var(--background)",
+    sidebarBg: "var(--surface)",
+    sidebarBorder: "var(--border)",
+    sidebarText: "var(--text-primary)",
+    accent: "var(--primary)",
+    headerBg: "var(--surface-light)",
+    cardBg: "var(--surface)",
+    text: "var(--text-primary)",
+    mutedText: "var(--text-secondary)",
   },
 };
 

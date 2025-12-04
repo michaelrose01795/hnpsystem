@@ -112,12 +112,12 @@ const getCapacityStatus = (booked, available) => {
 
 const getStatusBadgeStyle = (status) => {
   if (status === "red") {
-    return { backgroundColor: "#ffe5e5", color: "#b71c1c" };
+    return { backgroundColor: "var(--surface-light)", color: "var(--danger)" };
   }
   if (status === "amber") {
-    return { backgroundColor: "#fff4e5", color: "#ef6c00" };
+    return { backgroundColor: "var(--warning-surface)", color: "var(--warning)" };
   }
-  return { backgroundColor: "#e8f5e9", color: "#2e7d32" };
+  return { backgroundColor: "var(--success-surface)", color: "var(--success-dark)" };
 };
 
 const getCapacityStatusLabel = (status) => {
@@ -883,25 +883,25 @@ export default function Appointments() {
     const normalized = (status || "").toLowerCase();
     if (normalized === "waiting") {
       return {
-        backgroundColor: "#ffe5e5",
-        color: "#c62828",
+        backgroundColor: "var(--surface-light)",
+        color: "var(--danger)",
       };
     }
     if (normalized === "loan car") {
       return {
-        backgroundColor: "#e3f2fd",
-        color: "#1565c0",
+        backgroundColor: "var(--info-surface)",
+        color: "var(--info)",
       };
     }
     if (normalized === "collection") {
       return {
-        backgroundColor: "#fff8e1",
-        color: "#ff9800",
+        backgroundColor: "var(--warning-surface)",
+        color: "var(--warning)",
       };
     }
     return {
-      backgroundColor: "#e8f5e9",
-      color: "#2e7d32",
+      backgroundColor: "var(--success-surface)",
+      color: "var(--success-dark)",
     };
   };
 
@@ -969,16 +969,16 @@ export default function Appointments() {
           alignItems: "center", 
           marginBottom: "12px", 
           padding: "12px", 
-          backgroundColor: "#fff", 
+          backgroundColor: "var(--surface)", 
           borderRadius: "8px", 
-          boxShadow: "0 2px 4px rgba(0,0,0,0.08)" 
+          boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)" 
         }}>
           <button 
             onClick={() => handleAddNote(selectedDay)} 
             disabled={isLoading} 
             style={{ 
               padding: "10px 20px", 
-              backgroundColor: isLoading ? "#ccc" : "#FF4040", 
+              backgroundColor: isLoading ? "var(--background)" : "var(--primary)", 
               color: "white", 
               border: "none", 
               borderRadius: "8px", 
@@ -987,8 +987,8 @@ export default function Appointments() {
               fontSize: "14px",
               transition: "background-color 0.2s"
             }}
-            onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = "#cc0000")}
-            onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = "#FF4040")}
+            onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = "var(--danger)")}
+            onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = "var(--primary)")}
           >
             📝 Add Note
           </button>
@@ -1003,12 +1003,12 @@ export default function Appointments() {
               flex: 1, 
               padding: "10px 16px", 
               borderRadius: "8px", 
-              border: "1px solid #e0e0e0", 
+              border: "1px solid var(--surface-light)", 
               fontSize: "14px",
               outline: "none"
             }}
-            onFocus={(e) => e.target.style.borderColor = "#FF4040"}
-            onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+            onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
+            onBlur={(e) => e.target.style.borderColor = "var(--surface-light)"}
           />
 
           <input 
@@ -1021,12 +1021,12 @@ export default function Appointments() {
               width: "140px", 
               padding: "10px 16px", 
               borderRadius: "8px", 
-              border: "1px solid #e0e0e0", 
+              border: "1px solid var(--surface-light)", 
               fontSize: "14px",
               outline: "none"
             }}
-            onFocus={(e) => e.target.style.borderColor = "#FF4040"}
-            onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+            onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
+            onBlur={(e) => e.target.style.borderColor = "var(--surface-light)"}
           />
 
           <select 
@@ -1037,7 +1037,7 @@ export default function Appointments() {
               width: "120px", 
               padding: "10px 12px", 
               borderRadius: "8px", 
-              border: "1px solid #e0e0e0", 
+              border: "1px solid var(--surface-light)", 
               fontSize: "14px",
               cursor: "pointer",
               outline: "none"
@@ -1054,7 +1054,7 @@ export default function Appointments() {
             disabled={isLoading} 
             style={{ 
               padding: "10px 20px", 
-              backgroundColor: isLoading ? "#ccc" : "#FF4040", 
+              backgroundColor: isLoading ? "var(--background)" : "var(--primary)", 
               color: "white", 
               border: "none", 
               borderRadius: "8px", 
@@ -1063,8 +1063,8 @@ export default function Appointments() {
               fontSize: "14px",
               transition: "background-color 0.2s"
             }}
-            onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = "#cc0000")}
-            onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = "#FF4040")}
+            onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = "var(--danger)")}
+            onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = "var(--primary)")}
           >
             {isLoading ? "Booking..." : "📅 Book Appointment"}
           </button>
@@ -1077,12 +1077,12 @@ export default function Appointments() {
           overflowY: "auto", 
           marginBottom: "12px", 
           borderRadius: "10px", 
-          boxShadow: "0 2px 6px rgba(0,0,0,0.1)", 
-          backgroundColor: "#fff" 
+          boxShadow: "0 2px 6px rgba(var(--shadow-rgb),0.1)", 
+          backgroundColor: "var(--surface)" 
         }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
-              <tr style={{ backgroundColor: "#f6f6f6", borderBottom: "2px solid #FF4040" }}>
+              <tr style={{ backgroundColor: "var(--surface)", borderBottom: "2px solid var(--primary)" }}>
                 {["Day/Date","Availability","Total Hours","Total Jobs","Jobs Scheduled","Finish","Services","MOT","Diagnosis","Other","Staff Off"].map(header => (
                   <th 
                     key={header} 
@@ -1091,9 +1091,9 @@ export default function Appointments() {
                       padding: "10px 12px", 
                       fontWeight: "600", 
                       fontSize: "14px", 
-                      color: "#333", 
-                      borderBottom: "1px solid #ddd", 
-                      background: "#f9f9f9", 
+                      color: "var(--text-secondary)", 
+                      borderBottom: "1px solid var(--surface-light)", 
+                      background: "var(--surface)", 
                       position: "sticky", 
                       top: 0 
                     }}
@@ -1117,69 +1117,69 @@ export default function Appointments() {
                     onClick={() => setSelectedDay(date)} 
                     style={{ 
                       cursor: "pointer", 
-                      backgroundColor: isSelected ? "#FFF2F2" : isSat ? "#FFF8E1" : "#fff",
+                      backgroundColor: isSelected ? "var(--surface-light)" : isSat ? "var(--warning-surface)" : "var(--surface)",
                       transition: "background-color 0.2s"
                     }}
                     onMouseEnter={(e) => {
                       if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = "#f5f5f5";
+                        e.currentTarget.style.backgroundColor = "var(--surface)";
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = isSat ? "#FFF8E1" : "#fff";
+                        e.currentTarget.style.backgroundColor = isSat ? "var(--warning-surface)" : "var(--surface)";
                       }
                     }}
                   >
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", fontWeight: isSelected ? "600" : "400" }}>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: isSelected ? "600" : "400" }}>
                       {formatDate(date)}
                     </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
                       {getTechHoursForDay(date)} techs
                     </td>
                     <td style={{ 
                       padding: "10px 12px", 
-                      borderBottom: "1px solid #eee",
-                      color: counts.totalHours > 0 ? "#333" : "#999"
+                      borderBottom: "1px solid var(--surface-light)",
+                      color: counts.totalHours > 0 ? "var(--text-secondary)" : "var(--grey-accent-light)"
                     }}>
                       {counts.totalHours}h
                     </td>
                     <td style={{
                       padding: "10px 12px", 
-                      borderBottom: "1px solid #eee",
+                      borderBottom: "1px solid var(--surface-light)",
                       fontWeight: counts.totalJobs > 0 ? "600" : "400"
                     }}>
                       {counts.totalJobs}
                     </td>
                     <td style={{
                       padding: "10px 12px", 
-                      borderBottom: "1px solid #eee",
+                      borderBottom: "1px solid var(--surface-light)",
                       fontWeight: counts.totalJobs > 0 ? "600" : "400"
                     }}>
                       {counts.totalJobs}
                     </td>
                     <td style={{
                       padding: "10px 12px", 
-                      borderBottom: "1px solid #eee",
+                      borderBottom: "1px solid var(--surface-light)",
                       fontWeight: "500"
                     }}>
                       {counts.finishTime || "-"}
                     </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
                       {counts.services}
                     </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
                       {counts.mot}
                     </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
                       {counts.diagnosis}
                     </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
                       {counts.other}
                     </td>
                     <td style={{ 
                       padding: "10px 12px", 
-                      borderBottom: "1px solid #eee"
+                      borderBottom: "1px solid var(--surface-light)"
                     }}>
                       {staffEntries.length > 0 ? (
                         <button
@@ -1188,15 +1188,15 @@ export default function Appointments() {
                           style={{
                             padding: "6px 12px",
                             borderRadius: "999px",
-                            border: "1px solid #FF4040",
-                            backgroundColor: "#FFF2F2",
-                            color: "#FF4040",
+                            border: "1px solid var(--primary)",
+                            backgroundColor: "var(--surface-light)",
+                            color: "var(--primary)",
                             fontWeight: "600",
                             cursor: "pointer",
                             fontSize: "12px"
                           }}
-                          onMouseEnter={(event) => event.currentTarget.style.backgroundColor = "#ffe5e5"}
-                          onMouseLeave={(event) => event.currentTarget.style.backgroundColor = "#FFF2F2"}
+                          onMouseEnter={(event) => event.currentTarget.style.backgroundColor = "var(--surface-light)"}
+                          onMouseLeave={(event) => event.currentTarget.style.backgroundColor = "var(--surface-light)"}
                         >
                           {`View ${staffEntries.length} staff off`}
                         </button>
@@ -1215,11 +1215,11 @@ export default function Appointments() {
         <div style={{ 
           flex: "0 0 40%", 
           marginBottom: "8px", 
-          border: "1px solid #e0e0e0", 
+          border: "1px solid var(--surface-light)", 
           borderRadius: "10px", 
           padding: "16px", 
-          backgroundColor: "#fff", 
-          boxShadow: "0 2px 6px rgba(0,0,0,0.05)", 
+          backgroundColor: "var(--surface)", 
+          boxShadow: "0 2px 6px rgba(var(--shadow-rgb),0.05)", 
           overflowY: "auto" 
         }}>
           <div style={{ 
@@ -1229,34 +1229,34 @@ export default function Appointments() {
             marginBottom: "16px" 
           }}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600" }}>
-              Jobs for <span style={{ color: "#FF4040" }}>{formatDateNoYear(selectedDay)}</span>
+              Jobs for <span style={{ color: "var(--primary)" }}>{formatDateNoYear(selectedDay)}</span>
             </h3>
             <span style={{
               padding: "6px 14px",
-              backgroundColor: "#f0f0f0",
+              backgroundColor: "var(--surface)",
               borderRadius: "16px",
               fontSize: "14px",
               fontWeight: "600",
-              color: "#333"
+              color: "var(--text-secondary)"
             }}>
               {sortedJobs.length} job{sortedJobs.length !== 1 ? 's' : ''}
             </span>
           </div>
 
           <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
-            <div style={{ flex: "1", minWidth: "140px", background: "#f9f9f9", borderRadius: "10px", padding: "12px", border: "1px solid #ececec" }}>
-              <div style={{ fontSize: "12px", color: "#666", marginBottom: "6px" }}>Total Appointments</div>
-              <div style={{ fontSize: "20px", fontWeight: "700", color: "#222" }}>{checkinStatsForSelectedDay.total}</div>
+            <div style={{ flex: "1", minWidth: "140px", background: "var(--surface)", borderRadius: "10px", padding: "12px", border: "1px solid var(--surface-light)" }}>
+              <div style={{ fontSize: "12px", color: "var(--grey-accent)", marginBottom: "6px" }}>Total Appointments</div>
+              <div style={{ fontSize: "20px", fontWeight: "700", color: "var(--text-primary)" }}>{checkinStatsForSelectedDay.total}</div>
             </div>
-            <div style={{ flex: "1", minWidth: "140px", background: "#f9f9f9", borderRadius: "10px", padding: "12px", border: "1px solid #ececec" }}>
-              <div style={{ fontSize: "12px", color: "#666", marginBottom: "6px" }}>Checked In</div>
-              <div style={{ fontSize: "20px", fontWeight: "700", color: "#222" }}>{checkinStatsForSelectedDay.checkedIn}</div>
+            <div style={{ flex: "1", minWidth: "140px", background: "var(--surface)", borderRadius: "10px", padding: "12px", border: "1px solid var(--surface-light)" }}>
+              <div style={{ fontSize: "12px", color: "var(--grey-accent)", marginBottom: "6px" }}>Checked In</div>
+              <div style={{ fontSize: "20px", fontWeight: "700", color: "var(--text-primary)" }}>{checkinStatsForSelectedDay.checkedIn}</div>
             </div>
-            <div style={{ flex: "1", minWidth: "140px", background: "#f9f9f9", borderRadius: "10px", padding: "12px", border: "1px solid #ececec" }}>
-              <div style={{ fontSize: "12px", color: "#666", marginBottom: "6px" }}>
+            <div style={{ flex: "1", minWidth: "140px", background: "var(--surface)", borderRadius: "10px", padding: "12px", border: "1px solid var(--surface-light)" }}>
+              <div style={{ fontSize: "12px", color: "var(--grey-accent)", marginBottom: "6px" }}>
                 {isSameDate(selectedDay, new Date()) ? "Awaiting Check-in" : "Awaiting (today only)"}
               </div>
-              <div style={{ fontSize: "20px", fontWeight: "700", color: "#222" }}>
+              <div style={{ fontSize: "20px", fontWeight: "700", color: "var(--text-primary)" }}>
                 {isSameDate(selectedDay, new Date()) ? checkinStatsForSelectedDay.awaiting : "-"}
               </div>
             </div>
@@ -1266,9 +1266,9 @@ export default function Appointments() {
             <button
               style={{
                 padding: "8px 16px",
-                border: "2px solid #FF4040",
-                backgroundColor: "#FFF2F2",
-                color: "#FF4040",
+                border: "2px solid var(--primary)",
+                backgroundColor: "var(--surface-light)",
+                color: "var(--primary)",
                 borderRadius: "8px",
                 cursor: "pointer",
                 fontWeight: "600",
@@ -1282,17 +1282,17 @@ export default function Appointments() {
               onClick={toggleTechHoursEditor}
               style={{
                 padding: "8px 16px",
-                border: "1px solid #e0e0e0",
-                backgroundColor: showTechHoursEditor ? "#FFF2F2" : "white",
-                color: "#666",
+                border: "1px solid var(--surface-light)",
+                backgroundColor: showTechHoursEditor ? "var(--surface-light)" : "white",
+                color: "var(--grey-accent)",
                 borderRadius: "8px",
                 cursor: "pointer",
                 fontWeight: "500",
                 fontSize: "13px",
                 transition: "all 0.2s"
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = "#f5f5f5"}
-              onMouseLeave={(e) => e.target.style.backgroundColor = showTechHoursEditor ? "#FFF2F2" : "white"}
+              onMouseEnter={(e) => e.target.style.backgroundColor = "var(--surface)"}
+              onMouseLeave={(e) => e.target.style.backgroundColor = showTechHoursEditor ? "var(--surface-light)" : "white"}
             >
               ⚙️ Tech Hours
             </button>
@@ -1302,24 +1302,24 @@ export default function Appointments() {
             <div style={{ 
               marginBottom: "16px", 
               padding: "16px", 
-              border: "2px solid #FF4040", 
+              border: "2px solid var(--primary)", 
               borderRadius: "8px", 
-              background: "#FFF5F5" 
+              background: "var(--surface-light)" 
             }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
               <div>
-                <div style={{ fontSize: "14px", fontWeight: "600", color: "#333" }}>
+                <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-secondary)" }}>
                   Live Tech Availability — {formatDateNoYear(selectedDay)}
                 </div>
-                <div style={{ fontSize: "12px", color: "#777" }}>
+                <div style={{ fontSize: "12px", color: "var(--grey-accent)" }}>
                   Source: {TECH_AVAILABILITY_TABLE === "tech_hours" ? "tech_hours" : "job_clocking"} table
                 </div>
               </div>
               <span style={{ 
                 padding: "4px 12px", 
                 borderRadius: "999px", 
-                backgroundColor: "#FFE0E0", 
-                color: "#FF4040", 
+                backgroundColor: "var(--surface-light)", 
+                color: "var(--primary)", 
                 fontWeight: "600", 
                 fontSize: "13px" 
               }}>
@@ -1334,10 +1334,10 @@ export default function Appointments() {
               flexWrap: "wrap",
               gap: "6px"
             }}>
-              <div style={{ fontSize: "13px", fontWeight: "600", color: "#222" }}>
+              <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>
                 Booked {totalBookedTechHours.toFixed(1)}h
               </div>
-              <div style={{ fontSize: "12px", color: "#555" }}>
+              <div style={{ fontSize: "12px", color: "var(--grey-accent-dark)" }}>
                 of {totalAvailableTechHours.toFixed(1)}h available
               </div>
               <span 
@@ -1360,9 +1360,9 @@ export default function Appointments() {
               <div style={{ 
                   marginBottom: "10px", 
                   padding: "10px 12px", 
-                  background: "#fff0f0", 
+                  background: "var(--surface-light)", 
                   borderRadius: "6px", 
-                  color: "#c62828", 
+                  color: "var(--danger)", 
                   fontSize: "13px" 
                 }}>
                   {techAvailabilityError}
@@ -1370,7 +1370,7 @@ export default function Appointments() {
               )}
 
               {isTechAvailabilityLoading ? (
-                <div style={{ padding: "10px 0", color: "#666", fontSize: "13px" }}>
+                <div style={{ padding: "10px 0", color: "var(--grey-accent)", fontSize: "13px" }}>
                   Loading live tech availability...
                 </div>
               ) : techsForSelectedDay.length > 0 ? (
@@ -1400,29 +1400,29 @@ export default function Appointments() {
                           justifyContent: "space-between", 
                           alignItems: "center", 
                           padding: "10px 12px", 
-                          background: "#fff", 
+                          background: "var(--surface)", 
                           borderRadius: "8px", 
-                          border: "1px solid #ffd6d6",
-                          boxShadow: "0 1px 2px rgba(0,0,0,0.04)"
+                          border: "1px solid var(--surface-light)",
+                          boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.04)"
                         }}
                       >
                         <div>
-                          <div style={{ fontSize: "14px", fontWeight: "600", color: "#333" }}>
+                          <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-secondary)" }}>
                             {tech.name}
                           </div>
-                          <div style={{ fontSize: "12px", color: "#777" }}>
+                          <div style={{ fontSize: "12px", color: "var(--grey-accent)" }}>
                             {latestJobDisplay}
                           </div>
-                        <div style={{ fontSize: "12px", color: "#999", marginTop: "4px" }}>
+                        <div style={{ fontSize: "12px", color: "var(--grey-accent-light)", marginTop: "4px" }}>
                           Shift: {latestClockIn} – {tech.currentlyClockedIn ? "Present" : latestClockOut}
                           {" · "}
                           {tech.totalHours > 0 ? `${tech.totalHours}h logged` : "0h recorded"}
                         </div>
                         <div style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "6px", flexWrap: "wrap" }}>
-                          <span style={{ fontSize: "12px", color: "#444" }}>
+                          <span style={{ fontSize: "12px", color: "var(--grey-accent-dark)" }}>
                             {bookedHours.toFixed(1)}h booked
                           </span>
-                          <span style={{ fontSize: "12px", color: "#666" }}>
+                          <span style={{ fontSize: "12px", color: "var(--grey-accent)" }}>
                             of {availableHours.toFixed(1)}h available
                           </span>
                           <span
@@ -1443,8 +1443,8 @@ export default function Appointments() {
                           borderRadius: "999px", 
                           fontSize: "12px", 
                           fontWeight: "600", 
-                          backgroundColor: tech.currentlyClockedIn ? "#E8F5E9" : "#F5F5F5",
-                          color: tech.currentlyClockedIn ? "#2E7D32" : "#666" 
+                          backgroundColor: tech.currentlyClockedIn ? "var(--success-surface)" : "var(--surface)",
+                          color: tech.currentlyClockedIn ? "var(--success-dark)" : "var(--grey-accent)" 
                         }}>
                           {tech.currentlyClockedIn ? "Clocked In" : "Clocked Out"}
                         </span>
@@ -1453,7 +1453,7 @@ export default function Appointments() {
                   })}
                 </div>
               ) : (
-                <div style={{ padding: "12px 0", fontSize: "13px", color: "#666" }}>
+                <div style={{ padding: "12px 0", fontSize: "13px", color: "var(--grey-accent)" }}>
                   No tech availability recorded for this day yet.
                 </div>
               )}
@@ -1480,9 +1480,9 @@ export default function Appointments() {
                       style={{ 
                         textAlign: "left", 
                         padding: "10px 12px", 
-                        background: "#f6f6f6", 
+                        background: "var(--surface)", 
                         fontWeight: "600", 
-                        borderBottom: "2px solid #FF4040", 
+                        borderBottom: "2px solid var(--primary)", 
                         position: "sticky", 
                         top: 0, 
                         zIndex: 1,
@@ -1500,47 +1500,47 @@ export default function Appointments() {
                     <tr 
                       key={idx} 
                       style={{ 
-                        backgroundColor: highlightJob === job.jobNumber ? "#D0F0C0" : idx % 2 === 0 ? "#fafafa" : "transparent", 
+                        backgroundColor: highlightJob === job.jobNumber ? "var(--success)" : idx % 2 === 0 ? "var(--surface)" : "transparent", 
                         transition: "background-color 0.5s",
                         cursor: "pointer"
                       }}
                       onClick={() => handleJobRowClick(job.jobNumber || job.id)}
                       onMouseEnter={(e) => {
                         if (highlightJob !== job.jobNumber) {
-                          e.currentTarget.style.backgroundColor = "#f0f0f0";
+                          e.currentTarget.style.backgroundColor = "var(--surface)";
                         }
                       }}
                       onMouseLeave={(e) => {
                         if (highlightJob !== job.jobNumber) {
-                          e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "#fafafa" : "transparent";
+                          e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "var(--surface)" : "transparent";
                         }
                       }}
                     >
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", fontWeight: "600" }}>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: "600" }}>
                         {job.appointment?.time || "-"}
                       </td>
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", color: "#FF4040", fontWeight: "600" }}>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", color: "var(--primary)", fontWeight: "600" }}>
                         {job.jobNumber || job.id || "-"}
                       </td>
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", fontWeight: "500" }}>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: "500" }}>
                         {job.reg || "-"}
                       </td>
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
                         {getVehicleDisplay(job)}
                       </td>
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
                         {job.customer || "-"}
                       </td>
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
                         <span style={{
                           fontSize: "13px",
                           fontWeight: "600",
-                          color: "#222"
+                          color: "var(--text-primary)"
                         }}>
                           {getDetectedJobTypeLabel(job)}
                         </span>
                       </td>
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
                         <span
                           style={{
                             padding: "4px 10px",
@@ -1553,7 +1553,7 @@ export default function Appointments() {
                           {job.waitingStatus || "Neither"}
                         </span>
                       </td>
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", fontWeight: "600" }}>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: "600" }}>
                         {getEstimatedFinishTime(job)}
                       </td>
                     </tr>
@@ -1565,7 +1565,7 @@ export default function Appointments() {
                       style={{ 
                         padding: "40px", 
                         textAlign: "center", 
-                        color: "#999",
+                        color: "var(--grey-accent-light)",
                         fontSize: "14px"
                       }}
                     >
@@ -1589,7 +1589,7 @@ export default function Appointments() {
               height: "120px", 
               padding: "12px", 
               borderRadius: "8px", 
-              border: "1px solid #e0e0e0",
+              border: "1px solid var(--surface-light)",
               fontSize: "14px",
               fontFamily: "inherit",
               resize: "vertical",
@@ -1598,8 +1598,8 @@ export default function Appointments() {
             value={currentNote} 
             onChange={(e) => setCurrentNote(e.target.value)}
             placeholder="Enter notes about this day's schedule..."
-            onFocus={(e) => e.target.style.borderColor = "#FF4040"}
-            onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+            onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
+            onBlur={(e) => e.target.style.borderColor = "var(--surface-light)"}
           />
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: "16px", gap: "10px" }}>
             <button 
@@ -1607,7 +1607,7 @@ export default function Appointments() {
               style={{ 
                 flex: 1,
                 padding: "10px 20px", 
-                backgroundColor: "#FF4040", 
+                backgroundColor: "var(--primary)", 
                 color: "white", 
                 border: "none", 
                 borderRadius: "8px", 
@@ -1616,8 +1616,8 @@ export default function Appointments() {
                 fontSize: "14px",
                 transition: "background-color 0.2s"
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = "#cc0000"}
-              onMouseLeave={(e) => e.target.style.backgroundColor = "#FF4040"}
+              onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger)"}
+              onMouseLeave={(e) => e.target.style.backgroundColor = "var(--primary)"}
             >
               💾 Save Note
             </button>
@@ -1626,7 +1626,7 @@ export default function Appointments() {
               style={{ 
                 flex: 1,
                 padding: "10px 20px", 
-                backgroundColor: "#666", 
+                backgroundColor: "var(--grey-accent)", 
                 color: "white", 
                 border: "none", 
                 borderRadius: "8px", 
@@ -1635,8 +1635,8 @@ export default function Appointments() {
                 fontSize: "14px",
                 transition: "background-color 0.2s"
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = "#555"}
-              onMouseLeave={(e) => e.target.style.backgroundColor = "#666"}
+              onMouseEnter={(e) => e.target.style.backgroundColor = "var(--grey-accent-dark)"}
+              onMouseLeave={(e) => e.target.style.backgroundColor = "var(--grey-accent)"}
             >
               Cancel
             </button>
@@ -1647,7 +1647,7 @@ export default function Appointments() {
           <h3 style={{ marginTop: 0, marginBottom: "12px", fontSize: "20px", fontWeight: "600" }}>
             Staff Off · {formatDate(staffOffPopupDate || selectedDay)}
           </h3>
-          <p style={{ marginTop: 0, marginBottom: "16px", color: "#666", fontSize: "14px" }}>
+          <p style={{ marginTop: 0, marginBottom: "16px", color: "var(--grey-accent)", fontSize: "14px" }}>
             Showing approved holiday/absence data for the selected roles.
           </p>
           {staffOffPopupDetails.length > 0 ? (
@@ -1658,20 +1658,20 @@ export default function Appointments() {
                   style={{
                     padding: "12px",
                     borderRadius: "10px",
-                    backgroundColor: "#fff",
-                    border: "1px solid #ffe5e5",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.06)"
+                    backgroundColor: "var(--surface)",
+                    border: "1px solid var(--surface-light)",
+                    boxShadow: "0 1px 3px rgba(var(--shadow-rgb),0.06)"
                   }}
                 >
-                  <div style={{ fontWeight: "600", color: "#333" }}>{entry.name}</div>
-                  <div style={{ fontSize: "13px", color: "#555", marginTop: "4px" }}>
+                  <div style={{ fontWeight: "600", color: "var(--text-secondary)" }}>{entry.name}</div>
+                  <div style={{ fontSize: "13px", color: "var(--grey-accent-dark)", marginTop: "4px" }}>
                     {entry.role} · {entry.type}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ color: "#666", marginBottom: "16px" }}>No recorded absences for the selected roles today.</div>
+            <div style={{ color: "var(--grey-accent)", marginBottom: "16px" }}>No recorded absences for the selected roles today.</div>
           )}
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <button
@@ -1680,14 +1680,14 @@ export default function Appointments() {
                 padding: "10px 20px",
                 borderRadius: "8px",
                 border: "none",
-                backgroundColor: "#FF4040",
-                color: "#fff",
+                backgroundColor: "var(--primary)",
+                color: "var(--surface)",
                 fontWeight: "600",
                 cursor: "pointer",
                 transition: "background-color 0.2s"
               }}
-              onMouseEnter={(event) => (event.currentTarget.style.backgroundColor = "#cc0000")}
-              onMouseLeave={(event) => (event.currentTarget.style.backgroundColor = "#FF4040")}
+              onMouseEnter={(event) => (event.currentTarget.style.backgroundColor = "var(--danger)")}
+              onMouseLeave={(event) => (event.currentTarget.style.backgroundColor = "var(--primary)")}
             >
               Close
             </button>

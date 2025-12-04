@@ -12,11 +12,11 @@ export default function ClockingStats() {
     <div
       style={{
         padding: "10px 16px",
-        border: "1px solid #FF4040",
+        border: "1px solid var(--primary)",
         borderRadius: "8px",
         marginTop: "10px",
-        backgroundColor: "#FFF0F0",
-        color: "#FF4040",
+        backgroundColor: "var(--surface-light)",
+        color: "var(--primary)",
         fontWeight: "bold",
         display: "inline-block",
       }}

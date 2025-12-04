@@ -5,7 +5,7 @@ export const SERVICE_STATUS_FLOW = {
   BOOKED: {
     id: 'booked',
     label: 'Appointment Booked',
-    color: '#3B82F6', // blue
+    color: 'var(--info)', // blue
     next: ['customer_arrived'],
     department: 'Service Reception',
     canClockOn: false,
@@ -15,7 +15,7 @@ export const SERVICE_STATUS_FLOW = {
   CUSTOMER_ARRIVED: {
     id: 'customer_arrived',
     label: 'Customer Arrived',
-    color: '#8B5CF6', // purple
+    color: 'var(--accent-purple)', // purple
     next: ['job_accepted'],
     department: 'Service Reception',
     canClockOn: false,
@@ -25,7 +25,7 @@ export const SERVICE_STATUS_FLOW = {
   JOB_ACCEPTED: {
     id: 'job_accepted',
     label: 'Job Accepted',
-    color: '#10B981', // green
+    color: 'var(--info)', // green
     next: ['assigned_to_tech'],
     department: 'Workshop Manager',
     canClockOn: false,
@@ -36,7 +36,7 @@ export const SERVICE_STATUS_FLOW = {
   ASSIGNED_TO_TECH: {
     id: 'assigned_to_tech',
     label: 'Assigned to Technician',
-    color: '#F59E0B', // amber
+    color: 'var(--warning)', // amber
     next: ['in_progress'],
     department: 'Workshop',
     canClockOn: true,
@@ -47,7 +47,7 @@ export const SERVICE_STATUS_FLOW = {
   IN_PROGRESS: {
     id: 'in_progress',
     label: 'Work In Progress',
-    color: '#10B981', // green
+    color: 'var(--info)', // green
     next: ['waiting_for_parts', 'tea_break', 'vhc_in_progress', 'work_complete'],
     department: 'Workshop',
     canClockOn: true,
@@ -59,7 +59,7 @@ export const SERVICE_STATUS_FLOW = {
   WAITING_FOR_PARTS: {
     id: 'waiting_for_parts',
     label: 'Waiting for Parts',
-    color: '#EF4444', // red
+    color: 'var(--danger)', // red
     next: ['parts_arrived', 'in_progress'],
     department: 'Workshop',
     canClockOn: true,
@@ -70,7 +70,7 @@ export const SERVICE_STATUS_FLOW = {
   TEA_BREAK: {
     id: 'tea_break',
     label: 'Tea Break',
-    color: '#6B7280', // gray
+    color: 'var(--info)', // gray
     next: ['in_progress'],
     department: 'Workshop',
     canClockOn: true,
@@ -81,7 +81,7 @@ export const SERVICE_STATUS_FLOW = {
   PARTS_ARRIVED: {
     id: 'parts_arrived',
     label: 'Parts Ready',
-    color: '#10B981', // green
+    color: 'var(--info)', // green
     next: ['in_progress'],
     department: 'Parts',
     canClockOn: true,
@@ -93,7 +93,7 @@ export const SERVICE_STATUS_FLOW = {
   VHC_IN_PROGRESS: {
     id: 'vhc_in_progress',
     label: 'VHC Being Completed',
-    color: '#8B5CF6', // purple
+    color: 'var(--accent-purple)', // purple
     next: ['vhc_sent_to_service'],
     department: 'Workshop',
     canClockOn: true,
@@ -103,7 +103,7 @@ export const SERVICE_STATUS_FLOW = {
   VHC_SENT_TO_SERVICE: {
     id: 'vhc_sent_to_service',
     label: 'VHC With Service Team',
-    color: '#F59E0B', // amber
+    color: 'var(--warning)', // amber
     next: ['vhc_priced', 'in_progress'],
     department: 'Service',
     canClockOn: true,
@@ -114,7 +114,7 @@ export const SERVICE_STATUS_FLOW = {
   VHC_PRICED: {
     id: 'vhc_priced',
     label: 'VHC Priced',
-    color: '#10B981', // green
+    color: 'var(--info)', // green
     next: ['vhc_sent_to_customer'],
     department: 'Service',
     canClockOn: true,
@@ -124,7 +124,7 @@ export const SERVICE_STATUS_FLOW = {
   VHC_SENT_TO_CUSTOMER: {
     id: 'vhc_sent_to_customer',
     label: 'Awaiting Customer Approval',
-    color: '#F59E0B', // amber
+    color: 'var(--warning)', // amber
     next: ['vhc_approved', 'vhc_declined', 'in_progress'],
     department: 'Service',
     canClockOn: true,
@@ -135,7 +135,7 @@ export const SERVICE_STATUS_FLOW = {
   VHC_APPROVED: {
     id: 'vhc_approved',
     label: 'VHC Work Approved',
-    color: '#10B981', // green
+    color: 'var(--info)', // green
     next: ['waiting_for_parts', 'in_progress'],
     department: 'Service',
     canClockOn: true,
@@ -146,7 +146,7 @@ export const SERVICE_STATUS_FLOW = {
   VHC_DECLINED: {
     id: 'vhc_declined',
     label: 'VHC Work Declined',
-    color: '#EF4444', // red
+    color: 'var(--danger)', // red
     next: ['work_complete'],
     department: 'Service',
     canClockOn: true,
@@ -158,7 +158,7 @@ export const SERVICE_STATUS_FLOW = {
   WORK_COMPLETE: {
     id: 'work_complete',
     label: 'Workshop Complete',
-    color: '#10B981', // green
+    color: 'var(--info)', // green
     next: ['ready_for_valet'],
     department: 'Workshop',
     canClockOn: false,
@@ -169,7 +169,7 @@ export const SERVICE_STATUS_FLOW = {
   READY_FOR_VALET: {
     id: 'ready_for_valet',
     label: 'Ready for Valeting',
-    color: '#3B82F6', // blue
+    color: 'var(--info)', // blue
     next: ['being_valeted'],
     department: 'Valeting',
     canClockOn: true,
@@ -180,7 +180,7 @@ export const SERVICE_STATUS_FLOW = {
   BEING_VALETED: {
     id: 'being_valeted',
     label: 'Being Valeted',
-    color: '#8B5CF6', // purple
+    color: 'var(--accent-purple)', // purple
     next: ['valet_complete'],
     department: 'Valeting',
     canClockOn: true,
@@ -190,7 +190,7 @@ export const SERVICE_STATUS_FLOW = {
   VALET_COMPLETE: {
     id: 'valet_complete',
     label: 'Valet Complete',
-    color: '#10B981', // green
+    color: 'var(--info)', // green
     next: ['ready_for_release'],
     department: 'Valeting',
     canClockOn: false,
@@ -201,7 +201,7 @@ export const SERVICE_STATUS_FLOW = {
   READY_FOR_RELEASE: {
     id: 'ready_for_release',
     label: 'Ready for Customer',
-    color: '#10B981', // green
+    color: 'var(--info)', // green
     next: ['delivered_to_customer', 'invoicing'],
     department: 'Service',
     canClockOn: false,
@@ -212,7 +212,7 @@ export const SERVICE_STATUS_FLOW = {
   DELIVERED_TO_CUSTOMER: {
     id: 'delivered_to_customer',
     label: 'Delivered to Customer',
-    color: '#0F766E', // teal
+    color: 'var(--info-dark)', // teal
     next: ['invoicing'],
     department: 'Service',
     canClockOn: false,
@@ -223,7 +223,7 @@ export const SERVICE_STATUS_FLOW = {
   INVOICING: {
     id: 'invoicing',
     label: 'Creating Invoice',
-    color: '#F59E0B', // amber
+    color: 'var(--warning)', // amber
     next: ['completed'],
     department: 'Accounts',
     canClockOn: false,
@@ -233,7 +233,7 @@ export const SERVICE_STATUS_FLOW = {
   COMPLETED: {
     id: 'completed',
     label: 'Job Complete',
-    color: '#10B981', // green
+    color: 'var(--info)', // green
     next: null, // Final status
     department: 'Accounts',
     canClockOn: false,

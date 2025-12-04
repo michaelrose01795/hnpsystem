@@ -14,8 +14,8 @@ import React from "react";
 export default function Section({
   title,
   children,
-  bgColor = "#fefefe",        // soft white background
-  textColor = "#222222",
+  bgColor = "var(--surface)",        // soft white background
+  textColor = "var(--text-primary)",
   hoverShadow = true,
   className = "",
 }) {
@@ -33,14 +33,14 @@ export default function Section({
         fontFamily: "inherit",
         transition: "all 0.2s ease-in-out",    // smooth hover effect
         boxShadow: hoverShadow
-          ? "0 1px 4px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04)"
+          ? "0 1px 4px rgba(var(--shadow-rgb),0.08), 0 2px 6px rgba(var(--shadow-rgb),0.04)"
           : "none",
       }}
       onMouseEnter={(e) => {
-        if (hoverShadow) e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.12)";
+        if (hoverShadow) e.currentTarget.style.boxShadow = "0 4px 12px rgba(var(--shadow-rgb),0.12)";
       }}
       onMouseLeave={(e) => {
-        if (hoverShadow) e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04)";
+        if (hoverShadow) e.currentTarget.style.boxShadow = "0 1px 4px rgba(var(--shadow-rgb),0.08), 0 2px 6px rgba(var(--shadow-rgb),0.04)";
       }}
     >
       {title && (

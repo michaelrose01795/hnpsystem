@@ -18,7 +18,7 @@ export default function HrLeaveManagement() {
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <p style={{ color: "#6B7280", marginTop: "6px" }}>
+            <p style={{ color: "var(--info)", marginTop: "6px" }}>
               Approve leave requests, calculate balances, and track special leave programmes.
             </p>
           </div>
@@ -29,13 +29,13 @@ export default function HrLeaveManagement() {
 
         {isLoading && (
           <SectionCard title="Loading leave data" subtitle="Fetching requests and balances.">
-            <span style={{ color: "#6B7280" }}>Retrieving placeholder leave details for testing.</span>
+            <span style={{ color: "var(--info)" }}>Retrieving placeholder leave details for testing.</span>
           </SectionCard>
         )}
 
         {error && (
           <SectionCard title="Unable to load leave data" subtitle="Mock API returned an error.">
-            <span style={{ color: "#B91C1C" }}>{error.message}</span>
+            <span style={{ color: "var(--danger)" }}>{error.message}</span>
           </SectionCard>
         )}
 
@@ -58,7 +58,7 @@ export default function HrLeaveManagement() {
               >
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
-                    <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                    <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                       <th style={{ paddingBottom: "10px", textAlign: "left" }}>Employee</th>
                       <th>Type</th>
                       <th>Dates</th>
@@ -68,7 +68,7 @@ export default function HrLeaveManagement() {
                   </thead>
                   <tbody>
                     {leaveRequests.map((request) => (
-                      <tr key={request.id} style={{ borderTop: "1px solid #E5E7EB" }}>
+                      <tr key={request.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
                         <td style={{ padding: "12px 0", fontWeight: 600 }}>{request.employee}</td>
                         <td>{request.type}</td>
                         <td>
@@ -100,7 +100,7 @@ export default function HrLeaveManagement() {
                     <div
                       key={absence.id}
                       style={{
-                        border: "1px solid #E5E7EB",
+                        border: "1px solid var(--accent-purple-surface)",
                         borderRadius: "12px",
                         padding: "12px",
                         display: "flex",
@@ -108,10 +108,10 @@ export default function HrLeaveManagement() {
                         gap: "4px",
                       }}
                     >
-                      <span style={{ fontWeight: 600, color: "#111827" }}>
+                      <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
                         {absence.employee} • {absence.department}
                       </span>
-                      <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>
+                      <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
                         {absence.type} from {new Date(absence.startDate).toLocaleDateString()} to{" "}
                         {new Date(absence.endDate).toLocaleDateString()}
                       </span>
@@ -125,7 +125,7 @@ export default function HrLeaveManagement() {
               <SectionCard title="Leave Balances" subtitle="Entitlement vs. taken time off">
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
-                    <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                    <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                       <th style={{ paddingBottom: "10px", textAlign: "left" }}>Employee</th>
                       <th>Department</th>
                       <th>Entitlement</th>
@@ -135,7 +135,7 @@ export default function HrLeaveManagement() {
                   </thead>
                   <tbody>
                     {leaveBalances.map((balance) => (
-                      <tr key={balance.employeeId} style={{ borderTop: "1px solid #E5E7EB" }}>
+                      <tr key={balance.employeeId} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
                         <td style={{ padding: "12px 0", fontWeight: 600 }}>{balance.employee}</td>
                         <td>{balance.department}</td>
                         <td>{balance.entitlement} days</td>
@@ -152,13 +152,13 @@ export default function HrLeaveManagement() {
                 subtitle="Push approved leave to shared calendars and notify relevant managers"
               >
                 <ul style={{ margin: 0, padding: "0 16px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <li style={{ color: "#374151" }}>
+                  <li style={{ color: "var(--info-dark)" }}>
                     Enable per-department calendar feeds (Google / Outlook) for leave visibility.
                   </li>
-                  <li style={{ color: "#374151" }}>
+                  <li style={{ color: "var(--info-dark)" }}>
                     Configure auto-notifications for approvals, rejections, and upcoming return dates.
                   </li>
-                  <li style={{ color: "#374151" }}>
+                  <li style={{ color: "var(--info-dark)" }}>
                     Sync sickness and unpaid leave with payroll deductions automatically.
                   </li>
                 </ul>
@@ -183,7 +183,7 @@ const buttonStylePrimary = {
   padding: "10px 18px",
   borderRadius: "10px",
   border: "none",
-  background: "#F97316",
+  background: "var(--danger)",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",
@@ -192,9 +192,9 @@ const buttonStylePrimary = {
 const buttonStyleSecondary = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px solid #FED7AA",
+  border: "1px solid var(--warning)",
   background: "white",
-  color: "#EA580C",
+  color: "var(--danger)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -204,7 +204,7 @@ const buttonStyleGhost = {
   borderRadius: "10px",
   border: "1px solid transparent",
   background: "transparent",
-  color: "#EA580C",
+  color: "var(--danger)",
   fontWeight: 600,
   cursor: "pointer",
 };

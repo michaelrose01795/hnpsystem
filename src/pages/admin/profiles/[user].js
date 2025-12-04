@@ -10,7 +10,7 @@ export default function AdminProfilePreview() {
 
   if (!router.isReady || !username) {
     return (
-      <div style={{ padding: "16px", fontWeight: 600, color: "#6B7280" }}>
+      <div style={{ padding: "16px", fontWeight: 600, color: "var(--info)" }}>
         Loading profile…
       </div>
     );

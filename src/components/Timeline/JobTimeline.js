@@ -33,7 +33,7 @@ export default function JobTimeline({ jobNumber }) {
   }, [jobNumber]);
 
   if (loading) {
-    return <p style={{ color: "#aaa", padding: "10px" }}>Loading job timeline...</p>;
+    return <p style={{ color: "var(--border)", padding: "10px" }}>Loading job timeline...</p>;
   }
 
   if (error) {
@@ -41,7 +41,7 @@ export default function JobTimeline({ jobNumber }) {
   }
 
   if (!timeline.length) {
-    return <p style={{ color: "#888", padding: "10px" }}>No timeline data available.</p>;
+    return <p style={{ color: "var(--grey-accent-light)", padding: "10px" }}>No timeline data available.</p>;
   }
 
   return (
@@ -71,15 +71,15 @@ export default function JobTimeline({ jobNumber }) {
 const styles = {
   container: {
     padding: "16px",
-    borderLeft: "3px solid #cc0000",
-    backgroundColor: "#121212",
-    color: "#f5f5f5",
+    borderLeft: "3px solid var(--danger)",
+    backgroundColor: "var(--text-primary)",
+    color: "var(--surface)",
     borderRadius: "6px",
     marginTop: "10px",
   },
   header: {
     marginBottom: "12px",
-    borderBottom: "1px solid #cc0000",
+    borderBottom: "1px solid var(--danger)",
     paddingBottom: "4px",
   },
   timeline: { listStyle: "none", padding: 0, margin: 0 },
@@ -87,16 +87,16 @@ const styles = {
   dot: {
     width: "10px",
     height: "10px",
-    backgroundColor: "#cc0000",
+    backgroundColor: "var(--danger)",
     borderRadius: "50%",
     position: "absolute",
     left: 0,
     top: "5px",
   },
   content: { marginLeft: "10px" },
-  status: { margin: "0 0 2px", color: "#fff" },
-  note: { margin: "0 0 2px", fontSize: "0.9rem", color: "#bbb" },
-  meta: { fontSize: "0.8rem", color: "#888" },
+  status: { margin: "0 0 2px", color: "var(--surface)" },
+  note: { margin: "0 0 2px", fontSize: "0.9rem", color: "var(--background)" },
+  meta: { fontSize: "0.8rem", color: "var(--grey-accent-light)" },
 };
 
 JobTimeline.propTypes = {

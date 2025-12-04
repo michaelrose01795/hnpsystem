@@ -15,17 +15,17 @@ import { supabase } from "@/lib/supabaseClient";
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
 
 const STATUS_BADGE_STYLES = {
-  "In Progress": { background: "#dbeafe", color: "#1e40af" },
-  Started: { background: "#dbeafe", color: "#1e40af" },
-  Pending: { background: "#fef3c7", color: "#92400e" },
-  Waiting: { background: "#fef3c7", color: "#92400e" },
-  Open: { background: "#fef3c7", color: "#92400e" },
-  Complete: { background: "#dcfce7", color: "#166534" },
-  Completed: { background: "#dcfce7", color: "#166534" },
+  "In Progress": { background: "var(--info-surface)", color: "var(--accent-purple)" },
+  Started: { background: "var(--info-surface)", color: "var(--accent-purple)" },
+  Pending: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
+  Waiting: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
+  Open: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
+  Complete: { background: "var(--success-surface)", color: "var(--success-dark)" },
+  Completed: { background: "var(--success-surface)", color: "var(--success-dark)" },
 };
 
 const getStatusBadgeStyle = (status) =>
-  STATUS_BADGE_STYLES[status] || { background: "#f3f4f6", color: "#4b5563" };
+  STATUS_BADGE_STYLES[status] || { background: "var(--info-surface)", color: "var(--info-dark)" };
 
 const getMakeModel = (job) => {
   if (!job) return "N/A";
@@ -336,7 +336,7 @@ export default function MyJobsPage() {
   if (rosterLoading) {
     return (
       <Layout>
-        <div style={{ padding: "40px", textAlign: "center", color: "#6B7280" }}>
+        <div style={{ padding: "40px", textAlign: "center", color: "var(--info)" }}>
           Loading roster…
         </div>
       </Layout>
@@ -364,10 +364,10 @@ export default function MyJobsPage() {
           minHeight: "60vh"
         }}>
           <div style={{ fontSize: "60px", marginBottom: "20px" }}>⚠️</div>
-          <h2 style={{ color: "#d10000", marginBottom: "10px", fontWeight: "700" }}>
+          <h2 style={{ color: "var(--primary)", marginBottom: "10px", fontWeight: "700" }}>
             Access Denied
           </h2>
-          <p style={{ color: "#666", fontSize: "16px" }}>
+          <p style={{ color: "var(--grey-accent)", fontSize: "16px" }}>
             This page is only accessible to Technicians and MOT Testers.
           </p>
         </div>
@@ -390,12 +390,12 @@ export default function MyJobsPage() {
           <div style={{
             width: "60px",
             height: "60px",
-            border: "4px solid #f3f3f3",
-            borderTop: "4px solid #d10000",
+            border: "4px solid var(--surface)",
+            borderTop: "4px solid var(--primary)",
             borderRadius: "50%",
             animation: "spin 1s linear infinite"
           }}></div>
-          <p style={{ color: "#666", fontSize: "16px" }}>Loading your jobs...</p>
+          <p style={{ color: "var(--grey-accent)", fontSize: "16px" }}>Loading your jobs...</p>
           <style jsx>{`
             @keyframes spin {
               0% { transform: rotate(0deg); }
@@ -426,14 +426,14 @@ export default function MyJobsPage() {
         }}>
           <div>
             <h1 style={{
-              color: "#d10000",
+              color: "var(--primary)",
               fontSize: "32px",
               fontWeight: "700",
               margin: "0 0 8px 0"
             }}>
               My Assigned Jobs
             </h1>
-            <p style={{ color: "#666", fontSize: "14px", margin: 0 }}>
+            <p style={{ color: "var(--grey-accent)", fontSize: "14px", margin: 0 }}>
               {filteredJobs.length} job{filteredJobs.length !== 1 ? "s" : ""} assigned to you
             </p>
           </div>
@@ -442,7 +442,7 @@ export default function MyJobsPage() {
             onClick={() => router.push("/tech/dashboard")}
             style={{
               padding: "12px 24px",
-              backgroundColor: "#d10000",
+              backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -451,8 +451,8 @@ export default function MyJobsPage() {
               fontWeight: "600",
               transition: "background-color 0.2s"
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = "#a60a0a"}
-            onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
+            onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger-dark)"}
+            onMouseLeave={(e) => e.target.style.backgroundColor = "var(--primary)"}
           >
             ← Back to Dashboard
           </button>
@@ -461,28 +461,28 @@ export default function MyJobsPage() {
         {/* Clocking Status Banner */}
         {clockingStatus && (
           <div style={{
-            backgroundColor: "#f0fdf4",
-            border: "1px solid #bbf7d0",
+            backgroundColor: "var(--success-surface)",
+            border: "1px solid var(--success)",
             borderRadius: "12px",
             padding: "16px 24px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            boxShadow: "0 2px 6px rgba(16,185,129,0.12)"
+            boxShadow: "0 2px 6px rgba(var(--info-rgb), 0.12)"
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <div style={{
                 width: "12px",
                 height: "12px",
                 borderRadius: "50%",
-                backgroundColor: "#10b981",
+                backgroundColor: "var(--info)",
                 animation: "pulse 2s infinite"
               }}></div>
               <div>
-                <p style={{ fontSize: "14px", fontWeight: "600", color: "#166534", margin: 0 }}>
+                <p style={{ fontSize: "14px", fontWeight: "600", color: "var(--success-dark)", margin: 0 }}>
                   Currently Clocked In
                 </p>
-                <p style={{ fontSize: "12px", color: "#166534", margin: "4px 0 0 0" }}>
+                <p style={{ fontSize: "12px", color: "var(--success-dark)", margin: "4px 0 0 0" }}>
                   Since {new Date(clockingStatus.clock_in).toLocaleTimeString("en-GB", { 
                     hour: "2-digit", 
                     minute: "2-digit" 
@@ -506,9 +506,9 @@ export default function MyJobsPage() {
           alignItems: "center",
           flexWrap: "wrap",
           padding: "12px",
-          backgroundColor: "#fff",
+          backgroundColor: "var(--surface)",
           borderRadius: "12px",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.08)"
+          boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)"
         }}>
           {/* Search Input */}
           <input
@@ -521,17 +521,17 @@ export default function MyJobsPage() {
               minWidth: "220px",
               padding: "12px 16px",
               borderRadius: "8px",
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--accent-purple-surface)",
               fontSize: "14px",
               outline: "none",
               transition: "border-color 0.2s, box-shadow 0.2s"
             }}
             onFocus={(e) => {
-              e.target.style.borderColor = "#d10000";
-              e.target.style.boxShadow = "0 0 0 3px rgba(209,0,0,0.12)";
+              e.target.style.borderColor = "var(--primary)";
+              e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
             }}
             onBlur={(e) => {
-              e.target.style.borderColor = "#e5e7eb";
+              e.target.style.borderColor = "var(--accent-purple-surface)";
               e.target.style.boxShadow = "none";
             }}
           />
@@ -549,9 +549,9 @@ export default function MyJobsPage() {
                 onClick={() => setFilter(value)}
                 style={{
                   padding: "10px 20px",
-                  backgroundColor: filter === value ? "#d10000" : "#fff",
-                  color: filter === value ? "#fff" : "#d10000",
-                  border: "1px solid #d10000",
+                  backgroundColor: filter === value ? "var(--primary)" : "var(--surface)",
+                  color: filter === value ? "var(--surface)" : "var(--primary)",
+                  border: "1px solid var(--primary)",
                   borderRadius: "8px",
                   cursor: "pointer",
                   fontSize: "14px",
@@ -561,12 +561,12 @@ export default function MyJobsPage() {
                 }}
                 onMouseEnter={(e) => {
                   if (filter !== value) {
-                    e.target.style.backgroundColor = "#ffe5e5";
+                    e.target.style.backgroundColor = "var(--surface-light)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (filter !== value) {
-                    e.target.style.backgroundColor = "#fff";
+                    e.target.style.backgroundColor = "var(--surface)";
                   }
                 }}
               >
@@ -583,9 +583,9 @@ export default function MyJobsPage() {
             display: "flex",
             flexDirection: "column",
             borderRadius: "24px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-            border: "1px solid #ffe5e5",
-            background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)",
+            boxShadow: "0 4px 12px rgba(var(--shadow-rgb),0.08)",
+            border: "1px solid var(--surface-light)",
+            background: "linear-gradient(to bottom right, white, var(--danger-surface), var(--surface-light))",
             padding: "24px",
             overflow: "hidden",
             minHeight: 0
@@ -597,7 +597,7 @@ export default function MyJobsPage() {
               padding: "60px",
               borderRadius: "16px",
               boxShadow: "none",
-              border: "1px dashed #ffc9c9",
+              border: "1px dashed var(--danger)",
               textAlign: "center",
               margin: "auto",
               maxWidth: "520px"
@@ -605,10 +605,10 @@ export default function MyJobsPage() {
               <div style={{ fontSize: "64px", marginBottom: "20px" }}>
                 {searchTerm ? "🔍" : "📭"}
               </div>
-              <h3 style={{ fontSize: "20px", fontWeight: "600", color: "#333", marginBottom: "8px" }}>
+              <h3 style={{ fontSize: "20px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "8px" }}>
                 {searchTerm ? "No jobs found" : "No jobs assigned"}
               </h3>
-              <p style={{ color: "#666", fontSize: "14px" }}>
+              <p style={{ color: "var(--grey-accent)", fontSize: "14px" }}>
                 {searchTerm
                   ? "Try adjusting your search or filter criteria"
                   : "You currently have no jobs assigned to you"
@@ -636,8 +636,8 @@ export default function MyJobsPage() {
 
                 // ✅ VHC Status Indicator
                 const vhcRequired = job.vhcRequired === true;
-                const vhcColor = vhcRequired ? "#10b981" : "#ef4444"; // Green if required, Red if not
-                const vhcBgColor = vhcRequired ? "#d1fae5" : "#fee2e2";
+                const vhcColor = vhcRequired ? "var(--info)" : "var(--danger)"; // Green if required, Red if not
+                const vhcBgColor = vhcRequired ? "var(--success)" : "var(--danger-surface)";
                 const vhcText = vhcRequired ? "VHC Required" : "No VHC";
 
                 const handleVhcBadgeClick = (event) => {
@@ -661,7 +661,7 @@ export default function MyJobsPage() {
                   return !["picked", "fitted", "cancelled"].includes(status);
                 });
                 const clockStateLabel = isClockedOn ? "Clocked On" : "Clocked Off";
-                const partsIndicatorColor = partsPending ? "#dc2626" : "#10b981";
+                const partsIndicatorColor = partsPending ? "var(--danger)" : "var(--info)";
                 const jobPipeline = summarizePartsPipeline(job.partsAllocations || [], {
                   quantityField: "quantityRequested",
                 });
@@ -674,11 +674,11 @@ export default function MyJobsPage() {
                     key={job.id || job.jobNumber}
                     onClick={() => handleJobClick(job)}
                     style={{
-                      border: "1px solid #ffe5e5",
+                      border: "1px solid var(--surface-light)",
                       padding: "16px 20px",
                       borderRadius: "12px",
                       backgroundColor: "white",
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                      boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)",
                       cursor: "pointer",
                       transition: "all 0.3s ease",
                       display: "flex",
@@ -688,13 +688,13 @@ export default function MyJobsPage() {
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow = "0 6px 18px rgba(209,0,0,0.16)";
-                      e.currentTarget.style.borderColor = "#ffb3b3";
+                      e.currentTarget.style.boxShadow = "0 6px 18px rgba(var(--primary-rgb),0.16)";
+                      e.currentTarget.style.borderColor = "var(--danger)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.05)";
-                      e.currentTarget.style.borderColor = "#ffe5e5";
+                      e.currentTarget.style.boxShadow = "0 2px 4px rgba(var(--shadow-rgb),0.05)";
+                      e.currentTarget.style.borderColor = "var(--surface-light)";
                     }}
                   >
                     <div
@@ -782,7 +782,7 @@ export default function MyJobsPage() {
                             style={{
                               fontSize: "18px",
                               fontWeight: "700",
-                              color: "#1a1a1a"
+                              color: "var(--text-primary)"
                             }}
                           >
                             {job.jobNumber || "No Job #"}
@@ -790,7 +790,7 @@ export default function MyJobsPage() {
                           <span
                             style={{
                               fontSize: "14px",
-                              color: "#555",
+                              color: "var(--grey-accent-dark)",
                               fontWeight: "600"
                             }}
                           >
@@ -811,9 +811,9 @@ export default function MyJobsPage() {
                                   borderRadius: "999px",
                                   fontSize: "11px",
                                   fontWeight: 600,
-                                  color: "#a00000",
-                                  border: "1px solid rgba(209,0,0,0.3)",
-                                  background: "rgba(234, 15, 15, 0.08)",
+                                  color: "var(--primary-dark)",
+                                  border: "1px solid rgba(var(--primary-rgb),0.3)",
+                                  background: "rgba(var(--primary-rgb), 0.08)",
                                 }}
                               >
                                 {stage.label.split(" ").slice(0, 2).join(" ")} · {stage.count}
@@ -827,9 +827,9 @@ export default function MyJobsPage() {
                                   padding: "4px 10px",
                                   borderRadius: "999px",
                                   fontSize: "11px",
-                                  color: "#6b7280",
-                                  border: "1px solid #e5e7eb",
-                                  background: "#f3f4f6",
+                                  color: "var(--info)",
+                                  border: "1px solid var(--accent-purple-surface)",
+                                  background: "var(--info-surface)",
                                 }}
                               >
                                 +{stageBadges.length - 3} more
@@ -846,24 +846,24 @@ export default function MyJobsPage() {
                             flexWrap: "wrap"
                           }}
                         >
-                          <span style={{ fontSize: "12px", color: "#444" }}>
+                          <span style={{ fontSize: "12px", color: "var(--grey-accent-dark)" }}>
                             Customer: {job.customer || "Unknown"}
                           </span>
-                          <span style={{ fontSize: "12px", color: "#444" }}>
+                          <span style={{ fontSize: "12px", color: "var(--grey-accent-dark)" }}>
                             Type: {jobType}
                           </span>
                           <span style={{ fontSize: "12px", color: vhcColor }}>
                             {vhcRequired ? "VHC Required" : "VHC Not Required"}
                           </span>
                           <span
-                            style={{ fontSize: "12px", color: isClockedOn ? "#16a34a" : "#6b7280" }}
+                            style={{ fontSize: "12px", color: isClockedOn ? "var(--success)" : "var(--info)" }}
                           >
                             {clockStateLabel}
                           </span>
                           <span
                             style={{
                               fontSize: "12px",
-                              color: "#fff",
+                              color: "var(--surface)",
                               backgroundColor: partsIndicatorColor,
                               padding: "2px 10px",
                               borderRadius: "999px"
@@ -876,7 +876,7 @@ export default function MyJobsPage() {
                         <span
                           style={{
                             fontSize: "12px",
-                            color: "#999"
+                            color: "var(--grey-accent-light)"
                           }}
                         >
                           {makeModel}
@@ -898,7 +898,7 @@ export default function MyJobsPage() {
                           maxWidth: "260px",
                           minWidth: "220px",
                           fontSize: "12px",
-                          color: "#555",
+                          color: "var(--grey-accent-dark)",
                           lineHeight: "1.4"
                         }}
                       >
@@ -914,7 +914,7 @@ export default function MyJobsPage() {
                             {description}
                           </span>
                         ) : (
-                          <span style={{ color: "#ccc" }}>No notes added</span>
+                          <span style={{ color: "var(--background)" }}>No notes added</span>
                         )}
                       </div>
 
@@ -923,7 +923,7 @@ export default function MyJobsPage() {
                           minWidth: "140px",
                           textAlign: "center",
                           fontSize: "12px",
-                          color: "#555"
+                          color: "var(--grey-accent-dark)"
                         }}
                       >
                         {createdAt || "N/A"}
@@ -945,9 +945,9 @@ export default function MyJobsPage() {
                           }}
                           style={{
                             padding: "8px 14px",
-                            backgroundColor: "#f5f3ff",
-                            color: "#5b21b6",
-                            border: "1px solid #ddd6fe",
+                            backgroundColor: "var(--accent-purple-surface)",
+                            color: "var(--accent-purple)",
+                            border: "1px solid var(--accent-purple-surface)",
                             borderRadius: "8px",
                             cursor: "pointer",
                             fontSize: "12px",
@@ -955,10 +955,10 @@ export default function MyJobsPage() {
                             transition: "all 0.2s"
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = "#ede9fe";
+                            e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = "#f5f3ff";
+                            e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
                           }}
                         >
                           ✍️ Write-Up
@@ -977,8 +977,8 @@ export default function MyJobsPage() {
           backgroundColor: "white",
           padding: "20px",
           borderRadius: "16px",
-          boxShadow: "0 2px 6px rgba(209,0,0,0.08)",
-          border: "1px solid #ffe5e5"
+          boxShadow: "0 2px 6px rgba(var(--primary-rgb),0.08)",
+          border: "1px solid var(--surface-light)"
         }}>
           <div style={{
             display: "grid",
@@ -987,49 +987,49 @@ export default function MyJobsPage() {
             textAlign: "center"
           }}>
             <div>
-              <div style={{ fontSize: "28px", fontWeight: "700", color: "#d10000", marginBottom: "4px" }}>
+              <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--primary)", marginBottom: "4px" }}>
                 {myJobs.length}
               </div>
-              <div style={{ fontSize: "13px", color: "#666" }}>Total Jobs</div>
+              <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Total Jobs</div>
             </div>
             <div>
-              <div style={{ fontSize: "28px", fontWeight: "700", color: "#3b82f6", marginBottom: "4px" }}>
+              <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--info)", marginBottom: "4px" }}>
                 {myJobs.filter(j => j.status === "In Progress").length}
               </div>
-              <div style={{ fontSize: "13px", color: "#666" }}>In Progress</div>
+              <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>In Progress</div>
             </div>
             <div>
-              <div style={{ fontSize: "28px", fontWeight: "700", color: "#f97316", marginBottom: "4px" }}>
+              <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--danger)", marginBottom: "4px" }}>
                 {myJobs.filter(j => j.status === "Pending" || j.status === "Open").length}
               </div>
-              <div style={{ fontSize: "13px", color: "#666" }}>Pending</div>
+              <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Pending</div>
             </div>
             <div>
-              <div style={{ fontSize: "28px", fontWeight: "700", color: "#10b981", marginBottom: "4px" }}>
+              <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--info)", marginBottom: "4px" }}>
                 {myJobs.filter(j => j.status === "Complete" || j.status === "Completed").length}
               </div>
-              <div style={{ fontSize: "13px", color: "#666" }}>Completed</div>
+              <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Completed</div>
             </div>
           </div>
         </div>
 
         {/* Quick Info Box */}
         <div style={{
-          background: "linear-gradient(90deg, #fff5f5, #ffe5e5)",
-          border: "1px solid #ffc9c9",
+          background: "linear-gradient(90deg, var(--surface-light), var(--surface-light))",
+          border: "1px solid var(--danger)",
           borderRadius: "12px",
           padding: "16px 20px",
           display: "flex",
           alignItems: "center",
           gap: "12px",
-          boxShadow: "0 2px 6px rgba(209,0,0,0.08)"
+          boxShadow: "0 2px 6px rgba(var(--primary-rgb),0.08)"
         }}>
           <div style={{ fontSize: "24px" }}>💡</div>
           <div>
-            <p style={{ fontSize: "14px", fontWeight: "600", color: "#b91c1c", margin: "0 0 4px 0" }}>
+            <p style={{ fontSize: "14px", fontWeight: "600", color: "var(--danger)", margin: "0 0 4px 0" }}>
               VHC Status Legend
             </p>
-            <p style={{ fontSize: "13px", color: "#7f1d1d", margin: 0 }}>
+            <p style={{ fontSize: "13px", color: "var(--danger-dark)", margin: 0 }}>
               🟢 <strong>Green Badge</strong> = VHC Required for this job | 
               🔴 <strong>Red Badge</strong> = VHC Not Required
             </p>

@@ -11,7 +11,7 @@ export default function Popup({ isOpen, onClose, children }) {
       left: 0,
       width: "100%",
       height: "100%",
-      backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundColor: "rgba(var(--shadow-rgb),0.5)",
       display: "flex",
       justifyContent: "center",
       alignItems: "center",

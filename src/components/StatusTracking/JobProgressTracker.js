@@ -4,13 +4,13 @@
 import React, { useMemo } from "react";
 
 const COLORS = {
-  current: "#c00000",
-  complete: "#c00000",
-  base: "#e0e0e0",
-  panelBg: "#fff",
-  textDark: "#1f2933",
-  textMuted: "#6b7280",
-  connector: "#c00000",
+  current: "var(--danger)",
+  complete: "var(--danger)",
+  base: "var(--surface-light)",
+  panelBg: "var(--surface)",
+  textDark: "var(--info-dark)",
+  textMuted: "var(--info)",
+  connector: "var(--danger)",
 };
 
 const formatTimestamp = (timestamp) => {
@@ -44,9 +44,9 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
       style={{
         backgroundColor: COLORS.panelBg,
         borderRadius: "16px",
-        border: "1px solid #ffe0e0",
+        border: "1px solid var(--surface-light)",
         padding: "16px",
-        boxShadow: "0 6px 18px rgba(0,0,0,0.06)",
+        boxShadow: "0 6px 18px rgba(var(--shadow-rgb),0.06)",
         height: "100%",
         display: "flex",
         flexDirection: "column",
@@ -120,10 +120,10 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                   height: "14px",
                   borderRadius: "50%",
                   backgroundColor: nodeColor,
-                  border: "2px solid #fff",
+                  border: "2px solid var(--surface)",
                   boxShadow: isCurrent
-                    ? "0 0 14px rgba(192,0,0,0.35)"
-                    : "0 0 8px rgba(192,0,0,0.15)",
+                    ? "0 0 14px rgba(var(--danger-rgb), 0.35)"
+                    : "0 0 8px rgba(var(--danger-rgb), 0.15)",
                   zIndex: 2,
                 }}
               />
@@ -145,14 +145,14 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
               <div
                 style={{
                   width: "100%",
-                  backgroundColor: "#fff",
+                  backgroundColor: "var(--surface)",
                   borderRadius: "12px",
                   border: isCurrent
-                    ? "1px solid rgba(192,0,0,0.35)"
-                    : "1px solid rgba(224,224,224,0.8)",
+                    ? "1px solid rgba(var(--danger-rgb), 0.35)"
+                    : "1px solid rgba(var(--background-rgb), 0.8)",
                   boxShadow: isCurrent
-                    ? "0 8px 20px rgba(192,0,0,0.15)"
-                    : "0 4px 12px rgba(15,23,42,0.08)",
+                    ? "0 8px 20px rgba(var(--danger-rgb), 0.15)"
+                    : "0 4px 12px rgba(var(--shadow-rgb),0.08)",
                   padding: "16px 18px",
                   display: "flex",
                   flexDirection: "column",
@@ -164,14 +164,14 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-2px)";
                   e.currentTarget.style.boxShadow = isCurrent
-                    ? "0 10px 24px rgba(192,0,0,0.25)"
-                    : "0 8px 18px rgba(15,23,42,0.14)";
+                    ? "0 10px 24px rgba(var(--danger-rgb), 0.25)"
+                    : "0 8px 18px rgba(var(--shadow-rgb),0.14)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
                   e.currentTarget.style.boxShadow = isCurrent
-                    ? "0 8px 20px rgba(192,0,0,0.15)"
-                    : "0 4px 12px rgba(15,23,42,0.08)";
+                    ? "0 8px 20px rgba(var(--danger-rgb), 0.15)"
+                    : "0 4px 12px rgba(var(--shadow-rgb),0.08)";
                 }}
               >
                 <div style={{ textAlign: "left", minWidth: 0 }}>

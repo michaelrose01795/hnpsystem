@@ -29,12 +29,12 @@ export default function CustomerPartsPage() {
         </div>
       )}
       {isLoading ? (
-        <div className="rounded-2xl border border-[#ffe0e0] bg-white p-5 text-sm text-slate-500 shadow mb-4">
+        <div className="rounded-2xl border border-[var(--surface-light)] bg-white p-5 text-sm text-slate-500 shadow mb-4">
           Loading compatible parts…
         </div>
       ) : null}
       {activeVehicle && (
-        <div className="mb-4 rounded-2xl border border-[#ffe0e0] bg-[#fffafa] px-4 py-3 text-xs text-slate-600">
+        <div className="mb-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-xs text-slate-600">
           Showing accessories for <strong>{activeVehicle.makeModel}</strong> · {activeVehicle.reg}
         </div>
       )}

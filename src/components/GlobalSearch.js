@@ -11,7 +11,7 @@ const typeLabels = {
 };
 
 const GlobalSearch = ({
-  accentColor = "#FF4040",
+  accentColor = "var(--primary)",
   isDarkMode = false,
   navigationItems = [],
 }) => {
@@ -201,10 +201,10 @@ const GlobalSearch = ({
     }
   };
 
-  const borderColor = isFocused ? accentColor : isDarkMode ? "#333" : "#ddd";
-  const backgroundColor = isDarkMode ? "#181818" : "#ffffff";
-  const textColor = isDarkMode ? "#f5f5f5" : "#212121";
-  const placeholderColor = isDarkMode ? "#7a7a7a" : "#9e9e9e";
+  const borderColor = isFocused ? accentColor : isDarkMode ? "var(--text-secondary)" : "var(--surface-light)";
+  const backgroundColor = isDarkMode ? "var(--text-primary)" : "var(--surface)";
+  const textColor = isDarkMode ? "var(--surface)" : "var(--text-primary)";
+  const placeholderColor = isDarkMode ? "var(--grey-accent)" : "var(--border)";
 
   return (
     <div
@@ -222,7 +222,7 @@ const GlobalSearch = ({
           padding: "8px 12px",
           boxShadow: isFocused
             ? `0 0 0 3px ${accentColor}22`
-            : "0 8px 20px rgba(0,0,0,0.08)",
+            : "0 8px 20px rgba(var(--shadow-rgb),0.08)",
           transition: "all 0.2s ease",
         }}
       >
@@ -290,8 +290,8 @@ const GlobalSearch = ({
             padding: "12px 16px",
             borderRadius: "12px",
             backgroundColor,
-            border: `1px solid ${isDarkMode ? "#2a2a2a" : "#f0f0f0"}`,
-            boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+            border: `1px solid ${isDarkMode ? "var(--text-secondary)" : "var(--surface)"}`,
+            boxShadow: "0 10px 30px rgba(var(--shadow-rgb),0.15)",
             color: textColor,
             fontSize: "0.85rem",
             zIndex: 30,
@@ -310,8 +310,8 @@ const GlobalSearch = ({
             right: 0,
             backgroundColor,
             borderRadius: "16px",
-            boxShadow: "0 15px 40px rgba(0,0,0,0.15)",
-            border: `1px solid ${isDarkMode ? "#2a2a2a" : "#ececec"}`,
+            boxShadow: "0 15px 40px rgba(var(--shadow-rgb),0.15)",
+            border: `1px solid ${isDarkMode ? "var(--text-secondary)" : "var(--surface-light)"}`,
             overflow: "hidden",
             zIndex: 40,
           }}
@@ -340,7 +340,7 @@ const GlobalSearch = ({
                   borderBottom:
                     index === combinedResults.length - 1
                       ? "none"
-                      : `1px solid ${isDarkMode ? "#242424" : "#f5f5f5"}`,
+                      : `1px solid ${isDarkMode ? "var(--text-primary)" : "var(--surface)"}`,
                   backgroundColor: itemBackground,
                   color: itemColor,
                   cursor: "pointer",
@@ -355,7 +355,7 @@ const GlobalSearch = ({
                     <span
                       style={{
                         fontSize: "0.8rem",
-                        color: isDarkMode ? "#9c9c9c" : "#6a6a6a",
+                        color: isDarkMode ? "var(--border)" : "var(--grey-accent)",
                       }}
                     >
                       {item.subtitle}
@@ -367,8 +367,8 @@ const GlobalSearch = ({
                     fontSize: "0.7rem",
                     padding: "4px 8px",
                     borderRadius: "999px",
-                    backgroundColor: active ? accentColor : "#f1f1f1",
-                    color: active ? "#ffffff" : "#5a5a5a",
+                    backgroundColor: active ? accentColor : "var(--surface)",
+                    color: active ? "var(--surface)" : "var(--grey-accent)",
                     textTransform: "uppercase",
                     fontWeight: 700,
                     letterSpacing: "0.05em",
@@ -395,8 +395,8 @@ const GlobalSearch = ({
               padding: "16px",
               borderRadius: "12px",
               backgroundColor,
-              border: `1px solid ${isDarkMode ? "#2a2a2a" : "#f0f0f0"}`,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+              border: `1px solid ${isDarkMode ? "var(--text-secondary)" : "var(--surface)"}`,
+              boxShadow: "0 10px 30px rgba(var(--shadow-rgb),0.15)",
               color: textColor,
               fontSize: "0.85rem",
               zIndex: 30,

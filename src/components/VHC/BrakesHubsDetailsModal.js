@@ -239,7 +239,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     borderRadius: "999px",
     fontSize: "12px",
     fontWeight: 700,
-    background: status === "Red" ? "#fee2e2" : "#fef3c7",
+    background: status === "Red" ? "var(--danger-surface)" : "var(--warning-surface)",
     color: status === "Red" ? palette.danger : palette.warning,
   });
 
@@ -361,7 +361,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   const popupOverlayStyle = {
     position: "absolute",
     inset: 0,
-    background: "rgba(15,23,42,0.45)",
+    background: "rgba(var(--shadow-rgb),0.45)",
     backdropFilter: "blur(6px)",
     display: "flex",
     alignItems: "center",
@@ -375,7 +375,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     borderRadius: "18px",
     background: palette.surface,
     border: `1px solid ${palette.border}`,
-    boxShadow: "0 18px 36px rgba(15,23,42,0.18)",
+    boxShadow: "0 18px 36px rgba(var(--shadow-rgb),0.18)",
     display: "flex",
     flexDirection: "column",
     gap: "12px",
@@ -383,7 +383,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
   const enhanceFocus = (event) => {
     event.target.style.borderColor = palette.accent;
-    event.target.style.boxShadow = "0 0 0 3px rgba(209,0,0,0.12)";
+    event.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
   };
 
   const resetFocus = (event) => {
@@ -633,7 +633,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             fontSize: "14px",
             color: palette.textPrimary,
             outline: "none",
-            boxShadow: "inset 0 1px 3px rgba(15,23,42,0.04)",
+            boxShadow: "inset 0 1px 3px rgba(var(--shadow-rgb),0.04)",
           }}
           onFocus={enhanceFocus}
           onBlur={resetFocus}
@@ -688,11 +688,11 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     const tabButtonStyle = (active) => ({
       ...createVhcButtonStyle(active ? "primary" : "ghost"),
       backgroundColor: active ? palette.accent : "transparent",
-      color: active ? "#ffffff" : palette.textPrimary,
+      color: active ? "var(--surface)" : palette.textPrimary,
       padding: "8px 16px",
       fontSize: "12px",
       border: active ? "none" : "1px solid transparent",
-      boxShadow: active ? "0 6px 18px rgba(209,0,0,0.18)" : "none",
+      boxShadow: active ? "0 6px 18px rgba(var(--primary-rgb),0.18)" : "none",
     });
 
     return (
@@ -810,7 +810,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                 ...createVhcButtonStyle(active ? "primary" : "ghost"),
                 padding: "10px 18px",
                 backgroundColor: active ? palette.accent : palette.surface,
-                color: active ? "#ffffff" : palette.textPrimary,
+                color: active ? "var(--surface)" : palette.textPrimary,
                 border: active ? "none" : `1px solid ${palette.border}`,
               }}
             >
@@ -1018,7 +1018,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                   style={{
                     ...selectBaseStyle,
                     width: "100%",
-                    boxShadow: "inset 0 1px 3px rgba(15,23,42,0.04)",
+                    boxShadow: "inset 0 1px 3px rgba(var(--shadow-rgb),0.04)",
                   }}
                   onFocus={enhanceFocus}
                   onBlur={resetFocus}

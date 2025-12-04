@@ -7,7 +7,7 @@ export function MetricCard({
   primary,
   secondary,
   trend,
-  accentColor = "#1F7A8C",
+  accentColor = "var(--info-dark)",
 }) {
   return (
     <div
@@ -18,14 +18,14 @@ export function MetricCard({
         display: "flex",
         flexDirection: "column",
         gap: "14px",
-        boxShadow: "0 8px 20px rgba(15, 23, 42, 0.08)",
+        boxShadow: "0 8px 20px rgba(var(--accent-purple-rgb), 0.08)",
         minWidth: "200px",
         flex: 1,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
         <span style={{ fontSize: "1.6rem" }}>{icon}</span>
-        <span style={{ fontWeight: 600, fontSize: "0.95rem", color: "#4B5563" }}>
+        <span style={{ fontWeight: 600, fontSize: "0.95rem", color: "var(--info-dark)" }}>
           {label}
         </span>
       </div>
@@ -34,13 +34,13 @@ export function MetricCard({
           {primary}
         </span>
         {secondary ? (
-          <span style={{ color: "#6B7280", fontWeight: 500 }}>{secondary}</span>
+          <span style={{ color: "var(--info)", fontWeight: 500 }}>{secondary}</span>
         ) : null}
       </div>
       {trend ? (
         <span
           style={{
-            backgroundColor: "rgba(31, 122, 140, 0.08)",
+            backgroundColor: "rgba(var(--info-rgb), 0.08)",
             color: accentColor,
             borderRadius: "999px",
             padding: "6px 12px",
@@ -63,7 +63,7 @@ export function SectionCard({ title, subtitle, action, children }) {
         background: "white",
         borderRadius: "16px",
         padding: "20px",
-        boxShadow: "0 6px 18px rgba(15, 23, 42, 0.05)",
+        boxShadow: "0 6px 18px rgba(var(--accent-purple-rgb), 0.05)",
         display: "flex",
         flexDirection: "column",
         gap: "18px",
@@ -79,11 +79,11 @@ export function SectionCard({ title, subtitle, action, children }) {
         }}
       >
         <div>
-          <div style={{ fontWeight: 700, fontSize: "1.05rem", color: "#111827" }}>
+          <div style={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--accent-purple)" }}>
             {title}
           </div>
           {subtitle ? (
-            <div style={{ fontSize: "0.85rem", color: "#6B7280", marginTop: "4px" }}>
+            <div style={{ fontSize: "0.85rem", color: "var(--info)", marginTop: "4px" }}>
               {subtitle}
             </div>
           ) : null}
@@ -97,10 +97,10 @@ export function SectionCard({ title, subtitle, action, children }) {
 
 export function StatusTag({ label, tone = "default" }) {
   const variants = {
-    default: { bg: "rgba(37, 99, 235, 0.12)", color: "#2563EB" },
-    success: { bg: "rgba(16, 185, 129, 0.12)", color: "#059669" },
-    warning: { bg: "rgba(245, 158, 11, 0.12)", color: "#B45309" },
-    danger: { bg: "rgba(239, 68, 68, 0.12)", color: "#B91C1C" },
+    default: { bg: "rgba(var(--accent-purple-rgb), 0.12)", color: "var(--accent-purple)" },
+    success: { bg: "rgba(var(--info-rgb), 0.12)", color: "var(--info-dark)" },
+    warning: { bg: "rgba(var(--warning-rgb), 0.12)", color: "var(--warning)" },
+    danger: { bg: "rgba(var(--danger-rgb), 0.12)", color: "var(--danger)" },
   };
 
   const palette = variants[tone] ?? variants.default;

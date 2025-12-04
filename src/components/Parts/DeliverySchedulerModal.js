@@ -5,10 +5,10 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 
 const cardStyle = {
   borderRadius: "18px",
-  border: "1px solid #ffe0e0",
-  background: "#ffffff",
+  border: "1px solid var(--surface-light)",
+  background: "var(--surface)",
   padding: "20px",
-  boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+  boxShadow: "0 20px 40px rgba(var(--shadow-rgb),0.2)",
   width: "min(520px, 100%)",
 };
 
@@ -135,7 +135,7 @@ export default function DeliverySchedulerModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(15,23,42,0.6)",
+        background: "rgba(var(--shadow-rgb),0.6)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -153,10 +153,10 @@ export default function DeliverySchedulerModal({
           }}
         >
           <div>
-            <p style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.08em", color: "#a00000" }}>
+            <p style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--primary-dark)" }}>
               Schedule delivery
             </p>
-            <h3 style={{ margin: "6px 0 0", fontSize: "1.25rem", color: "#d10000" }}>
+            <h3 style={{ margin: "6px 0 0", fontSize: "1.25rem", color: "var(--primary)" }}>
               Job {job?.job_number || job?.jobNumber || "—"}
             </h3>
           </div>
@@ -168,7 +168,7 @@ export default function DeliverySchedulerModal({
               background: "transparent",
               fontSize: "1.2rem",
               cursor: "pointer",
-              color: "#6b7280",
+              color: "var(--info)",
             }}
           >
             ×
@@ -176,7 +176,7 @@ export default function DeliverySchedulerModal({
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           <div>
-            <label style={{ fontWeight: 600, color: "#555" }}>Route</label>
+            <label style={{ fontWeight: 600, color: "var(--grey-accent-dark)" }}>Route</label>
             <div style={{ marginTop: "6px", display: "flex", gap: "10px" }}>
               <label>
                 <input
@@ -207,10 +207,10 @@ export default function DeliverySchedulerModal({
               style={{
                 width: "100%",
                 borderRadius: "10px",
-                border: "1px solid #ffd1d1",
+                border: "1px solid var(--surface-light)",
                 padding: "10px 12px",
                 fontWeight: 600,
-                color: "#a00000",
+                color: "var(--primary-dark)",
               }}
             >
               <option value="">Select a delivery</option>
@@ -224,7 +224,7 @@ export default function DeliverySchedulerModal({
           {scheduleMode === "new" && (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px" }}>
-                <label style={{ fontWeight: 600, color: "#555" }}>
+                <label style={{ fontWeight: 600, color: "var(--grey-accent-dark)" }}>
                   Delivery date
                   <input
                     type="date"
@@ -234,12 +234,12 @@ export default function DeliverySchedulerModal({
                       width: "100%",
                       marginTop: "4px",
                       borderRadius: "10px",
-                      border: "1px solid #ffd1d1",
+                      border: "1px solid var(--surface-light)",
                       padding: "8px 10px",
                     }}
                   />
                 </label>
-                <label style={{ fontWeight: 600, color: "#555" }}>
+                <label style={{ fontWeight: 600, color: "var(--grey-accent-dark)" }}>
                   Vehicle reg
                   <input
                     type="text"
@@ -250,12 +250,12 @@ export default function DeliverySchedulerModal({
                       width: "100%",
                       marginTop: "4px",
                       borderRadius: "10px",
-                      border: "1px solid #ffd1d1",
+                      border: "1px solid var(--surface-light)",
                       padding: "8px 10px",
                     }}
                   />
                 </label>
-                <label style={{ fontWeight: 600, color: "#555" }}>
+                <label style={{ fontWeight: 600, color: "var(--grey-accent-dark)" }}>
                   Fuel type
                   <input
                     type="text"
@@ -266,7 +266,7 @@ export default function DeliverySchedulerModal({
                       width: "100%",
                       marginTop: "4px",
                       borderRadius: "10px",
-                      border: "1px solid #ffd1d1",
+                      border: "1px solid var(--surface-light)",
                       padding: "8px 10px",
                     }}
                   />
@@ -275,7 +275,7 @@ export default function DeliverySchedulerModal({
             </>
           )}
           <div>
-            <label style={{ fontWeight: 600, color: "#555" }}>Address</label>
+            <label style={{ fontWeight: 600, color: "var(--grey-accent-dark)" }}>Address</label>
             <textarea
               value={address}
               onChange={(event) => setAddress(event.target.value)}
@@ -285,14 +285,14 @@ export default function DeliverySchedulerModal({
                 width: "100%",
                 marginTop: "4px",
                 borderRadius: "12px",
-                border: "1px solid #ffd1d1",
+                border: "1px solid var(--surface-light)",
                 padding: "10px",
                 resize: "vertical",
               }}
             />
           </div>
           <div>
-            <label style={{ fontWeight: 600, color: "#555" }}>Postcode</label>
+            <label style={{ fontWeight: 600, color: "var(--grey-accent-dark)" }}>Postcode</label>
             <input
               type="text"
               value={postcode}
@@ -302,13 +302,13 @@ export default function DeliverySchedulerModal({
                 width: "100%",
                 marginTop: "4px",
                 borderRadius: "10px",
-                border: "1px solid #ffd1d1",
+                border: "1px solid var(--surface-light)",
                 padding: "8px 10px",
               }}
             />
           </div>
           <div>
-            <label style={{ fontWeight: 600, color: "#555" }}>Delivery notes</label>
+            <label style={{ fontWeight: 600, color: "var(--grey-accent-dark)" }}>Delivery notes</label>
             <textarea
               value={stopNotes}
               onChange={(event) => setStopNotes(event.target.value)}
@@ -318,7 +318,7 @@ export default function DeliverySchedulerModal({
                 width: "100%",
                 marginTop: "4px",
                 borderRadius: "12px",
-                border: "1px solid #ffd1d1",
+                border: "1px solid var(--surface-light)",
                 padding: "10px",
                 resize: "vertical",
               }}
@@ -331,8 +331,8 @@ export default function DeliverySchedulerModal({
               disabled={loading}
               style={{
                 ...buttonStyle,
-                background: "#0f766e",
-                color: "#fff",
+                background: "var(--info-dark)",
+                color: "var(--surface)",
                 flex: "1 1 140px",
                 minWidth: "140px",
                 opacity: loading ? 0.6 : 1,
@@ -345,9 +345,9 @@ export default function DeliverySchedulerModal({
               onClick={onClose}
               style={{
                 ...buttonStyle,
-                border: "1px solid #ffd1d1",
-                background: "#fff",
-                color: "#a00000",
+                border: "1px solid var(--surface-light)",
+                background: "var(--surface)",
+                color: "var(--primary-dark)",
                 flex: "1 1 140px",
                 minWidth: "140px",
               }}
@@ -355,9 +355,9 @@ export default function DeliverySchedulerModal({
               Cancel
             </button>
           </div>
-          {error && <p style={{ margin: 0, color: "#b91c1c" }}>{error}</p>}
+          {error && <p style={{ margin: 0, color: "var(--danger)" }}>{error}</p>}
           {customerName && (
-            <p style={{ margin: 0, fontSize: "0.85rem", color: "#555" }}>
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--grey-accent-dark)" }}>
               Customer: {customerName}
             </p>
           )}

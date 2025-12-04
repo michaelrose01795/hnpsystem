@@ -41,7 +41,7 @@ export default function StatusTimeline({ currentStatus, statusHistory, getTimeIn
                 <div
                   className="absolute left-4 top-10 w-0.5 h-12"
                   style={{
-                    backgroundColor: completed || current ? status.color : '#E5E7EB'
+                    backgroundColor: completed || current ? status.color : 'var(--accent-purple-surface)'
                   }}
                 />
               )}
@@ -52,7 +52,7 @@ export default function StatusTimeline({ currentStatus, statusHistory, getTimeIn
                   current ? 'animate-pulse ring-4 ring-opacity-50' : ''
                 }`}
                 style={{
-                  backgroundColor: completed || current ? status.color : '#E5E7EB',
+                  backgroundColor: completed || current ? status.color : 'var(--accent-purple-surface)',
                   ringColor: current ? status.color : 'transparent'
                 }}
               >
@@ -74,7 +74,7 @@ export default function StatusTimeline({ currentStatus, statusHistory, getTimeIn
 
               {/* Status details */}
               <div className={`flex-1 pb-4 ${isFuture ? 'opacity-40' : ''}`}>
-                <div className="font-semibold text-sm" style={{ color: completed || current ? status.color : '#6B7280' }}>
+                <div className="font-semibold text-sm" style={{ color: completed || current ? status.color : 'var(--info)' }}>
                   {status.label}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">

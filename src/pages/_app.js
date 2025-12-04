@@ -1,7 +1,8 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/_app.js
 import "@/utils/polyfills"; // ensure polyfills load globally
-import "../styles/globals.css"; // import global Tailwind styles
+import "@/styles/theme.css"; // register CSS variables before globals
+import "../styles/globals.css"; // import global base styles
 import React, { useEffect } from "react"; // import React helpers
 import { SessionProvider } from "next-auth/react"; // import NextAuth session provider
 import { UserProvider, useUser } from "@/context/UserContext"; // import user context
@@ -11,6 +12,7 @@ import { ClockingProvider } from "@/context/ClockingContext"; // import clocking
 import { RosterProvider } from "@/context/RosterContext"; // import roster context
 import { getAllJobs } from "@/lib/database/jobs"; // database helper to seed jobs in context
 import { AlertProvider } from "@/context/AlertContext";
+import { ThemeProvider } from "@/styles/themeProvider";
 
 function AppWrapper({ Component, pageProps }) {
   const { user } = useUser() || {}; // read logged in user
@@ -35,15 +37,17 @@ export default function MyApp({ Component, pageProps }) {
     <SessionProvider session={pageProps.session}>
       <AlertProvider>
         <UserProvider>
-          <NextActionProvider>
-            <JobsProvider>
-              <ClockingProvider>
-                <RosterProvider>
-                  <AppWrapper Component={Component} pageProps={pageProps} />
-                </RosterProvider>
-              </ClockingProvider>
-            </JobsProvider>
-          </NextActionProvider>
+          <ThemeProvider defaultMode="light">
+            <NextActionProvider>
+              <JobsProvider>
+                <ClockingProvider>
+                  <RosterProvider>
+                    <AppWrapper Component={Component} pageProps={pageProps} />
+                  </RosterProvider>
+                </ClockingProvider>
+              </JobsProvider>
+            </NextActionProvider>
+          </ThemeProvider>
         </UserProvider>
       </AlertProvider>
     </SessionProvider>

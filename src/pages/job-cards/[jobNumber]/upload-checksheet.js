@@ -68,7 +68,7 @@ export default function UploadChecksheet() {
   return (
     <Layout>
       <div style={{ maxWidth: "600px", margin: "0 auto", padding: "16px" }}>
-        <h2 style={{ color: "#FF4040", marginBottom: "16px" }}>
+        <h2 style={{ color: "var(--primary)", marginBottom: "16px" }}>
           Upload Check Sheet for Job {jobNumber}
         </h2>
 
@@ -87,7 +87,7 @@ export default function UploadChecksheet() {
             style={{
               flex: 1,
               padding: "10px 16px",
-              backgroundColor: "#FF4040",
+              backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "6px",
@@ -126,7 +126,7 @@ export default function UploadChecksheet() {
               left: 0,
               width: "100vw",
               height: "100vh",
-              backgroundColor: "rgba(0,0,0,0.6)",
+              backgroundColor: "rgba(var(--shadow-rgb),0.6)",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -140,10 +140,10 @@ export default function UploadChecksheet() {
                 borderRadius: "8px",
                 textAlign: "center",
                 width: "300px",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+                boxShadow: "0 4px 10px rgba(var(--shadow-rgb),0.2)",
               }}
             >
-              <h3 style={{ color: "#FF4040" }}>Update Job Status</h3>
+              <h3 style={{ color: "var(--primary)" }}>Update Job Status</h3>
               <p style={{ marginBottom: "12px" }}>
                 Choose the status for this job:
               </p>
@@ -173,7 +173,7 @@ export default function UploadChecksheet() {
                 style={{
                   marginTop: "8px",
                   padding: "10px 16px",
-                  backgroundColor: "#FF4040",
+                  backgroundColor: "var(--primary)",
                   color: "white",
                   border: "none",
                   borderRadius: "6px",

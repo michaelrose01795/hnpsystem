@@ -140,7 +140,7 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
         left: 0,
         width: "100%",
         height: "100%",
-        backgroundColor: "rgba(0,0,0,0.5)",
+        backgroundColor: "rgba(var(--shadow-rgb),0.5)",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
@@ -180,9 +180,9 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
                   marginTop: "4px",
                   padding: "6px 10px",
                   borderRadius: "6px",
-                  border: "1px solid #d1d5db",
-                  backgroundColor: lookupState.loading ? "#f3f4f6" : "#f9fafb",
-                  color: "#111827",
+                  border: "1px solid var(--info)",
+                  backgroundColor: lookupState.loading ? "var(--info-surface)" : "var(--info-surface)",
+                  color: "var(--accent-purple)",
                   fontSize: "12px",
                   fontWeight: 600,
                   cursor: lookupState.loading ? "not-allowed" : "pointer",
@@ -206,7 +206,7 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
                 width: "100%",
                 padding: "8px 10px",
                 borderRadius: "8px",
-                border: "1px solid #d1d5db",
+                border: "1px solid var(--info)",
                 fontSize: "14px",
               }}
             />
@@ -220,9 +220,9 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
               marginBottom: "12px",
               padding: "8px 10px",
               borderRadius: "8px",
-              border: "1px solid #fecaca",
-              backgroundColor: "#fef2f2",
-              color: "#b91c1c",
+              border: "1px solid var(--danger-surface)",
+              backgroundColor: "var(--danger-surface)",
+              color: "var(--danger)",
               fontSize: "13px",
             }}
           >
@@ -234,7 +234,7 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
           <div
             style={{
               marginBottom: "12px",
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--accent-purple-surface)",
               borderRadius: "10px",
               maxHeight: "160px",
               overflowY: "auto",
@@ -249,7 +249,7 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
                   width: "100%",
                   padding: "10px",
                   border: "none",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid var(--accent-purple-surface)",
                   textAlign: "left",
                   backgroundColor: "white",
                   cursor: "pointer",
@@ -278,7 +278,7 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
             disabled={loading}
             style={{
               padding: "8px 16px",
-              backgroundColor: "#FF4040",
+              backgroundColor: "var(--primary)",
               color: "white",
               opacity: loading ? 0.6 : 1,
             }}

@@ -509,29 +509,29 @@ export default function CustomerMessagesPage() {
         </div>
       )}
       {isLoading ? (
-        <div className="rounded-2xl border border-[#ffe0e0] bg-white p-5 text-sm text-slate-500 shadow mb-4">
+        <div className="rounded-2xl border border-[var(--surface-light)] bg-white p-5 text-sm text-slate-500 shadow mb-4">
           Loading messages…
         </div>
       ) : null}
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-3xl border border-[#ffe0e0] bg-white p-5 shadow-[0_12px_34px_rgba(209,0,0,0.08)]">
+        <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5 shadow-[0_12px_34px_rgba(var(--primary-rgb),0.08)]">
           <header className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">Message centre</p>
+              <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Message centre</p>
               <h3 className="text-xl font-semibold text-slate-900">
                 Message the right person
               </h3>
             </div>
-            <span className="text-xs font-semibold text-[#d10000]">
+            <span className="text-xs font-semibold text-[var(--primary)]">
               Conversations stay linked to your job
             </span>
           </header>
 
           <div className="mt-4 space-y-6">
-            <div className="space-y-3 rounded-2xl border border-[#ffe5e5] bg-[#fff7f7] p-4 shadow-[0_6px_16px_rgba(209,0,0,0.08)]">
+            <div className="space-y-3 rounded-2xl border border-[var(--surface-light)] bg-[var(--danger-surface)] p-4 shadow-[0_6px_16px_rgba(var(--primary-rgb),0.08)]">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">
+                  <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">
                     Live conversations
                   </p>
                   <h4 className="text-lg font-semibold text-slate-900">Your messages</h4>
@@ -541,7 +541,7 @@ export default function CustomerMessagesPage() {
                     type="button"
                     onClick={() => setComposerOpen(true)}
                     disabled={composerCreating}
-                    className="rounded-full border border-dashed border-[#d10000] bg-white px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#d10000] shadow disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full border border-dashed border-[var(--primary)] bg-white px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--primary)] shadow disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     + New conversation
                   </button>
@@ -549,7 +549,7 @@ export default function CustomerMessagesPage() {
                     type="button"
                     onClick={fetchThreads}
                     disabled={threadsLoading}
-                    className="rounded-full border border-[#ffe5e5] bg-white px-3 py-1 text-xs font-semibold text-[#d10000] shadow hover:border-[#d10000] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full border border-[var(--surface-light)] bg-white px-3 py-1 text-xs font-semibold text-[var(--primary)] shadow hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {threadsLoading ? "Refreshing…" : "Refresh"}
                   </button>
@@ -572,10 +572,10 @@ export default function CustomerMessagesPage() {
                 <button
                   type="button"
                   onClick={openSystemNotificationsThread}
-                  className={`w-full text-left rounded-2xl border px-4 py-3 text-sm shadow-[0_6px_20px_rgba(209,0,0,0.06)] transition ${
+                  className={`w-full text-left rounded-2xl border px-4 py-3 text-sm shadow-[0_6px_20px_rgba(var(--primary-rgb),0.06)] transition ${
                     isSystemThreadActive
-                      ? "border-[#d10000] bg-[#fff2f2]"
-                      : "border-[#ffe5e5] bg-[#fffafa]"
+                      ? "border-[var(--primary)] bg-[var(--surface-light)]"
+                      : "border-[var(--surface-light)] bg-[var(--background)]"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -585,11 +585,11 @@ export default function CustomerMessagesPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {hasSystemUnread && (
-                        <span className="rounded-full bg-[#d10000] px-3 py-1 text-[0.65rem] font-semibold text-white">
+                        <span className="rounded-full bg-[var(--primary)] px-3 py-1 text-[0.65rem] font-semibold text-white">
                           Unread
                         </span>
                       )}
-                      <span className="rounded-full border border-[#ffe5e5] px-3 py-1 text-[0.65rem] font-semibold text-[#b91c1c]">
+                      <span className="rounded-full border border-[var(--surface-light)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--danger)]">
                         Read only
                       </span>
                     </div>
@@ -606,10 +606,10 @@ export default function CustomerMessagesPage() {
                           key={thread.id}
                           type="button"
                           onClick={() => openThread(thread)}
-                          className={`w-full text-left rounded-2xl border px-4 py-3 shadow-[0_6px_20px_rgba(209,0,0,0.06)] transition ${
+                          className={`w-full text-left rounded-2xl border px-4 py-3 shadow-[0_6px_20px_rgba(var(--primary-rgb),0.06)] transition ${
                             isActiveThread
-                              ? "border-[#d10000] bg-[#fff2f2]"
-                              : "border-[#ffe5e5] bg-[#fffafa]"
+                              ? "border-[var(--primary)] bg-[var(--surface-light)]"
+                              : "border-[var(--surface-light)] bg-[var(--background)]"
                           }`}
                         >
                           <div className="flex items-center justify-between gap-3">
@@ -617,7 +617,7 @@ export default function CustomerMessagesPage() {
                               {thread.title || "Conversation"}
                             </p>
                             {thread.hasUnread && (
-                              <span className="rounded-full bg-[#d10000] px-3 py-1 text-xs font-semibold text-white">
+                              <span className="rounded-full bg-[var(--primary)] px-3 py-1 text-xs font-semibold text-white">
                                 Unread
                               </span>
                             )}
@@ -638,13 +638,13 @@ export default function CustomerMessagesPage() {
             </div>
 
             {isSystemThreadActive ? (
-              <div className="space-y-4 rounded-2xl border border-[#ffe5e5] bg-[#fffafa] p-4 shadow-[0_6px_16px_rgba(209,0,0,0.08)]">
+              <div className="space-y-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] p-4 shadow-[0_6px_16px_rgba(var(--primary-rgb),0.08)]">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">System thread</p>
+                    <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">System thread</p>
                     <h4 className="text-lg font-semibold text-slate-900">System notifications</h4>
                   </div>
-                  <span className="rounded-full bg-[#fee2e2] px-3 py-1 text-xs font-semibold text-[#b91c1c]">
+                  <span className="rounded-full bg-[var(--danger-surface)] px-3 py-1 text-xs font-semibold text-[var(--danger)]">
                     Read only
                   </span>
                 </div>
@@ -663,7 +663,7 @@ export default function CustomerMessagesPage() {
                       {systemNotifications.map((note) => (
                         <article
                           key={`system-${note.notification_id}`}
-                          className="space-y-1 rounded-2xl border border-[#ffe5e5] bg-white/70 px-4 py-3 text-sm"
+                          className="space-y-1 rounded-2xl border border-[var(--surface-light)] bg-white/70 px-4 py-3 text-sm"
                         >
                           <p className="text-sm text-slate-900">{note.message || "System update"}</p>
                           <p className="text-[0.65rem] text-slate-500">
@@ -679,10 +679,10 @@ export default function CustomerMessagesPage() {
                 </p>
               </div>
             ) : activeThread ? (
-              <div className="space-y-4 rounded-2xl border border-[#ffe5e5] bg-[#ffffff] p-4 shadow-[0_6px_16px_rgba(209,0,0,0.08)]">
+              <div className="space-y-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-4 shadow-[0_6px_16px_rgba(var(--primary-rgb),0.08)]">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">Active thread</p>
+                    <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Active thread</p>
                     <h4 className="text-lg font-semibold text-slate-900">{activeThread.title}</h4>
                   </div>
                   <span className="text-xs text-slate-500">
@@ -709,7 +709,7 @@ export default function CustomerMessagesPage() {
                           <div
                             key={message.id || `${message.senderId}-${message.createdAt}`}
                             className={`space-y-1 rounded-2xl border px-4 py-3 text-sm ${
-                              isMine ? "border-[#ffd3d3] bg-[#fff2f2]" : "border-[#ffe5e5] bg-[#fffafa]"
+                              isMine ? "border-[var(--surface-light)] bg-[var(--surface-light)]" : "border-[var(--surface-light)] bg-[var(--background)]"
                             }`}
                           >
                             <div className="flex items-center justify-between">
@@ -736,7 +736,7 @@ export default function CustomerMessagesPage() {
                             )}
                             <div className="flex flex-wrap items-center gap-2">
                               {message.savedForever ? (
-                                <span className="rounded-full border border-[#ffe5e5] px-3 py-1 text-[0.65rem] font-semibold text-[#d10000]">
+                                <span className="rounded-full border border-[var(--surface-light)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--primary)]">
                                   Saved forever
                                 </span>
                               ) : (
@@ -744,7 +744,7 @@ export default function CustomerMessagesPage() {
                                   type="button"
                                   onClick={() => handleSaveMessage(message)}
                                   disabled={savingMessageId === message.id}
-                                  className="rounded-full border border-[#ffe5e5] px-3 py-1 text-[0.65rem] font-semibold text-[#d10000] hover:border-[#d10000] disabled:cursor-not-allowed disabled:opacity-60"
+                                  className="rounded-full border border-[var(--surface-light)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--primary)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                   {savingMessageId === message.id ? "Saving…" : "Save forever"}
                                 </button>
@@ -766,13 +766,13 @@ export default function CustomerMessagesPage() {
                     value={messageDraft}
                     onChange={(event) => setMessageDraft(event.target.value)}
                     placeholder="Type your message…"
-                    className="w-full rounded-2xl border border-[#ffe5e5] bg-[#fffafa] px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#d10000] focus:outline-none"
+                    className="w-full rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[var(--primary)] focus:outline-none"
                   />
                   <div className="flex justify-end">
                     <button
                       type="submit"
                       disabled={!dbUserId || sendingMessage || !messageDraft.trim()}
-                      className="rounded-full bg-[#d10000] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow hover:bg-[#b50d0d] disabled:cursor-not-allowed disabled:bg-[#f0a8a8]"
+                      className="rounded-full bg-[var(--primary)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
                     >
                       {sendingMessage ? "Sending…" : "Send"}
                     </button>
@@ -780,17 +780,17 @@ export default function CustomerMessagesPage() {
                 </form>
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-[#ffe5e5] bg-[#fffafa] p-6 text-sm text-slate-500">
+              <div className="rounded-2xl border border-dashed border-[var(--surface-light)] bg-[var(--background)] p-6 text-sm text-slate-500">
                 Select a conversation to view messages and replies.
               </div>
             )}
           </div>
           {composerOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-              <div className="w-full max-w-2xl rounded-3xl border border-[#ffe5e5] bg-white p-6 shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
+              <div className="w-full max-w-2xl rounded-3xl border border-[var(--surface-light)] bg-white p-6 shadow-[0_20px_60px_rgba(var(--shadow-rgb),0.4)]">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">Compose</p>
+                    <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Compose</p>
                     <h3 className="text-xl font-semibold text-slate-900">Create a group chat</h3>
                     <p className="text-sm text-slate-500">
                       Search by name, check the people you need, and create a new thread.
@@ -799,7 +799,7 @@ export default function CustomerMessagesPage() {
                   <button
                     type="button"
                     onClick={() => setComposerOpen(false)}
-                    className="rounded-full border border-[#ffe5e5] px-3 py-1 text-xs font-semibold text-[#d10000]"
+                    className="rounded-full border border-[var(--surface-light)] px-3 py-1 text-xs font-semibold text-[var(--primary)]"
                   >
                     Close
                   </button>
@@ -811,9 +811,9 @@ export default function CustomerMessagesPage() {
                     value={composerSearch}
                     onChange={(event) => setComposerSearch(event.target.value)}
                     placeholder="Find teammates by name or email"
-                    className="w-full rounded-2xl border border-[#ffe5e5] bg-[#fffafa] px-4 py-3 text-sm text-slate-900 focus:border-[#d10000] focus:outline-none"
+                    className="w-full rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-sm text-slate-900 focus:border-[var(--primary)] focus:outline-none"
                   />
-                  <div className="max-h-60 overflow-y-auto space-y-2 rounded-2xl border border-[#ffe5e5] bg-white p-3">
+                  <div className="max-h-60 overflow-y-auto space-y-2 rounded-2xl border border-[var(--surface-light)] bg-white p-3">
                     {composerLoading && (
                       <p className="text-sm text-slate-500">Searching your roster…</p>
                     )}
@@ -833,14 +833,14 @@ export default function CustomerMessagesPage() {
                           return (
                             <label
                               key={user.id}
-                              className="flex cursor-pointer items-center justify-between rounded-2xl border border-[#f6d6d6] bg-[#fffafa] px-3 py-2 text-sm transition hover:border-[#d10000]"
+                              className="flex cursor-pointer items-center justify-between rounded-2xl border border-[var(--danger-surface)] bg-[var(--background)] px-3 py-2 text-sm transition hover:border-[var(--primary)]"
                             >
                               <div className="flex items-center gap-2">
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={() => toggleComposerUser(user)}
-                                  className="h-4 w-4 rounded border-[#d10000]"
+                                  className="h-4 w-4 rounded border-[var(--primary)]"
                                 />
                                 <div>
                                   <p className="font-semibold text-slate-900">{user.name}</p>
@@ -866,7 +866,7 @@ export default function CustomerMessagesPage() {
                     type="button"
                     onClick={handleCreateGroup}
                     disabled={composerCreating || composerSelection.length === 0}
-                    className="rounded-full bg-[#d10000] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow hover:bg-[#b50d0d] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full bg-[var(--primary)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {composerCreating ? "Creating…" : "Create chat"}
                   </button>

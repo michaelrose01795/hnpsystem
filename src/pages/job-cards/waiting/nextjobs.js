@@ -980,7 +980,7 @@ export default function NextJobsPage() {
         key={panelKey}
         style={{
           background: "white",
-          border: dragOverTarget === assignee.name ? "3px solid #d10000" : "1px solid #ffe5e5",
+          border: dragOverTarget === assignee.name ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
           borderRadius: "8px",
           padding: "16px",
           display: "flex",
@@ -988,9 +988,9 @@ export default function NextJobsPage() {
           height: PANEL_HEIGHT_PX,
           minHeight: PANEL_HEIGHT_PX,
           maxHeight: PANEL_HEIGHT_PX,
-          boxShadow: dragOverTarget === assignee.name ? "0 4px 12px rgba(209,0,0,0.2)" : "0 2px 4px rgba(0,0,0,0.08)",
+          boxShadow: dragOverTarget === assignee.name ? "0 4px 12px rgba(var(--primary-rgb),0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
           transition: "all 0.2s ease",
-          backgroundColor: dragOverTarget === assignee.name ? "#fff5f5" : "white"
+          backgroundColor: dragOverTarget === assignee.name ? "var(--surface-light)" : "white"
       }}
       onDragOver={handleDragOver}
       onDragEnter={(e) => handleDragEnterSection(assignee.name, e)}
@@ -1004,7 +1004,7 @@ export default function NextJobsPage() {
         fontWeight: "600",
         marginBottom: "12px",
         fontSize: "16px",
-        color: "#1f2937",
+        color: "var(--info-dark)",
         flexShrink: 0
       }}>
         {assignee.name} ({assignee.jobs.length})
@@ -1014,8 +1014,8 @@ export default function NextJobsPage() {
           marginBottom: "12px",
           padding: "12px",
           borderRadius: "8px",
-          border: currentClocking ? "1px solid #34d399" : "1px dashed #d1d5db",
-          backgroundColor: currentClocking ? "#ecfdf5" : "#f9fafb",
+          border: currentClocking ? "1px solid var(--success)" : "1px dashed var(--info)",
+          backgroundColor: currentClocking ? "var(--success-surface)" : "var(--info-surface)",
           cursor: currentClocking ? "pointer" : "default",
         }}
         onClick={() => handleOpenCurrentClocking(currentClocking, assignee.name)}
@@ -1026,7 +1026,7 @@ export default function NextJobsPage() {
             fontSize: "11px",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
-            color: "#6b7280",
+            color: "var(--info)",
           }}
         >
           Current clocking
@@ -1038,7 +1038,7 @@ export default function NextJobsPage() {
                 margin: "0 0 4px 0",
                 fontSize: "14px",
                 fontWeight: 600,
-                color: "#065f46",
+                color: "var(--info-dark)",
               }}
             >
               {currentClocking.jobNumber || "Job pending"}
@@ -1048,7 +1048,7 @@ export default function NextJobsPage() {
                 style={{
                   margin: "0 0 4px 0",
                   fontSize: "12px",
-                  color: "#047857",
+                  color: "var(--info-dark)",
                 }}
               >
                 {clockingSubtitle}
@@ -1058,7 +1058,7 @@ export default function NextJobsPage() {
               style={{
                 margin: 0,
                 fontSize: "12px",
-                color: "#047857",
+                color: "var(--info-dark)",
               }}
             >
               {clockInLabel
@@ -1071,7 +1071,7 @@ export default function NextJobsPage() {
             style={{
               margin: 0,
               fontSize: "13px",
-              color: "#6b7280",
+              color: "var(--info)",
             }}
           >
             Not clocked into a job
@@ -1087,7 +1087,7 @@ export default function NextJobsPage() {
       }}>
         {assignee.jobs.length === 0 ? (
           <p style={{
-            color: "#9ca3af",
+            color: "var(--info)",
             fontSize: "14px",
             margin: 0
           }}>
@@ -1099,10 +1099,10 @@ export default function NextJobsPage() {
               {dragOverJob === job.jobNumber && dragOverTarget === assignee.name && (
                 <div style={{
                   height: "3px",
-                  backgroundColor: "#d10000",
+                  backgroundColor: "var(--primary)",
                   marginBottom: "8px",
                   borderRadius: "2px",
-                  boxShadow: "0 0 8px rgba(209,0,0,0.4)"
+                  boxShadow: "0 0 8px rgba(var(--primary-rgb),0.4)"
                 }} />
               )}
 
@@ -1119,25 +1119,25 @@ export default function NextJobsPage() {
                 }}
                 onClick={() => handleOpenJobDetails(job)}
                 style={{
-                  border: "1px solid #ffd6d6",
+                  border: "1px solid var(--surface-light)",
                   borderRadius: "8px",
                   padding: "10px",
                   marginBottom: "8px",
                   backgroundColor:
-                    draggingJob?.jobNumber === job.jobNumber ? "#ffe5e5" : "#fff5f5",
+                    draggingJob?.jobNumber === job.jobNumber ? "var(--surface-light)" : "var(--surface-light)",
                   cursor: hasAccess ? "grab" : "pointer",
                   transition: "all 0.2s",
                   opacity: draggingJob?.jobNumber === job.jobNumber ? 0.5 : 1
                 }}
                 onMouseEnter={(e) => {
                   if (draggingJob?.jobNumber !== job.jobNumber) {
-                    e.currentTarget.style.backgroundColor = "#ffecec";
-                    e.currentTarget.style.boxShadow = "0 2px 6px rgba(209,0,0,0.12)";
+                    e.currentTarget.style.backgroundColor = "var(--surface-light)";
+                    e.currentTarget.style.boxShadow = "0 2px 6px rgba(var(--primary-rgb),0.12)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (draggingJob?.jobNumber !== job.jobNumber) {
-                    e.currentTarget.style.backgroundColor = "#fff5f5";
+                    e.currentTarget.style.backgroundColor = "var(--surface-light)";
                     e.currentTarget.style.boxShadow = "none";
                   }
                 }}
@@ -1145,14 +1145,14 @@ export default function NextJobsPage() {
                 <p style={{
                   fontSize: "14px",
                   fontWeight: "600",
-                  color: "#d10000",
+                  color: "var(--primary)",
                   margin: "0 0 4px 0"
                 }}>
                   {job.jobNumber} – {job.reg}
                 </p>
                 <p style={{
                   fontSize: "12px",
-                  color: "#6b7280",
+                  color: "var(--info)",
                   margin: 0
                 }}>
                   {job.status}
@@ -1165,11 +1165,11 @@ export default function NextJobsPage() {
                 draggingJob && (
                   <div style={{
                     height: "3px",
-                    backgroundColor: "#d10000",
+                    backgroundColor: "var(--primary)",
                     marginTop: "-8px",
                     marginBottom: "8px",
                     borderRadius: "2px",
-                    boxShadow: "0 0 8px rgba(209,0,0,0.4)"
+                    boxShadow: "0 0 8px rgba(var(--primary-rgb),0.4)"
                   }} />
                 )}
             </React.Fragment>
@@ -1181,9 +1181,9 @@ export default function NextJobsPage() {
           draggingJob && (
             <div style={{
               height: "3px",
-              backgroundColor: "#d10000",
+              backgroundColor: "var(--primary)",
               borderRadius: "2px",
-              boxShadow: "0 0 8px rgba(209,0,0,0.4)"
+              boxShadow: "0 0 8px rgba(var(--primary-rgb),0.4)"
             }} />
           )}
       </div>
@@ -1195,7 +1195,7 @@ export default function NextJobsPage() {
   if (rosterLoading) {
     return (
       <Layout>
-        <div style={{ padding: "40px", textAlign: "center", color: "#6B7280" }}>
+        <div style={{ padding: "40px", textAlign: "center", color: "var(--info)" }}>
           Loading roster…
         </div>
       </Layout>
@@ -1206,7 +1206,7 @@ export default function NextJobsPage() {
     return (
       <Layout>
         <div style={{ padding: "40px", textAlign: "center" }}>
-          <h2 style={{ color: "#d10000" }}>Access Denied</h2>
+          <h2 style={{ color: "var(--primary)" }}>Access Denied</h2>
           <p>You do not have access to Next Jobs.</p>
         </div>
       </Layout>
@@ -1228,12 +1228,12 @@ export default function NextJobsPage() {
           <div style={{
             width: "60px",
             height: "60px",
-            border: "4px solid #f3f3f3",
-            borderTop: "4px solid #d10000",
+            border: "4px solid var(--surface)",
+            borderTop: "4px solid var(--primary)",
             borderRadius: "50%",
             animation: "spin 1s linear infinite"
           }}></div>
-          <p style={{ color: "#666" }}>Loading jobs...</p>
+          <p style={{ color: "var(--grey-accent)" }}>Loading jobs...</p>
           <style jsx>{`
             @keyframes spin {
               0% { transform: rotate(0deg); }
@@ -1260,17 +1260,17 @@ export default function NextJobsPage() {
         <div 
           style={{
             marginBottom: "12px",
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: "8px",
-            border: dragOverTarget === "outstanding" ? "3px solid #d10000" : "1px solid #ffe5e5",
-            boxShadow: dragOverTarget === "outstanding" ? "0 4px 12px rgba(209,0,0,0.2)" : "0 2px 4px rgba(0,0,0,0.08)",
+            border: dragOverTarget === "outstanding" ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
+            boxShadow: dragOverTarget === "outstanding" ? "0 4px 12px rgba(var(--primary-rgb),0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
             padding: "16px",
             display: "flex",
             flexDirection: "column",
             minHeight: OUTSTANDING_GRID_MAX_HEIGHT_PX,
             flexShrink: 0,
             transition: "all 0.2s ease",
-            backgroundColor: dragOverTarget === "outstanding" ? "#fff5f5" : "#fff" // Highlight entire box
+            backgroundColor: dragOverTarget === "outstanding" ? "var(--surface-light)" : "var(--surface)" // Highlight entire box
           }}
           onDragOver={handleDragOver}
           onDragEnter={(e) => handleDragEnterSection("outstanding", e)}
@@ -1286,7 +1286,7 @@ export default function NextJobsPage() {
             <h2 style={{ 
               fontSize: "18px", 
               fontWeight: "600", 
-              color: "#1f2937",
+              color: "var(--info-dark)",
               margin: 0
             }}>
               Outstanding Jobs ({outstandingJobs.length})
@@ -1302,13 +1302,13 @@ export default function NextJobsPage() {
               padding: "10px 12px",
               marginBottom: "12px",
               borderRadius: "8px",
-              border: "1px solid #e0e0e0",
+              border: "1px solid var(--surface-light)",
               fontSize: "14px",
               outline: "none",
               transition: "border-color 0.2s"
             }}
-            onFocus={(e) => e.currentTarget.style.borderColor = "#d10000"}
-            onBlur={(e) => e.currentTarget.style.borderColor = "#e0e0e0"}
+            onFocus={(e) => e.currentTarget.style.borderColor = "var(--primary)"}
+            onBlur={(e) => e.currentTarget.style.borderColor = "var(--surface-light)"}
           />
 
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -1321,7 +1321,7 @@ export default function NextJobsPage() {
               }}
             >
               {filteredOutstandingJobs.length === 0 ? (
-                <p style={{ color: "#9ca3af", fontSize: "14px", margin: 0 }}>
+                <p style={{ color: "var(--info)", fontSize: "14px", margin: 0 }}>
                   {searchTerm.trim() ? "No matching jobs found." : "No outstanding jobs."}
                 </p>
               ) : (
@@ -1349,12 +1349,12 @@ export default function NextJobsPage() {
                           borderRadius: "16px",
                           border:
                             draggingJob?.jobNumber === job.jobNumber
-                              ? "2px dashed #d10000"
-                              : "1px solid #f3f4f6",
+                              ? "2px dashed var(--primary)"
+                              : "1px solid var(--info-surface)",
                           backgroundColor:
-                            draggingJob?.jobNumber === job.jobNumber ? "#fff5f5" : "#fffafa",
+                            draggingJob?.jobNumber === job.jobNumber ? "var(--surface-light)" : "var(--background)",
                           cursor: hasAccess ? "grab" : "pointer",
-                          boxShadow: "0 8px 20px rgba(15,23,42,0.08)",
+                          boxShadow: "0 8px 20px rgba(var(--shadow-rgb),0.08)",
                           transition: "border 0.2s, background-color 0.2s, transform 0.2s",
                         }}
                         title={`${job.jobNumber} – ${job.customer || "Unknown customer"}`}
@@ -1372,12 +1372,12 @@ export default function NextJobsPage() {
                               style={{
                                 fontWeight: 700,
                                 fontSize: "16px",
-                                color: "#111827",
+                                color: "var(--accent-purple)",
                               }}
                             >
                               {job.jobNumber}
                             </div>
-                            <div style={{ fontSize: "13px", color: "#6b7280" }}>
+                            <div style={{ fontSize: "13px", color: "var(--info)" }}>
                               {job.reg || "Reg TBC"}
                             </div>
                           </div>
@@ -1385,8 +1385,8 @@ export default function NextJobsPage() {
                             style={{
                               padding: "4px 10px",
                               borderRadius: "999px",
-                              backgroundColor: "#fee2e2",
-                              color: "#b91c1c",
+                              backgroundColor: "var(--danger-surface)",
+                              color: "var(--danger)",
                               fontSize: "12px",
                               fontWeight: 700,
                             }}
@@ -1394,7 +1394,7 @@ export default function NextJobsPage() {
                             {jobTypeLabel}
                           </span>
                         </div>
-                        <div style={{ fontSize: "13px", color: "#374151" }}>
+                        <div style={{ fontSize: "13px", color: "var(--info-dark)" }}>
                           {job.customer || "Unknown customer"}
                         </div>
                         <div
@@ -1403,7 +1403,7 @@ export default function NextJobsPage() {
                             flexWrap: "wrap",
                             gap: "8px",
                             fontSize: "12px",
-                            color: "#4b5563",
+                            color: "var(--info-dark)",
                           }}
                         >
                           <span>
@@ -1430,13 +1430,13 @@ export default function NextJobsPage() {
                               borderRadius: "12px",
                               fontSize: "11px",
                               fontWeight: 600,
-                              backgroundColor: "#e0f2fe",
-                              color: "#0c4a6e",
+                              backgroundColor: "var(--info-surface)",
+                              color: "var(--info-dark)",
                             }}
                           >
                             {customerStatus}
                           </span>
-                          <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                          <span style={{ fontSize: "12px", color: "var(--info)" }}>
                             {job.status || "Status pending"}
                           </span>
                         </div>
@@ -1453,9 +1453,9 @@ export default function NextJobsPage() {
         <div style={{ 
           flex: "1 0 auto",
           borderRadius: "8px",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-          border: "1px solid #ffe5e5",
-          background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)",
+          boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
+          border: "1px solid var(--surface-light)",
+          background: "linear-gradient(to bottom right, white, var(--danger-surface), var(--surface-light))",
           padding: "24px",
           display: "flex",
           flexDirection: "column",
@@ -1478,7 +1478,7 @@ export default function NextJobsPage() {
                 margin: "0 0 12px 0",
                 fontSize: "18px",
                 fontWeight: "600",
-                color: "#1f2937"
+                color: "var(--info-dark)"
               }}>
                 MOT Testers
               </h3>
@@ -1498,7 +1498,7 @@ export default function NextJobsPage() {
         {selectedJob && (
           <div
             style={{
-              backgroundColor: "rgba(0,0,0,0.5)", // Semi-transparent overlay
+              backgroundColor: "rgba(var(--shadow-rgb),0.5)", // Semi-transparent overlay
               position: "fixed",
               top: 0,
               left: 0,
@@ -1518,8 +1518,8 @@ export default function NextJobsPage() {
                 borderRadius: "12px",
                 width: "500px",
                 maxWidth: "90%",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-                border: "1px solid #ffe5e5",
+                boxShadow: "0 8px 24px rgba(var(--shadow-rgb),0.3)",
+                border: "1px solid var(--surface-light)",
                 position: "relative"
               }}
               onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
@@ -1531,7 +1531,7 @@ export default function NextJobsPage() {
                   position: "absolute",
                   top: "20px",
                   right: "20px",
-                  backgroundColor: "#ef4444",
+                  backgroundColor: "var(--danger)",
                   color: "white",
                   padding: "8px 16px",
                   borderRadius: "8px",
@@ -1540,10 +1540,10 @@ export default function NextJobsPage() {
                   fontSize: "13px",
                   fontWeight: "600",
                   transition: "background-color 0.2s",
-                  boxShadow: "0 2px 4px rgba(239,68,68,0.2)"
+                  boxShadow: "0 2px 4px rgba(var(--danger-rgb), 0.2)"
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#dc2626"}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#ef4444"}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--danger)"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "var(--danger)"}
               >
                 Edit Job
               </button>
@@ -1552,7 +1552,7 @@ export default function NextJobsPage() {
                 fontWeight: "700", 
                 marginBottom: "16px",
                 fontSize: "20px",
-                color: "#d10000",
+                color: "var(--primary)",
                 paddingRight: "100px" // Make space for edit button
               }}>
                 Job Details
@@ -1565,11 +1565,11 @@ export default function NextJobsPage() {
                     padding: "12px 14px",
                     borderRadius: "8px",
                     backgroundColor:
-                      feedbackMessage.type === "error" ? "#fee2e2" : "#d1fae5",
-                    color: feedbackMessage.type === "error" ? "#991b1b" : "#065f46",
+                      feedbackMessage.type === "error" ? "var(--danger-surface)" : "var(--success)",
+                    color: feedbackMessage.type === "error" ? "var(--danger)" : "var(--info-dark)",
                     fontSize: "14px",
                     fontWeight: 600,
-                    border: feedbackMessage.type === "error" ? "1px solid #fca5a5" : "1px solid #6ee7b7"
+                    border: feedbackMessage.type === "error" ? "1px solid var(--danger)" : "1px solid var(--success)"
                   }}
                 >
                   {feedbackMessage.text}
@@ -1578,26 +1578,26 @@ export default function NextJobsPage() {
               
               <div style={{ marginBottom: "20px" }}>
                 <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "#6b7280" }}>Job Number:</strong> {selectedJob.jobNumber}
+                  <strong style={{ color: "var(--info)" }}>Job Number:</strong> {selectedJob.jobNumber}
                 </p>
                 <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "#6b7280" }}>Status:</strong> {selectedJob.status}
+                  <strong style={{ color: "var(--info)" }}>Status:</strong> {selectedJob.status}
                 </p>
                 <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "#6b7280" }}>Make:</strong> {selectedJob.make} {selectedJob.model}
+                  <strong style={{ color: "var(--info)" }}>Make:</strong> {selectedJob.make} {selectedJob.model}
                 </p>
                 <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "#6b7280" }}>Reg:</strong> {selectedJob.reg}
+                  <strong style={{ color: "var(--info)" }}>Reg:</strong> {selectedJob.reg}
                 </p>
                 <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "#6b7280" }}>Customer:</strong> {selectedJob.customer}
+                  <strong style={{ color: "var(--info)" }}>Customer:</strong> {selectedJob.customer}
                 </p>
                 <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "#6b7280" }}>Description:</strong> {selectedJob.description}
+                  <strong style={{ color: "var(--info)" }}>Description:</strong> {selectedJob.description}
                 </p>
                 {selectedJob.assignedTech && (
                   <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                    <strong style={{ color: "#6b7280" }}>Assigned To:</strong> {selectedJob.assignedTech.name}
+                    <strong style={{ color: "var(--info)" }}>Assigned To:</strong> {selectedJob.assignedTech.name}
                   </p>
                 )}
               </div>
@@ -1611,7 +1611,7 @@ export default function NextJobsPage() {
               >
                 <button
                   style={{
-                    backgroundColor: "#6c757d",
+                    backgroundColor: "var(--grey-accent)",
                     color: "white",
                     padding: "12px 16px",
                     borderRadius: "8px",
@@ -1622,14 +1622,14 @@ export default function NextJobsPage() {
                     transition: "background-color 0.2s"
                   }}
                   onClick={handleOpenAssignPopup} // Open assign popup
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#5a6268")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#6c757d")}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--grey-accent)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--grey-accent)")}
                 >
                   Assign Tech
                 </button>
                 <button
                   style={{
-                    backgroundColor: "#2563eb",
+                    backgroundColor: "var(--accent-purple)",
                     color: "white",
                     padding: "12px 16px",
                     borderRadius: "8px",
@@ -1640,15 +1640,15 @@ export default function NextJobsPage() {
                     transition: "background-color 0.2s"
                   }}
                   onClick={handleViewSelectedJobCard}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-purple)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-purple)")}
                 >
                   View Job Card
                 </button>
                 {selectedJob.assignedTech && (
                   <button
                     style={{
-                      backgroundColor: "#f59e0b",
+                      backgroundColor: "var(--warning)",
                       color: "white",
                       padding: "12px 16px",
                       borderRadius: "8px",
@@ -1659,15 +1659,15 @@ export default function NextJobsPage() {
                       transition: "background-color 0.2s"
                     }}
                     onClick={unassignTechFromJob} // Unassign technician
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#d97706")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#f59e0b")}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--warning)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--warning)")}
                   >
                     Unassign
                   </button>
                 )}
                 <button
                   style={{
-                    backgroundColor: "#d10000",
+                    backgroundColor: "var(--primary)",
                     color: "white",
                     padding: "12px 16px",
                     borderRadius: "8px",
@@ -1678,8 +1678,8 @@ export default function NextJobsPage() {
                     transition: "background-color 0.2s"
                   }}
                   onClick={handleCloseJobDetails} // Close popup
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#a60a0a")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#d10000")}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--danger-dark)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--primary)")}
                 >
                   Close
                 </button>
@@ -1692,7 +1692,7 @@ export default function NextJobsPage() {
         {assignPopup && (
           <div
             style={{
-              backgroundColor: "rgba(0,0,0,0.5)", // Semi-transparent overlay
+              backgroundColor: "rgba(var(--shadow-rgb),0.5)", // Semi-transparent overlay
               position: "fixed",
               top: 0,
               left: 0,
@@ -1712,8 +1712,8 @@ export default function NextJobsPage() {
                 borderRadius: "12px",
                 width: "450px",
                 maxWidth: "90%",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-                border: "1px solid #ffe5e5"
+                boxShadow: "0 8px 24px rgba(var(--shadow-rgb),0.3)",
+                border: "1px solid var(--surface-light)"
               }}
               onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
             >
@@ -1721,7 +1721,7 @@ export default function NextJobsPage() {
                 fontWeight: "700", 
                 marginBottom: "16px",
                 fontSize: "20px",
-                color: "#d10000"
+                color: "var(--primary)"
               }}>
                 Assign Technician
               </h3>
@@ -1739,15 +1739,15 @@ export default function NextJobsPage() {
                   width: "100%",
                   padding: "12px",
                   borderRadius: "8px",
-                  border: "1px solid #e0e0e0",
+                  border: "1px solid var(--surface-light)",
                   fontSize: "14px",
                   marginBottom: "16px",
                   outline: "none",
                   cursor: "pointer",
                   transition: "border-color 0.2s"
                 }}
-                onFocus={(e) => e.currentTarget.style.borderColor = "#d10000"}
-                onBlur={(e) => e.currentTarget.style.borderColor = "#e0e0e0"}
+                onFocus={(e) => e.currentTarget.style.borderColor = "var(--primary)"}
+                onBlur={(e) => e.currentTarget.style.borderColor = "var(--surface-light)"}
                 defaultValue=""
               >
                 <option value="" disabled>
@@ -1766,7 +1766,7 @@ export default function NextJobsPage() {
               <button
                 style={{
                   width: "100%",
-                  backgroundColor: "#d10000",
+                  backgroundColor: "var(--primary)",
                   color: "white",
                   padding: "12px 16px",
                   borderRadius: "8px",
@@ -1777,8 +1777,8 @@ export default function NextJobsPage() {
                   transition: "background-color 0.2s"
                 }}
                 onClick={() => setAssignPopup(false)} // Close assign popup
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#a60a0a")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#d10000")}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--danger-dark)")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--primary)")}
               >
                 Cancel
               </button>

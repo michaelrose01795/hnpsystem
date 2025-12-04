@@ -16,14 +16,14 @@ export default function HrPerformanceAppraisals() {
     <Layout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header>
-          <p style={{ color: "#6B7280", marginTop: "6px" }}>
+          <p style={{ color: "var(--info)", marginTop: "6px" }}>
             Track reviews, ratings, development plans, and upcoming appraisals.
           </p>
         </header>
 
         {isLoading && (
           <SectionCard title="Loading performance data" subtitle="Fetching placeholder employee list.">
-            <span style={{ color: "#6B7280" }}>
+            <span style={{ color: "var(--info)" }}>
               Gathering live performance records from Supabase.
             </span>
           </SectionCard>
@@ -31,7 +31,7 @@ export default function HrPerformanceAppraisals() {
 
         {error && (
           <SectionCard title="Unable to load performance data" subtitle="Mock API returned an error.">
-            <span style={{ color: "#B91C1C" }}>{error.message}</span>
+            <span style={{ color: "var(--danger)" }}>{error.message}</span>
           </SectionCard>
         )}
 
@@ -44,7 +44,7 @@ export default function HrPerformanceAppraisals() {
               >
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
-                    <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                    <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                       <th style={{ textAlign: "left", paddingBottom: "10px" }}>Employee</th>
                       <th>Period</th>
                       <th>Reviewer</th>
@@ -53,7 +53,7 @@ export default function HrPerformanceAppraisals() {
                   </thead>
                   <tbody>
                     {performanceReviews.map((review) => (
-                      <tr key={review.id} style={{ borderTop: "1px solid #E5E7EB" }}>
+                      <tr key={review.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
                         <td style={{ padding: "12px 0", fontWeight: 600 }}>{review.employee}</td>
                         <td>{review.period}</td>
                         <td>{review.reviewer}</td>
@@ -75,7 +75,7 @@ export default function HrPerformanceAppraisals() {
               >
                 <ul style={{ margin: 0, paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
                   {performanceReviews.map((review) => (
-                    <li key={review.id} style={{ color: "#374151" }}>
+                    <li key={review.id} style={{ color: "var(--info-dark)" }}>
                       <strong>{review.employee}:</strong> {review.developmentFocus}
                     </li>
                   ))}
@@ -95,7 +95,7 @@ export default function HrPerformanceAppraisals() {
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
-                    <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                    <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                       <th style={{ textAlign: "left", paddingBottom: "10px" }}>Employee</th>
                       <th>Overall</th>
                       <th>Attendance</th>
@@ -107,7 +107,7 @@ export default function HrPerformanceAppraisals() {
                   </thead>
                   <tbody>
                     {performanceReviews.map((review) => (
-                      <tr key={review.id} style={{ borderTop: "1px solid #E5E7EB" }}>
+                      <tr key={review.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
                         <td style={{ padding: "12px 0", fontWeight: 600 }}>{review.employee}</td>
                         <td>
                           <StatusTag
@@ -131,7 +131,7 @@ export default function HrPerformanceAppraisals() {
               title="Create Performance Review"
               subtitle="Kick off a new review cycle or log a mid-year check-in."
             >
-              <p style={{ color: "#4B5563", marginBottom: "14px" }}>
+              <p style={{ color: "var(--info-dark)", marginBottom: "14px" }}>
                 Select an employee to start drafting their performance review. You can attach supporting documents and invite
                 co-reviewers.
               </p>
@@ -185,7 +185,7 @@ const buttonStylePrimary = {
   padding: "10px 18px",
   borderRadius: "10px",
   border: "none",
-  background: "#F97316",
+  background: "var(--danger)",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",
@@ -194,9 +194,9 @@ const buttonStylePrimary = {
 const buttonStyleSecondary = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px solid #FED7AA",
+  border: "1px solid var(--warning)",
   background: "white",
-  color: "#EA580C",
+  color: "var(--danger)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -206,7 +206,7 @@ const buttonStyleGhost = {
   borderRadius: "10px",
   border: "1px solid transparent",
   background: "transparent",
-  color: "#EA580C",
+  color: "var(--danger)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -215,7 +215,7 @@ const labelStyle = {
   display: "flex",
   flexDirection: "column",
   gap: "6px",
-  color: "#374151",
+  color: "var(--info-dark)",
   fontSize: "0.85rem",
   fontWeight: 600,
 };
@@ -224,8 +224,8 @@ const inputStyle = {
   width: "100%",
   padding: "10px 12px",
   borderRadius: "10px",
-  border: "1px solid #E5E7EB",
+  border: "1px solid var(--accent-purple-surface)",
   background: "white",
-  color: "#111827",
+  color: "var(--accent-purple)",
   fontSize: "0.9rem",
 };

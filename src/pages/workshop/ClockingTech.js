@@ -110,7 +110,7 @@ export default function ClockingTech() {
   return (
     <Layout>
       <div style={{ padding: "20px" }}>
-        <h1 style={{ color: "#FF4040", marginBottom: "20px" }}>My Clocking</h1>
+        <h1 style={{ color: "var(--primary)", marginBottom: "20px" }}>My Clocking</h1>
 
         <button
           onClick={handleToggle}
@@ -121,7 +121,7 @@ export default function ClockingTech() {
             borderRadius: "8px",
             border: "none",
             cursor: "pointer",
-            backgroundColor: isClockedIn() ? "#FF8080" : "#FF4040",
+            backgroundColor: isClockedIn() ? "var(--primary-light)" : "var(--primary)",
             color: "white",
             marginBottom: "20px",
           }}

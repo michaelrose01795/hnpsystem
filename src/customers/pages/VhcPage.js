@@ -17,7 +17,7 @@ export default function CustomerVhcPage() {
         </div>
       )}
       {isLoading ? (
-        <div className="rounded-2xl border border-[#ffe0e0] bg-white p-5 text-sm text-slate-500 shadow mb-4">
+        <div className="rounded-2xl border border-[var(--surface-light)] bg-white p-5 text-sm text-slate-500 shadow mb-4">
           Loading VHC updates…
         </div>
       ) : null}

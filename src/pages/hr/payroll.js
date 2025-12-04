@@ -39,14 +39,14 @@ export default function HrPayroll() {
     <Layout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <p style={{ color: "#6B7280" }}>
+          <p style={{ color: "var(--info)" }}>
             Track compensation, pay rise approvals, overtime payments, and exports.
           </p>
         </header>
 
         {isLoading && (
           <SectionCard title="Loading payroll data" subtitle="Fetching pay records and overtime.">
-            <span style={{ color: "#6B7280" }}>
+            <span style={{ color: "var(--info)" }}>
               Please wait while we retrieve placeholder payroll information for testing purposes.
             </span>
           </SectionCard>
@@ -54,7 +54,7 @@ export default function HrPayroll() {
 
         {error && (
           <SectionCard title="Unable to load payroll data" subtitle="Mock API returned an error.">
-            <span style={{ color: "#B91C1C" }}>{error.message}</span>
+            <span style={{ color: "var(--danger)" }}>{error.message}</span>
           </SectionCard>
         )}
 
@@ -73,7 +73,7 @@ export default function HrPayroll() {
                 <div style={{ maxHeight: "440px", overflowY: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
-                      <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                      <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                         <th style={{ paddingBottom: "10px", textAlign: "left" }}>Employee</th>
                         <th>Department</th>
                         <th>Contract</th>
@@ -82,11 +82,11 @@ export default function HrPayroll() {
                     </thead>
                     <tbody>
                       {employeeDirectory.map((employee) => (
-                        <tr key={employee.id} style={{ borderTop: "1px solid #E5E7EB" }}>
+                        <tr key={employee.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
                           <td style={{ padding: "12px 0" }}>
                             <div style={{ display: "flex", flexDirection: "column" }}>
-                              <span style={{ fontWeight: 600, color: "#111827" }}>{employee.name}</span>
-                              <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>{employee.jobTitle}</span>
+                              <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{employee.name}</span>
+                              <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>{employee.jobTitle}</span>
                             </div>
                           </td>
                           <td>{employee.department}</td>
@@ -105,23 +105,23 @@ export default function HrPayroll() {
                     <div
                       key={request.id}
                       style={{
-                        border: "1px solid #E5E7EB",
+                        border: "1px solid var(--accent-purple-surface)",
                         borderRadius: "12px",
                         padding: "12px",
                         display: "flex",
                         flexDirection: "column",
                         gap: "6px",
-                        background: "rgba(14, 165, 233, 0.04)",
+                        background: "rgba(var(--info-rgb), 0.04)",
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontWeight: 600, color: "#111827" }}>{request.employee}</span>
+                        <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{request.employee}</span>
                         <StatusTag tone={request.status === "Approved" ? "success" : "warning"} label={request.status} />
                       </div>
-                      <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>
+                      <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
                         Submitted {new Date(request.submittedOn).toLocaleDateString()}
                       </span>
-                      <div style={{ display: "flex", gap: "14px", fontSize: "0.85rem", color: "#374151" }}>
+                      <div style={{ display: "flex", gap: "14px", fontSize: "0.85rem", color: "var(--info-dark)" }}>
                         <span>Current £{request.currentRate.toFixed(2)}</span>
                         <span>Requested £{request.requestedRate.toFixed(2)}</span>
                         <span>Approver: {request.approver}</span>
@@ -152,7 +152,7 @@ export default function HrPayroll() {
               >
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
-                    <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                    <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                       <th style={{ textAlign: "left", paddingBottom: "10px" }}>Employee</th>
                       <th>Effective Date</th>
                       <th>Rate</th>
@@ -162,7 +162,7 @@ export default function HrPayroll() {
                   </thead>
                   <tbody>
                     {payRateHistory.map((entry) => (
-                      <tr key={entry.id} style={{ borderTop: "1px solid #E5E7EB" }}>
+                      <tr key={entry.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
                         <td style={{ padding: "12px 0", fontWeight: 600 }}>{entry.employee}</td>
                         <td>{new Date(entry.effectiveDate).toLocaleDateString()}</td>
                         <td>£{Number(entry.rate).toFixed(2)}</td>
@@ -188,7 +188,7 @@ export default function HrPayroll() {
                     <div
                       key={summary.id}
                       style={{
-                        border: "1px solid #E5E7EB",
+                        border: "1px solid var(--accent-purple-surface)",
                         borderRadius: "12px",
                         padding: "12px",
                         display: "flex",
@@ -197,16 +197,16 @@ export default function HrPayroll() {
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontWeight: 600, color: "#111827" }}>{summary.employee}</span>
-                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#0EA5E9" }}>
+                        <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{summary.employee}</span>
+                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>
                           {summary.status}
                         </span>
                       </div>
-                      <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>
+                      <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
                         Period {new Date(summary.periodStart).toLocaleDateString()} -{" "}
                         {new Date(summary.periodEnd).toLocaleDateString()}
                       </span>
-                      <div style={{ display: "flex", gap: "14px", fontSize: "0.85rem", color: "#374151" }}>
+                      <div style={{ display: "flex", gap: "14px", fontSize: "0.85rem", color: "var(--info-dark)" }}>
                         <span>{summary.overtimeHours} hrs</span>
                         <span>Rate £{Number(summary.overtimeRate).toFixed(2)}</span>
                         <span>Bonus £{Number(summary.bonus).toFixed(2)}</span>
@@ -227,7 +227,7 @@ const buttonStylePrimary = {
   padding: "10px 18px",
   borderRadius: "10px",
   border: "none",
-  background: "#F97316",
+  background: "var(--danger)",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",
@@ -236,9 +236,9 @@ const buttonStylePrimary = {
 const buttonStyleSecondary = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px solid #FED7AA",
+  border: "1px solid var(--warning)",
   background: "white",
-  color: "#EA580C",
+  color: "var(--danger)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -248,7 +248,7 @@ const buttonStyleGhost = {
   borderRadius: "10px",
   border: "1px solid transparent",
   background: "transparent",
-  color: "#EA580C",
+  color: "var(--danger)",
   fontWeight: 600,
   cursor: "pointer",
 };

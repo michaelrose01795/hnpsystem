@@ -103,8 +103,8 @@ export default function Sidebar({
               minHeight: 24,
               padding: "0 6px",
               borderRadius: 999,
-              background: "#d10000",
-              color: "#ffffff",
+              background: "var(--primary)",
+              color: "var(--surface)",
               fontSize: "0.75rem",
               fontWeight: 700,
               display: "inline-flex",
@@ -122,7 +122,7 @@ export default function Sidebar({
   return (
     <aside
       style={{
-        background: "#ffffff",
+        background: "var(--surface)",
         padding: "0",
         width: isCondensed ? "100%" : "260px",
         minWidth: isCondensed ? "auto" : "220px",
@@ -133,9 +133,9 @@ export default function Sidebar({
         flexDirection: "column",
         borderRadius: "16px",
         boxShadow: isCondensed
-          ? "0 12px 30px rgba(209, 0, 0, 0.12)"
-          : "0 20px 40px rgba(209, 0, 0, 0.12)",
-        border: "1px solid #ffe0e0",
+          ? "0 12px 30px rgba(var(--primary-rgb), 0.12)"
+          : "0 20px 40px rgba(var(--primary-rgb), 0.12)",
+        border: "1px solid var(--surface-light)",
         position: isCondensed ? "relative" : "sticky",
         top: isCondensed ? "auto" : "10px",
         overflowX: "hidden",
@@ -146,7 +146,7 @@ export default function Sidebar({
       {/* Header */}
       <div
         style={{
-          background: "linear-gradient(to right, #d10000, #a00000)",
+          background: "linear-gradient(to right, var(--primary), var(--primary-dark))",
           padding: "24px",
           color: "white",
           position: "relative",
@@ -190,12 +190,12 @@ export default function Sidebar({
               padding: "0 16px",
               height: "36px",
               borderRadius: "10px",
-              border: "1px solid rgba(255,255,255,0.4)",
-              backgroundColor: "rgba(255,255,255,0.12)",
-              color: "#ffffff",
+              border: "1px solid rgba(var(--surface-rgb), 0.4)",
+              backgroundColor: "rgba(var(--surface-rgb), 0.12)",
+              color: "var(--surface)",
               fontWeight: 700,
               cursor: "pointer",
-              boxShadow: "0 6px 16px rgba(0,0,0,0.15)",
+              boxShadow: "0 6px 16px rgba(var(--shadow-rgb),0.15)",
             }}
           >
             Close
@@ -215,12 +215,12 @@ export default function Sidebar({
                 gap: "8px",
                 padding: "10px 14px",
                 borderRadius: "12px",
-                border: "1px solid #ffe0e0",
-                background: "#fff5f5",
-                color: "#a00000",
+                border: "1px solid var(--surface-light)",
+                background: "var(--surface-light)",
+                color: "var(--primary-dark)",
                 fontWeight: 600,
                 textDecoration: "none",
-                boxShadow: "0 6px 16px rgba(209,0,0,0.12)",
+                boxShadow: "0 6px 16px rgba(var(--primary-rgb),0.12)",
               }}
             >
               <span role="img" aria-label="deliveries">
@@ -234,7 +234,7 @@ export default function Sidebar({
           <>
             <div
               style={{
-                color: "#a00000",
+                color: "var(--primary-dark)",
                 fontWeight: 700,
                 fontSize: "0.85rem",
                 letterSpacing: "0.05em",
@@ -257,16 +257,16 @@ export default function Sidebar({
                     padding: "10px 14px",
                     marginBottom: "10px",
                     background: isActive
-                      ? "linear-gradient(90deg, #d10000, #a00000)"
-                      : "#ffffff",
-                    color: isActive ? "#ffffff" : "#a00000",
+                      ? "linear-gradient(90deg, var(--primary), var(--primary-dark))"
+                      : "var(--surface)",
+                    color: isActive ? "var(--surface)" : "var(--primary-dark)",
                     borderRadius: "10px",
                     fontWeight: 600,
                     cursor: "pointer",
-                    border: isActive ? "none" : "1px solid #ffe0e0",
+                    border: isActive ? "none" : "1px solid var(--surface-light)",
                     boxShadow: isActive
-                      ? "0 12px 20px rgba(161, 0, 0, 0.25)"
-                      : "0 4px 12px rgba(0, 0, 0, 0.05)",
+                      ? "0 12px 20px rgba(var(--danger-rgb), 0.25)"
+                      : "0 4px 12px rgba(var(--shadow-rgb), 0.05)",
                     textDecoration: "none",
                   }}
                 >
@@ -278,7 +278,7 @@ export default function Sidebar({
               style={{
                 height: "1px",
                 width: "100%",
-                background: "rgba(160,0,0,0.12)",
+                background: "rgba(var(--danger-rgb), 0.12)",
                 margin: "14px 0",
               }}
             />
@@ -290,7 +290,7 @@ export default function Sidebar({
           <>
             <div
               style={{
-                color: "#a00000",
+                color: "var(--primary-dark)",
                 fontWeight: 700,
                 fontSize: "0.85rem",
                 letterSpacing: "0.05em",
@@ -312,16 +312,16 @@ export default function Sidebar({
                     padding: "10px 14px",
                     marginBottom: "10px",
                     background: isActive
-                      ? "linear-gradient(90deg, #d10000, #a00000)"
-                      : "#ffffff",
-                    color: isActive ? "#ffffff" : "#a00000",
+                      ? "linear-gradient(90deg, var(--primary), var(--primary-dark))"
+                      : "var(--surface)",
+                    color: isActive ? "var(--surface)" : "var(--primary-dark)",
                     borderRadius: "10px",
                     fontWeight: 600,
                     cursor: "pointer",
-                    border: isActive ? "none" : "1px solid #ffe0e0",
+                    border: isActive ? "none" : "1px solid var(--surface-light)",
                     boxShadow: isActive
-                      ? "0 12px 20px rgba(161, 0, 0, 0.25)"
-                      : "0 4px 12px rgba(0, 0, 0, 0.05)",
+                      ? "0 12px 20px rgba(var(--danger-rgb), 0.25)"
+                      : "0 4px 12px rgba(var(--shadow-rgb), 0.05)",
                     textDecoration: "none",
                   }}
                 >
@@ -338,7 +338,7 @@ export default function Sidebar({
             <div
               key={`${section.label}-header`}
               style={{
-                color: "#a00000",
+                color: "var(--primary-dark)",
                 fontWeight: 700,
                 fontSize: "0.85rem",
                 letterSpacing: "0.05em",
@@ -361,16 +361,16 @@ export default function Sidebar({
                     padding: "10px 14px",
                     marginBottom: "10px",
                     background: isActive
-                      ? "linear-gradient(90deg, #d10000, #a00000)"
-                      : "#ffffff",
-                    color: isActive ? "#ffffff" : "#a00000",
+                      ? "linear-gradient(90deg, var(--primary), var(--primary-dark))"
+                      : "var(--surface)",
+                    color: isActive ? "var(--surface)" : "var(--primary-dark)",
                     borderRadius: "10px",
                     fontWeight: 600,
                     cursor: "pointer",
-                    border: isActive ? "none" : "1px solid #ffe0e0",
+                    border: isActive ? "none" : "1px solid var(--surface-light)",
                     boxShadow: isActive
-                      ? "0 12px 20px rgba(161, 0, 0, 0.25)"
-                      : "0 4px 12px rgba(0, 0, 0, 0.05)",
+                      ? "0 12px 20px rgba(var(--danger-rgb), 0.25)"
+                      : "0 4px 12px rgba(var(--shadow-rgb), 0.05)",
                     textDecoration: "none",
                   }}
                 >
@@ -386,7 +386,7 @@ export default function Sidebar({
           <>
             <div
               style={{
-                color: "#a00000",
+                color: "var(--primary-dark)",
                 fontWeight: 700,
                 fontSize: "0.85rem",
                 letterSpacing: "0.05em",
@@ -407,12 +407,12 @@ export default function Sidebar({
                     style={{
                       padding: "10px 14px",
                       borderRadius: "10px",
-                      background: "linear-gradient(90deg, #a00000, #700000)",
-                      color: "#ffffff",
+                      background: "linear-gradient(90deg, var(--primary-dark), var(--primary-dark))",
+                      color: "var(--surface)",
                       fontWeight: 700,
                       border: "none",
                       cursor: "pointer",
-                      boxShadow: "0 12px 20px rgba(112, 0, 0, 0.3)",
+                      boxShadow: "0 12px 20px rgba(var(--danger-rgb), 0.3)",
                       width: "100%",
                       textDecoration: "none",
                     }}
@@ -433,16 +433,16 @@ export default function Sidebar({
                       padding: "10px 14px",
                       marginBottom: "10px",
                       background: isActive
-                        ? "linear-gradient(90deg, #d10000, #a00000)"
-                        : "#ffffff",
-                      color: isActive ? "#ffffff" : "#a00000",
+                        ? "linear-gradient(90deg, var(--primary), var(--primary-dark))"
+                        : "var(--surface)",
+                      color: isActive ? "var(--surface)" : "var(--primary-dark)",
                       borderRadius: "10px",
                       fontWeight: 600,
                       cursor: "pointer",
-                      border: isActive ? "none" : "1px solid #ffe0e0",
+                      border: isActive ? "none" : "1px solid var(--surface-light)",
                       boxShadow: isActive
-                        ? "0 12px 20px rgba(161, 0, 0, 0.25)"
-                        : "0 4px 12px rgba(0, 0, 0, 0.05)",
+                        ? "0 12px 20px rgba(var(--danger-rgb), 0.25)"
+                        : "0 4px 12px rgba(var(--shadow-rgb), 0.05)",
                       textDecoration: "none",
                     }}
                 >

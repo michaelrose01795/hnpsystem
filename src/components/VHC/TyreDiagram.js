@@ -19,10 +19,10 @@ const TYRE_KEYS = [
 ];
 
 const statusPalette = {
-  unknown: { fill: "#9E9E9E", text: "#0F172A", label: "#E5E7EB" },
-  danger: { fill: "#E53935", text: "#FDECEE", label: "#F87171" },
-  advisory: { fill: "#FB8C00", text: "#1F1400", label: "#FDBA74" },
-  good: { fill: "#43A047", text: "#E6F4EA", label: "#4ADE80" },
+  unknown: { fill: "var(--border)", text: "var(--accent-purple)", label: "var(--accent-purple-surface)" },
+  danger: { fill: "var(--danger)", text: "var(--danger-surface)", label: "var(--danger)" },
+  advisory: { fill: "var(--warning)", text: "var(--warning-dark)", label: "var(--warning)" },
+  good: { fill: "var(--success)", text: "var(--success-surface)", label: "var(--success)" },
 };
 
 export const getReadingStatus = (value) => {
@@ -155,7 +155,7 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
 
         <defs>
           <filter id="tyreShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="rgba(0,0,0,0.55)" />
+            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="rgba(var(--shadow-rgb),0.55)" />
           </filter>
         </defs>
       </svg>
@@ -168,7 +168,7 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
           border: `1px solid ${spareActive ? palette.accent : palette.border}`,
           padding: "10px 20px",
           background: spareActive ? palette.accent : palette.surfaceAlt,
-          color: spareActive ? "#ffffff" : palette.textPrimary,
+          color: spareActive ? "var(--surface)" : palette.textPrimary,
           fontWeight: 600,
           cursor: onSpareSelect ? "pointer" : "default",
           boxShadow: spareActive ? shadows.md : shadows.sm,

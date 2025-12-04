@@ -39,7 +39,7 @@ export default function HrReportsExports() {
     <Layout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header>
-          <p style={{ color: "#6B7280", marginTop: "6px" }}>
+          <p style={{ color: "var(--info)", marginTop: "6px" }}>
             Generate HR analytics, download data sets, and schedule automated exports.
           </p>
         </header>
@@ -51,10 +51,10 @@ export default function HrReportsExports() {
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
           }}
         >
-          <MetricCard icon="🧾" label="Scheduled Exports" primary="4" accentColor="#6366F1" />
-          <MetricCard icon="📊" label="Reports Generated (30d)" primary="18" accentColor="#22C55E" />
-          <MetricCard icon="📥" label="Downloads (30d)" primary="126" accentColor="#F97316" />
-          <MetricCard icon="⚠️" label="Alerts Triggered" primary="3" accentColor="#EF4444" />
+          <MetricCard icon="🧾" label="Scheduled Exports" primary="4" accentColor="var(--accent-purple)" />
+          <MetricCard icon="📊" label="Reports Generated (30d)" primary="18" accentColor="var(--success)" />
+          <MetricCard icon="📥" label="Downloads (30d)" primary="126" accentColor="var(--danger)" />
+          <MetricCard icon="⚠️" label="Alerts Triggered" primary="3" accentColor="var(--danger)" />
         </section>
 
         <SectionCard
@@ -110,7 +110,7 @@ export default function HrReportsExports() {
               <div
                 key={report.id}
                 style={{
-                  border: "1px solid #E5E7EB",
+                  border: "1px solid var(--accent-purple-surface)",
                   borderRadius: "12px",
                   padding: "16px",
                   display: "flex",
@@ -119,16 +119,16 @@ export default function HrReportsExports() {
                   background: "white",
                 }}
               >
-                <span style={{ fontWeight: 600, color: "#111827" }}>{report.title}</span>
-                <p style={{ margin: 0, color: "#4B5563", fontSize: "0.9rem" }}>{report.description}</p>
-                <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>Formats: {report.format}</span>
+                <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{report.title}</span>
+                <p style={{ margin: 0, color: "var(--info-dark)", fontSize: "0.9rem" }}>{report.description}</p>
+                <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>Formats: {report.format}</span>
                 <button type="button" style={buttonStyleSecondary}>
                   View definition
                 </button>
               </div>
             ))}
           </div>
-          <p style={{ color: "#6B7280", marginTop: "16px" }}>
+          <p style={{ color: "var(--info)", marginTop: "16px" }}>
             Placeholder metrics for UI verification. Connect to Supabase views and export endpoints before go-live.
           </p>
         </SectionCard>
@@ -141,7 +141,7 @@ const buttonStylePrimary = {
   padding: "8px 14px",
   borderRadius: "10px",
   border: "none",
-  background: "#6366F1",
+  background: "var(--accent-purple)",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",
@@ -150,9 +150,9 @@ const buttonStylePrimary = {
 const buttonStyleSecondary = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px solid #C7D2FE",
+  border: "1px solid var(--accent-purple)",
   background: "white",
-  color: "#4F46E5",
+  color: "var(--accent-purple)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -160,9 +160,9 @@ const buttonStyleSecondary = {
 const buttonStyleGhost = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px dashed #D1D5DB",
+  border: "1px dashed var(--info)",
   background: "transparent",
-  color: "#6B7280",
+  color: "var(--info)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -172,15 +172,15 @@ const labelStyle = {
   flexDirection: "column",
   gap: "6px",
   fontSize: "0.85rem",
-  color: "#374151",
+  color: "var(--info-dark)",
   fontWeight: 600,
 };
 
 const inputStyle = {
   borderRadius: "10px",
-  border: "1px solid #E5E7EB",
+  border: "1px solid var(--accent-purple-surface)",
   padding: "10px 12px",
   fontWeight: 500,
-  color: "#111827",
-  background: "#FFFFFF",
+  color: "var(--accent-purple)",
+  background: "var(--surface)",
 };

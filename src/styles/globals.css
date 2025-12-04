@@ -16,8 +16,8 @@ body,
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-  background: linear-gradient(to bottom, #fffafa, #ffecec);
-  color: #222;
+  background: var(--background);
+  color: var(--text-primary);
   line-height: 1.35;
   min-height: 100%;
   overflow-x: hidden;
@@ -61,20 +61,20 @@ body {
 
 /* Links */
 a {
-  color: #d10000;
+  color: var(--primary);
   text-decoration: none;
   transition: color 0.2s;
 }
 a:hover {
-  color: #a00000;
+  color: var(--primary-light);
   text-decoration: underline;
 }
 
 /* Buttons */
 button {
-  background: #d10000;
-  color: white;
-  border: none;
+  background: var(--primary);
+  color: var(--text-inverse);
+  border: 1px solid var(--primary);
   border-radius: 4px;
   padding: 8px 12px;
   font-size: 0.9rem;
@@ -84,8 +84,8 @@ button {
   transform: none;
 }
 button:hover {
-  background: #a00000;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  background: var(--primary-light);
+  box-shadow: 0 1px 4px rgba(var(--shadow-rgb), 0.25);
 }
 
 /* Inputs, Textareas & Selects */
@@ -97,40 +97,41 @@ textarea,
 select {
   width: 100%;
   padding: 8px 12px;
-  border: 2px solid #e0e0e0;
+  border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 0.9rem;
   font-family: inherit;
   transition: all 0.3s ease;
   outline: none;
-  background-color: #fafafa;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  background-color: var(--surface-light);
+  color: var(--text-primary);
+  box-shadow: 0 2px 4px rgba(var(--shadow-rgb), 0.08);
 }
 input:hover,
 textarea:hover,
 select:hover {
-  border-color: #d10000;
-  box-shadow: 0 0 3px #d10000;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
 }
 input:focus,
 textarea:focus,
 select:focus {
-  border-color: #ff4040;
-  background-color: #fff;
-  box-shadow: 0 4px 8px rgba(255, 64, 64, 0.1);
+  border-color: var(--primary-light);
+  background-color: var(--surface);
+  box-shadow: 0 4px 8px rgba(var(--primary-rgb), 0.12);
 }
 
 /* Placeholder style */
 input::placeholder,
 textarea::placeholder {
-  color: #999;
+  color: var(--text-secondary);
 }
 
 /* Labels */
 label {
   font-size: 0.8rem;
   font-weight: 500;
-  color: #555;
+  color: var(--text-secondary);
   display: block;
   margin-bottom: 2px;
 }
@@ -142,22 +143,22 @@ section,
 div.card,
 div.news-card {
   border-radius: 10px;
-  background-color: #fff;
+  background-color: var(--surface);
   padding: 14px;
   margin-bottom: 14px; /* tighter spacing between cards */
-  box-shadow: 
-    0 4px 10px rgba(0, 0, 0, 0.06),
-    0 0 12px rgba(255, 64, 64, 0.03); /* subtle glow */
+  box-shadow:
+    0 4px 10px rgba(var(--shadow-rgb), 0.06),
+    0 0 12px rgba(var(--primary-rgb), 0.06); /* subtle glow */
   transition: all 0.3s ease, box-shadow 0.4s ease;
 }
 section:hover,
 div.card:hover,
 div.news-card:hover {
   transform: translateY(-3px); /* floating lift */
-  box-shadow: 
-    0 8px 16px rgba(0, 0, 0, 0.1),
-    0 0 18px rgba(255, 64, 64, 0.12); /* stronger glow on hover */
-  border-color: #ffb3b3;
+  box-shadow:
+    0 8px 16px rgba(var(--shadow-rgb), 0.16),
+    0 0 18px rgba(var(--primary-rgb), 0.18); /* stronger glow on hover */
+  border-color: var(--primary-light);
 }
 
 /* Optional: glowing effect for headings inside cards */
@@ -167,7 +168,7 @@ div.card h3 {
 }
 div.news-card:hover h3,
 div.card:hover h3 {
-  text-shadow: 0 0 8px rgba(255, 64, 64, 0.6);
+  text-shadow: 0 0 8px rgba(var(--primary-rgb), 0.6);
 }
 
 /* ========================================================= */
@@ -177,19 +178,19 @@ div.card:hover h3 {
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   text-decoration: none;
-  color: #888; /* default muted color */
+  color: var(--text-secondary); /* default muted color */
   transition: background-color 0.2s, color 0.2s;
   display: block;
 }
 
 .sidebar-link:hover {
-  background-color: rgba(209, 0, 0, 0.1); /* subtle hover effect */
-  color: #222;
+  background-color: rgba(var(--primary-rgb), 0.1); /* subtle hover effect */
+  color: var(--text-primary);
 }
 
 .sidebar-link.active {
-  background-color: #d10000; /* red when active page */
-  color: #fff; /* white text when active */
+  background-color: var(--primary); /* accent when active page */
+  color: var(--text-inverse); /* contrast */
 }
 
 .sidebar-action {
@@ -200,12 +201,12 @@ div.card:hover h3 {
 
 .sidebar-action:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(161, 0, 0, 0.25);
+  box-shadow: 0 12px 24px rgba(var(--danger-rgb), 0.25);
   text-decoration: none !important;
 }
 
 .sidebar-action:focus-visible {
-  outline: 2px solid #ff8a8a;
+  outline: 2px solid var(--primary-light);
   outline-offset: 2px;
   text-decoration: none !important;
 }
@@ -214,8 +215,8 @@ div.card:hover h3 {
 /* === Dark Mode Overrides === */
 /* ========================================================= */
 body.dark-mode {
-  background-color: #121212 !important;
-  color: #e0e0e0 !important;
+  background-color: var(--text-primary) !important;
+  color: var(--surface-light) !important;
 }
 
 /* Smooth transition for all main elements */
@@ -235,7 +236,7 @@ body.dark-mode main,
 body.dark-mode header,
 body.dark-mode aside {
   background-color: transparent !important;
-  color: #e0e0e0 !important;
+  color: var(--surface-light) !important;
 }
 
 /* Popups & modals */
@@ -246,43 +247,43 @@ body.dark-mode .overlay,
 body.dark-mode [class*="popup"],
 body.dark-mode [class*="modal"],
 body.dark-mode [class*="dialog"] {
-  background-color: #1f1f1f !important;
-  color: #e0e0e0 !important;
-  border: 1px solid #333 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+  background-color: var(--text-primary) !important;
+  color: var(--surface-light) !important;
+  border: 1px solid var(--text-secondary) !important;
+  box-shadow: 0 4px 12px rgba(var(--shadow-rgb), 0.6) !important;
 }
 
 /* Buttons in dark mode */
 body.dark-mode button {
-  background-color: #ff4040 !important;
-  color: #fff !important;
-  border: 1px solid #ff5a5a !important;
+  background-color: var(--primary) !important;
+  color: var(--surface) !important;
+  border: 1px solid var(--primary-light) !important;
 }
 body.dark-mode button:hover {
-  background-color: #d10000 !important;
+  background-color: var(--primary) !important;
 }
 
 /* Inputs, selects, and textareas in dark mode */
 body.dark-mode input,
 body.dark-mode textarea,
 body.dark-mode select {
-  background-color: #1e1e1e !important;
-  color: #e0e0e0 !important;
-  border-color: #333 !important;
+  background-color: var(--text-primary) !important;
+  color: var(--surface-light) !important;
+  border-color: var(--text-secondary) !important;
   box-shadow: none !important;
 }
 
 /* Links in dark mode */
 body.dark-mode a {
-  color: #ff4040 !important;
+  color: var(--primary) !important;
 }
 body.dark-mode a:hover {
-  color: #ff7070 !important;
+  color: var(--primary-light) !important;
 }
 
 /* Labels in dark mode */
 body.dark-mode label {
-  color: #ccc !important;
+  color: var(--background) !important;
 }
 
 /* ========================================================= */
@@ -291,22 +292,22 @@ body.dark-mode label {
 hr {
   border: none;
   height: 1px;
-  background: #eee;
+  background: var(--surface-light);
   margin: 10px 0;
 }
 
 .text-gradient {
-  background: linear-gradient(to right, #ff4040, #d10000);
+  background: linear-gradient(to right, var(--primary), var(--primary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .shadow-soft {
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 10px rgba(var(--shadow-rgb), 0.05);
   transition: all 0.3s ease;
 }
 .shadow-soft:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 20px rgba(var(--shadow-rgb), 0.1);
   transform: translateY(-2px);
 }
 

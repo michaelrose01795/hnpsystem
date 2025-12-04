@@ -65,7 +65,7 @@ export default function TyresSection({
         border: `1px solid ${palette.border}`, // Provide subtle border
         borderRadius: "16px", // Match rounded card styling
         padding: "16px", // Add internal spacing
-        boxShadow: "0 10px 24px rgba(15,23,42,0.08)", // Apply soft shadow for elevation
+        boxShadow: "0 10px 24px rgba(var(--shadow-rgb),0.08)", // Apply soft shadow for elevation
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -97,10 +97,10 @@ export default function TyresSection({
             padding: "12px 14px",
             borderRadius: "12px",
             border: `1px solid ${palette.border}`,
-            backgroundColor: "#fff",
+            backgroundColor: "var(--surface)",
             fontSize: "14px",
             color: palette.textPrimary,
-            boxShadow: isFocused ? "0 0 0 3px rgba(209,0,0,0.18)" : "inset 0 1px 2px rgba(15,23,42,0.08)",
+            boxShadow: isFocused ? "0 0 0 3px rgba(var(--primary-rgb),0.18)" : "inset 0 1px 2px rgba(var(--shadow-rgb),0.08)",
             transition: "box-shadow 0.2s ease, border-color 0.2s ease",
           }}
         />
@@ -111,10 +111,10 @@ export default function TyresSection({
               top: "calc(100% + 8px)",
               left: 0,
               right: 0,
-              backgroundColor: "#fff",
+              backgroundColor: "var(--surface)",
               borderRadius: "12px",
               border: `1px solid ${palette.border}`,
-              boxShadow: "0 18px 36px rgba(15,23,42,0.12)",
+              boxShadow: "0 18px 36px rgba(var(--shadow-rgb),0.12)",
               maxHeight: "220px",
               overflowY: "auto",
               zIndex: 30,
@@ -140,7 +140,7 @@ export default function TyresSection({
                   gap: "4px",
                 }}
                 onMouseEnter={(event) => {
-                  event.currentTarget.style.backgroundColor = "#fff4f4";
+                  event.currentTarget.style.backgroundColor = "var(--surface-light)";
                 }}
                 onMouseLeave={(event) => {
                   event.currentTarget.style.backgroundColor = "transparent";
@@ -166,8 +166,8 @@ export default function TyresSection({
             gap: "12px",
             padding: "12px",
             borderRadius: "12px",
-            backgroundColor: "#fff5f5",
-            border: "1px solid #ffd6d6",
+            backgroundColor: "var(--surface-light)",
+            border: "1px solid var(--surface-light)",
           }}
         >
           <DetailTile label="Make" value={selectedDetails.make} />
@@ -190,10 +190,10 @@ export default function TyresSection({
 function DetailTile({ label, value }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#b91c1c", fontWeight: 700 }}>
+      <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--danger)", fontWeight: 700 }}>
         {label}
       </span>
-      <span style={{ fontSize: "13px", fontWeight: 600, color: "#1f2937" }}>{value || "-"}</span>
+      <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--info-dark)" }}>{value || "-"}</span>
     </div>
   );
 }

@@ -66,7 +66,7 @@ export default function CarDetailsPage() {
     backgroundColor: "white",
     padding: "16px",
     borderRadius: "8px",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+    boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.1)"
   };
 
   const gridStyle = {
@@ -80,7 +80,7 @@ export default function CarDetailsPage() {
   const buttonStyle = {
     flex: 1,
     padding: "12px",
-    backgroundColor: "#FF4040",
+    backgroundColor: "var(--primary)",
     color: "white",
     border: "none",
     borderRadius: "6px",
@@ -94,7 +94,7 @@ export default function CarDetailsPage() {
   return (
     <Layout>
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "16px" }}>
-        <h1 style={{ color: "#FF4040", marginBottom: "16px" }}>
+        <h1 style={{ color: "var(--primary)", marginBottom: "16px" }}>
           Full Car Details - Job {jobNumber}
         </h1>
         <button
@@ -102,7 +102,7 @@ export default function CarDetailsPage() {
           style={{
             marginBottom: "24px",
             padding: "8px 16px",
-            backgroundColor: "#ccc",
+            backgroundColor: "var(--background)",
             border: "none",
             borderRadius: "6px",
             cursor: "pointer"

@@ -21,7 +21,7 @@ export default function DashboardClocking() {
 
   return (
     <div style={{ marginTop: "20px" }}>
-      <h2 style={{ color: "#FF4040", marginBottom: "16px" }}>Workshop Clocking Overview</h2>
+      <h2 style={{ color: "var(--primary)", marginBottom: "16px" }}>Workshop Clocking Overview</h2>
       <div
         style={{
           display: "grid",
@@ -33,8 +33,8 @@ export default function DashboardClocking() {
           <div
             key={index}
             style={{
-              backgroundColor: "#FFF0F0",
-              border: "1px solid #FFCCCC",
+              backgroundColor: "var(--surface-light)",
+              border: "1px solid var(--danger)",
               borderRadius: "8px",
               padding: "16px",
               textAlign: "center",
@@ -44,11 +44,11 @@ export default function DashboardClocking() {
               justifyContent: "center",
               fontWeight: "500",
               fontSize: "1rem",
-              color: "#FF4040",
+              color: "var(--primary)",
             }}
           >
             <div>{tech.user}</div>
-            <div style={{ marginTop: "10px", color: "#FF8080" }}>
+            <div style={{ marginTop: "10px", color: "var(--primary-light)" }}>
               Status: {tech.clockedIn ? "Clocked In" : "Clocked Out"}
             </div>
           </div>

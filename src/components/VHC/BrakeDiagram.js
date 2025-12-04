@@ -18,10 +18,10 @@ const BRAKE_KEYS = [
 ];
 
 const statusPalette = {
-  critical: { fill: "#E53935", text: "#FDECEE", label: "#F87171" },
-  advisory: { fill: "#FB8C00", text: "#1F1400", label: "#FDBA74" },
-  good: { fill: "#43A047", text: "#E6F4EA", label: "#34D399" },
-  unknown: { fill: "#9E9E9E", text: "#111827", label: "#CBD5F5" },
+  critical: { fill: "var(--danger)", text: "var(--danger-surface)", label: "var(--danger)" },
+  advisory: { fill: "var(--warning)", text: "var(--warning-dark)", label: "var(--warning)" },
+  good: { fill: "var(--success)", text: "var(--success-surface)", label: "var(--success)" },
+  unknown: { fill: "var(--border)", text: "var(--accent-purple)", label: "var(--accent-purple)" },
 };
 
 const getPadStatus = (value) => {
@@ -136,7 +136,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
 
         <defs>
           <filter id="brakeShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="rgba(0,0,0,0.55)" />
+            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="rgba(var(--shadow-rgb),0.55)" />
           </filter>
         </defs>
       </svg>

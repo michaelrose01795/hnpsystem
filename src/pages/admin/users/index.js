@@ -137,7 +137,7 @@ export default function AdminUserManagement() {
     <Layout>
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
         <header>
-          <p style={{ color: "#6B7280", marginTop: "6px" }}>
+          <p style={{ color: "var(--info)", marginTop: "6px" }}>
             Provision platform accounts and review department ownership. These records are driven by the shared Supabase roster for consistent testing.
           </p>
         </header>
@@ -159,19 +159,19 @@ export default function AdminUserManagement() {
           }
         >
           {dbError && (
-            <div style={{ color: "#B91C1C", marginBottom: "12px", fontWeight: 600 }}>{dbError}</div>
+            <div style={{ color: "var(--danger)", marginBottom: "12px", fontWeight: 600 }}>{dbError}</div>
           )}
           {dbLoading ? (
-            <div style={{ color: "#6B7280" }}>Reading users…</div>
+            <div style={{ color: "var(--info)" }}>Reading users…</div>
           ) : (
             <div style={{ overflowX: "auto" }}>
-              <p style={{ color: "#4B5563", margin: "0 0 12px" }}>
+              <p style={{ color: "var(--info-dark)", margin: "0 0 12px" }}>
                 This table reflects the live <code>users</code> table in Supabase. Any additions or deletions
                 performed here instantly update the database and associated activity logs.
               </p>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                  <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                     <th style={{ textAlign: "left", paddingBottom: "10px" }}>Name</th>
                     <th>Email</th>
                     <th>Role</th>
@@ -182,7 +182,7 @@ export default function AdminUserManagement() {
                 </thead>
                 <tbody>
                   {dbUsers.map((account) => (
-                    <tr key={account.id} style={{ borderTop: "1px solid #E5E7EB" }}>
+                    <tr key={account.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
                       <td style={{ padding: "12px 0", fontWeight: 600 }}>
                         {account.firstName} {account.lastName}
                       </td>
@@ -203,7 +203,7 @@ export default function AdminUserManagement() {
                   ))}
                   {dbUsers.length === 0 && (
                     <tr>
-                      <td colSpan={6} style={{ padding: "14px", textAlign: "center", color: "#6B7280" }}>
+                      <td colSpan={6} style={{ padding: "14px", textAlign: "center", color: "var(--info)" }}>
                         No platform users available.
                       </td>
                     </tr>
@@ -220,18 +220,18 @@ export default function AdminUserManagement() {
           action={<StatusTag label={`${userCount} people`} tone="default" />}
         >
           {directoryError && (
-            <div style={{ color: "#B91C1C", marginBottom: "12px", fontWeight: 600 }}>
+            <div style={{ color: "var(--danger)", marginBottom: "12px", fontWeight: 600 }}>
               {directoryError}
             </div>
           )}
           {directoryLoading ? (
-            <div style={{ color: "#6B7280" }}>Loading employee directory…</div>
+            <div style={{ color: "var(--info)" }}>Loading employee directory…</div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
               {departmentList.map(({ department, names }) => (
                 <div key={department} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#111827" }}>{department}</h3>
-                  <ul style={{ margin: 0, paddingLeft: "18px", color: "#4B5563" }}>
+                  <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "var(--accent-purple)" }}>{department}</h3>
+                  <ul style={{ margin: 0, paddingLeft: "18px", color: "var(--info-dark)" }}>
                     {names.map((name) => (
                       <li key={`${department}-${name}`}>{name}</li>
                     ))}
@@ -239,7 +239,7 @@ export default function AdminUserManagement() {
                 </div>
               ))}
               {departmentList.length === 0 && (
-                <div style={{ color: "#6B7280" }}>No departments available.</div>
+                <div style={{ color: "var(--info)" }}>No departments available.</div>
               )}
             </div>
           )}
@@ -250,19 +250,19 @@ export default function AdminUserManagement() {
           subtitle="Cross-reference roles with associated team members"
         >
           {rosterLoading ? (
-            <div style={{ color: "#6B7280" }}>Loading roster…</div>
+            <div style={{ color: "var(--info)" }}>Loading roster…</div>
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                  <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                     <th style={{ textAlign: "left", paddingBottom: "10px" }}>Role</th>
                     <th>Members</th>
                   </tr>
                 </thead>
                 <tbody>
                   {roleList.map(({ role, members }) => (
-                    <tr key={role} style={{ borderTop: "1px solid #E5E7EB" }}>
+                    <tr key={role} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
                       <td style={{ padding: "12px 0", fontWeight: 600 }}>{role}</td>
                       <td>
                         {members.length > 0 ? (
@@ -275,9 +275,9 @@ export default function AdminUserManagement() {
                                 style={{
                                   padding: "6px 10px",
                                   borderRadius: "999px",
-                                  border: "1px solid #E5E7EB",
-                                  background: activeUser === member.displayName ? "#111827" : "white",
-                                  color: activeUser === member.displayName ? "white" : "#1F2937",
+                                  border: "1px solid var(--accent-purple-surface)",
+                                  background: activeUser === member.displayName ? "var(--accent-purple)" : "white",
+                                  color: activeUser === member.displayName ? "white" : "var(--info-dark)",
                                   fontSize: "0.85rem",
                                   fontWeight: 600,
                                   cursor: "pointer",
@@ -289,7 +289,7 @@ export default function AdminUserManagement() {
                             ))}
                           </div>
                         ) : (
-                          <span style={{ color: "#9CA3AF" }}>No members assigned</span>
+                          <span style={{ color: "var(--info)" }}>No members assigned</span>
                         )}
                       </td>
                     </tr>
@@ -314,7 +314,7 @@ export default function AdminUserManagement() {
               <iframe
                 title={`${previewMember.displayName} profile`}
                 src={`/admin/profiles/${encodeURIComponent(previewMember.key || previewMember.displayName)}`}
-                style={{ width: "100%", height: "500px", border: "1px solid #E5E7EB", borderRadius: "12px" }}
+                style={{ width: "100%", height: "500px", border: "1px solid var(--accent-purple-surface)", borderRadius: "12px" }}
               />
               <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
                 <button type="button" style={secondaryButtonStyle} disabled>
@@ -335,9 +335,9 @@ export default function AdminUserManagement() {
 const refreshButtonStyle = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px solid #DBEAFE",
+  border: "1px solid var(--info-surface)",
   background: "white",
-  color: "#2563EB",
+  color: "var(--accent-purple)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -345,9 +345,9 @@ const refreshButtonStyle = {
 const dangerButtonStyle = {
   padding: "6px 12px",
   borderRadius: "8px",
-  border: "1px solid #FECACA",
-  background: "#FEF2F2",
-  color: "#B91C1C",
+  border: "1px solid var(--danger-surface)",
+  background: "var(--danger-surface)",
+  color: "var(--danger)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -355,7 +355,7 @@ const dangerButtonStyle = {
 const modalOverlayStyle = {
   position: "fixed",
   inset: 0,
-  background: "rgba(0,0,0,0.4)",
+  background: "rgba(var(--shadow-rgb),0.4)",
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
@@ -368,7 +368,7 @@ const modalContentStyle = {
   borderRadius: "16px",
   padding: "20px",
   width: "min(900px, 100%)",
-  boxShadow: "0 15px 40px rgba(15,23,42,0.25)",
+  boxShadow: "0 15px 40px rgba(var(--shadow-rgb),0.25)",
   display: "flex",
   flexDirection: "column",
   gap: "12px",
@@ -379,15 +379,15 @@ const modalCloseButtonStyle = {
   background: "transparent",
   fontSize: "1.25rem",
   cursor: "pointer",
-  color: "#6B7280",
+  color: "var(--info)",
 };
 
 const secondaryButtonStyle = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px solid #E5E7EB",
+  border: "1px solid var(--accent-purple-surface)",
   background: "white",
-  color: "#1F2937",
+  color: "var(--info-dark)",
   fontWeight: 600,
   cursor: "not-allowed",
   opacity: 0.6,
@@ -397,7 +397,7 @@ const primaryActionButtonStyle = {
   padding: "8px 14px",
   borderRadius: "10px",
   border: "none",
-  background: "#1D4ED8",
+  background: "var(--accent-purple)",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",

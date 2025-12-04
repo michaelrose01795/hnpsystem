@@ -115,7 +115,7 @@ const baseInputStyle = {
   fontSize: "14px",
   color: palette.textPrimary,
   outline: "none",
-  boxShadow: "inset 0 1px 3px rgba(15,23,42,0.06)",
+  boxShadow: "inset 0 1px 3px rgba(var(--shadow-rgb),0.06)",
 };
 
 const pillButton = ({ active = false } = {}) => ({
@@ -123,11 +123,11 @@ const pillButton = ({ active = false } = {}) => ({
   borderRadius: "999px",
   border: `1px solid ${active ? palette.accent : palette.border}`,
   background: active ? palette.accent : palette.surface,
-  color: active ? "#ffffff" : palette.textPrimary,
+  color: active ? "var(--surface)" : palette.textPrimary,
   fontWeight: 600,
   cursor: "pointer",
   transition: "transform 0.2s ease, box-shadow 0.2s ease",
-  boxShadow: active ? "0 10px 24px rgba(209,0,0,0.18)" : "0 4px 12px rgba(15,23,42,0.08)",
+  boxShadow: active ? "0 10px 24px rgba(var(--primary-rgb),0.18)" : "0 4px 12px rgba(var(--shadow-rgb),0.08)",
 });
 
 const sectionCardStyle = {
@@ -144,8 +144,8 @@ const concernBadge = (color) => ({
 });
 
 const statusColors = {
-  Amber: { background: "rgba(245,158,11,0.16)", text: palette.warning, border: "rgba(245,158,11,0.32)" },
-  Red: { background: "rgba(239,68,68,0.16)", text: palette.danger, border: "rgba(239,68,68,0.32)" },
+  Amber: { background: "rgba(var(--warning-rgb), 0.16)", text: palette.warning, border: "rgba(var(--warning-rgb), 0.32)" },
+  Red: { background: "rgba(var(--danger-rgb), 0.16)", text: palette.danger, border: "rgba(var(--danger-rgb), 0.32)" },
 };
 
 const getAverageTreadDepth = (tread = {}) => {
@@ -176,11 +176,11 @@ function AutoCompleteInput({ value, onChange, options, placeholder }) {
         style={baseInputStyle}
         onFocus={(e) => {
           e.target.style.borderColor = palette.accent;
-          e.target.style.boxShadow = "0 0 0 3px rgba(209,0,0,0.12)";
+          e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
         }}
         onBlur={(e) => {
           e.target.style.borderColor = palette.border;
-          e.target.style.boxShadow = "inset 0 1px 3px rgba(15,23,42,0.06)";
+          e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.06)";
         }}
       />
       {filtered.length > 0 ? (
@@ -193,7 +193,7 @@ function AutoCompleteInput({ value, onChange, options, placeholder }) {
             borderRadius: "14px",
             border: `1px solid ${palette.border}`,
             background: palette.surface,
-            boxShadow: "0 14px 32px rgba(15,23,42,0.18)",
+            boxShadow: "0 14px 32px rgba(var(--shadow-rgb),0.18)",
             maxHeight: "160px",
             overflowY: "auto",
             zIndex: 14,
@@ -985,7 +985,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                           border: `1px solid ${palette.border}`,
                           padding: "12px 16px",
                           background: palette.surface,
-                          boxShadow: "0 6px 18px rgba(15,23,42,0.08)",
+                          boxShadow: "0 6px 18px rgba(var(--shadow-rgb),0.08)",
                           cursor: "pointer",
                         }}
                         onClick={() => {
@@ -1014,7 +1014,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
           style={{
             position: "absolute",
             inset: 0,
-            background: "rgba(15,23,42,0.55)",
+            background: "rgba(var(--shadow-rgb),0.55)",
             backdropFilter: "blur(6px)",
             display: "flex",
             justifyContent: "center",
@@ -1029,7 +1029,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
               borderRadius: "20px",
               border: `1px solid ${palette.border}`,
               background: palette.surface,
-              boxShadow: "0 18px 36px rgba(15,23,42,0.20)",
+              boxShadow: "0 18px 36px rgba(var(--shadow-rgb),0.20)",
               padding: "24px",
               display: "flex",
               flexDirection: "column",
@@ -1049,11 +1049,11 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
               style={baseInputStyle}
               onFocus={(e) => {
                 e.target.style.borderColor = palette.accent;
-                e.target.style.boxShadow = "0 0 0 3px rgba(209,0,0,0.12)";
+                e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
               }}
               onBlur={(e) => {
                 e.target.style.borderColor = palette.border;
-                e.target.style.boxShadow = "inset 0 1px 3px rgba(15,23,42,0.06)";
+                e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.06)";
               }}
             />
 

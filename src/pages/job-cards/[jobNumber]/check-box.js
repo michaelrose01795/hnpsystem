@@ -124,7 +124,7 @@ const SignaturePad = React.forwardRef(function SignaturePad(
       width={canvasProps.width || 600}
       height={canvasProps.height || 150}
       className={canvasProps.className || "sigCanvas"}
-      style={canvasProps.style || { border: "1px solid #000", borderRadius: "8px" }}
+      style={canvasProps.style || { border: "1px solid var(--text-primary)", borderRadius: "8px" }}
     />
   );
 });
@@ -252,7 +252,7 @@ export default function CheckBoxPage() {
             width: 600,
             height: 150,
             className: "sigCanvas",
-            style: { border: "1px solid #000", borderRadius: "8px" },
+            style: { border: "1px solid var(--text-primary)", borderRadius: "8px" },
           }}
         />
 
@@ -262,7 +262,7 @@ export default function CheckBoxPage() {
             style={{
               marginRight: "12px",
               padding: "8px 16px",
-              backgroundColor: "#ccc",
+              backgroundColor: "var(--background)",
               border: "none",
               borderRadius: "6px",
             }}
@@ -275,7 +275,7 @@ export default function CheckBoxPage() {
             style={{
               marginRight: "12px",
               padding: "8px 16px",
-              backgroundColor: "#FF4040",
+              backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "6px",
@@ -288,7 +288,7 @@ export default function CheckBoxPage() {
             onClick={checkAll}
             style={{
               padding: "8px 16px",
-              backgroundColor: "#FF4040",
+              backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "6px",
@@ -305,7 +305,7 @@ export default function CheckBoxPage() {
               flex: 1,
               marginRight: "8px",
               padding: "12px",
-              backgroundColor: "#FF4040",
+              backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "6px",
@@ -320,7 +320,7 @@ export default function CheckBoxPage() {
               flex: 1,
               marginRight: "8px",
               padding: "12px",
-              backgroundColor: "#FF4040",
+              backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "6px",
@@ -334,7 +334,7 @@ export default function CheckBoxPage() {
             style={{
               flex: 1,
               padding: "12px",
-              backgroundColor: "#FF4040",
+              backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "6px",

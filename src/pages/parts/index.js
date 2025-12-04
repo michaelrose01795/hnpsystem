@@ -42,19 +42,19 @@ const cardStyle = {
   backgroundColor: "white",
   borderRadius: "12px",
   padding: "20px",
-  boxShadow: "0 10px 30px rgba(255,64,64,0.1)",
-  border: "1px solid #ffe1e1",
+  boxShadow: "0 10px 30px rgba(var(--danger-rgb), 0.1)",
+  border: "1px solid var(--surface-light)",
 };
 
 const sectionTitleStyle = {
   fontSize: "1.1rem",
   fontWeight: 600,
-  color: "#ff4040",
+  color: "var(--primary)",
   marginBottom: "12px",
 };
 
 const buttonStyle = {
-  backgroundColor: "#ff4040",
+  backgroundColor: "var(--primary)",
   color: "white",
   border: "none",
   padding: "10px 16px",
@@ -66,8 +66,8 @@ const buttonStyle = {
 const secondaryButtonStyle = {
   ...buttonStyle,
   backgroundColor: "white",
-  color: "#ff4040",
-  border: "1px solid #ff4040",
+  color: "var(--primary)",
+  border: "1px solid var(--primary)",
 };
 
 const tableStyle = {
@@ -76,32 +76,32 @@ const tableStyle = {
 };
 
 const STATUS_COLOR_MAP = {
-  waiting_authorisation: { background: "rgba(251,191,36,0.2)", color: "#92400e" },
-  awaiting_stock: { background: "rgba(254,240,138,0.4)", color: "#92400e" },
-  on_order: { background: "rgba(191,219,254,0.6)", color: "#1d4ed8" },
-  pre_picked: { background: "rgba(221,214,254,0.6)", color: "#6d28d9" },
-  stock: { background: "rgba(209,250,229,0.8)", color: "#065f46" },
-  pending: { background: "rgba(229,231,235,0.8)", color: "#374151" },
-  allocated: { background: "rgba(186,230,253,0.8)", color: "#0369a1" },
-  picked: { background: "rgba(199,210,254,0.8)", color: "#3730a3" },
-  fitted: { background: "rgba(209,250,229,0.8)", color: "#065f46" },
-  cancelled: { background: "rgba(254,202,202,0.8)", color: "#991b1b" },
+  waiting_authorisation: { background: "rgba(var(--warning-rgb), 0.2)", color: "var(--danger-dark)" },
+  awaiting_stock: { background: "rgba(var(--warning-rgb), 0.4)", color: "var(--danger-dark)" },
+  on_order: { background: "rgba(var(--info-rgb), 0.6)", color: "var(--accent-purple)" },
+  pre_picked: { background: "rgba(var(--accent-purple-rgb), 0.6)", color: "var(--accent-purple)" },
+  stock: { background: "rgba(var(--success-rgb), 0.8)", color: "var(--info-dark)" },
+  pending: { background: "rgba(var(--grey-accent-rgb), 0.8)", color: "var(--info-dark)" },
+  allocated: { background: "rgba(var(--info-rgb), 0.8)", color: "var(--info-dark)" },
+  picked: { background: "rgba(var(--accent-purple-rgb), 0.8)", color: "var(--accent-purple)" },
+  fitted: { background: "rgba(var(--success-rgb), 0.8)", color: "var(--info-dark)" },
+  cancelled: { background: "rgba(var(--danger-rgb), 0.8)", color: "var(--danger)" },
 };
 
 const SOURCE_META = {
-  vhc_red: { label: "VHC Red", background: "rgba(248,113,113,0.2)", color: "#991b1b" },
-  vhc_amber: { label: "VHC Amber", background: "rgba(251,191,36,0.25)", color: "#92400e" },
-  vhc: { label: "VHC", background: "rgba(248,113,113,0.15)", color: "#b91c1c" },
-  vhc_auto: { label: "VHC Auto-Order", background: "rgba(190,24,93,0.15)", color: "#9d174d" },
-  tech_request: { label: "Tech Request", background: "rgba(59,130,246,0.18)", color: "#1d4ed8" },
-  parts_workspace: { label: "Manual", background: "rgba(148,163,184,0.3)", color: "#475569" },
-  manual: { label: "Manual", background: "rgba(148,163,184,0.3)", color: "#475569" },
+  vhc_red: { label: "VHC Red", background: "rgba(var(--danger-rgb), 0.2)", color: "var(--danger)" },
+  vhc_amber: { label: "VHC Amber", background: "rgba(var(--warning-rgb), 0.25)", color: "var(--danger-dark)" },
+  vhc: { label: "VHC", background: "rgba(var(--danger-rgb), 0.15)", color: "var(--danger)" },
+  vhc_auto: { label: "VHC Auto-Order", background: "rgba(var(--danger-rgb), 0.15)", color: "var(--danger)" },
+  tech_request: { label: "Tech Request", background: "rgba(var(--info-rgb), 0.18)", color: "var(--accent-purple)" },
+  parts_workspace: { label: "Manual", background: "rgba(var(--grey-accent-rgb), 0.3)", color: "var(--info-dark)" },
+  manual: { label: "Manual", background: "rgba(var(--grey-accent-rgb), 0.3)", color: "var(--info-dark)" },
 };
 
 const formatStatusLabel = (status) =>
   status ? status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "Unknown";
 
-const resolveStatusStyles = (status) => STATUS_COLOR_MAP[status] || { background: "rgba(229,231,235,0.8)", color: "#374151" };
+const resolveStatusStyles = (status) => STATUS_COLOR_MAP[status] || { background: "rgba(var(--grey-accent-rgb), 0.8)", color: "var(--info-dark)" };
 
 const resolveSourceMeta = (origin = "") => {
   const normalized = typeof origin === "string" ? origin.toLowerCase() : "";
@@ -214,8 +214,8 @@ function PartsPortalPage() {
     const links = part.linked_jobs || [];
     if (links.length === 0) return null;
     return (
-      <div style={{ marginTop: "8px", fontSize: "0.8rem", color: "#4b5563" }}>
-        <div style={{ fontWeight: 600, color: "#a00000", marginBottom: "4px" }}>Linked Jobs</div>
+      <div style={{ marginTop: "8px", fontSize: "0.8rem", color: "var(--info-dark)" }}>
+        <div style={{ fontWeight: 600, color: "var(--primary-dark)", marginBottom: "4px" }}>Linked Jobs</div>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           {links.slice(0, 3).map((link) => {
             const sourceMeta = resolveSourceMeta(link.source);
@@ -236,7 +236,7 @@ function PartsPortalPage() {
                   }}
                 >
                   <div>
-                    <p style={{ margin: 0, fontSize: "0.8rem", color: "#a00000" }}>Delivery plan</p>
+                    <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--primary-dark)" }}>Delivery plan</p>
                     {jobDeliveryInfo ? (
                       <div style={{ fontWeight: 600 }}>
                         Stop {jobDeliveryInfo.stop_number} ·{" "}
@@ -245,7 +245,7 @@ function PartsPortalPage() {
                           : "Scheduled"}
                       </div>
                     ) : (
-                      <div style={{ fontWeight: 600, color: "#6b7280" }}>No upcoming delivery</div>
+                      <div style={{ fontWeight: 600, color: "var(--info)" }}>No upcoming delivery</div>
                     )}
                   </div>
                   {needsDeliveryScheduling(jobData.waitingStatus || jobData.waiting_status) && (
@@ -254,9 +254,9 @@ function PartsPortalPage() {
                       onClick={openScheduleModal}
                       style={{
                         ...buttonStyle,
-                        border: "1px solid #2563eb",
-                        background: "#fff",
-                        color: "#2563eb",
+                        border: "1px solid var(--accent-purple)",
+                        background: "var(--surface)",
+                        color: "var(--accent-purple)",
                         fontWeight: 600,
                       }}
                     >
@@ -272,7 +272,7 @@ function PartsPortalPage() {
             );
           })}
           {links.length > 3 && (
-            <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>+{links.length - 3} more jobs…</div>
+            <div style={{ fontSize: "0.75rem", color: "var(--info)" }}>+{links.length - 3} more jobs…</div>
           )}
         </div>
       </div>
@@ -626,7 +626,7 @@ function PartsPortalPage() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: "rgba(0,0,0,0.4)",
+          backgroundColor: "rgba(var(--shadow-rgb),0.4)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -649,7 +649,7 @@ function PartsPortalPage() {
                 width: "100%",
                 padding: "10px",
                 borderRadius: "8px",
-                border: "1px solid #ffd1d1",
+                border: "1px solid var(--surface-light)",
               }}
             >
               <option value="">Select part...</option>
@@ -664,13 +664,13 @@ function PartsPortalPage() {
           {selectedPart && (
             <div
               style={{
-                background: "#fff4f4",
-                border: "1px solid #ffd1d1",
+                background: "var(--surface-light)",
+                border: "1px solid var(--surface-light)",
                 borderRadius: "8px",
                 padding: "12px",
                 marginBottom: "12px",
                 fontSize: "0.9rem",
-                color: "#a41d1d",
+                color: "var(--danger)",
               }}
             >
               <div><strong>In Stock:</strong> {selectedPart.qty_in_stock}</div>
@@ -703,7 +703,7 @@ function PartsPortalPage() {
                   width: "100%",
                   padding: "10px",
                   borderRadius: "8px",
-                  border: "1px solid #ffd1d1",
+                  border: "1px solid var(--surface-light)",
                 }}
               />
             </label>
@@ -721,7 +721,7 @@ function PartsPortalPage() {
                   width: "100%",
                   padding: "10px",
                   borderRadius: "8px",
-                  border: "1px solid #ffd1d1",
+                  border: "1px solid var(--surface-light)",
                 }}
               >
                 <option value="yes">Yes - reserve from stock</option>
@@ -741,7 +741,7 @@ function PartsPortalPage() {
                 width: "100%",
                 padding: "10px",
                 borderRadius: "8px",
-                border: "1px solid #ffd1d1",
+                border: "1px solid var(--surface-light)",
               }}
             >
               {PRE_PICK_OPTIONS.map((option) => (
@@ -764,7 +764,7 @@ function PartsPortalPage() {
                 width: "100%",
                 padding: "10px",
                 borderRadius: "8px",
-                border: "1px solid #ffd1d1",
+                border: "1px solid var(--surface-light)",
                 resize: "vertical",
               }}
               placeholder="E.g. requires confirmation or order number"
@@ -772,7 +772,7 @@ function PartsPortalPage() {
           </label>
 
           {partFormError && (
-            <div style={{ color: "#b80d0d", marginBottom: "12px", fontWeight: 600 }}>
+            <div style={{ color: "var(--danger)", marginBottom: "12px", fontWeight: 600 }}>
               {partFormError}
             </div>
           )}
@@ -798,7 +798,7 @@ function PartsPortalPage() {
         style={{
           position: "fixed",
           inset: 0,
-          backgroundColor: "rgba(0,0,0,0.4)",
+          backgroundColor: "rgba(var(--shadow-rgb),0.4)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -823,7 +823,7 @@ function PartsPortalPage() {
                 width: "100%",
                 padding: "10px",
                 borderRadius: "8px",
-                border: "1px solid #ffd1d1",
+                border: "1px solid var(--surface-light)",
               }}
             />
           </label>
@@ -846,7 +846,7 @@ function PartsPortalPage() {
                 width: "100%",
                 padding: "10px",
                 borderRadius: "8px",
-                border: "1px solid #ffd1d1",
+                border: "1px solid var(--surface-light)",
               }}
             />
           </label>
@@ -864,7 +864,7 @@ function PartsPortalPage() {
                 width: "100%",
                 padding: "10px",
                 borderRadius: "8px",
-                border: "1px solid #ffd1d1",
+                border: "1px solid var(--surface-light)",
               }}
             >
               <option value="">Select part...</option>
@@ -902,7 +902,7 @@ function PartsPortalPage() {
                   width: "100%",
                   padding: "10px",
                   borderRadius: "8px",
-                  border: "1px solid #ffd1d1",
+                  border: "1px solid var(--surface-light)",
                 }}
               />
             </label>
@@ -925,7 +925,7 @@ function PartsPortalPage() {
                   width: "100%",
                   padding: "10px",
                   borderRadius: "8px",
-                  border: "1px solid #ffd1d1",
+                  border: "1px solid var(--surface-light)",
                 }}
               />
             </label>
@@ -951,7 +951,7 @@ function PartsPortalPage() {
                 width: "100%",
                 padding: "10px",
                 borderRadius: "8px",
-                border: "1px solid #ffd1d1",
+                border: "1px solid var(--surface-light)",
               }}
             />
           </label>
@@ -970,14 +970,14 @@ function PartsPortalPage() {
                 width: "100%",
                 padding: "10px",
                 borderRadius: "8px",
-                border: "1px solid #ffd1d1",
+                border: "1px solid var(--surface-light)",
                 resize: "vertical",
               }}
             />
           </label>
 
           {deliveryFormError && (
-            <div style={{ color: "#b80d0d", marginBottom: "12px", fontWeight: 600 }}>
+            <div style={{ color: "var(--danger)", marginBottom: "12px", fontWeight: 600 }}>
               {deliveryFormError}
             </div>
           )}
@@ -1030,7 +1030,7 @@ function PartsPortalPage() {
                   flex: 1,
                   padding: "12px",
                   borderRadius: "8px",
-                  border: "1px solid #ffd1d1",
+                  border: "1px solid var(--surface-light)",
                 }}
               />
               <button type="submit" style={buttonStyle} disabled={jobLoading}>
@@ -1039,7 +1039,7 @@ function PartsPortalPage() {
             </form>
 
             {jobError && (
-              <div style={{ color: "#b80d0d", marginBottom: "12px", fontWeight: 600 }}>
+              <div style={{ color: "var(--danger)", marginBottom: "12px", fontWeight: 600 }}>
                 {jobError}
               </div>
             )}
@@ -1056,39 +1056,39 @@ function PartsPortalPage() {
                 >
                   <div
                     style={{
-                      background: "#fff4f4",
+                      background: "var(--surface-light)",
                       borderRadius: "10px",
                       padding: "14px",
-                      border: "1px solid #ffd1d1",
+                      border: "1px solid var(--surface-light)",
                     }}
                   >
-                    <div style={{ fontSize: "0.8rem", color: "#a41d1d" }}>JOB</div>
-                    <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#ff4040" }}>
+                    <div style={{ fontSize: "0.8rem", color: "var(--danger)" }}>JOB</div>
+                    <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--primary)" }}>
                       {jobData.jobNumber}
                     </div>
                     <div>{jobData.description || "No description"}</div>
                   </div>
                   <div
                     style={{
-                      background: "#fff4f4",
+                      background: "var(--surface-light)",
                       borderRadius: "10px",
                       padding: "14px",
-                      border: "1px solid #ffd1d1",
+                      border: "1px solid var(--surface-light)",
                     }}
                   >
-                    <div style={{ fontSize: "0.8rem", color: "#a41d1d" }}>VEHICLE</div>
+                    <div style={{ fontSize: "0.8rem", color: "var(--danger)" }}>VEHICLE</div>
                     <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>{jobData.reg}</div>
                     <div>{jobData.makeModel || `${jobData.make} ${jobData.model}`}</div>
                   </div>
                   <div
                     style={{
-                      background: "#fff4f4",
+                      background: "var(--surface-light)",
                       borderRadius: "10px",
                       padding: "14px",
-                      border: "1px solid #ffd1d1",
+                      border: "1px solid var(--surface-light)",
                     }}
                   >
-                    <div style={{ fontSize: "0.8rem", color: "#a41d1d" }}>STATUS</div>
+                    <div style={{ fontSize: "0.8rem", color: "var(--danger)" }}>STATUS</div>
                     <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>
                       {jobData.status}
                     </div>
@@ -1127,9 +1127,9 @@ function PartsPortalPage() {
                       aria-pressed={selectedPipelineStage === "all"}
                       style={{
                         borderRadius: "14px",
-                        border: "1px solid rgba(209,0,0,0.4)",
+                        border: "1px solid rgba(var(--primary-rgb),0.4)",
                         backgroundColor:
-                          selectedPipelineStage === "all" ? "#ffeceb" : "#fff",
+                          selectedPipelineStage === "all" ? "var(--danger-surface)" : "var(--surface)",
                         padding: "8px 14px",
                         display: "flex",
                         flexDirection: "column",
@@ -1137,11 +1137,11 @@ function PartsPortalPage() {
                         gap: "2px",
                         cursor: "pointer",
                         fontWeight: 600,
-                        color: selectedPipelineStage === "all" ? "#d10000" : "#a00000",
+                        color: selectedPipelineStage === "all" ? "var(--primary)" : "var(--primary-dark)",
                       }}
                     >
                       <span>All Parts</span>
-                      <small style={{ fontSize: "0.75rem", color: "#555" }}>
+                      <small style={{ fontSize: "0.75rem", color: "var(--grey-accent-dark)" }}>
                         {jobParts.length} line{jobParts.length === 1 ? "" : "s"} total
                       </small>
                     </button>
@@ -1153,9 +1153,9 @@ function PartsPortalPage() {
                         aria-pressed={selectedPipelineStage === stage.id}
                         style={{
                           borderRadius: "14px",
-                          border: "1px solid rgba(209,0,0,0.4)",
+                          border: "1px solid rgba(var(--primary-rgb),0.4)",
                           backgroundColor:
-                            selectedPipelineStage === stage.id ? "#ffeceb" : "#fff",
+                            selectedPipelineStage === stage.id ? "var(--danger-surface)" : "var(--surface)",
                           padding: "8px 14px",
                           display: "flex",
                           flexDirection: "column",
@@ -1164,11 +1164,11 @@ function PartsPortalPage() {
                           cursor: "pointer",
                           fontWeight: 600,
                           color:
-                            selectedPipelineStage === stage.id ? "#d10000" : "#a00000",
+                            selectedPipelineStage === stage.id ? "var(--primary)" : "var(--primary-dark)",
                         }}
                       >
                         <span>{stage.label}</span>
-                        <small style={{ fontSize: "0.75rem", color: "#555" }}>
+                        <small style={{ fontSize: "0.75rem", color: "var(--grey-accent-dark)" }}>
                           {stage.count} line{stage.count === 1 ? "" : "s"}
                         </small>
                       </button>
@@ -1179,12 +1179,12 @@ function PartsPortalPage() {
                 {selectedPipelineStage !== "all" && displayedJobParts.length === 0 && (
                   <div
                     style={{
-                      background: "#fffaf0",
+                      background: "var(--warning-surface)",
                       borderRadius: "10px",
-                      border: "1px solid #ffd1d1",
+                      border: "1px solid var(--surface-light)",
                       padding: "10px 14px",
                       marginBottom: "12px",
-                      color: "#92400e",
+                      color: "var(--danger-dark)",
                       fontSize: "0.9rem",
                     }}
                   >
@@ -1196,11 +1196,11 @@ function PartsPortalPage() {
                 {jobParts.length === 0 ? (
                   <div
                     style={{
-                      background: "#fff4f4",
-                      border: "1px dashed #ffb0b0",
+                      background: "var(--surface-light)",
+                      border: "1px dashed var(--primary-light)",
                       borderRadius: "8px",
                       padding: "16px",
-                      color: "#a41d1d",
+                      color: "var(--danger)",
                       textAlign: "center",
                     }}
                   >
@@ -1210,7 +1210,7 @@ function PartsPortalPage() {
                   <div style={{ overflowX: "auto" }}>
                     <table style={tableStyle}>
                       <thead>
-                        <tr style={{ background: "#fff4f4", color: "#a41d1d" }}>
+                        <tr style={{ background: "var(--surface-light)", color: "var(--danger)" }}>
                           <th style={{ textAlign: "left", padding: "10px" }}>Part</th>
                           <th style={{ textAlign: "left", padding: "10px" }}>Qty</th>
                           <th style={{ textAlign: "left", padding: "10px" }}>Stage</th>
@@ -1224,12 +1224,12 @@ function PartsPortalPage() {
                           const stageId = mapPartStatusToPipelineId(part.status);
                           const stageMeta = getPipelineStageMeta(stageId);
                           return (
-                          <tr key={part.id} style={{ borderBottom: "1px solid #ffe1e1" }}>
+                          <tr key={part.id} style={{ borderBottom: "1px solid var(--surface-light)" }}>
                             <td style={{ padding: "10px", verticalAlign: "top" }}>
                               <div style={{ fontWeight: 600 }}>
                                 {part.part?.part_number} · {part.part?.name}
                               </div>
-                              <div style={{ fontSize: "0.85rem", color: "#555" }}>
+                              <div style={{ fontSize: "0.85rem", color: "var(--grey-accent-dark)" }}>
                                 {part.part?.storage_location || "No bin"} · Stock:{" "}
                                 {part.part?.qty_in_stock}
                               </div>
@@ -1247,8 +1247,8 @@ function PartsPortalPage() {
                                 {part.vhc_item_id ? (
                                   <RequirementBadge
                                     label={`VHC #${part.vhc_item_id}`}
-                                    background="rgba(248,113,113,0.18)"
-                                    color="#991b1b"
+                                    background="rgba(var(--danger-rgb), 0.18)"
+                                    color="var(--danger)"
                                   />
                                 ) : null}
                               </div>
@@ -1283,14 +1283,14 @@ function PartsPortalPage() {
                                   borderRadius: "999px",
                                   fontSize: "0.8rem",
                                   fontWeight: 600,
-                                  backgroundColor: "#fff0f0",
-                                  color: "#991b1b",
+                                  backgroundColor: "var(--surface-light)",
+                                  color: "var(--danger)",
                                   marginBottom: "6px",
                                 }}
                               >
                                 {stageMeta.label}
                               </span>
-                              <div style={{ fontSize: "0.75rem", color: "#555" }}>
+                              <div style={{ fontSize: "0.75rem", color: "var(--grey-accent-dark)" }}>
                                 {stageMeta.description}
                               </div>
                             </td>
@@ -1306,7 +1306,7 @@ function PartsPortalPage() {
                                   width: "170px",
                                   padding: "8px",
                                   borderRadius: "8px",
-                                  border: "1px solid #ffd1d1",
+                                  border: "1px solid var(--surface-light)",
                                 }}
                               >
                                 {JOB_PART_STATUSES.map((statusValue) => (
@@ -1328,7 +1328,7 @@ function PartsPortalPage() {
                                   width: "170px",
                                   padding: "8px",
                                   borderRadius: "8px",
-                                  border: "1px solid #ffd1d1",
+                                  border: "1px solid var(--surface-light)",
                                 }}
                               >
                                 {PRE_PICK_OPTIONS.map((option) => (
@@ -1369,7 +1369,7 @@ function PartsPortalPage() {
                     <div style={{ overflowX: "auto" }}>
                       <table style={{ ...tableStyle, fontSize: "0.9rem" }}>
                         <thead>
-                          <tr style={{ background: "#fff8f0", color: "#a04100" }}>
+                          <tr style={{ background: "var(--warning-surface)", color: "var(--danger-dark)" }}>
                             <th style={{ textAlign: "left", padding: "10px" }}>Request</th>
                             <th style={{ textAlign: "left", padding: "10px" }}>Quantity</th>
                             <th style={{ textAlign: "left", padding: "10px" }}>Source</th>
@@ -1382,11 +1382,11 @@ function PartsPortalPage() {
                             const sourceMeta = resolveSourceMeta(request.source);
                             const statusMeta = resolveStatusStyles(request.status);
                             return (
-                              <tr key={request.request_id} style={{ borderBottom: "1px solid #ffe1e1" }}>
+                              <tr key={request.request_id} style={{ borderBottom: "1px solid var(--surface-light)" }}>
                                 <td style={{ padding: "10px" }}>
                                   <div style={{ fontWeight: 600 }}>{request.description || "Part request"}</div>
                                   {request.part ? (
-                                    <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+                                    <div style={{ fontSize: "0.8rem", color: "var(--info)" }}>
                                       Suggested: {request.part.part_number} · {request.part.name}
                                     </div>
                                   ) : null}
@@ -1422,9 +1422,9 @@ function PartsPortalPage() {
                       marginTop: "20px",
                       padding: "16px",
                       borderRadius: "8px",
-                      background: "#fffdf5",
-                      border: "1px solid #ffe5b4",
-                      color: "#ab6500",
+                      background: "var(--warning-surface)",
+                      border: "1px solid var(--warning)",
+                      color: "var(--warning-dark)",
                     }}
                   >
                     <strong>{pendingJobParts.length} part(s)</strong> awaiting stock or action for
@@ -1435,11 +1435,11 @@ function PartsPortalPage() {
             ) : (
               <div
                 style={{
-                  background: "#fff4f4",
-                  border: "1px dashed #ffb0b0",
+                  background: "var(--surface-light)",
+                  border: "1px dashed var(--primary-light)",
                   borderRadius: "8px",
                   padding: "16px",
-                  color: "#a41d1d",
+                  color: "var(--danger)",
                   textAlign: "center",
                 }}
               >
@@ -1459,26 +1459,26 @@ function PartsPortalPage() {
                 width: "100%",
                 padding: "12px",
                 borderRadius: "8px",
-                border: "1px solid #ffd1d1",
+                border: "1px solid var(--surface-light)",
                 marginBottom: "12px",
               }}
             />
 
             {inventoryError && (
-              <div style={{ color: "#b80d0d", marginBottom: "12px", fontWeight: 600 }}>
+              <div style={{ color: "var(--danger)", marginBottom: "12px", fontWeight: 600 }}>
                 {inventoryError}
               </div>
             )}
 
             <div style={{ maxHeight: "420px", overflowY: "auto" }}>
               {inventoryLoading ? (
-                <div style={{ color: "#888" }}>Loading inventory...</div>
+                <div style={{ color: "var(--grey-accent-light)" }}>Loading inventory...</div>
               ) : inventory.length === 0 ? (
-                <div style={{ color: "#888" }}>No parts found. Refine your search.</div>
+                <div style={{ color: "var(--grey-accent-light)" }}>No parts found. Refine your search.</div>
               ) : (
                 <table style={{ ...tableStyle, fontSize: "0.9rem" }}>
                   <thead>
-                    <tr style={{ background: "#fff4f4", color: "#a41d1d" }}>
+                    <tr style={{ background: "var(--surface-light)", color: "var(--danger)" }}>
                       <th style={{ textAlign: "left", padding: "10px" }}>Part</th>
                       <th style={{ textAlign: "left", padding: "10px" }}>Stock</th>
                       <th style={{ textAlign: "left", padding: "10px" }}>Actions</th>
@@ -1486,20 +1486,20 @@ function PartsPortalPage() {
                   </thead>
                   <tbody>
                     {inventory.map((part) => (
-                      <tr key={part.id} style={{ borderBottom: "1px solid #ffe1e1" }}>
+                      <tr key={part.id} style={{ borderBottom: "1px solid var(--surface-light)" }}>
                         <td style={{ padding: "10px", verticalAlign: "top" }}>
                           <div style={{ fontWeight: 600 }}>
                             {part.part_number} · {part.name}
                           </div>
-                          <div style={{ color: "#555" }}>{part.category || "Uncategorised"}</div>
-                          <div style={{ fontSize: "0.8rem", color: "#777" }}>
+                          <div style={{ color: "var(--grey-accent-dark)" }}>{part.category || "Uncategorised"}</div>
+                          <div style={{ fontSize: "0.8rem", color: "var(--grey-accent)" }}>
                             {part.storage_location || "No storage"} · Service default:{" "}
                             {part.service_default_zone || "—"}
                           </div>
-                          <div style={{ fontSize: "0.8rem", color: "#555" }}>
+                          <div style={{ fontSize: "0.8rem", color: "var(--grey-accent-dark)" }}>
                             Supplier: {part.supplier || "Unknown"}
                           </div>
-                          <div style={{ fontSize: "0.8rem", color: "#555" }}>
+                          <div style={{ fontSize: "0.8rem", color: "var(--grey-accent-dark)" }}>
                             Cost {formatCurrency(part.unit_cost)} · Sell {formatCurrency(part.unit_price)} · Margin {formatMargin(part.unit_cost, part.unit_price)}
                           </div>
                           <div style={{ marginTop: "4px" }}>
@@ -1511,16 +1511,16 @@ function PartsPortalPage() {
                                 borderRadius: "999px",
                                 background:
                                   part.stock_status === "low_stock"
-                                    ? "rgba(245,158,11,0.2)"
+                                    ? "rgba(var(--warning-rgb), 0.2)"
                                     : part.stock_status === "back_order"
-                                    ? "rgba(209,0,0,0.15)"
-                                    : "rgba(16,185,129,0.18)",
+                                    ? "rgba(var(--primary-rgb),0.15)"
+                                    : "rgba(var(--info-rgb), 0.18)",
                                 color:
                                   part.stock_status === "low_stock"
-                                    ? "#92400e"
+                                    ? "var(--danger-dark)"
                                     : part.stock_status === "back_order"
-                                    ? "#7f1d1d"
-                                    : "#065f46",
+                                    ? "var(--danger-dark)"
+                                    : "var(--info-dark)",
                                 fontSize: "0.75rem",
                                 fontWeight: 600,
                               }}
@@ -1549,7 +1549,7 @@ function PartsPortalPage() {
                           >
                             Add to Job
                           </button>
-                          <div style={{ marginTop: "6px", fontSize: "0.8rem", color: "#777" }}>
+                          <div style={{ marginTop: "6px", fontSize: "0.8rem", color: "var(--grey-accent)" }}>
                             Cost: {formatCurrency(part.unit_cost)} · Sell:{" "}
                             {formatCurrency(part.unit_price)}
                           </div>
@@ -1579,22 +1579,22 @@ function PartsPortalPage() {
           </div>
 
           {deliveriesError && (
-            <div style={{ color: "#b80d0d", marginBottom: "12px", fontWeight: 600 }}>
+            <div style={{ color: "var(--danger)", marginBottom: "12px", fontWeight: 600 }}>
               {deliveriesError}
             </div>
           )}
 
           {deliveriesLoading ? (
-            <div style={{ color: "#888" }}>Loading deliveries...</div>
+            <div style={{ color: "var(--grey-accent-light)" }}>Loading deliveries...</div>
           ) : deliveries.length === 0 ? (
-            <div style={{ color: "#888" }}>
+            <div style={{ color: "var(--grey-accent-light)" }}>
               No deliveries recorded yet. Log incoming stock to keep inventory accurate.
             </div>
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ ...tableStyle, fontSize: "0.9rem" }}>
                 <thead>
-                  <tr style={{ background: "#fff4f4", color: "#a41d1d" }}>
+                  <tr style={{ background: "var(--surface-light)", color: "var(--danger)" }}>
                     <th style={{ textAlign: "left", padding: "10px" }}>Delivery</th>
                     <th style={{ textAlign: "left", padding: "10px" }}>Items</th>
                     <th style={{ textAlign: "left", padding: "10px" }}>Status</th>
@@ -1602,15 +1602,15 @@ function PartsPortalPage() {
                 </thead>
                 <tbody>
                   {deliveries.map((delivery) => (
-                    <tr key={delivery.id} style={{ borderBottom: "1px solid #ffe1e1" }}>
+                    <tr key={delivery.id} style={{ borderBottom: "1px solid var(--surface-light)" }}>
                       <td style={{ padding: "10px", verticalAlign: "top" }}>
                         <div style={{ fontWeight: 600 }}>
                           {delivery.supplier || "Unknown supplier"}
                         </div>
-                        <div style={{ color: "#777" }}>
+                        <div style={{ color: "var(--grey-accent)" }}>
                           Ref: {delivery.order_reference || "—"}
                         </div>
-                        <div style={{ color: "#777" }}>
+                        <div style={{ color: "var(--grey-accent)" }}>
                           Expected: {delivery.expected_date || "—"}
                         </div>
                       </td>
@@ -1620,21 +1620,21 @@ function PartsPortalPage() {
                             <div style={{ fontWeight: 600 }}>
                               {item.part?.part_number} · {item.part?.name}
                             </div>
-                            <div style={{ fontSize: "0.8rem", color: "#777" }}>
+                            <div style={{ fontSize: "0.8rem", color: "var(--grey-accent)" }}>
                               Ordered {item.quantity_ordered}, received{" "}
                               {item.quantity_received}
                             </div>
                           </div>
                         ))}
                         {(delivery.delivery_items || []).length > 3 && (
-                          <div style={{ fontSize: "0.8rem", color: "#777" }}>
+                          <div style={{ fontSize: "0.8rem", color: "var(--grey-accent)" }}>
                             +{delivery.delivery_items.length - 3} more items...
                           </div>
                         )}
                       </td>
                       <td style={{ padding: "10px", verticalAlign: "top" }}>
                         <div style={{ fontWeight: 600 }}>{delivery.status}</div>
-                        <div style={{ fontSize: "0.8rem", color: "#777" }}>
+                        <div style={{ fontSize: "0.8rem", color: "var(--grey-accent)" }}>
                           Logged {new Date(delivery.created_at).toLocaleString()}
                         </div>
                       </td>

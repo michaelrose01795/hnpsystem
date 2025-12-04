@@ -16,20 +16,20 @@ export default function HrAttendance() {
     <Layout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <p style={{ color: "#6B7280" }}>
+          <p style={{ color: "var(--info)" }}>
             Monitor time logs, absences, late arrivals, and overtime activity across the team.
           </p>
         </header>
 
         {isLoading && (
           <SectionCard title="Loading attendance" subtitle="Fetching clocking data.">
-            <span style={{ color: "#6B7280" }}>Pulling attendance data from Supabase.</span>
+            <span style={{ color: "var(--info)" }}>Pulling attendance data from Supabase.</span>
           </SectionCard>
         )}
 
         {error && (
           <SectionCard title="Unable to load attendance" subtitle="Mock API returned an error.">
-            <span style={{ color: "#B91C1C" }}>{error.message}</span>
+            <span style={{ color: "var(--danger)" }}>{error.message}</span>
           </SectionCard>
         )}
 
@@ -48,7 +48,7 @@ export default function HrAttendance() {
                 <div style={{ maxHeight: "360px", overflowY: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
-                      <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                      <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                         <th style={{ paddingBottom: "10px", textAlign: "left" }}>Employee</th>
                         <th>Date</th>
                         <th>Clock In</th>
@@ -59,7 +59,7 @@ export default function HrAttendance() {
                     </thead>
                     <tbody>
                       {attendanceLogs.map((log) => (
-                        <tr key={log.id} style={{ borderTop: "1px solid #E5E7EB" }}>
+                        <tr key={log.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
                           <td style={{ padding: "12px 0", fontWeight: 600 }}>{log.employeeId}</td>
                           <td>{new Date(log.date).toLocaleDateString()}</td>
                           <td>{log.clockIn}</td>
@@ -98,7 +98,7 @@ export default function HrAttendance() {
                     <div
                       key={record.id}
                       style={{
-                        border: "1px solid #E5E7EB",
+                        border: "1px solid var(--accent-purple-surface)",
                         borderRadius: "12px",
                         padding: "12px",
                         display: "flex",
@@ -107,17 +107,17 @@ export default function HrAttendance() {
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontWeight: 600, color: "#111827" }}>{record.employee}</span>
+                        <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{record.employee}</span>
                         <StatusTag
                           label={record.status}
                           tone={record.status === "Ready" ? "success" : "warning"}
                         />
                       </div>
-                      <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>
+                      <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
                         {new Date(record.periodStart).toLocaleDateString()} -{" "}
                         {new Date(record.periodEnd).toLocaleDateString()}
                       </span>
-                      <div style={{ display: "flex", gap: "16px", fontSize: "0.85rem", color: "#374151" }}>
+                      <div style={{ display: "flex", gap: "16px", fontSize: "0.85rem", color: "var(--info-dark)" }}>
                         <span>{record.overtimeHours} hrs</span>
                         <span>OT rate £{Number(record.overtimeRate).toFixed(2)}</span>
                         <span>Bonus £{Number(record.bonus).toFixed(0)}</span>
@@ -145,7 +145,7 @@ export default function HrAttendance() {
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
-                    <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                    <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                       <th style={{ textAlign: "left", paddingBottom: "10px" }}>Employee</th>
                       <th>Type</th>
                       <th>Start</th>
@@ -155,7 +155,7 @@ export default function HrAttendance() {
                   </thead>
                   <tbody>
                     {absenceRecords.map((absence) => (
-                      <tr key={absence.id} style={{ borderTop: "1px solid #E5E7EB" }}>
+                      <tr key={absence.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
                         <td style={{ padding: "12px 0", fontWeight: 600 }}>{absence.employee}</td>
                         <td>{absence.type}</td>
                         <td>{new Date(absence.startDate).toLocaleDateString()}</td>
@@ -183,7 +183,7 @@ const buttonStylePrimary = {
   padding: "8px 14px",
   borderRadius: "10px",
   border: "none",
-  background: "#0EA5E9",
+  background: "var(--info)",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",
@@ -192,9 +192,9 @@ const buttonStylePrimary = {
 const buttonStyleSecondary = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px solid #BFDBFE",
+  border: "1px solid var(--info)",
   background: "white",
-  color: "#2563EB",
+  color: "var(--accent-purple)",
   fontWeight: 600,
   cursor: "pointer",
 };

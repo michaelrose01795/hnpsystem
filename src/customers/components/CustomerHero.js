@@ -3,7 +3,7 @@ import React from "react";
 
 export default function CustomerHero({ nextVisit, lastUpdated }) {
   return (
-    <section className="rounded-3xl border border-[#ffe0e0] bg-gradient-to-r from-[#d10000] via-[#ff4d4d] to-[#ff9966] p-6 text-white shadow-[0_18px_45px_rgba(209,0,0,0.25)]">
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-gradient-to-r from-[var(--primary)] via-[var(--primary-light)] to-[var(--danger)] p-6 text-white shadow-[0_18px_45px_rgba(var(--primary-rgb),0.25)]">
       <div className="flex flex-wrap justify-between gap-4">
         <div className="max-w-2xl">
           <p className="text-xs uppercase tracking-[0.4em] text-white/70">Vehicle Health</p>

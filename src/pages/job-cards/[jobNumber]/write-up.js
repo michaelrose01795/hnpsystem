@@ -104,11 +104,11 @@ const determineJobStatusFromTasks = (tasks = [], requests = [], hasRectification
 };
 
 const sectionBoxStyle = {
-  backgroundColor: "#f9fafb",
+  backgroundColor: "var(--info-surface)",
   padding: "18px",
   borderRadius: "16px",
-  boxShadow: "0 12px 24px rgba(15, 23, 42, 0.05)",
-  border: "1px solid #e5e7eb",
+  boxShadow: "0 12px 24px rgba(var(--accent-purple-rgb), 0.05)",
+  border: "1px solid var(--accent-purple-surface)",
   display: "flex",
   flexDirection: "column",
   minHeight: "360px",
@@ -126,7 +126,7 @@ const sectionScrollerStyle = {
 const modernInputStyle = {
   width: "100%",
   borderRadius: "10px",
-  border: "1px solid #d1d5db",
+  border: "1px solid var(--info)",
   padding: "10px 12px",
   fontSize: "14px",
   fontFamily: "inherit",
@@ -137,7 +137,7 @@ const modernInputStyle = {
 const modernTextareaStyle = {
   width: "100%",
   borderRadius: "10px",
-  border: "1px solid #d1d5db",
+  border: "1px solid var(--info)",
   padding: "10px 12px",
   fontSize: "14px",
   fontFamily: "inherit",
@@ -150,7 +150,7 @@ const modernSelectStyle = {
   ...modernInputStyle,
   appearance: "none",
   cursor: "pointer",
-  backgroundImage: "linear-gradient(45deg, transparent 50%, #d1d5db 50%), linear-gradient(135deg, #d1d5db 50%, transparent 50%)",
+  backgroundImage: "linear-gradient(45deg, transparent 50%, var(--info) 50%), linear-gradient(135deg, var(--info) 50%, transparent 50%)",
   backgroundPosition: "calc(100% - 12px) calc(50% - 2px), calc(100% - 7px) calc(50% - 2px)",
   backgroundSize: "6px 6px, 6px 6px",
   backgroundRepeat: "no-repeat",
@@ -178,20 +178,20 @@ const sectionTitleStyle = {
   margin: 0,
   fontSize: "1.1rem",
   fontWeight: 600,
-  color: "#111827",
+  color: "var(--accent-purple)",
 };
 
 const sectionSubtitleStyle = {
   margin: 0,
   fontSize: "0.85rem",
-  color: "#6b7280",
+  color: "var(--info)",
 };
 
 const statusBadgeStyle = {
   borderRadius: "999px",
   padding: "6px 14px",
-  backgroundColor: "#e0f2fe",
-  color: "#0369a1",
+  backgroundColor: "var(--info-surface)",
+  color: "var(--info-dark)",
   fontSize: "12px",
   fontWeight: 600,
 };
@@ -206,9 +206,9 @@ const completionBadgeStyle = {
 
 const cardRowStyle = (completed) => ({
   borderRadius: "12px",
-  border: `1px solid ${completed ? "#10b981" : "#e5e7eb"}`,
+  border: `1px solid ${completed ? "var(--info)" : "var(--accent-purple-surface)"}`,
   padding: "12px",
-  backgroundColor: completed ? "#ecfdf5" : "#fff",
+  backgroundColor: completed ? "var(--success-surface)" : "var(--surface)",
   display: "flex",
   flexDirection: "column",
   gap: "8px",
@@ -216,13 +216,13 @@ const cardRowStyle = (completed) => ({
 
 const rectificationCardStyle = (completed) => ({
   borderRadius: "12px",
-  border: `1px solid ${completed ? "#10b981" : "#f3c1c1"}`,
+  border: `1px solid ${completed ? "var(--info)" : "var(--danger)"}`,
   padding: "12px",
-  backgroundColor: completed ? "#ecfdf5" : "#fff",
+  backgroundColor: completed ? "var(--success-surface)" : "var(--surface)",
   display: "flex",
   flexDirection: "column",
   gap: "8px",
-  boxShadow: "0 4px 10px rgba(15,23,42,0.05)",
+  boxShadow: "0 4px 10px rgba(var(--shadow-rgb),0.05)",
 });
 
 const rectRowHeaderStyle = {
@@ -236,23 +236,23 @@ const checkboxLabelStyle = (completed) => ({
   alignItems: "center",
   gap: "8px",
   fontSize: "13px",
-  color: completed ? "#047857" : "#b45309",
+  color: completed ? "var(--info-dark)" : "var(--warning)",
 });
 
 const checkboxStyle = {
-  accentColor: "#d10000",
+  accentColor: "var(--primary)",
   cursor: "pointer",
 };
 
 const causeRowStyle = {
   borderRadius: "12px",
-  border: "1px solid #d1d5db",
-  backgroundColor: "#fff",
+  border: "1px solid var(--info)",
+  backgroundColor: "var(--surface)",
   padding: "12px",
   display: "flex",
   flexDirection: "column",
   gap: "12px",
-  boxShadow: "0 4px 16px rgba(15,23,42,0.04)",
+  boxShadow: "0 4px 16px rgba(var(--shadow-rgb),0.04)",
 };
 
 const generateCauseId = () => {
@@ -899,7 +899,7 @@ export default function WriteUpPage() {
   const rectificationTasks = writeUpData.tasks.filter((task) => task && task.source !== "request");
   const completionStatusLabel =
     writeUpData.completionStatus === "complete" ? "Complete" : "Waiting Additional Work";
-  const completionStatusColor = writeUpData.completionStatus === "complete" ? "#10b981" : "#f59e0b";
+  const completionStatusColor = writeUpData.completionStatus === "complete" ? "var(--info)" : "var(--warning)";
   const showRectificationStatus = rectificationTasks.length > 0;
   const visibleRequestCount = Math.max(2, requestTasks.length);
   const requestSlots = Array.from({ length: visibleRequestCount }, (_, index) => requestTasks[index] || null);
@@ -970,12 +970,12 @@ export default function WriteUpPage() {
           <div style={{
             width: "60px",
             height: "60px",
-            border: "4px solid #f3f3f3",
-            borderTop: "4px solid #d10000",
+            border: "4px solid var(--surface)",
+            borderTop: "4px solid var(--primary)",
             borderRadius: "50%",
             animation: "spin 1s linear infinite"
           }}></div>
-          <p style={{ color: "#666" }}>Loading write-up...</p>
+          <p style={{ color: "var(--grey-accent)" }}>Loading write-up...</p>
           <style jsx>{`
             @keyframes spin {
               0% { transform: rotate(0deg); }
@@ -990,7 +990,7 @@ export default function WriteUpPage() {
   if (rosterLoading) {
     return (
       <Layout>
-        <div style={{ padding: "24px", color: "#6B7280" }}>Loading roster…</div>
+        <div style={{ padding: "24px", color: "var(--info)" }}>Loading roster…</div>
       </Layout>
     );
   }
@@ -1013,32 +1013,32 @@ export default function WriteUpPage() {
             alignItems: "center",
             marginBottom: "12px",
             padding: "16px",
-            backgroundColor: "#ffffff",
+            backgroundColor: "var(--surface)",
             borderRadius: "16px",
-            boxShadow: "0 10px 30px rgba(15,23,42,0.08)",
+            boxShadow: "0 10px 30px rgba(var(--shadow-rgb),0.08)",
             flexShrink: 0
           }}>
             <button
               onClick={goBackToJobCard}
               style={{
                 ...modernButtonStyle,
-                backgroundColor: "#0f172a",
+                backgroundColor: "var(--accent-purple)",
                 color: "white",
-                boxShadow: "0 6px 12px rgba(15,23,42,0.2)",
+                boxShadow: "0 6px 12px rgba(var(--shadow-rgb),0.2)",
               }}
             >
               ← Back to job
             </button>
             <div style={{ flex: 1 }}>
               <h1 style={{
-                color: "#d10000",
+                color: "var(--primary)",
                 fontSize: "28px",
                 fontWeight: "700",
                 margin: "0 0 4px 0"
               }}>
                 Write-Up - Job #{jobNumber}
               </h1>
-              <p style={{ color: "#666", fontSize: "14px", margin: 0 }}>
+              <p style={{ color: "var(--grey-accent)", fontSize: "14px", margin: 0 }}>
                 {jobData.customer?.firstName} {jobData.customer?.lastName} | {jobData.jobCard?.reg}
               </p>
             </div>
@@ -1059,9 +1059,9 @@ export default function WriteUpPage() {
         <div style={{
           flex: 1,
           borderRadius: "8px",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-          border: "1px solid #ffe5e5",
-          background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)",
+          boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
+          border: "1px solid var(--surface-light)",
+          background: "linear-gradient(to bottom right, white, var(--danger-surface), var(--surface-light))",
           padding: "24px",
           overflow: "hidden",
           display: "flex",
@@ -1077,13 +1077,13 @@ export default function WriteUpPage() {
                 flex: 1,
                 padding: "12px",
                 borderRadius: "8px",
-                border: activeTab === "writeup" ? "2px solid #d10000" : "1px solid #e5e7eb",
-                backgroundColor: activeTab === "writeup" ? "#ffecec" : "white",
+                border: activeTab === "writeup" ? "2px solid var(--primary)" : "1px solid var(--accent-purple-surface)",
+                backgroundColor: activeTab === "writeup" ? "var(--surface-light)" : "white",
                 fontWeight: 600,
                 cursor: "pointer"
               }}
             >
-              <span style={{ color: "#d10000" }}>Write-Up</span>
+              <span style={{ color: "var(--primary)" }}>Write-Up</span>
             </button>
             <button
               type="button"
@@ -1092,13 +1092,13 @@ export default function WriteUpPage() {
                 flex: 1,
                 padding: "12px",
                 borderRadius: "8px",
-                border: activeTab === "extras" ? "2px solid #d10000" : "1px solid #e5e7eb",
-                backgroundColor: activeTab === "extras" ? "#ffecec" : "white",
+                border: activeTab === "extras" ? "2px solid var(--primary)" : "1px solid var(--accent-purple-surface)",
+                backgroundColor: activeTab === "extras" ? "var(--surface-light)" : "white",
                 fontWeight: 600,
                 cursor: "pointer"
               }}
             >
-              <span style={{ color: "#d10000" }}>Warranty Extras</span>
+              <span style={{ color: "var(--primary)" }}>Warranty Extras</span>
             </button>
           </div>
           <div style={{ flex: 1, minHeight: 0 }}>
@@ -1135,19 +1135,19 @@ export default function WriteUpPage() {
                             />
                             {isComplete ? "Completed" : "Mark complete"}
                           </label>
-                          <div style={{ fontSize: "12px", color: "#6b7280" }}>Request {index + 1}</div>
+                          <div style={{ fontSize: "12px", color: "var(--info)" }}>Request {index + 1}</div>
                           <textarea
                             value={task?.label || ""}
                             onChange={task ? handleRequestLabelChange(slotKey) : undefined}
                             placeholder={task ? "" : "No request added yet."}
                             readOnly={!task}
-                            style={task ? modernTextareaStyle : { ...modernTextareaStyle, borderStyle: "dashed", backgroundColor: "#f3f4f6" }}
+                            style={task ? modernTextareaStyle : { ...modernTextareaStyle, borderStyle: "dashed", backgroundColor: "var(--info-surface)" }}
                           />
                         </div>
                       );
                     })}
                     {requestSlots.length === 0 && (
-                      <p style={{ color: "#9ca3af", fontSize: "13px" }}>No job requests available yet.</p>
+                      <p style={{ color: "var(--info)", fontSize: "13px" }}>No job requests available yet.</p>
                     )}
                   </div>
                 </div>
@@ -1161,7 +1161,7 @@ export default function WriteUpPage() {
                       <button
                         type="button"
                         onClick={addCauseRow}
-                        style={{ ...modernButtonStyle, backgroundColor: "#1d4ed8", color: "#fff" }}
+                        style={{ ...modernButtonStyle, backgroundColor: "var(--accent-purple)", color: "var(--surface)" }}
                       >
                         + Add Cause
                       </button>
@@ -1201,7 +1201,7 @@ export default function WriteUpPage() {
                                 <button
                                   type="button"
                                   onClick={() => removeCauseRow(entry.id)}
-                                  style={{ ...modernButtonStyle, backgroundColor: "#ef4444", color: "white" }}
+                                  style={{ ...modernButtonStyle, backgroundColor: "var(--danger)", color: "white" }}
                                 >
                                   Remove
                                 </button>
@@ -1225,7 +1225,7 @@ export default function WriteUpPage() {
                   </div>
                   <div style={sectionScrollerStyle}>
                     {rectificationTasks.length === 0 ? (
-                      <p style={{ margin: 0, color: "#9ca3af", fontSize: "13px" }}>
+                      <p style={{ margin: 0, color: "var(--info)", fontSize: "13px" }}>
                         Add authorised additional work to record rectifications.
                       </p>
                     ) : (
@@ -1244,7 +1244,7 @@ export default function WriteUpPage() {
                                 />
                                 Completed
                               </label>
-                              <span style={{ fontSize: "12px", color: "#6b7280" }}>Item {index + 1}</span>
+                              <span style={{ fontSize: "12px", color: "var(--info)" }}>Item {index + 1}</span>
                             </div>
                             <textarea
                               value={task.label}
@@ -1273,15 +1273,15 @@ export default function WriteUpPage() {
                       backgroundColor: "white",
                       padding: "16px",
                       borderRadius: "8px",
-                      border: "1px solid #ffe5e5",
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+                      border: "1px solid var(--surface-light)",
+                      boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
                       display: "flex",
                       flexDirection: "column",
                       minHeight: "140px",
                       gap: "8px"
                     }}
                   >
-                    <label style={{ fontSize: "14px", fontWeight: "600", color: "#333" }}>
+                    <label style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-secondary)" }}>
                       {fieldConfig.label}
                     </label>
                       {fieldConfig.type === "textarea" ? (
@@ -1289,8 +1289,8 @@ export default function WriteUpPage() {
                           value={writeUpData[fieldConfig.field]}
                           onChange={handleNoteChange(fieldConfig.field)}
                           style={{ ...modernTextareaStyle, minHeight: "90px", flex: 1 }}
-                          onFocus={(e) => (e.currentTarget.style.borderColor = "#d10000")}
-                          onBlur={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
+                          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary)")}
+                          onBlur={(e) => (e.currentTarget.style.borderColor = "var(--info)")}
                         />
                       ) : (
                         <input
@@ -1298,8 +1298,8 @@ export default function WriteUpPage() {
                           value={writeUpData[fieldConfig.field]}
                           onChange={handleInputChange(fieldConfig.field)}
                           style={{ ...modernInputStyle, flex: 1 }}
-                          onFocus={(e) => (e.currentTarget.style.borderColor = "#d10000")}
-                          onBlur={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
+                          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary)")}
+                          onBlur={(e) => (e.currentTarget.style.borderColor = "var(--info)")}
                         />
                       )}
                   </div>
@@ -1315,16 +1315,16 @@ export default function WriteUpPage() {
           gap: "12px",
           marginTop: "12px",
           paddingTop: "12px",
-          borderTop: "2px solid rgba(209, 0, 0, 0.1)",
+          borderTop: "2px solid rgba(var(--primary-rgb), 0.1)",
           flexShrink: 0
         }}>
           <button
             onClick={goBackToJobCard}
             style={{
               ...modernButtonStyle,
-              backgroundColor: "#263245",
+              backgroundColor: "var(--info-dark)",
               color: "white",
-              boxShadow: "0 6px 12px rgba(15,23,42,0.25)",
+              boxShadow: "0 6px 12px rgba(var(--shadow-rgb),0.25)",
             }}
           >
             ← Back to job
@@ -1334,9 +1334,9 @@ export default function WriteUpPage() {
             onClick={openCheckSheetPopup}
             style={{
               ...modernButtonStyle,
-              backgroundColor: "#d10000",
+              backgroundColor: "var(--primary)",
               color: "white",
-              boxShadow: "0 6px 12px rgba(209,0,0,0.2)",
+              boxShadow: "0 6px 12px rgba(var(--primary-rgb),0.2)",
             }}
           >
             📋 Check sheet
@@ -1346,9 +1346,9 @@ export default function WriteUpPage() {
             onClick={openDocumentsPopup}
             style={{
               ...modernButtonStyle,
-              backgroundColor: "#d10000",
+              backgroundColor: "var(--primary)",
               color: "white",
-              boxShadow: "0 6px 12px rgba(209,0,0,0.2)",
+              boxShadow: "0 6px 12px rgba(var(--primary-rgb),0.2)",
             }}
           >
             🚗 Vehicle details
@@ -1359,9 +1359,9 @@ export default function WriteUpPage() {
             disabled={saving}
             style={{
               ...modernButtonStyle,
-              backgroundColor: saving ? "#94a3b8" : "#10b981",
+              backgroundColor: saving ? "var(--info)" : "var(--info)",
               color: "white",
-              boxShadow: "0 6px 12px rgba(16,185,129,0.25)",
+              boxShadow: "0 6px 12px rgba(var(--info-rgb), 0.25)",
             }}
           >
             {saving ? "💾 Saving..." : "💾 Save write-up"}
@@ -1381,7 +1381,7 @@ export default function WriteUpPage() {
           style={{
             position: "fixed",
             inset: 0,
-            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backgroundColor: "rgba(var(--accent-purple-rgb), 0.65)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1397,7 +1397,7 @@ export default function WriteUpPage() {
               backgroundColor: "white",
               borderRadius: "18px",
               padding: "32px",
-              boxShadow: "0 24px 60px rgba(15,23,42,0.35)",
+              boxShadow: "0 24px 60px rgba(var(--shadow-rgb),0.35)",
               display: "flex",
               flexDirection: "column",
               gap: "16px",
@@ -1405,8 +1405,8 @@ export default function WriteUpPage() {
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "#0f172a" }}>Vehicle Documents</h3>
-                <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#64748b" }}>
+                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "var(--accent-purple)" }}>Vehicle Documents</h3>
+                <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--info)" }}>
                   View or upload documents tied to this vehicle. Documents generated during job creation appear here.
                 </p>
               </div>
@@ -1417,7 +1417,7 @@ export default function WriteUpPage() {
                   background: "transparent",
                   fontSize: "22px",
                   cursor: "pointer",
-                  color: "#94a3b8",
+                  color: "var(--info)",
                 }}
               >
                 ×
@@ -1435,7 +1435,7 @@ export default function WriteUpPage() {
                   border: "none",
                   borderRadius: "10px",
                   padding: "12px 16px",
-                  background: "#10b981",
+                  background: "var(--info)",
                   color: "white",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -1448,11 +1448,11 @@ export default function WriteUpPage() {
                 onClick={closeDocumentsPopup}
                 style={{
                   flex: 1,
-                  border: "1px solid #d1d5db",
+                  border: "1px solid var(--info)",
                   borderRadius: "10px",
                   padding: "12px 16px",
                   background: "white",
-                  color: "#0f172a",
+                  color: "var(--accent-purple)",
                   fontWeight: 600,
                   cursor: "pointer",
                 }}

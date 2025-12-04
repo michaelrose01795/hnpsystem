@@ -152,25 +152,25 @@ export default function AfterSalesManagerDashboard() {
         key: "todaysJobs",
         label: "Today’s Jobs",
         helper: "Jobs created today",
-        accent: "#b45309",
+        accent: "var(--warning)",
       },
       {
         key: "openJobs",
         label: "Open Jobs",
         helper: "Active jobs excluding completed statuses",
-        accent: "#d97706",
+        accent: "var(--warning)",
       },
       {
         key: "partsPending",
         label: "Parts Pending",
         helper: "Requests awaiting allocation",
-        accent: "#dc2626",
+        accent: "var(--danger)",
       },
       {
         key: "vhcSentToday",
         label: "VHC Sent Today",
         helper: "Customer VHC reports sent",
-        accent: "#16a34a",
+        accent: "var(--success)",
       },
     ];
 
@@ -205,19 +205,19 @@ export default function AfterSalesManagerDashboard() {
         style={{
           padding: "24px",
           borderRadius: "18px",
-          background: "linear-gradient(135deg, #fff1d6, #ffe8c2)",
-          border: "1px solid #ffd7a8",
-          boxShadow: "0 24px 50px rgba(191,96,0,0.18)",
+          background: "linear-gradient(135deg, var(--warning-surface), var(--warning))",
+          border: "1px solid var(--warning)",
+          boxShadow: "0 24px 50px rgba(var(--warning-rgb), 0.18)",
           display: "flex",
           flexDirection: "column",
           gap: "6px",
         }}
       >
-        <span style={{ textTransform: "uppercase", letterSpacing: "0.2em", fontSize: "0.78rem", color: "#a45200" }}>
+        <span style={{ textTransform: "uppercase", letterSpacing: "0.2em", fontSize: "0.78rem", color: "var(--warning-dark)" }}>
           After Sales Performance War Room
         </span>
-        <h1 style={{ margin: 0, fontSize: "1.9rem", color: "#7a3e00" }}>Revenue & Loyalty Pulse</h1>
-        <p style={{ margin: 0, color: "#8b5a2b" }}>{today} • {formatCurrency(totals.actual)} / {formatCurrency(totals.target)} • {progress}% to plan</p>
+        <h1 style={{ margin: 0, fontSize: "1.9rem", color: "var(--warning-dark)" }}>Revenue & Loyalty Pulse</h1>
+        <p style={{ margin: 0, color: "var(--warning)" }}>{today} • {formatCurrency(totals.actual)} / {formatCurrency(totals.target)} • {progress}% to plan</p>
       </header>
 
       <section
@@ -225,11 +225,11 @@ export default function AfterSalesManagerDashboard() {
           display: "flex",
           flexWrap: "wrap",
           gap: "12px",
-          background: "#fff",
+          background: "var(--surface)",
           padding: "14px 20px",
           borderRadius: "16px",
-          border: "1px solid #ffd7a8",
-          boxShadow: "0 18px 40px rgba(191,96,0,0.12)",
+          border: "1px solid var(--warning)",
+          boxShadow: "0 18px 40px rgba(var(--warning-rgb), 0.12)",
         }}
       >
         {quickActions.map((action) => (
@@ -242,13 +242,13 @@ export default function AfterSalesManagerDashboard() {
               justifyContent: "center",
               padding: "10px 20px",
               borderRadius: "999px",
-              border: "1px solid #ffddb9",
-              backgroundColor: "#fff",
-              color: "#a45200",
+              border: "1px solid var(--warning)",
+              backgroundColor: "var(--surface)",
+              color: "var(--warning-dark)",
               fontWeight: 600,
               fontSize: "0.9rem",
               textDecoration: "none",
-              boxShadow: "0 12px 28px rgba(191,96,0,0.15)",
+              boxShadow: "0 12px 28px rgba(var(--warning-rgb), 0.15)",
             }}
           >
             {action.label}
@@ -267,21 +267,21 @@ export default function AfterSalesManagerDashboard() {
           <div
             key={metric.label}
             style={{
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: "18px",
               border: `1px solid ${metric.accent}22`,
               padding: "18px",
               display: "flex",
               flexDirection: "column",
               gap: "6px",
-              boxShadow: "0 18px 40px rgba(0,0,0,0.08)",
+              boxShadow: "0 18px 40px rgba(var(--shadow-rgb),0.08)",
             }}
           >
-            <span style={{ textTransform: "uppercase", letterSpacing: "0.08em", color: "#6b7280", fontSize: "0.78rem" }}>
+            <span style={{ textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)", fontSize: "0.78rem" }}>
               {metric.label}
             </span>
             <strong style={{ fontSize: "1.7rem", color: metric.accent }}>{metric.value}</strong>
-            <span style={{ color: "#4b5563", fontSize: "0.85rem" }}>{metric.helper}</span>
+            <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>{metric.helper}</span>
           </div>
         ))}
       </section>
@@ -295,11 +295,11 @@ export default function AfterSalesManagerDashboard() {
       >
         <article
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: "18px",
             padding: "20px",
-            border: "1px solid #ffe0b5",
-            boxShadow: "0 24px 50px rgba(191,96,0,0.12)",
+            border: "1px solid var(--warning)",
+            boxShadow: "0 24px 50px rgba(var(--warning-rgb), 0.12)",
             display: "flex",
             flexDirection: "column",
             gap: "16px",
@@ -307,12 +307,12 @@ export default function AfterSalesManagerDashboard() {
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
             <div>
-              <h2 style={{ margin: 0, color: "#7a3e00", fontSize: "1.2rem" }}>Revenue Streams</h2>
-              <p style={{ margin: "4px 0 0", color: "#8b5a2b" }}>
+              <h2 style={{ margin: 0, color: "var(--warning-dark)", fontSize: "1.2rem" }}>Revenue Streams</h2>
+              <p style={{ margin: "4px 0 0", color: "var(--warning)" }}>
                 {formatCurrency(totals.actual - totals.target)} vs plan • {progress}% achieved
               </p>
             </div>
-            <strong style={{ fontSize: "1.3rem", color: "#b45309" }}>{formatCurrency(totals.actual)}</strong>
+            <strong style={{ fontSize: "1.3rem", color: "var(--warning)" }}>{formatCurrency(totals.actual)}</strong>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             {revenueStreams.map((stream) => {
@@ -320,8 +320,8 @@ export default function AfterSalesManagerDashboard() {
               return (
                 <div key={stream.label} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <strong style={{ color: "#7a3e00" }}>{stream.label}</strong>
-                    <span style={{ color: "#4b5563" }}>
+                    <strong style={{ color: "var(--warning-dark)" }}>{stream.label}</strong>
+                    <span style={{ color: "var(--info-dark)" }}>
                       {formatCurrency(stream.actual)} / {formatCurrency(stream.target)} ({streamProgress}%)
                     </span>
                   </div>
@@ -329,8 +329,8 @@ export default function AfterSalesManagerDashboard() {
                     style={{
                       height: "12px",
                       borderRadius: "999px",
-                      background: "#fff7ec",
-                      border: "1px solid #ffe0b5",
+                      background: "var(--warning-surface)",
+                      border: "1px solid var(--warning)",
                       overflow: "hidden",
                     }}
                   >
@@ -338,7 +338,7 @@ export default function AfterSalesManagerDashboard() {
                       style={{
                         width: `${Math.min(streamProgress, 125)}%`,
                         height: "100%",
-                        background: "linear-gradient(90deg, #f97316, #b45309)",
+                        background: "linear-gradient(90deg, var(--danger), var(--warning))",
                       }}
                     />
                   </div>
@@ -350,26 +350,26 @@ export default function AfterSalesManagerDashboard() {
 
         <article
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: "18px",
             padding: "20px",
-            border: "1px solid #ffe0b5",
-            boxShadow: "0 24px 50px rgba(191,96,0,0.12)",
+            border: "1px solid var(--warning)",
+            boxShadow: "0 24px 50px rgba(var(--warning-rgb), 0.12)",
             display: "flex",
             flexDirection: "column",
             gap: "16px",
           }}
         >
           <div>
-            <h2 style={{ margin: 0, color: "#7a3e00", fontSize: "1.2rem" }}>Regional Pulse</h2>
-            <p style={{ margin: "4px 0 0", color: "#8b5a2b" }}>Sites benchmarked vs strategic KPIs</p>
+            <h2 style={{ margin: 0, color: "var(--warning-dark)", fontSize: "1.2rem" }}>Regional Pulse</h2>
+            <p style={{ margin: "4px 0 0", color: "var(--warning)" }}>Sites benchmarked vs strategic KPIs</p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {regionalSnapshot.map((site) => (
               <div
                 key={site.site}
                 style={{
-                  border: "1px solid #ffe0b5",
+                  border: "1px solid var(--warning)",
                   borderRadius: "14px",
                   padding: "14px",
                   display: "flex",
@@ -378,12 +378,12 @@ export default function AfterSalesManagerDashboard() {
                 }}
               >
                 <div>
-                  <strong style={{ color: "#7a3e00" }}>{site.site}</strong>
-                  <p style={{ margin: "4px 0 0", color: "#8b5a2b", fontSize: "0.85rem" }}>{site.doc}</p>
+                  <strong style={{ color: "var(--warning-dark)" }}>{site.site}</strong>
+                  <p style={{ margin: "4px 0 0", color: "var(--warning)", fontSize: "0.85rem" }}>{site.doc}</p>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <strong style={{ fontSize: "1.4rem", color: "#b45309" }}>{site.value}</strong>
-                  <p style={{ margin: "4px 0 0", color: site.trend.startsWith("+") ? "#16a34a" : "#dc2626" }}>
+                  <strong style={{ fontSize: "1.4rem", color: "var(--warning)" }}>{site.value}</strong>
+                  <p style={{ margin: "4px 0 0", color: site.trend.startsWith("+") ? "var(--success)" : "var(--danger)" }}>
                     {site.trend}
                   </p>
                 </div>
@@ -402,45 +402,45 @@ export default function AfterSalesManagerDashboard() {
       >
         <article
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: "18px",
             padding: "20px",
-            border: "1px solid #ffe0b5",
-            boxShadow: "0 24px 50px rgba(191,96,0,0.12)",
+            border: "1px solid var(--warning)",
+            boxShadow: "0 24px 50px rgba(var(--warning-rgb), 0.12)",
             display: "flex",
             flexDirection: "column",
             gap: "12px",
           }}
         >
           <div>
-            <h2 style={{ margin: 0, color: "#7a3e00", fontSize: "1.2rem" }}>Strategic Risks</h2>
-            <p style={{ margin: "4px 0 0", color: "#8b5a2b" }}>Escalations that impact daily GP and CSI</p>
+            <h2 style={{ margin: 0, color: "var(--warning-dark)", fontSize: "1.2rem" }}>Strategic Risks</h2>
+            <p style={{ margin: "4px 0 0", color: "var(--warning)" }}>Escalations that impact daily GP and CSI</p>
           </div>
           {strategicRisks.map((risk) => (
             <div
               key={risk.title}
               style={{
-                border: "1px solid #ffe0b5",
+                border: "1px solid var(--warning)",
                 borderRadius: "16px",
                 padding: "16px",
-                background: risk.severity === "high" ? "#fff5ec" : "#fffdf8",
+                background: risk.severity === "high" ? "var(--warning-surface)" : "var(--warning-surface)",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <strong style={{ color: "#7a3e00" }}>{risk.title}</strong>
+                <strong style={{ color: "var(--warning-dark)" }}>{risk.title}</strong>
                 <span
                   style={{
                     textTransform: "uppercase",
                     letterSpacing: "0.08em",
-                    color: risk.severity === "high" ? "#dc2626" : "#d97706",
+                    color: risk.severity === "high" ? "var(--danger)" : "var(--warning)",
                     fontSize: "0.75rem",
                   }}
                 >
                   {risk.severity}
                 </span>
               </div>
-              <p style={{ margin: "6px 0", color: "#4b5563" }}>{risk.detail}</p>
-              <p style={{ margin: "6px 0", color: "#7a3e00", fontSize: "0.9rem" }}>
+              <p style={{ margin: "6px 0", color: "var(--info-dark)" }}>{risk.detail}</p>
+              <p style={{ margin: "6px 0", color: "var(--warning-dark)", fontSize: "0.9rem" }}>
                 Owner: {risk.owner} • Mitigation: {risk.mitigation}
               </p>
             </div>
@@ -449,39 +449,39 @@ export default function AfterSalesManagerDashboard() {
 
         <article
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: "18px",
             padding: "20px",
-            border: "1px solid #ffe0b5",
-            boxShadow: "0 24px 50px rgba(191,96,0,0.12)",
+            border: "1px solid var(--warning)",
+            boxShadow: "0 24px 50px rgba(var(--warning-rgb), 0.12)",
             display: "flex",
             flexDirection: "column",
             gap: "14px",
           }}
         >
           <div>
-            <h2 style={{ margin: 0, color: "#7a3e00", fontSize: "1.2rem" }}>Loyalty Engine</h2>
-            <p style={{ margin: "4px 0 0", color: "#8b5a2b" }}>Subscription and retention guardrails</p>
+            <h2 style={{ margin: 0, color: "var(--warning-dark)", fontSize: "1.2rem" }}>Loyalty Engine</h2>
+            <p style={{ margin: "4px 0 0", color: "var(--warning)" }}>Subscription and retention guardrails</p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {loyaltyMetrics.map((metric) => (
               <div
                 key={metric.label}
                 style={{
-                  border: "1px dashed #ffd7a8",
+                  border: "1px dashed var(--warning)",
                   borderRadius: "14px",
                   padding: "14px",
-                  background: "#fffaf3",
+                  background: "var(--warning-surface)",
                   display: "flex",
                   flexDirection: "column",
                   gap: "4px",
                 }}
               >
-                <span style={{ color: "#8b5a2b", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                <span style={{ color: "var(--warning)", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                   {metric.label}
                 </span>
-                <strong style={{ fontSize: "1.6rem", color: "#b45309" }}>{metric.value}</strong>
-                <span style={{ color: "#4b5563" }}>{metric.helper}</span>
+                <strong style={{ fontSize: "1.6rem", color: "var(--warning)" }}>{metric.value}</strong>
+                <span style={{ color: "var(--info-dark)" }}>{metric.helper}</span>
               </div>
             ))}
           </div>
@@ -490,8 +490,8 @@ export default function AfterSalesManagerDashboard() {
               marginTop: "8px",
               padding: "12px",
               borderRadius: "12px",
-              background: "#ecfccb",
-              color: "#3f6212",
+              background: "var(--success)",
+              color: "var(--success-dark)",
               fontWeight: 600,
             }}
           >

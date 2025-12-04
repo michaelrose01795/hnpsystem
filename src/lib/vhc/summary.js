@@ -3,14 +3,14 @@
 
 // ✅ Brand color mapping for high-level VHC status badges
 export const STATUS_COLORS = {
-  "VHC not started": "#9ca3af",
-  "In progress": "#3b82f6",
-  "Waiting for parts": "#f97316",
-  "Sent to customer": "#8b5cf6",
-  "Awaiting approval": "#fbbf24",
-  Approved: "#10b981",
-  Declined: "#ef4444",
-  Completed: "#06b6d4",
+  "VHC not started": "var(--info)",
+  "In progress": "var(--info)",
+  "Waiting for parts": "var(--danger)",
+  "Sent to customer": "var(--accent-purple)",
+  "Awaiting approval": "var(--warning)",
+  Approved: "var(--info)",
+  Declined: "var(--danger)",
+  Completed: "var(--info)",
 };
 
 // ✅ Canonical list of workflow statuses that should appear on VHC surfaces

@@ -64,7 +64,7 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f7f7fb" }}>
+    <div style={{ minHeight: "100vh", background: "var(--accent-purple-surface)" }}>
       <div
         style={{
           display: "flex",
@@ -88,10 +88,10 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
           <header
             style={{
               borderRadius: "18px",
-              border: "1px solid #ffe5e5",
-              background: "#ffffff",
+              border: "1px solid var(--surface-light)",
+              background: "var(--surface)",
               padding: "24px",
-              boxShadow: "0 12px 34px rgba(209,0,0,0.08)",
+              boxShadow: "0 12px 34px rgba(var(--primary-rgb),0.08)",
             }}
           >
             <p
@@ -99,7 +99,7 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
                 textTransform: "uppercase",
                 letterSpacing: "0.35em",
                 fontSize: "0.7rem",
-                color: "#d10000",
+                color: "var(--primary)",
                 marginBottom: "8px",
               }}
             >
@@ -113,14 +113,14 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
                 alignItems: "center",
               }}
             >
-              <h1 style={{ fontSize: "2rem", fontWeight: 700, margin: 0, color: "#1f2937" }}>
+              <h1 style={{ fontSize: "2rem", fontWeight: 700, margin: 0, color: "var(--info-dark)" }}>
                 {pageTitle}
               </h1>
               <span
                 style={{
                   borderRadius: "999px",
-                  background: "#fff1f1",
-                  color: "#b91c1c",
+                  background: "var(--surface-light)",
+                  color: "var(--danger)",
                   padding: "6px 16px",
                   fontSize: "0.75rem",
                   fontWeight: 600,
@@ -141,9 +141,9 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
               <div
                 style={{
                   borderRadius: "16px",
-                  border: "1px solid #ffe0e0",
+                  border: "1px solid var(--surface-light)",
                   padding: "16px",
-                  background: "#fff5f5",
+                  background: "var(--surface-light)",
                 }}
               >
                 <p
@@ -151,22 +151,22 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
                     textTransform: "uppercase",
                     letterSpacing: "0.25em",
                     fontSize: "0.65rem",
-                    color: "#d10000",
+                    color: "var(--primary)",
                     marginBottom: "6px",
                   }}
                 >
                   Signed in
                 </p>
-                <p style={{ margin: 0, fontWeight: 600, color: "#1f2937" }}>
+                <p style={{ margin: 0, fontWeight: 600, color: "var(--info-dark)" }}>
                   {user.username || "Customer"}
                 </p>
               </div>
               <div
                 style={{
                   borderRadius: "16px",
-                  border: "1px solid #ffe0e0",
+                  border: "1px solid var(--surface-light)",
                   padding: "16px",
-                  background: "#fff5f5",
+                  background: "var(--surface-light)",
                 }}
               >
                 <p
@@ -174,7 +174,7 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
                     textTransform: "uppercase",
                     letterSpacing: "0.25em",
                     fontSize: "0.65rem",
-                    color: "#d10000",
+                    color: "var(--primary)",
                     marginBottom: "6px",
                   }}
                 >
@@ -185,7 +185,7 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
-                    color: "#a00000",
+                    color: "var(--primary-dark)",
                     fontWeight: 600,
                     textDecoration: "underline",
                   }}
@@ -196,9 +196,9 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
               <div
                 style={{
                   borderRadius: "16px",
-                  border: "1px solid #ffe0e0",
+                  border: "1px solid var(--surface-light)",
                   padding: "16px",
-                  background: "#fff5f5",
+                  background: "var(--surface-light)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -211,25 +211,25 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
                       textTransform: "uppercase",
                       letterSpacing: "0.25em",
                       fontSize: "0.65rem",
-                      color: "#d10000",
+                      color: "var(--primary)",
                       marginBottom: "6px",
                     }}
                   >
                     Session
                   </p>
-                  <p style={{ margin: 0, color: "#1f2937", fontWeight: 600 }}>Active</p>
+                  <p style={{ margin: 0, color: "var(--info-dark)", fontWeight: 600 }}>Active</p>
                 </div>
                 <button
                   onClick={handleLogout}
                   style={{
                     border: "none",
-                    background: "linear-gradient(90deg, #d10000, #a00000)",
-                    color: "#ffffff",
+                    background: "linear-gradient(90deg, var(--primary), var(--primary-dark))",
+                    color: "var(--surface)",
                     fontWeight: 600,
                     borderRadius: "999px",
                     padding: "10px 18px",
                     cursor: "pointer",
-                    boxShadow: "0 10px 24px rgba(209,0,0,0.25)",
+                    boxShadow: "0 10px 24px rgba(var(--primary-rgb),0.25)",
                   }}
                 >
                   Logout

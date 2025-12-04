@@ -64,12 +64,12 @@ const getAutoMovementRule = (status) => {
 };
 
 const STATUS_COLORS = {
-  "Awaiting Authorization": "#f97316",
-  "Waiting For Collection": "#0ea5e9",
-  "Ready For Collection": "#10b981",
-  "Complete": "#10b981",
-  "Valet Hold": "#a21caf",
-  "In Transit": "#6366f1",
+  "Awaiting Authorization": "var(--danger)",
+  "Waiting For Collection": "var(--info)",
+  "Ready For Collection": "var(--info)",
+  "Complete": "var(--info)",
+  "Valet Hold": "var(--accent-orange)",
+  "In Transit": "var(--accent-purple)",
 };
 
 const NEXT_ACTION_ENDPOINT = "/api/tracking/next-action";
@@ -104,9 +104,9 @@ const CombinedTrackerCard = ({ entry }) => {
       style={{
         padding: "16px 18px",
         borderRadius: "16px",
-        border: "1px solid rgba(148,163,184,0.3)",
+        border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
         background: "white",
-        boxShadow: "0 8px 16px rgba(148,163,184,0.15)",
+        boxShadow: "0 8px 16px rgba(var(--grey-accent-rgb), 0.15)",
         display: "flex",
         flexDirection: "column",
         gap: "8px",
@@ -114,10 +114,10 @@ const CombinedTrackerCard = ({ entry }) => {
     >
       <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
         <div>
-          <strong style={{ fontSize: "1.05rem", color: "#0f172a" }}>{entry.jobNumber || "Unknown job"}</strong>
-          <p style={{ margin: "2px 0 0", color: "#475569" }}>{entry.customer || "Customer pending"}</p>
+          <strong style={{ fontSize: "1.05rem", color: "var(--accent-purple)" }}>{entry.jobNumber || "Unknown job"}</strong>
+          <p style={{ margin: "2px 0 0", color: "var(--info-dark)" }}>{entry.customer || "Customer pending"}</p>
         </div>
-        <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>Updated {formatRelativeTime(entry.updatedAt)}</span>
+        <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>Updated {formatRelativeTime(entry.updatedAt)}</span>
       </div>
 
       <div
@@ -129,24 +129,24 @@ const CombinedTrackerCard = ({ entry }) => {
         }}
       >
         <div>
-          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "#94a3b8" }}>Vehicle</p>
-          <strong style={{ color: "#111827" }}>{entry.reg || "Unknown reg"}</strong>
+          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Vehicle</p>
+          <strong style={{ color: "var(--accent-purple)" }}>{entry.reg || "Unknown reg"}</strong>
         </div>
         <div>
-          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "#94a3b8" }}>Car location</p>
-          <strong style={{ color: "#15803d" }}>{entry.vehicleLocation || "Unallocated"}</strong>
+          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Car location</p>
+          <strong style={{ color: "var(--success-dark)" }}>{entry.vehicleLocation || "Unallocated"}</strong>
         </div>
         <div>
-          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "#94a3b8" }}>Key location</p>
-          <strong style={{ color: "#4338ca" }}>{entry.keyLocation || "Pending"}</strong>
+          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Key location</p>
+          <strong style={{ color: "var(--accent-purple)" }}>{entry.keyLocation || "Pending"}</strong>
         </div>
         <div>
-          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "#94a3b8" }}>Last move</p>
-          <strong style={{ color: "#0f172a" }}>{formatRelativeTime(entry.updatedAt)}</strong>
+          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Last move</p>
+          <strong style={{ color: "var(--accent-purple)" }}>{formatRelativeTime(entry.updatedAt)}</strong>
         </div>
       </div>
 
-      <p style={{ margin: 0, color: "#475569" }}>{entry.notes || "No additional notes"}</p>
+      <p style={{ margin: 0, color: "var(--info-dark)" }}>{entry.notes || "No additional notes"}</p>
     </div>
   );
 };
@@ -160,7 +160,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(15,23,42,0.55)",
+        background: "rgba(var(--shadow-rgb),0.55)",
         backdropFilter: "blur(4px)",
         display: "flex",
         alignItems: "center",
@@ -182,7 +182,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <p style={{ margin: 0, fontSize: "0.75rem", color: "#94a3b8", letterSpacing: "0.08em" }}>
+            <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--info)", letterSpacing: "0.08em" }}>
               {type === "car" ? "Parking library" : "Key hook library"}
             </p>
             <h2 style={{ margin: "4px 0 0" }}>Search location</h2>
@@ -194,7 +194,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
               width: "38px",
               height: "38px",
               borderRadius: "50%",
-              border: "1px solid rgba(15,23,42,0.15)",
+              border: "1px solid rgba(var(--shadow-rgb),0.15)",
               backgroundColor: "white",
               cursor: "pointer",
               fontWeight: 700,
@@ -208,7 +208,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={type === "car" ? "Search bays or overflow" : "Search key safes, drawers"}
-          style={{ padding: "10px 14px", borderRadius: "12px", border: "1px solid #e5e7eb" }}
+          style={{ padding: "10px 14px", borderRadius: "12px", border: "1px solid var(--accent-purple-surface)" }}
         />
 
         <div style={{ maxHeight: "320px", overflow: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -218,8 +218,8 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
               style={{
                 padding: "14px",
                 borderRadius: "16px",
-                border: "1px solid #e0e7ff",
-                background: "linear-gradient(180deg, #ffffff, #f8fafc)",
+                border: "1px solid var(--accent-purple-surface)",
+                background: "linear-gradient(180deg, var(--surface), var(--info-surface))",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -227,16 +227,16 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
                 flexWrap: "wrap",
               }}
             >
-              <strong style={{ color: "#0f172a" }}>{option.label}</strong>
+              <strong style={{ color: "var(--accent-purple)" }}>{option.label}</strong>
               <button
                 type="button"
                 onClick={() => onSelect(option)}
                 style={{
                   padding: "8px 12px",
                   borderRadius: "10px",
-                  border: "1px solid rgba(209,0,0,0.3)",
+                  border: "1px solid rgba(var(--primary-rgb),0.3)",
                   backgroundColor: "white",
-                  color: "#a00000",
+                  color: "var(--primary-dark)",
                   fontWeight: 600,
                   cursor: "pointer",
                 }}
@@ -251,9 +251,9 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
               style={{
                 padding: "18px",
                 borderRadius: "16px",
-                border: "1px dashed #e2e8f0",
+                border: "1px dashed var(--info-surface)",
                 textAlign: "center",
-                color: "#94a3b8",
+                color: "var(--info)",
               }}
             >
               No locations found.
@@ -291,7 +291,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(15,23,42,0.55)",
+        background: "rgba(var(--shadow-rgb),0.55)",
         backdropFilter: "blur(4px)",
         display: "flex",
         alignItems: "center",
@@ -314,7 +314,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.08em", color: "#94a3b8" }}>
+            <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.08em", color: "var(--info)" }}>
               {context === "car" ? "Update vehicle location" : "Update key location"}
             </p>
             <h2 style={{ margin: "4px 0 0" }}>{entry ? "Edit existing" : "Log new"}</h2>
@@ -326,7 +326,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
               width: "38px",
               height: "38px",
               borderRadius: "50%",
-              border: "1px solid rgba(15,23,42,0.15)",
+              border: "1px solid rgba(var(--shadow-rgb),0.15)",
               backgroundColor: "white",
               cursor: "pointer",
               fontWeight: 700,
@@ -350,13 +350,13 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
             { label: "Service Type", field: "serviceType", placeholder: "MOT, Service..." },
           ].map((input) => (
             <label key={input.field} style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600 }}>
-              <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>{input.label}</span>
+              <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>{input.label}</span>
               <input
                 required
                 value={form[input.field]}
                 onChange={(event) => handleChange(input.field, event.target.value)}
                 placeholder={input.placeholder}
-                style={{ padding: "10px 12px", borderRadius: "12px", border: "1px solid #e5e7eb" }}
+                style={{ padding: "10px 12px", borderRadius: "12px", border: "1px solid var(--accent-purple-surface)" }}
               />
             </label>
           ))}
@@ -370,11 +370,11 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
           }}
         >
           <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600 }}>
-            <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>Vehicle Location</span>
+            <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>Vehicle Location</span>
             <select
               value={form.vehicleLocation}
               onChange={(event) => handleChange("vehicleLocation", event.target.value)}
-              style={{ padding: "10px", borderRadius: "12px", border: "1px solid #e5e7eb" }}
+              style={{ padding: "10px", borderRadius: "12px", border: "1px solid var(--accent-purple-surface)" }}
             >
               {CAR_LOCATIONS.map((loc) => (
                 <option key={loc.id} value={loc.label}>
@@ -385,12 +385,12 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
           </label>
 
           <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600 }}>
-            <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>Key Location</span>
+            <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>Key Location</span>
             <select
               required
               value={form.keyLocation}
               onChange={(event) => handleChange("keyLocation", event.target.value)}
-              style={{ padding: "10px", borderRadius: "12px", border: "1px solid #e5e7eb" }}
+              style={{ padding: "10px", borderRadius: "12px", border: "1px solid var(--accent-purple-surface)" }}
             >
               {KEY_LOCATION_GROUPS.map((group) => (
                 <optgroup key={group.title} label={group.title}>
@@ -408,11 +408,11 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
           </label>
 
           <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600 }}>
-            <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>Status</span>
+            <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>Status</span>
             <select
               value={form.status}
               onChange={(event) => handleChange("status", event.target.value)}
-              style={{ padding: "10px", borderRadius: "12px", border: "1px solid #e5e7eb" }}
+              style={{ padding: "10px", borderRadius: "12px", border: "1px solid var(--accent-purple-surface)" }}
             >
               {Object.keys(STATUS_COLORS).map((status) => (
                 <option key={status} value={status}>
@@ -424,23 +424,23 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
         </div>
 
         <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600 }}>
-          <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>Key Tag / Guidance</span>
+          <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>Key Tag / Guidance</span>
           <input
             value={form.keyTip}
             onChange={(event) => handleChange("keyTip", event.target.value)}
             placeholder="Green tag #4, handover drawer, etc."
-            style={{ padding: "10px", borderRadius: "12px", border: "1px solid #e5e7eb" }}
+            style={{ padding: "10px", borderRadius: "12px", border: "1px solid var(--accent-purple-surface)" }}
           />
         </label>
 
         <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600 }}>
-          <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>Notes</span>
+          <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>Notes</span>
           <textarea
             rows={3}
             value={form.notes}
             onChange={(event) => handleChange("notes", event.target.value)}
             placeholder="Collection time, valet status, instructions..."
-            style={{ padding: "10px", borderRadius: "12px", border: "1px solid #e5e7eb", resize: "vertical" }}
+            style={{ padding: "10px", borderRadius: "12px", border: "1px solid var(--accent-purple-surface)", resize: "vertical" }}
           />
         </label>
 
@@ -451,7 +451,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
             style={{
               padding: "10px 16px",
               borderRadius: "12px",
-              border: "1px solid rgba(15,23,42,0.15)",
+              border: "1px solid rgba(var(--shadow-rgb),0.15)",
               backgroundColor: "white",
               cursor: "pointer",
               fontWeight: 600,
@@ -465,7 +465,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
               padding: "10px 16px",
               borderRadius: "12px",
               border: "none",
-              background: "linear-gradient(120deg, #d10000, #a00000)",
+              background: "linear-gradient(120deg, var(--primary), var(--primary-dark))",
               color: "white",
               fontWeight: 600,
               cursor: "pointer",
@@ -687,19 +687,19 @@ export default function TrackingDashboard() {
             justifyContent: "space-between",
             padding: "14px 18px",
             borderRadius: "18px",
-            border: "1px solid rgba(239,68,68,0.18)",
-            background: "linear-gradient(120deg, rgba(255,228,230,0.65), rgba(255,241,242,0.9))",
-            boxShadow: "0 18px 28px rgba(239,68,68,0.08)",
+            border: "1px solid rgba(var(--danger-rgb), 0.18)",
+            background: "linear-gradient(120deg, rgba(var(--danger-rgb), 0.65), rgba(var(--danger-rgb), 0.9))",
+            boxShadow: "0 18px 28px rgba(var(--danger-rgb), 0.08)",
             gap: "12px",
             flexWrap: "wrap",
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-            <span style={{ fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "#b91c1c" }}>Tracking Sync</span>
-            <strong style={{ color: "#7f1d1d" }}>Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "Syncing..."}</strong>
+            <span style={{ fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--danger)" }}>Tracking Sync</span>
+            <strong style={{ color: "var(--danger-dark)" }}>Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "Syncing..."}</strong>
           </div>
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            {loading && (<span style={{ color: "#b91c1c", fontWeight: 600 }}>Refreshing…</span>)}
+            {loading && (<span style={{ color: "var(--danger)", fontWeight: 600 }}>Refreshing…</span>)}
             <button
               type="button"
               onClick={loadEntries}
@@ -707,11 +707,11 @@ export default function TrackingDashboard() {
                 padding: "8px 16px",
                 borderRadius: "12px",
                 border: "none",
-                background: "linear-gradient(135deg, #ef4444, #b91c1c)",
-                color: "#fff",
+                background: "linear-gradient(135deg, var(--danger), var(--danger))",
+                color: "var(--surface)",
                 fontWeight: 700,
                 cursor: "pointer",
-                boxShadow: "0 12px 24px rgba(239,68,68,0.25)",
+                boxShadow: "0 12px 24px rgba(var(--danger-rgb), 0.25)",
               }}
             >
               Refresh
@@ -724,9 +724,9 @@ export default function TrackingDashboard() {
               gridColumn: "1 / -1",
               padding: "12px 16px",
               borderRadius: "16px",
-              border: "1px solid rgba(239,68,68,0.25)",
-              background: "rgba(254,226,226,0.8)",
-              color: "#991b1b",
+              border: "1px solid rgba(var(--danger-rgb), 0.25)",
+              background: "rgba(var(--danger-rgb), 0.8)",
+              color: "var(--danger)",
               fontWeight: 600,
             }}
           >
@@ -739,8 +739,8 @@ export default function TrackingDashboard() {
             padding: "24px",
             borderRadius: "24px",
             background: "white",
-            border: "1px solid rgba(148,163,184,0.35)",
-            boxShadow: "0 20px 40px rgba(15,23,42,0.04)",
+            border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+            boxShadow: "0 20px 40px rgba(var(--shadow-rgb),0.04)",
             display: "flex",
             flexDirection: "column",
             gap: "18px",
@@ -748,8 +748,8 @@ export default function TrackingDashboard() {
         >
           <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
             <div>
-              <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.12em", color: "#475569" }}>Live tracker</p>
-              <h1 style={{ margin: "6px 0 0", fontSize: "1.5rem", color: "#0f172a" }}>Active jobs</h1>
+              <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.12em", color: "var(--info-dark)" }}>Live tracker</p>
+              <h1 style={{ margin: "6px 0 0", fontSize: "1.5rem", color: "var(--accent-purple)" }}>Active jobs</h1>
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
               <button
@@ -759,7 +759,7 @@ export default function TrackingDashboard() {
                   padding: "8px 12px",
                   borderRadius: "10px",
                   border: "none",
-                  background: "linear-gradient(120deg, #d10000, #a00000)",
+                  background: "linear-gradient(120deg, var(--primary), var(--primary-dark))",
                   color: "white",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -782,9 +782,9 @@ export default function TrackingDashboard() {
                   gridColumn: "1 / -1",
                   padding: "12px",
                   borderRadius: "12px",
-                  border: "1px dashed rgba(148,163,184,0.6)",
+                  border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
                   textAlign: "center",
-                  color: "#475569",
+                  color: "var(--info-dark)",
                 }}
               >
                 No active job tracking data yet.
@@ -796,9 +796,9 @@ export default function TrackingDashboard() {
                   gridColumn: "1 / -1",
                   padding: "12px",
                   borderRadius: "12px",
-                  border: "1px dashed rgba(148,163,184,0.6)",
+                  border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
                   textAlign: "center",
-                  color: "#475569",
+                  color: "var(--info-dark)",
                 }}
               >
                 Waiting for job-mapped tracking entries.

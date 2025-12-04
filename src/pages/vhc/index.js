@@ -28,7 +28,7 @@ export default function VHCIndex() {
   if (isLoading) {
     return (
       <Layout>
-        <div style={{ padding: "20px", color: "#6B7280" }}>
+        <div style={{ padding: "20px", color: "var(--info)" }}>
           Loading permissions…
         </div>
       </Layout>
@@ -39,14 +39,14 @@ export default function VHCIndex() {
     return (
       <Layout>
         <div style={{ padding: "20px" }}>
-          <p style={{ color: "#ef4444", fontWeight: "600", fontSize: "16px" }}>
+          <p style={{ color: "var(--danger)", fontWeight: "600", fontSize: "16px" }}>
             You do not have access to the VHC page.
           </p>
           <div
             style={{
               marginTop: "20px",
               padding: "20px",
-              background: "#f5f5f5",
+              background: "var(--surface)",
               borderRadius: "8px",
             }}
           >

@@ -84,7 +84,7 @@ export default function OvertimeEntriesEditor({ initialEntries = [] }) {
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+            <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
               <th style={{ textAlign: "left", paddingBottom: "10px" }}>Date</th>
               <th>Start</th>
               <th>End</th>
@@ -93,7 +93,7 @@ export default function OvertimeEntriesEditor({ initialEntries = [] }) {
           </thead>
           <tbody>
             {entries.map((entry) => (
-              <tr key={entry.id} style={{ borderTop: "1px solid #E5E7EB" }}>
+              <tr key={entry.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
                 <td style={{ padding: "12px 0", fontWeight: 600 }}>
                   {new Date(entry.date).toLocaleDateString()}
                 </td>
@@ -109,7 +109,7 @@ export default function OvertimeEntriesEditor({ initialEntries = [] }) {
       <div style={{ marginTop: "16px", display: "flex", gap: "16px", alignItems: "center" }}>
         <StatusTag label={`Sessions: ${totals.sessions}`} tone="default" />
         <StatusTag label={`Total Hours: ${totals.totalHours}`} tone="success" />
-        <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>
+        <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
           TODO: Persist overtime sessions via Supabase edge functions.
         </span>
       </div>
@@ -123,13 +123,13 @@ const labelStyle = {
   gap: "6px",
   fontSize: "0.8rem",
   fontWeight: 600,
-  color: "#374151",
+  color: "var(--info-dark)",
 };
 
 const inputStyle = {
   padding: "8px 10px",
   borderRadius: "8px",
-  border: "1px solid #E5E7EB",
+  border: "1px solid var(--accent-purple-surface)",
   fontWeight: 500,
 };
 
@@ -138,7 +138,7 @@ const buttonStyle = {
   padding: "10px 12px",
   borderRadius: "10px",
   border: "none",
-  background: "#6366F1",
+  background: "var(--accent-purple)",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",

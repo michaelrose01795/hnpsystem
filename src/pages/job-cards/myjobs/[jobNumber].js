@@ -16,16 +16,16 @@ import { supabase } from "@/lib/supabaseClient";
 
 // Status color mapping for consistency
 const STATUS_COLORS = {
-  "Outstanding": "#9ca3af",
-  "Accepted": "#d10000",
-  "In Progress": "#3b82f6",
-  "Awaiting Authorization": "#fbbf24",
-  "Authorized": "#9333ea",
-  "Ready": "#10b981",
-  "Carry Over": "#f97316",
-  "Complete": "#06b6d4",
-  "Sent": "#8b5cf6",
-  "Viewed": "#06b6d4",
+  "Outstanding": "var(--info)",
+  "Accepted": "var(--primary)",
+  "In Progress": "var(--info)",
+  "Awaiting Authorization": "var(--warning)",
+  "Authorized": "var(--accent-purple)",
+  "Ready": "var(--info)",
+  "Carry Over": "var(--danger)",
+  "Complete": "var(--info)",
+  "Sent": "var(--accent-purple)",
+  "Viewed": "var(--info)",
 };
 
 const IN_PROGRESS_STATUS = "In Progress";
@@ -61,22 +61,22 @@ function calculateHoursWorked(clockInTime) {
 }
 
 const PARTS_STATUS_STYLES = {
-  pending: { background: "#fef3c7", color: "#92400e" },
-  awaiting_stock: { background: "#fee2e2", color: "#b91c1c" },
-  priced: { background: "#eef2ff", color: "#3730a3" },
-  "pre-pick": { background: "#dcfce7", color: "#15803d" },
-  "pre_pick": { background: "#dcfce7", color: "#15803d" },
-  "on-order": { background: "#fefce8", color: "#d97706" },
-  "on_order": { background: "#fefce8", color: "#d97706" },
-  allocated: { background: "#f0fdf4", color: "#15803d" },
-  picked: { background: "#dcfce7", color: "#15803d" },
-  fitted: { background: "#dbeafe", color: "#1d4ed8" },
-  cancelled: { background: "#f3f4f6", color: "#6b7280" },
+  pending: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
+  awaiting_stock: { background: "var(--danger-surface)", color: "var(--danger)" },
+  priced: { background: "var(--accent-purple-surface)", color: "var(--accent-purple)" },
+  "pre-pick": { background: "var(--success-surface)", color: "var(--success-dark)" },
+  "pre_pick": { background: "var(--success-surface)", color: "var(--success-dark)" },
+  "on-order": { background: "var(--warning-surface)", color: "var(--warning)" },
+  "on_order": { background: "var(--warning-surface)", color: "var(--warning)" },
+  allocated: { background: "var(--success-surface)", color: "var(--success-dark)" },
+  picked: { background: "var(--success-surface)", color: "var(--success-dark)" },
+  fitted: { background: "var(--info-surface)", color: "var(--accent-purple)" },
+  cancelled: { background: "var(--info-surface)", color: "var(--info)" },
 };
 
 const getPartsStatusStyle = (status) => {
-  if (!status) return { background: "#f3f4f6", color: "#4b5563" };
-  return PARTS_STATUS_STYLES[status.toLowerCase()] || { background: "#f3f4f6", color: "#4b5563" };
+  if (!status) return { background: "var(--info-surface)", color: "var(--info-dark)" };
+  return PARTS_STATUS_STYLES[status.toLowerCase()] || { background: "var(--info-surface)", color: "var(--info-dark)" };
 };
 
 // Helper to get status after clock out
@@ -601,7 +601,7 @@ export default function TechJobDetailPage() {
     return (
       <Layout>
         <div style={{ padding: "40px", textAlign: "center" }}>
-          <h2 style={{ color: "#d10000" }}>Access Denied</h2>
+          <h2 style={{ color: "var(--primary)" }}>Access Denied</h2>
           <p>This page is only for Technicians.</p>
         </div>
       </Layout>
@@ -623,12 +623,12 @@ export default function TechJobDetailPage() {
           <div style={{
             width: "60px",
             height: "60px",
-            border: "4px solid #f3f3f3",
-            borderTop: "4px solid #d10000",
+            border: "4px solid var(--surface)",
+            borderTop: "4px solid var(--primary)",
             borderRadius: "50%",
             animation: "spin 1s linear infinite"
           }}></div>
-          <p style={{ color: "#666" }}>Loading job...</p>
+          <p style={{ color: "var(--grey-accent)" }}>Loading job...</p>
           <style jsx>{`
             @keyframes spin {
               0% { transform: rotate(0deg); }
@@ -645,12 +645,12 @@ export default function TechJobDetailPage() {
     return (
       <Layout>
         <div style={{ padding: "40px", textAlign: "center" }}>
-          <h2 style={{ color: "#d10000" }}>Job Not Found</h2>
+          <h2 style={{ color: "var(--primary)" }}>Job Not Found</h2>
           <button
             onClick={() => router.push("/job-cards/myjobs")}
             style={{
               padding: "12px 24px",
-              backgroundColor: "#d10000",
+              backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -669,7 +669,7 @@ export default function TechJobDetailPage() {
   const { jobCard, customer, vehicle } = jobData;
   const jobRequiresVhc = jobCard?.vhcRequired === true;
   const jobCardStatus = jobCard?.status || "Unknown";
-  const jobStatusColor = STATUS_COLORS[jobCardStatus] || "#9ca3af";
+  const jobStatusColor = STATUS_COLORS[jobCardStatus] || "var(--info)";
   const partsCount = jobCard.partsRequests?.length || 0;
   const clockedHours = clockingStatus?.clock_in
     ? `${calculateHoursWorked(clockingStatus.clock_in)}h`
@@ -686,25 +686,25 @@ export default function TechJobDetailPage() {
     {
       label: "Job Type",
       value: jobCard.type || "General",
-      accent: "#1f2937",
+      accent: "var(--info-dark)",
       pill: false,
     },
     {
       label: "VHC Checks",
       value: vhcChecks.length,
-      accent: "#0369a1",
+      accent: "var(--info-dark)",
       pill: false,
     },
     {
       label: "Parts Requests",
       value: partsCount,
-      accent: "#f97316",
+      accent: "var(--danger)",
       pill: false,
     },
     {
       label: "Clocked Hours",
       value: clockedHours,
-      accent: "#16a34a",
+      accent: "var(--success)",
       pill: false,
     },
   ];
@@ -763,7 +763,7 @@ export default function TechJobDetailPage() {
   if (rosterLoading) {
     return (
       <Layout>
-        <div style={{ padding: "24px", color: "#6B7280" }}>Loading roster…</div>
+        <div style={{ padding: "24px", color: "var(--info)" }}>Loading roster…</div>
       </Layout>
     );
   }
@@ -788,40 +788,40 @@ export default function TechJobDetailPage() {
           alignItems: "center",
           marginBottom: "12px",
           padding: "12px",
-          backgroundColor: "#fff",
+          backgroundColor: "var(--surface)",
           borderRadius: "8px",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+          boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
           flexShrink: 0
         }}>
           <button
             onClick={() => router.push("/job-cards/myjobs")}
             style={{
               padding: "10px 24px",
-              backgroundColor: "#d10000",
+              backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: "0 4px 10px rgba(209,0,0,0.16)",
+              boxShadow: "0 4px 10px rgba(var(--primary-rgb),0.16)",
               transition: "background-color 0.2s"
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#a60a0a")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#d10000")}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--danger-dark)")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--primary)")}
           >
             ← Back
           </button>
           <div style={{ flex: 1 }}>
             <h1 style={{ 
-              color: "#d10000", 
+              color: "var(--primary)", 
               fontSize: "28px", 
               fontWeight: "700",
               margin: "0 0 4px 0"
             }}>
               Job #{jobCard.jobNumber}
             </h1>
-            <p style={{ color: "#666", fontSize: "14px", margin: 0 }}>
+            <p style={{ color: "var(--grey-accent)", fontSize: "14px", margin: 0 }}>
               {customer.firstName} {customer.lastName} | {vehicle.reg}
             </p>
           </div>
@@ -830,10 +830,10 @@ export default function TechJobDetailPage() {
             alignItems: "center",
             gap: "12px",
             backgroundColor: "white",
-            border: "1px solid #ffe5e5",
+            border: "1px solid var(--surface-light)",
             borderRadius: "12px",
             padding: "10px 18px",
-            boxShadow: "0 4px 12px rgba(209,0,0,0.08)"
+            boxShadow: "0 4px 12px rgba(var(--primary-rgb),0.08)"
           }}>
             <span style={{
               backgroundColor: jobStatusColor,
@@ -846,7 +846,7 @@ export default function TechJobDetailPage() {
             }}>
               {jobCard.status}
             </span>
-            <span style={{ fontSize: "12px", color: "#6b7280" }}>
+            <span style={{ fontSize: "12px", color: "var(--info)" }}>
               Updated {formatDateTime(jobCard.updatedAt)}
             </span>
           </div>
@@ -860,25 +860,25 @@ export default function TechJobDetailPage() {
           padding: "20px 24px",
           borderRadius: "8px",
           backgroundColor: "white",
-          border: "1px solid #ffe5e5",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+          border: "1px solid var(--surface-light)",
+          boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
           gap: "24px",
           marginBottom: "12px",
           flexShrink: 0
         }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <span style={{ fontSize: "12px", color: "#d10000", fontWeight: "600", letterSpacing: "0.06em" }}>
+            <span style={{ fontSize: "12px", color: "var(--primary)", fontWeight: "600", letterSpacing: "0.06em" }}>
               JOB SUMMARY
             </span>
             <h2 style={{
-              color: "#1f2937",
+              color: "var(--info-dark)",
               fontSize: "28px",
               fontWeight: "700",
               margin: 0
             }}>
               #{jobCard.jobNumber} • {vehicle.reg}
             </h2>
-            <span style={{ fontSize: "15px", color: "#6b7280" }}>
+            <span style={{ fontSize: "15px", color: "var(--info)" }}>
               {customer.firstName} {customer.lastName} • {vehicle.makeModel}
             </span>
           </div>
@@ -887,18 +887,18 @@ export default function TechJobDetailPage() {
             display: "flex",
             alignItems: "center",
             gap: "20px",
-            borderLeft: "1px solid #ffe5e5",
+            borderLeft: "1px solid var(--surface-light)",
             paddingLeft: "20px"
           }}>
             <div style={{ textAlign: "center" }}>
-              <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: "600" }}>Booked</span>
-              <div style={{ fontSize: "16px", fontWeight: "700", color: "#1f2937" }}>
+              <span style={{ fontSize: "12px", color: "var(--info)", fontWeight: "600" }}>Booked</span>
+              <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--info-dark)" }}>
                 {formatDateTime(jobCard.createdAt)}
               </div>
             </div>
             <div style={{ textAlign: "center" }}>
-              <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: "600" }}>Advisor</span>
-              <div style={{ fontSize: "16px", fontWeight: "700", color: "#1f2937" }}>
+              <span style={{ fontSize: "12px", color: "var(--info)", fontWeight: "600" }}>Advisor</span>
+              <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--info-dark)" }}>
                 {jobCard.serviceAdvisor || "TBC"}
               </div>
             </div>
@@ -918,9 +918,9 @@ export default function TechJobDetailPage() {
               key={stat.label}
               style={{
                 backgroundColor: "white",
-                border: "1px solid #ffe5e5",
+                border: "1px solid var(--surface-light)",
                 borderRadius: "8px",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+                boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
                 padding: "16px",
                 display: "flex",
                 flexDirection: "column",
@@ -942,7 +942,7 @@ export default function TechJobDetailPage() {
               }}>
                 {stat.value}
               </div>
-              <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              <span style={{ fontSize: "12px", color: "var(--info)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                 {stat.label}
               </span>
             </div>
@@ -964,9 +964,9 @@ export default function TechJobDetailPage() {
               onClick={() => setActiveTab(tab)}
               style={{
                 padding: "10px 18px",
-                backgroundColor: activeTab === tab ? "#d10000" : "white",
-                color: activeTab === tab ? "white" : "#d10000",
-                border: activeTab === tab ? "2px solid #d10000" : "1px solid #ffe5e5",
+                backgroundColor: activeTab === tab ? "var(--primary)" : "white",
+                color: activeTab === tab ? "white" : "var(--primary)",
+                border: activeTab === tab ? "2px solid var(--primary)" : "1px solid var(--surface-light)",
                 borderRadius: "8px",
                 cursor: "pointer",
                 fontSize: "14px",
@@ -986,9 +986,9 @@ export default function TechJobDetailPage() {
           style={{
             flex: 1,
             borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-            border: "1px solid #ffe5e5",
-            background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)",
+            boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
+            border: "1px solid var(--surface-light)",
+            background: "linear-gradient(to bottom right, white, var(--danger-surface), var(--surface-light))",
             padding: "24px",
             overflow: "hidden",
             display: "flex",
@@ -1007,24 +1007,24 @@ export default function TechJobDetailPage() {
                 backgroundColor: "white",
                 padding: "24px",
                 borderRadius: "12px",
-                boxShadow: "0 2px 8px rgba(209,0,0,0.08)",
-                border: "1px solid #ffe5e5"
+                boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
+                border: "1px solid var(--surface-light)"
               }}>
                 <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
                   Job Details
                 </h3>
                 {jobCard.requests && jobCard.requests.length > 0 && (
                   <div style={{ marginBottom: "16px" }}>
-                    <strong style={{ fontSize: "14px", color: "#6b7280", letterSpacing: "0.04em" }}>Customer Requests:</strong>
+                    <strong style={{ fontSize: "14px", color: "var(--info)", letterSpacing: "0.04em" }}>Customer Requests:</strong>
                     <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "12px" }}>
                       {jobCard.requests.map((req, i) => (
                         <div key={i} style={{
                           padding: "14px 16px",
-                          backgroundColor: "#fff5f5",
-                          borderLeft: "4px solid #d10000",
+                          backgroundColor: "var(--surface-light)",
+                          borderLeft: "4px solid var(--primary)",
                           borderRadius: "10px",
-                          color: "#1f2937",
-                          boxShadow: "0 2px 6px rgba(209,0,0,0.08)"
+                          color: "var(--info-dark)",
+                          boxShadow: "0 2px 6px rgba(var(--primary-rgb),0.08)"
                         }}>
                           {req.text || req}
                         </div>
@@ -1034,8 +1034,8 @@ export default function TechJobDetailPage() {
                 )}
                 {jobCard.cosmeticNotes && (
                   <div>
-                    <strong style={{ fontSize: "14px", color: "#6b7280", letterSpacing: "0.04em" }}>Cosmetic Notes:</strong>
-                    <p style={{ marginTop: "10px", color: "#374151", lineHeight: 1.6 }}>{jobCard.cosmeticNotes}</p>
+                    <strong style={{ fontSize: "14px", color: "var(--info)", letterSpacing: "0.04em" }}>Cosmetic Notes:</strong>
+                    <p style={{ marginTop: "10px", color: "var(--info-dark)", lineHeight: 1.6 }}>{jobCard.cosmeticNotes}</p>
                   </div>
                 )}
               </div>
@@ -1045,28 +1045,28 @@ export default function TechJobDetailPage() {
                 backgroundColor: "white",
                 padding: "24px",
                 borderRadius: "12px",
-                boxShadow: "0 2px 8px rgba(209,0,0,0.08)",
-                border: "1px solid #ffe5e5"
+                boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
+                border: "1px solid var(--surface-light)"
               }}>
                 <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
                   Vehicle Information
                 </h3>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
                   <div>
-                    <span style={{ fontSize: "13px", color: "#666" }}>Registration:</span>
-                    <p style={{ fontSize: "16px", fontWeight: "600", color: "#d10000", margin: "4px 0 0 0" }}>
+                    <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Registration:</span>
+                    <p style={{ fontSize: "16px", fontWeight: "600", color: "var(--primary)", margin: "4px 0 0 0" }}>
                       {vehicle.reg}
                     </p>
                   </div>
                   <div>
-                    <span style={{ fontSize: "13px", color: "#666" }}>Make & Model:</span>
+                    <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Make & Model:</span>
                     <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
                       {vehicle.makeModel}
                     </p>
                   </div>
                   {vehicle.mileage && (
                     <div>
-                      <span style={{ fontSize: "13px", color: "#666" }}>Mileage:</span>
+                      <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Mileage:</span>
                       <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
                         {vehicle.mileage.toLocaleString()} miles
                       </p>
@@ -1074,7 +1074,7 @@ export default function TechJobDetailPage() {
                   )}
                   {vehicle.colour && (
                     <div>
-                      <span style={{ fontSize: "13px", color: "#666" }}>Colour:</span>
+                      <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Colour:</span>
                       <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
                         {vehicle.colour}
                       </p>
@@ -1088,29 +1088,29 @@ export default function TechJobDetailPage() {
                 backgroundColor: "white",
                 padding: "24px",
                 borderRadius: "12px",
-                boxShadow: "0 2px 8px rgba(209,0,0,0.08)",
-                border: "1px solid #ffe5e5"
+                boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
+                border: "1px solid var(--surface-light)"
               }}>
                 <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
                   Customer Information
                 </h3>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
                   <div>
-                    <span style={{ fontSize: "13px", color: "#666" }}>Name:</span>
+                    <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Name:</span>
                     <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
                       {customer.firstName} {customer.lastName}
                     </p>
                   </div>
                   <div>
-                    <span style={{ fontSize: "13px", color: "#666" }}>Mobile:</span>
+                    <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Mobile:</span>
                     <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
                       {customer.mobile}
                     </p>
                   </div>
                   {customer.email && (
                     <div>
-                      <span style={{ fontSize: "13px", color: "#666" }}>Email:</span>
-                      <p style={{ fontSize: "16px", fontWeight: "600", color: "#007bff", margin: "4px 0 0 0" }}>
+                      <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Email:</span>
+                      <p style={{ fontSize: "16px", fontWeight: "600", color: "var(--info)", margin: "4px 0 0 0" }}>
                         {customer.email}
                       </p>
                     </div>
@@ -1126,8 +1126,8 @@ export default function TechJobDetailPage() {
               backgroundColor: "white",
               padding: "24px",
               borderRadius: "12px",
-              boxShadow: "0 2px 8px rgba(209,0,0,0.08)",
-              border: "1px solid #ffe5e5",
+              boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
+              border: "1px solid var(--surface-light)",
               display: "flex",
               flexDirection: "column",
               gap: "20px"
@@ -1143,33 +1143,33 @@ export default function TechJobDetailPage() {
                   disabled={!jobRequiresVhc}
                   style={{
                     padding: "12px 24px",
-                    backgroundColor: jobRequiresVhc ? "#d10000" : "#e0e0e0",
+                    backgroundColor: jobRequiresVhc ? "var(--primary)" : "var(--surface-light)",
                     color: "white",
                     border: "none",
                     borderRadius: "8px",
                     cursor: jobRequiresVhc ? "pointer" : "not-allowed",
                     fontSize: "14px",
                     fontWeight: "600",
-                    boxShadow: jobRequiresVhc ? "0 4px 12px rgba(209,0,0,0.2)" : "none",
+                    boxShadow: jobRequiresVhc ? "0 4px 12px rgba(var(--primary-rgb),0.2)" : "none",
                     transition: "all 0.2s"
                   }}
                   onMouseEnter={(e) => {
                     if (jobRequiresVhc) {
-                      e.currentTarget.style.backgroundColor = "#b00000";
-                      e.currentTarget.style.boxShadow = "0 6px 16px rgba(209,0,0,0.3)";
+                      e.currentTarget.style.backgroundColor = "var(--primary-dark)";
+                      e.currentTarget.style.boxShadow = "0 6px 16px rgba(var(--primary-rgb),0.3)";
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (jobRequiresVhc) {
-                      e.currentTarget.style.backgroundColor = "#d10000";
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(209,0,0,0.2)";
+                      e.currentTarget.style.backgroundColor = "var(--primary)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(var(--primary-rgb),0.2)";
                     }
                   }}
                 >
                   {getVhcButtonText()}
                 </button>
               </div>
-              <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+              <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
                 {getVhcStatusMessage()}
               </div>
 
@@ -1178,16 +1178,16 @@ export default function TechJobDetailPage() {
                 <div style={{
                   textAlign: "center",
                   padding: "40px",
-                  color: "#9ca3af",
-                  backgroundColor: "#f9fafb",
+                  color: "var(--info)",
+                  backgroundColor: "var(--info-surface)",
                   borderRadius: "12px",
-                  border: "1px solid #e5e7eb"
+                  border: "1px solid var(--accent-purple-surface)"
                 }}>
                   <div style={{ fontSize: "48px", marginBottom: "16px" }}>ℹ️</div>
-                  <p style={{ fontSize: "16px", fontWeight: "600", color: "#6b7280" }}>
+                  <p style={{ fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
                     VHC Not Required
                   </p>
-                  <p style={{ fontSize: "14px", color: "#9ca3af", marginTop: "8px" }}>
+                  <p style={{ fontSize: "14px", color: "var(--info)", marginTop: "8px" }}>
                     A Vehicle Health Check was not added to this job.
                   </p>
                 </div>
@@ -1205,43 +1205,43 @@ export default function TechJobDetailPage() {
                   }}>
                     <div style={{
                       padding: "20px",
-                      backgroundColor: "#fef2f2",
+                      backgroundColor: "var(--danger-surface)",
                       borderRadius: "12px",
-                      border: "1px solid #fecaca",
+                      border: "1px solid var(--danger-surface)",
                       textAlign: "center"
                     }}>
-                      <div style={{ fontSize: "32px", fontWeight: "700", color: "#dc2626" }}>
+                      <div style={{ fontSize: "32px", fontWeight: "700", color: "var(--danger)" }}>
                         {vhcSummary.redCount}
                       </div>
-                      <div style={{ fontSize: "13px", color: "#991b1b", fontWeight: "600", marginTop: "4px" }}>
+                      <div style={{ fontSize: "13px", color: "var(--danger)", fontWeight: "600", marginTop: "4px" }}>
                         RED ITEMS
                       </div>
                     </div>
                     <div style={{
                       padding: "20px",
-                      backgroundColor: "#fffbeb",
+                      backgroundColor: "var(--warning-surface)",
                       borderRadius: "12px",
-                      border: "1px solid #fde68a",
+                      border: "1px solid var(--warning-surface)",
                       textAlign: "center"
                     }}>
-                      <div style={{ fontSize: "32px", fontWeight: "700", color: "#d97706" }}>
+                      <div style={{ fontSize: "32px", fontWeight: "700", color: "var(--warning)" }}>
                         {vhcSummary.amberCount}
                       </div>
-                      <div style={{ fontSize: "13px", color: "#92400e", fontWeight: "600", marginTop: "4px" }}>
+                      <div style={{ fontSize: "13px", color: "var(--danger-dark)", fontWeight: "600", marginTop: "4px" }}>
                         AMBER ITEMS
                       </div>
                     </div>
                     <div style={{
                       padding: "20px",
-                      backgroundColor: "#f0f9ff",
+                      backgroundColor: "var(--info-surface)",
                       borderRadius: "12px",
-                      border: "1px solid #bfdbfe",
+                      border: "1px solid var(--info)",
                       textAlign: "center"
                     }}>
-                      <div style={{ fontSize: "32px", fontWeight: "700", color: "#0369a1" }}>
+                      <div style={{ fontSize: "32px", fontWeight: "700", color: "var(--info-dark)" }}>
                         {vhcChecks.length}
                       </div>
-                      <div style={{ fontSize: "13px", color: "#075985", fontWeight: "600", marginTop: "4px" }}>
+                      <div style={{ fontSize: "13px", color: "var(--info-dark)", fontWeight: "600", marginTop: "4px" }}>
                         TOTAL CHECKS
                       </div>
                     </div>
@@ -1252,14 +1252,14 @@ export default function TechJobDetailPage() {
                     <div style={{
                       textAlign: "center",
                       padding: "40px",
-                      color: "#9ca3af",
-                      backgroundColor: "#fff5f5",
+                      color: "var(--info)",
+                      backgroundColor: "var(--surface-light)",
                       borderRadius: "12px",
-                      border: "1px solid #ffd6d6"
+                      border: "1px solid var(--surface-light)"
                     }}>
                       <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
                       <p style={{ fontSize: "16px", fontWeight: "600" }}>No VHC Checks Added Yet</p>
-                      <p style={{ fontSize: "14px", color: "#6b7280", marginTop: "8px" }}>
+                      <p style={{ fontSize: "14px", color: "var(--info)", marginTop: "8px" }}>
                         Click &quot;Start VHC&quot; above to begin the vehicle health check.
                       </p>
                     </div>
@@ -1268,7 +1268,7 @@ export default function TechJobDetailPage() {
                       <h4 style={{ 
                         fontSize: "14px", 
                         fontWeight: "600", 
-                        color: "#6b7280", 
+                        color: "var(--info)", 
                         textTransform: "uppercase", 
                         letterSpacing: "0.05em",
                         marginBottom: "8px"
@@ -1278,9 +1278,9 @@ export default function TechJobDetailPage() {
                       {vhcChecks.map(check => {
                         const isRed = check.section === "Brakes" || check.severity === "Red";
                         const isAmber = check.section === "Tyres" || check.severity === "Amber";
-                        const badgeColor = isRed ? "#dc2626" : isAmber ? "#d97706" : "#6b7280";
-                        const bgColor = isRed ? "#fef2f2" : isAmber ? "#fffbeb" : "#f9fafb";
-                        const borderColor = isRed ? "#fecaca" : isAmber ? "#fde68a" : "#e5e7eb";
+                        const badgeColor = isRed ? "var(--danger)" : isAmber ? "var(--warning)" : "var(--info)";
+                        const bgColor = isRed ? "var(--danger-surface)" : isAmber ? "var(--warning-surface)" : "var(--info-surface)";
+                        const borderColor = isRed ? "var(--danger-surface)" : isAmber ? "var(--warning-surface)" : "var(--accent-purple-surface)";
 
                         return (
                           <div key={check.vhc_id} style={{
@@ -1289,7 +1289,7 @@ export default function TechJobDetailPage() {
                             borderLeft: `4px solid ${badgeColor}`,
                             borderRadius: "12px",
                             backgroundColor: bgColor,
-                            boxShadow: "0 2px 6px rgba(0,0,0,0.06)"
+                            boxShadow: "0 2px 6px rgba(var(--shadow-rgb),0.06)"
                           }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                               <div style={{ flex: 1 }}>
@@ -1308,16 +1308,16 @@ export default function TechJobDetailPage() {
                                   </span>
                                   <span style={{
                                     fontSize: "12px",
-                                    color: "#6b7280",
+                                    color: "var(--info)",
                                     fontWeight: "600"
                                   }}>
                                     {check.section}
                                   </span>
                                 </div>
-                                <p style={{ fontSize: "16px", fontWeight: "600", margin: "0 0 6px 0", color: "#1f2937" }}>
+                                <p style={{ fontSize: "16px", fontWeight: "600", margin: "0 0 6px 0", color: "var(--info-dark)" }}>
                                   {check.issue_title}
                                 </p>
-                                <p style={{ fontSize: "14px", color: "#6b7280", margin: 0, lineHeight: 1.5 }}>
+                                <p style={{ fontSize: "14px", color: "var(--info)", margin: 0, lineHeight: 1.5 }}>
                                   {check.issue_description}
                                 </p>
                               </div>
@@ -1352,31 +1352,31 @@ export default function TechJobDetailPage() {
               backgroundColor: "white",
               padding: "24px",
               borderRadius: "12px",
-              boxShadow: "0 2px 8px rgba(209,0,0,0.1)",
-              border: "1px solid #ffe5e5",
+              boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.1)",
+              border: "1px solid var(--surface-light)",
               display: "flex",
               flexDirection: "column",
               gap: "16px",
               alignItems: "stretch"
             }}>
               <div style={{
-                backgroundColor: "#fff7ed",
+                backgroundColor: "var(--warning-surface)",
                 borderRadius: "12px",
-                border: "1px solid #fed7aa",
+                border: "1px solid var(--warning)",
                 padding: "20px",
                 display: "flex",
                 flexDirection: "column",
                 gap: "12px"
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "#b45309" }}>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "var(--warning)" }}>
                     Request a Part
                   </h3>
-                  <span style={{ fontSize: "12px", color: "#92400e" }}>
+                  <span style={{ fontSize: "12px", color: "var(--danger-dark)" }}>
                     Surfaces in the VHC parts queue
                   </span>
                 </div>
-                <p style={{ margin: 0, color: "#6b7280", fontSize: "14px" }}>
+                <p style={{ margin: 0, color: "var(--info)", fontSize: "14px" }}>
                   Describe the specific part you need—the parts team will price, approve, and pre-pick it alongside other VHC requests.
                 </p>
                 <textarea
@@ -1392,7 +1392,7 @@ export default function TechJobDetailPage() {
                   style={{
                     width: "100%",
                     borderRadius: "10px",
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid var(--accent-purple-surface)",
                     padding: "12px",
                     fontSize: "14px",
                     resize: "vertical",
@@ -1401,14 +1401,14 @@ export default function TechJobDetailPage() {
                     outline: "none"
                   }}
                   onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "#d97706";
+                    e.currentTarget.style.borderColor = "var(--warning)";
                   }}
                   onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "#e5e7eb";
+                    e.currentTarget.style.borderColor = "var(--accent-purple-surface)";
                   }}
                 />
                 <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
-                  <label style={{ display: "flex", flexDirection: "column", fontSize: "12px", color: "#6b7280" }}>
+                  <label style={{ display: "flex", flexDirection: "column", fontSize: "12px", color: "var(--info)" }}>
                     Quantity
                     <input
                       type="number"
@@ -1424,7 +1424,7 @@ export default function TechJobDetailPage() {
                         width: "80px",
                         padding: "6px 10px",
                         borderRadius: "8px",
-                        border: "1px solid #e5e7eb",
+                        border: "1px solid var(--accent-purple-surface)",
                         fontSize: "14px"
                       }}
                     />
@@ -1435,14 +1435,14 @@ export default function TechJobDetailPage() {
                     disabled={partsSubmitting}
                     style={{
                       padding: "10px 22px",
-                      backgroundColor: partsSubmitting ? "#a1a1aa" : "#d97706",
+                      backgroundColor: partsSubmitting ? "var(--border)" : "var(--warning)",
                       color: "white",
                       border: "none",
                       borderRadius: "10px",
                       cursor: partsSubmitting ? "not-allowed" : "pointer",
                       fontSize: "14px",
                       fontWeight: "600",
-                      boxShadow: partsSubmitting ? "none" : "0 4px 10px rgba(217,119,6,0.25)"
+                      boxShadow: partsSubmitting ? "none" : "0 4px 10px rgba(var(--warning-rgb), 0.25)"
                     }}
                   >
                     {partsSubmitting ? "Submitting…" : "Request Part"}
@@ -1451,8 +1451,8 @@ export default function TechJobDetailPage() {
                 {partsFeedback && (
                   <div style={{
                     fontSize: "13px",
-                    color: "#065f46",
-                    backgroundColor: "#ecfdf5",
+                    color: "var(--info-dark)",
+                    backgroundColor: "var(--success-surface)",
                     borderRadius: "8px",
                     padding: "10px 14px"
                   }}>
@@ -1464,7 +1464,7 @@ export default function TechJobDetailPage() {
               <div style={{
                 backgroundColor: "white",
                 borderRadius: "12px",
-                border: "1px solid #e5e7eb",
+                border: "1px solid var(--accent-purple-surface)",
                 padding: "20px",
                 display: "flex",
                 flexDirection: "column",
@@ -1472,17 +1472,17 @@ export default function TechJobDetailPage() {
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px" }}>
                   <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700" }}>Active Requests</h3>
-                  <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                  <span style={{ fontSize: "12px", color: "var(--info)" }}>
                     {partsRequests.length} request{partsRequests.length === 1 ? "" : "s"}
                   </span>
                 </div>
-                <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
                   These entries are visible to the parts team in the VHC parts tab for pricing, approval, and pre-picks.
                 </p>
                 {partsRequestsLoading ? (
-                  <p style={{ margin: 0, fontSize: "14px", color: "#6b7280" }}>Loading requests…</p>
+                  <p style={{ margin: 0, fontSize: "14px", color: "var(--info)" }}>Loading requests…</p>
                 ) : partsRequests.length === 0 ? (
-                  <p style={{ margin: 0, fontSize: "14px", color: "#9ca3af" }}>
+                  <p style={{ margin: 0, fontSize: "14px", color: "var(--info)" }}>
                     No parts have been requested yet.
                   </p>
                 ) : (
@@ -1513,9 +1513,9 @@ export default function TechJobDetailPage() {
                           key={request.request_id}
                           style={{
                             padding: "16px",
-                            border: "1px solid #e5e7eb",
+                            border: "1px solid var(--accent-purple-surface)",
                             borderRadius: "10px",
-                            backgroundColor: "#fafafc",
+                            backgroundColor: "var(--accent-purple-surface)",
                             display: "flex",
                             flexDirection: "column",
                             gap: "6px"
@@ -1528,16 +1528,16 @@ export default function TechJobDetailPage() {
                             gap: "12px"
                           }}>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: "15px", fontWeight: "600", color: "#111827" }}>
+                              <div style={{ fontSize: "15px", fontWeight: "600", color: "var(--accent-purple)" }}>
                                 {partLabel}
                               </div>
-                              <div style={{ fontSize: "13px", color: "#4b5563", marginTop: "2px" }}>
+                              <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
                                 {request.description || "No description provided."}
                               </div>
-                              <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                              <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
                                 Requested by {sourceLabel}
                               </div>
-                              <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                              <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
                                 Requested {formatDateTime(request.created_at)}
                               </div>
                             </div>
@@ -1557,7 +1557,7 @@ export default function TechJobDetailPage() {
                             alignItems: "center",
                             gap: "12px",
                             fontSize: "13px",
-                            color: "#6b7280"
+                            color: "var(--info)"
                           }}>
                             <span>Qty: {quantity}</span>
                           </div>
@@ -1576,8 +1576,8 @@ export default function TechJobDetailPage() {
               backgroundColor: "white",
               padding: "24px",
               borderRadius: "12px",
-              boxShadow: "0 2px 8px rgba(209,0,0,0.08)",
-              border: "1px solid #ffe5e5",
+              boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
+              border: "1px solid var(--surface-light)",
               display: "flex",
               flexDirection: "column",
               gap: "20px"
@@ -1590,9 +1590,9 @@ export default function TechJobDetailPage() {
                   onClick={() => setShowAddNote(true)}
                   style={{
                     padding: "10px 20px",
-                    backgroundColor: "#d10000",
+                    backgroundColor: "var(--primary)",
                     color: "white",
-                    border: "1px solid #b91c1c",
+                    border: "1px solid var(--danger)",
                     borderRadius: "8px",
                     cursor: "pointer",
                     fontSize: "14px",
@@ -1606,9 +1606,9 @@ export default function TechJobDetailPage() {
               {showAddNote && (
                 <div style={{
                   padding: "20px",
-                  backgroundColor: "#fff5f5",
+                  backgroundColor: "var(--surface-light)",
                   borderRadius: "12px",
-                  border: "1px solid #ffd6d6"
+                  border: "1px solid var(--surface-light)"
                 }}>
                   <textarea
                     value={newNote}
@@ -1617,7 +1617,7 @@ export default function TechJobDetailPage() {
                     style={{
                       width: "100%",
                       padding: "12px 14px",
-                      border: "1px solid #fca5a5",
+                      border: "1px solid var(--danger)",
                       borderRadius: "10px",
                       resize: "vertical",
                       minHeight: "110px",
@@ -1632,8 +1632,8 @@ export default function TechJobDetailPage() {
                       style={{
                         padding: "10px 18px",
                         backgroundColor: "white",
-                        color: "#6b7280",
-                        border: "1px solid #d1d5db",
+                        color: "var(--info)",
+                        border: "1px solid var(--info)",
                         borderRadius: "8px",
                         cursor: "pointer",
                         fontSize: "14px",
@@ -1646,14 +1646,14 @@ export default function TechJobDetailPage() {
                       onClick={handleAddNote}
                       style={{
                         padding: "10px 18px",
-                        backgroundColor: "#10b981",
+                        backgroundColor: "var(--info)",
                         color: "white",
-                        border: "1px solid #0f766e",
+                        border: "1px solid var(--info-dark)",
                         borderRadius: "8px",
                         cursor: "pointer",
                         fontSize: "14px",
                         fontWeight: "600",
-                        boxShadow: "0 4px 10px rgba(16,185,129,0.2)"
+                        boxShadow: "0 4px 10px rgba(var(--info-rgb), 0.2)"
                       }}
                     >
                       Save Note
@@ -1665,14 +1665,14 @@ export default function TechJobDetailPage() {
               <div style={{
                 textAlign: "center",
                 padding: "40px",
-                color: "#9ca3af",
-                backgroundColor: "#fff5f5",
+                color: "var(--info)",
+                backgroundColor: "var(--surface-light)",
                 borderRadius: "12px",
-                border: "1px solid #ffd6d6"
+                border: "1px solid var(--surface-light)"
               }}>
                 <div style={{ fontSize: "48px", marginBottom: "16px" }}>📝</div>
                 <p style={{ fontSize: "16px", fontWeight: "600", marginBottom: "4px" }}>No notes added yet</p>
-                <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                <p style={{ fontSize: "14px", color: "var(--info)" }}>
                   Keep technicians aligned by logging progress, issues and next steps.
                 </p>
               </div>
@@ -1685,8 +1685,8 @@ export default function TechJobDetailPage() {
               backgroundColor: "white",
               padding: "24px",
               borderRadius: "12px",
-              boxShadow: "0 2px 8px rgba(209,0,0,0.08)",
-              border: "1px solid #ffe5e5",
+              boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
+              border: "1px solid var(--surface-light)",
               textAlign: "center",
               display: "flex",
               flexDirection: "column",
@@ -1697,21 +1697,21 @@ export default function TechJobDetailPage() {
               <h3 style={{ fontSize: "20px", fontWeight: "700", margin: 0 }}>
                 Job Write-Up
               </h3>
-              <p style={{ color: "#6b7280", margin: 0, maxWidth: "520px" }}>
+              <p style={{ color: "var(--info)", margin: 0, maxWidth: "520px" }}>
                 Complete the job write-up form to document all work performed and capture handover notes for the service advisor.
               </p>
               <button
                 onClick={() => router.push(`/job-cards/${jobNumber}/write-up`)}
                 style={{
                   padding: "14px 28px",
-                  backgroundColor: "#d10000",
+                  backgroundColor: "var(--primary)",
                   color: "white",
-                  border: "1px solid #b91c1c",
+                  border: "1px solid var(--danger)",
                   borderRadius: "8px",
                   cursor: "pointer",
                   fontSize: "15px",
                   fontWeight: "600",
-                  boxShadow: "0 6px 16px rgba(209,0,0,0.18)"
+                  boxShadow: "0 6px 16px rgba(var(--primary-rgb),0.18)"
                 }}
               >
                 Open Write-Up Form →
@@ -1728,7 +1728,7 @@ export default function TechJobDetailPage() {
           gap: "12px",
           marginTop: "12px",
           paddingTop: "12px",
-          borderTop: "2px solid #ffd6d6",
+          borderTop: "2px solid var(--surface-light)",
           flexShrink: 0
         }}>
           {/* Back to My Jobs Button */}
@@ -1736,14 +1736,14 @@ export default function TechJobDetailPage() {
             onClick={() => router.push("/job-cards/myjobs")}
             style={{
               padding: "14px",
-              backgroundColor: "#d10000",
+              backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: "0 2px 8px rgba(209,0,0,0.18)"
+              boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.18)"
             }}
           >
             ← Back to My Jobs
@@ -1756,14 +1756,14 @@ export default function TechJobDetailPage() {
               disabled={clockOutLoading || clockInLoading}
               style={{
                 padding: "14px",
-                backgroundColor: "#ef4444",
+                backgroundColor: "var(--danger)",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
                 cursor: clockOutLoading || clockInLoading ? "not-allowed" : "pointer",
                 fontSize: "14px",
                 fontWeight: "600",
-                boxShadow: "0 2px 8px rgba(239,68,68,0.18)",
+                boxShadow: "0 2px 8px rgba(var(--danger-rgb), 0.18)",
                 opacity: clockOutLoading ? 0.8 : 1,
                 transition: "background-color 0.2s ease"
               }}
@@ -1776,14 +1776,14 @@ export default function TechJobDetailPage() {
               disabled={clockInLoading || clockOutLoading}
               style={{
                 padding: "14px",
-                backgroundColor: "#10b981",
+                backgroundColor: "var(--info)",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
                 cursor: clockInLoading || clockOutLoading ? "not-allowed" : "pointer",
                 fontSize: "14px",
                 fontWeight: "600",
-                boxShadow: "0 2px 8px rgba(16,185,129,0.18)",
+                boxShadow: "0 2px 8px rgba(var(--info-rgb), 0.18)",
                 opacity: clockInLoading ? 0.8 : 1,
                 transition: "background-color 0.2s ease"
               }}
@@ -1797,14 +1797,14 @@ export default function TechJobDetailPage() {
             onClick={() => router.push(`/job-cards/${jobNumber}/write-up`)}
             style={{
               padding: "14px",
-              backgroundColor: "#f5f3ff",
-              color: "#5b21b6",
-              border: "1px solid #ddd6fe",
+              backgroundColor: "var(--accent-purple-surface)",
+              color: "var(--accent-purple)",
+              border: "1px solid var(--accent-purple-surface)",
               borderRadius: "8px",
               cursor: "pointer",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: "0 2px 8px rgba(91,33,182,0.16)"
+              boxShadow: "0 2px 8px rgba(var(--accent-purple-rgb), 0.16)"
             }}
           >
             ✍️ Write-Up
@@ -1816,14 +1816,14 @@ export default function TechJobDetailPage() {
             disabled={!canCompleteJob || clockInLoading || clockOutLoading}
             style={{
               padding: "14px",
-              backgroundColor: canCompleteJob ? "#10b981" : "#d1fae5",
-              color: canCompleteJob ? "white" : "#6b7280",
+              backgroundColor: canCompleteJob ? "var(--info)" : "var(--success)",
+              color: canCompleteJob ? "white" : "var(--info)",
               border: "none",
               borderRadius: "8px",
               cursor: canCompleteJob ? "pointer" : "not-allowed",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: canCompleteJob ? "0 2px 8px rgba(16,185,129,0.18)" : "none",
+              boxShadow: canCompleteJob ? "0 2px 8px rgba(var(--info-rgb), 0.18)" : "none",
               opacity: clockInLoading || clockOutLoading ? 0.8 : 1
             }}
             title={

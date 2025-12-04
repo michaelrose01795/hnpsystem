@@ -13,7 +13,7 @@ export default function CheckSheetPopup({ onClose, onAddCheckSheet, onAddDealerD
         left: 0, // left 0
         width: "100%", // full width
         height: "100%", // full height
-        backgroundColor: "rgba(0,0,0,0.5)", // translucent bg
+        backgroundColor: "rgba(var(--shadow-rgb),0.5)", // translucent bg
         display: "flex", // center horizontally
         justifyContent: "center", // center horizontally
         alignItems: "center", // center vertically
@@ -38,11 +38,11 @@ export default function CheckSheetPopup({ onClose, onAddCheckSheet, onAddDealerD
           {/* Cancel */}
           <button onClick={onClose} style={{ padding: "8px 16px" }}>Cancel</button> {/* Cancel */}
           {/* Add Check Sheet */}
-          <button onClick={() => { onAddCheckSheet && onAddCheckSheet(); onClose(); }} style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white" }}>
+          <button onClick={() => { onAddCheckSheet && onAddCheckSheet(); onClose(); }} style={{ padding: "8px 16px", backgroundColor: "var(--primary)", color: "white" }}>
             Add Check Sheet
           </button> {/* Add check sheet */}
           {/* Add Dealer Car Details */}
-          <button onClick={() => { onAddDealerDetails && onAddDealerDetails(); onClose(); }} style={{ padding: "8px 16px", backgroundColor: "#FF4040", color: "white" }}>
+          <button onClick={() => { onAddDealerDetails && onAddDealerDetails(); onClose(); }} style={{ padding: "8px 16px", backgroundColor: "var(--primary)", color: "white" }}>
             Add Dealer Car Details
           </button> {/* Add dealer details */}
         </div>

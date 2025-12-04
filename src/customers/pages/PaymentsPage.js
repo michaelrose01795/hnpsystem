@@ -25,7 +25,7 @@ export default function CustomerPaymentsPage() {
         </div>
       )}
       {isLoading ? (
-        <div className="mb-4 rounded-2xl border border-[#ffe0e0] bg-white p-5 text-sm text-slate-500 shadow">
+        <div className="mb-4 rounded-2xl border border-[var(--surface-light)] bg-white p-5 text-sm text-slate-500 shadow">
           Loading your payment information…
         </div>
       ) : null}

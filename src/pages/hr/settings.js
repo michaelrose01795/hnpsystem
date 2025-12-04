@@ -12,7 +12,7 @@ export default function HrSettingsPolicies() {
     <Layout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header>
-          <p style={{ color: "#6B7280", marginTop: "6px" }}>
+          <p style={{ color: "var(--info)", marginTop: "6px" }}>
             Upload policy documents, configure shift patterns, and manage role-based access for HR tools.
           </p>
         </header>
@@ -52,7 +52,7 @@ export default function HrSettingsPolicies() {
                 </button>
               </div>
             </form>
-            <p style={{ color: "#6B7280", marginTop: "16px" }}>
+            <p style={{ color: "var(--info)", marginTop: "16px" }}>
               Placeholder upload form. Connect to Supabase Storage and metadata tables before deployment.
             </p>
           </SectionCard>
@@ -86,7 +86,7 @@ export default function HrSettingsPolicies() {
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                   <th style={{ textAlign: "left", paddingBottom: "10px" }}>Role</th>
                   <th>HR Dashboard</th>
                   <th>Employee Records</th>
@@ -97,7 +97,7 @@ export default function HrSettingsPolicies() {
               </thead>
               <tbody>
                 {accessMatrix.map((row) => (
-                  <tr key={row.role} style={{ borderTop: "1px solid #E5E7EB" }}>
+                  <tr key={row.role} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
                     <td style={{ padding: "12px 0", fontWeight: 600 }}>{row.role}</td>
                     <td style={cellStyle}>{renderToggle(row.hrDashboard)}</td>
                     <td style={cellStyle}>{renderToggle(row.employeeRecords)}</td>
@@ -109,7 +109,7 @@ export default function HrSettingsPolicies() {
               </tbody>
             </table>
           </div>
-          <p style={{ color: "#6B7280", marginTop: "16px" }}>
+          <p style={{ color: "var(--info)", marginTop: "16px" }}>
             Toggle boxes are placeholders to visualise permissions. Integrate with Supabase policy tables later.
           </p>
         </SectionCard>
@@ -151,7 +151,7 @@ function renderToggle(isEnabled) {
         width: "36px",
         height: "20px",
         borderRadius: "999px",
-        backgroundColor: isEnabled ? "#22C55E" : "#D1D5DB",
+        backgroundColor: isEnabled ? "var(--success)" : "var(--info)",
         color: "white",
         fontWeight: 700,
         fontSize: "0.7rem",
@@ -171,10 +171,10 @@ function ToggleSetting({ label, defaultChecked }) {
         gap: "10px",
         padding: "12px",
         borderRadius: "12px",
-        border: "1px solid #E5E7EB",
+        border: "1px solid var(--accent-purple-surface)",
         background: "white",
         fontWeight: 600,
-        color: "#374151",
+        color: "var(--info-dark)",
       }}
     >
       <input type="checkbox" defaultChecked={defaultChecked} />
@@ -187,7 +187,7 @@ const buttonStylePrimary = {
   padding: "8px 14px",
   borderRadius: "10px",
   border: "none",
-  background: "#6366F1",
+  background: "var(--accent-purple)",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",
@@ -196,9 +196,9 @@ const buttonStylePrimary = {
 const buttonStyleGhost = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px dashed #D1D5DB",
+  border: "1px dashed var(--info)",
   background: "transparent",
-  color: "#6B7280",
+  color: "var(--info)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -208,17 +208,17 @@ const labelStyle = {
   flexDirection: "column",
   gap: "6px",
   fontSize: "0.85rem",
-  color: "#374151",
+  color: "var(--info-dark)",
   fontWeight: 600,
 };
 
 const inputStyle = {
   borderRadius: "10px",
-  border: "1px solid #E5E7EB",
+  border: "1px solid var(--accent-purple-surface)",
   padding: "10px 12px",
   fontWeight: 500,
-  color: "#111827",
-  background: "#FFFFFF",
+  color: "var(--accent-purple)",
+  background: "var(--surface)",
 };
 
 const cellStyle = {

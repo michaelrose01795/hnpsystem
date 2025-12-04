@@ -217,11 +217,11 @@ export default function JobClockingCard() {
       <div style={{
         padding: "20px",
         textAlign: "center",
-        backgroundColor: "#fff3cd",
+        backgroundColor: "var(--warning-surface)",
         borderRadius: "8px",
-        border: "1px solid #ffc107"
+        border: "1px solid var(--warning)"
       }}>
-        <p style={{ margin: 0, color: "#856404" }}>
+        <p style={{ margin: 0, color: "var(--warning-dark)" }}>
           Please log in to use job clocking
         </p>
       </div>
@@ -242,8 +242,8 @@ export default function JobClockingCard() {
         backgroundColor: "white",
         borderRadius: "16px",
         padding: "24px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-        border: "1px solid #e0e0e0"
+        boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+        border: "1px solid var(--surface-light)"
       }}>
         <div style={{
           display: "flex",
@@ -254,7 +254,7 @@ export default function JobClockingCard() {
           <h2 style={{
             fontSize: "24px",
             fontWeight: "700",
-            color: "#1a1a1a",
+            color: "var(--text-primary)",
             margin: 0
           }}>
             Job Clocking - {user.first_name} {user.last_name}
@@ -265,7 +265,7 @@ export default function JobClockingCard() {
             disabled={loading}
             style={{
               padding: "10px 20px",
-              backgroundColor: loading ? "#ccc" : "#d10000",
+              backgroundColor: loading ? "var(--background)" : "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -274,8 +274,8 @@ export default function JobClockingCard() {
               fontWeight: "600",
               transition: "background-color 0.2s"
             }}
-            onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = "#b00000")}
-            onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = "#d10000")}
+            onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = "var(--primary-dark)")}
+            onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = "var(--primary)")}
           >
             {loading ? "Refreshing..." : "🔄 Refresh"}
           </button>
@@ -290,42 +290,42 @@ export default function JobClockingCard() {
           }}>
             <div style={{
               padding: "16px",
-              backgroundColor: "#f0f9ff",
+              backgroundColor: "var(--info-surface)",
               borderRadius: "12px",
-              border: "1px solid #bfdbfe"
+              border: "1px solid var(--info)"
             }}>
-              <p style={{ fontSize: "13px", color: "#666", margin: "0 0 8px 0" }}>
+              <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
                 Total Hours Today
               </p>
-              <p style={{ fontSize: "32px", fontWeight: "700", color: "#1a1a1a", margin: 0 }}>
+              <p style={{ fontSize: "32px", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>
                 {dailySummary.totalHours}h
               </p>
             </div>
             
             <div style={{
               padding: "16px",
-              backgroundColor: "#fef3c7",
+              backgroundColor: "var(--warning-surface)",
               borderRadius: "12px",
-              border: "1px solid #fde68a"
+              border: "1px solid var(--warning-surface)"
             }}>
-              <p style={{ fontSize: "13px", color: "#666", margin: "0 0 8px 0" }}>
+              <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
                 Active Jobs
               </p>
-              <p style={{ fontSize: "32px", fontWeight: "700", color: "#1a1a1a", margin: 0 }}>
+              <p style={{ fontSize: "32px", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>
                 {dailySummary.activeJobs}
               </p>
             </div>
             
             <div style={{
               padding: "16px",
-              backgroundColor: "#d1fae5",
+              backgroundColor: "var(--success)",
               borderRadius: "12px",
-              border: "1px solid #a7f3d0"
+              border: "1px solid var(--success)"
             }}>
-              <p style={{ fontSize: "13px", color: "#666", margin: "0 0 8px 0" }}>
+              <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
                 Completed Today
               </p>
-              <p style={{ fontSize: "32px", fontWeight: "700", color: "#1a1a1a", margin: 0 }}>
+              <p style={{ fontSize: "32px", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>
                 {dailySummary.completedJobs}
               </p>
             </div>
@@ -338,13 +338,13 @@ export default function JobClockingCard() {
         backgroundColor: "white",
         borderRadius: "16px",
         padding: "24px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-        border: "1px solid #e0e0e0"
+        boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+        border: "1px solid var(--surface-light)"
       }}>
         <h3 style={{
           fontSize: "18px",
           fontWeight: "600",
-          color: "#1a1a1a",
+          color: "var(--text-primary)",
           margin: "0 0 20px 0"
         }}>
           Currently Working On
@@ -354,14 +354,14 @@ export default function JobClockingCard() {
           <div style={{
             textAlign: "center",
             padding: "40px",
-            backgroundColor: "#fafafa",
+            backgroundColor: "var(--surface)",
             borderRadius: "12px"
           }}>
             <div style={{ fontSize: "48px", marginBottom: "16px" }}>⏸️</div>
-            <p style={{ fontSize: "16px", color: "#666", margin: 0 }}>
+            <p style={{ fontSize: "16px", color: "var(--grey-accent)", margin: 0 }}>
               Not clocked into any jobs
             </p>
-            <p style={{ fontSize: "14px", color: "#999", marginTop: "8px" }}>
+            <p style={{ fontSize: "14px", color: "var(--grey-accent-light)", marginTop: "8px" }}>
               Select a job below to start working
             </p>
           </div>
@@ -375,8 +375,8 @@ export default function JobClockingCard() {
                   justifyContent: "space-between",
                   alignItems: "center",
                   padding: "16px",
-                  backgroundColor: "#fff5f5",
-                  border: "2px solid #d10000",
+                  backgroundColor: "var(--surface-light)",
+                  border: "2px solid var(--primary)",
                   borderRadius: "12px"
                 }}
               >
@@ -384,19 +384,19 @@ export default function JobClockingCard() {
                   <div style={{
                     fontSize: "16px",
                     fontWeight: "600",
-                    color: "#d10000",
+                    color: "var(--primary)",
                     marginBottom: "8px"
                   }}>
                     Job {job.jobNumber} - {job.reg}
                   </div>
-                  <div style={{ fontSize: "14px", color: "#666", marginBottom: "4px" }}>
+                  <div style={{ fontSize: "14px", color: "var(--grey-accent)", marginBottom: "4px" }}>
                     {job.makeModel} • {job.customer}
                   </div>
                   <div style={{
                     display: "flex",
                     gap: "12px",
                     fontSize: "13px",
-                    color: "#999"
+                    color: "var(--grey-accent-light)"
                   }}>
                     <span>
                       <strong>Clocked in:</strong> {new Date(job.clockIn).toLocaleTimeString()}
@@ -415,7 +415,7 @@ export default function JobClockingCard() {
                   disabled={loading}
                   style={{
                     padding: "10px 20px",
-                    backgroundColor: loading ? "#ccc" : "#ef4444",
+                    backgroundColor: loading ? "var(--background)" : "var(--danger)",
                     color: "white",
                     border: "none",
                     borderRadius: "8px",
@@ -424,8 +424,8 @@ export default function JobClockingCard() {
                     fontWeight: "600",
                     transition: "background-color 0.2s"
                   }}
-                  onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = "#dc2626")}
-                  onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = "#ef4444")}
+                  onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = "var(--danger)")}
+                  onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = "var(--danger)")}
                 >
                   ⏸️ Clock Out
                 </button>
@@ -440,8 +440,8 @@ export default function JobClockingCard() {
         backgroundColor: "white",
         borderRadius: "16px",
         padding: "24px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-        border: "1px solid #e0e0e0"
+        boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+        border: "1px solid var(--surface-light)"
       }}>
         <div style={{
           display: "flex",
@@ -452,7 +452,7 @@ export default function JobClockingCard() {
           <h3 style={{
             fontSize: "18px",
             fontWeight: "600",
-            color: "#1a1a1a",
+            color: "var(--text-primary)",
             margin: 0
           }}>
             Clock Into Job
@@ -467,9 +467,9 @@ export default function JobClockingCard() {
             }}
             style={{
               padding: "8px 16px",
-              backgroundColor: showAvailableJobs ? "#d10000" : "#f5f5f5",
-              color: showAvailableJobs ? "white" : "#666",
-              border: "1px solid #e0e0e0",
+              backgroundColor: showAvailableJobs ? "var(--primary)" : "var(--surface)",
+              color: showAvailableJobs ? "white" : "var(--grey-accent)",
+              border: "1px solid var(--surface-light)",
               borderRadius: "8px",
               cursor: "pointer",
               fontSize: "13px",
@@ -497,12 +497,12 @@ export default function JobClockingCard() {
             style={{
               padding: "12px 16px",
               borderRadius: "8px",
-              border: "1px solid #e0e0e0",
+              border: "1px solid var(--surface-light)",
               fontSize: "14px",
               outline: "none"
             }}
-            onFocus={(e) => e.target.style.borderColor = "#d10000"}
-            onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+            onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
+            onBlur={(e) => e.target.style.borderColor = "var(--surface-light)"}
           />
 
           <select
@@ -512,7 +512,7 @@ export default function JobClockingCard() {
             style={{
               padding: "12px 16px",
               borderRadius: "8px",
-              border: "1px solid #e0e0e0",
+              border: "1px solid var(--surface-light)",
               fontSize: "14px",
               cursor: "pointer",
               outline: "none"
@@ -527,7 +527,7 @@ export default function JobClockingCard() {
             disabled={loading || !selectedJobNumber}
             style={{
               padding: "12px 24px",
-              backgroundColor: loading || !selectedJobNumber ? "#ccc" : "#10b981",
+              backgroundColor: loading || !selectedJobNumber ? "var(--background)" : "var(--info)",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -536,8 +536,8 @@ export default function JobClockingCard() {
               fontWeight: "600",
               transition: "background-color 0.2s"
             }}
-            onMouseEnter={(e) => !loading && selectedJobNumber && (e.target.style.backgroundColor = "#059669")}
-            onMouseLeave={(e) => !loading && selectedJobNumber && (e.target.style.backgroundColor = "#10b981")}
+            onMouseEnter={(e) => !loading && selectedJobNumber && (e.target.style.backgroundColor = "var(--info-dark)")}
+            onMouseLeave={(e) => !loading && selectedJobNumber && (e.target.style.backgroundColor = "var(--info)")}
           >
             ⏱️ Clock In
           </button>
@@ -557,26 +557,26 @@ export default function JobClockingCard() {
                 padding: "12px 16px",
                 marginBottom: "16px",
                 borderRadius: "8px",
-                border: "1px solid #e0e0e0",
+                border: "1px solid var(--surface-light)",
                 fontSize: "14px",
                 outline: "none"
               }}
-              onFocus={(e) => e.target.style.borderColor = "#d10000"}
-              onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+              onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
+              onBlur={(e) => e.target.style.borderColor = "var(--surface-light)"}
             />
 
             {/* Jobs Table */}
             <div style={{
               maxHeight: "400px",
               overflowY: "auto",
-              border: "1px solid #e0e0e0",
+              border: "1px solid var(--surface-light)",
               borderRadius: "8px"
             }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead style={{
                   position: "sticky",
                   top: 0,
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "var(--info-surface)",
                   zIndex: 1
                 }}>
                   <tr>
@@ -594,7 +594,7 @@ export default function JobClockingCard() {
                       <td colSpan="6" style={{
                         padding: "40px",
                         textAlign: "center",
-                        color: "#999"
+                        color: "var(--grey-accent-light)"
                       }}>
                         No jobs found
                       </td>
@@ -604,14 +604,14 @@ export default function JobClockingCard() {
                       <tr
                         key={job.id}
                         style={{
-                          borderBottom: "1px solid #f3f4f6",
+                          borderBottom: "1px solid var(--info-surface)",
                           transition: "background-color 0.2s"
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--info-surface)"}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
                       >
                         <td style={tableCellStyle}>
-                          <span style={{ fontWeight: "600", color: "#d10000" }}>
+                          <span style={{ fontWeight: "600", color: "var(--primary)" }}>
                             {job.jobNumber}
                           </span>
                         </td>
@@ -638,7 +638,7 @@ export default function JobClockingCard() {
                             }}
                             style={{
                               padding: "6px 12px",
-                              backgroundColor: "#ef4444",
+                              backgroundColor: "var(--danger)",
                               color: "white",
                               border: "none",
                               borderRadius: "6px",
@@ -647,8 +647,8 @@ export default function JobClockingCard() {
                               fontWeight: "600",
                               transition: "background-color 0.2s"
                             }}
-                            onMouseEnter={(e) => e.target.style.backgroundColor = "#dc2626"}
-                            onMouseLeave={(e) => e.target.style.backgroundColor = "#ef4444"}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger)"}
+                            onMouseLeave={(e) => e.target.style.backgroundColor = "var(--danger)"}
                           >
                             Select
                           </button>
@@ -670,25 +670,25 @@ export default function JobClockingCard() {
 function getStatusColor(status) {
   switch (status?.toLowerCase()) {
     case "booked":
-      return "#06b6d4";
+      return "var(--info)";
     case "checked in":
-      return "#8b5cf6";
+      return "var(--accent-purple)";
     case "workshop/mot":
-      return "#f59e0b";
+      return "var(--warning)";
     case "vhc complete":
-      return "#3b82f6";
+      return "var(--info)";
     case "vhc sent":
-      return "#6366f1";
+      return "var(--accent-purple)";
     case "additional work required":
-      return "#f59e0b";
+      return "var(--warning)";
     case "additional work being carried out":
-      return "#f97316";
+      return "var(--danger)";
     case "being washed":
-      return "#14b8a6";
+      return "var(--info)";
     case "complete":
-      return "#10b981";
+      return "var(--info)";
     default:
-      return "#6b7280";
+      return "var(--info)";
   }
 }
 
@@ -698,14 +698,14 @@ const tableHeaderStyle = {
   textAlign: "left",
   fontSize: "13px",
   fontWeight: "600",
-  color: "#6b7280",
+  color: "var(--info)",
   textTransform: "uppercase",
   letterSpacing: "0.5px",
-  borderBottom: "2px solid #e0e0e0"
+  borderBottom: "2px solid var(--surface-light)"
 };
 
 const tableCellStyle = {
   padding: "12px 16px",
   fontSize: "14px",
-  color: "#4b5563"
+  color: "var(--info-dark)"
 };

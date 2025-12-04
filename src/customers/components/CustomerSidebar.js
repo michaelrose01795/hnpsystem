@@ -30,17 +30,17 @@ export default function CustomerSidebar() {
         top: "16px",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--surface)",
         borderRadius: "16px",
-        boxShadow: "0 20px 40px rgba(209, 0, 0, 0.12)",
-        border: "1px solid #ffe0e0",
+        boxShadow: "0 20px 40px rgba(var(--primary-rgb), 0.12)",
+        border: "1px solid var(--surface-light)",
         overflow: "hidden",
         flexShrink: 0,
       }}
     >
       <div
         style={{
-          background: "linear-gradient(to right, #d10000, #a00000)",
+          background: "linear-gradient(to right, var(--primary), var(--primary-dark))",
           padding: "24px",
           color: "white",
         }}
@@ -70,13 +70,13 @@ export default function CustomerSidebar() {
                   padding: "12px 16px",
                   borderRadius: "12px",
                   background: isActive
-                    ? "linear-gradient(90deg, #d10000, #a00000)"
-                    : "#fff5f5",
-                  color: isActive ? "#ffffff" : "#a00000",
+                    ? "linear-gradient(90deg, var(--primary), var(--primary-dark))"
+                    : "var(--surface-light)",
+                  color: isActive ? "var(--surface)" : "var(--primary-dark)",
                   fontWeight: 600,
                   boxShadow: isActive
-                    ? "0 12px 20px rgba(161, 0, 0, 0.25)"
-                    : "0 4px 12px rgba(0, 0, 0, 0.05)",
+                    ? "0 12px 20px rgba(var(--danger-rgb), 0.25)"
+                    : "0 4px 12px rgba(var(--shadow-rgb), 0.05)",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
@@ -88,8 +88,8 @@ export default function CustomerSidebar() {
                         minHeight: 24,
                         padding: "0 6px",
                         borderRadius: 999,
-                        background: "#d10000",
-                        color: "#ffffff",
+                        background: "var(--primary)",
+                        color: "var(--surface)",
                         fontSize: "0.75rem",
                         fontWeight: 700,
                         display: "inline-flex",

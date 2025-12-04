@@ -52,7 +52,7 @@ export default function EmployeeManagement() {
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <p style={{ color: "#6B7280", marginTop: "6px" }}>
+            <p style={{ color: "var(--info)", marginTop: "6px" }}>
               Maintain staff records, employment details, documents, and system access.
             </p>
           </div>
@@ -62,11 +62,11 @@ export default function EmployeeManagement() {
               style={{
                 padding: "10px 16px",
                 borderRadius: "10px",
-                border: "1px solid #E0E7FF",
+                border: "1px solid var(--accent-purple-surface)",
                 background: "white",
                 fontWeight: 600,
-                color: "#4338CA",
-                boxShadow: "0 8px 16px rgba(67, 56, 202, 0.12)",
+                color: "var(--accent-purple)",
+                boxShadow: "0 8px 16px rgba(var(--accent-purple-rgb), 0.12)",
               }}
             >
               + Add Employee
@@ -77,10 +77,10 @@ export default function EmployeeManagement() {
                 padding: "10px 16px",
                 borderRadius: "10px",
                 border: "none",
-                background: "#4338CA",
+                background: "var(--accent-purple)",
                 fontWeight: 600,
                 color: "white",
-                boxShadow: "0 10px 24px rgba(67, 56, 202, 0.25)",
+                boxShadow: "0 10px 24px rgba(var(--accent-purple-rgb), 0.25)",
               }}
             >
               Manage Keycloak Access
@@ -90,13 +90,13 @@ export default function EmployeeManagement() {
 
         {isLoading && (
           <SectionCard title="Loading directory…" subtitle="Fetching employee listing.">
-            <span style={{ color: "#6B7280" }}>Please wait while we load the placeholder directory data.</span>
+            <span style={{ color: "var(--info)" }}>Please wait while we load the placeholder directory data.</span>
           </SectionCard>
         )}
 
         {error && (
           <SectionCard title="Failed to load employee directory" subtitle="Mock API returned an error.">
-            <span style={{ color: "#B91C1C" }}>{error.message}</span>
+            <span style={{ color: "var(--danger)" }}>{error.message}</span>
           </SectionCard>
         )}
 
@@ -117,7 +117,7 @@ export default function EmployeeManagement() {
               <div style={{ maxHeight: "520px", overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead style={{ position: "sticky", top: 0, background: "white", zIndex: 1 }}>
-                    <tr style={{ color: "#6B7280", fontSize: "0.8rem" }}>
+                    <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                       <th style={{ padding: "12px 0", textAlign: "left" }}>Employee</th>
                       <th>Department</th>
                       <th>Type</th>
@@ -133,18 +133,18 @@ export default function EmployeeManagement() {
                           onClick={() => setSelectedEmployeeId(employee.id)}
                           style={{
                             cursor: "pointer",
-                            backgroundColor: isSelected ? "rgba(67, 56, 202, 0.08)" : "transparent",
-                            borderTop: "1px solid #E5E7EB",
+                            backgroundColor: isSelected ? "rgba(var(--accent-purple-rgb), 0.08)" : "transparent",
+                            borderTop: "1px solid var(--accent-purple-surface)",
                           }}
                         >
                           <td style={{ padding: "14px 0" }}>
                             <div style={{ display: "flex", flexDirection: "column" }}>
-                              <span style={{ fontWeight: 600, color: "#111827" }}>{employee.name}</span>
-                              <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>{employee.jobTitle}</span>
+                              <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{employee.name}</span>
+                              <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>{employee.jobTitle}</span>
                             </div>
                           </td>
                           <td style={{ fontWeight: 500 }}>{employee.department}</td>
-                          <td style={{ fontSize: "0.85rem", color: "#4B5563" }}>{employee.employmentType}</td>
+                          <td style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>{employee.employmentType}</td>
                           <td>
                             <StatusTag
                               label={employee.status}
@@ -213,9 +213,9 @@ function DirectoryFilters({ filters, setFilters, departments, employmentTypes })
 
 const selectStyle = {
   borderRadius: "999px",
-  border: "1px solid #E0E7FF",
+  border: "1px solid var(--accent-purple-surface)",
   padding: "6px 12px",
   fontWeight: 600,
-  color: "#4338CA",
+  color: "var(--accent-purple)",
   background: "white",
 };

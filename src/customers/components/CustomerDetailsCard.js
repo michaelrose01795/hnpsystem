@@ -83,10 +83,10 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
   };
 
   return (
-    <section className="rounded-3xl border border-[#ffe0e0] bg-white p-5 shadow-[0_12px_34px_rgba(209,0,0,0.08)]">
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5 shadow-[0_12px_34px_rgba(var(--primary-rgb),0.08)]">
       <header className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">My details</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">My details</p>
           <h3 className="text-xl font-semibold text-slate-900">Keep your profile up to date</h3>
         </div>
       </header>
@@ -111,7 +111,7 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
               type="text"
               value={formState.firstname}
               onChange={(event) => handleInputChange("firstname", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[#ffdede] px-3 py-2 text-sm focus:border-[#d10000] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
           <label className="text-xs font-semibold text-slate-600">
@@ -120,7 +120,7 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
               type="text"
               value={formState.lastname}
               onChange={(event) => handleInputChange("lastname", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[#ffdede] px-3 py-2 text-sm focus:border-[#d10000] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
         </div>
@@ -132,7 +132,7 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
               type="email"
               value={formState.email}
               onChange={(event) => handleInputChange("email", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[#ffdede] px-3 py-2 text-sm focus:border-[#d10000] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
           <label className="text-xs font-semibold text-slate-600">
@@ -141,7 +141,7 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
               type="tel"
               value={formState.mobile}
               onChange={(event) => handleInputChange("mobile", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[#ffdede] px-3 py-2 text-sm focus:border-[#d10000] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
         </div>
@@ -153,7 +153,7 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
               type="tel"
               value={formState.telephone}
               onChange={(event) => handleInputChange("telephone", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[#ffdede] px-3 py-2 text-sm focus:border-[#d10000] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
           <label className="text-xs font-semibold text-slate-600">
@@ -162,7 +162,7 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
               type="text"
               value={formState.postcode}
               onChange={(event) => handleInputChange("postcode", event.target.value.toUpperCase())}
-              className="mt-1 w-full rounded-xl border border-[#ffdede] px-3 py-2 text-sm focus:border-[#d10000] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
         </div>
@@ -173,7 +173,7 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
             value={formState.address}
             onChange={(event) => handleInputChange("address", event.target.value)}
             rows={3}
-            className="mt-1 w-full rounded-xl border border-[#ffdede] px-3 py-2 text-sm focus:border-[#d10000] focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
           />
         </label>
 
@@ -182,7 +182,7 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
           <select
             value={formState.contactPreference}
             onChange={(event) => handleInputChange("contactPreference", event.target.value)}
-            className="mt-1 w-full rounded-xl border border-[#ffdede] px-3 py-2 text-sm focus:border-[#d10000] focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
           >
             {CONTACT_OPTIONS.map((option) => (
               <option key={option} value={option}>
@@ -196,7 +196,7 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-full border border-[#ffd0d0] bg-[#d10000] px-5 py-2 text-sm font-semibold text-white shadow hover:bg-[#a00000] disabled:cursor-not-allowed disabled:bg-[#f4bebe]"
+            className="rounded-full border border-[var(--surface-light)] bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white shadow hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
           >
             {saving ? "Saving..." : "Save changes"}
           </button>

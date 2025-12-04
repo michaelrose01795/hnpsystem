@@ -83,9 +83,9 @@ export default function CustomerBookingCalendar() {
   const nextAvailable = slots.find((slot) => slot.status !== "red");
 
   return (
-    <section className="rounded-3xl border border-[#ffe0e0] bg-white p-5 shadow-[0_12px_34px_rgba(209,0,0,0.08)]">
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5 shadow-[0_12px_34px_rgba(var(--primary-rgb),0.08)]">
       <header>
-        <p className="text-xs uppercase tracking-[0.35em] text-[#d10000]">
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">
           Booking calendar
         </p>
         <h3 className="text-xl font-semibold text-slate-900">
@@ -119,7 +119,7 @@ export default function CustomerBookingCalendar() {
                   onClick={() => setSelectedSlot(slot)}
                   className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                     STATUS_CLASSES[slot.status] ?? STATUS_CLASSES.green
-                  } ${isSelected ? "ring-2 ring-[#d10000]" : ""}`}
+                  } ${isSelected ? "ring-2 ring-[var(--primary)]" : ""}`}
                 >
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold text-slate-800">
@@ -161,7 +161,7 @@ export default function CustomerBookingCalendar() {
       )}
 
       {selectedSlot && (
-        <div className="mt-6 rounded-2xl border border-[#ffe0e0] bg-[#fff5f5] p-4">
+        <div className="mt-6 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface-light)] p-4">
           <div className="flex flex-wrap items-baseline gap-2">
             <p className="text-sm text-slate-600">Selected date</p>
             <p className="text-lg font-semibold text-slate-900">
@@ -198,7 +198,7 @@ export default function CustomerBookingCalendar() {
               className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition ${
                 selectedSlot.status === "red"
                   ? "cursor-not-allowed bg-slate-300 text-slate-600"
-                  : "bg-[#d10000] text-white hover:bg-[#a00000]"
+                  : "bg-[var(--primary)] text-white hover:bg-[var(--primary-dark)]"
               }`}
             >
               {selectedSlot.status === "red"

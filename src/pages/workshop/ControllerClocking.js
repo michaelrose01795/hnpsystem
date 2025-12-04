@@ -116,34 +116,34 @@ export default function ControllerClocking() {
 
   return (
     <div style={{ padding: "20px" }}>
-      <h1 style={{ color: "#FF4040", fontSize: "1.8rem", marginBottom: "20px" }}>
+      <h1 style={{ color: "var(--primary)", fontSize: "1.8rem", marginBottom: "20px" }}>
         Workshop Controller Dashboard
       </h1>
 
-      {loading && <p style={{ color: "#FF8080" }}>Updating...</p>}
+      {loading && <p style={{ color: "var(--primary-light)" }}>Updating...</p>}
 
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
-          <tr style={{ backgroundColor: "#FFCCCC" }}>
-            <th style={{ padding: "8px", border: "1px solid #FFAAAA" }}>Technician</th>
-            <th style={{ padding: "8px", border: "1px solid #FFAAAA" }}>Status</th>
-            <th style={{ padding: "8px", border: "1px solid #FFAAAA" }}>Clock In</th>
-            <th style={{ padding: "8px", border: "1px solid #FFAAAA" }}>Clock Out</th>
+          <tr style={{ backgroundColor: "var(--danger)" }}>
+            <th style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>Technician</th>
+            <th style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>Status</th>
+            <th style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>Clock In</th>
+            <th style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>Clock Out</th>
           </tr>
         </thead>
         <tbody>
           {techs.map((tech) => (
             <tr key={tech}>
-              <td style={{ padding: "8px", border: "1px solid #FFAAAA" }}>{tech}</td>
-              <td style={{ padding: "8px", border: "1px solid #FFAAAA" }}>
+              <td style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>{tech}</td>
+              <td style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>
                 {clocking[tech] || "Not Clocked"}
               </td>
-              <td style={{ padding: "8px", border: "1px solid #FFAAAA" }}>
+              <td style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>
                 <button
                   onClick={() => clockIn(tech)}
                   style={{
                     padding: "4px 8px",
-                    backgroundColor: "#FF4040",
+                    backgroundColor: "var(--primary)",
                     color: "white",
                     border: "none",
                     borderRadius: "4px",
@@ -154,12 +154,12 @@ export default function ControllerClocking() {
                   IN
                 </button>
               </td>
-              <td style={{ padding: "8px", border: "1px solid #FFAAAA" }}>
+              <td style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>
                 <button
                   onClick={() => clockOut(tech)}
                   style={{
                     padding: "4px 8px",
-                    backgroundColor: "#FF8080",
+                    backgroundColor: "var(--primary-light)",
                     color: "white",
                     border: "none",
                     borderRadius: "4px",

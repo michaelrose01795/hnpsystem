@@ -28,7 +28,7 @@ function ChecksheetRenderer({ sections, onSave }) {
             backgroundColor: "white",
             padding: "16px",
             borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+            boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.1)",
           }}
         >
           <h2
@@ -69,7 +69,7 @@ function ChecksheetRenderer({ sections, onSave }) {
                   }
                   style={{
                     flex: 1,
-                    border: "1px solid #ccc",
+                    border: "1px solid var(--background)",
                     borderRadius: "4px",
                     padding: "6px 8px",
                   }}
@@ -84,7 +84,7 @@ function ChecksheetRenderer({ sections, onSave }) {
         onClick={() => onSave(formData)}
         style={{
           padding: "12px 20px",
-          backgroundColor: "#FF4040",
+          backgroundColor: "var(--primary)",
           color: "white",
           border: "none",
           borderRadius: "6px",
@@ -156,13 +156,13 @@ export default function AddChecksheet() {
           gap: "16px",
         }}
       >
-        <h1 style={{ color: "#FF4040" }}>Add Checksheet – Job #{jobNumber}</h1>
+        <h1 style={{ color: "var(--primary)" }}>Add Checksheet – Job #{jobNumber}</h1>
 
         <button
           onClick={handleAddChecksheet}
           style={{
             padding: "12px 20px",
-            backgroundColor: "#FF4040",
+            backgroundColor: "var(--primary)",
             color: "white",
             border: "none",
             borderRadius: "6px",
@@ -180,7 +180,7 @@ export default function AddChecksheet() {
           <pre
             style={{
               backgroundColor: "black",
-              color: "#00ff90",
+              color: "var(--success)",
               padding: "12px",
               borderRadius: "8px",
             }}

@@ -268,12 +268,12 @@ export default function CheckInPage() {
           <div style={{
             width: "60px",
             height: "60px",
-            border: "4px solid #f3f3f3",
-            borderTop: "4px solid #d10000",
+            border: "4px solid var(--surface)",
+            borderTop: "4px solid var(--primary)",
             borderRadius: "50%",
             animation: "spin 1s linear infinite"
           }}></div>
-          <p style={{ color: "#666", fontSize: "16px" }}>Loading appointments...</p>
+          <p style={{ color: "var(--grey-accent)", fontSize: "16px" }}>Loading appointments...</p>
           <style jsx>{`
             @keyframes spin {
               0% { transform: rotate(0deg); }
@@ -303,7 +303,7 @@ export default function CheckInPage() {
           flexShrink: 0
         }}>
           <div>
-            <p style={{ fontSize: "16px", color: "#666", margin: 0 }}>
+            <p style={{ fontSize: "16px", color: "var(--grey-accent)", margin: 0 }}>
               {displayDate}
             </p>
           </div>
@@ -316,7 +316,7 @@ export default function CheckInPage() {
             disabled={loading}
             style={{
               padding: "12px 24px",
-              backgroundColor: loading ? "#ccc" : "#d10000",
+              backgroundColor: loading ? "var(--background)" : "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -325,8 +325,8 @@ export default function CheckInPage() {
               fontWeight: "600",
               transition: "background-color 0.2s"
             }}
-            onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = "#b00000")}
-            onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = "#d10000")}
+            onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = "var(--primary-dark)")}
+            onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = "var(--primary)")}
           >
             🔄 Refresh
           </button>
@@ -344,13 +344,13 @@ export default function CheckInPage() {
             backgroundColor: "white",
             padding: "20px",
             borderRadius: "12px",
-            border: "1px solid #e0e0e0",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
+            border: "1px solid var(--surface-light)",
+            boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)"
           }}>
-            <p style={{ fontSize: "13px", color: "#666", margin: "0 0 8px 0" }}>
+            <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
               Total Appointments
             </p>
-            <p style={{ fontSize: "32px", fontWeight: "700", color: "#1a1a1a", margin: 0 }}>
+            <p style={{ fontSize: "32px", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>
               {countsLoading ? "…" : totalAppointments}
             </p>
           </div>
@@ -359,13 +359,13 @@ export default function CheckInPage() {
             backgroundColor: "white",
             padding: "20px",
             borderRadius: "12px",
-            border: "1px solid #e0e0e0",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
+            border: "1px solid var(--surface-light)",
+            boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)"
           }}>
-            <p style={{ fontSize: "13px", color: "#666", margin: "0 0 8px 0" }}>
+            <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
               Checked In
             </p>
-            <p style={{ fontSize: "32px", fontWeight: "700", color: "#10b981", margin: 0 }}>
+            <p style={{ fontSize: "32px", fontWeight: "700", color: "var(--info)", margin: 0 }}>
               {countsLoading ? "…" : checkedInCount}
             </p>
           </div>
@@ -374,13 +374,13 @@ export default function CheckInPage() {
             backgroundColor: "white",
             padding: "20px",
             borderRadius: "12px",
-            border: "1px solid #e0e0e0",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
+            border: "1px solid var(--surface-light)",
+            boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)"
           }}>
-            <p style={{ fontSize: "13px", color: "#666", margin: "0 0 8px 0" }}>
+            <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
               Awaiting Check-In
             </p>
-            <p style={{ fontSize: "32px", fontWeight: "700", color: "#f59e0b", margin: 0 }}>
+            <p style={{ fontSize: "32px", fontWeight: "700", color: "var(--warning)", margin: 0 }}>
               {countsLoading ? "…" : awaitingCheckIn}
             </p>
           </div>
@@ -402,21 +402,21 @@ export default function CheckInPage() {
               flex: 1,
               padding: "12px 16px",
               borderRadius: "8px",
-              border: "1px solid #e0e0e0",
+              border: "1px solid var(--surface-light)",
               fontSize: "14px",
               outline: "none"
             }}
-            onFocus={(e) => e.target.style.borderColor = "#d10000"}
-            onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+            onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
+            onBlur={(e) => e.target.style.borderColor = "var(--surface-light)"}
           />
 
           <button
             onClick={() => setShowCheckedIn(!showCheckedIn)}
             style={{
               padding: "12px 20px",
-              backgroundColor: showCheckedIn ? "#d10000" : "#f5f5f5",
-              color: showCheckedIn ? "white" : "#666",
-              border: "1px solid #e0e0e0",
+              backgroundColor: showCheckedIn ? "var(--primary)" : "var(--surface)",
+              color: showCheckedIn ? "white" : "var(--grey-accent)",
+              border: "1px solid var(--surface-light)",
               borderRadius: "8px",
               cursor: "pointer",
               fontSize: "14px",
@@ -437,14 +437,14 @@ export default function CheckInPage() {
             justifyContent: "center",
             backgroundColor: "white",
             borderRadius: "12px",
-            border: "1px solid #e0e0e0"
+            border: "1px solid var(--surface-light)"
           }}>
             <div style={{ textAlign: "center", padding: "40px" }}>
               <div style={{ fontSize: "64px", marginBottom: "16px" }}>📅</div>
-              <p style={{ fontSize: "18px", fontWeight: "600", color: "#1a1a1a", margin: "0 0 8px 0" }}>
+              <p style={{ fontSize: "18px", fontWeight: "600", color: "var(--text-primary)", margin: "0 0 8px 0" }}>
                 No Appointments Today
               </p>
-              <p style={{ fontSize: "14px", color: "#666", margin: 0 }}>
+              <p style={{ fontSize: "14px", color: "var(--grey-accent)", margin: 0 }}>
                 There are no scheduled appointments for today
               </p>
             </div>
@@ -457,14 +457,14 @@ export default function CheckInPage() {
             justifyContent: "center",
             backgroundColor: "white",
             borderRadius: "12px",
-            border: "1px solid #e0e0e0"
+            border: "1px solid var(--surface-light)"
           }}>
             <div style={{ textAlign: "center", padding: "40px" }}>
               <div style={{ fontSize: "64px", marginBottom: "16px" }}>🔍</div>
-              <p style={{ fontSize: "18px", fontWeight: "600", color: "#1a1a1a", margin: "0 0 8px 0" }}>
+              <p style={{ fontSize: "18px", fontWeight: "600", color: "var(--text-primary)", margin: "0 0 8px 0" }}>
                 No Results Found
               </p>
-              <p style={{ fontSize: "14px", color: "#666", margin: 0 }}>
+              <p style={{ fontSize: "14px", color: "var(--grey-accent)", margin: 0 }}>
                 {searchTerm.trim() 
                   ? "Try adjusting your search terms"
                   : showCheckedIn 
@@ -481,17 +481,17 @@ export default function CheckInPage() {
             overflowY: "auto",
             backgroundColor: "white",
             borderRadius: "12px",
-            border: "1px solid #e0e0e0",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
+            border: "1px solid var(--surface-light)",
+            boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)"
           }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead style={{
                 position: "sticky",
                 top: 0,
-                backgroundColor: "#f9fafb",
+                backgroundColor: "var(--info-surface)",
                 zIndex: 1
               }}>
-                <tr style={{ borderBottom: "2px solid #e0e0e0" }}>
+                <tr style={{ borderBottom: "2px solid var(--surface-light)" }}>
                   <th style={tableHeaderStyle}>Time</th>
                   <th style={tableHeaderStyle}>Job #</th>
                   <th style={tableHeaderStyle}>Registration</th>
@@ -518,17 +518,17 @@ export default function CheckInPage() {
                     <tr
                       key={job.id || index}
                       style={{
-                        borderBottom: "1px solid #f3f4f6",
-                        backgroundColor: isCheckedIn ? "#f0fdf4" : "white",
+                        borderBottom: "1px solid var(--info-surface)",
+                        backgroundColor: isCheckedIn ? "var(--success-surface)" : "white",
                         transition: "background-color 0.2s"
                       }}
                       onMouseEnter={(e) => {
                         if (!isCheckedIn) {
-                          e.currentTarget.style.backgroundColor = "#f9fafb";
+                          e.currentTarget.style.backgroundColor = "var(--info-surface)";
                         }
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = isCheckedIn ? "#f0fdf4" : "white";
+                        e.currentTarget.style.backgroundColor = isCheckedIn ? "var(--success-surface)" : "white";
                       }}
                     >
                       <td style={tableCellStyle}>
@@ -537,7 +537,7 @@ export default function CheckInPage() {
                         </span>
                       </td>
                       <td style={tableCellStyle}>
-                        <span style={{ fontWeight: "600", color: "#d10000" }}>
+                        <span style={{ fontWeight: "600", color: "var(--primary)" }}>
                           {job.jobNumber}
                         </span>
                       </td>
@@ -550,7 +550,7 @@ export default function CheckInPage() {
                         {job.customer || "N/A"}
                       </td>
                       <td style={tableCellStyle}>
-                        <span style={{ fontWeight: "600", color: "#222" }}>
+                        <span style={{ fontWeight: "600", color: "var(--text-primary)" }}>
                           {getDetectedJobTypeLabel(job)}
                         </span>
                       </td>
@@ -579,8 +579,8 @@ export default function CheckInPage() {
                           borderRadius: "12px",
                           fontSize: "12px",
                           fontWeight: "700",
-                          backgroundColor: job.vhcRequired ? "#e0f2fe" : "#f3f4f6",
-                          color: job.vhcRequired ? "#0369a1" : "#4b5563",
+                          backgroundColor: job.vhcRequired ? "var(--info-surface)" : "var(--info-surface)",
+                          color: job.vhcRequired ? "var(--info-dark)" : "var(--info-dark)",
                           display: "inline-block"
                         }}>
                           {job.vhcRequired ? "Yes" : "No"}
@@ -593,7 +593,7 @@ export default function CheckInPage() {
                             disabled={isCurrentlyCheckingIn}
                             style={{
                               padding: "8px 16px",
-                              backgroundColor: isCurrentlyCheckingIn ? "#ccc" : "#10b981",
+                              backgroundColor: isCurrentlyCheckingIn ? "var(--background)" : "var(--info)",
                               color: "white",
                               border: "none",
                               borderRadius: "6px",
@@ -602,8 +602,8 @@ export default function CheckInPage() {
                               fontWeight: "600",
                               transition: "background-color 0.2s"
                             }}
-                            onMouseEnter={(e) => !isCurrentlyCheckingIn && (e.target.style.backgroundColor = "#059669")}
-                            onMouseLeave={(e) => !isCurrentlyCheckingIn && (e.target.style.backgroundColor = "#10b981")}
+                            onMouseEnter={(e) => !isCurrentlyCheckingIn && (e.target.style.backgroundColor = "var(--info-dark)")}
+                            onMouseLeave={(e) => !isCurrentlyCheckingIn && (e.target.style.backgroundColor = "var(--info)")}
                           >
                             {isCurrentlyCheckingIn ? "Checking In..." : "Check In"}
                           </button>
@@ -613,8 +613,8 @@ export default function CheckInPage() {
                             borderRadius: "6px",
                             fontSize: "13px",
                             fontWeight: "600",
-                            backgroundColor: "#d1fae5",
-                            color: "#065f46"
+                            backgroundColor: "var(--success)",
+                            color: "var(--info-dark)"
                           }}>
                             ✓ Checked In
                           </span>
@@ -633,7 +633,7 @@ export default function CheckInPage() {
           <div style={{
             marginTop: "16px",
             fontSize: "14px",
-            color: "#6b7280",
+            color: "var(--info)",
             textAlign: "center",
             flexShrink: 0
           }}>
@@ -693,15 +693,15 @@ function getDetectedJobTypeLabel(job) {
 function getCustomerStatusBadgeColors(status) {
   const normalized = (status || "").toLowerCase();
   if (normalized === "waiting") {
-    return { backgroundColor: "#ffe5e5", color: "#c62828" };
+    return { backgroundColor: "var(--surface-light)", color: "var(--danger)" };
   }
   if (normalized === "loan car") {
-    return { backgroundColor: "#e3f2fd", color: "#1565c0" };
+    return { backgroundColor: "var(--info-surface)", color: "var(--info)" };
   }
   if (normalized === "collection") {
-    return { backgroundColor: "#fff8e1", color: "#ff9800" };
+    return { backgroundColor: "var(--warning-surface)", color: "var(--warning)" };
   }
-  return { backgroundColor: "#e8f5e9", color: "#2e7d32" };
+  return { backgroundColor: "var(--success-surface)", color: "var(--success-dark)" };
 }
 
 function getEstimatedFinishTime(job) {
@@ -720,21 +720,21 @@ function getEstimatedFinishTime(job) {
 function getStatusColor(status) {
   switch (status?.toLowerCase()) {
     case "booked":
-      return "#06b6d4";
+      return "var(--info)";
     case "checked in":
-      return "#8b5cf6";
+      return "var(--accent-purple)";
     case "workshop/mot":
-      return "#f59e0b";
+      return "var(--warning)";
     case "vhc complete":
-      return "#3b82f6";
+      return "var(--info)";
     case "vhc sent":
-      return "#6366f1";
+      return "var(--accent-purple)";
     case "being washed":
-      return "#14b8a6";
+      return "var(--info)";
     case "complete":
-      return "#10b981";
+      return "var(--info)";
     default:
-      return "#6b7280";
+      return "var(--info)";
   }
 }
 
@@ -744,7 +744,7 @@ const tableHeaderStyle = {
   textAlign: "left",
   fontSize: "13px",
   fontWeight: "600",
-  color: "#6b7280",
+  color: "var(--info)",
   textTransform: "uppercase",
   letterSpacing: "0.5px"
 };
@@ -752,5 +752,5 @@ const tableHeaderStyle = {
 const tableCellStyle = {
   padding: "14px 16px",
   fontSize: "14px",
-  color: "#4b5563"
+  color: "var(--info-dark)"
 };

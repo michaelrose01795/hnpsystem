@@ -63,12 +63,12 @@ export default function DealerCarDetailsPage() {
   return (
     <Layout>
       <div style={{ maxWidth: "600px", margin: "0 auto", padding: "16px" }}>
-        <h1 style={{ color: "#FF4040", marginBottom: "16px" }}>
+        <h1 style={{ color: "var(--primary)", marginBottom: "16px" }}>
           Dealer Car Details – Job #{jobNumber}
         </h1>
 
         {/* Display basic job/vehicle info */}
-        <div style={{ marginBottom: "16px", padding: "12px", backgroundColor: "#f9f9f9", borderRadius: "8px" }}>
+        <div style={{ marginBottom: "16px", padding: "12px", backgroundColor: "var(--surface)", borderRadius: "8px" }}>
           <p><strong>Vehicle Registration:</strong> {jobData.reg}</p>
           <p><strong>Make & Model:</strong> {jobData.vehicle?.make} {jobData.vehicle?.model}</p>
           <p><strong>Customer:</strong> {jobData.customer}</p>
@@ -81,7 +81,7 @@ export default function DealerCarDetailsPage() {
             onClick={handleUpload}
             style={{
               padding: "12px 20px",
-              backgroundColor: "#FF4040",
+              backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "6px",
@@ -94,7 +94,7 @@ export default function DealerCarDetailsPage() {
             onClick={handleGoToAppointment}
             style={{
               padding: "12px 20px",
-              backgroundColor: "#4040FF",
+              backgroundColor: "var(--accent-purple)",
               color: "white",
               border: "none",
               borderRadius: "6px",

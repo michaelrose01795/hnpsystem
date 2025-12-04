@@ -9,36 +9,36 @@ import { getWorkshopDashboardData } from "@/lib/database/dashboard/workshop";
 const MetricCard = ({ label, value, helper }) => (
   <div
     style={{
-      background: "#fff",
+      background: "var(--surface)",
       borderRadius: "16px",
       padding: "16px",
-      border: "1px solid #ffe0e0",
-      boxShadow: "0 10px 24px rgba(0,0,0,0.04)",
+      border: "1px solid var(--surface-light)",
+      boxShadow: "0 10px 24px rgba(var(--shadow-rgb),0.04)",
       minWidth: 160,
     }}
   >
-    <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "#a00000" }}>{label}</p>
+    <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--primary-dark)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
-    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "#6b7280" }}>{helper}</p>}
+    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
   </div>
 );
 
 const Section = ({ title, subtitle, children }) => (
   <section
     style={{
-      background: "#fff",
+      background: "var(--surface)",
       borderRadius: "18px",
       padding: "24px",
-      border: "1px solid #ffe0e0",
-      boxShadow: "0 16px 30px rgba(209,0,0,0.08)",
+      border: "1px solid var(--surface-light)",
+      boxShadow: "0 16px 30px rgba(var(--primary-rgb),0.08)",
       display: "flex",
       flexDirection: "column",
       gap: "12px",
     }}
   >
     <div>
-      <h2 style={{ margin: 0, fontSize: "1.2rem", color: "#a00000" }}>{title}</h2>
-      {subtitle && <p style={{ margin: "6px 0 0", color: "#6b7280" }}>{subtitle}</p>}
+      <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>{title}</h2>
+      {subtitle && <p style={{ margin: "6px 0 0", color: "var(--info)" }}>{subtitle}</p>}
     </div>
     {children}
   </section>
@@ -49,25 +49,25 @@ const TrendBlock = ({ title, data }) => {
   return (
     <div
       style={{
-        border: "1px solid #efe5e5",
+        border: "1px solid var(--danger-surface)",
         borderRadius: "12px",
         padding: "16px",
-        background: "#fff",
+        background: "var(--surface)",
         display: "flex",
         flexDirection: "column",
         gap: "10px",
       }}
     >
-      <p style={{ margin: 0, textTransform: "uppercase", color: "#a00000", fontSize: "0.75rem" }}>{title}</p>
+      <p style={{ margin: 0, textTransform: "uppercase", color: "var(--primary-dark)", fontSize: "0.75rem" }}>{title}</p>
       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
         {(data || []).map((point) => (
           <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ width: 35, fontSize: "0.8rem", color: "#6b7280" }}>{point.label}</span>
+            <span style={{ width: 35, fontSize: "0.8rem", color: "var(--info)" }}>{point.label}</span>
             <div
               style={{
                 flex: 1,
                 height: 8,
-                background: "#f5f5f5",
+                background: "var(--surface)",
                 borderRadius: 4,
                 overflow: "hidden",
               }}
@@ -76,11 +76,11 @@ const TrendBlock = ({ title, data }) => {
                 style={{
                   height: "100%",
                   width: `${Math.round((point.count / maxValue) * 100)}%`,
-                  background: "#f97316",
+                  background: "var(--danger)",
                 }}
               />
             </div>
-            <strong style={{ width: 30, fontSize: "0.85rem", color: "#a00000" }}>{point.count}</strong>
+            <strong style={{ width: 30, fontSize: "0.85rem", color: "var(--primary-dark)" }}>{point.count}</strong>
           </div>
         ))}
       </div>
@@ -92,16 +92,16 @@ const ProgressBar = ({ completed, target }) => {
   const percentage = Math.min(100, Math.round((completed / target) * 100));
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "#6b7280" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--info)" }}>
         <span>Completed</span>
         <span>{percentage}%</span>
       </div>
-      <div style={{ width: "100%", height: 10, background: "#f5f5f5", borderRadius: 5 }}>
+      <div style={{ width: "100%", height: 10, background: "var(--surface)", borderRadius: 5 }}>
         <div
           style={{
             width: `${percentage}%`,
             height: "100%",
-            background: "#0ea5e9",
+            background: "var(--info)",
             borderRadius: 5,
           }}
         />
@@ -113,24 +113,24 @@ const ProgressBar = ({ completed, target }) => {
 const StatusList = ({ title, titleSuffix, items }) => (
   <div
     style={{
-      background: "#fff",
+      background: "var(--surface)",
       borderRadius: "12px",
-      border: "1px solid #ffe0e0",
+      border: "1px solid var(--surface-light)",
       padding: "12px",
       display: "flex",
       flexDirection: "column",
       gap: "10px",
     }}
   >
-    <p style={{ margin: 0, fontWeight: 600, color: "#a00000" }}>
-      {title} <span style={{ fontSize: "0.85rem", fontWeight: 400, color: "#6b7280" }}>{titleSuffix}</span>
+    <p style={{ margin: 0, fontWeight: 600, color: "var(--primary-dark)" }}>
+      {title} <span style={{ fontSize: "0.85rem", fontWeight: 400, color: "var(--info)" }}>{titleSuffix}</span>
     </p>
     {(items || []).length === 0 ? (
-      <p style={{ margin: 0, color: "#6b7280" }}>No updates yet.</p>
+      <p style={{ margin: 0, color: "var(--info)" }}>No updates yet.</p>
     ) : (
       items.map((item) => (
-        <div key={item.id || item.job_id} style={{ fontSize: "0.85rem", color: "#374151" }}>
-          <strong style={{ color: "#a00000" }}>{item.job?.job_number || item.job_number || "Job"}</strong> – {item.to_status || item.status}
+        <div key={item.id || item.job_id} style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
+          <strong style={{ color: "var(--primary-dark)" }}>{item.job?.job_number || item.job_number || "Job"}</strong> – {item.to_status || item.status}
         </div>
       ))
     )}
@@ -184,29 +184,29 @@ export default function WorkshopDashboard() {
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
         <header
           style={{
-            background: "linear-gradient(120deg, #ffeaea, #fff5f5)",
+            background: "linear-gradient(120deg, var(--danger-surface), var(--surface-light))",
             borderRadius: "18px",
             padding: "24px",
-            border: "1px solid #ffd6d6",
-            boxShadow: "0 18px 35px rgba(209,0,0,0.1)",
+            border: "1px solid var(--surface-light)",
+            boxShadow: "0 18px 35px rgba(var(--primary-rgb),0.1)",
           }}
         >
-          <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "#a00000" }}>
+          <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--primary-dark)" }}>
             Workshop workspace · {todayLabel}
           </p>
-          <h1 style={{ margin: "6px 0 0", color: "#a00000" }}>
+          <h1 style={{ margin: "6px 0 0", color: "var(--primary-dark)" }}>
             {user?.username ? `Hi ${user.username}, workshop view` : "Workshop workspace"}
           </h1>
-          <p style={{ margin: "6px 0 0", color: "#6b7280" }}>
+          <p style={{ margin: "6px 0 0", color: "var(--info)" }}>
             Live view of technician assignments, queue, and VHC throughput.
           </p>
         </header>
 
         <Section title="Daily checkpoints">
           {loading ? (
-            <p style={{ color: "#6b7280" }}>Loading today&apos;s metrics…</p>
+            <p style={{ color: "var(--info)" }}>Loading today&apos;s metrics…</p>
           ) : error ? (
-            <p style={{ color: "#ff4040" }}>{error}</p>
+            <p style={{ color: "var(--primary)" }}>{error}</p>
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
               <MetricCard
@@ -242,11 +242,11 @@ export default function WorkshopDashboard() {
 
         <Section title="Next jobs queue">
           {loading ? (
-            <p style={{ color: "#6b7280" }}>Loading queue…</p>
+            <p style={{ color: "var(--info)" }}>Loading queue…</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {dashboardData.queue.length === 0 ? (
-                <p style={{ margin: 0, color: "#6b7280" }}>No outstanding jobs in the queue.</p>
+                <p style={{ margin: 0, color: "var(--info)" }}>No outstanding jobs in the queue.</p>
               ) : (
                 dashboardData.queue.map((job) => (
                   <div
@@ -254,20 +254,20 @@ export default function WorkshopDashboard() {
                     style={{
                       padding: "14px",
                       borderRadius: "10px",
-                      background: "#fef6f6",
-                      border: "1px solid #ffe0e0",
+                      background: "var(--danger-surface)",
+                      border: "1px solid var(--surface-light)",
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
                     }}
                   >
                     <div>
-                      <strong style={{ color: "#a00000" }}>
+                      <strong style={{ color: "var(--primary-dark)" }}>
                         {job.job_number || "—"} · {job.vehicle_reg || "TBC"}
                       </strong>
-                      <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>{job.status || "Status unknown"}</div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--info)" }}>{job.status || "Status unknown"}</div>
                     </div>
-                    <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                    <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>
                       Checked in {formatTime(job.checked_in_at)}
                     </span>
                   </div>
@@ -279,9 +279,9 @@ export default function WorkshopDashboard() {
 
         <Section title="Outstanding VHCs" subtitle="Jobs requiring follow-up">
           {loading ? (
-            <p style={{ color: "#6b7280" }}>Loading VHC backlog…</p>
+            <p style={{ color: "var(--info)" }}>Loading VHC backlog…</p>
           ) : dashboardData.outstandingVhc.length === 0 ? (
-            <p style={{ margin: 0, color: "#6b7280" }}>No VHCs awaiting completion.</p>
+            <p style={{ margin: 0, color: "var(--info)" }}>No VHCs awaiting completion.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {dashboardData.outstandingVhc.map((job) => (
@@ -290,19 +290,19 @@ export default function WorkshopDashboard() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    background: "#fff",
+                    background: "var(--surface)",
                     borderRadius: "10px",
-                    border: "1px solid #ffe0e0",
+                    border: "1px solid var(--surface-light)",
                     padding: "12px 14px",
                   }}
                 >
                   <div>
                     <strong>{job.job_number || "—"}</strong>
-                    <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "0.85rem" }}>
+                    <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
                       {job.vehicle_reg || "Registration missing"}
                     </p>
                   </div>
-                  <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                  <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>
                     Checked in {formatTime(job.checked_in_at)}
                   </span>
                 </div>

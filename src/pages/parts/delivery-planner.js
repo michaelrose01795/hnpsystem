@@ -6,11 +6,11 @@ import { useUser } from "@/context/UserContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 const sectionStyle = {
-  background: "#fff",
+  background: "var(--surface)",
   borderRadius: "18px",
-  border: "1px solid #ffe0e0",
+  border: "1px solid var(--surface-light)",
   padding: "24px",
-  boxShadow: "0 12px 28px rgba(0,0,0,0.08)",
+  boxShadow: "0 12px 28px rgba(var(--shadow-rgb),0.08)",
   display: "flex",
   flexDirection: "column",
   gap: "18px",
@@ -18,8 +18,8 @@ const sectionStyle = {
 
 const dayCardStyle = {
   borderRadius: "14px",
-  border: "1px solid #ffe5e5",
-  background: "#fff7f7",
+  border: "1px solid var(--surface-light)",
+  background: "var(--danger-surface)",
   padding: "16px",
   display: "flex",
   flexDirection: "column",
@@ -29,8 +29,8 @@ const dayCardStyle = {
 const runRowStyle = {
   padding: "12px",
   borderRadius: "10px",
-  border: "1px solid rgba(209,0,0,0.12)",
-  background: "#ffffff",
+  border: "1px solid rgba(var(--primary-rgb),0.12)",
+  background: "var(--surface)",
   display: "grid",
   gridTemplateColumns: "minmax(0, 1fr) minmax(150px, 1fr)",
   gap: "12px",
@@ -162,7 +162,7 @@ export default function PartsDeliveryPlannerPage() {
   if (!hasPartsAccess) {
     return (
       <Layout>
-        <div style={{ padding: "48px", textAlign: "center", color: "#a00000" }}>
+        <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
           You do not have access to the delivery planner.
         </div>
       </Layout>
@@ -172,12 +172,12 @@ export default function PartsDeliveryPlannerPage() {
   return (
     <Layout>
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "22px" }}>
-        <header style={{ ...sectionStyle, boxShadow: "0 14px 32px rgba(0,0,0,0.12)" }}>
-          <p style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.1em", color: "#a00000" }}>
+        <header style={{ ...sectionStyle, boxShadow: "0 14px 32px rgba(var(--shadow-rgb),0.12)" }}>
+          <p style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--primary-dark)" }}>
             Delivery planning
           </p>
-          <h1 style={{ margin: "6px 0 0", color: "#a00000" }}>Outbound parts runs</h1>
-          <p style={{ margin: "6px 0 0", color: "#555" }}>
+          <h1 style={{ margin: "6px 0 0", color: "var(--primary-dark)" }}>Outbound parts runs</h1>
+          <p style={{ margin: "6px 0 0", color: "var(--grey-accent-dark)" }}>
             Review scheduled departure/arrival times, stops, mileage, and fuel for each delivery run.
           </p>
           <div
@@ -189,19 +189,19 @@ export default function PartsDeliveryPlannerPage() {
             }}
           >
             <div>
-              <div style={{ fontSize: "0.75rem", color: "#a00000" }}>Upcoming runs</div>
+              <div style={{ fontSize: "0.75rem", color: "var(--primary-dark)" }}>Upcoming runs</div>
               <strong style={{ fontSize: "1.6rem" }}>{runs.length}</strong>
             </div>
             <div>
-              <div style={{ fontSize: "0.75rem", color: "#a00000" }}>Total mileage</div>
+              <div style={{ fontSize: "0.75rem", color: "var(--primary-dark)" }}>Total mileage</div>
               <strong style={{ fontSize: "1.6rem" }}>{totalMileage} km</strong>
             </div>
             <div>
-              <div style={{ fontSize: "0.75rem", color: "#a00000" }}>Fuel estimate</div>
+              <div style={{ fontSize: "0.75rem", color: "var(--primary-dark)" }}>Fuel estimate</div>
               <strong style={{ fontSize: "1.6rem" }}>{formatCurrency(totalFuel)}</strong>
             </div>
           </div>
-          <div style={{ color: "#4b5563", fontSize: "0.85rem", marginTop: "6px" }}>
+          <div style={{ color: "var(--info-dark)", fontSize: "0.85rem", marginTop: "6px" }}>
             Fuel rate: {priceLabel}
           </div>
         </header>
@@ -217,7 +217,7 @@ export default function PartsDeliveryPlannerPage() {
               gap: "12px",
             }}
           >
-            <label style={{ fontSize: "0.85rem", color: "#4b5563" }}>
+            <label style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
               <span style={{ display: "block", fontWeight: 600, marginBottom: "4px" }}>Filter by day</span>
               <select
                 value={selectedDate}
@@ -225,9 +225,9 @@ export default function PartsDeliveryPlannerPage() {
                 style={{
                   padding: "8px 10px",
                   borderRadius: "8px",
-                  border: "1px solid #ffdede",
+                  border: "1px solid var(--surface-light)",
                   fontSize: "0.9rem",
-                  color: "#a00000",
+                  color: "var(--primary-dark)",
                 }}
               >
                 <option value="">All days</option>
@@ -245,9 +245,9 @@ export default function PartsDeliveryPlannerPage() {
                 style={{
                   padding: "8px 14px",
                   borderRadius: "999px",
-                  border: "1px solid #ffdede",
-                  background: "#fffbfb",
-                  color: "#a00000",
+                  border: "1px solid var(--surface-light)",
+                  background: "var(--danger-surface)",
+                  color: "var(--primary-dark)",
                   fontWeight: 600,
                   fontSize: "0.85rem",
                   cursor: "pointer",
@@ -258,11 +258,11 @@ export default function PartsDeliveryPlannerPage() {
             )}
           </div>
           {loading ? (
-            <p style={{ color: "#6b7280", margin: 0 }}>Loading delivery runs…</p>
+            <p style={{ color: "var(--info)", margin: 0 }}>Loading delivery runs…</p>
           ) : error ? (
-            <p style={{ color: "#ff4040", margin: 0 }}>{error}</p>
+            <p style={{ color: "var(--primary)", margin: 0 }}>{error}</p>
           ) : filteredRunsByDate.length === 0 ? (
-            <p style={{ margin: 0, color: "#6b7280" }}>
+            <p style={{ margin: 0, color: "var(--info)" }}>
               {selectedDate
                 ? `No delivery runs scheduled for ${formatDate(selectedDate)}.`
                 : "No delivery runs scheduled yet."}
@@ -281,8 +281,8 @@ export default function PartsDeliveryPlannerPage() {
                 <div key={`${date}-${status}`} style={dayCardStyle}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <h3 style={{ margin: 0, color: "#a00000" }}>{cardLabel}</h3>
-                      <p style={{ margin: "4px 0 0", color: "#555" }}>
+                      <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>{cardLabel}</h3>
+                      <p style={{ margin: "4px 0 0", color: "var(--grey-accent-dark)" }}>
                         {items.length} run{items.length === 1 ? "" : "s"} · {dayMileage} km ·{" "}
                         {formatCurrency(dayFuel)} · {dayDrops} drop{dayDrops === 1 ? "" : "s"}
                       </p>
@@ -291,7 +291,7 @@ export default function PartsDeliveryPlannerPage() {
                       style={{
                         fontSize: "0.85rem",
                         fontWeight: 600,
-                        color: "#a00000",
+                        color: "var(--primary-dark)",
                         textTransform: "uppercase",
                         letterSpacing: "0.05em",
                       }}
@@ -309,12 +309,12 @@ export default function PartsDeliveryPlannerPage() {
                       return (
                         <article key={run.id} style={runRowStyle}>
                           <div>
-                            <div style={{ fontWeight: 600, color: "#a00000" }}>{jobNumber}</div>
-                            <div style={{ fontSize: "0.9rem", color: "#4b5563" }}>
+                            <div style={{ fontWeight: 600, color: "var(--primary-dark)" }}>{jobNumber}</div>
+                            <div style={{ fontSize: "0.9rem", color: "var(--info-dark)" }}>
                               {customerName(customer)} · {address}
                             </div>
                             {run.notes ? (
-                              <p style={{ margin: "6px 0 0", fontSize: "0.8rem", color: "#6b7280" }}>
+                              <p style={{ margin: "6px 0 0", fontSize: "0.8rem", color: "var(--info)" }}>
                                 {run.notes}
                               </p>
                             ) : null}

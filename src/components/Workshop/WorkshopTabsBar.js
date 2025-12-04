@@ -27,11 +27,11 @@ export default function WorkshopTabsBar() {
   return (
     <div
       style={{
-        background: "#ffffff",
+        background: "var(--surface)",
         borderRadius: "18px",
         padding: "18px",
-        border: "1px solid #ffe0e0",
-        boxShadow: "0 16px 30px rgba(209, 0, 0, 0.08)",
+        border: "1px solid var(--surface-light)",
+        boxShadow: "0 16px 30px rgba(var(--primary-rgb), 0.08)",
         marginBottom: "22px",
       }}
     >
@@ -63,15 +63,15 @@ export default function WorkshopTabsBar() {
                 style={{
                   padding: "10px 16px",
                   borderRadius: "12px",
-                  border: active ? "1px solid #b10000" : "1px solid #ffe0e0",
-                  backgroundColor: active ? "#b10000" : "#fff5f5",
-                  color: active ? "#ffffff" : "#720000",
+                  border: active ? "1px solid var(--primary-dark)" : "1px solid var(--surface-light)",
+                  backgroundColor: active ? "var(--primary-dark)" : "var(--surface-light)",
+                  color: active ? "var(--surface)" : "var(--primary-dark)",
                   fontWeight: 600,
                   fontSize: "0.85rem",
                   textDecoration: "none",
                   boxShadow: active
-                    ? "0 8px 20px rgba(177, 0, 0, 0.25)"
-                    : "inset 0 -1px 0 rgba(177, 0, 0, 0.06)",
+                    ? "0 8px 20px rgba(var(--primary-rgb), 0.25)"
+                    : "inset 0 -1px 0 rgba(var(--primary-rgb), 0.06)",
                   transition: "background-color 0.2s ease, color 0.2s ease",
                   whiteSpace: "nowrap",
                 }}
@@ -101,15 +101,15 @@ export default function WorkshopTabsBar() {
                   textAlign: "center",
                   padding: "10px 18px",
                   borderRadius: "999px",
-                  border: "1px solid #ffb3b3",
-                  backgroundColor: active ? "#b10000" : "#ffffff",
-                  color: active ? "#ffffff" : "#b10000",
+                  border: "1px solid var(--danger)",
+                  backgroundColor: active ? "var(--primary-dark)" : "var(--surface)",
+                  color: active ? "var(--surface)" : "var(--primary-dark)",
                   fontWeight: 600,
                   fontSize: "0.9rem",
                   textDecoration: "none",
                   boxShadow: active
-                    ? "0 16px 32px rgba(177, 0, 0, 0.22)"
-                    : "0 10px 20px rgba(209, 0, 0, 0.12)",
+                    ? "0 16px 32px rgba(var(--primary-rgb), 0.22)"
+                    : "0 10px 20px rgba(var(--primary-rgb), 0.12)",
                   transition: "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
                   whiteSpace: "nowrap",
                 }}

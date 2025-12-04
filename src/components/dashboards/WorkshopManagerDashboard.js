@@ -20,22 +20,22 @@ const quickActions = [
 ];
 
 const workflowMetrics = [
-  { label: "Jobs On Site", value: "18", helper: "4 awaiting triage", accent: "#d10000" },
-  { label: "Technicians Clocked In", value: "11 / 14", helper: "2 due back 13:00", accent: "#a00000" },
-  { label: "Awaiting Parts", value: "6", helper: "TPS van ETA 12:45", accent: "#ff6b6b" },
-  { label: "QC / Road Test", value: "3", helper: "2 require sign off", accent: "#ef4444" },
+  { label: "Jobs On Site", value: "18", helper: "4 awaiting triage", accent: "var(--primary)" },
+  { label: "Technicians Clocked In", value: "11 / 14", helper: "2 due back 13:00", accent: "var(--primary-dark)" },
+  { label: "Awaiting Parts", value: "6", helper: "TPS van ETA 12:45", accent: "var(--primary-light)" },
+  { label: "QC / Road Test", value: "3", helper: "2 require sign off", accent: "var(--danger)" },
 ];
 
 const technicianFocus = [
-  { tech: "Jordan P", job: "JC1421 • VHC", next: "Awaiting authorisation", color: "#d10000" },
-  { tech: "Aisha L", job: "JC1430 • Timing belt", next: "Parts eta 30 mins", color: "#a00000" },
-  { tech: "Liam S", job: "JC1427 • MOT & service", next: "Road test 14:15", color: "#ef4444" },
+  { tech: "Jordan P", job: "JC1421 • VHC", next: "Awaiting authorisation", color: "var(--primary)" },
+  { tech: "Aisha L", job: "JC1430 • Timing belt", next: "Parts eta 30 mins", color: "var(--primary-dark)" },
+  { tech: "Liam S", job: "JC1427 • MOT & service", next: "Road test 14:15", color: "var(--danger)" },
 ];
 
 const bayReadiness = [
-  { bay: "EV Bay", status: "Charging fault", action: "Mobile charger connected", tone: "#f97316" },
-  { bay: "Alignment", status: "Ready", action: "Next slot 13:30", tone: "#16a34a" },
-  { bay: "Fast Fit", status: "Full", action: "Clear JC1409 ASAP", tone: "#dc2626" },
+  { bay: "EV Bay", status: "Charging fault", action: "Mobile charger connected", tone: "var(--danger)" },
+  { bay: "Alignment", status: "Ready", action: "Next slot 13:30", tone: "var(--success)" },
+  { bay: "Fast Fit", status: "Full", action: "Clear JC1409 ASAP", tone: "var(--danger)" },
 ];
 
 export default function WorkshopManagerDashboard() {
@@ -77,7 +77,7 @@ export default function WorkshopManagerDashboard() {
     left: 0,
     width: "100%",
     height: "100%",
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(var(--shadow-rgb),0.45)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -86,13 +86,13 @@ export default function WorkshopManagerDashboard() {
   };
 
   const modalCardStyle = {
-    backgroundColor: "#fff",
+    backgroundColor: "var(--surface)",
     borderRadius: "16px",
     padding: "24px",
     width: "min(960px, 100%)",
     maxHeight: "90vh",
     overflow: "auto",
-    boxShadow: "0 30px 60px rgba(0,0,0,0.2)",
+    boxShadow: "0 30px 60px rgba(var(--shadow-rgb),0.2)",
   };
 
   return (
@@ -101,19 +101,19 @@ export default function WorkshopManagerDashboard() {
         style={{
           borderRadius: "18px",
           padding: "24px",
-          border: "1px solid #ffd4d4",
-          background: "linear-gradient(120deg, #fff5f5, #ffecec)",
-          boxShadow: "0 24px 45px rgba(209,0,0,0.08)",
+          border: "1px solid var(--surface-light)",
+          background: "linear-gradient(120deg, var(--surface-light), var(--surface-light))",
+          boxShadow: "0 24px 45px rgba(var(--primary-rgb),0.08)",
           display: "flex",
           flexDirection: "column",
           gap: "6px",
         }}
       >
-        <span style={{ textTransform: "uppercase", letterSpacing: "0.15em", fontSize: "0.78rem", color: "#b10000" }}>
+        <span style={{ textTransform: "uppercase", letterSpacing: "0.15em", fontSize: "0.78rem", color: "var(--primary-dark)" }}>
           Workshop Manager Command Room
         </span>
-        <h1 style={{ margin: 0, fontSize: "1.8rem", color: "#8c0000" }}>Technical Flow Control</h1>
-        <p style={{ margin: 0, color: "#6b7280" }}>
+        <h1 style={{ margin: 0, fontSize: "1.8rem", color: "var(--danger-dark)" }}>Technical Flow Control</h1>
+        <p style={{ margin: 0, color: "var(--info)" }}>
           {dayjs().format("dddd, D MMM")} • {pendingJobs.length} pending • {techsClockedIn}/{totalTechs} techs clocked in
         </p>
       </header>
@@ -123,11 +123,11 @@ export default function WorkshopManagerDashboard() {
           display: "flex",
           flexWrap: "wrap",
           gap: "12px",
-          background: "#fff",
+          background: "var(--surface)",
           padding: "14px 20px",
           borderRadius: "16px",
-          border: "1px solid #ffe0e0",
-          boxShadow: "0 18px 40px rgba(209,0,0,0.08)",
+          border: "1px solid var(--surface-light)",
+          boxShadow: "0 18px 40px rgba(var(--primary-rgb),0.08)",
         }}
       >
         {quickActions.map((action) => (
@@ -140,13 +140,13 @@ export default function WorkshopManagerDashboard() {
               justifyContent: "center",
               padding: "10px 20px",
               borderRadius: "999px",
-              border: "1px solid #ffb3b3",
-              backgroundColor: "#ffffff",
-              color: "#b10000",
+              border: "1px solid var(--danger)",
+              backgroundColor: "var(--surface)",
+              color: "var(--primary-dark)",
               fontWeight: 600,
               fontSize: "0.9rem",
               textDecoration: "none",
-              boxShadow: "0 10px 24px rgba(209,0,0,0.12)",
+              boxShadow: "0 10px 24px rgba(var(--primary-rgb),0.12)",
             }}
           >
             {action.label}
@@ -167,19 +167,19 @@ export default function WorkshopManagerDashboard() {
             style={{
               borderRadius: "18px",
               padding: "18px",
-              background: "#fff",
+              background: "var(--surface)",
               border: `1px solid ${metric.accent}22`,
-              boxShadow: "0 18px 35px rgba(209,0,0,0.08)",
+              boxShadow: "0 18px 35px rgba(var(--primary-rgb),0.08)",
               display: "flex",
               flexDirection: "column",
               gap: "6px",
             }}
           >
-            <span style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.78rem", color: "#6b7280" }}>
+            <span style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.78rem", color: "var(--info)" }}>
               {metric.label}
             </span>
             <strong style={{ fontSize: "1.8rem", color: metric.accent }}>{metric.value}</strong>
-            <span style={{ color: "#4b5563", fontSize: "0.85rem" }}>{metric.helper}</span>
+            <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>{metric.helper}</span>
           </div>
         ))}
       </section>
@@ -193,19 +193,19 @@ export default function WorkshopManagerDashboard() {
       >
         <article
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: "18px",
             padding: "20px",
-            border: "1px solid #ffd4d4",
-            boxShadow: "0 22px 45px rgba(209,0,0,0.08)",
+            border: "1px solid var(--surface-light)",
+            boxShadow: "0 22px 45px rgba(var(--primary-rgb),0.08)",
             display: "flex",
             flexDirection: "column",
             gap: "14px",
           }}
         >
           <div>
-            <h2 style={{ margin: 0, fontSize: "1.2rem", color: "#b10000" }}>Technician Focus</h2>
-            <p style={{ margin: "4px 0 0", color: "#6b7280" }}>Live callouts from the floor</p>
+            <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>Technician Focus</h2>
+            <p style={{ margin: "4px 0 0", color: "var(--info)" }}>Live callouts from the floor</p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {technicianFocus.map((item) => (
@@ -218,12 +218,12 @@ export default function WorkshopManagerDashboard() {
                   display: "flex",
                   flexDirection: "column",
                   gap: "4px",
-                  background: "#fff7f7",
+                  background: "var(--danger-surface)",
                 }}
               >
                 <strong style={{ color: item.color }}>{item.tech}</strong>
-                <span style={{ fontWeight: 600, color: "#111827" }}>{item.job}</span>
-                <small style={{ color: "#6b7280" }}>{item.next}</small>
+                <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{item.job}</span>
+                <small style={{ color: "var(--info)" }}>{item.next}</small>
               </div>
             ))}
           </div>
@@ -231,19 +231,19 @@ export default function WorkshopManagerDashboard() {
 
         <article
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: "18px",
             padding: "20px",
-            border: "1px solid #ffd4d4",
-            boxShadow: "0 22px 45px rgba(209,0,0,0.08)",
+            border: "1px solid var(--surface-light)",
+            boxShadow: "0 22px 45px rgba(var(--primary-rgb),0.08)",
             display: "flex",
             flexDirection: "column",
             gap: "12px",
           }}
         >
           <div>
-            <h2 style={{ margin: 0, fontSize: "1.1rem", color: "#b10000" }}>Bay Readiness</h2>
-            <p style={{ margin: "4px 0 0", color: "#6b7280" }}>Next actions per specialist bay</p>
+            <h2 style={{ margin: 0, fontSize: "1.1rem", color: "var(--primary-dark)" }}>Bay Readiness</h2>
+            <p style={{ margin: "4px 0 0", color: "var(--info)" }}>Next actions per specialist bay</p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {bayReadiness.map((bay) => (
@@ -253,15 +253,15 @@ export default function WorkshopManagerDashboard() {
                   padding: "12px 14px",
                   borderRadius: "14px",
                   border: `1px solid ${bay.tone}33`,
-                  background: "#fffafa",
+                  background: "var(--background)",
                   display: "flex",
                   flexDirection: "column",
                   gap: "4px",
                 }}
               >
                 <strong style={{ color: bay.tone }}>{bay.bay}</strong>
-                <span style={{ color: "#111827", fontWeight: 600 }}>{bay.status}</span>
-                <small style={{ color: "#6b7280" }}>{bay.action}</small>
+                <span style={{ color: "var(--accent-purple)", fontWeight: 600 }}>{bay.status}</span>
+                <small style={{ color: "var(--info)" }}>{bay.action}</small>
               </div>
             ))}
           </div>
@@ -270,21 +270,21 @@ export default function WorkshopManagerDashboard() {
 
       <section style={{ marginBottom: "32px" }}>
         <h2 style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "12px" }}>Pending Jobs</h2>
-        <div style={{ padding: "12px", backgroundColor: "#FFF0F0", borderRadius: "6px" }}>
+        <div style={{ padding: "12px", backgroundColor: "var(--surface-light)", borderRadius: "6px" }}>
           <p>{pendingJobs.length} vehicles are waiting for inspection.</p>
         </div>
       </section>
 
       <section style={{ marginBottom: "32px" }}>
         <h2 style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "12px" }}>Clocking Overview</h2>
-        <div style={{ padding: "12px", backgroundColor: "#FFF0F0", borderRadius: "6px" }}>
+        <div style={{ padding: "12px", backgroundColor: "var(--surface-light)", borderRadius: "6px" }}>
           <p>Technicians clocked in: {techsClockedIn} / {totalTechs}</p>
         </div>
       </section>
 
       <section style={{ marginBottom: "32px" }}>
         <h2 style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "12px" }}>Consumables</h2>
-        <div style={{ padding: "12px", backgroundColor: "#FFF0F0", borderRadius: "6px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+        <div style={{ padding: "12px", backgroundColor: "var(--surface-light)", borderRadius: "6px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
           <p style={{ margin: 0 }}>Review recent consumable orders and spend by month.</p>
           <button
             type="button"
@@ -293,11 +293,11 @@ export default function WorkshopManagerDashboard() {
               padding: "10px 18px",
               borderRadius: "10px",
               border: "none",
-              background: "linear-gradient(135deg, #d10000, #940000)",
-              color: "#fff",
+              background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+              color: "var(--surface)",
               fontWeight: 600,
               cursor: "pointer",
-              boxShadow: "0 12px 24px rgba(209,0,0,0.2)",
+              boxShadow: "0 12px 24px rgba(var(--primary-rgb),0.2)",
             }}
           >
             View Consumable Orders
@@ -307,7 +307,7 @@ export default function WorkshopManagerDashboard() {
 
       <section>
         <h2 style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "12px" }}>Important Notices</h2>
-        <div style={{ padding: "12px", backgroundColor: "#FFF0F0", borderRadius: "6px" }}>
+        <div style={{ padding: "12px", backgroundColor: "var(--surface-light)", borderRadius: "6px" }}>
           <p>Remember to review workshop safety guidelines.</p>
         </div>
       </section>
@@ -317,8 +317,8 @@ export default function WorkshopManagerDashboard() {
           <div style={modalCardStyle}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
               <div>
-                <h2 style={{ margin: 0, color: "#b10000" }}>Workshop Consumable Orders</h2>
-                <p style={{ margin: "6px 0 0", color: "#555" }}>
+                <h2 style={{ margin: 0, color: "var(--primary-dark)" }}>Workshop Consumable Orders</h2>
+                <p style={{ margin: "6px 0 0", color: "var(--grey-accent-dark)" }}>
                   Month view so you can see when each consumable was last ordered, quantities, and cost impact.
                 </p>
               </div>
@@ -330,7 +330,7 @@ export default function WorkshopManagerDashboard() {
                   background: "transparent",
                   fontSize: "1.2rem",
                   cursor: "pointer",
-                  color: "#b10000",
+                  color: "var(--primary-dark)",
                 }}
                 aria-label="Close consumables modal"
               >
@@ -339,7 +339,7 @@ export default function WorkshopManagerDashboard() {
             </div>
 
             <div style={{ marginTop: "20px", display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
-              <label htmlFor="consumable-month" style={{ fontWeight: 600, color: "#b10000" }}>
+              <label htmlFor="consumable-month" style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
                 Month
               </label>
               <select
@@ -349,7 +349,7 @@ export default function WorkshopManagerDashboard() {
                 style={{
                   padding: "8px 12px",
                   borderRadius: "10px",
-                  border: "1px solid #ffb3b3",
+                  border: "1px solid var(--danger)",
                   fontSize: "0.95rem",
                 }}
               >
@@ -359,7 +359,7 @@ export default function WorkshopManagerDashboard() {
                   </option>
                 ))}
               </select>
-              <span style={{ color: "#777", fontSize: "0.9rem" }}>
+              <span style={{ color: "var(--grey-accent)", fontSize: "0.9rem" }}>
                 Showing orders from {monthLabel(selectedMonth)}.
               </span>
             </div>
@@ -368,22 +368,22 @@ export default function WorkshopManagerDashboard() {
               <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 10px" }}>
                 <thead>
                   <tr>
-                    <th style={{ textAlign: "left", padding: "8px", color: "#a00000", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    <th style={{ textAlign: "left", padding: "8px", color: "var(--primary-dark)", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                       Name
                     </th>
-                    <th style={{ textAlign: "left", padding: "8px", color: "#a00000", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    <th style={{ textAlign: "left", padding: "8px", color: "var(--primary-dark)", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                       Last Ordered
                     </th>
-                    <th style={{ textAlign: "left", padding: "8px", color: "#a00000", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    <th style={{ textAlign: "left", padding: "8px", color: "var(--primary-dark)", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                       Avg. Order Gap
                     </th>
-                    <th style={{ textAlign: "left", padding: "8px", color: "#a00000", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    <th style={{ textAlign: "left", padding: "8px", color: "var(--primary-dark)", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                       Qty Ordered
                     </th>
-                    <th style={{ textAlign: "left", padding: "8px", color: "#a00000", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    <th style={{ textAlign: "left", padding: "8px", color: "var(--primary-dark)", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                       Total Cost
                     </th>
-                    <th style={{ textAlign: "left", padding: "8px", color: "#a00000", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    <th style={{ textAlign: "left", padding: "8px", color: "var(--primary-dark)", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                       Supplier
                     </th>
                   </tr>
@@ -391,7 +391,7 @@ export default function WorkshopManagerDashboard() {
                 <tbody>
                   {consumablesForMonth.length === 0 ? (
                     <tr>
-                      <td colSpan={6} style={{ padding: "16px", textAlign: "center", color: "#777" }}>
+                      <td colSpan={6} style={{ padding: "16px", textAlign: "center", color: "var(--grey-accent)" }}>
                         No consumable orders recorded for this month.
                       </td>
                     </tr>
@@ -400,13 +400,13 @@ export default function WorkshopManagerDashboard() {
                       const frequencyWeeks = (item.reorderFrequencyDays / 7).toFixed(1);
                       const totalCost = item.quantityPerOrder * item.unitCost;
                       return (
-                        <tr key={item.id} style={{ backgroundColor: "#fff7f7", borderRadius: "12px" }}>
-                          <td style={{ padding: "12px", fontWeight: 600, color: "#333" }}>{item.name}</td>
-                          <td style={{ padding: "12px", color: "#555" }}>{dayjs(item.lastOrderedDate).format("DD MMM YYYY")}</td>
-                          <td style={{ padding: "12px", color: "#555" }}>{frequencyWeeks} weeks</td>
-                          <td style={{ padding: "12px", color: "#555" }}>{item.quantityPerOrder}</td>
-                          <td style={{ padding: "12px", color: "#555" }}>£{totalCost.toFixed(2)}</td>
-                          <td style={{ padding: "12px", color: "#555" }}>{item.supplier}</td>
+                        <tr key={item.id} style={{ backgroundColor: "var(--danger-surface)", borderRadius: "12px" }}>
+                          <td style={{ padding: "12px", fontWeight: 600, color: "var(--text-secondary)" }}>{item.name}</td>
+                          <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>{dayjs(item.lastOrderedDate).format("DD MMM YYYY")}</td>
+                          <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>{frequencyWeeks} weeks</td>
+                          <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>{item.quantityPerOrder}</td>
+                          <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>£{totalCost.toFixed(2)}</td>
+                          <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>{item.supplier}</td>
                         </tr>
                       );
                     })

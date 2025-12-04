@@ -7,7 +7,7 @@ export default function EmployeeProfilePanel({ employee }) {
   if (!employee) {
     return (
       <SectionCard title="Employee Profile" subtitle="Select an employee to view their profile.">
-        <div style={{ color: "#6B7280", fontSize: "0.9rem" }}>
+        <div style={{ color: "var(--info)", fontSize: "0.9rem" }}>
           Employee details, documents, and employment information will appear here.
         </div>
       </SectionCard>
@@ -39,8 +39,8 @@ export default function EmployeeProfilePanel({ employee }) {
           <ProfileItem label="Emergency Contact" value={employee.emergencyContact} />
         </div>
         <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
-          <span style={{ fontWeight: 600, color: "#111827" }}>Address</span>
-          <span style={{ color: "#4B5563" }}>{employee.address}</span>
+          <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>Address</span>
+          <span style={{ color: "var(--info-dark)" }}>{employee.address}</span>
         </div>
       </SectionCard>
 
@@ -53,9 +53,9 @@ export default function EmployeeProfilePanel({ employee }) {
             style={{
               padding: "8px 14px",
               borderRadius: "999px",
-              border: "1px solid #CBD5F5",
+              border: "1px solid var(--accent-purple)",
               background: "white",
-              color: "#2563EB",
+              color: "var(--accent-purple)",
               fontWeight: 600,
               fontSize: "0.8rem",
             }}
@@ -74,12 +74,12 @@ export default function EmployeeProfilePanel({ employee }) {
                 justifyContent: "space-between",
                 padding: "10px 12px",
                 borderRadius: "12px",
-                border: "1px solid #E5E7EB",
+                border: "1px solid var(--accent-purple-surface)",
               }}
             >
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span style={{ fontWeight: 600, color: "#111827" }}>{doc.name}</span>
-                <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>
+                <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{doc.name}</span>
+                <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
                   {doc.type} • Uploaded {formatDate(doc.uploadedOn)}
                 </span>
               </div>
@@ -88,7 +88,7 @@ export default function EmployeeProfilePanel({ employee }) {
                 style={{
                   padding: "6px 12px",
                   borderRadius: "8px",
-                  border: "1px solid #D1D5DB",
+                  border: "1px solid var(--info)",
                   background: "white",
                   fontWeight: 600,
                   fontSize: "0.8rem",
@@ -107,8 +107,8 @@ export default function EmployeeProfilePanel({ employee }) {
 function ProfileItem({ label, value }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <span style={{ fontSize: "0.75rem", color: "#6B7280", fontWeight: 600 }}>{label}</span>
-      <span style={{ color: "#1F2937", fontWeight: 600 }}>{value || "—"}</span>
+      <span style={{ fontSize: "0.75rem", color: "var(--info)", fontWeight: 600 }}>{label}</span>
+      <span style={{ color: "var(--info-dark)", fontWeight: 600 }}>{value || "—"}</span>
     </div>
   );
 }

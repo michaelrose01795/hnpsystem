@@ -18,24 +18,24 @@ const pageWrapperStyle = {
 };
 
 const cardStyle = {
-  backgroundColor: "#ffffff", // White card background for clarity
+  backgroundColor: "var(--surface)", // White card background for clarity
   borderRadius: "16px", // Rounded corners for modern design
   padding: "20px", // Interior spacing for content
-  boxShadow: "0 18px 36px rgba(209,0,0,0.14)", // Soft red shadow to match brand
-  border: "1px solid #ffe1e1", // Subtle red border accent
+  boxShadow: "0 18px 36px rgba(var(--primary-rgb),0.14)", // Soft red shadow to match brand
+  border: "1px solid var(--surface-light)", // Subtle red border accent
 };
 
 const inputStyle = {
   width: "100%", // Inputs fill available width
   padding: "10px 12px", // Comfortable padding for data entry
   borderRadius: "10px", // Rounded inputs consistent with cards
-  border: "1px solid #ffb3b3", // Light red border accent
+  border: "1px solid var(--danger)", // Light red border accent
   fontSize: "0.95rem", // Legible input text size
 };
 
 const tableHeaderStyle = {
   textAlign: "left", // Left align headers for readability
-  color: "#a00000", // On-brand header colour
+  color: "var(--primary-dark)", // On-brand header colour
   fontSize: "0.8rem", // Smaller uppercase header text
   textTransform: "uppercase", // Uppercase for header emphasis
   letterSpacing: "0.08em", // Add tracking to uppercase text
@@ -44,24 +44,24 @@ const tableHeaderStyle = {
 
 const statusBadgeStyles = {
   pending: {
-    backgroundColor: "rgba(209,0,0,0.12)", // Pale red for pending requests
-    color: "#a00000", // Deep red text colour
-    border: "1px solid rgba(209,0,0,0.3)", // Border to define badge
+    backgroundColor: "rgba(var(--primary-rgb),0.12)", // Pale red for pending requests
+    color: "var(--primary-dark)", // Deep red text colour
+    border: "1px solid rgba(var(--primary-rgb),0.3)", // Border to define badge
   },
   urgent: {
-    backgroundColor: "rgba(255,172,0,0.18)", // Amber background for urgent requests
-    color: "#9a4b00", // Brown/orange text tone
-    border: "1px solid rgba(255,172,0,0.38)", // Amber border accent
+    backgroundColor: "rgba(var(--warning-rgb), 0.18)", // Amber background for urgent requests
+    color: "var(--warning-dark)", // Brown/orange text tone
+    border: "1px solid rgba(var(--warning-rgb), 0.38)", // Amber border accent
   },
   fulfilled: {
-    backgroundColor: "rgba(0,176,112,0.15)", // Green background for completed requests
-    color: "#006b44", // Deep green text tone
-    border: "1px solid rgba(0,176,112,0.32)", // Green border accent
+    backgroundColor: "rgba(var(--success-rgb), 0.15)", // Green background for completed requests
+    color: "var(--success-dark)", // Deep green text tone
+    border: "1px solid rgba(var(--success-rgb), 0.32)", // Green border accent
   },
   ordered: {
-    backgroundColor: "rgba(0,176,112,0.15)",
-    color: "#006b44",
-    border: "1px solid rgba(0,176,112,0.32)",
+    backgroundColor: "rgba(var(--success-rgb), 0.15)",
+    color: "var(--success-dark)",
+    border: "1px solid rgba(var(--success-rgb), 0.32)",
   },
 };
 
@@ -173,10 +173,10 @@ const TechConsumableRequestPage = () => {
       <Layout>
         <div style={{ padding: "40px", maxWidth: "720px", margin: "0 auto" }}>
           <div style={{ ...cardStyle, textAlign: "center" }}>
-            <h1 style={{ color: "#a00000", marginBottom: "16px" }}>
+            <h1 style={{ color: "var(--primary-dark)", marginBottom: "16px" }}>
               Technician Access Only
             </h1>
-            <p style={{ marginBottom: "16px", color: "#444" }}>
+            <p style={{ marginBottom: "16px", color: "var(--grey-accent-dark)" }}>
               This page is reserved for workshop technicians to request
               consumables. Please navigate back to your dashboard if this was in
               error.
@@ -187,8 +187,8 @@ const TechConsumableRequestPage = () => {
                 display: "inline-block",
                 padding: "10px 18px",
                 borderRadius: "999px",
-                background: "linear-gradient(135deg, #d10000, #940000)",
-                color: "#ffffff",
+                background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+                color: "var(--surface)",
                 fontWeight: 600,
                 textDecoration: "none",
               }}
@@ -207,10 +207,10 @@ const TechConsumableRequestPage = () => {
         <div style={{ ...cardStyle }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
-              <h1 style={{ margin: 0, fontSize: "1.6rem", color: "#b10000" }}>
+              <h1 style={{ margin: 0, fontSize: "1.6rem", color: "var(--primary-dark)" }}>
                 Request Workshop Consumables
               </h1>
-              <p style={{ marginTop: "6px", color: "#666" }}>
+              <p style={{ marginTop: "6px", color: "var(--grey-accent)" }}>
                 Submit consumable requirements to the workshop management team for
                 purchasing and replenishment.
               </p>
@@ -219,7 +219,7 @@ const TechConsumableRequestPage = () => {
 
           <form onSubmit={handleSubmit} style={{ marginTop: "20px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", alignItems: "end" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label htmlFor="partName" style={{ fontWeight: 600, color: "#b10000" }}>
+              <label htmlFor="partName" style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
                 Part Name
               </label>
               <input
@@ -235,7 +235,7 @@ const TechConsumableRequestPage = () => {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label htmlFor="quantity" style={{ fontWeight: 600, color: "#b10000" }}>
+              <label htmlFor="quantity" style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
                 Quantity Needed
               </label>
               <input
@@ -257,11 +257,11 @@ const TechConsumableRequestPage = () => {
                   padding: "12px 24px",
                   borderRadius: "12px",
                   border: "none",
-                  background: "linear-gradient(135deg, #d10000, #940000)",
-                  color: "#ffffff",
+                  background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+                  color: "var(--surface)",
                   fontWeight: 700,
                   cursor: "pointer",
-                  boxShadow: "0 16px 28px rgba(209,0,0,0.24)",
+                  boxShadow: "0 16px 28px rgba(var(--primary-rgb),0.24)",
                   width: "100%",
                 }}
               >
@@ -273,7 +273,7 @@ const TechConsumableRequestPage = () => {
 
         <div style={{ ...cardStyle }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-            <h2 style={{ margin: 0, fontSize: "1.2rem", color: "#b10000" }}>My Requests</h2>
+            <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>My Requests</h2>
             <input
               type="text"
               placeholder="Search requests"
@@ -283,10 +283,10 @@ const TechConsumableRequestPage = () => {
             />
           </div>
           {successMessage && (
-            <p style={{ margin: "0 0 12px", color: "#007a4e" }}>{successMessage}</p>
+            <p style={{ margin: "0 0 12px", color: "var(--success-dark)" }}>{successMessage}</p>
           )}
           {requestError && (
-            <p style={{ margin: "0 0 12px", color: "#a00000" }}>{requestError}</p>
+            <p style={{ margin: "0 0 12px", color: "var(--primary-dark)" }}>{requestError}</p>
           )}
 
           <div style={{ overflowX: "auto" }}>
@@ -302,7 +302,7 @@ const TechConsumableRequestPage = () => {
               </thead>
               <tbody>
                 {filteredRequests.map((request) => (
-                  <tr key={request.id} style={{ background: "#fff7f7", borderRadius: "12px" }}>
+                  <tr key={request.id} style={{ background: "var(--danger-surface)", borderRadius: "12px" }}>
                     <td style={{ padding: "12px" }}>
                       <span
                         style={{
@@ -320,9 +320,9 @@ const TechConsumableRequestPage = () => {
                         {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                       </span>
                     </td>
-                    <td style={{ padding: "12px", fontWeight: 600, color: "#333" }}>{request.itemName}</td>
-                    <td style={{ padding: "12px", color: "#555" }}>{request.quantity}</td>
-                    <td style={{ padding: "12px", color: "#555" }}>
+                    <td style={{ padding: "12px", fontWeight: 600, color: "var(--text-secondary)" }}>{request.itemName}</td>
+                    <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>{request.quantity}</td>
+                    <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
                       {request.requestedAt
                         ? new Date(request.requestedAt).toLocaleDateString("en-GB", {
                             day: "2-digit",
@@ -331,7 +331,7 @@ const TechConsumableRequestPage = () => {
                           })
                         : "—"}
                     </td>
-                    <td style={{ padding: "12px", color: "#555" }}>{request.requestedByName || "—"}</td>
+                    <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>{request.requestedByName || "—"}</td>
                   </tr>
                 ))}
               </tbody>

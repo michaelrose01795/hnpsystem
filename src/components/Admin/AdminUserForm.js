@@ -72,17 +72,17 @@ export default function AdminUserForm({ onCreated }) {
         background: "white",
         borderRadius: "16px",
         padding: "24px",
-        boxShadow: "0 16px 32px rgba(15, 23, 42, 0.08)",
+        boxShadow: "0 16px 32px rgba(var(--accent-purple-rgb), 0.08)",
         display: "flex",
         flexDirection: "column",
         gap: "18px",
       }}
     >
       <div>
-        <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#111827" }}>
+        <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "var(--accent-purple)" }}>
           Create Platform User
         </h2>
-        <p style={{ margin: "4px 0 0", color: "#6B7280" }}>
+        <p style={{ margin: "4px 0 0", color: "var(--info)" }}>
           Provision employees with access to the DMS. Uses the admin API to insert directly into Supabase.
         </p>
       </div>
@@ -148,24 +148,24 @@ export default function AdminUserForm({ onCreated }) {
           style={{
             background:
               message.type === "error"
-                ? "rgba(220,38,38,0.1)"
+                ? "rgba(var(--primary-rgb), 0.1)"
                 : message.type === "success"
-                ? "rgba(16,185,129,0.12)"
-                : "rgba(37, 99, 235, 0.1)",
+                ? "rgba(var(--info-rgb), 0.12)"
+                : "rgba(var(--accent-purple-rgb), 0.1)",
             border:
               message.type === "error"
-                ? "1px solid rgba(220,38,38,0.3)"
+                ? "1px solid rgba(var(--primary-rgb), 0.3)"
                 : message.type === "success"
-                ? "1px solid rgba(16,185,129,0.3)"
-                : "1px solid rgba(37, 99, 235, 0.2)",
+                ? "1px solid rgba(var(--info-rgb), 0.3)"
+                : "1px solid rgba(var(--accent-purple-rgb), 0.2)",
             borderRadius: "12px",
             padding: "12px",
             color:
               message.type === "error"
-                ? "#B91C1C"
+                ? "var(--danger)"
                 : message.type === "success"
-                ? "#047857"
-                : "#1D4ED8",
+                ? "var(--info-dark)"
+                : "var(--accent-purple)",
             fontWeight: 600,
           }}
         >
@@ -190,24 +190,24 @@ const labelStyle = {
   flexDirection: "column",
   gap: "6px",
   fontSize: "0.85rem",
-  color: "#374151",
+  color: "var(--info-dark)",
   fontWeight: 600,
 };
 
 const inputStyle = {
   borderRadius: "10px",
-  border: "1px solid #E5E7EB",
+  border: "1px solid var(--accent-purple-surface)",
   padding: "10px 12px",
   fontWeight: 500,
-  color: "#111827",
-  background: "#FFFFFF",
+  color: "var(--accent-purple)",
+  background: "var(--surface)",
 };
 
 const primaryButtonStyle = {
   padding: "10px 16px",
   borderRadius: "10px",
   border: "none",
-  background: "#1D4ED8",
+  background: "var(--accent-purple)",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",
@@ -216,9 +216,9 @@ const primaryButtonStyle = {
 const secondaryButtonStyle = {
   padding: "10px 16px",
   borderRadius: "10px",
-  border: "1px solid #CBD5F5",
+  border: "1px solid var(--accent-purple)",
   background: "white",
-  color: "#1D4ED8",
+  color: "var(--accent-purple)",
   fontWeight: 600,
   cursor: "pointer",
 };

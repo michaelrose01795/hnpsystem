@@ -359,7 +359,7 @@ export default function VHCPAGE() {
             top: "50%",
             transform: "translateY(-50%)",
             fontSize: "18px",
-            color: "#d1d5db",
+            color: "var(--info)",
           }}
         >
           →
@@ -391,12 +391,12 @@ export default function VHCPAGE() {
                   width: "64px",
                   height: "64px",
                   borderRadius: "50%",
-                  border: "6px solid #fde8e8",
-                  borderTopColor: "#d10000",
+                  border: "6px solid var(--danger-surface)",
+                  borderTopColor: "var(--primary)",
                   animation: "spin 1s linear infinite",
                 }}
               />
-              <p style={{ color: "#6b7280", fontSize: "15px", fontWeight: "600" }}>
+              <p style={{ color: "var(--info)", fontSize: "15px", fontWeight: "600" }}>
                 Loading VHC workspace...
               </p>
             </div>
@@ -475,12 +475,12 @@ export default function VHCPAGE() {
                   alignSelf: "flex-start",
                   padding: "8px 14px",
                   borderRadius: "12px",
-                  border: "1px solid #e5e7eb",
-                  background: "#fff",
+                  border: "1px solid var(--accent-purple-surface)",
+                  background: "var(--surface)",
                   color: themeConfig.palette.accent,
                   fontWeight: 700,
                   fontSize: "12px",
-                  boxShadow: "0 6px 14px rgba(0,0,0,0.06)",
+                  boxShadow: "0 6px 14px rgba(var(--shadow-rgb),0.06)",
                   cursor: "pointer",
                 }}
               >
@@ -586,7 +586,7 @@ export default function VHCPAGE() {
             style={{
               position: "fixed",
               inset: 0,
-              background: "rgba(15,23,42,0.55)",
+              background: "rgba(var(--shadow-rgb),0.55)",
               backdropFilter: "blur(4px)",
               display: "flex",
               alignItems: "center",
@@ -600,10 +600,10 @@ export default function VHCPAGE() {
                 width: "min(720px, 100%)",
                 maxHeight: "90vh",
                 overflow: "hidden",
-                background: "#fff",
+                background: "var(--surface)",
                 borderRadius: "20px",
-                border: "1px solid #e5e7eb",
-                boxShadow: "0 20px 50px rgba(0,0,0,0.18)",
+                border: "1px solid var(--accent-purple-surface)",
+                boxShadow: "0 20px 50px rgba(var(--shadow-rgb),0.18)",
                 display: "flex",
                 flexDirection: "column",
               }}
@@ -614,13 +614,13 @@ export default function VHCPAGE() {
                   justifyContent: "space-between",
                   alignItems: "center",
                   padding: "16px 20px",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid var(--accent-purple-surface)",
                   gap: "12px",
                 }}
               >
                 <div>
-                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#111827" }}>Concern Summary</h3>
-                  <p style={{ margin: 0, color: "#6b7280", fontSize: "13px" }}>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "var(--accent-purple)" }}>Concern Summary</h3>
+                  <p style={{ margin: 0, color: "var(--info)", fontSize: "13px" }}>
                     Quick snapshot of reported issues across the VHC.
                   </p>
                 </div>
@@ -629,8 +629,8 @@ export default function VHCPAGE() {
                   onClick={() => setShowSummaryModal(false)}
                   style={{
                     border: "none",
-                    background: "#f3f4f6",
-                    color: "#111827",
+                    background: "var(--info-surface)",
+                    color: "var(--accent-purple)",
                     padding: "8px 12px",
                     borderRadius: "10px",
                     cursor: "pointer",
@@ -641,8 +641,8 @@ export default function VHCPAGE() {
                 </button>
               </div>
 
-              <div style={{ padding: "12px 20px", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: "10px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#374151", cursor: "pointer" }}>
+              <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--accent-purple-surface)", display: "flex", alignItems: "center", gap: "10px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--info-dark)", cursor: "pointer" }}>
                   <input
                     type="checkbox"
                     checked={showGreenSummary}
@@ -658,10 +658,10 @@ export default function VHCPAGE() {
                   const items = summaryBuckets[statusKey] || [];
                   const colors =
                     statusKey === "red"
-                      ? { bg: "#fef2f2", text: "#b91c1c", badge: "#fee2e2" }
+                      ? { bg: "var(--danger-surface)", text: "var(--danger)", badge: "var(--danger-surface)" }
                       : statusKey === "amber"
-                      ? { bg: "#fffbeb", text: "#92400e", badge: "#fef3c7" }
-                      : { bg: "#ecfdf3", text: "#065f46", badge: "#d1fae5" };
+                      ? { bg: "var(--warning-surface)", text: "var(--danger-dark)", badge: "var(--warning-surface)" }
+                      : { bg: "var(--success-surface)", text: "var(--info-dark)", badge: "var(--success)" };
                   return (
                     <div key={statusKey} style={{ background: colors.bg, borderRadius: "14px", border: `1px solid ${colors.badge}`, padding: "12px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
@@ -679,15 +679,15 @@ export default function VHCPAGE() {
                         </span>
                       </div>
                       {items.length === 0 ? (
-                        <p style={{ margin: 0, color: "#6b7280", fontSize: "13px" }}>No items.</p>
+                        <p style={{ margin: 0, color: "var(--info)", fontSize: "13px" }}>No items.</p>
                       ) : (
                         <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
                           {items.map((item, idx) => (
                             <li
                               key={`${statusKey}-${idx}`}
                               style={{
-                                background: "#fff",
-                                border: "1px solid #e5e7eb",
+                                background: "var(--surface)",
+                                border: "1px solid var(--accent-purple-surface)",
                                 borderRadius: "12px",
                                 padding: "10px 12px",
                                 display: "flex",
@@ -696,11 +696,11 @@ export default function VHCPAGE() {
                               }}
                             >
                               <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
-                                <span style={{ fontWeight: 700, fontSize: "14px", color: "#111827" }}>
+                                <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)" }}>
                                   {item.section}
                                 </span>
                               </div>
-                              <span style={{ color: "#374151", fontSize: "13px" }}>{item.text}</span>
+                              <span style={{ color: "var(--info-dark)", fontSize: "13px" }}>{item.text}</span>
                             </li>
                           ))}
                         </ul>
@@ -768,7 +768,7 @@ export default function VHCPAGE() {
     <div
       style={{
         padding: isEmbeddedView ? "16px" : "0",
-        background: isEmbeddedView ? "#f8fafc" : "transparent",
+        background: isEmbeddedView ? "var(--info-surface)" : "transparent",
         minHeight: isEmbeddedView ? "100vh" : "auto",
       }}
     >

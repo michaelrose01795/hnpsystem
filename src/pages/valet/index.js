@@ -116,11 +116,11 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
   return (
     <div
       style={{
-        border: "1px solid #ffe5e5",
+        border: "1px solid var(--surface-light)",
         padding: "16px 20px",
         borderRadius: "12px",
         backgroundColor: "white",
-        boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+        boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
@@ -147,7 +147,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
             style={{
               fontSize: "18px",
               fontWeight: "700",
-              color: "#1a1a1a",
+              color: "var(--text-primary)",
             }}
           >
             {job.reg || "N/A"}
@@ -156,22 +156,22 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
             style={{
               fontSize: "14px",
               fontWeight: "600",
-              color: "#d10000",
+              color: "var(--primary)",
             }}
           >
             {job.jobNumber || "No Job Number"}
           </span>
         </div>
-        <span style={{ fontSize: "14px", color: "#555" }}>
+        <span style={{ fontSize: "14px", color: "var(--grey-accent-dark)" }}>
           {job.makeModel || "Unknown Vehicle"}
         </span>
-        <span style={{ fontSize: "13px", color: "#888" }}>
+        <span style={{ fontSize: "13px", color: "var(--grey-accent-light)" }}>
           {job.customer || "No customer assigned"}
         </span>
         <span
           style={{
             fontSize: "12px",
-            color: "#999",
+            color: "var(--grey-accent-light)",
           }}
         >
           Status: {job.status || "N/A"}
@@ -199,7 +199,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
               alignItems: "center",
               gap: "8px",
               fontSize: "13px",
-              color: "#444",
+              color: "var(--grey-accent-dark)",
               fontWeight: "600",
               cursor: "pointer",
             }}
@@ -222,7 +222,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
 
       <div style={{ textAlign: "right", minWidth: "160px" }}>
         {isSaving ? (
-          <span style={{ fontSize: "12px", color: "#d10000" }}>Saving…</span>
+          <span style={{ fontSize: "12px", color: "var(--primary)" }}>Saving…</span>
         ) : checklist.updatedAt ? (
           <div
             style={{
@@ -230,7 +230,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
               flexDirection: "column",
               gap: "4px",
               fontSize: "12px",
-              color: "#666",
+              color: "var(--grey-accent)",
             }}
           >
             <span>Updated by {checklist.updatedBy || "Unknown"}</span>
@@ -244,7 +244,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
             </span>
           </div>
         ) : (
-          <span style={{ fontSize: "12px", color: "#bbb" }}>
+          <span style={{ fontSize: "12px", color: "var(--background)" }}>
             No valet updates yet
           </span>
         )}
@@ -407,7 +407,7 @@ export default function ValetDashboard() {
     return (
       <Layout>
         <div style={{ padding: "24px" }}>
-          <p style={{ color: "#d10000", fontWeight: 600 }}>
+          <p style={{ color: "var(--primary)", fontWeight: 600 }}>
             You must be logged in to view valet jobs.
           </p>
         </div>
@@ -419,7 +419,7 @@ export default function ValetDashboard() {
     return (
       <Layout>
         <div style={{ padding: "24px" }}>
-          <p style={{ color: "#d10000", fontWeight: 600 }}>
+          <p style={{ color: "var(--primary)", fontWeight: 600 }}>
             You do not have access to the valet dashboard.
           </p>
         </div>
@@ -462,11 +462,11 @@ export default function ValetDashboard() {
                 minWidth: "240px",
                 padding: "10px 14px",
                 borderRadius: "8px",
-                border: "1px solid #e5e5e5",
+                border: "1px solid var(--surface-light)",
                 fontSize: "14px",
               }}
             />
-            <span style={{ fontSize: "14px", color: "#666" }}>
+            <span style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
               Showing {filteredJobs.length} job
               {filteredJobs.length === 1 ? "" : "s"}
             </span>
@@ -476,8 +476,8 @@ export default function ValetDashboard() {
               style={{
                 padding: "12px 16px",
                 borderRadius: "8px",
-                backgroundColor: "#fee2e2",
-                color: "#b91c1c",
+                backgroundColor: "var(--danger-surface)",
+                color: "var(--danger)",
                 fontSize: "14px",
                 fontWeight: 600,
               }}
@@ -495,7 +495,7 @@ export default function ValetDashboard() {
               alignItems: "center",
               padding: "60px 0",
               fontSize: "16px",
-              color: "#666",
+              color: "var(--grey-accent)",
             }}
           >
             Loading valet jobs…
@@ -505,7 +505,7 @@ export default function ValetDashboard() {
             style={{
               padding: "60px 0",
               textAlign: "center",
-              color: "#888",
+              color: "var(--grey-accent-light)",
               fontSize: "16px",
             }}
           >

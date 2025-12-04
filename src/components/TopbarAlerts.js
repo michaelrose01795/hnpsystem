@@ -2,10 +2,10 @@ import React from "react";
 import { useAlerts } from "@/context/AlertContext";
 
 const toneStyles = {
-  success: { bg: "linear-gradient(135deg,#22c55e,#15803d)", text: "#ffffff" },
-  error: { bg: "linear-gradient(135deg,#ef4444,#991b1b)", text: "#ffffff" },
-  warning: { bg: "linear-gradient(135deg,#f97316,#c2410c)", text: "#ffffff" },
-  info: { bg: "linear-gradient(135deg,#38bdf8,#0ea5e9)", text: "#0f172a" },
+  success: { bg: "linear-gradient(135deg,var(--success),var(--success-dark))", text: "var(--surface)" },
+  error: { bg: "linear-gradient(135deg,var(--danger),var(--danger))", text: "var(--surface)" },
+  warning: { bg: "linear-gradient(135deg,var(--danger),var(--danger))", text: "var(--surface)" },
+  info: { bg: "linear-gradient(135deg,var(--info),var(--info))", text: "var(--accent-purple)" },
 };
 
 const getTone = (type) => toneStyles[type] || toneStyles.info;
@@ -28,7 +28,7 @@ export function AlertBadge() {
         color: tone.text,
         fontSize: "0.75rem",
         fontWeight: 600,
-        boxShadow: "0 6px 12px rgba(15,23,42,0.15)",
+        boxShadow: "0 6px 12px rgba(var(--shadow-rgb),0.15)",
         maxWidth: "220px",
         whiteSpace: "nowrap",
         overflow: "hidden",
@@ -67,7 +67,7 @@ export default function TopbarAlerts() {
               padding: "12px 14px",
               background: tone.bg,
               color: tone.text,
-              boxShadow: "0 12px 30px rgba(15,23,42,0.2)",
+              boxShadow: "0 12px 30px rgba(var(--shadow-rgb),0.2)",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -80,7 +80,7 @@ export default function TopbarAlerts() {
               onClick={() => dismissAlert(alert.id)}
               style={{
                 border: "none",
-                background: "rgba(255,255,255,0.15)",
+                background: "rgba(var(--surface-rgb), 0.15)",
                 color: tone.text,
                 borderRadius: "999px",
                 width: "26px",

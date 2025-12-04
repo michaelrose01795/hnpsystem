@@ -104,8 +104,8 @@ export default function LoginPage() {
         <div className="w-full max-w-sm mx-auto">
           <Section
             title="Login"
-            bgColor="#ffffff"
-            textColor="#0f172a"
+            bgColor="var(--surface)"
+            textColor="var(--accent-purple)"
             className="border border-slate-200/70 shadow-xl ring-1 ring-black/5 rounded-3xl"
           >
             <div className="space-y-6">
@@ -160,8 +160,8 @@ export default function LoginPage() {
         <div className="w-full max-w-3xl mx-auto">
           <Section
             title="Developer Login"
-            bgColor="#ffffff"
-            textColor="#0f172a"
+            bgColor="var(--surface)"
+            textColor="var(--accent-purple)"
             className="border border-slate-200/70 shadow-lg ring-1 ring-black/5"
           >
             <div className="space-y-6">

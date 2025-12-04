@@ -17,10 +17,10 @@ const containerStyle = {
 
 const sectionCardStyle = {
   borderRadius: "16px",
-  background: "#fff",
-  border: "1px solid #ffe0e0",
+  background: "var(--surface)",
+  border: "1px solid var(--surface-light)",
   padding: "20px",
-  boxShadow: "0 18px 36px rgba(0,0,0,0.06)",
+  boxShadow: "0 18px 36px rgba(var(--shadow-rgb),0.06)",
   height: "100%",
 };
 
@@ -28,7 +28,7 @@ const sectionTitleStyle = {
   fontSize: "0.95rem",
   fontWeight: 700,
   letterSpacing: "0.05em",
-  color: "#a00000",
+  color: "var(--primary-dark)",
   marginBottom: "14px",
   textTransform: "uppercase",
 };
@@ -39,25 +39,25 @@ const performanceTableStyle = {
 };
 
 const STATUS_COLOR_MAP = {
-  waiting_authorisation: { background: "rgba(251,191,36,0.2)", color: "#92400e" },
-  awaiting_stock: { background: "rgba(254,240,138,0.4)", color: "#92400e" },
-  on_order: { background: "rgba(191,219,254,0.6)", color: "#1d4ed8" },
-  pre_picked: { background: "rgba(221,214,254,0.6)", color: "#6d28d9" },
-  stock: { background: "rgba(209,250,229,0.8)", color: "#065f46" },
-  pending: { background: "rgba(229,231,235,0.8)", color: "#374151" },
-  allocated: { background: "rgba(186,230,253,0.8)", color: "#0369a1" },
-  picked: { background: "rgba(199,210,254,0.8)", color: "#3730a3" },
-  fitted: { background: "rgba(209,250,229,0.8)", color: "#065f46" },
+  waiting_authorisation: { background: "rgba(var(--warning-rgb), 0.2)", color: "var(--danger-dark)" },
+  awaiting_stock: { background: "rgba(var(--warning-rgb), 0.4)", color: "var(--danger-dark)" },
+  on_order: { background: "rgba(var(--info-rgb), 0.6)", color: "var(--accent-purple)" },
+  pre_picked: { background: "rgba(var(--accent-purple-rgb), 0.6)", color: "var(--accent-purple)" },
+  stock: { background: "rgba(var(--success-rgb), 0.8)", color: "var(--info-dark)" },
+  pending: { background: "rgba(var(--grey-accent-rgb), 0.8)", color: "var(--info-dark)" },
+  allocated: { background: "rgba(var(--info-rgb), 0.8)", color: "var(--info-dark)" },
+  picked: { background: "rgba(var(--accent-purple-rgb), 0.8)", color: "var(--accent-purple)" },
+  fitted: { background: "rgba(var(--success-rgb), 0.8)", color: "var(--info-dark)" },
 };
 
 const SOURCE_META = {
-  vhc_red: { label: "VHC Red", background: "rgba(248,113,113,0.2)", color: "#991b1b" },
-  vhc_amber: { label: "VHC Amber", background: "rgba(251,191,36,0.25)", color: "#92400e" },
-  vhc: { label: "VHC", background: "rgba(248,113,113,0.15)", color: "#b91c1c" },
-  vhc_auto: { label: "VHC Auto-Order", background: "rgba(190,24,93,0.15)", color: "#9d174d" },
-  tech_request: { label: "Tech Request", background: "rgba(59,130,246,0.18)", color: "#1d4ed8" },
-  parts_workspace: { label: "Manual", background: "rgba(148,163,184,0.3)", color: "#475569" },
-  manual: { label: "Manual", background: "rgba(148,163,184,0.3)", color: "#475569" },
+  vhc_red: { label: "VHC Red", background: "rgba(var(--danger-rgb), 0.2)", color: "var(--danger)" },
+  vhc_amber: { label: "VHC Amber", background: "rgba(var(--warning-rgb), 0.25)", color: "var(--danger-dark)" },
+  vhc: { label: "VHC", background: "rgba(var(--danger-rgb), 0.15)", color: "var(--danger)" },
+  vhc_auto: { label: "VHC Auto-Order", background: "rgba(var(--danger-rgb), 0.15)", color: "var(--danger)" },
+  tech_request: { label: "Tech Request", background: "rgba(var(--info-rgb), 0.18)", color: "var(--accent-purple)" },
+  parts_workspace: { label: "Manual", background: "rgba(var(--grey-accent-rgb), 0.3)", color: "var(--info-dark)" },
+  manual: { label: "Manual", background: "rgba(var(--grey-accent-rgb), 0.3)", color: "var(--info-dark)" },
 };
 
 const EMPTY_PIPELINE_SUMMARY = summarizePartsPipeline([]);
@@ -67,7 +67,7 @@ const OPEN_REQUEST_STATUSES = ["waiting_authorisation", "pending", "awaiting_sto
 const formatStatusLabel = (status) =>
   status ? status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "Unknown";
 
-const resolveStatusStyles = (status) => STATUS_COLOR_MAP[status] || { background: "rgba(229,231,235,0.8)", color: "#374151" };
+const resolveStatusStyles = (status) => STATUS_COLOR_MAP[status] || { background: "rgba(var(--grey-accent-rgb), 0.8)", color: "var(--info-dark)" };
 
 const resolveSourceMeta = (origin = "") => {
   const normalized = typeof origin === "string" ? origin.toLowerCase() : "";
@@ -379,7 +379,7 @@ export default function PartsManagerDashboard() {
   if (!isManager) {
     return (
       <Layout>
-        <div style={{ padding: "48px", textAlign: "center", color: "#a00000" }}>
+        <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
           Only the parts manager can view this dashboard.
         </div>
       </Layout>
@@ -389,11 +389,11 @@ export default function PartsManagerDashboard() {
   return (
     <Layout>
       {loading ? (
-        <div style={{ padding: "48px", textAlign: "center", color: "#a00000" }}>
+        <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
           Loading parts manager dashboard…
         </div>
       ) : error ? (
-        <div style={{ padding: "48px", textAlign: "center", color: "#a00000" }}>{error}</div>
+        <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>{error}</div>
       ) : (
         <>
           <PartsOpsDashboard
@@ -417,22 +417,22 @@ export default function PartsManagerDashboard() {
                   style={{
                     padding: "10px 12px",
                     borderRadius: "12px",
-                    border: "1px solid rgba(209,0,0,0.2)",
-                    background: "rgba(255, 228, 228, 0.4)",
+                    border: "1px solid rgba(var(--primary-rgb),0.2)",
+                    background: "rgba(var(--danger-rgb), 0.4)",
                     minHeight: "100px",
                   }}
                 >
-                  <div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#d10000" }}>
+                  <div style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--primary)" }}>
                     {stage.count}
                   </div>
                   <div style={{ fontWeight: 600 }}>{stage.label}</div>
-                  <p style={{ margin: "6px 0 0 0", fontSize: "0.8rem", color: "#555" }}>
+                  <p style={{ margin: "6px 0 0 0", fontSize: "0.8rem", color: "var(--grey-accent-dark)" }}>
                     {stage.description}
                   </p>
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: "12px", fontSize: "0.9rem", color: "#57534e" }}>
+            <div style={{ marginTop: "12px", fontSize: "0.9rem", color: "var(--grey-accent-dark)" }}>
               {pipelineSummary.totalCount} part line
               {pipelineSummary.totalCount === 1 ? "" : "s"} currently tracked in the pipeline.
             </div>
@@ -444,7 +444,7 @@ export default function PartsManagerDashboard() {
                 <div style={sectionTitleStyle}>Queue Snapshot</div>
                 <table style={performanceTableStyle}>
                   <thead>
-                    <tr style={{ textAlign: "left", color: "#777", fontSize: "0.85rem" }}>
+                    <tr style={{ textAlign: "left", color: "var(--grey-accent)", fontSize: "0.85rem" }}>
                       <th style={{ paddingBottom: "10px" }}>Job</th>
                       <th style={{ paddingBottom: "10px" }}>Delivery</th>
                       <th style={{ paddingBottom: "10px" }}>Reg</th>
@@ -461,19 +461,19 @@ export default function PartsManagerDashboard() {
                       return (
                         <tr
                           key={`${row.jobNumber}-${row.advisor}-${row.jobId}`}
-                          style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}
+                          style={{ borderTop: "1px solid rgba(var(--shadow-rgb),0.06)" }}
                         >
                           <td style={{ padding: "12px 0" }}>{row.jobNumber}</td>
                           <td style={{ padding: "12px 0" }}>
                             {deliveryInfo ? (
                               <div>
                                 <div style={{ fontWeight: 600 }}>Stop {deliveryInfo.stop_number}</div>
-                                <div style={{ fontSize: "0.8rem", color: "#555" }}>
+                                <div style={{ fontSize: "0.8rem", color: "var(--grey-accent-dark)" }}>
                                   {deliveryDate ? new Date(deliveryDate).toLocaleDateString() : "Delivery scheduled"}
                                 </div>
                               </div>
                             ) : (
-                              <span style={{ color: "#6b7280" }}>None</span>
+                              <span style={{ color: "var(--info)" }}>None</span>
                             )}
                             {needsSchedule && (
                               <button
@@ -482,9 +482,9 @@ export default function PartsManagerDashboard() {
                                 style={{
                                   marginTop: "6px",
                                   borderRadius: "8px",
-                                  border: "1px solid #2563eb",
-                                  background: "#fff",
-                                  color: "#2563eb",
+                                  border: "1px solid var(--accent-purple)",
+                                  background: "var(--surface)",
+                                  color: "var(--accent-purple)",
                                   padding: "4px 10px",
                                   fontWeight: 600,
                                   cursor: "pointer",
@@ -512,11 +512,11 @@ export default function PartsManagerDashboard() {
                   {dashboardData.teamAvailability.map((bucket) => (
                     <div
                       key={bucket.name}
-                      style={{ padding: "10px 0", borderBottom: "1px solid rgba(0,0,0,0.06)" }}
+                      style={{ padding: "10px 0", borderBottom: "1px solid rgba(var(--shadow-rgb),0.06)" }}
                     >
                       <div style={{ fontWeight: 600 }}>{bucket.name}</div>
-                      <div style={{ fontSize: "0.85rem", color: "#666" }}>{bucket.status}</div>
-                      <div style={{ fontSize: "0.8rem", color: "#a00000", marginTop: "4px" }}>{bucket.window}</div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--grey-accent)" }}>{bucket.status}</div>
+                      <div style={{ fontSize: "0.8rem", color: "var(--primary-dark)", marginTop: "4px" }}>{bucket.window}</div>
                     </div>
                   ))}
                 </div>
@@ -524,10 +524,10 @@ export default function PartsManagerDashboard() {
                 <div style={sectionCardStyle}>
                   <div style={sectionTitleStyle}>Focus Items</div>
                   {dashboardData.focusItems.map((item) => (
-                    <div key={item.title} style={{ padding: "10px 0", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+                    <div key={item.title} style={{ padding: "10px 0", borderBottom: "1px solid rgba(var(--shadow-rgb),0.06)" }}>
                       <div style={{ fontWeight: 600 }}>{item.title}</div>
-                      <div style={{ color: "#666", fontSize: "0.85rem" }}>{item.detail}</div>
-                      <div style={{ fontSize: "0.8rem", color: "#a00000", marginTop: "4px" }}>{item.owner}</div>
+                      <div style={{ color: "var(--grey-accent)", fontSize: "0.85rem" }}>{item.detail}</div>
+                      <div style={{ fontSize: "0.8rem", color: "var(--primary-dark)", marginTop: "4px" }}>{item.owner}</div>
                     </div>
                   ))}
                 </div>
@@ -538,7 +538,7 @@ export default function PartsManagerDashboard() {
               <div style={sectionTitleStyle}>Top Queue Lines</div>
               <table style={performanceTableStyle}>
                 <thead>
-                  <tr style={{ textAlign: "left", color: "#777", fontSize: "0.85rem" }}>
+                  <tr style={{ textAlign: "left", color: "var(--grey-accent)", fontSize: "0.85rem" }}>
                     <th style={{ paddingBottom: "10px" }}>Line</th>
                     <th style={{ paddingBottom: "10px" }}>Supplier</th>
                     <th style={{ paddingBottom: "10px" }}>Status</th>
@@ -547,7 +547,7 @@ export default function PartsManagerDashboard() {
                 </thead>
                 <tbody>
                   {teamPerformance.map((row) => (
-                    <tr key={row.name} style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+                    <tr key={row.name} style={{ borderTop: "1px solid rgba(var(--shadow-rgb),0.06)" }}>
                       <td style={{ padding: "12px 0" }}>{row.name}</td>
                       <td style={{ padding: "12px 0" }}>{row.accuracy}</td>
                       <td style={{ padding: "12px 0" }}>{row.fillRate}</td>
@@ -561,11 +561,11 @@ export default function PartsManagerDashboard() {
             <div style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Low Stock Parts Overview</div>
               {lowStockRows.length === 0 ? (
-                <div style={{ color: "#666" }}>No low stock parts currently.</div>
+                <div style={{ color: "var(--grey-accent)" }}>No low stock parts currently.</div>
               ) : (
                 <table style={performanceTableStyle}>
                   <thead>
-                    <tr style={{ textAlign: "left", color: "#777", fontSize: "0.85rem" }}>
+                    <tr style={{ textAlign: "left", color: "var(--grey-accent)", fontSize: "0.85rem" }}>
                       <th style={{ paddingBottom: "10px" }}>Part</th>
                       <th style={{ paddingBottom: "10px" }}>Supplier</th>
                       <th style={{ paddingBottom: "10px" }}>Cost</th>
@@ -579,7 +579,7 @@ export default function PartsManagerDashboard() {
                   </thead>
                   <tbody>
                     {lowStockRows.map((part) => (
-                      <tr key={part.id} style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+                      <tr key={part.id} style={{ borderTop: "1px solid rgba(var(--shadow-rgb),0.06)" }}>
                         <td style={{ padding: "12px 0" }}>
                           <div style={{ fontWeight: 600 }}>
                             {part.partNumber} · {part.name}
@@ -603,11 +603,11 @@ export default function PartsManagerDashboard() {
           <div style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Tech Requests</div>
             {techRequests.length === 0 ? (
-              <div style={{ color: "#666" }}>No open technician requests.</div>
+              <div style={{ color: "var(--grey-accent)" }}>No open technician requests.</div>
             ) : (
               <table style={performanceTableStyle}>
                   <thead>
-                    <tr style={{ textAlign: "left", color: "#777", fontSize: "0.85rem" }}>
+                    <tr style={{ textAlign: "left", color: "var(--grey-accent)", fontSize: "0.85rem" }}>
                       <th style={{ paddingBottom: "10px" }}>Job</th>
                       <th style={{ paddingBottom: "10px" }}>Request</th>
                       <th style={{ paddingBottom: "10px" }}>Qty</th>
@@ -621,12 +621,12 @@ export default function PartsManagerDashboard() {
                       const sourceMeta = resolveSourceMeta(request.source);
                       const statusMeta = resolveStatusStyles(request.status || "waiting_authorisation");
                       return (
-                        <tr key={request.request_id} style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+                        <tr key={request.request_id} style={{ borderTop: "1px solid rgba(var(--shadow-rgb),0.06)" }}>
                           <td style={{ padding: "12px 0" }}>{request.job?.job_number || `#${request.job_id}`}</td>
                           <td style={{ padding: "12px 0" }}>
                             <div style={{ fontWeight: 600 }}>{request.description || "Part request"}</div>
                             {request.part ? (
-                              <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+                              <div style={{ fontSize: "0.8rem", color: "var(--info)" }}>
                                 {request.part.part_number} · {request.part.name}
                               </div>
                             ) : null}

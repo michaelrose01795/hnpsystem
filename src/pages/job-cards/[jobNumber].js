@@ -1005,12 +1005,12 @@ export default function JobCardDetailPage() {
           <div style={{
             width: "60px",
             height: "60px",
-            border: "4px solid #f3f3f3",
-            borderTop: "4px solid #d10000",
+            border: "4px solid var(--surface)",
+            borderTop: "4px solid var(--primary)",
             borderRadius: "50%",
             animation: "spin 1s linear infinite"
           }}></div>
-          <p style={{ color: "#666" }}>Loading job card #{jobNumber}...</p>
+          <p style={{ color: "var(--grey-accent)" }}>Loading job card #{jobNumber}...</p>
           <style jsx>{`
             @keyframes spin {
               0% { transform: rotate(0deg); }
@@ -1036,10 +1036,10 @@ export default function JobCardDetailPage() {
           minHeight: "60vh"
         }}>
           <div style={{ fontSize: "60px", marginBottom: "20px" }}>⚠️</div>
-          <h2 style={{ color: "#d10000", marginBottom: "10px" }}>
+          <h2 style={{ color: "var(--primary)", marginBottom: "10px" }}>
             {error || "Job card not found"}
           </h2>
-          <p style={{ color: "#666", marginBottom: "30px" }}>
+          <p style={{ color: "var(--grey-accent)", marginBottom: "30px" }}>
             Job #{jobNumber} could not be loaded from the database.
           </p>
           <div style={{ display: "flex", gap: "10px" }}>
@@ -1047,7 +1047,7 @@ export default function JobCardDetailPage() {
               onClick={() => router.push("/job-cards/view")}
               style={{
                 padding: "12px 24px",
-                backgroundColor: "#d10000",
+                backgroundColor: "var(--primary)",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
@@ -1056,8 +1056,8 @@ export default function JobCardDetailPage() {
                 fontSize: "14px",
                 transition: "background-color 0.2s"
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = "#b00000"}
-              onMouseLeave={(e) => e.target.style.backgroundColor = "#d10000"}
+              onMouseEnter={(e) => e.target.style.backgroundColor = "var(--primary-dark)"}
+              onMouseLeave={(e) => e.target.style.backgroundColor = "var(--primary)"}
             >
               View All Job Cards
             </button>
@@ -1122,9 +1122,9 @@ export default function JobCardDetailPage() {
               marginBottom: "16px",
               padding: "12px 16px",
               borderRadius: "12px",
-              border: "1px solid #fcd9d7",
-              backgroundColor: "#fff4f4",
-              color: "#7c2d12",
+              border: "1px solid var(--danger-surface)",
+              backgroundColor: "var(--surface-light)",
+              color: "var(--danger-dark)",
               fontSize: "0.95rem",
               fontWeight: 600,
             }}
@@ -1142,15 +1142,15 @@ export default function JobCardDetailPage() {
           padding: "20px",
           backgroundColor: "white",
           borderRadius: "12px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-          border: "1px solid #e0e0e0",
+          boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+          border: "1px solid var(--surface-light)",
           flexShrink: 0
         }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
               <h1 style={{ 
                 margin: 0, 
-                color: "#d10000", 
+                color: "var(--primary)", 
                 fontSize: "28px", 
                 fontWeight: "700" 
               }}>
@@ -1159,13 +1159,13 @@ export default function JobCardDetailPage() {
               <span style={{
                 padding: "6px 14px",
                 backgroundColor: 
-                  jobData.status === "Open" ? "#e8f5e9" : 
-                  jobData.status === "Complete" ? "#e3f2fd" : 
-                  "#fff3e0",
+                  jobData.status === "Open" ? "var(--success-surface)" : 
+                  jobData.status === "Complete" ? "var(--info-surface)" : 
+                  "var(--warning-surface)",
                 color: 
-                  jobData.status === "Open" ? "#2e7d32" : 
-                  jobData.status === "Complete" ? "#1565c0" : 
-                  "#e65100",
+                  jobData.status === "Open" ? "var(--success-dark)" : 
+                  jobData.status === "Complete" ? "var(--info)" : 
+                  "var(--danger)",
                 borderRadius: "20px",
                 fontWeight: "600",
                 fontSize: "13px"
@@ -1175,8 +1175,8 @@ export default function JobCardDetailPage() {
               {jobData.jobSource && (
                 <span style={{
                   padding: "6px 14px",
-                  backgroundColor: jobData.jobSource === "Warranty" ? "#fff3e0" : "#e8f5e9",
-                  color: jobData.jobSource === "Warranty" ? "#e65100" : "#2e7d32",
+                  backgroundColor: jobData.jobSource === "Warranty" ? "var(--warning-surface)" : "var(--success-surface)",
+                  color: jobData.jobSource === "Warranty" ? "var(--danger)" : "var(--success-dark)",
                   borderRadius: "20px",
                   fontWeight: "600",
                   fontSize: "13px"
@@ -1185,7 +1185,7 @@ export default function JobCardDetailPage() {
                 </span>
               )}
             </div>
-            <p style={{ margin: 0, color: "#666", fontSize: "14px" }}>
+            <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "14px" }}>
               Created: {new Date(jobData.createdAt).toLocaleString()} | 
               Last Updated: {new Date(jobData.updatedAt).toLocaleString()}
             </p>
@@ -1198,7 +1198,7 @@ export default function JobCardDetailPage() {
                 disabled={creatingInvoice}
                 style={{
                   padding: "10px 20px",
-                  backgroundColor: "#0d9488",
+                  backgroundColor: "var(--info-dark)",
                   color: "white",
                   border: "none",
                   borderRadius: "8px",
@@ -1210,12 +1210,12 @@ export default function JobCardDetailPage() {
                 }}
                 onMouseEnter={(e) => {
                   if (!creatingInvoice) {
-                    e.target.style.backgroundColor = "#0f766e";
+                    e.target.style.backgroundColor = "var(--info-dark)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!creatingInvoice) {
-                    e.target.style.backgroundColor = "#0d9488";
+                    e.target.style.backgroundColor = "var(--info-dark)";
                   }
                 }}
               >
@@ -1226,7 +1226,7 @@ export default function JobCardDetailPage() {
               onClick={() => router.push("/job-cards/view")}
               style={{
                 padding: "10px 20px",
-                backgroundColor: "#6c757d",
+                backgroundColor: "var(--grey-accent)",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
@@ -1235,8 +1235,8 @@ export default function JobCardDetailPage() {
                 fontSize: "14px",
                 transition: "background-color 0.2s"
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = "#5a6268"}
-              onMouseLeave={(e) => e.target.style.backgroundColor = "#6c757d"}
+              onMouseEnter={(e) => e.target.style.backgroundColor = "var(--grey-accent)"}
+              onMouseLeave={(e) => e.target.style.backgroundColor = "var(--grey-accent)"}
             >
               Back
             </button>
@@ -1255,14 +1255,14 @@ export default function JobCardDetailPage() {
             padding: "16px 20px",
             backgroundColor: "white",
             borderRadius: "12px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            border: "1px solid #e0e0e0"
+            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            border: "1px solid var(--surface-light)"
           }}>
-            <div style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}>VEHICLE</div>
-            <div style={{ fontSize: "20px", fontWeight: "700", color: "#d10000", marginBottom: "4px" }}>
+            <div style={{ fontSize: "12px", color: "var(--grey-accent)", marginBottom: "4px" }}>VEHICLE</div>
+            <div style={{ fontSize: "20px", fontWeight: "700", color: "var(--primary)", marginBottom: "4px" }}>
               {jobData.reg || "N/A"}
             </div>
-            <div style={{ fontSize: "14px", color: "#333" }}>
+            <div style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
               {jobData.makeModel || `${jobData.make} ${jobData.model}`}
             </div>
           </div>
@@ -1271,14 +1271,14 @@ export default function JobCardDetailPage() {
             padding: "16px 20px",
             backgroundColor: "white",
             borderRadius: "12px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            border: "1px solid #e0e0e0"
+            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            border: "1px solid var(--surface-light)"
           }}>
-            <div style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}>CUSTOMER</div>
-            <div style={{ fontSize: "18px", fontWeight: "600", color: "#333", marginBottom: "4px" }}>
+            <div style={{ fontSize: "12px", color: "var(--grey-accent)", marginBottom: "4px" }}>CUSTOMER</div>
+            <div style={{ fontSize: "18px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "4px" }}>
               {jobData.customer || "N/A"}
             </div>
-            <div style={{ fontSize: "14px", color: "#666" }}>
+            <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
               {jobData.customerPhone || jobData.customerEmail || "No contact info"}
             </div>
           </div>
@@ -1293,8 +1293,8 @@ export default function JobCardDetailPage() {
           padding: "8px",
           backgroundColor: "white",
           borderRadius: "12px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-          border: "1px solid #e0e0e0",
+          boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+          border: "1px solid var(--surface-light)",
           flexShrink: 0
         }}>
           {tabs.map((tab) => (
@@ -1303,8 +1303,8 @@ export default function JobCardDetailPage() {
               onClick={() => setActiveTab(tab.id)}
               style={{
                 padding: "10px 16px",
-                backgroundColor: activeTab === tab.id ? "#d10000" : "transparent",
-                color: activeTab === tab.id ? "white" : "#666",
+                backgroundColor: activeTab === tab.id ? "var(--primary)" : "transparent",
+                color: activeTab === tab.id ? "white" : "var(--grey-accent)",
                 border: "none",
                 borderRadius: "8px",
                 cursor: "pointer",
@@ -1319,7 +1319,7 @@ export default function JobCardDetailPage() {
               }}
               onMouseEnter={(e) => {
                 if (activeTab !== tab.id) {
-                  e.target.style.backgroundColor = "#f5f5f5";
+                  e.target.style.backgroundColor = "var(--surface)";
                 }
               }}
               onMouseLeave={(e) => {
@@ -1333,7 +1333,7 @@ export default function JobCardDetailPage() {
               {tab.badge && (
                 <span style={{
                   padding: "2px 8px",
-                  backgroundColor: activeTab === tab.id ? "rgba(255,255,255,0.3)" : "#d10000",
+                  backgroundColor: activeTab === tab.id ? "rgba(var(--surface-rgb), 0.3)" : "var(--primary)",
                   color: activeTab === tab.id ? "white" : "white",
                   borderRadius: "10px",
                   fontSize: "11px",
@@ -1352,8 +1352,8 @@ export default function JobCardDetailPage() {
           overflowY: "auto",
           backgroundColor: "white",
           borderRadius: "12px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-          border: "1px solid #e0e0e0",
+          boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+          border: "1px solid var(--surface-light)",
           padding: "24px"
         }}>
           {/* Customer Requests Tab */}
@@ -1515,7 +1515,7 @@ function CustomerRequestsTab({
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-        <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
+        <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "600", color: "var(--text-primary)" }}>
           Customer Requests
         </h2>
         {canEdit && !editing && (
@@ -1523,7 +1523,7 @@ function CustomerRequestsTab({
             onClick={() => setEditing(true)}
             style={{
               padding: "8px 16px",
-              backgroundColor: "#ef4444",
+              backgroundColor: "var(--danger)",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -1541,7 +1541,7 @@ function CustomerRequestsTab({
               onClick={handleSave}
               style={{
                 padding: "8px 16px",
-                backgroundColor: "#10b981",
+                backgroundColor: "var(--info)",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
@@ -1559,7 +1559,7 @@ function CustomerRequestsTab({
               }}
               style={{
                 padding: "8px 16px",
-                backgroundColor: "#6c757d",
+                backgroundColor: "var(--grey-accent)",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
@@ -1579,14 +1579,14 @@ function CustomerRequestsTab({
           {requests.map((req, index) => (
             <div key={index} style={{
               padding: "16px",
-              border: "1px solid #e0e0e0",
+              border: "1px solid var(--surface-light)",
               borderRadius: "8px",
               marginBottom: "12px",
-              backgroundColor: "#fafafa"
+              backgroundColor: "var(--surface)"
             }}>
               <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "12px" }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "4px" }}>
+                  <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "4px" }}>
                     Request Description
                   </label>
                   <input
@@ -1596,14 +1596,14 @@ function CustomerRequestsTab({
                     style={{
                       width: "100%",
                       padding: "8px 12px",
-                      border: "1px solid #e0e0e0",
+                      border: "1px solid var(--surface-light)",
                       borderRadius: "6px",
                       fontSize: "14px"
                     }}
                   />
                 </div>
                 <div style={{ width: "120px" }}>
-                  <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "4px" }}>
+                  <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "4px" }}>
                     Est. Hours
                   </label>
                   <input
@@ -1615,14 +1615,14 @@ function CustomerRequestsTab({
                     style={{
                       width: "100%",
                       padding: "8px 12px",
-                      border: "1px solid #e0e0e0",
+                      border: "1px solid var(--surface-light)",
                       borderRadius: "6px",
                       fontSize: "14px"
                     }}
                   />
                 </div>
                 <div style={{ width: "160px" }}>
-                  <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "4px" }}>
+                  <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "4px" }}>
                     Payment Type
                   </label>
                   <select
@@ -1631,7 +1631,7 @@ function CustomerRequestsTab({
                     style={{
                       width: "100%",
                       padding: "8px 12px",
-                      border: "1px solid #e0e0e0",
+                      border: "1px solid var(--surface-light)",
                       borderRadius: "6px",
                       fontSize: "14px",
                       cursor: "pointer"
@@ -1651,7 +1651,7 @@ function CustomerRequestsTab({
                   onClick={() => handleRemoveRequest(index)}
                   style={{
                     padding: "8px 12px",
-                    backgroundColor: "#ef4444",
+                    backgroundColor: "var(--danger)",
                     color: "white",
                     border: "none",
                     borderRadius: "6px",
@@ -1670,7 +1670,7 @@ function CustomerRequestsTab({
             onClick={handleAddRequest}
             style={{
               padding: "10px 20px",
-              backgroundColor: "#d10000",
+              backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -1688,8 +1688,8 @@ function CustomerRequestsTab({
             requests.map((req, index) => (
               <div key={index} style={{
                 padding: "14px",
-                backgroundColor: "#f9f9f9",
-                borderLeft: "4px solid #d10000",
+                backgroundColor: "var(--surface)",
+                borderLeft: "4px solid var(--primary)",
                 borderRadius: "6px",
                 marginBottom: "12px",
                 display: "flex",
@@ -1697,7 +1697,7 @@ function CustomerRequestsTab({
                 alignItems: "center"
               }}>
                 <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: "14px", color: "#333" }}>
+                  <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
                     {req.text || req}
                   </span>
                 </div>
@@ -1705,8 +1705,8 @@ function CustomerRequestsTab({
                   {req.time && (
                     <span style={{
                       padding: "4px 10px",
-                      backgroundColor: "#e3f2fd",
-                      color: "#1976d2",
+                      backgroundColor: "var(--info-surface)",
+                      color: "var(--info)",
                       borderRadius: "12px",
                       fontSize: "12px",
                       fontWeight: "600"
@@ -1718,13 +1718,13 @@ function CustomerRequestsTab({
                     <span style={{
                       padding: "4px 10px",
                       backgroundColor: 
-                        req.paymentType === "Warranty" ? "#fff3cd" : 
-                        req.paymentType === "Customer" ? "#d4edda" : 
-                        "#f8d7da",
+                        req.paymentType === "Warranty" ? "var(--warning-surface)" : 
+                        req.paymentType === "Customer" ? "var(--success)" : 
+                        "var(--danger-surface)",
                       color: 
-                        req.paymentType === "Warranty" ? "#856404" : 
-                        req.paymentType === "Customer" ? "#155724" : 
-                        "#721c24",
+                        req.paymentType === "Warranty" ? "var(--warning-dark)" : 
+                        req.paymentType === "Customer" ? "var(--success-dark)" : 
+                        "var(--danger-dark)",
                       borderRadius: "12px",
                       fontSize: "12px",
                       fontWeight: "600"
@@ -1736,14 +1736,14 @@ function CustomerRequestsTab({
               </div>
             ))
           ) : (
-            <p style={{ color: "#999", fontStyle: "italic" }}>No requests logged.</p>
+            <p style={{ color: "var(--grey-accent-light)", fontStyle: "italic" }}>No requests logged.</p>
           )}
         </div>
       )}
 
       {/* Additional Job Info */}
-      <div style={{ marginTop: "32px", paddingTop: "24px", borderTop: "2px solid #f0f0f0" }}>
-        <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#333", marginBottom: "16px" }}>
+      <div style={{ marginTop: "32px", paddingTop: "24px", borderTop: "2px solid var(--surface)" }}>
+        <h3 style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "16px" }}>
           Additional Information
         </h3>
         <div style={{
@@ -1756,15 +1756,15 @@ function CustomerRequestsTab({
           <div style={{
             flex: "1 1 320px",
             padding: "16px",
-            backgroundColor: "#f9fafb",
+            backgroundColor: "var(--info-surface)",
             borderRadius: "12px",
-            border: "1px solid #e5e7eb",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+            border: "1px solid var(--accent-purple-surface)",
+            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.04)"
           }}>
-            <div style={{ fontSize: "13px", fontWeight: "700", color: "#374151", marginBottom: "6px" }}>
+            <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--info-dark)", marginBottom: "6px" }}>
               Vehicle Health Check
             </div>
-            <p style={{ margin: "0 0 12px 0", fontSize: "14px", color: "#4b5563" }}>
+            <p style={{ margin: "0 0 12px 0", fontSize: "14px", color: "var(--info-dark)" }}>
               {jobData.vhcRequired
                 ? "A VHC is required for this job card."
                 : "VHC has been marked as not required for this job."}
@@ -1777,8 +1777,8 @@ function CustomerRequestsTab({
                 gap: "6px",
                 padding: "6px 10px",
                 borderRadius: "999px",
-                backgroundColor: "#fee2e2",
-                color: "#b91c1c",
+                backgroundColor: "var(--danger-surface)",
+                color: "var(--danger)",
                 fontSize: "12px",
                 fontWeight: "600"
               }}>
@@ -1790,8 +1790,8 @@ function CustomerRequestsTab({
                 gap: "6px",
                 padding: "6px 10px",
                 borderRadius: "999px",
-                backgroundColor: "#fef3c7",
-                color: "#b45309",
+                backgroundColor: "var(--warning-surface)",
+                color: "var(--warning)",
                 fontSize: "12px",
                 fontWeight: "600"
               }}>
@@ -1803,8 +1803,8 @@ function CustomerRequestsTab({
                 gap: "6px",
                 padding: "6px 10px",
                 borderRadius: "999px",
-                backgroundColor: "#e0f2fe",
-                color: "#0369a1",
+                backgroundColor: "var(--info-surface)",
+                color: "var(--info-dark)",
                 fontSize: "12px",
                 fontWeight: "600"
               }}>
@@ -1816,8 +1816,8 @@ function CustomerRequestsTab({
                 gap: "6px",
                 padding: "6px 10px",
                 borderRadius: "999px",
-                backgroundColor: "#f3f4f6",
-                color: "#4b5563",
+                backgroundColor: "var(--info-surface)",
+                color: "var(--info-dark)",
                 fontSize: "12px",
                 fontWeight: "600"
               }}>
@@ -1828,22 +1828,22 @@ function CustomerRequestsTab({
             {jobData.vhcRequired ? (
               highlightedItems.length > 0 ? (
                 <div>
-                  <div style={{ fontSize: "12px", fontWeight: "600", color: "#374151", marginBottom: "6px" }}>
+                  <div style={{ fontSize: "12px", fontWeight: "600", color: "var(--info-dark)", marginBottom: "6px" }}>
                     Items requiring attention
                   </div>
                   <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
                     {highlightedItems.slice(0, 3).map(({ check, severity }) => {
                       const severityStyle = severity === "red"
-                        ? { label: "Red", color: "#b91c1c" }
-                        : { label: "Amber", color: "#b45309" };
+                        ? { label: "Red", color: "var(--danger)" }
+                        : { label: "Amber", color: "var(--warning)" };
                       return (
-                        <li key={check.vhc_id} style={{ fontSize: "13px", color: "#4b5563", display: "flex", gap: "8px", alignItems: "center" }}>
+                        <li key={check.vhc_id} style={{ fontSize: "13px", color: "var(--info-dark)", display: "flex", gap: "8px", alignItems: "center" }}>
                           <span style={{
                             padding: "4px 8px",
                             borderRadius: "8px",
                             fontWeight: "700",
-                            color: "#ffffff",
-                            backgroundColor: severity === "red" ? "#dc2626" : "#d97706",
+                            color: "var(--surface)",
+                            backgroundColor: severity === "red" ? "var(--danger)" : "var(--warning)",
                             fontSize: "11px",
                             letterSpacing: "0.04em"
                           }}>
@@ -1857,18 +1857,18 @@ function CustomerRequestsTab({
                     })}
                   </ul>
                   {highlightedItems.length > 3 && (
-                    <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "6px" }}>
+                    <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "6px" }}>
                       +{highlightedItems.length - 3} more issues logged
                     </div>
                   )}
                 </div>
               ) : (
-                <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
                   No red or amber items have been logged yet.
                 </p>
               )
             ) : (
-              <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>
+              <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
                 Service or management can enable the VHC if it becomes required.
               </p>
             )}
@@ -1883,9 +1883,9 @@ function CustomerRequestsTab({
                 fontSize: "14px",
                 fontWeight: "600",
                 cursor: "pointer",
-                backgroundColor: jobData.vhcRequired ? "#ef4444" : "#10b981",
+                backgroundColor: jobData.vhcRequired ? "var(--danger)" : "var(--info)",
                 color: "white",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                boxShadow: "0 4px 12px rgba(var(--shadow-rgb),0.12)",
                 alignSelf: "center"
               }}
               onMouseEnter={(e) => {
@@ -1902,16 +1902,16 @@ function CustomerRequestsTab({
         
         {jobData.cosmeticNotes && (
           <div style={{ marginBottom: "16px" }}>
-            <strong style={{ fontSize: "14px", color: "#666", display: "block", marginBottom: "8px" }}>
+            <strong style={{ fontSize: "14px", color: "var(--grey-accent)", display: "block", marginBottom: "8px" }}>
               Cosmetic Damage Notes:
             </strong>
             <div style={{
               padding: "12px",
-              backgroundColor: "#fff9e6",
-              borderLeft: "4px solid #ffc107",
+              backgroundColor: "var(--warning-surface)",
+              borderLeft: "4px solid var(--warning)",
               borderRadius: "6px"
             }}>
-              <p style={{ margin: 0, fontSize: "14px", color: "#333" }}>
+              <p style={{ margin: 0, fontSize: "14px", color: "var(--text-secondary)" }}>
                 {jobData.cosmeticNotes}
               </p>
             </div>
@@ -1987,13 +1987,13 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
 
   return (
     <div>
-      <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
+      <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "var(--text-primary)" }}>
         Contact Details
       </h2>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
         <div>
-          <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "8px", fontWeight: "600" }}>
+          <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "8px", fontWeight: "600" }}>
             CUSTOMER NAME
           </label>
           {editing ? (
@@ -2007,7 +2007,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
                   flex: 1,
                   padding: "10px 12px",
                   borderRadius: "8px",
-                  border: "1px solid #d1d5db",
+                  border: "1px solid var(--info)",
                   fontSize: "14px"
                 }}
                 disabled={customerSaving}
@@ -2021,7 +2021,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
                   flex: 1,
                   padding: "10px 12px",
                   borderRadius: "8px",
-                  border: "1px solid #d1d5db",
+                  border: "1px solid var(--info)",
                   fontSize: "14px"
                 }}
                 disabled={customerSaving}
@@ -2030,10 +2030,10 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
           ) : (
             <div style={{
               padding: "12px",
-              backgroundColor: "#f9f9f9",
+              backgroundColor: "var(--surface)",
               borderRadius: "8px",
               fontSize: "14px",
-              color: "#333",
+              color: "var(--text-secondary)",
               fontWeight: "500"
             }}>
               {jobData.customer || "N/A"}
@@ -2042,7 +2042,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
         </div>
 
         <div>
-          <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "8px", fontWeight: "600" }}>
+          <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "8px", fontWeight: "600" }}>
             EMAIL ADDRESS
           </label>
           {editing ? (
@@ -2054,7 +2054,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "8px",
-                border: "1px solid #d1d5db",
+                border: "1px solid var(--info)",
                 fontSize: "14px"
               }}
               disabled={customerSaving}
@@ -2062,10 +2062,10 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
           ) : (
             <div style={{
               padding: "12px",
-              backgroundColor: "#f9f9f9",
+              backgroundColor: "var(--surface)",
               borderRadius: "8px",
               fontSize: "14px",
-              color: "#0066cc",
+              color: "var(--info)",
               fontWeight: "500"
             }}>
               {jobData.customerEmail || "N/A"}
@@ -2074,7 +2074,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
         </div>
 
         <div>
-          <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "8px", fontWeight: "600" }}>
+          <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "8px", fontWeight: "600" }}>
             MOBILE PHONE
           </label>
           {editing ? (
@@ -2086,7 +2086,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "8px",
-                border: "1px solid #d1d5db",
+                border: "1px solid var(--info)",
                 fontSize: "14px"
               }}
               disabled={customerSaving}
@@ -2094,10 +2094,10 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
           ) : (
             <div style={{
               padding: "12px",
-              backgroundColor: "#f9f9f9",
+              backgroundColor: "var(--surface)",
               borderRadius: "8px",
               fontSize: "14px",
-              color: "#333",
+              color: "var(--text-secondary)",
               fontWeight: "500"
             }}>
               {jobData.customerMobile || jobData.customerPhone || "N/A"}
@@ -2106,7 +2106,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
         </div>
 
         <div>
-          <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "8px", fontWeight: "600" }}>
+          <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "8px", fontWeight: "600" }}>
             LANDLINE PHONE
           </label>
           {editing ? (
@@ -2118,7 +2118,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "8px",
-                border: "1px solid #d1d5db",
+                border: "1px solid var(--info)",
                 fontSize: "14px"
               }}
               disabled={customerSaving}
@@ -2126,10 +2126,10 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
           ) : (
             <div style={{
               padding: "12px",
-              backgroundColor: "#f9f9f9",
+              backgroundColor: "var(--surface)",
               borderRadius: "8px",
               fontSize: "14px",
-              color: "#333",
+              color: "var(--text-secondary)",
               fontWeight: "500"
             }}>
               {jobData.customerTelephone || "N/A"}
@@ -2138,7 +2138,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
         </div>
 
         <div>
-          <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "8px", fontWeight: "600" }}>
+          <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "8px", fontWeight: "600" }}>
             CONTACT PREFERENCE
           </label>
           {editing ? (
@@ -2149,7 +2149,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "8px",
-                border: "1px solid #d1d5db",
+                border: "1px solid var(--info)",
                 fontSize: "14px"
               }}
               disabled={customerSaving}
@@ -2163,10 +2163,10 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
           ) : (
             <div style={{
               padding: "12px",
-              backgroundColor: "#f9f9f9",
+              backgroundColor: "var(--surface)",
               borderRadius: "8px",
               fontSize: "14px",
-              color: "#333",
+              color: "var(--text-secondary)",
               fontWeight: "500"
             }}>
               {jobData.customerContactPreference || "Email"}
@@ -2175,7 +2175,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
         </div>
 
         <div style={{ gridColumn: "1 / -1" }}>
-          <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "8px", fontWeight: "600" }}>
+          <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "8px", fontWeight: "600" }}>
             ADDRESS
           </label>
           {editing ? (
@@ -2187,7 +2187,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
                 width: "100%",
                 padding: "12px",
                 borderRadius: "8px",
-                border: "1px solid #d1d5db",
+                border: "1px solid var(--info)",
                 fontSize: "14px",
                 resize: "vertical"
               }}
@@ -2196,10 +2196,10 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
           ) : (
             <div style={{
               padding: "12px",
-              backgroundColor: "#f9f9f9",
+              backgroundColor: "var(--surface)",
               borderRadius: "8px",
               fontSize: "14px",
-              color: "#333",
+              color: "var(--text-secondary)",
               fontWeight: "500"
             }}>
               {jobData.customerAddress || "N/A"}
@@ -2214,7 +2214,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
         </div>
 
         <div>
-          <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "8px", fontWeight: "600" }}>
+          <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "8px", fontWeight: "600" }}>
             POSTCODE
           </label>
           {editing ? (
@@ -2226,7 +2226,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "8px",
-                border: "1px solid #d1d5db",
+                border: "1px solid var(--info)",
                 fontSize: "14px"
               }}
               disabled={customerSaving}
@@ -2234,10 +2234,10 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
           ) : (
             <div style={{
               padding: "12px",
-              backgroundColor: "#f9f9f9",
+              backgroundColor: "var(--surface)",
               borderRadius: "8px",
               fontSize: "14px",
-              color: "#333",
+              color: "var(--text-secondary)",
               fontWeight: "500"
             }}>
               {jobData.customerPostcode || "N/A"}
@@ -2250,11 +2250,11 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
         <div style={{
           marginTop: "20px",
           padding: "16px",
-          backgroundColor: approvalChecked ? "#ecfdf5" : "#fff7ed",
+          backgroundColor: approvalChecked ? "var(--success-surface)" : "var(--warning-surface)",
           borderRadius: "8px",
-          border: `1px solid ${approvalChecked ? "#10b981" : "#f97316"}`
+          border: `1px solid ${approvalChecked ? "var(--info)" : "var(--danger)"}`
         }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "14px", color: "#374151" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "14px", color: "var(--info-dark)" }}>
             <input
               type="checkbox"
               checked={approvalChecked}
@@ -2264,14 +2264,14 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
             />
             Customer has approved updated details
           </label>
-          <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "8px" }}>
+          <p style={{ fontSize: "12px", color: "var(--info)", marginTop: "8px" }}>
             Regulatory requirement: customer confirmation must be recorded before saving.
           </p>
         </div>
       )}
 
       {saveError && (
-        <div style={{ marginTop: "12px", padding: "10px", borderRadius: "6px", backgroundColor: "#fef2f2", color: "#b91c1c", fontSize: "13px" }}>
+        <div style={{ marginTop: "12px", padding: "10px", borderRadius: "6px", backgroundColor: "var(--danger-surface)", color: "var(--danger)", fontSize: "13px" }}>
           {saveError}
         </div>
       )}
@@ -2286,7 +2286,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
                   disabled={customerSaving}
                   style={{
                     padding: "10px 20px",
-                    backgroundColor: customerSaving ? "#9ca3af" : "#10b981",
+                    backgroundColor: customerSaving ? "var(--info)" : "var(--info)",
                     color: "white",
                     border: "none",
                     borderRadius: "8px",
@@ -2303,7 +2303,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
                 disabled={customerSaving}
                 style={{
                   padding: "10px 20px",
-                  backgroundColor: "#6c757d",
+                  backgroundColor: "var(--grey-accent)",
                   color: "white",
                   border: "none",
                   borderRadius: "8px",
@@ -2320,7 +2320,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
               onClick={startEditing}
               style={{
                 padding: "10px 20px",
-                backgroundColor: "#ef4444",
+                backgroundColor: "var(--danger)",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
@@ -2332,7 +2332,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
               Edit Customer Details
             </button>
           )}
-          <p style={{ fontSize: "12px", color: "#999", margin: 0 }}>
+          <p style={{ fontSize: "12px", color: "var(--grey-accent-light)", margin: 0 }}>
             Note: Changes to customer records sync to appointments, job list, VHC, and messaging.
           </p>
         </div>
@@ -2591,8 +2591,8 @@ function SchedulingTab({
   const bookingStatus = bookingRequest?.status || "pending";
   const statusColor =
     bookingStatus === "approved"
-      ? { background: "#dcfce7", color: "#166534" }
-      : { background: "#fff7ed", color: "#92400e" };
+      ? { background: "var(--success-surface)", color: "var(--success-dark)" }
+      : { background: "var(--warning-surface)", color: "var(--danger-dark)" };
   const submittedAt = bookingRequest?.submittedAt
     ? new Date(bookingRequest.submittedAt).toLocaleString()
     : "Awaiting submission";
@@ -2610,7 +2610,7 @@ function SchedulingTab({
           margin: "0 0 20px 0",
           fontSize: "20px",
           fontWeight: "600",
-          color: "#1a1a1a"
+          color: "var(--text-primary)"
         }}
       >
         Scheduling Information
@@ -2621,9 +2621,9 @@ function SchedulingTab({
           padding: "20px",
           backgroundColor: "white",
           borderRadius: "12px",
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--accent-purple-surface)",
           marginBottom: "24px",
-          boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+          boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
         }}
       >
         <div style={{ marginBottom: "16px" }}>
@@ -2632,12 +2632,12 @@ function SchedulingTab({
               margin: 0,
               fontSize: "16px",
               fontWeight: "600",
-              color: "#111827"
+              color: "var(--accent-purple)"
             }}
           >
             Customer Booking
           </h3>
-          <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: "13px" }}>
+          <p style={{ margin: "4px 0 0 0", color: "var(--info)", fontSize: "13px" }}>
             Select the stored vehicle, confirm details, and capture the customer
             request so the team can approve it.
           </p>
@@ -2648,7 +2648,7 @@ function SchedulingTab({
             style={{
               fontSize: "12px",
               fontWeight: "600",
-              color: "#6b7280",
+              color: "var(--info)",
               display: "block",
               marginBottom: "6px"
             }}
@@ -2656,7 +2656,7 @@ function SchedulingTab({
             Vehicle
           </label>
           {customerVehiclesLoading ? (
-            <div style={{ fontSize: "13px", color: "#6b7280", padding: "8px 0" }}>
+            <div style={{ fontSize: "13px", color: "var(--info)", padding: "8px 0" }}>
               Loading stored vehicles...
             </div>
           ) : vehicleOptions.length > 0 ? (
@@ -2669,7 +2669,7 @@ function SchedulingTab({
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: "8px",
-                  border: "1px solid #d1d5db",
+                  border: "1px solid var(--info)",
                   fontSize: "14px",
                   marginBottom: "10px"
                 }}
@@ -2690,14 +2690,14 @@ function SchedulingTab({
                 <div
                   style={{
                     padding: "12px",
-                    backgroundColor: "#f9fafb",
-                    border: "1px solid #e5e7eb",
+                    backgroundColor: "var(--info-surface)",
+                    border: "1px solid var(--accent-purple-surface)",
                     borderRadius: "10px",
                     fontSize: "13px",
-                    color: "#374151"
+                    color: "var(--info-dark)"
                   }}
                 >
-                  <div style={{ fontWeight: "600", color: "#d10000" }}>
+                  <div style={{ fontWeight: "600", color: "var(--primary)" }}>
                     {selectedVehicle.registration || selectedVehicle.reg_number}
                   </div>
                   <div>
@@ -2710,7 +2710,7 @@ function SchedulingTab({
               )}
             </>
           ) : (
-            <div style={{ fontSize: "13px", color: "#b91c1c", padding: "8px 0" }}>
+            <div style={{ fontSize: "13px", color: "var(--danger)", padding: "8px 0" }}>
               No stored vehicles found for this customer.
             </div>
           )}
@@ -2721,8 +2721,8 @@ function SchedulingTab({
             marginTop: "16px",
             padding: "12px",
             borderRadius: "10px",
-            border: `1px solid ${confirmCustomerDetails ? "#10b981" : "#fbbf24"}`,
-            backgroundColor: confirmCustomerDetails ? "#ecfdf5" : "#fff7ed"
+            border: `1px solid ${confirmCustomerDetails ? "var(--info)" : "var(--warning)"}`,
+            backgroundColor: confirmCustomerDetails ? "var(--success-surface)" : "var(--warning-surface)"
           }}
         >
           <label
@@ -2731,7 +2731,7 @@ function SchedulingTab({
               gap: "10px",
               alignItems: "center",
               fontSize: "13px",
-              color: "#374151"
+              color: "var(--info-dark)"
             }}
           >
             <input
@@ -2753,7 +2753,7 @@ function SchedulingTab({
             style={{
               fontSize: "13px",
               fontWeight: "600",
-              color: "#374151",
+              color: "var(--info-dark)",
               marginBottom: "8px"
             }}
           >
@@ -2774,9 +2774,9 @@ function SchedulingTab({
                     minWidth: "140px",
                     padding: "12px 16px",
                     borderRadius: "10px",
-                    border: `2px solid ${isActive ? "#d10000" : "#e5e7eb"}`,
-                    backgroundColor: isActive ? "rgba(209,0,0,0.08)" : "white",
-                    color: isActive ? "#b91c1c" : "#374151",
+                    border: `2px solid ${isActive ? "var(--primary)" : "var(--accent-purple-surface)"}`,
+                    backgroundColor: isActive ? "rgba(var(--primary-rgb),0.08)" : "white",
+                    color: isActive ? "var(--danger)" : "var(--info-dark)",
                     fontWeight: "600",
                     cursor: canEdit ? "pointer" : "default",
                     transition: "all 0.2s"
@@ -2794,7 +2794,7 @@ function SchedulingTab({
             style={{
               fontSize: "12px",
               fontWeight: "600",
-              color: "#6b7280",
+              color: "var(--info)",
               display: "block",
               marginBottom: "6px"
             }}
@@ -2812,13 +2812,13 @@ function SchedulingTab({
               width: "100%",
               padding: "12px",
               borderRadius: "10px",
-              border: "1px solid #d1d5db",
+              border: "1px solid var(--info)",
               fontSize: "14px",
               resize: "vertical"
             }}
             placeholder="- Customer waiting for vehicle\n- Loan car requested"
           />
-          <p style={{ marginTop: "6px", fontSize: "12px", color: "#6b7280" }}>
+          <p style={{ marginTop: "6px", fontSize: "12px", color: "var(--info)" }}>
             Each new line automatically starts with "- " to maintain the booking
             checklist format.
           </p>
@@ -2838,7 +2838,7 @@ function SchedulingTab({
             disabled={bookingButtonDisabled || vehicleOptions.length === 0}
             style={{
               padding: "10px 20px",
-              backgroundColor: bookingButtonDisabled ? "#9ca3af" : "#ef4444",
+              backgroundColor: bookingButtonDisabled ? "var(--info)" : "var(--danger)",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -2850,12 +2850,12 @@ function SchedulingTab({
             {bookingFlowSaving ? "Saving..." : "Save Booking Details"}
           </button>
           {bookingMessage && (
-            <span style={{ fontSize: "13px", color: "#16a34a" }}>
+            <span style={{ fontSize: "13px", color: "var(--success)" }}>
               {bookingMessage}
             </span>
           )}
           {!confirmCustomerDetails && canEdit && (
-            <span style={{ fontSize: "12px", color: "#dc2626" }}>
+            <span style={{ fontSize: "12px", color: "var(--danger)" }}>
               Please confirm customer details before saving.
             </span>
           )}
@@ -2867,9 +2867,9 @@ function SchedulingTab({
           padding: "20px",
           backgroundColor: "white",
           borderRadius: "12px",
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--accent-purple-surface)",
           marginBottom: "24px",
-          boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+          boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
         }}
       >
         <div style={{ marginBottom: "16px" }}>
@@ -2878,12 +2878,12 @@ function SchedulingTab({
               margin: 0,
               fontSize: "16px",
               fontWeight: "600",
-              color: "#111827"
+              color: "var(--accent-purple)"
             }}
           >
             Booking Approval & Confirmation
           </h3>
-          <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: "13px" }}>
+          <p style={{ margin: "4px 0 0 0", color: "var(--info)", fontSize: "13px" }}>
             Review the booking request, capture workshop commitments, and send the
             confirmation email.
           </p>
@@ -2912,7 +2912,7 @@ function SchedulingTab({
               >
                 {bookingStatus === "approved" ? "Approved" : "Awaiting Approval"}
               </span>
-              <span style={{ fontSize: "13px", color: "#6b7280" }}>
+              <span style={{ fontSize: "13px", color: "var(--info)" }}>
                 Waiting status: {bookingRequest.waitingStatus || "Neither"}
               </span>
             </div>
@@ -2923,15 +2923,15 @@ function SchedulingTab({
                   marginBottom: "16px",
                   padding: "12px",
                   borderRadius: "10px",
-                  border: "1px solid #e5e7eb",
-                  backgroundColor: "#f9fafb"
+                  border: "1px solid var(--accent-purple-surface)",
+                  backgroundColor: "var(--info-surface)"
                 }}
               >
                 <div
                   style={{
                     fontSize: "13px",
                     fontWeight: "600",
-                    color: "#374151",
+                    color: "var(--info-dark)",
                     marginBottom: "8px"
                   }}
                 >
@@ -2941,7 +2941,7 @@ function SchedulingTab({
                   style={{
                     margin: 0,
                     paddingLeft: "18px",
-                    color: "#4b5563",
+                    color: "var(--info-dark)",
                     fontSize: "13px"
                   }}
                 >
@@ -2964,17 +2964,17 @@ function SchedulingTab({
                 style={{
                   padding: "12px",
                   borderRadius: "10px",
-                  border: "1px solid #e5e7eb",
-                  backgroundColor: "#f9fafb"
+                  border: "1px solid var(--accent-purple-surface)",
+                  backgroundColor: "var(--info-surface)"
                 }}
               >
-                <p style={{ margin: "0 0 4px 0", color: "#6b7280", fontSize: "12px" }}>
+                <p style={{ margin: "0 0 4px 0", color: "var(--info)", fontSize: "12px" }}>
                   Submitted
                 </p>
-                <p style={{ margin: 0, fontSize: "14px", color: "#111827" }}>
+                <p style={{ margin: 0, fontSize: "14px", color: "var(--accent-purple)" }}>
                   {submittedAt}
                 </p>
-                <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>
+                <p style={{ margin: 0, fontSize: "12px", color: "var(--info)" }}>
                   {bookingRequest.submittedByName || "Customer Portal"}
                 </p>
               </div>
@@ -2982,18 +2982,18 @@ function SchedulingTab({
                 style={{
                   padding: "12px",
                   borderRadius: "10px",
-                  border: "1px solid #e5e7eb",
-                  backgroundColor: "#f9fafb"
+                  border: "1px solid var(--accent-purple-surface)",
+                  backgroundColor: "var(--info-surface)"
                 }}
               >
-                <p style={{ margin: "0 0 4px 0", color: "#6b7280", fontSize: "12px" }}>
+                <p style={{ margin: "0 0 4px 0", color: "var(--info)", fontSize: "12px" }}>
                   Approved
                 </p>
-                <p style={{ margin: 0, fontSize: "14px", color: "#111827" }}>
+                <p style={{ margin: 0, fontSize: "14px", color: "var(--accent-purple)" }}>
                   {approvedAt || "Not yet approved"}
                 </p>
                 {bookingRequest.approvedByName && (
-                  <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>
+                  <p style={{ margin: 0, fontSize: "12px", color: "var(--info)" }}>
                     {bookingRequest.approvedByName}
                   </p>
                 )}
@@ -3002,18 +3002,18 @@ function SchedulingTab({
                 style={{
                   padding: "12px",
                   borderRadius: "10px",
-                  border: "1px solid #e5e7eb",
-                  backgroundColor: "#f9fafb"
+                  border: "1px solid var(--accent-purple-surface)",
+                  backgroundColor: "var(--info-surface)"
                 }}
               >
-                <p style={{ margin: "0 0 4px 0", color: "#6b7280", fontSize: "12px" }}>
+                <p style={{ margin: "0 0 4px 0", color: "var(--info)", fontSize: "12px" }}>
                   Estimated Completion
                 </p>
-                <p style={{ margin: 0, fontSize: "14px", color: "#111827" }}>
+                <p style={{ margin: 0, fontSize: "14px", color: "var(--accent-purple)" }}>
                   {etaDisplay || "Not scheduled"}
                 </p>
                 {bookingRequest.priceEstimate && (
-                  <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>
+                  <p style={{ margin: 0, fontSize: "12px", color: "var(--info)" }}>
                     Estimate: £{Number(bookingRequest.priceEstimate).toFixed(2)}
                   </p>
                 )}
@@ -3026,9 +3026,9 @@ function SchedulingTab({
                   marginBottom: "16px",
                   padding: "12px",
                   borderRadius: "10px",
-                  border: "1px solid #e5e7eb",
-                  backgroundColor: "#fff7ed",
-                  color: "#92400e",
+                  border: "1px solid var(--accent-purple-surface)",
+                  backgroundColor: "var(--warning-surface)",
+                  color: "var(--danger-dark)",
                   fontSize: "13px"
                 }}
               >
@@ -3045,9 +3045,9 @@ function SchedulingTab({
                   marginBottom: "16px",
                   padding: "12px",
                   borderRadius: "10px",
-                  border: "1px solid #e5e7eb",
-                  backgroundColor: "#f0fdf4",
-                  color: "#166534",
+                  border: "1px solid var(--accent-purple-surface)",
+                  backgroundColor: "var(--success-surface)",
+                  color: "var(--success-dark)",
                   fontSize: "13px"
                 }}
               >
@@ -3063,7 +3063,7 @@ function SchedulingTab({
                 style={{
                   marginTop: "12px",
                   paddingTop: "16px",
-                  borderTop: "1px solid #e5e7eb"
+                  borderTop: "1px solid var(--accent-purple-surface)"
                 }}
               >
                 <div
@@ -3080,7 +3080,7 @@ function SchedulingTab({
                       style={{
                         fontSize: "12px",
                         fontWeight: "600",
-                        color: "#6b7280",
+                        color: "var(--info)",
                         display: "block",
                         marginBottom: "6px"
                       }}
@@ -3102,7 +3102,7 @@ function SchedulingTab({
                         width: "100%",
                         padding: "10px 12px",
                         borderRadius: "8px",
-                        border: "1px solid #d1d5db",
+                        border: "1px solid var(--info)",
                         fontSize: "14px"
                       }}
                     />
@@ -3112,7 +3112,7 @@ function SchedulingTab({
                       style={{
                         fontSize: "12px",
                         fontWeight: "600",
-                        color: "#6b7280",
+                        color: "var(--info)",
                         display: "block",
                         marginBottom: "6px"
                       }}
@@ -3129,7 +3129,7 @@ function SchedulingTab({
                         width: "100%",
                         padding: "10px 12px",
                         borderRadius: "8px",
-                        border: "1px solid #d1d5db",
+                        border: "1px solid var(--info)",
                         fontSize: "14px"
                       }}
                     />
@@ -3139,7 +3139,7 @@ function SchedulingTab({
                       style={{
                         fontSize: "12px",
                         fontWeight: "600",
-                        color: "#6b7280",
+                        color: "var(--info)",
                         display: "block",
                         marginBottom: "6px"
                       }}
@@ -3156,7 +3156,7 @@ function SchedulingTab({
                         width: "100%",
                         padding: "10px 12px",
                         borderRadius: "8px",
-                        border: "1px solid #d1d5db",
+                        border: "1px solid var(--info)",
                         fontSize: "14px"
                       }}
                     />
@@ -3168,7 +3168,7 @@ function SchedulingTab({
                     style={{
                       fontSize: "12px",
                       fontWeight: "600",
-                      color: "#6b7280",
+                      color: "var(--info)",
                       display: "block",
                       marginBottom: "6px"
                     }}
@@ -3188,7 +3188,7 @@ function SchedulingTab({
                       width: "100%",
                       padding: "12px",
                       borderRadius: "10px",
-                      border: "1px solid #d1d5db",
+                      border: "1px solid var(--info)",
                       fontSize: "14px",
                       resize: "vertical"
                     }}
@@ -3201,7 +3201,7 @@ function SchedulingTab({
                     style={{
                       fontSize: "12px",
                       fontWeight: "600",
-                      color: "#6b7280",
+                      color: "var(--info)",
                       display: "block",
                       marginBottom: "6px"
                     }}
@@ -3221,7 +3221,7 @@ function SchedulingTab({
                       width: "100%",
                       padding: "12px",
                       borderRadius: "10px",
-                      border: "1px solid #d1d5db",
+                      border: "1px solid var(--info)",
                       fontSize: "14px",
                       resize: "vertical"
                     }}
@@ -3243,8 +3243,8 @@ function SchedulingTab({
                     style={{
                       padding: "10px 20px",
                       backgroundColor: approvalButtonDisabled
-                        ? "#9ca3af"
-                        : "#10b981",
+                        ? "var(--info)"
+                        : "var(--info)",
                       color: "white",
                       border: "none",
                       borderRadius: "8px",
@@ -3258,7 +3258,7 @@ function SchedulingTab({
                     {bookingApprovalSaving ? "Sending..." : "Send Confirmation"}
                   </button>
                   {approvalMessage && (
-                    <span style={{ fontSize: "13px", color: "#16a34a" }}>
+                    <span style={{ fontSize: "13px", color: "var(--success)" }}>
                       {approvalMessage}
                     </span>
                   )}
@@ -3267,7 +3267,7 @@ function SchedulingTab({
             )}
           </>
         ) : (
-          <p style={{ color: "#6b7280", fontSize: "13px", margin: 0 }}>
+          <p style={{ color: "var(--info)", fontSize: "13px", margin: 0 }}>
             Save the booking details above to generate a request that can be
             approved.
           </p>
@@ -3279,9 +3279,9 @@ function SchedulingTab({
           padding: "20px",
           backgroundColor: "white",
           borderRadius: "12px",
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--accent-purple-surface)",
           marginBottom: "24px",
-          boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+          boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
         }}
       >
         <div
@@ -3298,12 +3298,12 @@ function SchedulingTab({
                 margin: 0,
                 fontSize: "16px",
                 fontWeight: "600",
-                color: "#111827"
+                color: "var(--accent-purple)"
               }}
             >
               Appointment Information
             </h3>
-            <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: "13px" }}>
+            <p style={{ margin: "4px 0 0 0", color: "var(--info)", fontSize: "13px" }}>
               Adjust booking times directly from the job card
             </p>
           </div>
@@ -3312,9 +3312,9 @@ function SchedulingTab({
             style={{
               padding: "8px 14px",
               borderRadius: "8px",
-              border: "1px solid #d1d5db",
-              backgroundColor: "#f9fafb",
-              color: "#111827",
+              border: "1px solid var(--info)",
+              backgroundColor: "var(--info-surface)",
+              color: "var(--accent-purple)",
               fontSize: "13px",
               fontWeight: "600",
               cursor: "pointer"
@@ -3336,7 +3336,7 @@ function SchedulingTab({
               style={{
                 fontSize: "12px",
                 fontWeight: "600",
-                color: "#6b7280",
+                color: "var(--info)",
                 display: "block",
                 marginBottom: "6px"
               }}
@@ -3354,7 +3354,7 @@ function SchedulingTab({
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "8px",
-                border: "1px solid #d1d5db",
+                border: "1px solid var(--info)",
                 fontSize: "14px"
               }}
             />
@@ -3364,7 +3364,7 @@ function SchedulingTab({
               style={{
                 fontSize: "12px",
                 fontWeight: "600",
-                color: "#6b7280",
+                color: "var(--info)",
                 display: "block",
                 marginBottom: "6px"
               }}
@@ -3382,7 +3382,7 @@ function SchedulingTab({
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "8px",
-                border: "1px solid #d1d5db",
+                border: "1px solid var(--info)",
                 fontSize: "14px"
               }}
             />
@@ -3392,7 +3392,7 @@ function SchedulingTab({
               style={{
                 fontSize: "12px",
                 fontWeight: "600",
-                color: "#6b7280",
+                color: "var(--info)",
                 display: "block",
                 marginBottom: "6px"
               }}
@@ -3409,7 +3409,7 @@ function SchedulingTab({
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "8px",
-                border: "1px solid #d1d5db",
+                border: "1px solid var(--info)",
                 fontSize: "14px"
               }}
             >
@@ -3427,7 +3427,7 @@ function SchedulingTab({
             style={{
               fontSize: "12px",
               fontWeight: "600",
-              color: "#6b7280",
+              color: "var(--info)",
               display: "block",
               marginBottom: "6px"
             }}
@@ -3445,7 +3445,7 @@ function SchedulingTab({
               width: "100%",
               padding: "12px",
               borderRadius: "10px",
-              border: "1px solid #d1d5db",
+              border: "1px solid var(--info)",
               fontSize: "14px",
               resize: "vertical"
             }}
@@ -3466,7 +3466,7 @@ function SchedulingTab({
               disabled={!appointmentDirty || appointmentSaving}
               style={{
                 padding: "10px 20px",
-                backgroundColor: appointmentDirty ? "#10b981" : "#9ca3af",
+                backgroundColor: appointmentDirty ? "var(--info)" : "var(--info)",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
@@ -3486,7 +3486,7 @@ function SchedulingTab({
             </button>
           )}
           {appointmentMessage && (
-            <span style={{ fontSize: "13px", color: "#16a34a" }}>
+            <span style={{ fontSize: "13px", color: "var(--success)" }}>
               {appointmentMessage}
             </span>
           )}
@@ -3496,10 +3496,10 @@ function SchedulingTab({
           style={{
             marginTop: "20px",
             padding: "12px",
-            backgroundColor: "#f9fafb",
+            backgroundColor: "var(--info-surface)",
             borderRadius: "8px",
             fontSize: "13px",
-            color: "#4b5563"
+            color: "var(--info-dark)"
           }}
         >
           Appointment created: <strong>{appointmentCreatedAt}</strong>
@@ -3525,7 +3525,7 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
 
   return (
     <div>
-      <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
+      <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "var(--text-primary)" }}>
         Service History (Same Vehicle)
       </h2>
 
@@ -3537,49 +3537,49 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
               onClick={() => handleInvoiceOpen(job)}
               style={{
                 padding: "16px",
-                backgroundColor: "#ffffff",
-                border: "1px solid #e5e7eb",
+                backgroundColor: "var(--surface)",
+                border: "1px solid var(--accent-purple-surface)",
                 borderRadius: "10px",
                 cursor: job.invoiceAvailable ? "pointer" : "default",
                 transition: "all 0.2s"
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#f9fafb";
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
+                e.currentTarget.style.backgroundColor = "var(--info-surface)";
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(var(--shadow-rgb),0.08)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#ffffff";
+                e.currentTarget.style.backgroundColor = "var(--surface)";
                 e.currentTarget.style.boxShadow = "none";
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                 <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                  <span style={{ fontSize: "16px", fontWeight: "600", color: "#d10000" }}>
+                  <span style={{ fontSize: "16px", fontWeight: "600", color: "var(--primary)" }}>
                     Job #{job.jobNumber}
                   </span>
                   <span style={{
                     padding: "4px 10px",
-                    backgroundColor: "#f3f4f6",
+                    backgroundColor: "var(--info-surface)",
                     borderRadius: "999px",
                     fontSize: "11px",
                     fontWeight: "600",
-                    color: "#4b5563"
+                    color: "var(--info-dark)"
                   }}>
                     {job.serviceDateFormatted}
                   </span>
                 </div>
                 {job.invoiceAvailable ? (
-                  <span style={{ fontSize: "12px", color: "#10b981", fontWeight: "600" }}>
+                  <span style={{ fontSize: "12px", color: "var(--info)", fontWeight: "600" }}>
                     Invoice Available
                   </span>
                 ) : (
-                  <span style={{ fontSize: "12px", color: "#9ca3af", fontWeight: "600" }}>
+                  <span style={{ fontSize: "12px", color: "var(--info)", fontWeight: "600" }}>
                     No Invoice
                   </span>
                 )}
               </div>
 
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", fontSize: "13px", color: "#4b5563" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", fontSize: "13px", color: "var(--info-dark)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <strong>Mileage:</strong>
                   <span>{job.mileage ? `${job.mileage} miles` : "Not recorded"}</span>
@@ -3591,14 +3591,14 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
               </div>
 
               {job.requests.length > 0 && (
-                <ul style={{ margin: "12px 0 0 0", paddingLeft: "18px", color: "#374151", fontSize: "13px" }}>
+                <ul style={{ margin: "12px 0 0 0", paddingLeft: "18px", color: "var(--info-dark)", fontSize: "13px" }}>
                   {job.requests.slice(0, 3).map((req, index) => (
                     <li key={`${job.id}-req-${index}`}>
                       {req.text || req.description || "Request"}
                     </li>
                   ))}
                   {job.requests.length > 3 && (
-                    <li style={{ listStyle: "none", color: "#6b7280" }}>
+                    <li style={{ listStyle: "none", color: "var(--info)" }}>
                       +{job.requests.length - 3} more request{job.requests.length - 3 === 1 ? "" : "s"}
                     </li>
                   )}
@@ -3611,11 +3611,11 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
         <div style={{
           padding: "40px",
           textAlign: "center",
-          backgroundColor: "#f9f9f9",
+          backgroundColor: "var(--surface)",
           borderRadius: "8px"
         }}>
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
-          <p style={{ fontSize: "14px", color: "#666" }}>
+          <p style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
             No previous service history for this vehicle
           </p>
         </div>
@@ -3636,11 +3636,11 @@ const normalizePartStatus = (status = "") => {
 };
 
 const PART_STATUS_META = {
-  pending: { label: "Pending", color: "#92400e", background: "#fef3c7" },
-  priced: { label: "Priced", color: "#3730a3", background: "#eef2ff" },
-  pre_pick: { label: "Pre Pick", color: "#15803d", background: "#dcfce7" },
-  on_order: { label: "On Order", color: "#d97706", background: "#fefce8" },
-  stock: { label: "Stock", color: "#1d4ed8", background: "#dbeafe" },
+  pending: { label: "Pending", color: "var(--danger-dark)", background: "var(--warning-surface)" },
+  priced: { label: "Priced", color: "var(--accent-purple)", background: "var(--accent-purple-surface)" },
+  pre_pick: { label: "Pre Pick", color: "var(--success-dark)", background: "var(--success-surface)" },
+  on_order: { label: "On Order", color: "var(--warning)", background: "var(--warning-surface)" },
+  stock: { label: "Stock", color: "var(--accent-purple)", background: "var(--info-surface)" },
 };
 
 const getPartStatusMeta = (status) => {
@@ -3699,21 +3699,21 @@ function PartsTab({ jobData }) {
   if (!hasParts) {
     return (
       <div>
-        <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
+        <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "var(--text-primary)" }}>
           Parts Overview
         </h2>
         <div style={{
           padding: "40px",
           textAlign: "center",
-          backgroundColor: "#f9fafb",
+          backgroundColor: "var(--info-surface)",
           borderRadius: "12px",
-          border: "1px solid #e5e7eb"
+          border: "1px solid var(--accent-purple-surface)"
         }}>
           <div style={{ fontSize: "48px", marginBottom: "12px" }}>🧰</div>
-          <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#111827", marginBottom: "8px" }}>
+          <h3 style={{ fontSize: "18px", fontWeight: "600", color: "var(--accent-purple)", marginBottom: "8px" }}>
             No Parts Linked
           </h3>
-          <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>
+          <p style={{ color: "var(--info)", fontSize: "14px", margin: 0 }}>
             VHC authorizations and manual write-up requests will appear here automatically.
           </p>
         </div>
@@ -3726,17 +3726,17 @@ function PartsTab({ jobData }) {
       <div
         style={{
           background: "white",
-          border: "1px solid #ffe5e5",
+          border: "1px solid var(--surface-light)",
           borderRadius: "14px",
           padding: "16px",
-          boxShadow: "0 8px 20px rgba(209,0,0,0.08)",
+          boxShadow: "0 8px 20px rgba(var(--primary-rgb),0.08)",
         }}
       >
         <div
           style={{
             fontSize: "0.9rem",
             fontWeight: 600,
-            color: "#d10000",
+            color: "var(--primary)",
             letterSpacing: "0.05em",
             textTransform: "uppercase",
           }}
@@ -3757,37 +3757,37 @@ function PartsTab({ jobData }) {
               style={{
                 padding: "10px",
                 borderRadius: "10px",
-                border: "1px solid rgba(209,0,0,0.3)",
-                background: stage.count > 0 ? "#fff4f4" : "#f9fafb",
+                border: "1px solid rgba(var(--primary-rgb),0.3)",
+                background: stage.count > 0 ? "var(--surface-light)" : "var(--info-surface)",
               }}
             >
-              <div style={{ fontSize: "1.25rem", fontWeight: 600, color: "#d10000" }}>
+              <div style={{ fontSize: "1.25rem", fontWeight: 600, color: "var(--primary)" }}>
                 {stage.count}
               </div>
               <div style={{ fontWeight: 600 }}>{stage.label}</div>
-              <p style={{ margin: "4px 0 0", fontSize: "0.75rem", color: "#4b5563" }}>
+              <p style={{ margin: "4px 0 0", fontSize: "0.75rem", color: "var(--info-dark)" }}>
                 {stage.description}
               </p>
             </div>
           ))}
         </div>
-        <p style={{ marginTop: "12px", fontSize: "0.85rem", color: "#4b5563" }}>
+        <p style={{ marginTop: "12px", fontSize: "0.85rem", color: "var(--info-dark)" }}>
           {pipelineSummary.totalCount} part line
           {pipelineSummary.totalCount === 1 ? "" : "s"} currently tracked across these stages.
         </p>
       </div>
       <div>
-        <h2 style={{ margin: "0 0 12px 0", fontSize: "18px", fontWeight: "600", color: "#1f2937" }}>
+        <h2 style={{ margin: "0 0 12px 0", fontSize: "18px", fontWeight: "600", color: "var(--info-dark)" }}>
           VHC Linked Parts
         </h2>
         {vhcParts.length === 0 ? (
           <div style={{
             padding: "20px",
             borderRadius: "10px",
-            border: "1px solid #e5e7eb",
-            backgroundColor: "#fcfcfd",
+            border: "1px solid var(--accent-purple-surface)",
+            backgroundColor: "var(--accent-purple-surface)",
             fontSize: "14px",
-            color: "#6b7280"
+            color: "var(--info)"
           }}>
             No VHC items have been converted into parts for this job yet.
           </div>
@@ -3801,19 +3801,19 @@ function PartsTab({ jobData }) {
                   style={{
                     padding: "16px",
                     borderRadius: "12px",
-                    border: "1px solid #e5e7eb",
-                    backgroundColor: "#ffffff",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                    border: "1px solid var(--accent-purple-surface)",
+                    backgroundColor: "var(--surface)",
+                    boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                     <div>
-                      <div style={{ fontSize: "12px", color: "#6b7280" }}>{part.partNumber}</div>
-                      <h3 style={{ margin: "2px 0", fontSize: "16px", fontWeight: "600", color: "#111827" }}>
+                      <div style={{ fontSize: "12px", color: "var(--info)" }}>{part.partNumber}</div>
+                      <h3 style={{ margin: "2px 0", fontSize: "16px", fontWeight: "600", color: "var(--accent-purple)" }}>
                         {part.name}
                       </h3>
                       {part.description && (
-                        <p style={{ margin: 0, fontSize: "13px", color: "#4b5563" }}>{part.description}</p>
+                        <p style={{ margin: 0, fontSize: "13px", color: "var(--info-dark)" }}>{part.description}</p>
                       )}
                     </div>
                     <span
@@ -3836,35 +3836,35 @@ function PartsTab({ jobData }) {
                     gap: "12px",
                     marginTop: "12px",
                     fontSize: "13px",
-                    color: "#374151"
+                    color: "var(--info-dark)"
                   }}>
                     <div>
-                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Qty Requested</strong>
+                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Qty Requested</strong>
                       <div style={{ fontWeight: "700", fontSize: "16px" }}>{part.quantityRequested}</div>
                     </div>
                     <div>
-                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Qty Allocated</strong>
+                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Qty Allocated</strong>
                       <div style={{ fontWeight: "700", fontSize: "16px" }}>{part.quantityAllocated}</div>
                     </div>
                     <div>
-                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Qty Fitted</strong>
+                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Qty Fitted</strong>
                       <div style={{ fontWeight: "700", fontSize: "16px" }}>{part.quantityFitted}</div>
                     </div>
                     <div>
-                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Source</strong>
+                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Source</strong>
                       <div>{part.source}</div>
                     </div>
                     <div>
-                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Pre Pick Location</strong>
+                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Pre Pick Location</strong>
                       <div>{part.prePickLocation}</div>
                     </div>
                     <div>
-                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Storage</strong>
+                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Storage</strong>
                       <div>{part.storageLocation}</div>
                     </div>
                   </div>
 
-                  <div style={{ marginTop: "12px", display: "flex", flexWrap: "wrap", gap: "20px", fontSize: "12px", color: "#6b7280" }}>
+                  <div style={{ marginTop: "12px", display: "flex", flexWrap: "wrap", gap: "20px", fontSize: "12px", color: "var(--info)" }}>
                     <span>Created: {formatDateTime(part.createdAt)}</span>
                     <span>Updated: {formatDateTime(part.updatedAt)}</span>
                   </div>
@@ -3874,8 +3874,8 @@ function PartsTab({ jobData }) {
                       marginTop: "12px",
                       padding: "10px 12px",
                       borderRadius: "8px",
-                      backgroundColor: "#fef3c7",
-                      color: "#92400e",
+                      backgroundColor: "var(--warning-surface)",
+                      color: "var(--danger-dark)",
                       fontSize: "13px"
                     }}>
                       <strong style={{ fontSize: "12px", textTransform: "uppercase" }}>Technician Note:</strong>
@@ -3890,17 +3890,17 @@ function PartsTab({ jobData }) {
       </div>
 
       <div>
-        <h2 style={{ margin: "12px 0", fontSize: "18px", fontWeight: "600", color: "#1f2937" }}>
+        <h2 style={{ margin: "12px 0", fontSize: "18px", fontWeight: "600", color: "var(--info-dark)" }}>
           Manual Requests (Write-up)
         </h2>
         {manualRequests.length === 0 ? (
           <div style={{
             padding: "20px",
             borderRadius: "10px",
-            border: "1px solid #e5e7eb",
-            backgroundColor: "#fcfcfd",
+            border: "1px solid var(--accent-purple-surface)",
+            backgroundColor: "var(--accent-purple-surface)",
             fontSize: "14px",
-            color: "#6b7280"
+            color: "var(--info)"
           }}>
             No manual part requests have been logged.
           </div>
@@ -3914,19 +3914,19 @@ function PartsTab({ jobData }) {
                   style={{
                     padding: "16px",
                     borderRadius: "12px",
-                    border: "1px solid #e5e7eb",
-                    backgroundColor: "#ffffff",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                    border: "1px solid var(--accent-purple-surface)",
+                    backgroundColor: "var(--surface)",
+                    boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                     <div>
-                      <div style={{ fontSize: "12px", color: "#6b7280" }}>{request.partNumber}</div>
-                      <h3 style={{ margin: "2px 0", fontSize: "16px", fontWeight: "600", color: "#111827" }}>
+                      <div style={{ fontSize: "12px", color: "var(--info)" }}>{request.partNumber}</div>
+                      <h3 style={{ margin: "2px 0", fontSize: "16px", fontWeight: "600", color: "var(--accent-purple)" }}>
                         {request.name}
                       </h3>
                       {request.description && (
-                        <p style={{ margin: 0, fontSize: "13px", color: "#4b5563" }}>{request.description}</p>
+                        <p style={{ margin: 0, fontSize: "13px", color: "var(--info-dark)" }}>{request.description}</p>
                       )}
                     </div>
                     <span
@@ -3949,22 +3949,22 @@ function PartsTab({ jobData }) {
                     gap: "12px",
                     marginTop: "12px",
                     fontSize: "13px",
-                    color: "#374151"
+                    color: "var(--info-dark)"
                   }}>
                     <div>
-                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Quantity</strong>
+                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Quantity</strong>
                       <div style={{ fontWeight: "700", fontSize: "16px" }}>{request.quantity}</div>
                     </div>
                     <div>
-                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Requested By</strong>
+                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Requested By</strong>
                       <div>{request.requestedBy}</div>
                     </div>
                     <div>
-                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Approved By</strong>
+                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Approved By</strong>
                       <div>{request.approvedBy || "Awaiting approval"}</div>
                     </div>
                     <div>
-                      <strong style={{ color: "#6b7280", fontSize: "12px" }}>Created</strong>
+                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Created</strong>
                       <div>{formatDateTime(request.createdAt)}</div>
                     </div>
                   </div>
@@ -3975,7 +3975,7 @@ function PartsTab({ jobData }) {
         )}
       </div>
 
-      <p style={{ marginTop: "4px", color: "#9ca3af", fontSize: "12px" }}>
+      <p style={{ marginTop: "4px", color: "var(--info)", fontSize: "12px" }}>
         All data shown is read-only. Updates must be made from the VHC parts workflow or technician write-up form.
       </p>
     </div>
@@ -4000,16 +4000,16 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
 
   return (
     <div>
-      <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
+      <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "var(--text-primary)" }}>
         Job Notes
       </h2>
 
       <div style={{
         padding: "20px",
-        backgroundColor: "#fff",
+        backgroundColor: "var(--surface)",
         borderRadius: "12px",
-        border: "1px solid #e5e7eb",
-        boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+        border: "1px solid var(--accent-purple-surface)",
+        boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
       }}>
         <textarea
           value={value}
@@ -4022,22 +4022,22 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
             maxHeight: "65vh",
             padding: "18px",
             borderRadius: "12px",
-            border: canEdit ? "1px solid #d1d5db" : "1px solid #e5e7eb",
+            border: canEdit ? "1px solid var(--info)" : "1px solid var(--accent-purple-surface)",
             fontSize: "16px",
             lineHeight: 1.7,
             resize: "vertical",
-            backgroundColor: canEdit ? "#ffffff" : "#f9fafb",
-            color: "#1f2937"
+            backgroundColor: canEdit ? "var(--surface)" : "var(--info-surface)",
+            color: "var(--info-dark)"
           }}
         />
-        <div style={{ marginTop: "16px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", fontSize: "13px", color: "#6b7280", gap: "16px" }}>
+        <div style={{ marginTop: "16px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", fontSize: "13px", color: "var(--info)", gap: "16px" }}>
           <div>
             {lastUpdated ? (
               <>
-                Last updated by <strong style={{ color: "#111827" }}>{updatedBy}</strong> on{" "}
-                <strong style={{ color: "#111827" }}>{lastUpdated}</strong>
+                Last updated by <strong style={{ color: "var(--accent-purple)" }}>{updatedBy}</strong> on{" "}
+                <strong style={{ color: "var(--accent-purple)" }}>{lastUpdated}</strong>
                 {meta?.lastUpdatedByEmail ? (
-                  <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "2px" }}>
+                  <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "2px" }}>
                     {meta.lastUpdatedByEmail}
                   </div>
                 ) : null}
@@ -4046,7 +4046,7 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
               "No notes recorded yet."
             )}
           </div>
-          <div style={{ fontSize: "12px", color: saving ? "#d97706" : "#9ca3af" }}>
+          <div style={{ fontSize: "12px", color: saving ? "var(--warning)" : "var(--info)" }}>
             {saving ? "Saving…" : "Synced"}
           </div>
         </div>
@@ -4105,9 +4105,9 @@ function VHCTab({ jobNumber }) {
           style={{
             padding: "10px 16px",
             borderRadius: "10px",
-            border: "1px solid #d10000",
-            backgroundColor: hasPreviewed ? "#10b981" : "#d10000",
-            color: "#fff",
+            border: "1px solid var(--primary)",
+            backgroundColor: hasPreviewed ? "var(--info)" : "var(--primary)",
+            color: "var(--surface)",
             fontWeight: 600,
             cursor: sending ? "not-allowed" : "pointer",
             minWidth: "160px",
@@ -4160,10 +4160,10 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
 
   return (
     <div>
-      <h2 style={{ margin: "0 0 12px 0", fontSize: "20px", fontWeight: "600", color: "#1a1a1a" }}>
+      <h2 style={{ margin: "0 0 12px 0", fontSize: "20px", fontWeight: "600", color: "var(--text-primary)" }}>
         Messages
       </h2>
-      <p style={{ margin: "0 0 20px 0", color: "#6b7280", fontSize: "14px" }}>
+      <p style={{ margin: "0 0 20px 0", color: "var(--info)", fontSize: "14px" }}>
         Conversations between service advisors, workshop managers, after-sales managers, and the customer
         (customers join once their email is linked). Replying is available from the Messaging hub.
       </p>
@@ -4172,14 +4172,14 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
         <div style={{
           padding: "28px",
           borderRadius: "12px",
-          border: "1px dashed #fecaca",
-          backgroundColor: "#fff8f8",
+          border: "1px dashed var(--danger-surface)",
+          backgroundColor: "var(--danger-surface)",
           textAlign: "center"
         }}>
-          <h3 style={{ margin: "0 0 8px 0", fontSize: "17px", fontWeight: "600", color: "#b91c1c" }}>
+          <h3 style={{ margin: "0 0 8px 0", fontSize: "17px", fontWeight: "600", color: "var(--danger)" }}>
             No conversation linked yet
           </h3>
-          <p style={{ margin: "0 0 16px 0", fontSize: "14px", color: "#6b7280" }}>
+          <p style={{ margin: "0 0 16px 0", fontSize: "14px", color: "var(--info)" }}>
             Open the Messaging hub to start a thread for Job #{jobNumber}. Customers see the thread
             once their email is on file and they are added as a participant.
           </p>
@@ -4189,7 +4189,7 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
               padding: "10px 18px",
               borderRadius: "8px",
               border: "none",
-              backgroundColor: "#d10000",
+              backgroundColor: "var(--primary)",
               color: "white",
               fontWeight: "600",
               cursor: "pointer"
@@ -4203,17 +4203,17 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
           <div style={{
             padding: "20px",
             borderRadius: "12px",
-            border: "1px solid #e5e7eb",
-            backgroundColor: "#ffffff",
+            border: "1px solid var(--accent-purple-surface)",
+            backgroundColor: "var(--surface)",
             marginBottom: "16px",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+            boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <p style={{ margin: 0, fontSize: "12px", color: "#9ca3af", letterSpacing: "0.2em" }}>
+                <p style={{ margin: 0, fontSize: "12px", color: "var(--info)", letterSpacing: "0.2em" }}>
                   Thread
                 </p>
-                <h3 style={{ margin: "4px 0 0 0", fontSize: "17px", fontWeight: "600", color: "#111827" }}>
+                <h3 style={{ margin: "4px 0 0 0", fontSize: "17px", fontWeight: "600", color: "var(--accent-purple)" }}>
                   {thread.title}
                 </h3>
               </div>
@@ -4221,7 +4221,7 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
                 onClick={handleOpenMessagingHub}
                 style={{
                   padding: "8px 14px",
-                  backgroundColor: "#d10000",
+                  backgroundColor: "var(--primary)",
                   color: "white",
                   border: "none",
                   borderRadius: "8px",
@@ -4241,8 +4241,8 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
                     padding: "6px 12px",
                     borderRadius: "999px",
                     fontSize: "12px",
-                    backgroundColor: "#f3f4f6",
-                    color: "#374151"
+                    backgroundColor: "var(--info-surface)",
+                    color: "var(--info-dark)"
                   }}
                 >
                   {member.name} · {member.role || "Team"}
@@ -4254,8 +4254,8 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
                     padding: "6px 12px",
                     borderRadius: "999px",
                     fontSize: "12px",
-                    backgroundColor: "#dbeafe",
-                    color: "#1d4ed8"
+                    backgroundColor: "var(--info-surface)",
+                    color: "var(--accent-purple)"
                   }}
                 >
                   {customerMember.name || "Customer"} · Customer
@@ -4267,22 +4267,22 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
           <div style={{
             padding: "16px",
             borderRadius: "12px",
-            border: "1px solid #e5e7eb",
-            backgroundColor: "#ffffff",
+            border: "1px solid var(--accent-purple-surface)",
+            backgroundColor: "var(--surface)",
             marginBottom: "16px",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+            boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
           }}>
-            <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#111827" }}>
+            <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "var(--accent-purple)" }}>
               Customer delivery status
             </h4>
-            <p style={{ margin: "6px 0 0 0", fontSize: "13px", color: "#6b7280" }}>
+            <p style={{ margin: "6px 0 0 0", fontSize: "13px", color: "var(--info)" }}>
               {customerEmail
                 ? customerLinked
                   ? `Messages are shared with ${customerEmail}.`
                   : `Email on file (${customerEmail}) is not yet linked to this thread. Add them in Messaging to share updates.`
                 : "No customer email is linked yet. Add one to start messaging the customer."}
             </p>
-            <p style={{ margin: "6px 0 0 0", fontSize: "12px", color: "#9ca3af" }}>
+            <p style={{ margin: "6px 0 0 0", fontSize: "12px", color: "var(--info)" }}>
               Staff-only messages remain hidden from the customer portal.
             </p>
           </div>
@@ -4290,14 +4290,14 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
           <div style={{
             padding: "0 0 4px 0",
             borderRadius: "12px",
-            border: "1px solid #e5e7eb",
-            backgroundColor: "#ffffff",
+            border: "1px solid var(--accent-purple-surface)",
+            backgroundColor: "var(--surface)",
             maxHeight: "360px",
             overflowY: "auto",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+            boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
           }}>
             {messages.length === 0 ? (
-              <div style={{ padding: "24px", textAlign: "center", color: "#9ca3af", fontSize: "14px" }}>
+              <div style={{ padding: "24px", textAlign: "center", color: "var(--info)", fontSize: "14px" }}>
                 No messages have been posted in this thread yet.
               </div>
             ) : (
@@ -4308,26 +4308,26 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
                     key={message.id || `${message.createdAt}-${message.content.slice(0, 20)}`}
                     style={{
                       padding: "16px",
-                      borderBottom: "1px solid #f3f4f6",
-                      backgroundColor: isStaffOnly ? "#fff8f8" : "#f8fafc"
+                      borderBottom: "1px solid var(--info-surface)",
+                      backgroundColor: isStaffOnly ? "var(--danger-surface)" : "var(--info-surface)"
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div>
-                        <strong style={{ color: "#111827", fontSize: "14px" }}>
+                        <strong style={{ color: "var(--accent-purple)", fontSize: "14px" }}>
                           {message.sender?.name || "Team Member"}
                         </strong>
                         {message.sender?.role && (
-                          <span style={{ marginLeft: "8px", fontSize: "12px", color: "#9ca3af" }}>
+                          <span style={{ marginLeft: "8px", fontSize: "12px", color: "var(--info)" }}>
                             {message.sender.role}
                           </span>
                         )}
                       </div>
-                      <span style={{ fontSize: "12px", color: "#9ca3af" }}>
+                      <span style={{ fontSize: "12px", color: "var(--info)" }}>
                         {message.createdAt ? new Date(message.createdAt).toLocaleString() : ""}
                       </span>
                     </div>
-                    <p style={{ margin: "8px 0 0 0", color: "#374151", fontSize: "14px", whiteSpace: "pre-wrap" }}>
+                    <p style={{ margin: "8px 0 0 0", color: "var(--info-dark)", fontSize: "14px", whiteSpace: "pre-wrap" }}>
                       {message.content}
                     </p>
                     <div style={{ marginTop: "8px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -4337,14 +4337,14 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
                           borderRadius: "999px",
                           fontSize: "11px",
                           fontWeight: "600",
-                          color: isStaffOnly ? "#b91c1c" : "#047857",
-                          backgroundColor: isStaffOnly ? "#fee2e2" : "#d1fae5"
+                          color: isStaffOnly ? "var(--danger)" : "var(--info-dark)",
+                          backgroundColor: isStaffOnly ? "var(--danger-surface)" : "var(--success)"
                         }}
                       >
                         {isStaffOnly ? "Internal only" : "Shared with customer"}
                       </span>
                       {message.metadata?.jobNumber && (
-                        <span style={{ fontSize: "11px", color: "#6b7280" }}>
+                        <span style={{ fontSize: "11px", color: "var(--info)" }}>
                           Linked job #{message.metadata.jobNumber}
                         </span>
                       )}
@@ -4366,7 +4366,7 @@ const DOCUMENT_CATEGORY_CONFIG = [
     label: "Check-Sheets",
     description: "Technician check sheets, inspection reports, and paper service checklists.",
     icon: "📋",
-    accent: "#fb923c",
+    accent: "var(--warning)",
     hints: ["check", "sheet", "inspection", "checklist"],
     emptyState: "No check-sheets have been uploaded yet."
   },
@@ -4375,7 +4375,7 @@ const DOCUMENT_CATEGORY_CONFIG = [
     label: "VHC Reports",
     description: "Exports from the Vehicle Health Check system and annotated VHC PDFs.",
     icon: "🩺",
-    accent: "#f87171",
+    accent: "var(--danger)",
     hints: ["vhc", "health", "traffic", "vhcreport", "vhc-report", "vhc_report"],
     emptyState: "No VHC reports have been uploaded for this job."
   },
@@ -4384,7 +4384,7 @@ const DOCUMENT_CATEGORY_CONFIG = [
     label: "Vehicle Documents",
     description: "V5, warranty packs, loan agreements, and other vehicle-specific paperwork.",
     icon: "🚗",
-    accent: "#38bdf8",
+    accent: "var(--info)",
     hints: ["vehicle", "v5", "logbook", "warranty", "vehicle-doc", "vehicledoc"],
     emptyState: "No vehicle documents are stored yet."
   },
@@ -4393,7 +4393,7 @@ const DOCUMENT_CATEGORY_CONFIG = [
     label: "Customer Uploads",
     description: "Documents or photos supplied by the customer (portal or email).",
     icon: "👤",
-    accent: "#34d399",
+    accent: "var(--success)",
     hints: ["customer", "client", "cust", "customer-upload", "customer_upload"],
     emptyState: "No customer uploads have been linked yet."
   },
@@ -4402,7 +4402,7 @@ const DOCUMENT_CATEGORY_CONFIG = [
     label: "Service Forms",
     description: "Signed invoices, service authorisations, and mandatory service paperwork.",
     icon: "🧾",
-    accent: "#c084fc",
+    accent: "var(--accent-purple)",
     hints: ["service", "form", "authorisation", "authorization", "service-form"],
     emptyState: "No service forms have been uploaded yet."
   },
@@ -4411,7 +4411,7 @@ const DOCUMENT_CATEGORY_CONFIG = [
     label: "General Attachments",
     description: "Any other supporting photos, notes, or files.",
     icon: "📎",
-    accent: "#94a3b8",
+    accent: "var(--info)",
     hints: [],
     emptyState: "No attachments stored yet."
   }
@@ -4593,7 +4593,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
             padding: "10px 18px",
             borderRadius: "10px",
             border: "none",
-            backgroundColor: "#d10000",
+            backgroundColor: "var(--primary)",
             color: "white",
             fontWeight: "600",
             cursor: "pointer"
@@ -4610,8 +4610,8 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
           marginTop: "20px",
           padding: "16px",
           borderRadius: "12px",
-          border: "1px solid #e5e7eb",
-          backgroundColor: "#fff7ed",
+          border: "1px solid var(--accent-purple-surface)",
+          backgroundColor: "var(--warning-surface)",
           display: "flex",
           flexDirection: "column",
           gap: "12px"
@@ -4622,7 +4622,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
             style={{
               display: "block",
               fontSize: "13px",
-              color: "#374151",
+              color: "var(--info-dark)",
               fontWeight: "600",
               marginBottom: "6px"
             }}
@@ -4637,7 +4637,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
               width: "100%",
               padding: "10px 14px",
               borderRadius: "8px",
-              border: "1px solid #d1d5db",
+              border: "1px solid var(--info)",
               fontSize: "14px",
               backgroundColor: "white"
             }}
@@ -4655,7 +4655,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
             ))}
           </select>
           {linkError && (
-            <p style={{ marginTop: "6px", fontSize: "12px", color: "#b91c1c" }}>
+            <p style={{ marginTop: "6px", fontSize: "12px", color: "var(--danger)" }}>
               {linkError}
             </p>
           )}
@@ -4669,7 +4669,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
               padding: "10px 18px",
               borderRadius: "10px",
               border: "none",
-              backgroundColor: linking ? "#cbd5f5" : "#10b981",
+              backgroundColor: linking ? "var(--accent-purple)" : "var(--info)",
               color: "white",
               fontWeight: "600",
               cursor: linking ? "not-allowed" : "pointer",
@@ -4685,7 +4685,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
             style={{
               padding: "10px 18px",
               borderRadius: "10px",
-              border: "1px solid #d1d5db",
+              border: "1px solid var(--info)",
               backgroundColor: "white",
               fontWeight: "600",
               cursor: linking ? "not-allowed" : "pointer"
@@ -4705,12 +4705,12 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
           margin: "0 0 12px 0",
           fontSize: "20px",
           fontWeight: "600",
-          color: "#1a1a1a"
+          color: "var(--text-primary)"
         }}
       >
         Warranty Linking
       </h2>
-      <p style={{ color: "#6b7280", fontSize: "14px", margin: "0 0 18px 0" }}>
+      <p style={{ color: "var(--info)", fontSize: "14px", margin: "0 0 18px 0" }}>
         Link this job card with a warranty counterpart to mirror progress and
         share the same Vehicle Health Check. Clocking and labour capture remain
         independent for each job.
@@ -4720,17 +4720,17 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
         style={{
           padding: "18px",
           borderRadius: "12px",
-          border: "1px solid #e5e7eb",
-          backgroundColor: "#f9fafb",
+          border: "1px solid var(--accent-purple-surface)",
+          backgroundColor: "var(--info-surface)",
           marginBottom: "16px"
         }}
       >
-        <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#0f172a" }}>
+        <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "var(--accent-purple)" }}>
           Linked Warranty Job
         </h3>
         {linkedJob ? (
           <>
-            <p style={{ margin: 0, color: "#374151", fontSize: "14px" }}>
+            <p style={{ margin: 0, color: "var(--info-dark)", fontSize: "14px" }}>
               Linked to Job #{linkedJob.jobNumber} ({linkedJob.status || "Open"})
             </p>
             <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
@@ -4740,7 +4740,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
                 style={{
                   padding: "8px 14px",
                   borderRadius: "8px",
-                  border: "1px solid #d1d5db",
+                  border: "1px solid var(--info)",
                   backgroundColor: "white",
                   cursor: "pointer",
                   fontWeight: "600",
@@ -4752,7 +4752,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
             </div>
           </>
         ) : (
-          <p style={{ margin: 0, color: "#9ca3af", fontSize: "14px" }}>
+          <p style={{ margin: 0, color: "var(--info)", fontSize: "14px" }}>
             No warranty job card is linked yet.
           </p>
         )}
@@ -4762,17 +4762,17 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
         style={{
           padding: "18px",
           borderRadius: "12px",
-          border: "1px solid #e0f2fe",
-          backgroundColor: "#eff6ff"
+          border: "1px solid var(--info-surface)",
+          backgroundColor: "var(--info-surface)"
         }}
       >
-        <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#0f172a" }}>
+        <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "var(--accent-purple)" }}>
           Shared VHC Source
         </h3>
-        <p style={{ margin: "0 0 6px 0", color: "#1e3a8a", fontSize: "14px" }}>
+        <p style={{ margin: "0 0 6px 0", color: "var(--accent-purple)", fontSize: "14px" }}>
           VHC checklist hosted on Job #{sharedVhcJobNumber}
         </p>
-        <p style={{ margin: 0, color: "#475569", fontSize: "13px" }}>
+        <p style={{ margin: 0, color: "var(--info-dark)", fontSize: "13px" }}>
           Any VHC updates, approvals, or parts raised on the master job instantly
           reflect on both job cards. Clocking, labour, and invoicing remain
           separate per job.
@@ -4863,9 +4863,9 @@ function DocumentsTab({
           gap: "16px",
           padding: "16px",
           borderRadius: "12px",
-          border: "1px solid #e5e7eb",
-          backgroundColor: "#ffffff",
-          boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+          border: "1px solid var(--accent-purple-surface)",
+          backgroundColor: "var(--surface)",
+          boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
         }}
       >
         <div
@@ -4873,8 +4873,8 @@ function DocumentsTab({
             width: "84px",
             height: "84px",
             borderRadius: "10px",
-            border: "1px solid #e5e7eb",
-            backgroundColor: "#f8fafc",
+            border: "1px solid var(--accent-purple-surface)",
+            backgroundColor: "var(--info-surface)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -4890,7 +4890,7 @@ function DocumentsTab({
           ) : (
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "28px", marginBottom: "4px" }}>📄</div>
-              <div style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>
+              <div style={{ fontSize: "11px", fontWeight: "600", color: "var(--info-dark)" }}>
                 {ext}
               </div>
             </div>
@@ -4900,13 +4900,13 @@ function DocumentsTab({
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
-              <h4 style={{ margin: "0 0 4px 0", fontSize: "15px", color: "#111827" }}>
+              <h4 style={{ margin: "0 0 4px 0", fontSize: "15px", color: "var(--accent-purple)" }}>
                 {doc.name || "Document"}
               </h4>
-              <p style={{ margin: 0, color: "#6b7280", fontSize: "13px" }}>
+              <p style={{ margin: 0, color: "var(--info)", fontSize: "13px" }}>
                 Folder: {(doc.folder || "general").replace(/-/g, " ")} · {doc.type || "Unknown type"}
               </p>
-              <p style={{ margin: "6px 0 0 0", color: "#9ca3af", fontSize: "12px" }}>
+              <p style={{ margin: "6px 0 0 0", color: "var(--info)", fontSize: "12px" }}>
                 Uploaded {formatTimestamp(doc.uploadedAt)} by {doc.uploadedBy || "System"}
               </p>
             </div>
@@ -4917,7 +4917,7 @@ function DocumentsTab({
                 style={{
                   padding: "8px 12px",
                   borderRadius: "8px",
-                  border: "1px solid #d1d5db",
+                  border: "1px solid var(--info)",
                   backgroundColor: "white",
                   fontSize: "13px",
                   fontWeight: "600",
@@ -4933,9 +4933,9 @@ function DocumentsTab({
                   style={{
                     padding: "8px 12px",
                     borderRadius: "8px",
-                    border: "1px solid #fecaca",
-                    backgroundColor: "#fee2e2",
-                    color: "#b91c1c",
+                    border: "1px solid var(--danger-surface)",
+                    backgroundColor: "var(--danger-surface)",
+                    color: "var(--danger)",
                     fontSize: "13px",
                     fontWeight: "600",
                     cursor: "pointer"
@@ -4958,12 +4958,12 @@ function DocumentsTab({
           margin: "0 0 8px 0",
           fontSize: "20px",
           fontWeight: "600",
-          color: "#1a1a1a"
+          color: "var(--text-primary)"
         }}
       >
         Documents & Attachments
       </h2>
-      <p style={{ color: "#6b7280", fontSize: "14px", margin: "0 0 20px 0" }}>
+      <p style={{ color: "var(--info)", fontSize: "14px", margin: "0 0 20px 0" }}>
         Centralised storage for check-sheets, VHC exports, customer uploads, vehicle documents, and
         service paperwork. {totalDocuments} file{totalDocuments === 1 ? "" : "s"} stored for this job.
       </p>
@@ -4990,18 +4990,18 @@ function DocumentsTab({
                 gap: "6px",
                 padding: "16px",
                 borderRadius: "12px",
-                border: isActive ? `2px solid ${category.accent}` : "1px solid #e5e7eb",
-                backgroundColor: isActive ? "rgba(209,0,0,0.05)" : "white",
+                border: isActive ? `2px solid ${category.accent}` : "1px solid var(--accent-purple-surface)",
+                backgroundColor: isActive ? "rgba(var(--primary-rgb),0.05)" : "white",
                 cursor: "pointer",
                 textAlign: "left",
-                boxShadow: isActive ? "0 4px 12px rgba(209,0,0,0.12)" : "none"
+                boxShadow: isActive ? "0 4px 12px rgba(var(--primary-rgb),0.12)" : "none"
               }}
             >
               <span style={{ fontSize: "18px" }}>{category.icon}</span>
-              <strong style={{ fontSize: "14px", color: "#111827" }}>
+              <strong style={{ fontSize: "14px", color: "var(--accent-purple)" }}>
                 {category.label}
               </strong>
-              <span style={{ fontSize: "12px", color: "#6b7280" }}>
+              <span style={{ fontSize: "12px", color: "var(--info)" }}>
                 {docsInCategory.length} file{docsInCategory.length === 1 ? "" : "s"}
               </span>
             </button>
@@ -5015,8 +5015,8 @@ function DocumentsTab({
             marginBottom: "24px",
             padding: "16px",
             borderRadius: "12px",
-            border: "1px dashed #cbd5f5",
-            backgroundColor: "#f8fafc",
+            border: "1px dashed var(--accent-purple)",
+            backgroundColor: "var(--info-surface)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -5025,15 +5025,15 @@ function DocumentsTab({
           }}
         >
           <div style={{ flex: "1 1 240px" }}>
-            <p style={{ margin: "0 0 6px 0", fontSize: "14px", color: "#0f172a", fontWeight: "600" }}>
+            <p style={{ margin: "0 0 6px 0", fontSize: "14px", color: "var(--accent-purple)", fontWeight: "600" }}>
               Upload to {selectedCategoryMeta.label}
             </p>
-            <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
+            <p style={{ margin: 0, fontSize: "12px", color: "var(--info)" }}>
               You can select multiple images or documents. Files instantly sync to all job card
               surfaces and technician views.
             </p>
             {uploading && (
-              <p style={{ margin: "8px 0 0 0", fontSize: "12px", color: "#0f172a", fontWeight: "600" }}>
+              <p style={{ margin: "8px 0 0 0", fontSize: "12px", color: "var(--accent-purple)", fontWeight: "600" }}>
                 Uploading… please keep this tab open.
               </p>
             )}
@@ -5047,7 +5047,7 @@ function DocumentsTab({
                 padding: "10px 18px",
                 borderRadius: "10px",
                 border: "none",
-                backgroundColor: uploading ? "#cbd5f5" : "#d10000",
+                backgroundColor: uploading ? "var(--accent-purple)" : "var(--primary)",
                 color: "white",
                 fontWeight: "600",
                 cursor: uploading ? "not-allowed" : "pointer",
@@ -5069,20 +5069,20 @@ function DocumentsTab({
       )}
 
       <div style={{ marginBottom: "12px" }}>
-        <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#0f172a" }}>
+        <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", color: "var(--accent-purple)" }}>
           {selectedCategoryMeta.label}
         </h3>
-        <p style={{ margin: 0, color: "#6b7280", fontSize: "13px" }}>
+        <p style={{ margin: 0, color: "var(--info)", fontSize: "13px" }}>
           {selectedCategoryMeta.description}
         </p>
         {!canDelete && (
-          <p style={{ margin: "6px 0 0 0", fontSize: "11px", color: "#94a3b8" }}>
+          <p style={{ margin: "6px 0 0 0", fontSize: "11px", color: "var(--info)" }}>
             Only workshop/service managers can delete files. Contact management if a document needs to
             be removed.
           </p>
         )}
         {canDelete && (
-          <p style={{ margin: "6px 0 0 0", fontSize: "11px", color: "#94a3b8" }}>
+          <p style={{ margin: "6px 0 0 0", fontSize: "11px", color: "var(--info)" }}>
             Delete removes the Supabase storage file and the job file record.
           </p>
         )}
@@ -5093,9 +5093,9 @@ function DocumentsTab({
           style={{
             padding: "28px",
             borderRadius: "12px",
-            border: "1px dashed #e5e7eb",
+            border: "1px dashed var(--accent-purple-surface)",
             textAlign: "center",
-            color: "#94a3b8",
+            color: "var(--info)",
             fontSize: "14px"
           }}
         >

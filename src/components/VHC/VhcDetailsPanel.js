@@ -14,10 +14,10 @@ import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDet
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 
 const STATUS_BADGES = {
-  red: "#ef4444",
-  amber: "#f59e0b",
-  green: "#10b981",
-  grey: "#6b7280",
+  red: "var(--danger)",
+  amber: "var(--warning)",
+  green: "var(--info)",
+  grey: "var(--info)",
 };
 
 const TAB_OPTIONS = [
@@ -196,22 +196,22 @@ const RANK_TO_SEVERITY = {
 };
 const LABOUR_RATE = 155;
 const SEVERITY_META = {
-  red: { title: "Red Repairs", description: "", accent: "#b91c1c" },
-  amber: { title: "Amber Repairs", description: "Advisory items that should be considered soon.", accent: "#d97706" },
+  red: { title: "Red Repairs", description: "", accent: "var(--danger)" },
+  amber: { title: "Amber Repairs", description: "Advisory items that should be considered soon.", accent: "var(--warning)" },
 };
 
 const COLOUR_CLASS = {
-  red: "#fee2e2",
-  amber: "#fef3c7",
-  green: "#ecfdf5",
-  grey: "#f3f4f6",
+  red: "var(--danger-surface)",
+  amber: "var(--warning-surface)",
+  green: "var(--success-surface)",
+  grey: "var(--info-surface)",
 };
 
 const SEVERITY_THEME = {
-  red: { background: "#fef2f2", border: "#fecaca", text: "#b91c1c" },
-  amber: { background: "#fffbeb", border: "#fde68a", text: "#92400e" },
-  green: { background: "#ecfdf5", border: "#a7f3d0", text: "#047857" },
-  grey: { background: "#f3f4f6", border: "#e5e7eb", text: "#374151" },
+  red: { background: "var(--danger-surface)", border: "var(--danger-surface)", text: "var(--danger)" },
+  amber: { background: "var(--warning-surface)", border: "var(--warning-surface)", text: "var(--danger-dark)" },
+  green: { background: "var(--success-surface)", border: "var(--success)", text: "var(--info-dark)" },
+  grey: { background: "var(--info-surface)", border: "var(--accent-purple-surface)", text: "var(--info-dark)" },
 };
 
 const normalizeText = (value = "") => value.toString().toLowerCase();
@@ -359,8 +359,8 @@ const deriveSectionSeverity = (section = {}, rawData = null) => {
 const buildSeverityBadgeStyles = (status) => {
   const colour = normaliseColour(status);
   return {
-    background: (colour && SEVERITY_THEME[colour]?.background) || COLOUR_CLASS[colour] || "#f3f4f6",
-    color: (colour && SEVERITY_THEME[colour]?.text) || STATUS_BADGES[colour] || "#374151",
+    background: (colour && SEVERITY_THEME[colour]?.background) || COLOUR_CLASS[colour] || "var(--info-surface)",
+    color: (colour && SEVERITY_THEME[colour]?.text) || STATUS_BADGES[colour] || "var(--info-dark)",
   };
 };
 
@@ -396,17 +396,17 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
     borderRadius: "999px",
     fontSize: "12px",
     fontWeight: 600,
-    border: "1px solid #e5e7eb",
-    background: "#f9fafb",
-    color: "#4b5563",
+    border: "1px solid var(--accent-purple-surface)",
+    background: "var(--info-surface)",
+    color: "var(--info-dark)",
   };
 
   return (
     <div
       style={{
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--accent-purple-surface)",
         borderRadius: "16px",
-        background: "#fff",
+        background: "var(--surface)",
         padding: "20px",
         display: "flex",
         flexDirection: "column",
@@ -423,7 +423,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
         }}
       >
         <div style={{ flex: 1, minWidth: "220px" }}>
-          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#111827" }}>
+          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "var(--accent-purple)" }}>
             {config.label}
           </h3>
         </div>
@@ -454,9 +454,9 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
             style={{
               padding: "8px 14px",
               borderRadius: "10px",
-              border: "1px solid #d10000",
-              background: "#d10000",
-              color: "#fff",
+              border: "1px solid var(--primary)",
+              background: "var(--primary)",
+              color: "var(--surface)",
               fontWeight: 600,
               cursor: onOpen ? "pointer" : "not-allowed",
               opacity: onOpen ? 1 : 0.6,
@@ -479,13 +479,13 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
               <div
                 key={`${config.key}-${idx}-${item.heading || item.label || "item"}`}
                 style={{
-                  border: `1px solid ${theme?.border || "#f3f4f6"}`,
+                  border: `1px solid ${theme?.border || "var(--info-surface)"}`,
                   borderRadius: "12px",
                   padding: "14px",
                   display: "flex",
                   flexDirection: "column",
                   gap: "10px",
-                  background: theme?.background || "#f9fafb",
+                  background: theme?.background || "var(--info-surface)",
                 }}
               >
                 <div
@@ -497,11 +497,11 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                   }}
                 >
                   <div style={{ minWidth: "200px" }}>
-                    <strong style={{ color: "#111827", fontSize: "14px" }}>
+                    <strong style={{ color: "var(--accent-purple)", fontSize: "14px" }}>
                       {item.heading || item.label || `Item ${idx + 1}`}
                     </strong>
                     {item.notes ? (
-                      <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "13px" }}>{item.notes}</p>
+                      <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>{item.notes}</p>
                     ) : null}
                   </div>
                   {item.status ? (
@@ -520,7 +520,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                   ) : null}
                 </div>
                 {rows.length > 0 ? (
-                  <ul style={{ margin: 0, paddingLeft: "18px", color: "#374151", fontSize: "13px" }}>
+                  <ul style={{ margin: 0, paddingLeft: "18px", color: "var(--info-dark)", fontSize: "13px" }}>
                     {rows.map((row, rowIdx) => (
                       <li key={`${config.key}-${idx}-row-${rowIdx}`} style={{ marginBottom: "4px" }}>
                         {row}
@@ -538,8 +538,8 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                           gap: "8px",
                           alignItems: "flex-start",
                           fontSize: "13px",
-                          color: "#374151",
-                          background: SEVERITY_THEME[normaliseColour(concern.status)]?.background || "#fff",
+                          color: "var(--info-dark)",
+                          background: SEVERITY_THEME[normaliseColour(concern.status)]?.background || "var(--surface)",
                           borderRadius: "10px",
                           padding: "8px 10px",
                         }}
@@ -568,11 +568,11 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
       ) : (
         <div
           style={{
-            border: "1px dashed #cbd5f5",
+            border: "1px dashed var(--accent-purple)",
             borderRadius: "12px",
             padding: "16px",
-            background: "#f8fafc",
-            color: "#64748b",
+            background: "var(--info-surface)",
+            color: "var(--info)",
             fontSize: "13px",
           }}
         >
@@ -601,7 +601,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const [lastSectionSavedAt, setLastSectionSavedAt] = useState(null);
 
   const containerPadding = showNavigation ? "24px" : "0";
-  const renderStatusMessage = (message, color = "#6b7280") => (
+  const renderStatusMessage = (message, color = "var(--info)") => (
     <div style={{ padding: containerPadding, color }}>{message}</div>
   );
 
@@ -868,10 +868,10 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   }, [sectionSaveStatus, lastSectionSavedAt, sectionSaveError]);
   const sectionSaveColor =
     sectionSaveStatus === "error"
-      ? "#b91c1c"
+      ? "var(--danger)"
       : sectionSaveStatus === "saving"
-      ? "#d97706"
-      : "#6b7280";
+      ? "var(--warning)"
+      : "var(--info)";
   const handleOpenSection = useCallback((sectionKey) => {
     setActiveSection(sectionKey);
   }, []);
@@ -1056,13 +1056,13 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   };
 
   const determineStatusColor = (entry, resolvedPartsCost) => {
-    if (entry.status === "authorized") return "#16a34a";
-    if (entry.status === "declined") return "#dc2626";
+    if (entry.status === "authorized") return "var(--success)";
+    if (entry.status === "declined") return "var(--danger)";
     const hasLabour = parseNumericValue(entry.laborHours) > 0;
     const hasCosts =
       (resolvedPartsCost ?? parseNumericValue(entry.partsCost)) > 0 || parseNumericValue(entry.totalOverride) > 0;
-    if (!hasLabour || !hasCosts) return "#ea580c";
-    return "#facc15";
+    if (!hasLabour || !hasCosts) return "var(--danger)";
+    return "var(--warning)";
   };
 
   const toggleRowSelection = (severity, itemId) => {
@@ -1110,10 +1110,10 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
         <div
           style={{
             padding: "18px",
-            border: "1px solid #f1f5f9",
+            border: "1px solid var(--info-surface)",
             borderRadius: "12px",
-            background: "#f8fafc",
-            color: "#64748b",
+            background: "var(--info-surface)",
+            color: "var(--info)",
             fontSize: "13px",
           }}
         >
@@ -1125,14 +1125,14 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     const selectedIds = severitySelections[severity] || [];
     const selectedSet = new Set(selectedIds);
     const allChecked = items.length > 0 && selectedSet.size === items.length;
-    const theme = SEVERITY_THEME[severity] || { border: "#f1f5f9" };
+    const theme = SEVERITY_THEME[severity] || { border: "var(--info-surface)" };
 
     return (
       <div
         style={{
           border: `1px solid ${theme.border}`,
           borderRadius: "16px",
-          background: "#fff",
+          background: "var(--surface)",
           overflow: "hidden",
         }}
       >
@@ -1141,10 +1141,10 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
             <thead>
               <tr
                 style={{
-                  background: "#f9fafb",
+                  background: "var(--info-surface)",
                   textTransform: "uppercase",
                   letterSpacing: "0.04em",
-                  color: "#94a3b8",
+                  color: "var(--info)",
                   fontSize: "11px",
                 }}
               >
@@ -1194,19 +1194,19 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                   <tr
                     key={item.id}
                     style={{
-                      borderBottom: "1px solid #f1f5f9",
-                      background: rowTheme.background || "#fff",
+                      borderBottom: "1px solid var(--info-surface)",
+                      background: rowTheme.background || "var(--surface)",
                       transition: "background 0.2s ease",
                     }}
                   >
-                    <td style={{ padding: "12px 16px", color: "#111827", width: "32%" }}>
-                      <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#9ca3af" }}>
+                    <td style={{ padding: "12px 16px", color: "var(--accent-purple)", width: "32%" }}>
+                      <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                         {item.categoryLabel || "Recorded Section"}
                       </div>
-                      <div style={{ fontWeight: 700, fontSize: "14px", color: "#111827", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                      <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
                         <span>{detailLabel}</span>
                         {detailContent ? (
-                          <span style={{ fontWeight: 500, color: "#374151" }}>- {detailContent}</span>
+                          <span style={{ fontWeight: 500, color: "var(--info-dark)" }}>- {detailContent}</span>
                         ) : null}
                       </div>
                       {severityBadge ? (
@@ -1230,10 +1230,10 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                         </span>
                       ) : null}
                       {item.measurement ? (
-                        <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>Measurement: {item.measurement}</div>
+                        <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>Measurement: {item.measurement}</div>
                       ) : null}
                       {locationLabel ? (
-                        <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>Location: {locationLabel}</div>
+                        <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>Location: {locationLabel}</div>
                       ) : null}
                     </td>
                     <td style={{ padding: "12px 16px" }}>
@@ -1248,13 +1248,13 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                             width: "160px",
                             padding: "8px",
                             borderRadius: "8px",
-                            border: "1px solid #e5e7eb",
-                            backgroundColor: "#f8fafc",
+                            border: "1px solid var(--accent-purple-surface)",
+                            backgroundColor: "var(--info-surface)",
                           }}
                           disabled
                           readOnly
                         />
-                        <a href="#parts-identified" style={{ fontSize: "12px", color: "#b45309", textDecoration: "none" }}>
+                        <a href="#parts-identified" style={{ fontSize: "12px", color: "var(--warning)", textDecoration: "none" }}>
                           View parts tab
                         </a>
                       </div>
@@ -1272,11 +1272,11 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                             width: "140px",
                             padding: "8px",
                             borderRadius: "8px",
-                            border: "1px solid #e5e7eb",
+                            border: "1px solid var(--accent-purple-surface)",
                           }}
                           disabled={readOnly}
                         />
-                        <span style={{ fontSize: "12px", color: "#9ca3af" }}>£{labourCost.toFixed(2)}</span>
+                        <span style={{ fontSize: "12px", color: "var(--info)" }}>£{labourCost.toFixed(2)}</span>
                       </div>
                     </td>
                     <td style={{ padding: "12px 16px" }}>
@@ -1292,7 +1292,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                             width: "160px",
                             padding: "8px",
                             borderRadius: "8px",
-                            border: "1px solid #e5e7eb",
+                            border: "1px solid var(--accent-purple-surface)",
                           }}
                           disabled={readOnly}
                         />
@@ -1309,7 +1309,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                             display: "inline-block",
                           }}
                         />
-                        <span style={{ fontSize: "12px", color: "#4b5563" }}>
+                        <span style={{ fontSize: "12px", color: "var(--info-dark)" }}>
                           {entry.status ? entry.status.charAt(0).toUpperCase() + entry.status.slice(1) : "Pending"}
                         </span>
                       </div>
@@ -1336,7 +1336,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
               justifyContent: "flex-end",
               gap: "12px",
               padding: "16px",
-              borderTop: "1px solid #f1f5f9",
+              borderTop: "1px solid var(--info-surface)",
             }}
           >
             <button
@@ -1346,9 +1346,9 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
               style={{
                 padding: "10px 16px",
                 borderRadius: "10px",
-                border: "1px solid #dc2626",
-                backgroundColor: selectedSet.size === 0 ? "#fee2e2" : "#fff",
-                color: "#dc2626",
+                border: "1px solid var(--danger)",
+                backgroundColor: selectedSet.size === 0 ? "var(--danger-surface)" : "var(--surface)",
+                color: "var(--danger)",
                 fontWeight: 600,
                 cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
               }}
@@ -1362,9 +1362,9 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
               style={{
                 padding: "10px 16px",
                 borderRadius: "10px",
-                border: "1px solid #16a34a",
-                backgroundColor: selectedSet.size === 0 ? "#dcfce7" : "#16a34a",
-                color: selectedSet.size === 0 ? "#16a34a" : "#fff",
+                border: "1px solid var(--success)",
+                backgroundColor: selectedSet.size === 0 ? "var(--success-surface)" : "var(--success)",
+                color: selectedSet.size === 0 ? "var(--success)" : "var(--surface)",
                 fontWeight: 600,
                 cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
               }}
@@ -1416,14 +1416,14 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   }
 
   if (error) {
-    return renderStatusMessage(error, "#b91c1c");
+    return renderStatusMessage(error, "var(--danger)");
   }
 
   const jobHeader = (
     <div
       style={{
-        background: "#fff",
-        border: "1px solid #e5e7eb",
+        background: "var(--surface)",
+        border: "1px solid var(--accent-purple-surface)",
         borderRadius: "16px",
         padding: "16px",
         display: "grid",
@@ -1433,23 +1433,23 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       }}
     >
       <div>
-        <div style={{ fontSize: "12px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.16em" }}>Job</div>
+        <div style={{ fontSize: "12px", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Job</div>
         <div style={{ fontSize: "20px", fontWeight: 700 }}>{job?.job_number || "—"}</div>
       </div>
       <div>
-        <div style={{ fontSize: "12px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.16em" }}>Reg</div>
+        <div style={{ fontSize: "12px", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Reg</div>
         <div style={{ fontSize: "20px", fontWeight: 700 }}>{job?.vehicle?.registration || job?.vehicle_reg || "—"}</div>
       </div>
       <div>
-        <div style={{ fontSize: "12px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.16em" }}>Customer</div>
+        <div style={{ fontSize: "12px", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Customer</div>
         <div style={{ fontSize: "15px", fontWeight: 600 }}>{customerName}</div>
       </div>
       <div>
-        <div style={{ fontSize: "12px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.16em" }}>Mileage</div>
+        <div style={{ fontSize: "12px", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Mileage</div>
         <div style={{ fontSize: "15px", fontWeight: 600 }}>{job?.vehicle?.mileage ? `${job.vehicle.mileage} mi` : job?.mileage ? `${job.mileage} mi` : "—"}</div>
       </div>
       <div>
-        <div style={{ fontSize: "12px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.16em" }}>Submitted</div>
+        <div style={{ fontSize: "12px", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Submitted</div>
         <div style={{ fontSize: "15px", fontWeight: 600 }}>{formatDateTime(workflow?.vhc_sent_at || workflow?.last_sent_at || job?.created_at)}</div>
       </div>
       <div style={{ justifySelf: "end" }}>
@@ -1457,8 +1457,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
           style={{
             padding: "6px 12px",
             borderRadius: "999px",
-            background: "#111827",
-            color: "#fff",
+            background: "var(--accent-purple)",
+            color: "var(--surface)",
             fontWeight: 600,
             textTransform: "capitalize",
           }}
@@ -1477,10 +1477,10 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
             type="button"
             onClick={() => router.push("/vhc/dashboard")}
             style={{
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--accent-purple-surface)",
               borderRadius: "10px",
               padding: "8px 14px",
-              background: "#fff",
+              background: "var(--surface)",
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -1494,10 +1494,10 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
               router.push(target);
             }}
             style={{
-              border: "1px solid #d10000",
+              border: "1px solid var(--primary)",
               borderRadius: "10px",
               padding: "8px 18px",
-              background: "#d10000",
+              background: "var(--primary)",
               color: "white",
               fontWeight: 600,
               cursor: "pointer",
@@ -1511,7 +1511,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
       {showNavigation && jobHeader}
 
-      <div style={{ display: "flex", borderBottom: "1px solid #e5e7eb", gap: "8px" }}>
+      <div style={{ display: "flex", borderBottom: "1px solid var(--accent-purple-surface)", gap: "8px" }}>
         {TAB_OPTIONS.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -1523,8 +1523,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                 border: "none",
                 background: "transparent",
                 padding: "10px 14px",
-                borderBottom: isActive ? "3px solid #d10000" : "3px solid transparent",
-                color: isActive ? "#111827" : "#6b7280",
+                borderBottom: isActive ? "3px solid var(--primary)" : "3px solid transparent",
+                color: isActive ? "var(--accent-purple)" : "var(--info)",
                 fontWeight: isActive ? 700 : 500,
                 cursor: "pointer",
               }}
@@ -1541,7 +1541,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
             const section = severitySections[severity];
             if (!section || section.size === 0) return null;
             const meta = SEVERITY_META[severity];
-            const severityTheme = SEVERITY_THEME[severity] || { border: "#f1f5f9", background: "#fff8f8" };
+            const severityTheme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--danger-surface)" };
             return (
               <div
                 key={severity}
@@ -1552,8 +1552,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                   border: `2px solid ${severityTheme.border}`,
                   borderRadius: "18px",
                   padding: "18px",
-                  background: "#fff",
-                  boxShadow: "0 12px 30px rgba(15,23,42,0.08)",
+                  background: "var(--surface)",
+                  boxShadow: "0 12px 30px rgba(var(--shadow-rgb),0.08)",
                 }}
               >
                 <div
@@ -1564,7 +1564,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                 >
                   <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
                   {meta.description ? (
-                    <p style={{ margin: "4px 0 0", color: "#6b7280" }}>{meta.description}</p>
+                    <p style={{ margin: "4px 0 0", color: "var(--info)" }}>{meta.description}</p>
                   ) : null}
                 </div>
                 {renderSeverityTable(severity)}
@@ -1586,7 +1586,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
             }}
           >
             <div style={{ flex: 1, minWidth: "240px" }}>
-              <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "#111827" }}>
+              <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--accent-purple)" }}>
                 Health check
               </h3>
             </div>
@@ -1610,11 +1610,11 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
           {!hasHealthData && (
             <div
               style={{
-                border: "1px dashed #e5e7eb",
+                border: "1px dashed var(--accent-purple-surface)",
                 borderRadius: "14px",
                 padding: "20px",
-                background: "#fff",
-                color: "#6b7280",
+                background: "var(--surface)",
+                color: "var(--info)",
                 fontSize: "13px",
                 textAlign: "center",
               }}

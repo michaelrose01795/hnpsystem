@@ -19,7 +19,7 @@ const radii = appShellTheme.radii;
 const shadows = appShellTheme.shadows;
 
 const cardStyle = {
-  background: "linear-gradient(160deg, #ffffff, #fff7f7)",
+  background: "linear-gradient(160deg, var(--surface), var(--danger-surface))",
   border: `1px solid ${palette.border}`,
   borderRadius: "22px",
   padding: "20px",
@@ -67,8 +67,8 @@ const ComposeToggleButton = ({ active, children, onClick }) => (
       borderRadius: radii.lg,
       padding: "10px 12px",
       border: `1px solid ${active ? palette.accent : palette.border}`,
-      backgroundColor: active ? palette.accent : "#ffffff",
-      color: active ? "#ffffff" : palette.accent,
+      backgroundColor: active ? palette.accent : "var(--surface)",
+      color: active ? "var(--surface)" : palette.accent,
       fontWeight: 600,
       cursor: "pointer",
       transition: "all 0.2s ease",
@@ -127,7 +127,7 @@ const AvatarBadge = ({ name }) => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
+        boxShadow: "0 4px 10px rgba(var(--shadow-rgb),0.08)",
       }}
     >
       {initial}
@@ -147,10 +147,10 @@ const MessageBubble = ({ message, isMine }) => {
     borderRadius: isMine
       ? `${radii.lg} ${radii.sm} ${radii.lg} ${radii.lg}`
       : `${radii.sm} ${radii.lg} ${radii.lg} ${radii.lg}`,
-    backgroundColor: isMine ? palette.accent : "#ffffff",
-    color: isMine ? "#ffffff" : palette.textPrimary,
+    backgroundColor: isMine ? palette.accent : "var(--surface)",
+    color: isMine ? "var(--surface)" : palette.textPrimary,
     maxWidth: "480px",
-    boxShadow: isMine ? shadows.md : "0 8px 20px rgba(0,0,0,0.08)",
+    boxShadow: isMine ? shadows.md : "0 8px 20px rgba(var(--shadow-rgb),0.08)",
     lineHeight: 1.45,
   };
 
@@ -805,7 +805,7 @@ function MessagesPage() {
               borderRadius: radii.pill,
               padding: "12px 20px",
               backgroundColor: palette.accent,
-              color: "#ffffff",
+              color: "var(--surface)",
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -866,7 +866,7 @@ function MessagesPage() {
                   padding: "12px 14px",
                   borderRadius: radii.lg,
                   border: `1px solid ${palette.border}`,
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "var(--surface)",
                 }}
               />
 
@@ -911,7 +911,7 @@ function MessagesPage() {
                           backgroundColor:
                             composeMode === "group" && isRecipientSelected(entry)
                               ? palette.accentSurface
-                              : "#ffffff",
+                              : "var(--surface)",
                           cursor: "pointer",
                         }}
                       >
@@ -971,7 +971,7 @@ function MessagesPage() {
                       padding: "12px 14px",
                       borderRadius: radii.lg,
                       border: `1px solid ${palette.border}`,
-                      backgroundColor: "#ffffff",
+                      backgroundColor: "var(--surface)",
                     }}
                   />
                   <button
@@ -984,8 +984,8 @@ function MessagesPage() {
                       padding: "12px 18px",
                       backgroundColor: selectedRecipients.length
                         ? palette.accent
-                        : "#f3f4f6",
-                      color: selectedRecipients.length ? "#ffffff" : "#9ca3af",
+                        : "var(--info-surface)",
+                      color: selectedRecipients.length ? "var(--surface)" : "var(--info)",
                       fontWeight: 600,
                       cursor: selectedRecipients.length ? "pointer" : "not-allowed",
                     }}
@@ -996,7 +996,7 @@ function MessagesPage() {
               )}
 
               {composeError && (
-                <p style={{ color: "#b91c1c", margin: 0, fontSize: "0.85rem" }}>
+                <p style={{ color: "var(--danger)", margin: 0, fontSize: "0.85rem" }}>
                   {composeError}
                 </p>
               )}
@@ -1037,7 +1037,7 @@ function MessagesPage() {
                           isSystemThreadActive ? palette.accent : palette.border
                         }`,
                         backgroundColor:
-                          isSystemThreadActive ? palette.accentSurface : "#ffffff",
+                          isSystemThreadActive ? palette.accentSurface : "var(--surface)",
                         padding: "14px 16px",
                         textAlign: "left",
                         cursor: "pointer",
@@ -1062,7 +1062,7 @@ function MessagesPage() {
                               padding: "4px 10px",
                               borderRadius: radii.pill,
                               backgroundColor: palette.accent,
-                              color: "#ffffff",
+                              color: "var(--surface)",
                               fontSize: "0.75rem",
                               fontWeight: 600,
                             }}
@@ -1099,7 +1099,7 @@ function MessagesPage() {
                                 activeThreadId === thread.id ? palette.accent : palette.border
                               }`,
                               backgroundColor:
-                                activeThreadId === thread.id ? palette.accentSurface : "#ffffff",
+                                activeThreadId === thread.id ? palette.accentSurface : "var(--surface)",
                               padding: "14px 16px",
                               textAlign: "left",
                               cursor: "pointer",
@@ -1135,7 +1135,7 @@ function MessagesPage() {
                                   padding: "4px 10px",
                                   borderRadius: radii.pill,
                                   backgroundColor: palette.accent,
-                                  color: "#ffffff",
+                                  color: "var(--surface)",
                                   fontSize: "0.75rem",
                                   fontWeight: 600,
                                 }}
@@ -1178,8 +1178,8 @@ function MessagesPage() {
                     style={{
                       padding: "4px 10px",
                       borderRadius: radii.pill,
-                      backgroundColor: "#fee2e2",
-                      color: "#b91c1c",
+                      backgroundColor: "var(--danger-surface)",
+                      color: "var(--danger)",
                       fontSize: "0.75rem",
                       fontWeight: 600,
                     }}
@@ -1201,7 +1201,7 @@ function MessagesPage() {
                     <p style={{ color: palette.textMuted, margin: 0 }}>Loading system updates…</p>
                   )}
                   {!systemLoading && systemError && (
-                    <p style={{ color: "#b91c1c", margin: 0 }}>{systemError}</p>
+                    <p style={{ color: "var(--danger)", margin: 0 }}>{systemError}</p>
                   )}
                   {!systemLoading && !systemError && systemNotifications.length === 0 && (
                     <p style={{ color: palette.textMuted, margin: 0 }}>No system notifications yet.</p>
@@ -1215,7 +1215,7 @@ function MessagesPage() {
                             borderRadius: "14px",
                             border: `1px solid ${palette.border}`,
                             padding: "12px",
-                            backgroundColor: "#ffffff",
+                            backgroundColor: "var(--surface)",
                             boxShadow: shadows.sm,
                           }}
                         >
@@ -1299,7 +1299,7 @@ function MessagesPage() {
                       border: `1px dashed ${palette.border}`,
                       borderRadius: "16px",
                       padding: "12px",
-                      backgroundColor: "#fff",
+                      backgroundColor: "var(--surface)",
                       display: "flex",
                       flexDirection: "column",
                       gap: "10px",
@@ -1318,7 +1318,7 @@ function MessagesPage() {
                         padding: "10px 12px",
                         borderRadius: radii.lg,
                         border: `1px solid ${palette.border}`,
-                        backgroundColor: "#ffffff",
+                        backgroundColor: "var(--surface)",
                       }}
                     />
                     {groupSearchTerm.trim().length > 0 && groupSearchTerm.trim().length < 2 && (
@@ -1351,7 +1351,7 @@ function MessagesPage() {
                               border: `1px solid ${palette.border}`,
                               borderRadius: "12px",
                               padding: "8px 12px",
-                              backgroundColor: "#fff",
+                              backgroundColor: "var(--surface)",
                             }}
                           >
                             <div>
@@ -1376,8 +1376,8 @@ function MessagesPage() {
                                 border: "none",
                                 borderRadius: radii.pill,
                                 padding: "8px 14px",
-                                backgroundColor: groupManageBusy ? "#f3f4f6" : palette.accent,
-                                color: groupManageBusy ? "#9ca3af" : "#ffffff",
+                                backgroundColor: groupManageBusy ? "var(--info-surface)" : palette.accent,
+                                color: groupManageBusy ? "var(--info)" : "var(--surface)",
                                 fontWeight: 600,
                                 cursor: groupManageBusy ? "not-allowed" : "pointer",
                               }}
@@ -1396,7 +1396,7 @@ function MessagesPage() {
                         </p>
                       )}
                     {groupManageError && (
-                      <p style={{ margin: 0, fontSize: "0.8rem", color: "#b91c1c" }}>
+                      <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--danger)" }}>
                         {groupManageError}
                       </p>
                     )}
@@ -1453,7 +1453,7 @@ function MessagesPage() {
                       border: `1px solid ${palette.border}`,
                       padding: "12px 14px",
                       resize: "none",
-                      backgroundColor: "#ffffff",
+                      backgroundColor: "var(--surface)",
                     }}
                   />
                   <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
@@ -1464,8 +1464,8 @@ function MessagesPage() {
                         border: "none",
                         borderRadius: radii.pill,
                         padding: "12px 20px",
-                        backgroundColor: canSend ? palette.accent : "#f3f4f6",
-                        color: canSend ? "#ffffff" : "#9ca3af",
+                        backgroundColor: canSend ? palette.accent : "var(--info-surface)",
+                        color: canSend ? "var(--surface)" : "var(--info)",
                         fontWeight: 600,
                         cursor: canSend ? "pointer" : "not-allowed",
                       }}
@@ -1474,7 +1474,7 @@ function MessagesPage() {
                     </button>
                   </div>
                   {conversationError && (
-                    <p style={{ color: "#b91c1c", margin: 0, fontSize: "0.85rem" }}>
+                    <p style={{ color: "var(--danger)", margin: 0, fontSize: "0.85rem" }}>
                       {conversationError}
                     </p>
                   )}

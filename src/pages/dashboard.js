@@ -153,14 +153,14 @@ export default function Dashboard() {
             backgroundColor: "white",
             padding: "12px 20px",
             borderRadius: "8px",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+            boxShadow: "0 2px 6px rgba(var(--shadow-rgb),0.1)",
           }}
         >
           <button
             onClick={() => setShowSearch(true)}
             style={{
               padding: "10px 16px",
-              backgroundColor: "#FF4040",
+              backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "6px",
@@ -175,7 +175,7 @@ export default function Dashboard() {
 
         <div
           style={{
-            backgroundColor: "#FFF8F8",
+            backgroundColor: "var(--danger-surface)",
             padding: "20px",
             borderRadius: "8px",
             minHeight: "70vh",
@@ -185,24 +185,24 @@ export default function Dashboard() {
 
           <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "20px" }}>
             <thead>
-              <tr style={{ backgroundColor: "#FFCCCC" }}>
-                <th style={{ padding: "8px", border: "1px solid #FFAAAA" }}>Job Number</th>
-                <th style={{ padding: "8px", border: "1px solid #FFAAAA" }}>Customer</th>
-                <th style={{ padding: "8px", border: "1px solid #FFAAAA" }}>Vehicle</th>
-                <th style={{ padding: "8px", border: "1px solid #FFAAAA" }}>Status</th>
-                <th style={{ padding: "8px", border: "1px solid #FFAAAA" }}>Technician</th>
+              <tr style={{ backgroundColor: "var(--danger)" }}>
+                <th style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>Job Number</th>
+                <th style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>Customer</th>
+                <th style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>Vehicle</th>
+                <th style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>Status</th>
+                <th style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>Technician</th>
               </tr>
             </thead>
             <tbody>
               {jobs.map((job) => (
                 <tr key={job.id}>
-                  <td style={{ padding: "8px", border: "1px solid #FFAAAA" }}>{job.jobNumber}</td>
-                  <td style={{ padding: "8px", border: "1px solid #FFAAAA" }}>{job.customer}</td>
-                  <td style={{ padding: "8px", border: "1px solid #FFAAAA" }}>
+                  <td style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>{job.jobNumber}</td>
+                  <td style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>{job.customer}</td>
+                  <td style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>
                     {job.make} {job.model} ({job.reg})
                   </td>
-                  <td style={{ padding: "8px", border: "1px solid #FFAAAA" }}>{job.status}</td>
-                  <td style={{ padding: "8px", border: "1px solid #FFAAAA" }}>{job.technician}</td>
+                  <td style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>{job.status}</td>
+                  <td style={{ padding: "8px", border: "1px solid var(--primary-light)" }}>{job.technician}</td>
                 </tr>
               ))}
             </tbody>
@@ -218,7 +218,7 @@ export default function Dashboard() {
             left: 0,
             width: "100vw",
             height: "100vh",
-            backgroundColor: "rgba(0,0,0,0.5)",
+            backgroundColor: "rgba(var(--shadow-rgb),0.5)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
@@ -232,10 +232,10 @@ export default function Dashboard() {
               borderRadius: "10px",
               width: "400px",
               maxWidth: "90%",
-              boxShadow: "0 20px 45px rgba(0,0,0,0.2)",
+              boxShadow: "0 20px 45px rgba(var(--shadow-rgb),0.2)",
             }}
           >
-            <h2 style={{ marginBottom: "16px", color: "#FF4040" }}>Search Jobs</h2>
+            <h2 style={{ marginBottom: "16px", color: "var(--primary)" }}>Search Jobs</h2>
             <input
               type="text"
               value={searchTerm}
@@ -245,7 +245,7 @@ export default function Dashboard() {
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "6px",
-                border: "1px solid #ddd",
+                border: "1px solid var(--surface-light)",
                 marginBottom: "12px",
               }}
             />
@@ -254,7 +254,7 @@ export default function Dashboard() {
               style={{
                 width: "100%",
                 padding: "10px",
-                backgroundColor: "#FF4040",
+                backgroundColor: "var(--primary)",
                 color: "white",
                 border: "none",
                 borderRadius: "6px",
@@ -270,8 +270,8 @@ export default function Dashboard() {
               style={{
                 width: "100%",
                 padding: "10px",
-                backgroundColor: "#f3f4f6",
-                color: "#333",
+                backgroundColor: "var(--info-surface)",
+                color: "var(--text-secondary)",
                 border: "none",
                 borderRadius: "6px",
                 cursor: "pointer",
@@ -282,7 +282,7 @@ export default function Dashboard() {
 
             <div style={{ marginTop: "20px", maxHeight: "200px", overflowY: "auto" }}>
               {searchResults.length === 0 ? (
-                <p style={{ color: "#666" }}>No results found.</p>
+                <p style={{ color: "var(--grey-accent)" }}>No results found.</p>
               ) : (
                 <ul style={{ listStyle: "none", padding: 0 }}>
                   {searchResults.map((job) => (
@@ -290,7 +290,7 @@ export default function Dashboard() {
                       key={job.id}
                       style={{
                         padding: "10px",
-                        borderBottom: "1px solid #eee",
+                        borderBottom: "1px solid var(--surface-light)",
                       }}
                     >
                       <strong>{job.jobNumber}</strong> - {job.customer} ({job.reg})

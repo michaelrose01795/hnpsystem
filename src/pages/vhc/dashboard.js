@@ -22,18 +22,18 @@ const supabase = getDatabaseClient(); // reuse a single Supabase client instance
 
 // ✅ Badge palette used to keep all severity chips on brand
 const ITEM_STATUS_COLORS = {
-  Red: { background: "rgba(239,68,68,0.16)", color: "#ef4444", border: "rgba(239,68,68,0.32)" },
-  Amber: { background: "rgba(245,158,11,0.16)", color: "#b45309", border: "rgba(245,158,11,0.32)" },
-  Green: { background: "rgba(16,185,129,0.16)", color: "#059669", border: "rgba(16,185,129,0.32)" },
-  Neutral: { background: "rgba(107,114,128,0.16)", color: "#374151", border: "rgba(107,114,128,0.28)" },
+  Red: { background: "rgba(var(--danger-rgb), 0.16)", color: "var(--danger)", border: "rgba(var(--danger-rgb), 0.32)" },
+  Amber: { background: "rgba(var(--warning-rgb), 0.16)", color: "var(--warning)", border: "rgba(var(--warning-rgb), 0.32)" },
+  Green: { background: "rgba(var(--info-rgb), 0.16)", color: "var(--info-dark)", border: "rgba(var(--info-rgb), 0.32)" },
+  Neutral: { background: "rgba(var(--grey-accent-rgb), 0.16)", color: "var(--info-dark)", border: "rgba(var(--grey-accent-rgb), 0.28)" },
 };
 
 // ✅ Text color palette for individual concern lines
 const CONCERN_STATUS_COLORS = {
-  Red: "#ef4444",
-  Amber: "#b45309",
-  Green: "#059669",
-  Grey: "#6b7280",
+  Red: "var(--danger)",
+  Amber: "var(--warning)",
+  Green: "var(--info-dark)",
+  Grey: "var(--info)",
 };
 
 // ✅ Derive human readable text for how long ago a timestamp occurred (in months)
@@ -66,8 +66,8 @@ const getLastVisitColor = (lastVisitDate) => {
   const today = new Date(); // current date
   const monthsDiff = (today - visitDate) / (1000 * 60 * 60 * 24 * 30); // approximate months difference
 
-  if (monthsDiff <= 4) return "#10b981"; // recent visit -> green
-  return "#fbbf24"; // otherwise amber
+  if (monthsDiff <= 4) return "var(--info)"; // recent visit -> green
+  return "var(--warning)"; // otherwise amber
 };
 
 // ✅ Get next service bubble color
@@ -78,9 +78,9 @@ const getNextServiceColor = (nextServiceDate) => {
   const today = new Date(); // current date
   const monthsDiff = (serviceDate - today) / (1000 * 60 * 60 * 24 * 30); // approximate months until next service
 
-  if (monthsDiff <= 1) return "#ef4444"; // due within a month -> red
-  if (monthsDiff <= 3) return "#fbbf24"; // due within three months -> amber
-  return "#10b981"; // plenty of time -> green
+  if (monthsDiff <= 1) return "var(--danger)"; // due within a month -> red
+  if (monthsDiff <= 3) return "var(--warning)"; // due within three months -> amber
+  return "var(--info)"; // plenty of time -> green
 };
 
 // ✅ Get MOT expiry bubble color
@@ -91,10 +91,10 @@ const getMOTColor = (motExpiry) => {
   const today = new Date(); // current date
   const monthsDiff = (expiryDate - today) / (1000 * 60 * 60 * 24 * 30); // approximate months until expiry
 
-  if (monthsDiff < 1) return "#ef4444"; // expires within a month -> red
-  if (monthsDiff < 3) return "#fbbf24"; // expires within three months -> amber
-  if (monthsDiff >= 4) return "#10b981"; // more than four months -> green
-  return "#fbbf24"; // default amber
+  if (monthsDiff < 1) return "var(--danger)"; // expires within a month -> red
+  if (monthsDiff < 3) return "var(--warning)"; // expires within three months -> amber
+  if (monthsDiff >= 4) return "var(--info)"; // more than four months -> green
+  return "var(--warning)"; // default amber
 };
 
 // ✅ Build badge styles for section/item badges
@@ -121,7 +121,7 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
   const lastVisitColor = getLastVisitColor(job.lastVisit); // determine color for last visit pill
   const nextServiceColor = getNextServiceColor(job.nextService); // determine color for next service pill
   const motColor = getMOTColor(job.motExpiry); // determine color for MOT pill
-  const statusColor = STATUS_COLORS[job.vhcStatus] || "#9ca3af"; // pick brand color for status badge
+  const statusColor = STATUS_COLORS[job.vhcStatus] || "var(--info)"; // pick brand color for status badge
 
   const renderSectionMetrics = (section) => (
     <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
@@ -150,9 +150,9 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
       <div
         key={`${item.heading}-${index}`}
         style={{
-          border: "1px solid #f3f4f6",
+          border: "1px solid var(--info-surface)",
           borderRadius: "10px",
-          backgroundColor: "#fff",
+          backgroundColor: "var(--surface)",
           padding: "10px 12px",
           display: "flex",
           flexDirection: "column",
@@ -160,13 +160,13 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ fontSize: "13px", fontWeight: "600", color: "#111827" }}>{item.heading}</span>
+          <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--accent-purple)" }}>{item.heading}</span>
           {showBadge ? <span style={badgeStyle}>{item.status}</span> : null}
         </div>
         {item.rows?.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             {item.rows.map((line, lineIdx) => (
-              <span key={`${item.heading}-row-${lineIdx}`} style={{ fontSize: "12px", color: "#4b5563" }}>
+              <span key={`${item.heading}-row-${lineIdx}`} style={{ fontSize: "12px", color: "var(--info-dark)" }}>
                 {line}
               </span>
             ))}
@@ -179,8 +179,8 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
                 key={`${item.heading}-concern-${concernIdx}`}
                 style={{ display: "flex", gap: "6px", alignItems: "flex-start" }}
               >
-                <span style={{ fontSize: "10px", color: "#d1d5db", lineHeight: "18px" }}>•</span>
-                <span style={{ fontSize: "12px", color: "#4b5563" }}>
+                <span style={{ fontSize: "10px", color: "var(--info)", lineHeight: "18px" }}>•</span>
+                <span style={{ fontSize: "12px", color: "var(--info-dark)" }}>
                   <span style={{ fontWeight: "600", color: getConcernColor(concern.status) }}>
                     {concern.status}:
                   </span>{" "}
@@ -198,11 +198,11 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
     <div
       onClick={onClick}
       style={{
-        border: "1px solid #ffe5e5",
+        border: "1px solid var(--surface-light)",
         padding: "16px 20px",
         borderRadius: "12px",
         backgroundColor: "white",
-        boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+        boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)",
         cursor: "pointer",
         transition: "all 0.3s ease",
         display: "flex",
@@ -211,13 +211,13 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = "translateY(-2px)"; // lift card on hover
-        e.currentTarget.style.boxShadow = "0 4px 12px rgba(209,0,0,0.15)"; // add red glow
-        e.currentTarget.style.borderColor = "#ffb3b3"; // tint border red
+        e.currentTarget.style.boxShadow = "0 4px 12px rgba(var(--primary-rgb),0.15)"; // add red glow
+        e.currentTarget.style.borderColor = "var(--danger)"; // tint border red
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = "translateY(0)"; // reset transform
-        e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.05)"; // reset shadow
-        e.currentTarget.style.borderColor = "#ffe5e5"; // reset border color
+        e.currentTarget.style.boxShadow = "0 2px 4px rgba(var(--shadow-rgb),0.05)"; // reset shadow
+        e.currentTarget.style.borderColor = "var(--surface-light)"; // reset border color
       }}
     >
       <div
@@ -253,7 +253,7 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
                 style={{
                   fontSize: "18px",
                   fontWeight: "700",
-                  color: "#1a1a1a",
+                  color: "var(--text-primary)",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -262,7 +262,7 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
               <span
                 style={{
                   fontSize: "14px",
-                  color: "#666",
+                  color: "var(--grey-accent)",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -272,7 +272,7 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
             <span
               style={{
                 fontSize: "13px",
-                color: "#999",
+                color: "var(--grey-accent-light)",
                 whiteSpace: "nowrap",
               }}
             >
@@ -307,7 +307,7 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
                 {job.lastVisit}
               </div>
             ) : (
-              <span style={{ fontSize: "11px", color: "#ccc" }}>First visit</span>
+              <span style={{ fontSize: "11px", color: "var(--background)" }}>First visit</span>
             )}
           </div>
 
@@ -326,7 +326,7 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
                 {job.nextService}
               </div>
             ) : (
-              <span style={{ fontSize: "11px", color: "#ccc" }}>-</span>
+              <span style={{ fontSize: "11px", color: "var(--background)" }}>-</span>
             )}
           </div>
 
@@ -345,7 +345,7 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
                 {job.motExpiry || "N/A"}
               </div>
             ) : (
-              <span style={{ fontSize: "11px", color: "#ccc" }}>-</span>
+              <span style={{ fontSize: "11px", color: "var(--background)" }}>-</span>
             )}
           </div>
 
@@ -358,8 +358,8 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
           >
             <div
               style={{
-                backgroundColor: "rgba(239,68,68,0.12)",
-                color: "#ef4444",
+                backgroundColor: "rgba(var(--danger-rgb), 0.12)",
+                color: "var(--danger)",
                 padding: "6px 12px",
                 borderRadius: "8px",
                 fontSize: "13px",
@@ -384,8 +384,8 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
           >
             <div
               style={{
-                backgroundColor: "rgba(245,158,11,0.12)",
-                color: "#b45309",
+                backgroundColor: "rgba(var(--warning-rgb), 0.12)",
+                color: "var(--warning)",
                 padding: "6px 12px",
                 borderRadius: "8px",
                 fontSize: "13px",
@@ -407,7 +407,7 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
                 style={{
                   fontSize: "14px",
                   fontWeight: "600",
-                  color: "#b45309",
+                  color: "var(--warning)",
                 }}
               >
                 £{job.partsValue || "0.00"}
@@ -415,7 +415,7 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
               <div
                 style={{
                   fontSize: "10px",
-                  color: "#b45309",
+                  color: "var(--warning)",
                   textTransform: "uppercase",
                   letterSpacing: "0.5px",
                 }}
@@ -442,8 +442,8 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
                 flex: "1 1 260px",
                 minWidth: "260px",
                 borderRadius: "12px",
-                border: "1px solid #ffe5e5",
-                background: "linear-gradient(180deg,#fffafa,#fff5f5)",
+                border: "1px solid var(--surface-light)",
+                background: "linear-gradient(180deg,var(--background),var(--surface-light))",
                 padding: "14px 16px",
                 display: "flex",
                 flexDirection: "column",
@@ -451,7 +451,7 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: "14px", fontWeight: "700", color: "#d10000" }}>{section.title}</span>
+                <span style={{ fontSize: "14px", fontWeight: "700", color: "var(--primary)" }}>{section.title}</span>
                 {renderSectionMetrics(section)}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -727,9 +727,9 @@ export default function VHCDashboard() {
             alignItems: "center",
             marginBottom: "12px",
             padding: "12px",
-            backgroundColor: "#fff",
+            backgroundColor: "var(--surface)",
             borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+            boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
             flexShrink: 0,
           }}
         >
@@ -742,7 +742,7 @@ export default function VHCDashboard() {
               flex: 1,
               padding: "10px 16px",
               borderRadius: "8px",
-              border: "1px solid #e0e0e0",
+              border: "1px solid var(--surface-light)",
               fontSize: "14px",
               outline: "none",
             }}
@@ -756,7 +756,7 @@ export default function VHCDashboard() {
               flex: 1,
               padding: "10px 16px",
               borderRadius: "8px",
-              border: "1px solid #e0e0e0",
+              border: "1px solid var(--surface-light)",
               fontSize: "14px",
               outline: "none",
             }}
@@ -770,7 +770,7 @@ export default function VHCDashboard() {
               flex: 1,
               padding: "10px 16px",
               borderRadius: "8px",
-              border: "1px solid #e0e0e0",
+              border: "1px solid var(--surface-light)",
               fontSize: "14px",
               outline: "none",
             }}
@@ -794,9 +794,9 @@ export default function VHCDashboard() {
               onClick={() => setFilter(status)}
               style={{
                 padding: "8px 16px",
-                border: filter === status ? "2px solid #d10000" : "1px solid #d10000",
-                color: filter === status ? "#fff" : "#d10000",
-                backgroundColor: filter === status ? "#d10000" : "#fff",
+                border: filter === status ? "2px solid var(--primary)" : "1px solid var(--primary)",
+                color: filter === status ? "var(--surface)" : "var(--primary)",
+                backgroundColor: filter === status ? "var(--primary)" : "var(--surface)",
                 borderRadius: "8px",
                 cursor: "pointer",
                 fontWeight: filter === status ? "600" : "500",
@@ -813,15 +813,15 @@ export default function VHCDashboard() {
         {partsOnlyMode && (
           <div
             style={{
-              backgroundColor: "#fff8ed",
-              border: "1px solid #ffddaf",
+              backgroundColor: "var(--warning-surface)",
+              border: "1px solid var(--warning)",
               borderRadius: "12px",
               padding: "14px 16px",
               display: "flex",
               alignItems: "center",
               gap: "12px",
               marginBottom: "12px",
-              color: "#92400e",
+              color: "var(--danger-dark)",
             }}
           >
             <span style={{ fontSize: "20px" }}>🧰</span>
@@ -841,9 +841,9 @@ export default function VHCDashboard() {
             display: "flex",
             flexDirection: "column",
             borderRadius: "24px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-            border: "1px solid #ffe5e5",
-            background: "linear-gradient(to bottom right, white, #fff9f9, #ffecec)",
+            boxShadow: "0 4px 12px rgba(var(--shadow-rgb),0.08)",
+            border: "1px solid var(--surface-light)",
+            background: "linear-gradient(to bottom right, white, var(--danger-surface), var(--surface-light))",
             padding: "24px",
             overflow: "hidden",
             minHeight: 0,
@@ -861,7 +861,7 @@ export default function VHCDashboard() {
               }}
             >
               <div style={{ fontSize: "64px" }}>🔍</div>
-              <p style={{ color: "#666", fontSize: "18px", fontWeight: "600" }}>
+              <p style={{ color: "var(--grey-accent)", fontSize: "18px", fontWeight: "600" }}>
                 No VHC reports found
               </p>
             </div>
@@ -874,12 +874,12 @@ export default function VHCDashboard() {
                   justifyContent: "space-between",
                   paddingBottom: "16px",
                   marginBottom: "16px",
-                  borderBottom: "2px solid #ffd6d6",
+                  borderBottom: "2px solid var(--surface-light)",
                   flexShrink: 0,
                 }}
               >
                 <div style={{ width: "600px", flexShrink: 0 }}>
-                  <span style={{ fontSize: "12px", fontWeight: "600", color: "#000" }}>
+                  <span style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-primary)" }}>
                     VEHICLE DETAILS
                   </span>
                 </div>
@@ -927,7 +927,7 @@ export default function VHCDashboard() {
                 style={{
                   flexShrink: 0,
                   paddingTop: "16px",
-                  borderTop: "2px solid #ffd6d6",
+                  borderTop: "2px solid var(--surface-light)",
                 }}
               >
                 <div
@@ -944,9 +944,9 @@ export default function VHCDashboard() {
                     style={{
                       padding: "10px 20px",
                       borderRadius: "8px",
-                      border: "1px solid #e0e0e0",
-                      backgroundColor: currentPage === 1 ? "#f5f5f5" : "#fff",
-                      color: currentPage === 1 ? "#999" : "#333",
+                      border: "1px solid var(--surface-light)",
+                      backgroundColor: currentPage === 1 ? "var(--surface)" : "var(--surface)",
+                      color: currentPage === 1 ? "var(--grey-accent-light)" : "var(--text-secondary)",
                       cursor: currentPage === 1 ? "not-allowed" : "pointer",
                       fontSize: "14px",
                       fontWeight: "600",
@@ -960,9 +960,9 @@ export default function VHCDashboard() {
                     style={{
                       padding: "10px 20px",
                       borderRadius: "8px",
-                      border: "1px solid #e0e0e0",
-                      backgroundColor: currentPage === totalPages ? "#f5f5f5" : "#fff",
-                      color: currentPage === totalPages ? "#999" : "#333",
+                      border: "1px solid var(--surface-light)",
+                      backgroundColor: currentPage === totalPages ? "var(--surface)" : "var(--surface)",
+                      color: currentPage === totalPages ? "var(--grey-accent-light)" : "var(--text-secondary)",
                       cursor: currentPage === totalPages ? "not-allowed" : "pointer",
                       fontSize: "14px",
                       fontWeight: "600",
@@ -971,7 +971,7 @@ export default function VHCDashboard() {
                     Next →
                   </button>
                 </div>
-                <span style={{ display: "block", textAlign: "center", fontSize: "12px", color: "#888" }}>
+                <span style={{ display: "block", textAlign: "center", fontSize: "12px", color: "var(--grey-accent-light)" }}>
                   Page {currentPage} of {totalPages}
                 </span>
               </div>

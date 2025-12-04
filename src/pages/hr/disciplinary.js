@@ -52,7 +52,7 @@ export default function HrDisciplinaryIncidents() {
     <Layout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header>
-          <p style={{ color: "#6B7280", marginTop: "6px" }}>
+          <p style={{ color: "var(--info)", marginTop: "6px" }}>
             Log warnings, track follow-ups, and maintain audit trails for workplace incidents.
           </p>
         </header>
@@ -72,13 +72,13 @@ export default function HrDisciplinaryIncidents() {
                 <div
                   key={incident.id}
                   style={{
-                    border: "1px solid #E5E7EB",
+                    border: "1px solid var(--accent-purple-surface)",
                     borderRadius: "12px",
                     padding: "12px",
                     display: "flex",
                     flexDirection: "column",
                     gap: "6px",
-                    background: "rgba(249, 250, 251, 0.8)",
+                    background: "rgba(var(--grey-accent-rgb), 0.8)",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -88,10 +88,10 @@ export default function HrDisciplinaryIncidents() {
                       tone={incident.level.includes("Final") ? "danger" : "warning"}
                     />
                   </div>
-                  <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>
+                  <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
                     Reported {new Date(incident.reportedOn).toLocaleDateString()} • {incident.department}
                   </span>
-                  <p style={{ margin: 0, color: "#374151" }}>{incident.notes}</p>
+                  <p style={{ margin: 0, color: "var(--info-dark)" }}>{incident.notes}</p>
                   <StatusTag label={incident.status} tone={incident.status === "Open" ? "warning" : "success"} />
                 </div>
               ))}
@@ -109,7 +109,7 @@ export default function HrDisciplinaryIncidents() {
           >
             <ul style={{ margin: 0, paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
               {placeholderIncidentsLog.map((entry) => (
-                <li key={entry.id} style={{ color: "#374151" }}>
+                <li key={entry.id} style={{ color: "var(--info-dark)" }}>
                   <strong>{entry.type}</strong> • Job {entry.jobNumber} • {entry.recordedBy} •{" "}
                   <StatusTag
                     label={entry.outcome}
@@ -166,7 +166,7 @@ export default function HrDisciplinaryIncidents() {
               </button>
             </div>
           </form>
-          <p style={{ color: "#6B7280", marginTop: "18px" }}>
+          <p style={{ color: "var(--info)", marginTop: "18px" }}>
             These controls are placeholders for UX validation. Wire up Supabase tables for incidents and warnings before launch.
           </p>
         </SectionCard>
@@ -179,7 +179,7 @@ const buttonStylePrimary = {
   padding: "8px 14px",
   borderRadius: "10px",
   border: "none",
-  background: "#F97316",
+  background: "var(--danger)",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",
@@ -188,9 +188,9 @@ const buttonStylePrimary = {
 const buttonStyleSecondary = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px solid #FED7AA",
+  border: "1px solid var(--warning)",
   background: "white",
-  color: "#B45309",
+  color: "var(--warning)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -198,9 +198,9 @@ const buttonStyleSecondary = {
 const buttonStyleGhost = {
   padding: "8px 14px",
   borderRadius: "10px",
-  border: "1px dashed #D1D5DB",
+  border: "1px dashed var(--info)",
   background: "transparent",
-  color: "#6B7280",
+  color: "var(--info)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -210,15 +210,15 @@ const labelStyle = {
   flexDirection: "column",
   gap: "6px",
   fontSize: "0.85rem",
-  color: "#374151",
+  color: "var(--info-dark)",
   fontWeight: 600,
 };
 
 const inputStyle = {
   borderRadius: "10px",
-  border: "1px solid #E5E7EB",
+  border: "1px solid var(--accent-purple-surface)",
   padding: "10px 12px",
   fontWeight: 500,
-  color: "#111827",
-  background: "#FFFFFF",
+  color: "var(--accent-purple)",
+  background: "var(--surface)",
 };

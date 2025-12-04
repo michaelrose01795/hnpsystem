@@ -34,11 +34,11 @@ const pageStyles = {
     gap: "18px",
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "var(--surface)",
     borderRadius: "20px",
     padding: "24px",
-    border: "1px solid #ffddd8",
-    boxShadow: "0 12px 30px rgba(0, 0, 0, 0.08)",
+    border: "1px solid var(--danger-surface)",
+    boxShadow: "0 12px 30px rgba(var(--shadow-rgb), 0.08)",
     width: "100%",
   },
   cardRow: {
@@ -53,7 +53,7 @@ const pageStyles = {
     gap: "6px",
   },
   smallText: {
-    color: "#6b7280",
+    color: "var(--info)",
     fontSize: "0.85rem",
   },
   badge: {
@@ -66,9 +66,9 @@ const pageStyles = {
 };
 
 const statusVariants = {
-  planned: { label: "Planned", background: "rgba(15, 118, 110, 0.12)", color: "#0f766e" },
-  in_progress: { label: "In Progress", background: "rgba(59, 130, 246, 0.15)", color: "#1d4ed8" },
-  completed: { label: "Completed", background: "rgba(16, 185, 129, 0.25)", color: "#047857" },
+  planned: { label: "Planned", background: "rgba(var(--info-rgb), 0.12)", color: "var(--info-dark)" },
+  in_progress: { label: "In Progress", background: "rgba(var(--info-rgb), 0.15)", color: "var(--accent-purple)" },
+  completed: { label: "Completed", background: "rgba(var(--info-rgb), 0.25)", color: "var(--info-dark)" },
 };
 
 const formatCurrency = (value) => {
@@ -180,7 +180,7 @@ export default function PartsDeliveriesPage() {
   if (!hasAccess) {
     return (
       <Layout>
-        <div style={{ padding: "48px", textAlign: "center", color: "#a00000" }}>
+        <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
           You do not have access to delivery planning.
         </div>
       </Layout>
@@ -196,21 +196,21 @@ export default function PartsDeliveriesPage() {
               margin: 0,
               textTransform: "uppercase",
               letterSpacing: "0.08em",
-              color: "#a00000",
+              color: "var(--primary-dark)",
               fontSize: "0.85rem",
             }}
           >
             Parts Deliveries
           </p>
-          <h1 style={{ margin: 0, color: "#d10000" }}>Delivery Routes</h1>
-          <p style={{ margin: 0, color: "#6b7280" }}>
+          <h1 style={{ margin: 0, color: "var(--primary)" }}>Delivery Routes</h1>
+          <p style={{ margin: 0, color: "var(--info)" }}>
             Plan multi-stop runs, capture mileage/fuel, and confirm deliveries in a single workspace.
           </p>
         </div>
 
         <div style={pageStyles.controls}>
           <div>
-            <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#a00000" }}>Selected day</div>
+            <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--primary-dark)" }}>Selected day</div>
             <div style={{ fontSize: "1.1rem", fontWeight: 600 }}>{displayDate}</div>
           </div>
           <div style={pageStyles.dateControl}>
@@ -219,9 +219,9 @@ export default function PartsDeliveriesPage() {
               onClick={() => setSelectedDate((prev) => adjustIsoDate(prev, -1))}
               style={{
                 borderRadius: "10px",
-                border: "1px solid #ffd1d1",
-                background: "#ffffff",
-                color: "#a00000",
+                border: "1px solid var(--surface-light)",
+                background: "var(--surface)",
+                color: "var(--primary-dark)",
                 padding: "10px 14px",
                 cursor: "pointer",
                 fontWeight: 600,
@@ -235,10 +235,10 @@ export default function PartsDeliveriesPage() {
               onChange={(event) => setSelectedDate(event.target.value)}
               style={{
                 borderRadius: "10px",
-                border: "1px solid #ffd1d1",
+                border: "1px solid var(--surface-light)",
                 padding: "10px 12px",
                 fontWeight: 600,
-                color: "#a00000",
+                color: "var(--primary-dark)",
               }}
             />
             <button
@@ -246,9 +246,9 @@ export default function PartsDeliveriesPage() {
               onClick={() => setSelectedDate((prev) => adjustIsoDate(prev, 1))}
               style={{
                 borderRadius: "10px",
-                border: "1px solid #ffd1d1",
-                background: "#a00000",
-                color: "#ffffff",
+                border: "1px solid var(--surface-light)",
+                background: "var(--primary-dark)",
+                color: "var(--surface)",
                 padding: "10px 14px",
                 cursor: "pointer",
                 fontWeight: 600,
@@ -261,11 +261,11 @@ export default function PartsDeliveriesPage() {
 
         <div style={pageStyles.cardGrid}>
           {error && (
-            <div style={{ color: "#b91c1c", fontWeight: 600 }}>{error}</div>
+            <div style={{ color: "var(--danger)", fontWeight: 600 }}>{error}</div>
           )}
-          {loading && <div style={{ color: "#6b7280" }}>Loading delivery routes…</div>}
+          {loading && <div style={{ color: "var(--info)" }}>Loading delivery routes…</div>}
           {!loading && deliveries.length === 0 && (
-            <div style={{ color: "#6b7280" }}>
+            <div style={{ color: "var(--info)" }}>
               No planned deliveries found for the selected day. Adjust the date to keep planning.
             </div>
           )}
@@ -282,7 +282,7 @@ export default function PartsDeliveriesPage() {
                 <div key={delivery.id} style={pageStyles.card}>
                   <div style={pageStyles.cardRow}>
                     <div style={pageStyles.cardColumn}>
-                      <span style={{ color: "#6b7280", fontSize: "0.85rem" }}>
+                      <span style={{ color: "var(--info)", fontSize: "0.85rem" }}>
                         Delivery date
                       </span>
                       <span style={{ fontSize: "1.1rem", fontWeight: 700 }}>
@@ -317,17 +317,17 @@ export default function PartsDeliveriesPage() {
                       }}
                     >
                       <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>Stops</div>
+                        <div style={{ fontSize: "0.75rem", color: "var(--info)" }}>Stops</div>
                         <div style={{ fontWeight: 700, fontSize: "1.3rem" }}>{stopsCount}</div>
                       </div>
                       <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>Mileage</div>
+                        <div style={{ fontSize: "0.75rem", color: "var(--info)" }}>Mileage</div>
                         <div style={{ fontWeight: 700, fontSize: "1.3rem" }}>
                           {totalMileage.toLocaleString()} km
                         </div>
                       </div>
                       <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>Fuel cost</div>
+                        <div style={{ fontSize: "0.75rem", color: "var(--info)" }}>Fuel cost</div>
                         <div style={{ fontWeight: 700, fontSize: "1.3rem" }}>
                           {formatCurrency(totalFuelCost)}
                         </div>
@@ -352,12 +352,12 @@ export default function PartsDeliveriesPage() {
                       href={`/parts/delivery-planner?deliveryId=${delivery.id}`}
                       style={{
                         textDecoration: "none",
-                        background: "#d10000",
-                        color: "#ffffff",
+                        background: "var(--primary)",
+                        color: "var(--surface)",
                         padding: "10px 18px",
                         borderRadius: "12px",
                         fontWeight: 600,
-                        boxShadow: "0 6px 20px rgba(209, 0, 0, 0.25)",
+                        boxShadow: "0 6px 20px rgba(var(--primary-rgb), 0.25)",
                       }}
                     >
                       View route

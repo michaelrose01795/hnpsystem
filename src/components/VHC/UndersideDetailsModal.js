@@ -32,7 +32,7 @@ const inputStyle = {
   fontSize: "14px",
   color: palette.textPrimary,
   outline: "none",
-  boxShadow: "inset 0 1px 3px rgba(15,23,42,0.05)",
+  boxShadow: "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)",
 };
 
 const statusSelectStyle = {
@@ -200,7 +200,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
           style={{
             position: "absolute",
             inset: 0,
-            background: "rgba(15,23,42,0.55)",
+            background: "rgba(var(--shadow-rgb),0.55)",
             backdropFilter: "blur(6px)",
             display: "flex",
             alignItems: "center",
@@ -216,7 +216,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
               background: palette.surface,
               borderRadius: "20px",
               border: `1px solid ${palette.border}`,
-              boxShadow: "0 18px 36px rgba(15,23,42,0.20)",
+              boxShadow: "0 18px 36px rgba(var(--shadow-rgb),0.20)",
               padding: "24px",
               display: "flex",
               flexDirection: "column",
@@ -252,11 +252,11 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                 style={inputStyle}
                 onFocus={(e) => {
                   e.target.style.borderColor = palette.accent;
-                  e.target.style.boxShadow = "0 0 0 3px rgba(209,0,0,0.12)";
+                  e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
                 }}
                 onBlur={(e) => {
                   e.target.style.borderColor = palette.border;
-                  e.target.style.boxShadow = "inset 0 1px 3px rgba(15,23,42,0.05)";
+                  e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)";
                 }}
               />
 
@@ -317,7 +317,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                       borderRadius: "16px",
                       border: `1px solid ${palette.border}`,
                       background: palette.surface,
-                      boxShadow: "0 4px 14px rgba(15,23,42,0.08)",
+                      boxShadow: "0 4px 14px rgba(var(--shadow-rgb),0.08)",
                     }}
                   >
                     <label style={fieldLabelStyle}>Issue</label>
@@ -328,11 +328,11 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                       style={inputStyle}
                       onFocus={(e) => {
                         e.target.style.borderColor = palette.accent;
-                        e.target.style.boxShadow = "0 0 0 3px rgba(209,0,0,0.12)";
+                        e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
                       }}
                       onBlur={(e) => {
                         e.target.style.borderColor = palette.border;
-                        e.target.style.boxShadow = "inset 0 1px 3px rgba(15,23,42,0.05)";
+                        e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)";
                       }}
                     />
 

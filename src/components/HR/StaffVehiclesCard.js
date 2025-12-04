@@ -217,7 +217,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
                       onChange={(event) =>
                         handleHistoryFieldChange(vehicle.id, "description", event.target.value)
                       }
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-[#d10000] focus:outline-none"
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-[var(--primary)] focus:outline-none"
                       placeholder="E.g. brake pads"
                     />
                   </label>
@@ -230,7 +230,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
                       onChange={(event) =>
                         handleHistoryFieldChange(vehicle.id, "cost", event.target.value)
                       }
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-[#d10000] focus:outline-none"
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-[var(--primary)] focus:outline-none"
                       placeholder="0.00"
                     />
                   </label>
@@ -244,7 +244,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
                       onChange={(event) =>
                         handleHistoryFieldChange(vehicle.id, "jobId", event.target.value)
                       }
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-[#d10000] focus:outline-none"
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:border-[var(--primary)] focus:outline-none"
                       placeholder="Optional"
                     />
                   </label>
@@ -259,7 +259,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
                           event.target.checked
                         )
                       }
-                      className="h-4 w-4 rounded text-[#d10000]"
+                      className="h-4 w-4 rounded text-[var(--primary)]"
                     />
                     Deduct this repair from payroll
                   </label>
@@ -268,7 +268,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
                   <button
                     type="submit"
                     disabled={savingHistory[vehicle.id]}
-                    className="rounded-full border border-[#ffd0d0] bg-[#d10000] px-4 py-1.5 text-[11px] font-semibold text-white hover:bg-[#a00000] disabled:cursor-not-allowed disabled:bg-[#f4bebe]"
+                    className="rounded-full border border-[var(--surface-light)] bg-[var(--primary)] px-4 py-1.5 text-[11px] font-semibold text-white hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
                   >
                     {savingHistory[vehicle.id] ? "Saving…" : "Add to history"}
                   </button>
@@ -293,7 +293,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
               type="text"
               value={vehicleForm.make}
               onChange={(event) => handleVehicleFieldChange("make", event.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#d10000] focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
           <label className="text-xs font-semibold text-slate-600">
@@ -302,7 +302,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
               type="text"
               value={vehicleForm.model}
               onChange={(event) => handleVehicleFieldChange("model", event.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#d10000] focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
         </div>
@@ -313,7 +313,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
               type="text"
               value={vehicleForm.registration}
               onChange={(event) => handleVehicleFieldChange("registration", event.target.value.toUpperCase())}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#d10000] focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
               placeholder="AB12 CDE"
             />
           </label>
@@ -323,7 +323,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
               type="text"
               value={vehicleForm.vin}
               onChange={(event) => handleVehicleFieldChange("vin", event.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#d10000] focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
         </div>
@@ -334,7 +334,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
               type="text"
               value={vehicleForm.colour}
               onChange={(event) => handleVehicleFieldChange("colour", event.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#d10000] focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
           <label className="text-xs font-semibold text-slate-600">
@@ -345,7 +345,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
               onChange={(event) =>
                 handleVehicleFieldChange("payrollDeductionReference", event.target.value)
               }
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#d10000] focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
               placeholder="Optional reference"
             />
           </label>
@@ -355,7 +355,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
             type="checkbox"
             checked={vehicleForm.payrollDeductionEnabled}
             onChange={(event) => handleVehicleFieldChange("payrollDeductionEnabled", event.target.checked)}
-            className="h-4 w-4 rounded text-[#d10000]"
+            className="h-4 w-4 rounded text-[var(--primary)]"
           />
           Deduct repairs from payroll automatically
         </label>
@@ -368,7 +368,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
           <button
             type="submit"
             disabled={savingVehicle}
-            className="rounded-full border border-[#ffd0d0] bg-[#d10000] px-5 py-2 text-sm font-semibold text-white shadow hover:bg-[#a00000] disabled:cursor-not-allowed disabled:bg-[#f4bebe]"
+            className="rounded-full border border-[var(--surface-light)] bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white shadow hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
           >
             {savingVehicle ? "Saving…" : "Add vehicle"}
           </button>
