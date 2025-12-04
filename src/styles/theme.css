@@ -6,7 +6,7 @@
   --surface-rgb: 255, 255, 255;
   --surface-light: #f7f7f7;
   --surface-muted: #fff1f1;
-  --surface-gradient: linear-gradient(135deg, #ffffff, #fffaf8, #f7f7f7);
+  --surface-gradient: #ffffff;
   --border: #e8c9c9;
   --text-primary: #0f0f0f;
   --text-primary-rgb: 15, 15, 15;
@@ -58,7 +58,7 @@
   --surface-rgb: 22, 22, 26;
   --surface-light: #23232b;
   --surface-muted: #1d1d24;
-  --surface-gradient: linear-gradient(145deg, #1c1c22, #0f0f14);
+  --surface-gradient: #111116;
   --border: #2e2e36;
   --text-primary: #f8f7ff;
   --text-primary-rgb: 248, 247, 255;

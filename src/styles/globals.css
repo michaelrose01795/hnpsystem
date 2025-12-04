@@ -215,8 +215,8 @@ div.card:hover h3 {
 /* === Dark Mode Overrides === */
 /* ========================================================= */
 body.dark-mode {
-  background-color: var(--text-primary) !important;
-  color: var(--surface-light) !important;
+  background-color: var(--background) !important;
+  color: var(--text-primary) !important;
 }
 
 /* Smooth transition for all main elements */
@@ -235,8 +235,8 @@ body.dark-mode section,
 body.dark-mode main,
 body.dark-mode header,
 body.dark-mode aside {
-  background-color: transparent !important;
-  color: var(--surface-light) !important;
+  background-color: inherit !important;
+  color: inherit !important;
 }
 
 /* Popups & modals */
