@@ -312,7 +312,7 @@ export default function StatusSidebar({
       <div style={panelStyle}>
         {/* Header */}
         <div style={{
-          background: 'linear-gradient(to right, var(--primary), var(--primary-dark))', // Red gradient
+          background: 'var(--primary)', // Red gradient
           color: 'white',
           padding: '20px',
           borderRadius: '0', // Match full-height edge-to-edge layout
@@ -463,7 +463,7 @@ export default function StatusSidebar({
           flex: 1, // Fill remaining vertical space so colored section reaches footer
           minHeight: 0, // Allow flex child to shrink for proper scrolling
           padding: '20px',
-          background: 'linear-gradient(to bottom, var(--background), var(--surface-light))',
+          background: 'var(--surface)',
           borderRadius: '0 0 16px 16px' // Match parent border radius
         }}>
           {/* Show message when no job selected */}

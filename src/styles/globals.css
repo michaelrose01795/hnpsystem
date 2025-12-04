@@ -320,7 +320,7 @@ hr {
 }
 
 .text-gradient {
-  background: linear-gradient(to right, var(--primary), var(--primary));
+  background: var(--primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

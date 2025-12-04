@@ -585,7 +585,7 @@ export default function MyJobsPage() {
             borderRadius: "24px",
             boxShadow: "0 4px 12px rgba(var(--shadow-rgb),0.08)",
             border: "1px solid var(--surface-light)",
-            background: "linear-gradient(to bottom right, white, var(--danger-surface), var(--surface-light))",
+            background: "var(--surface)",
             padding: "24px",
             overflow: "hidden",
             minHeight: 0
@@ -1015,7 +1015,7 @@ export default function MyJobsPage() {
 
         {/* Quick Info Box */}
         <div style={{
-          background: "linear-gradient(90deg, var(--surface-light), var(--surface-light))",
+          background: "var(--surface-light)",
           border: "1px solid var(--danger)",
           borderRadius: "12px",
           padding: "16px 20px",

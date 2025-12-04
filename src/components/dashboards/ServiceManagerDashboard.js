@@ -76,7 +76,7 @@ export default function ServiceManagerDashboard() {
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "16px" }}>
       <header
         style={{
-          background: "linear-gradient(120deg, var(--info-surface), var(--info-surface))",
+          background: "var(--info-surface)",
           borderRadius: "18px",
           padding: "24px",
           border: "1px solid var(--info-surface)",

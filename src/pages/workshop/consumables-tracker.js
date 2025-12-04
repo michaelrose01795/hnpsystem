@@ -24,7 +24,7 @@ const workspaceShellStyle = {
   borderRadius: "24px",
   boxShadow: "0 4px 12px rgba(var(--shadow-rgb),0.08)",
   border: "1px solid var(--surface-light)",
-  background: "linear-gradient(to bottom right, var(--surface), var(--danger-surface), var(--surface-light))",
+  background: "var(--surface)",
   padding: "24px",
   minHeight: 0,
   overflow: "hidden",
@@ -182,7 +182,7 @@ const orderButtonStyle = {
   padding: "8px 16px",
   borderRadius: "10px",
   border: "none",
-  background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+  background: "var(--primary)",
   color: "var(--surface)",
   fontWeight: 600,
   cursor: "pointer",
@@ -1092,7 +1092,7 @@ function ConsumablesTrackerPage() {
                 display: "inline-block",
                 padding: "10px 18px",
                 borderRadius: "999px",
-                background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+                background: "var(--primary)",
                 color: "var(--surface)",
                 fontWeight: 600,
                 textDecoration: "none",
@@ -1137,7 +1137,7 @@ function ConsumablesTrackerPage() {
                       padding: "10px 16px",
                       borderRadius: "10px",
                       border: "none",
-                      background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+                      background: "var(--primary)",
                       color: "var(--surface)",
                       fontWeight: 600,
                       cursor: "pointer",
@@ -1224,7 +1224,7 @@ function ConsumablesTrackerPage() {
                       ...orderModalButtonStyle,
                       background: orderModalLoading
                         ? "rgba(var(--primary-rgb),0.4)"
-                        : "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+                        : "var(--primary)",
                       color: "var(--surface)",
                     }}
                   >
@@ -1303,7 +1303,7 @@ function ConsumablesTrackerPage() {
                         width: "100%",
                         background: orderModalLoading
                           ? "rgba(var(--primary-rgb),0.4)"
-                          : "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+                          : "var(--primary)",
                         color: "var(--surface)",
                       }}
                     >
@@ -1650,7 +1650,7 @@ function ConsumablesTrackerPage() {
                       width: "auto",
                       background: newItemLoading
                         ? "rgba(var(--primary-rgb),0.4)"
-                        : "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+                        : "var(--primary)",
                       color: "var(--surface)",
                     }}
                   >
@@ -1809,7 +1809,7 @@ function ConsumablesTrackerPage() {
                       ...orderModalButtonStyle,
                       background: budgetSaving
                         ? "rgba(var(--primary-rgb),0.4)"
-                        : "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+                        : "var(--primary)",
                       color: "var(--surface)",
                       width: "auto",
                     }}

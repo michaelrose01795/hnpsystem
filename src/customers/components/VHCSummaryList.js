@@ -25,7 +25,7 @@ export default function VHCSummaryList({ summaries = [], vehicles = [] }) {
           return (
             <div
               key={summary.id}
-              className="rounded-2xl border border-[var(--surface-light)] bg-gradient-to-r from-white to-[var(--danger-surface)] px-4 py-4 text-sm text-slate-700 shadow-[0_6px_20px_rgba(var(--primary-rgb),0.06)]"
+              className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-4 py-4 text-sm text-slate-700 shadow-[0_6px_20px_rgba(var(--primary-rgb),0.06)]"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>

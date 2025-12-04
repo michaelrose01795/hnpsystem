@@ -2520,7 +2520,7 @@ export default function CreateJobCardPage() {
                     padding: "12px",
                     borderRadius: "10px",
                     border: "none",
-                    background: "linear-gradient(135deg, var(--accent-purple), var(--accent-purple))",
+                    background: "var(--primary)",
                     color: "white",
                     fontWeight: "600",
                     cursor: isUploadingDocuments ? "not-allowed" : "pointer",

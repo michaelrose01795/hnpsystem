@@ -988,7 +988,7 @@ export default function TechJobDetailPage() {
             borderRadius: "8px",
             boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
             border: "1px solid var(--surface-light)",
-            background: "linear-gradient(to bottom right, white, var(--danger-surface), var(--surface-light))",
+            background: "var(--surface)",
             padding: "24px",
             overflow: "hidden",
             display: "flex",

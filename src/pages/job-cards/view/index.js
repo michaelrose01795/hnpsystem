@@ -416,7 +416,7 @@ export default function ViewJobCards() {
           minHeight: "100vh",
           width: "100%",
           padding: "32px 24px 40px",
-          background: "linear-gradient(180deg,var(--surface-light) 0%,var(--surface) 45%,var(--info-surface) 100%)",
+          background: "var(--surface)",
           display: "flex",
           justifyContent: "center",
         }}
@@ -479,7 +479,7 @@ export default function ViewJobCards() {
                     minWidth: "130px",
                     padding: "10px 16px",
                     borderRadius: "16px",
-                    background: "linear-gradient(135deg,var(--danger-surface),var(--danger))",
+                    background: "var(--danger)",
                     border: "1px solid var(--danger-surface)",
                     color: "var(--danger-dark)",
                     textAlign: "center",
@@ -495,7 +495,7 @@ export default function ViewJobCards() {
                 onClick={fetchJobs}
                 style={{
                   padding: "12px 28px",
-                  background: "linear-gradient(135deg,var(--danger),var(--danger))",
+                  background: "var(--danger)",
                   color: "white",
                   border: "none",
                   borderRadius: "16px",
@@ -546,10 +546,7 @@ export default function ViewJobCards() {
                   padding: "12px 32px",
                   border: "none",
                   borderRadius: "999px",
-                  background:
-                    activeTab === "today"
-                      ? "linear-gradient(135deg,var(--primary),var(--primary-dark))"
-                      : "transparent",
+                  background: activeTab === "today" ? "var(--primary)" : "transparent",
                   color: activeTab === "today" ? "white" : "var(--danger-dark)",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -564,10 +561,7 @@ export default function ViewJobCards() {
                   padding: "12px 32px",
                   border: "none",
                   borderRadius: "999px",
-                  background:
-                    activeTab === "carryOver"
-                      ? "linear-gradient(135deg,var(--primary),var(--primary-dark))"
-                      : "transparent",
+                  background: activeTab === "carryOver" ? "var(--primary)" : "transparent",
                   color: activeTab === "carryOver" ? "white" : "var(--danger-dark)",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -661,7 +655,7 @@ export default function ViewJobCards() {
                 gap: "10px",
                 padding: "12px",
                 marginBottom: "16px",
-                background: "linear-gradient(135deg,rgba(var(--surface-rgb), 0.95),rgba(var(--danger-rgb), 0.9))",
+                background: "var(--surface)",
                 borderRadius: "18px",
                 border: "1px solid var(--surface-light)",
                 boxShadow: "inset 0 1px 1px rgba(var(--surface-rgb), 0.8)",
@@ -681,9 +675,7 @@ export default function ViewJobCards() {
                       borderRadius: "14px",
                       border: "1px solid",
                       borderColor: isActive ? "transparent" : "rgba(var(--primary-rgb), 0.3)",
-                      background: isActive
-                        ? "linear-gradient(135deg,var(--danger),var(--danger))"
-                        : "rgba(var(--surface-rgb), 0.9)",
+                      background: isActive ? "var(--danger)" : "rgba(var(--surface-rgb), 0.9)",
                       color: isActive ? "white" : "var(--danger)",
                       cursor: "pointer",
                       fontWeight: 600,
@@ -822,7 +814,7 @@ export default function ViewJobCards() {
 
               {/* ✅ Job Details - Enhanced */}
               <div style={{ 
-                background: "linear-gradient(to bottom right, white, var(--danger-surface), var(--surface-light))",
+                background: "var(--surface)",
                 border: "1px solid var(--surface-light)",
                 borderRadius: "12px",
                 padding: "16px",

@@ -72,7 +72,8 @@ export default function NewsFeed() {
           {Object.keys(groupedUpdates).map((dept) => (
             <section
               key={dept}
-              className="rounded-3xl shadow-lg p-8 border border-[var(--surface-light)] transition-all duration-300 bg-gradient-to-br from-white via-[var(--danger-surface)] to-[var(--surface-light)] hover:shadow-2xl"
+              className="rounded-3xl shadow-lg p-8 border border-[var(--surface-light)] transition-all duration-300 hover:shadow-2xl"
+              style={{ background: "var(--surface)" }}
             >
               <h2
                 className="text-2xl font-semibold mb-6 pb-2 border-b border-[var(--surface-light)]"

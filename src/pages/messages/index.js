@@ -19,7 +19,7 @@ const radii = appShellTheme.radii;
 const shadows = appShellTheme.shadows;
 
 const cardStyle = {
-  background: "linear-gradient(160deg, var(--surface), var(--danger-surface))",
+  background: "var(--surface)",
   border: `1px solid ${palette.border}`,
   borderRadius: "22px",
   padding: "20px",

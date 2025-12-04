@@ -140,7 +140,7 @@ export default function PartsDashboard() {
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
         <header
           style={{
-            background: "linear-gradient(120deg, var(--info-surface), var(--surface))",
+            background: "var(--surface)",
             borderRadius: "18px",
             border: "1px solid var(--info)",
             padding: "24px",

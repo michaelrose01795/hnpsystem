@@ -219,7 +219,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
                 padding: "14px",
                 borderRadius: "16px",
                 border: "1px solid var(--accent-purple-surface)",
-                background: "linear-gradient(180deg, var(--surface), var(--info-surface))",
+                background: "var(--surface)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -465,7 +465,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
               padding: "10px 16px",
               borderRadius: "12px",
               border: "none",
-              background: "linear-gradient(120deg, var(--primary), var(--primary-dark))",
+              background: "var(--primary)",
               color: "white",
               fontWeight: 600,
               cursor: "pointer",
@@ -688,7 +688,7 @@ export default function TrackingDashboard() {
             padding: "14px 18px",
             borderRadius: "18px",
             border: "1px solid rgba(var(--danger-rgb), 0.18)",
-            background: "linear-gradient(120deg, rgba(var(--danger-rgb), 0.65), rgba(var(--danger-rgb), 0.9))",
+            background: "var(--danger-surface)",
             boxShadow: "0 18px 28px rgba(var(--danger-rgb), 0.08)",
             gap: "12px",
             flexWrap: "wrap",
@@ -707,7 +707,7 @@ export default function TrackingDashboard() {
                 padding: "8px 16px",
                 borderRadius: "12px",
                 border: "none",
-                background: "linear-gradient(135deg, var(--danger), var(--danger))",
+                background: "var(--danger)",
                 color: "var(--surface)",
                 fontWeight: 700,
                 cursor: "pointer",
@@ -758,12 +758,12 @@ export default function TrackingDashboard() {
                 style={{
                   padding: "8px 12px",
                   borderRadius: "10px",
-                  border: "none",
-                  background: "linear-gradient(120deg, var(--primary), var(--primary-dark))",
-                  color: "white",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
+                border: "none",
+                background: "var(--primary)",
+                color: "white",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
               >
                 Add location
               </button>

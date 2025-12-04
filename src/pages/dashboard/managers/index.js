@@ -177,7 +177,7 @@ export default function ManagersDashboard() {
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
         <header
           style={{
-            background: "linear-gradient(120deg, var(--info-surface), var(--surface-light))",
+            background: "var(--surface-light)",
             borderRadius: "18px",
             padding: "24px",
             border: "1px solid var(--surface-light)",

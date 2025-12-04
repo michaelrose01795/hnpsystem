@@ -42,7 +42,7 @@ export default function CustomerViewPreview({
   selectedDepartment = "",
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5 shadow-sm space-y-4">
+    <div className="rounded-xl border border-gray-200 bg-[var(--surface)] p-5 shadow-sm space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <p className="text-sm uppercase tracking-wide text-red-600 font-semibold">

@@ -2,10 +2,10 @@ import React from "react";
 import { useAlerts } from "@/context/AlertContext";
 
 const toneStyles = {
-  success: { bg: "linear-gradient(135deg,var(--success),var(--success-dark))", text: "var(--surface)" },
-  error: { bg: "linear-gradient(135deg,var(--danger),var(--danger))", text: "var(--surface)" },
-  warning: { bg: "linear-gradient(135deg,var(--danger),var(--danger))", text: "var(--surface)" },
-  info: { bg: "linear-gradient(135deg,var(--info),var(--info))", text: "var(--accent-purple)" },
+  success: { bg: "var(--success)", text: "var(--surface)" },
+  error: { bg: "var(--danger)", text: "var(--surface)" },
+  warning: { bg: "var(--danger)", text: "var(--surface)" },
+  info: { bg: "var(--info)", text: "var(--accent-purple)" },
 };
 
 const getTone = (type) => toneStyles[type] || toneStyles.info;

@@ -100,7 +100,10 @@ export default function LoginPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen w-full bg-gradient-to-b from-white via-slate-50 to-slate-100 flex flex-col items-center justify-center px-4 py-12 space-y-10 max-w-5xl mx-auto">
+      <div
+        className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-12 space-y-10 max-w-5xl mx-auto"
+        style={{ background: "var(--surface)" }}
+      >
         <div className="w-full max-w-sm mx-auto">
           <Section
             title="Login"
@@ -148,7 +151,8 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  className="w-full rounded-lg bg-gradient-to-r from-red-600 to-red-500 py-3 text-base font-semibold text-white shadow-lg shadow-red-500/30 transition hover:from-red-700 hover:to-red-600 focus:outline-none focus:ring-2 focus:ring-red-200"
+                  className="w-full rounded-lg py-3 text-base font-semibold text-white shadow-lg shadow-red-500/30 transition focus:outline-none focus:ring-2 focus:ring-red-200"
+                  style={{ background: "var(--primary)" }}
                 >
                   Login
                 </button>

@@ -146,7 +146,7 @@ export default function Sidebar({
       {/* Header */}
       <div
         style={{
-          background: "linear-gradient(to right, var(--primary), var(--primary-dark))",
+          background: "var(--primary)",
           padding: "24px",
           color: "white",
           position: "relative",
@@ -257,7 +257,7 @@ export default function Sidebar({
                     padding: "10px 14px",
                     marginBottom: "10px",
                     background: isActive
-                      ? "linear-gradient(90deg, var(--primary), var(--primary-dark))"
+                      ? "var(--primary)"
                       : "var(--surface)",
                     color: isActive ? "var(--surface)" : "var(--primary-dark)",
                     borderRadius: "10px",
@@ -312,7 +312,7 @@ export default function Sidebar({
                     padding: "10px 14px",
                     marginBottom: "10px",
                     background: isActive
-                      ? "linear-gradient(90deg, var(--primary), var(--primary-dark))"
+                      ? "var(--primary)"
                       : "var(--surface)",
                     color: isActive ? "var(--surface)" : "var(--primary-dark)",
                     borderRadius: "10px",
@@ -361,7 +361,7 @@ export default function Sidebar({
                     padding: "10px 14px",
                     marginBottom: "10px",
                     background: isActive
-                      ? "linear-gradient(90deg, var(--primary), var(--primary-dark))"
+                      ? "var(--primary)"
                       : "var(--surface)",
                     color: isActive ? "var(--surface)" : "var(--primary-dark)",
                     borderRadius: "10px",
@@ -407,7 +407,7 @@ export default function Sidebar({
                     style={{
                       padding: "10px 14px",
                       borderRadius: "10px",
-                      background: "linear-gradient(90deg, var(--primary-dark), var(--primary-dark))",
+                      background: "var(--primary)",
                       color: "var(--surface)",
                       fontWeight: 700,
                       border: "none",
@@ -433,7 +433,7 @@ export default function Sidebar({
                       padding: "10px 14px",
                       marginBottom: "10px",
                       background: isActive
-                        ? "linear-gradient(90deg, var(--primary), var(--primary-dark))"
+                        ? "var(--primary)"
                         : "var(--surface)",
                       color: isActive ? "var(--surface)" : "var(--primary-dark)",
                       borderRadius: "10px",

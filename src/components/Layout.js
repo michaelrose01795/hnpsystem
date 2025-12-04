@@ -595,7 +595,7 @@ export default function Layout({ children, jobNumber }) {
                     padding: "10px 14px",
                     borderRadius: "12px",
                     border: `1px solid ${colors.accent}`,
-                    background: "linear-gradient(90deg, var(--surface-light), var(--surface))",
+                    background: "var(--surface)",
                     fontWeight: 600,
                     color: colors.accent,
                     boxShadow: "0 6px 14px rgba(var(--shadow-rgb),0.08)",
@@ -937,7 +937,7 @@ export default function Layout({ children, jobNumber }) {
                     style={{
                       padding: "8px 14px",
                       borderRadius: "14px",
-                      background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+                      background: "var(--primary)",
                       color: "var(--surface)",
                       fontWeight: 600,
                       textDecoration: "none",
@@ -994,7 +994,7 @@ export default function Layout({ children, jobNumber }) {
                     borderRadius: "10px",
                     border: "none",
                     background: currentJob?.jobNumber
-                      ? "linear-gradient(135deg, var(--primary), var(--primary-dark))"
+                      ? "var(--primary)"
                       : "var(--info-surface)",
                     color: currentJob?.jobNumber ? "var(--surface)" : "var(--info)",
                     fontWeight: 600,
@@ -1043,7 +1043,7 @@ export default function Layout({ children, jobNumber }) {
             key={contentKey}
             style={{
               minHeight: "100%",
-              background: "linear-gradient(to bottom right, var(--surface), var(--danger-surface), var(--surface-light))",
+              background: "var(--surface)",
               borderRadius: hideSidebar ? "0px" : "28px",
               border: hideSidebar ? "none" : "1px solid var(--surface-light)",
               boxShadow: hideSidebar ? "none" : "0 32px 64px rgba(var(--primary-rgb),0.1)",
@@ -1071,8 +1071,8 @@ export default function Layout({ children, jobNumber }) {
             borderRadius: "0 999px 999px 0",
             border: "none",
             background: isSidebarOpen
-              ? "linear-gradient(135deg, var(--primary-dark), var(--primary-dark))"
-              : "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+              ? "var(--primary)"
+              : "var(--primary)",
             color: "var(--surface)",
             fontSize: "20px",
             fontWeight: 700,
@@ -1102,8 +1102,8 @@ export default function Layout({ children, jobNumber }) {
               borderRadius: "999px 0 0 999px",
               border: "none",
               background: isStatusSidebarOpen
-                ? "linear-gradient(135deg, var(--primary-dark), var(--primary-dark))"
-                : "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+                ? "var(--primary)"
+                : "var(--primary)",
               color: "var(--surface)",
               fontSize: "20px",
               fontWeight: 700,

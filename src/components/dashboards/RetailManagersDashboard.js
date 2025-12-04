@@ -380,7 +380,7 @@ export default function RetailManagersDashboard({ user }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px" }}>
       <header
         style={{
-          background: "linear-gradient(120deg, var(--surface-light), var(--surface-light))",
+          background: "var(--surface)",
           borderRadius: "18px",
           padding: "24px",
           display: "flex",
@@ -510,7 +510,7 @@ export default function RetailManagersDashboard({ user }) {
                     style={{
                       width: `${team.utilisation}%`,
                       height: "100%",
-                      background: "linear-gradient(90deg, var(--primary), var(--primary-dark))",
+                      background: "var(--primary)",
                     }}
                   />
                 </div>

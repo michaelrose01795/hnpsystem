@@ -205,7 +205,7 @@ export default function AfterSalesManagerDashboard() {
         style={{
           padding: "24px",
           borderRadius: "18px",
-          background: "linear-gradient(135deg, var(--warning-surface), var(--warning))",
+          background: "var(--warning-surface)",
           border: "1px solid var(--warning)",
           boxShadow: "0 24px 50px rgba(var(--warning-rgb), 0.18)",
           display: "flex",
@@ -338,7 +338,7 @@ export default function AfterSalesManagerDashboard() {
                       style={{
                         width: `${Math.min(streamProgress, 125)}%`,
                         height: "100%",
-                        background: "linear-gradient(90deg, var(--danger), var(--warning))",
+                        background: "var(--danger)",
                       }}
                     />
                   </div>

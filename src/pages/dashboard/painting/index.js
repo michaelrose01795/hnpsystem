@@ -138,7 +138,7 @@ export default function PaintingDashboard() {
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
         <header
           style={{
-            background: "linear-gradient(120deg, var(--warning-surface), var(--warning-surface))",
+            background: "var(--warning-surface)",
             borderRadius: "18px",
             padding: "24px",
             border: "1px solid var(--warning)",

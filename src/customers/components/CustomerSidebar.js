@@ -40,7 +40,7 @@ export default function CustomerSidebar() {
     >
       <div
         style={{
-          background: "linear-gradient(to right, var(--primary), var(--primary-dark))",
+          background: "var(--primary)",
           padding: "24px",
           color: "white",
         }}
@@ -69,9 +69,7 @@ export default function CustomerSidebar() {
                   marginBottom: "12px",
                   padding: "12px 16px",
                   borderRadius: "12px",
-                  background: isActive
-                    ? "linear-gradient(90deg, var(--primary), var(--primary-dark))"
-                    : "var(--surface-light)",
+                  background: isActive ? "var(--primary)" : "var(--surface-light)",
                   color: isActive ? "var(--surface)" : "var(--primary-dark)",
                   fontWeight: 600,
                   boxShadow: isActive

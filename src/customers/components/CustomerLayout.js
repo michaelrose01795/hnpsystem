@@ -223,7 +223,7 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
                   onClick={handleLogout}
                   style={{
                     border: "none",
-                    background: "linear-gradient(90deg, var(--primary), var(--primary-dark))",
+                    background: "var(--primary)",
                     color: "var(--surface)",
                     fontWeight: 600,
                     borderRadius: "999px",

@@ -112,7 +112,7 @@ export default function NextActionPrompt() {
           padding: "8px 16px",
           borderRadius: "14px",
           border: "none",
-          background: "linear-gradient(135deg, var(--danger), var(--danger))",
+          background: "var(--danger)",
           color: "white",
           fontWeight: 700,
           fontSize: "0.85rem",
@@ -179,12 +179,12 @@ export default function NextActionPrompt() {
             </div>
 
             <div
-              style={{
-                padding: "16px",
-                borderRadius: "16px",
-                background: "linear-gradient(135deg, rgba(var(--danger-rgb), 0.1), rgba(var(--danger-rgb), 0.05))",
-                border: "1px solid rgba(var(--danger-rgb), 0.25)",
-                display: "grid",
+            style={{
+              padding: "16px",
+              borderRadius: "16px",
+              background: "rgba(var(--danger-rgb), 0.1)",
+              border: "1px solid rgba(var(--danger-rgb), 0.25)",
+              display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
                 gap: "12px",
               }}
@@ -305,8 +305,8 @@ export default function NextActionPrompt() {
                     borderRadius: "12px",
                     border: "none",
                     background: isSubmitting
-                      ? "linear-gradient(135deg, var(--danger), var(--danger))"
-                      : "linear-gradient(135deg, var(--danger), var(--danger))",
+                      ? "var(--danger)"
+                      : "var(--danger)",
                     color: "white",
                     fontWeight: 700,
                     cursor: isSubmitting ? "wait" : "pointer",
