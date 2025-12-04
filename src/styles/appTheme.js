@@ -234,7 +234,7 @@ export const vhcLayoutStyles = {
   sectionCardHover: {
     transform: "translateY(-3px)",
     boxShadow: shadows.md,
-    borderColor: palette.accentSoft,
+    borderColor: palette.accent,
   },
   cardTitle: {
     fontSize: "16px",
@@ -407,7 +407,7 @@ export const vhcModalContentStyles = {
   baseCardHover: {
     transform: "translateY(-3px)",
     boxShadow: shadows.md,
-    borderColor: palette.accentSoft,
+    borderColor: palette.accent,
   },
 };
 
