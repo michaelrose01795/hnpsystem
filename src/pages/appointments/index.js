@@ -6,12 +6,15 @@ import React, { useState, useEffect, useCallback } from "react"; // Import React
 import Layout from "@/components/Layout"; // Main layout wrapper
 import Popup from "@/components/popups/Popup"; // Reusable popup modal
 import { useRouter } from "next/router"; // For reading query params
+import { useUser } from "@/context/UserContext"; // Access current user for check-in attribution
+import { useNextAction } from "@/context/NextActionContext"; // Trigger follow-up actions after check-in
 import { 
   getAllJobs, 
   createOrUpdateAppointment, 
   getJobByNumberOrReg,
   getJobsByDate // ✅ NEW: Get appointments by date
 } from "@/lib/database/jobs"; // DB functions
+import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService"; // Shared status transition helper
 import supabase from "@/lib/supabaseClient"; // Supabase client for live tech availability
 
 const TECH_AVAILABILITY_TABLE = "job_clocking"; // Source table for tech availability data
@@ -289,6 +292,8 @@ export default function Appointments() {
   const jobQueryParam = Array.isArray(router.query.jobNumber)
     ? router.query.jobNumber[0]
     : router.query.jobNumber;
+  const { user } = useUser();
+  const { triggerNextAction } = useNextAction();
 
   // ---------------- States ----------------
   const [jobs, setJobs] = useState([]);
@@ -307,6 +312,7 @@ export default function Appointments() {
   const [searchQuery, setSearchQuery] = useState("");
   const [timeSlots] = useState(generateTimeSlots());
   const [isLoading, setIsLoading] = useState(false);
+  const [checkingInJobId, setCheckingInJobId] = useState(null);
   const [jobRequestHours, setJobRequestHours] = useState({});
   const [jobVhcLabourHours, setJobVhcLabourHours] = useState({});
   const [staffAbsences, setStaffAbsences] = useState({});
@@ -719,6 +725,70 @@ export default function Appointments() {
       alert(`Unexpected error:\n\n${error.message}\n\nPlease try again or contact support.`);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // ---------------- Check-in Flow ----------------
+  const handleCheckIn = async (job) => {
+    if (!job?.id) {
+      alert("Unable to check in this job because it is missing an ID.");
+      return;
+    }
+
+    const confirmed = confirm(
+      `Check in customer?\n\n` +
+        `Job: ${job.jobNumber || job.id}\n` +
+        `Customer: ${job.customer || "N/A"}\n` +
+        `Vehicle: ${job.reg || "N/A"}\n` +
+        `Appointment: ${job.appointment?.time || "N/A"}`
+    );
+
+    if (!confirmed) return;
+
+    setCheckingInJobId(job.id);
+
+    try {
+      const result = await autoSetCheckedInStatus(job.id, user?.id || "SYSTEM");
+
+      if (result.success) {
+        alert(
+          `✅ Customer Checked In!\n\n` +
+            `Job: ${job.jobNumber || job.id}\n` +
+            `Customer: ${job.customer || "N/A"}\n` +
+            `Time: ${new Date().toLocaleTimeString()}`
+        );
+
+        if (typeof triggerNextAction === "function") {
+          triggerNextAction("job_checked_in", {
+            jobId: job.id || null,
+            jobNumber: job.jobNumber || "",
+            vehicleId: job.vehicleId || job.vehicle_id || null,
+            vehicleReg: job.reg || job.vehicleReg || job.vehicle_reg || "",
+            triggeredBy: user?.id || null,
+          });
+        }
+
+        const updatedJob = result.data || {};
+        setJobs((prevJobs) =>
+          prevJobs.map((existing) => {
+            if (existing.id !== job.id) return existing;
+            return {
+              ...existing,
+              ...updatedJob,
+              status: updatedJob.status || "Checked In",
+              checked_in_at: updatedJob.checked_in_at || new Date().toISOString(),
+            };
+          })
+        );
+      } else {
+        console.error("❌ Check-in failed:", result.error);
+        alert(`❌ Failed to check in: ${result.error?.message || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("❌ Error checking in:", error);
+      alert("❌ Error checking in customer. Please try again.");
+    } finally {
+      setCheckingInJobId(null);
     }
   };
 
@@ -1473,12 +1543,13 @@ export default function Appointments() {
                   "Customer",
                   "Job Type",
                   "Customer Status",
-                  "Estimated Finish Time"
+                  "Estimated Finish Time",
+                  "Check-In"
                 ].map(head => (
                     <th 
                       key={head} 
                       style={{ 
-                        textAlign: "left", 
+                        textAlign: head === "Check-In" ? "center" : "left", 
                         padding: "10px 12px", 
                         background: "var(--surface)", 
                         fontWeight: "600", 
@@ -1496,68 +1567,129 @@ export default function Appointments() {
               </thead>
               <tbody>
                 {sortedJobs.length > 0 ? (
-                  sortedJobs.map((job, idx) => (
-                    <tr 
-                      key={idx} 
-                      style={{ 
-                        backgroundColor: highlightJob === job.jobNumber ? "var(--success)" : idx % 2 === 0 ? "var(--surface)" : "transparent", 
-                        transition: "background-color 0.5s",
-                        cursor: "pointer"
-                      }}
-                      onClick={() => handleJobRowClick(job.jobNumber || job.id)}
-                      onMouseEnter={(e) => {
-                        if (highlightJob !== job.jobNumber) {
-                          e.currentTarget.style.backgroundColor = "var(--surface)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (highlightJob !== job.jobNumber) {
-                          e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "var(--surface)" : "transparent";
-                        }
-                      }}
-                    >
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: "600" }}>
-                        {job.appointment?.time || "-"}
-                      </td>
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", color: "var(--primary)", fontWeight: "600" }}>
-                        {job.jobNumber || job.id || "-"}
-                      </td>
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: "500" }}>
-                        {job.reg || "-"}
-                      </td>
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
-                        {getVehicleDisplay(job)}
-                      </td>
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
-                        {job.customer || "-"}
-                      </td>
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
-                        <span style={{
-                          fontSize: "13px",
-                          fontWeight: "600",
-                          color: "var(--text-primary)"
-                        }}>
-                          {getDetectedJobTypeLabel(job)}
-                        </span>
-                      </td>
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
-                        <span
-                          style={{
-                            padding: "4px 10px",
-                            borderRadius: "12px",
-                            fontSize: "11px",
+                  sortedJobs.map((job, idx) => {
+                    const statusNormalized = (job.status || "").trim().toLowerCase();
+                    const isBooked = statusNormalized === "booked";
+                    const isCheckedIn =
+                      ["checked in", "workshop/mot", "vhc complete", "vhc sent", "being washed", "complete"].includes(
+                        statusNormalized
+                      ) || !isBooked;
+                    const isCurrentlyCheckingIn = checkingInJobId === job.id;
+                    const rowBackground =
+                      highlightJob === job.jobNumber
+                        ? "var(--success)"
+                        : idx % 2 === 0
+                        ? "var(--surface)"
+                        : "transparent";
+
+                    return (
+                      <tr 
+                        key={idx} 
+                        style={{ 
+                          backgroundColor: rowBackground, 
+                          transition: "background-color 0.5s",
+                          cursor: "pointer"
+                        }}
+                        onClick={() => handleJobRowClick(job.jobNumber || job.id)}
+                        onMouseEnter={(e) => {
+                          if (highlightJob !== job.jobNumber) {
+                            e.currentTarget.style.backgroundColor = "var(--surface)";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (highlightJob !== job.jobNumber) {
+                            e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "var(--surface)" : "transparent";
+                          }
+                        }}
+                      >
+                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: "600" }}>
+                          {job.appointment?.time || "-"}
+                        </td>
+                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", color: "var(--primary)", fontWeight: "600" }}>
+                          {job.jobNumber || job.id || "-"}
+                        </td>
+                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: "500" }}>
+                          {job.reg || "-"}
+                        </td>
+                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
+                          {getVehicleDisplay(job)}
+                        </td>
+                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
+                          {job.customer || "-"}
+                        </td>
+                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
+                          <span style={{
+                            fontSize: "13px",
                             fontWeight: "600",
-                            ...getCustomerStatusBadgeColors(job.waitingStatus || "Neither"),
-                          }}
-                        >
-                          {job.waitingStatus || "Neither"}
-                        </span>
-                      </td>
-                      <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: "600" }}>
-                        {getEstimatedFinishTime(job)}
-                      </td>
-                    </tr>
-                  ))
+                            color: "var(--text-primary)"
+                          }}>
+                            {getDetectedJobTypeLabel(job)}
+                          </span>
+                        </td>
+                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
+                          <span
+                            style={{
+                              padding: "4px 10px",
+                              borderRadius: "12px",
+                              fontSize: "11px",
+                              fontWeight: "600",
+                              ...getCustomerStatusBadgeColors(job.waitingStatus || "Neither"),
+                            }}
+                          >
+                            {job.waitingStatus || "Neither"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: "600" }}>
+                          {getEstimatedFinishTime(job)}
+                        </td>
+                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", textAlign: "center" }}>
+                          {isCheckedIn ? (
+                            <span style={{
+                              padding: "8px 16px",
+                              borderRadius: "6px",
+                              fontSize: "13px",
+                              fontWeight: "600",
+                              backgroundColor: "var(--success)",
+                              color: "var(--info-dark)"
+                            }}>
+                              ✓ Checked In
+                            </span>
+                          ) : (
+                            <button
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleCheckIn(job);
+                              }}
+                              disabled={isCurrentlyCheckingIn}
+                              style={{
+                                padding: "8px 16px",
+                                backgroundColor: isCurrentlyCheckingIn ? "var(--background)" : "var(--info)",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "6px",
+                                cursor: isCurrentlyCheckingIn ? "not-allowed" : "pointer",
+                                fontSize: "13px",
+                                fontWeight: "600",
+                                transition: "background-color 0.2s"
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isCurrentlyCheckingIn) {
+                                  e.currentTarget.style.backgroundColor = "var(--info-dark)";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isCurrentlyCheckingIn) {
+                                  e.currentTarget.style.backgroundColor = "var(--info)";
+                                }
+                              }}
+                            >
+                              {isCurrentlyCheckingIn ? "Checking In..." : "Check In"}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td 

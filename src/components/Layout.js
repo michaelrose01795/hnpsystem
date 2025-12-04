@@ -883,44 +883,6 @@ export default function Layout({ children, jobNumber }) {
                     Deliveries
                   </Link>
                 )}
-                <Link
-                  href="/messages"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "8px 14px",
-                    borderRadius: "14px",
-                    border: "1px solid var(--surface-light)",
-                    background: "var(--surface-light)",
-                    color: "var(--primary-dark)",
-                    fontWeight: 600,
-                    textDecoration: "none",
-                    boxShadow: "0 6px 16px rgba(var(--primary-rgb),0.12)",
-                  }}
-                >
-                  Messages
-                  {messagesUnread > 0 && (
-                    <span
-                      style={{
-                        minWidth: 24,
-                        minHeight: 24,
-                        padding: "0 6px",
-                        borderRadius: 999,
-                        background: "var(--primary)",
-                        color: "var(--surface)",
-                        fontSize: "0.75rem",
-                        fontWeight: 700,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {messagesUnread > 99 ? "99+" : messagesUnread}
-                    </span>
-                  )}
-                </Link>
-
                 {userRoles.includes("admin manager") && (
                   <Link
                     href="/admin/users"

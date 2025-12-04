@@ -226,14 +226,6 @@ const GlobalSearch = ({
           transition: "all 0.2s ease",
         }}
       >
-        <span
-          style={{
-            fontSize: "1rem",
-            color: placeholderColor,
-          }}
-        >
-          🔍
-        </span>
         <input
           type="search"
           value={query}
@@ -270,12 +262,12 @@ const GlobalSearch = ({
               background: "none",
               border: "none",
               cursor: "pointer",
-              fontSize: "1rem",
+              fontSize: "0.9rem",
               color: placeholderColor,
             }}
             aria-label="Clear search"
           >
-            ✖️
+            Clear
           </button>
         )}
       </div>
