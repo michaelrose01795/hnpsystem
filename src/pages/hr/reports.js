@@ -51,10 +51,10 @@ export default function HrReportsExports() {
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
           }}
         >
-          <MetricCard icon="🧾" label="Scheduled Exports" primary="4" accentColor="var(--accent-purple)" />
-          <MetricCard icon="📊" label="Reports Generated (30d)" primary="18" accentColor="var(--success)" />
-          <MetricCard icon="📥" label="Downloads (30d)" primary="126" accentColor="var(--danger)" />
-          <MetricCard icon="⚠️" label="Alerts Triggered" primary="3" accentColor="var(--danger)" />
+          <MetricCard icon="" label="Scheduled Exports" primary="4" accentColor="var(--accent-purple)" />
+          <MetricCard icon="" label="Reports Generated (30d)" primary="18" accentColor="var(--success)" />
+          <MetricCard icon="" label="Downloads (30d)" primary="126" accentColor="var(--danger)" />
+          <MetricCard icon="" label="Alerts Triggered" primary="3" accentColor="var(--danger)" />
         </section>
 
         <SectionCard

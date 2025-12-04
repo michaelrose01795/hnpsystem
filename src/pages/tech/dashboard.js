@@ -72,7 +72,7 @@ export default function TechsDashboard() {
         }
 
       } catch (error) {
-        console.error("❌ Error fetching tech data:", error);
+        console.error("Error fetching tech data:", error);
       } finally {
         setLoading(false);
       }
@@ -88,10 +88,10 @@ export default function TechsDashboard() {
     const result = await clockIn(username);
     
     if (result.success) {
-      alert("✅ Clocked in successfully!");
+      alert("Clocked in successfully!");
       setClockingStatus(result.data);
     } else {
-      alert(`❌ ${result.error?.message || "Failed to clock in"}`);
+      alert(result.error?.message || "Failed to clock in");
     }
   };
 
@@ -105,11 +105,11 @@ export default function TechsDashboard() {
     const result = await clockOut(username);
     
     if (result.success) {
-      alert("✅ Clocked out successfully!");
+      alert("Clocked out successfully!");
       setClockingStatus(null);
       setCurrentJob(null);
     } else {
-      alert(`❌ ${result.error?.message || "Failed to clock out"}`);
+      alert(result.error?.message || "Failed to clock out");
     }
   };
 
