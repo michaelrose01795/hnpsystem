@@ -412,7 +412,7 @@ export default function Sidebar({
                       fontWeight: 700,
                       border: "none",
                       cursor: "pointer",
-                      boxShadow: "0 12px 20px rgba(var(--danger-rgb), 0.3)",
+                      boxShadow: "0 12px 20px rgba(var(--primary-rgb), 0.35)",
                       width: "100%",
                       textDecoration: "none",
                     }}
