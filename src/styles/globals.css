@@ -171,6 +171,53 @@ div.card:hover h3 {
   text-shadow: 0 0 8px rgba(var(--primary-rgb), 0.6);
 }
 
+/* Dark mode overrides: flatter sections/buttons + layered greys */
+:root[data-theme="dark"] #__next {
+  background: var(--layer-gradient);
+}
+
+:root[data-theme="dark"] button {
+  box-shadow: none;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+:root[data-theme="dark"] button:hover {
+  box-shadow: none;
+  background: var(--primary-light);
+}
+
+:root[data-theme="dark"] section,
+:root[data-theme="dark"] div.card,
+:root[data-theme="dark"] div.news-card {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--layer-section-medium);
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] section:nth-of-type(4n + 1),
+:root[data-theme="dark"] div.card:nth-of-type(4n + 1),
+:root[data-theme="dark"] div.news-card:nth-of-type(4n + 1) {
+  background: var(--layer-section-light);
+}
+
+:root[data-theme="dark"] section:nth-of-type(4n + 2),
+:root[data-theme="dark"] div.card:nth-of-type(4n + 2),
+:root[data-theme="dark"] div.news-card:nth-of-type(4n + 2) {
+  background: var(--layer-section-medium);
+}
+
+:root[data-theme="dark"] section:nth-of-type(4n + 3),
+:root[data-theme="dark"] div.card:nth-of-type(4n + 3),
+:root[data-theme="dark"] div.news-card:nth-of-type(4n + 3) {
+  background: var(--layer-section-dark);
+}
+
+:root[data-theme="dark"] section:nth-of-type(4n),
+:root[data-theme="dark"] div.card:nth-of-type(4n),
+:root[data-theme="dark"] div.news-card:nth-of-type(4n) {
+  background: var(--layer-section-deep);
+}
+
 /* ========================================================= */
 /* === Sidebar Link Styles === */
 /* ========================================================= */
@@ -274,6 +321,35 @@ body.dark-mode [class*="dialog"] {
   color: var(--text-primary) !important;
   border: 1px solid var(--border) !important;
   box-shadow: 0 12px 28px rgba(var(--shadow-rgb), 0.35) !important;
+}
+
+/* Popup blur + grey lock effect */
+.popup-backdrop,
+.modal-backdrop,
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(8, 9, 14, 0.78);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: 1100;
+  transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+body.dark-mode .popup-backdrop {
+  background-color: rgba(5, 5, 8, 0.85);
+}
+
+.popup-card {
+  width: min(520px, 100%);
+  background: var(--surface);
+  color: var(--text-primary);
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 60px rgba(var(--shadow-rgb), 0.32);
 }
 
 /* Buttons in dark mode */

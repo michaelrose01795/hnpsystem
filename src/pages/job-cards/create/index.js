@@ -124,9 +124,6 @@ export default function CreateJobCardPage() {
   const [jobNumberDisplay, setJobNumberDisplay] = useState(null); // store assigned job number for header display
   const lastVehicleLookupRef = useRef(""); // track last registration looked up to avoid duplicate fetches
 
-  // state for maintenance information (simplified - only MOT date now)
-  const [nextMotDate, setNextMotDate] = useState(""); // store upcoming MOT date for maintenance info
-
   useEffect(() => { // sync editable form with whichever customer is selected
     if (customer) { // when a customer exists use their values
       setCustomerForm(normalizeCustomerRecord(customer)); // copy normalized customer data into the form controls
@@ -848,10 +845,6 @@ export default function CreateJobCardPage() {
 
       setVehicle(vehicleData); // update vehicle state with DVLA data
 
-      if (data.motExpiryDate || data.nextMotDate) { // check for MOT date fields
-        setNextMotDate((data.motExpiryDate || data.nextMotDate || "").split("T")[0]); // store MOT date stripped of time
-      }
-
       showNotification("vehicle", "success", "✓ Vehicle details fetched from DVLA!"); // notify success
     } catch (err) {
       console.error("Error fetching vehicle data from DVLA:", err); // log error
@@ -946,7 +939,6 @@ export default function CreateJobCardPage() {
         cosmeticNotes: cosmeticNotes || null,
         vhcRequired: vhcRequired,
         maintenanceInfo: {
-          nextMotDate: nextMotDate || null,
           cosmeticDamagePresent,
         },
       };
@@ -1213,39 +1205,6 @@ export default function CreateJobCardPage() {
                 </div>
               </div>
 
-              <div style={{ marginTop: "16px" }}>
-                <label
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: "500",
-                    color: "var(--grey-accent)",
-                    display: "block",
-                    marginBottom: "6px",
-                  }}
-                >
-                  Next MOT Date
-                </label>
-                <input
-                  type="date"
-                  value={nextMotDate}
-                  onChange={(e) => setNextMotDate(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid var(--surface-light)",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    outline: "none",
-                    transition: "border-color 0.2s",
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = "var(--primary)";
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = "var(--surface-light)";
-                  }}
-                />
-              </div>
             </div>
 
             {/* Vehicle Details Section - 33% width */}

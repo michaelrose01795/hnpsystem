@@ -74,6 +74,119 @@ const STATUS_COLORS = {
 
 const NEXT_ACTION_ENDPOINT = "/api/tracking/next-action";
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+const DEFAULT_EQUIPMENT_CHECKS = [
+  {
+    id: "hoist-4p",
+    name: "4 Post Hoist",
+    location: "Bay 2",
+    owner: "Service team",
+    frequencyDays: 14,
+    lastChecked: "2024-08-10T08:30:00Z",
+    nextDue: "2024-08-24T08:30:00Z",
+    status: "Ready",
+    notes: "Verify cables, locks and safety interlocks every two weeks.",
+  },
+  {
+    id: "pressure-washer",
+    name: "Pressure Washer",
+    location: "Valet bay",
+    owner: "Valet team",
+    frequencyDays: 7,
+    lastChecked: "2024-08-22T14:00:00Z",
+    nextDue: "2024-08-29T14:00:00Z",
+    status: "Ready",
+    notes: "Clean lance filters, inspect hoses and refill detergent tank.",
+  },
+  {
+    id: "wheel-balancer",
+    name: "Wheel Balancer",
+    location: "Wheel bay",
+    owner: "Tech lead",
+    frequencyDays: 30,
+    lastChecked: "2024-07-30T11:20:00Z",
+    nextDue: "2024-08-29T11:20:00Z",
+    status: "Due soon",
+    notes: "Calibration certificate is due for renewal at the end of the month.",
+  },
+];
+
+const DEFAULT_OIL_CHECKS = [
+  {
+    id: "engine-oil",
+    name: "Engine oil 5W-30 (bulk)",
+    storageLocation: "Oil store rack A",
+    stockLevel: "18 × 5L cans",
+    frequencyDays: 3,
+    lastChecked: "2024-08-25T09:10:00Z",
+    nextDue: "2024-08-28T09:10:00Z",
+    guidance: "Keep minimum of two cans at each service bay; top up after busy shifts.",
+  },
+  {
+    id: "transmission-oil",
+    name: "ATF - Transmission fluid",
+    storageLocation: "Fluid cupboard",
+    stockLevel: "12 × 1L bottles",
+    frequencyDays: 7,
+    lastChecked: "2024-08-20T08:00:00Z",
+    nextDue: "2024-08-27T08:00:00Z",
+    guidance: "Order more once stock dips below 10 bottles or after commercial fleet checks.",
+  },
+  {
+    id: "coolant",
+    name: "Coolant & additives",
+    storageLocation: "Fluid locker",
+    stockLevel: "6 jugs (3.5L)",
+    frequencyDays: 14,
+    lastChecked: "2024-08-12T15:30:00Z",
+    nextDue: "2024-08-26T15:30:00Z",
+    guidance: "Monitor hybrid cooling kit stocks (AP02) every fortnight.",
+  },
+];
+
+const formatDateLabel = (value) => {
+  if (!value) return "Pending";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Pending";
+  return parsed.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const getDueLabel = (value) => {
+  if (!value) return "Schedule pending";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Schedule pending";
+  const diff = parsed.getTime() - Date.now();
+  if (diff <= 0) return "Due now";
+  const days = Math.ceil(diff / MS_PER_DAY);
+  return `Due in ${days} day${days === 1 ? "" : "s"}`;
+};
+
+const nextDueFrom = (reference, intervalDays = 7) => {
+  const baseTime =
+    reference instanceof Date ? reference.getTime() : Number(reference || Date.now());
+  const days = Number.isFinite(Number(intervalDays)) ? Number(intervalDays) : 7;
+  return new Date(baseTime + days * MS_PER_DAY).toISOString();
+};
+
+const cloneList = (list) => list.map((entry) => ({ ...entry }));
+
+const SECTION_STYLE = {
+  padding: "24px",
+  borderRadius: "24px",
+  background: "var(--surface)",
+  border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+  boxShadow: "0 20px 40px rgba(var(--shadow-rgb),0.04)",
+  display: "flex",
+  flexDirection: "column",
+  gap: "18px",
+};
+
 const emptyForm = {
   id: null,
   jobNumber: "",
@@ -488,7 +601,19 @@ export default function TrackingDashboard() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [searchModal, setSearchModal] = useState({ open: false, type: null });
   const [entryModal, setEntryModal] = useState({ open: false, type: null, entry: null });
-  const { dbUserId } = useUser();
+  const { dbUserId, user } = useUser();
+  const userRoles = useMemo(() => (user?.roles || []).map((role) => role.toLowerCase()), [user]);
+  const isWorkshopManager = userRoles.includes("workshop manager");
+  const tabs = useMemo(() => {
+    const base = [{ id: "tracker", label: "Tracker" }];
+    if (isWorkshopManager) {
+      base.push({ id: "equipment", label: "Equipment/Tools" }, { id: "oil-stock", label: "Oil/Stock" });
+    }
+    return base;
+  }, [isWorkshopManager]);
+  const [activeTab, setActiveTab] = useState("tracker");
+  const [equipmentChecks, setEquipmentChecks] = useState(() => cloneList(DEFAULT_EQUIPMENT_CHECKS));
+  const [oilChecks, setOilChecks] = useState(() => cloneList(DEFAULT_OIL_CHECKS));
 
   const loadEntries = useCallback(async () => {
     setLoading(true);
@@ -513,6 +638,39 @@ export default function TrackingDashboard() {
   useEffect(() => {
     loadEntries();
   }, [loadEntries]);
+
+  useEffect(() => {
+    if (!tabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab(tabs[0]?.id || "tracker");
+    }
+  }, [tabs, activeTab]);
+
+  const handleEquipmentCheck = useCallback((id) => {
+    setEquipmentChecks((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        return {
+          ...item,
+          lastChecked: new Date().toISOString(),
+          nextDue: nextDueFrom(new Date(), item.frequencyDays),
+          status: "Serviced",
+        };
+      })
+    );
+  }, []);
+
+  const handleOilCheck = useCallback((id) => {
+    setOilChecks((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        return {
+          ...item,
+          lastChecked: new Date().toISOString(),
+          nextDue: nextDueFrom(new Date(), item.frequencyDays),
+        };
+      })
+    );
+  }, []);
 
   const handleAutoMovement = useCallback(
     async (job, rule, newStatus) => {
@@ -576,7 +734,6 @@ export default function TrackingDashboard() {
     };
   }, [handleAutoMovement]);
 
-  const recentEntries = useMemo(() => entries.slice(0, 3), [entries]);
   const activeEntries = useMemo(
     () =>
       entries
@@ -669,6 +826,383 @@ export default function TrackingDashboard() {
     }
   };
 
+  const renderTrackerContent = () => (
+    <section style={SECTION_STYLE}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "12px",
+          alignItems: "flex-start",
+        }}
+      >
+        <div>
+          <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.12em", color: "var(--info-dark)" }}>Live tracker</p>
+          <h1 style={{ margin: "6px 0 0", fontSize: "1.5rem", color: "var(--accent-purple)" }}>Active jobs</h1>
+          <p style={{ margin: "6px 0 0", fontSize: "0.85rem", color: "var(--info)", fontWeight: 500 }}>
+            Last updated:{" "}
+            {lastUpdated
+              ? new Date(lastUpdated).toLocaleTimeString("en-GB", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "Syncing..."}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+          <button
+            type="button"
+            onClick={loadEntries}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "12px",
+              border: "none",
+              background: "var(--accent-purple)",
+              color: "white",
+              fontWeight: 600,
+              cursor: "pointer",
+              boxShadow: "0 12px 24px rgba(var(--accent-purple-rgb), 0.15)",
+            }}
+          >
+            Refresh
+          </button>
+          {loading && (
+            <span style={{ color: "var(--accent-purple)", fontWeight: 600 }}>Refreshing…</span>
+          )}
+          <button
+            type="button"
+            onClick={() => openEntryModal("car")}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "10px",
+              border: "none",
+              background: "var(--primary)",
+              color: "white",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Add location
+          </button>
+        </div>
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: "12px",
+        }}
+      >
+        {entries.length === 0 && (
+          <div
+            style={{
+              gridColumn: "1 / -1",
+              padding: "12px",
+              borderRadius: "12px",
+              border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
+              textAlign: "center",
+              color: "var(--info-dark)",
+            }}
+          >
+            No active job tracking data yet.
+          </div>
+        )}
+        {activeEntries.length === 0 && entries.length > 0 && (
+          <div
+            style={{
+              gridColumn: "1 / -1",
+              padding: "12px",
+              borderRadius: "12px",
+              border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
+              textAlign: "center",
+              color: "var(--info-dark)",
+            }}
+          >
+            Waiting for job-mapped tracking entries.
+          </div>
+        )}
+        {activeEntries.map((entry) => (
+          <CombinedTrackerCard
+            key={entry.jobId || entry.id || `${entry.jobNumber}-${entry.updatedAt}`}
+            entry={entry}
+          />
+        ))}
+      </div>
+    </section>
+  );
+
+  const renderEquipmentContent = () => (
+    <section style={{ ...SECTION_STYLE, gap: "20px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "12px",
+          alignItems: "flex-start",
+        }}
+      >
+        <div>
+          <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.12em", color: "var(--info-dark)" }}>
+            Equipment services
+          </p>
+          <h1 style={{ margin: "6px 0 0", fontSize: "1.5rem", color: "var(--accent-purple)" }}>
+            Equipment &amp; tools
+          </h1>
+          <p style={{ margin: "4px 0 0", color: "var(--info)", maxWidth: "560px" }}>
+            Track shared kit maintenance, upcoming inspections and who is responsible for each tool.
+          </p>
+        </div>
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+          gap: "14px",
+        }}
+      >
+        {equipmentChecks.length === 0 && (
+          <div
+            style={{
+              gridColumn: "1 / -1",
+              padding: "12px",
+              borderRadius: "12px",
+              border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
+              textAlign: "center",
+              color: "var(--info-dark)",
+            }}
+          >
+            Equipment service list is empty.
+          </div>
+        )}
+        {equipmentChecks.map((check) => {
+          const dueLabel = getDueLabel(check.nextDue);
+          const isDue = dueLabel === "Due now";
+          const badgeColor =
+            check.status?.toLowerCase().includes("due") || isDue ? "var(--danger)" : "var(--success-dark)";
+          return (
+            <div
+              key={check.id}
+              style={{
+                padding: "18px",
+                borderRadius: "16px",
+                border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
+                background: "var(--surface)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: "10px",
+                }}
+              >
+                <div>
+                  <strong style={{ display: "block", fontSize: "1.05rem" }}>{check.name}</strong>
+                  <p style={{ margin: "2px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>{check.location}</p>
+                  <p style={{ margin: "2px 0 0", color: "var(--info-dark)", fontSize: "0.8rem" }}>
+                    Owner: {check.owner}
+                  </p>
+                </div>
+                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: badgeColor }}>
+                  {check.status || dueLabel}
+                </span>
+              </div>
+              <div style={{ display: "grid", gap: "6px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "0.85rem",
+                    color: "var(--info-dark)",
+                  }}
+                >
+                  <span>Last checked</span>
+                  <strong>{formatDateLabel(check.lastChecked)}</strong>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "0.85rem",
+                    color: "var(--info-dark)",
+                  }}
+                >
+                  <span>Next due</span>
+                  <strong>{formatDateLabel(check.nextDue)}</strong>
+                </div>
+                <p style={{ margin: "6px 0 0", color: "var(--info)", fontSize: "0.8rem" }}>{check.notes}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleEquipmentCheck(check.id)}
+                style={{
+                  marginTop: "6px",
+                  padding: "8px 14px",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: "var(--primary)",
+                  color: "white",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  alignSelf: "flex-start",
+                }}
+              >
+                Log check
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+
+  const renderOilContent = () => (
+    <section style={{ ...SECTION_STYLE, gap: "20px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "12px",
+          alignItems: "flex-start",
+        }}
+      >
+        <div>
+          <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.12em", color: "var(--info-dark)" }}>
+            Oil &amp; stock checks
+          </p>
+          <h1 style={{ margin: "6px 0 0", fontSize: "1.5rem", color: "var(--accent-purple)" }}>
+            Oil / Stock
+          </h1>
+          <p style={{ margin: "4px 0 0", color: "var(--info)", maxWidth: "560px" }}>
+            Capture when to inspect service fluids and replenish stock for busy workshop days.
+          </p>
+        </div>
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+          gap: "14px",
+        }}
+      >
+        {oilChecks.length === 0 && (
+          <div
+            style={{
+              gridColumn: "1 / -1",
+              padding: "12px",
+              borderRadius: "12px",
+              border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
+              textAlign: "center",
+              color: "var(--info-dark)",
+            }}
+          >
+            Oil stock checklist is empty.
+          </div>
+        )}
+        {oilChecks.map((item) => {
+          const dueLabel = getDueLabel(item.nextDue);
+          const isDue = dueLabel === "Due now";
+          return (
+            <div
+              key={item.id}
+              style={{
+                padding: "18px",
+                borderRadius: "16px",
+                border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
+                background: "var(--surface)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: "10px",
+                }}
+              >
+                <div>
+                  <strong style={{ display: "block", fontSize: "1.05rem" }}>{item.name}</strong>
+                  <p style={{ margin: "2px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
+                    {item.storageLocation}
+                  </p>
+                </div>
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    color: isDue ? "var(--danger)" : "var(--success-dark)",
+                  }}
+                >
+                  {dueLabel}
+                </span>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                  gap: "10px",
+                  color: "var(--info-dark)",
+                  fontSize: "0.85rem",
+                }}
+              >
+                <div>
+                  <span style={{ display: "block", color: "var(--info)" }}>Stock</span>
+                  <strong>{item.stockLevel}</strong>
+                </div>
+                <div>
+                  <span style={{ display: "block", color: "var(--info)" }}>Last checked</span>
+                  <strong>{formatDateLabel(item.lastChecked)}</strong>
+                </div>
+                <div>
+                  <span style={{ display: "block", color: "var(--info)" }}>Next check</span>
+                  <strong>{formatDateLabel(item.nextDue)}</strong>
+                </div>
+              </div>
+              <p style={{ margin: "0", color: "var(--info)", fontSize: "0.85rem" }}>{item.guidance}</p>
+              <button
+                type="button"
+                onClick={() => handleOilCheck(item.id)}
+                style={{
+                  marginTop: "6px",
+                  padding: "8px 14px",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: "var(--primary)",
+                  color: "white",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  alignSelf: "flex-start",
+                }}
+              >
+                Mark checked
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+
+  const renderActiveTabContent = () => {
+    if (activeTab === "equipment") {
+      return renderEquipmentContent();
+    }
+    if (activeTab === "oil-stock") {
+      return renderOilContent();
+    }
+    return renderTrackerContent();
+  };
+
   return (
     <Layout>
       <div
@@ -683,135 +1217,52 @@ export default function TrackingDashboard() {
           style={{
             gridColumn: "1 / -1",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 18px",
-            borderRadius: "18px",
-            border: "1px solid rgba(var(--danger-rgb), 0.18)",
-            background: "var(--danger-surface)",
-            boxShadow: "0 18px 28px rgba(var(--danger-rgb), 0.08)",
-            gap: "12px",
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-            <span style={{ fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--danger)" }}>Tracking Sync</span>
-            <strong style={{ color: "var(--danger-dark)" }}>Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "Syncing..."}</strong>
-          </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            {loading && (<span style={{ color: "var(--danger)", fontWeight: 600 }}>Refreshing…</span>)}
-            <button
-              type="button"
-              onClick={loadEntries}
-              style={{
-                padding: "8px 16px",
-                borderRadius: "12px",
-                border: "none",
-                background: "var(--danger)",
-                color: "var(--surface)",
-                fontWeight: 700,
-                cursor: "pointer",
-                boxShadow: "0 12px 24px rgba(var(--danger-rgb), 0.25)",
-              }}
-            >
-              Refresh
-            </button>
-          </div>
-        </div>
-        {error && (
-          <div
-            style={{
-              gridColumn: "1 / -1",
-              padding: "12px 16px",
-              borderRadius: "16px",
-              border: "1px solid rgba(var(--danger-rgb), 0.25)",
-              background: "rgba(var(--danger-rgb), 0.8)",
-              color: "var(--danger)",
-              fontWeight: 600,
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        <section
-          style={{
-            padding: "24px",
-            borderRadius: "24px",
-            background: "var(--surface)",
-            border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
-            boxShadow: "0 20px 40px rgba(var(--shadow-rgb),0.04)",
-            display: "flex",
             flexDirection: "column",
             gap: "18px",
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-            <div>
-              <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.12em", color: "var(--info-dark)" }}>Live tracker</p>
-              <h1 style={{ margin: "6px 0 0", fontSize: "1.5rem", color: "var(--accent-purple)" }}>Active jobs</h1>
-            </div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                type="button"
-                onClick={() => openEntryModal("car")}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: "10px",
-                border: "none",
-                background: "var(--primary)",
-                color: "white",
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+            {tabs.map((tab) => {
+              const isActive = tab.id === activeTab;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    padding: "10px 18px",
+                    borderRadius: "12px",
+                    border: isActive
+                      ? "1px solid var(--primary)"
+                      : "1px solid rgba(var(--grey-accent-rgb), 0.3)",
+                    background: isActive ? "rgba(var(--primary-rgb), 0.08)" : "var(--surface)",
+                    color: isActive ? "var(--primary)" : "var(--info-dark)",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    boxShadow: isActive ? "0 8px 20px rgba(var(--primary-rgb), 0.08)" : "none",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+          {error && (
+            <div
+              style={{
+                padding: "12px 16px",
+                borderRadius: "16px",
+                border: "1px solid rgba(var(--danger-rgb), 0.25)",
+                background: "rgba(var(--danger-rgb), 0.8)",
+                color: "var(--danger)",
                 fontWeight: 600,
-                cursor: "pointer",
               }}
-              >
-                Add location
-              </button>
+            >
+              {error}
             </div>
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: "12px",
-            }}
-          >
-            {entries.length === 0 && (
-              <div
-                style={{
-                  gridColumn: "1 / -1",
-                  padding: "12px",
-                  borderRadius: "12px",
-                  border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
-                  textAlign: "center",
-                  color: "var(--info-dark)",
-                }}
-              >
-                No active job tracking data yet.
-              </div>
-            )}
-            {activeEntries.length === 0 && entries.length > 0 && (
-              <div
-                style={{
-                  gridColumn: "1 / -1",
-                  padding: "12px",
-                  borderRadius: "12px",
-                  border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
-                  textAlign: "center",
-                  color: "var(--info-dark)",
-                }}
-              >
-                Waiting for job-mapped tracking entries.
-              </div>
-            )}
-            {activeEntries.map((entry) => (
-              <CombinedTrackerCard
-                key={entry.jobId || entry.id || `${entry.jobNumber}-${entry.updatedAt}`}
-                entry={entry}
-              />
-            ))}
-          </div>
-        </section>
+          )}
+          {renderActiveTabContent()}
+        </div>
       </div>
 
       {searchModal.open && (

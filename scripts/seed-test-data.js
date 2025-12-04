@@ -14,6 +14,14 @@ if (!supabaseUrl || !serviceKey) {
 
 const supabase = createClient(supabaseUrl, serviceKey);
 
+const formatSeedJobNumber = (jobId) => {
+  const normalizedId = Number(jobId);
+  if (!Number.isFinite(normalizedId) || normalizedId <= 0) {
+    return null;
+  }
+  return String(Math.floor(normalizedId)).padStart(5, "0");
+};
+
 const isTableEmpty = async (table) => {
   const { count, error } = await supabase.from(table).select("*", { head: true, count: "exact" });
   if (error) {
@@ -168,7 +176,6 @@ const seedJobs = async (customerIds, vehicleIds, userIds) => {
   const now = new Date();
   const jobs = [
     {
-      job_number: "JC1442",
       customer_id: customerId,
       vehicle_id: vehicleId,
       vehicle_reg: "HN70 HPA",
@@ -184,8 +191,22 @@ const seedJobs = async (customerIds, vehicleIds, userIds) => {
     },
   ];
 
-  const { data, error } = await supabase.from("jobs").insert(jobs).select("id, job_number");
+  const { data, error } = await supabase.from("jobs").insert(jobs).select("id");
   if (error) throw new Error(`Failed to seed jobs: ${error.message}`);
+
+  const jobRow = Array.isArray(data) ? data[0] : null;
+  if (jobRow) {
+    const seededJobNumber = formatSeedJobNumber(jobRow.id);
+    if (seededJobNumber) {
+      const { error: updateError } = await supabase
+        .from("jobs")
+        .update({ job_number: seededJobNumber })
+        .eq("id", jobRow.id);
+      if (updateError) throw new Error(`Failed to update seeded job number: ${updateError.message}`);
+      jobRow.job_number = seededJobNumber;
+    }
+  }
+
   console.info("✅ Seeded jobs table.");
   return data;
 };

@@ -6,27 +6,14 @@ export default function CheckSheetPopup({ onClose, onAddCheckSheet, onAddDealerD
   // Render overlay + options
   return (
     // Full-screen overlay
-    <div
-      style={{
-        position: "fixed", // fixed overlay
-        top: 0, // top 0
-        left: 0, // left 0
-        width: "100%", // full width
-        height: "100%", // full height
-        backgroundColor: "rgba(var(--shadow-rgb),0.5)", // translucent bg
-        display: "flex", // center horizontally
-        justifyContent: "center", // center horizontally
-        alignItems: "center", // center vertically
-        zIndex: 1000, // ensure on top
-      }}
-    >
+    <div className="popup-backdrop">
       {/* Popup card */}
       <div
+        className="popup-card"
         style={{
-          backgroundColor: "var(--surface)", // white card
-          padding: "24px", // padding
-          borderRadius: "8px", // rounded corners
-          width: "420px", // width
+          padding: "24px",
+          borderRadius: "8px",
+          width: "420px",
         }}
       >
         {/* Title */}

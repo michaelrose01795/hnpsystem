@@ -41,25 +41,12 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
      RENDER POPUP
   ============================================ */
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        backgroundColor: "rgba(var(--shadow-rgb),0.5)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
-    >
+    <div className="popup-backdrop">
       <div
+        className="popup-card"
         style={{
-          backgroundColor: "var(--surface)",
           padding: "24px",
-          borderRadius: "8px",
+          borderRadius: "10px",
           width: "420px",
           maxHeight: "90vh",
           overflowY: "auto",

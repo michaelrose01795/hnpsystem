@@ -953,7 +953,7 @@ export default function DeliveryRoutePage() {
                 type="text"
                 value={jobNumberInput}
                 onChange={(event) => setJobNumberInput(event.target.value)}
-                placeholder="e.g. JOB-12345"
+                placeholder="e.g. 00001"
                 style={{
                   borderRadius: "12px",
                   border: "1px solid var(--surface-light)",

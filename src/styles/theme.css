@@ -100,4 +100,13 @@
   --accent-blue-surface: rgba(var(--info-rgb), 0.2);
   --overlay: rgba(var(--accent-purple-rgb), 0.5);
   --shadow-rgb: 180, 170, 220; /* lighter shadow tint for better contrast in dark mode */
+  --layer-surface-top: #1f2027;
+  --layer-surface-mid: #181a21;
+  --layer-surface-deep: #12121a;
+  --layer-surface-base: #0d0d12;
+  --layer-gradient: linear-gradient(180deg, var(--layer-surface-top), var(--layer-surface-mid), var(--layer-surface-deep), var(--layer-surface-base));
+  --layer-section-light: #1f2129;
+  --layer-section-medium: #181a20;
+  --layer-section-dark: #12121a;
+  --layer-section-deep: #0e0e13;
 }

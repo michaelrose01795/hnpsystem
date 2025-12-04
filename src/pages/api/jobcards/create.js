@@ -1,6 +1,7 @@
 // file location: src/pages/api/jobcards/create.js
 
 import { supabase } from '@/lib/supabaseClient' // Import Supabase client
+import { formatJobNumberFromId } from "@/lib/database/jobs";
 
 /**
  * API endpoint to create a new job card
@@ -24,16 +25,9 @@ export default async function handler(req, res) {
 
   try {
     const jobCard = req.body
-    console.log('📝 Creating job card:', jobCard.jobNumber)
+    console.log('📝 Creating job card for vehicle:', jobCard.vehicle?.reg || "unknown")
 
     // ✅ Validate required fields
-    if (!jobCard.jobNumber) {
-      return res.status(400).json({
-        message: "Missing required field: jobNumber",
-        code: "MISSING_JOB_NUMBER"
-      })
-    }
-
     if (!jobCard.vehicle || !jobCard.vehicle.reg) {
       return res.status(400).json({
         message: "Missing required field: vehicle registration",
@@ -52,20 +46,6 @@ export default async function handler(req, res) {
       return res.status(400).json({
         message: "Missing required field: at least one job request",
         code: "MISSING_REQUESTS"
-      })
-    }
-
-    // ✅ Check for duplicate jobNumber in database
-    const { data: existingJob, error: checkError } = await supabase
-      .from('jobs')
-      .select('job_number')
-      .eq('job_number', jobCard.jobNumber)
-      .single()
-
-    if (existingJob) {
-      return res.status(409).json({
-        message: `Job Card ${jobCard.jobNumber} already exists`,
-        code: "DUPLICATE_JOB"
       })
     }
 
@@ -202,7 +182,6 @@ export default async function handler(req, res) {
     const { data: newJob, error: jobError } = await supabase
       .from('jobs')
       .insert([{
-        job_number: jobCard.jobNumber,
         reg: jobCard.vehicle.reg.toUpperCase(),
         customer_id: customerId,
         assigned_to: null, // Will be assigned later
@@ -222,7 +201,24 @@ export default async function handler(req, res) {
       })
     }
 
-    console.log('✅ Job card created successfully:', jobCard.jobNumber)
+    const generatedJobNumber = formatJobNumberFromId(newJob?.id);
+    if (!generatedJobNumber) {
+      throw new Error("Unable to generate job number");
+    }
+
+    const { data: jobWithNumber, error: jobNumberError } = await supabase
+      .from('jobs')
+      .update({ job_number: generatedJobNumber })
+      .eq('id', newJob.id)
+      .select("job_number")
+      .single()
+
+    if (jobNumberError) {
+      throw jobNumberError;
+    }
+
+    const persistedJobNumber = jobWithNumber?.job_number || generatedJobNumber;
+    console.log('✅ Job card created successfully:', persistedJobNumber)
 
     // ✅ Get job history counts
     const { count: customerJobCount } = await supabase
@@ -235,12 +231,14 @@ export default async function handler(req, res) {
       .select('*', { count: 'exact', head: true })
       .eq('reg', jobCard.vehicle.reg.toUpperCase())
 
+    const responseJobNumber = persistedJobNumber || jobCard.jobNumber || null;
+
     // ✅ Respond with success
     return res.status(200).json({
-      message: `Job Card ${jobCard.jobNumber} created successfully!`,
+      message: `Job Card ${responseJobNumber} created successfully!`,
       code: "SUCCESS",
       jobCard: {
-        jobNumber: jobCard.jobNumber,
+        jobNumber: responseJobNumber,
         createdAt: jobCard.createdAt || new Date().toISOString(),
         status: "pending",
         vehicleReg: jobCard.vehicle.reg,

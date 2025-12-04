@@ -43,7 +43,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
   const normaliseJob = (j) => ({ // Convert DB/job list rows to a standard object
     id: j?.id ?? j?.job_id ?? j?.jobId ?? null, // Numeric jobs.id
     jobNumber:
-      j?.jobNumber ?? j?.job_number ?? j?.jobnumber ?? j?.jobNo ?? "", // Human code like JOB-2025-014
+      j?.jobNumber ?? j?.job_number ?? j?.jobnumber ?? j?.jobNo ?? "", // Human code like 00001
     reg:
       j?.vehicle_reg ??
       j?.reg ??
@@ -408,7 +408,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               setError(""); // Clear errors when typing
             }}
             onKeyDown={handleKeyDown} // Enter handler
-            placeholder="e.g., JOB-2025-014" // Example format
+            placeholder="e.g., 00001" // Example format
             disabled={loading} // Disable when loading
             style={{
               width: "100%", // Full width

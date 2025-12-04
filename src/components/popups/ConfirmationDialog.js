@@ -41,25 +41,15 @@ export default function ConfirmationDialog({
       role="dialog"
       aria-modal="true"
       aria-label={title || "Confirmation dialog"}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(var(--shadow-rgb), 0.55)",
-        backdropFilter: "blur(4px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-        zIndex: 1100,
-      }}
+      className="popup-backdrop"
+      style={{ padding: "20px" }}
     >
       <div
+        className="popup-card"
         style={{
           width: "min(520px, 100%)",
           padding: "28px",
           borderRadius: "24px",
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
           boxShadow: "0 24px 48px rgba(var(--shadow-rgb), 0.25)",
           display: "flex",
           flexDirection: "column",

@@ -8,8 +8,6 @@ import dayjs from "dayjs";
 
 const supabase = getDatabaseClient();
 
-const JOB_NUMBER_PREFIX = "JOB";
-
 const normaliseJobNumberInput = (value) => {
   if (value === null || value === undefined) {
     return null;
@@ -27,14 +25,17 @@ const normaliseJobNumberInput = (value) => {
   return null;
 };
 
-const buildJobNumberFromId = (jobId) => {
+export const formatJobNumberFromId = (jobId) => {
   if (!jobId) {
     return null;
   }
 
-  const paddedId = String(jobId).padStart(4, "0");
-  const currentYear = dayjs().format("YYYY");
-  return `${JOB_NUMBER_PREFIX}-${currentYear}-${paddedId}`;
+  const normalizedId = Number(jobId);
+  if (!Number.isFinite(normalizedId) || normalizedId <= 0) {
+    return null;
+  }
+
+  return String(Math.floor(normalizedId)).padStart(5, "0");
 };
 
 const ensureJobNumberAssigned = async (jobRow, providedJobNumber = null) => {
@@ -54,7 +55,7 @@ const ensureJobNumberAssigned = async (jobRow, providedJobNumber = null) => {
     return jobRow;
   }
 
-  const fallbackJobNumber = buildJobNumberFromId(jobRow.id);
+  const fallbackJobNumber = formatJobNumberFromId(jobRow.id);
   if (!fallbackJobNumber) {
     return jobRow;
   }

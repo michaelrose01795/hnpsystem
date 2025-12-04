@@ -128,23 +128,11 @@ export default function NextActionPrompt() {
       </button>
 
       {isOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(var(--shadow-rgb),0.55)",
-            backdropFilter: "blur(4px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
-            zIndex: 1000,
-          }}
-        >
+        <div className="popup-backdrop" style={{ padding: "20px", zIndex: 1000 }}>
           <div
+            className="popup-card"
             style={{
               width: "min(520px, 100%)",
-              background: "var(--surface)",
               borderRadius: "24px",
               padding: "28px",
               display: "flex",

@@ -1,94 +1,327 @@
-// ✅ Imports converted to use absolute alias "@/"
-// file location: src/pages/newsfeed.js
 "use client";
 
-import React, { useState } from "react"; // Import React and useState hook
-import Layout from "@/components/Layout"; // Import layout wrapper
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Layout from "@/components/Layout";
+import { supabase } from "@/lib/supabaseClient";
+import { useUser } from "@/context/UserContext";
+
+const FALLBACK_UPDATES = [
+  {
+    id: "fallback-1",
+    title: "Workshop Clean-up & Tool Audit",
+    author: "Tom — Service Manager",
+    created_at: "2025-10-21T14:00:00.000Z",
+    departments: ["Workshop"],
+    content:
+      "Reminder: full workshop clean-up and tool audit on Friday at 3 PM. Please ensure all shared tools are returned and bays are left clear by Thursday evening.",
+  },
+  {
+    id: "fallback-2",
+    title: "Record Sales Week — Thank You Team!",
+    author: "Sarah — Sales Manager",
+    created_at: "2025-10-20T10:30:00.000Z",
+    departments: ["Sales"],
+    content:
+      "We’ve achieved a new milestone with 27 cars sold last week! Huge thanks to everyone, especially valeting and prep teams for their fast turnarounds.",
+  },
+  {
+    id: "fallback-3",
+    title: "Parts Stocktake Reminder",
+    author: "Jamie — Parts Manager",
+    created_at: "2025-10-19T09:45:00.000Z",
+    departments: ["Parts"],
+    content:
+      "End-of-month stocktake will take place Tuesday morning. Please ensure all deliveries are logged before Monday afternoon.",
+  },
+];
+
+const AVAILABLE_DEPARTMENTS = [
+  "General",
+  "Service",
+  "Workshop",
+  "Parts",
+  "Sales",
+  "Valeting",
+  "Admin",
+  "HR",
+];
+
+const SECTION_ORDER = [
+  "General",
+  "Service",
+  "Workshop",
+  "Parts",
+  "Sales",
+  "Valeting",
+  "Admin",
+  "HR",
+];
+
+const normalizeDepartment = (value) => {
+  if (!value) return null;
+  const normalized = String(value).trim();
+  const key = normalized.toLowerCase();
+  const match = AVAILABLE_DEPARTMENTS.find((dept) => dept.toLowerCase() === key);
+  return match || normalized;
+};
+
+const normalizeDepartments = (input) => {
+  if (!input) return [];
+  if (Array.isArray(input)) {
+    return Array.from(new Set(input.map(normalizeDepartment).filter(Boolean)));
+  }
+  return [normalizeDepartment(input)].filter(Boolean);
+};
+
+const deriveDepartmentsFromRoles = (roles = []) => {
+  const sanitized = (role) =>
+    String(role || "")
+      .toLowerCase()
+      .replace(/[-_]/g, " ")
+      .trim();
+  const mapped = new Set();
+  roles.forEach((role) => {
+    const normalized = sanitized(role);
+    if (!normalized) return;
+    if (normalized.includes("service") || normalized.includes("after sales") || normalized.includes("aftersales")) {
+      mapped.add("Service");
+    }
+    if (normalized.includes("workshop") || normalized.includes("tech") || normalized.includes("mot")) {
+      mapped.add("Workshop");
+    }
+    if (normalized.includes("parts")) {
+      mapped.add("Parts");
+    }
+    if (normalized.includes("sales") && !normalized.includes("after sales")) {
+      mapped.add("Sales");
+    }
+    if (normalized.includes("valet")) {
+      mapped.add("Valeting");
+    }
+    if (normalized.includes("hr")) {
+      mapped.add("HR");
+    }
+    if (normalized.includes("admin") || normalized.includes("owner")) {
+      mapped.add("Admin");
+    }
+  });
+  return Array.from(mapped);
+};
+
+const formatDate = (value) => {
+  if (!value) return "Unknown date";
+  try {
+    return new Date(value).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch (error) {
+    return "Unknown date";
+  }
+};
+
+const isManagerRole = (roles = []) =>
+  roles.some((role) => /(manager|director|owner)/i.test(role));
+
+const matchesSection = (update, section) => {
+  const payload = Array.isArray(update.departments) ? update.departments : [];
+  if (section === "General") {
+    return payload.length === 0 || payload.includes("General");
+  }
+  return payload.includes(section);
+};
 
 export default function NewsFeed() {
-  // Predefined updates — will later be fetched from database
-  const [updates, setUpdates] = useState([
-    {
-      id: 1,
-      title: "Workshop Clean-up & Tool Audit",
-      author: "Tom — Service Manager",
-      date: "October 21, 2025",
-      department: "Workshop",
-      content:
-        "Reminder: full workshop clean-up and tool audit on Friday at 3 PM. Please ensure all shared tools are returned and bays are left clear by Thursday evening.",
-    },
-    {
-      id: 2,
-      title: "Record Sales Week — Thank You Team!",
-      author: "Sarah — Sales Manager",
-      date: "October 20, 2025",
-      department: "Sales",
-      content:
-        "We’ve achieved a new milestone with 27 cars sold last week! Huge thanks to everyone, especially valeting and prep teams for their fast turnarounds.",
-    },
-    {
-      id: 3,
-      title: "Parts Stocktake Reminder",
-      author: "Jamie — Parts Manager",
-      date: "October 19, 2025",
-      department: "Parts",
-      content:
-        "End-of-month stocktake will take place Tuesday morning. Please ensure all deliveries are logged before Monday afternoon.",
-    },
-  ]);
+  const { user, dbUserId } = useUser();
+  const [updates, setUpdates] = useState(FALLBACK_UPDATES);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formState, setFormState] = useState({
+    title: "",
+    content: "",
+    departments: [],
+  });
+  const [departmentMenuOpen, setDepartmentMenuOpen] = useState(false);
+  const [notificationError, setNotificationError] = useState("");
+  const departmentMenuRef = useRef(null);
 
-  const userIsManager = true; // Placeholder until Keycloak role-based permissions added
+  const userRoles = user?.roles || [];
+  const userDepartments = useMemo(() => deriveDepartmentsFromRoles(userRoles), [userRoles]);
+  const canManageUpdates = useMemo(() => isManagerRole(userRoles), [userRoles]);
 
-  // Group updates dynamically by department
-  const groupedUpdates = updates.reduce((groups, update) => {
-    if (!groups[update.department]) groups[update.department] = [];
-    groups[update.department].push(update);
-    return groups;
-  }, {});
+  const fetchUpdates = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("news_updates")
+        .select("id, title, content, departments, author, created_at")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (!error && Array.isArray(data)) {
+        setUpdates(
+          data.map((row) => ({
+            id: row.id ?? row.title,
+            title: row.title,
+            content: row.content,
+            author: row.author,
+            created_at: row.created_at,
+            departments: normalizeDepartments(row.departments),
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to load news updates:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUpdates();
+    const channel = supabase
+      .channel("news-feed-updates")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "news_updates" },
+        () => {
+          fetchUpdates();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchUpdates]);
+
+  useEffect(() => {
+    if (!departmentMenuOpen) return undefined;
+    const handleClick = (event) => {
+      if (departmentMenuRef.current && !departmentMenuRef.current.contains(event.target)) {
+        setDepartmentMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [departmentMenuOpen]);
+
+  const sectionFeeds = useMemo(() => {
+    const accessibleSections = SECTION_ORDER.filter(
+      (section) => section === "General" || userDepartments.includes(section)
+    );
+    return accessibleSections
+      .map((label) => {
+        const posts = updates.filter((update) => matchesSection(update, label));
+        return { label, posts };
+      })
+      .filter((section) => section.posts.length > 0);
+  }, [updates, userDepartments]);
+
+  const handleDepartmentToggle = (department) => {
+    setFormState((previous) => {
+      const hasDept = previous.departments.includes(department);
+      const nextDepartments = hasDept
+        ? previous.departments.filter((dept) => dept !== department)
+        : [...previous.departments, department];
+      return { ...previous, departments: nextDepartments };
+    });
+  };
+
+  const resetModal = () => {
+    setFormState({ title: "", content: "", departments: [] });
+    setNotificationError("");
+    setDepartmentMenuOpen(false);
+  };
+
+  const handleCreateUpdate = async () => {
+    setNotificationError("");
+    if (!formState.title.trim() || !formState.content.trim() || formState.departments.length === 0) {
+      setNotificationError("Provide a title, description, and target departments.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        title: formState.title.trim(),
+        content: formState.content.trim(),
+        departments: formState.departments,
+        author: user?.username || "System",
+        created_by: dbUserId,
+      };
+      const { error } = await supabase.from("news_updates").insert([payload]);
+      if (error) {
+        throw error;
+      }
+      resetModal();
+      setModalOpen(false);
+      await fetchUpdates();
+    } catch (error) {
+      console.error("Failed to save update:", error);
+      setNotificationError("Unable to save updates right now. Please try again later.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const departmentsSummary =
+    formState.departments.length === 0
+      ? "Choose departments"
+      : `${formState.departments.length} selected`;
 
   return (
     <Layout>
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Header */}
-        {userIsManager && (
+        {canManageUpdates && (
           <div className="flex justify-end items-center mb-10">
             <button
-              onClick={() => alert("Manager post creation coming soon")}
-              className="px-5 py-2 font-semibold text-white rounded-xl shadow-sm hover:shadow-lg transition-all hover:-translate-y-0.5"
-              style={{ backgroundColor: "var(--primary)" }}
+              onClick={() => {
+                resetModal();
+                setModalOpen(true);
+              }}
+              className="px-5 py-2 font-semibold text-white rounded-xl shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg"
+              style={{
+                backgroundColor: "var(--primary)",
+                border: "1px solid var(--primary-dark)",
+              }}
+              type="button"
             >
               + Add Update
             </button>
           </div>
         )}
 
-        {/* Description */}
-        <p className="text-gray-600 mb-10 text-lg">
-          Stay informed on the latest updates, events, and achievements from all departments.
-        </p>
+        {loading && (
+          <p className="text-sm text-gray-400 mb-6">Loading latest updates…</p>
+        )}
 
-        {/* Department Sections */}
+        {!loading && sectionFeeds.length === 0 && (
+          <p className="text-sm text-gray-400 mb-6">
+            No updates published for your departments yet.
+          </p>
+        )}
+
         <div className="space-y-10">
-          {Object.keys(groupedUpdates).map((dept) => (
+          {sectionFeeds.map((section) => (
             <section
-              key={dept}
-              className="rounded-3xl shadow-lg p-8 border border-[var(--surface-light)] transition-all duration-300 hover:shadow-2xl"
+              key={section.label}
+              className="rounded-3xl p-8 border border-[var(--surface-light)] transition-all duration-300"
               style={{ background: "var(--surface)" }}
             >
               <h2
                 className="text-2xl font-semibold mb-6 pb-2 border-b border-[var(--surface-light)]"
                 style={{ color: "var(--primary)" }}
               >
-                {dept} Department
+                {section.label} Department
               </h2>
 
               <div className="flex flex-col gap-6">
-                {groupedUpdates[dept].map((post) => (
-                  <div
-                    key={post.id}
-                    className="rounded-2xl bg-white shadow-md p-6 border border-[var(--surface-light)] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-[var(--danger)]"
+                {section.posts.map((post) => (
+                  <article
+                    key={post.id ?? post.title}
+                    className="rounded-2xl bg-[var(--surface-light)] shadow-md p-6 border border-[var(--surface-light)] transition-all duration-300 hover:-translate-y-1 hover:border-[var(--primary-light)]"
                   >
-                    {/* Title and Department Tag */}
                     <div className="flex justify-between items-start mb-3">
                       <h3 className="text-lg font-semibold text-gray-900">
                         {post.title}
@@ -96,31 +329,146 @@ export default function NewsFeed() {
                       <span
                         className="text-xs font-medium px-3 py-1 rounded-full"
                         style={{
-                          backgroundColor: "var(--surface-light)",
+                          backgroundColor: "var(--surface)",
+                          border: "1px solid var(--surface-light)",
                           color: "var(--primary)",
                         }}
                       >
-                        {post.department}
+                        {(post.departments && post.departments[0]) || section.label}
                       </span>
                     </div>
 
-                    {/* Content */}
-                    <p className="text-gray-700 mb-4 leading-relaxed">
-                      {post.content}
-                    </p>
+                    <p className="text-gray-700 mb-4 leading-relaxed">{post.content}</p>
 
-                    {/* Footer */}
                     <div className="flex justify-between text-sm text-gray-500 border-t border-gray-100 pt-3">
-                      <span>{post.author}</span>
-                      <span>{post.date}</span>
+                      <span>{post.author || "System"}</span>
+                      <span>{formatDate(post.created_at)}</span>
                     </div>
-                  </div>
+                  </article>
                 ))}
               </div>
             </section>
           ))}
         </div>
       </div>
+
+      {modalOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+          <div
+            className="bg-[var(--surface)] border border-[var(--surface-light)] rounded-[32px] shadow-2xl w-full max-w-3xl"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="px-8 py-6 flex justify-between items-center border-b border-[var(--surface-light)]">
+              <h3 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>
+                Share an update
+              </h3>
+              <button
+                onClick={() => setModalOpen(false)}
+                type="button"
+                aria-label="Close update modal"
+                className="text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="px-8 py-6 space-y-5">
+              <div className="flex flex-col gap-2">
+                <label className="font-semibold text-sm text-gray-400" htmlFor="news-title">
+                  Title
+                </label>
+                <input
+                  id="news-title"
+                  type="text"
+                  value={formState.title}
+                  onChange={(event) =>
+                    setFormState((previous) => ({ ...previous, title: event.target.value }))
+                  }
+                  className="w-full px-4 py-3 rounded-xl border border-[var(--surface-light)] bg-[var(--surface-light)] text-sm text-[var(--text-primary)] transition focus:border-[var(--primary)] focus:outline-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="font-semibold text-sm text-gray-400" htmlFor="news-content">
+                  Description
+                </label>
+                <textarea
+                  id="news-content"
+                  rows={4}
+                  value={formState.content}
+                  onChange={(event) =>
+                    setFormState((previous) => ({ ...previous, content: event.target.value }))
+                  }
+                  className="w-full px-4 py-3 rounded-xl border border-[var(--surface-light)] bg-[var(--surface-light)] text-sm text-[var(--text-primary)] transition focus:border-[var(--primary)] focus:outline-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2 relative" ref={departmentMenuRef}>
+                <label className="font-semibold text-sm text-gray-400">Visible to</label>
+                <button
+                  type="button"
+                  onClick={() => setDepartmentMenuOpen((previous) => !previous)}
+                  className="w-full flex justify-between items-center px-4 py-3 rounded-xl border border-[var(--surface-light)] bg-[var(--surface-light)] text-sm text-[var(--text-primary)]"
+                >
+                  <span>{departmentsSummary}</span>
+                  <span className="text-[0.85rem] text-gray-400">
+                    {departmentMenuOpen ? "Close" : "Select"}
+                  </span>
+                </button>
+                {departmentMenuOpen && (
+                  <div className="absolute top-full mt-2 left-0 right-0 bg-[var(--surface)] rounded-2xl border border-[var(--surface-light)] shadow-lg z-10 max-h-56 overflow-auto py-3">
+                    {AVAILABLE_DEPARTMENTS.map((department) => (
+                      <label
+                        key={department}
+                        className="flex items-center justify-between px-4 py-2 text-sm cursor-pointer hover:bg-[var(--surface-light)]"
+                      >
+                        <span>{department}</span>
+                        <input
+                          type="checkbox"
+                          checked={formState.departments.includes(department)}
+                          onChange={() => handleDepartmentToggle(department)}
+                          className="w-4 h-4 text-[var(--primary)] border rounded focus:ring-0"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {notificationError && (
+                <p className="text-sm text-[var(--danger)]">{notificationError}</p>
+              )}
+
+              <div className="flex justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalOpen(false);
+                    resetModal();
+                  }}
+                  className="px-4 py-2 rounded-xl border border-[var(--surface-light)] text-sm font-semibold text-[var(--text-primary)] transition hover:border-[var(--primary-light)]"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateUpdate}
+                  disabled={saving}
+                  className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition"
+                  style={{
+                    backgroundColor: "var(--primary)",
+                    opacity: saving ? 0.65 : 1,
+                    border: "1px solid var(--primary-dark)",
+                  }}
+                >
+                  {saving ? "Publishing…" : "Add update"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
