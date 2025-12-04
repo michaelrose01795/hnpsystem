@@ -979,7 +979,7 @@ export default function NextJobsPage() {
       <div
         key={panelKey}
         style={{
-          background: "white",
+          background: "var(--surface)",
           border: dragOverTarget === assignee.name ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
           borderRadius: "8px",
           padding: "16px",
@@ -1513,7 +1513,7 @@ export default function NextJobsPage() {
           >
             <div
               style={{
-                backgroundColor: "white",
+                backgroundColor: "var(--surface)",
                 padding: "24px",
                 borderRadius: "12px",
                 width: "500px",
@@ -1707,7 +1707,7 @@ export default function NextJobsPage() {
           >
             <div
               style={{
-                backgroundColor: "white",
+                backgroundColor: "var(--surface)",
                 padding: "24px",
                 borderRadius: "12px",
                 width: "450px",

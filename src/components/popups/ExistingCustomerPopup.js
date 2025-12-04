@@ -57,7 +57,7 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
     >
       <div
         style={{
-          backgroundColor: "white",
+          backgroundColor: "var(--surface)",
           padding: "24px",
           borderRadius: "8px",
           width: "420px",

@@ -23,7 +23,7 @@ export default function CheckSheetPopup({ onClose, onAddCheckSheet, onAddDealerD
       {/* Popup card */}
       <div
         style={{
-          backgroundColor: "white", // white card
+          backgroundColor: "var(--surface)", // white card
           padding: "24px", // padding
           borderRadius: "8px", // rounded corners
           width: "420px", // width

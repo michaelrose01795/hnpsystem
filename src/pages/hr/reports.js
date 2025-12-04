@@ -116,7 +116,7 @@ export default function HrReportsExports() {
                   display: "flex",
                   flexDirection: "column",
                   gap: "8px",
-                  background: "white",
+                  background: "var(--surface)",
                 }}
               >
                 <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{report.title}</span>
@@ -151,7 +151,7 @@ const buttonStyleSecondary = {
   padding: "8px 14px",
   borderRadius: "10px",
   border: "1px solid var(--accent-purple)",
-  background: "white",
+  background: "var(--surface)",
   color: "var(--accent-purple)",
   fontWeight: 600,
   cursor: "pointer",

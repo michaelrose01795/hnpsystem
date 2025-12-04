@@ -201,7 +201,7 @@ const VHCJobCard = ({ job, onClick, partsMode }) => {
         border: "1px solid var(--surface-light)",
         padding: "16px 20px",
         borderRadius: "12px",
-        backgroundColor: "white",
+        backgroundColor: "var(--surface)",
         boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)",
         cursor: "pointer",
         transition: "all 0.3s ease",

@@ -829,7 +829,7 @@ export default function TechJobDetailPage() {
             display: "flex",
             alignItems: "center",
             gap: "12px",
-            backgroundColor: "white",
+            backgroundColor: "var(--surface)",
             border: "1px solid var(--surface-light)",
             borderRadius: "12px",
             padding: "10px 18px",
@@ -859,7 +859,7 @@ export default function TechJobDetailPage() {
           alignItems: "center",
           padding: "20px 24px",
           borderRadius: "8px",
-          backgroundColor: "white",
+          backgroundColor: "var(--surface)",
           border: "1px solid var(--surface-light)",
           boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
           gap: "24px",
@@ -917,7 +917,7 @@ export default function TechJobDetailPage() {
             <div
               key={stat.label}
               style={{
-                backgroundColor: "white",
+                backgroundColor: "var(--surface)",
                 border: "1px solid var(--surface-light)",
                 borderRadius: "8px",
                 boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
@@ -1004,7 +1004,7 @@ export default function TechJobDetailPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {/* Job Details */}
               <div style={{
-                backgroundColor: "white",
+                backgroundColor: "var(--surface)",
                 padding: "24px",
                 borderRadius: "12px",
                 boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
@@ -1042,7 +1042,7 @@ export default function TechJobDetailPage() {
 
               {/* Vehicle Info */}
               <div style={{
-                backgroundColor: "white",
+                backgroundColor: "var(--surface)",
                 padding: "24px",
                 borderRadius: "12px",
                 boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
@@ -1085,7 +1085,7 @@ export default function TechJobDetailPage() {
 
               {/* Customer Info */}
               <div style={{
-                backgroundColor: "white",
+                backgroundColor: "var(--surface)",
                 padding: "24px",
                 borderRadius: "12px",
                 boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
@@ -1123,7 +1123,7 @@ export default function TechJobDetailPage() {
           {/* VHC TAB */}
           {activeTab === "vhc" && (
             <div style={{
-              backgroundColor: "white",
+              backgroundColor: "var(--surface)",
               padding: "24px",
               borderRadius: "12px",
               boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
@@ -1324,7 +1324,7 @@ export default function TechJobDetailPage() {
                               {check.measurement && (
                                 <div style={{
                                   padding: "10px 18px",
-                                  backgroundColor: "white",
+                                  backgroundColor: "var(--surface)",
                                   color: badgeColor,
                                   borderRadius: "10px",
                                   fontSize: "18px",
@@ -1349,7 +1349,7 @@ export default function TechJobDetailPage() {
           {/* PARTS TAB */}
           {activeTab === "parts" && (
             <div style={{
-              backgroundColor: "white",
+              backgroundColor: "var(--surface)",
               padding: "24px",
               borderRadius: "12px",
               boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.1)",
@@ -1462,7 +1462,7 @@ export default function TechJobDetailPage() {
               </div>
 
               <div style={{
-                backgroundColor: "white",
+                backgroundColor: "var(--surface)",
                 borderRadius: "12px",
                 border: "1px solid var(--accent-purple-surface)",
                 padding: "20px",
@@ -1573,7 +1573,7 @@ export default function TechJobDetailPage() {
           {/* NOTES TAB */}
           {activeTab === "notes" && (
             <div style={{
-              backgroundColor: "white",
+              backgroundColor: "var(--surface)",
               padding: "24px",
               borderRadius: "12px",
               boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
@@ -1623,7 +1623,7 @@ export default function TechJobDetailPage() {
                       minHeight: "110px",
                       fontSize: "14px",
                       marginBottom: "12px",
-                      backgroundColor: "white"
+                      backgroundColor: "var(--surface)"
                     }}
                   />
                   <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
@@ -1631,7 +1631,7 @@ export default function TechJobDetailPage() {
                       onClick={() => setShowAddNote(false)}
                       style={{
                         padding: "10px 18px",
-                        backgroundColor: "white",
+                        backgroundColor: "var(--surface)",
                         color: "var(--info)",
                         border: "1px solid var(--info)",
                         borderRadius: "8px",
@@ -1682,7 +1682,7 @@ export default function TechJobDetailPage() {
           {/* WRITE-UP TAB */}
           {activeTab === "write-up" && (
             <div style={{
-              backgroundColor: "white",
+              backgroundColor: "var(--surface)",
               padding: "24px",
               borderRadius: "12px",
               boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",

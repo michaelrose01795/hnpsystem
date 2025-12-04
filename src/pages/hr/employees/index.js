@@ -63,7 +63,7 @@ export default function EmployeeManagement() {
                 padding: "10px 16px",
                 borderRadius: "10px",
                 border: "1px solid var(--accent-purple-surface)",
-                background: "white",
+                background: "var(--surface)",
                 fontWeight: 600,
                 color: "var(--accent-purple)",
                 boxShadow: "0 8px 16px rgba(var(--accent-purple-rgb), 0.12)",
@@ -116,7 +116,7 @@ export default function EmployeeManagement() {
             >
               <div style={{ maxHeight: "520px", overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead style={{ position: "sticky", top: 0, background: "white", zIndex: 1 }}>
+                  <thead style={{ position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>
                     <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                       <th style={{ padding: "12px 0", textAlign: "left" }}>Employee</th>
                       <th>Department</th>
@@ -217,5 +217,5 @@ const selectStyle = {
   padding: "6px 12px",
   fontWeight: 600,
   color: "var(--accent-purple)",
-  background: "white",
+  background: "var(--surface)",
 };

@@ -39,7 +39,7 @@ const JOB_PART_STATUSES = [
 const needsDeliveryScheduling = (status = "") => /collect|delivery/i.test(String(status || ""));
 
 const cardStyle = {
-  backgroundColor: "white",
+  backgroundColor: "var(--surface)",
   borderRadius: "12px",
   padding: "20px",
   boxShadow: "0 10px 30px rgba(var(--danger-rgb), 0.1)",
@@ -65,7 +65,7 @@ const buttonStyle = {
 
 const secondaryButtonStyle = {
   ...buttonStyle,
-  backgroundColor: "white",
+  backgroundColor: "var(--surface)",
   color: "var(--primary)",
   border: "1px solid var(--primary)",
 };

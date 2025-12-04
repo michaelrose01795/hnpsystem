@@ -144,7 +144,7 @@ export default function NextActionPrompt() {
           <div
             style={{
               width: "min(520px, 100%)",
-              background: "white",
+              background: "var(--surface)",
               borderRadius: "24px",
               padding: "28px",
               display: "flex",
@@ -289,7 +289,7 @@ export default function NextActionPrompt() {
                     padding: "10px 16px",
                     borderRadius: "12px",
                     border: "1px solid var(--info)",
-                    background: "white",
+                    background: "var(--surface)",
                     color: "var(--info-dark)",
                     fontWeight: 600,
                     cursor: "pointer",

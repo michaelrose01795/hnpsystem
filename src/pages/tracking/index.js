@@ -105,7 +105,7 @@ const CombinedTrackerCard = ({ entry }) => {
         padding: "16px 18px",
         borderRadius: "16px",
         border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
-        background: "white",
+        background: "var(--surface)",
         boxShadow: "0 8px 16px rgba(var(--grey-accent-rgb), 0.15)",
         display: "flex",
         flexDirection: "column",
@@ -172,7 +172,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
       <div
         style={{
           width: "min(600px, 100%)",
-          background: "white",
+          background: "var(--surface)",
           borderRadius: "24px",
           padding: "26px",
           display: "flex",
@@ -195,7 +195,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
               height: "38px",
               borderRadius: "50%",
               border: "1px solid rgba(var(--shadow-rgb),0.15)",
-              backgroundColor: "white",
+              backgroundColor: "var(--surface)",
               cursor: "pointer",
               fontWeight: 700,
             }}
@@ -235,7 +235,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
                   padding: "8px 12px",
                   borderRadius: "10px",
                   border: "1px solid rgba(var(--primary-rgb),0.3)",
-                  backgroundColor: "white",
+                  backgroundColor: "var(--surface)",
                   color: "var(--primary-dark)",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -304,7 +304,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
         onSubmit={handleSubmit}
         style={{
           width: "min(720px, 100%)",
-          background: "white",
+          background: "var(--surface)",
           borderRadius: "24px",
           padding: "28px",
           display: "flex",
@@ -327,7 +327,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
               height: "38px",
               borderRadius: "50%",
               border: "1px solid rgba(var(--shadow-rgb),0.15)",
-              backgroundColor: "white",
+              backgroundColor: "var(--surface)",
               cursor: "pointer",
               fontWeight: 700,
             }}
@@ -452,7 +452,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
               padding: "10px 16px",
               borderRadius: "12px",
               border: "1px solid rgba(var(--shadow-rgb),0.15)",
-              backgroundColor: "white",
+              backgroundColor: "var(--surface)",
               cursor: "pointer",
               fontWeight: 600,
             }}
@@ -738,7 +738,7 @@ export default function TrackingDashboard() {
           style={{
             padding: "24px",
             borderRadius: "24px",
-            background: "white",
+            background: "var(--surface)",
             border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
             boxShadow: "0 20px 40px rgba(var(--shadow-rgb),0.04)",
             display: "flex",

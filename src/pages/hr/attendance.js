@@ -193,7 +193,7 @@ const buttonStyleSecondary = {
   padding: "8px 14px",
   borderRadius: "10px",
   border: "1px solid var(--info)",
-  background: "white",
+  background: "var(--surface)",
   color: "var(--accent-purple)",
   fontWeight: 600,
   cursor: "pointer",

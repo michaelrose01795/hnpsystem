@@ -371,7 +371,7 @@ export default function StatusSidebar({
                   type="submit"
                   style={{
                     padding: '10px 16px',
-                    backgroundColor: 'white',
+                    backgroundColor: 'var(--surface)',
                     color: 'var(--primary)',
                     border: 'none',
                     borderRadius: '6px',

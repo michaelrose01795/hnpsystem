@@ -131,7 +131,7 @@ const modernInputStyle = {
   fontSize: "14px",
   fontFamily: "inherit",
   outline: "none",
-  backgroundColor: "white",
+  backgroundColor: "var(--surface)",
 };
 
 const modernTextareaStyle = {
@@ -143,7 +143,7 @@ const modernTextareaStyle = {
   fontFamily: "inherit",
   resize: "vertical",
   outline: "none",
-  backgroundColor: "white",
+  backgroundColor: "var(--surface)",
 };
 
 const modernSelectStyle = {
@@ -1270,7 +1270,7 @@ export default function WriteUpPage() {
                   <div
                     key={fieldConfig.field}
                     style={{
-                      backgroundColor: "white",
+                      backgroundColor: "var(--surface)",
                       padding: "16px",
                       borderRadius: "8px",
                       border: "1px solid var(--surface-light)",
@@ -1394,7 +1394,7 @@ export default function WriteUpPage() {
             style={{
               width: "480px",
               maxWidth: "90%",
-              backgroundColor: "white",
+              backgroundColor: "var(--surface)",
               borderRadius: "18px",
               padding: "32px",
               boxShadow: "0 24px 60px rgba(var(--shadow-rgb),0.35)",
@@ -1451,7 +1451,7 @@ export default function WriteUpPage() {
                   border: "1px solid var(--info)",
                   borderRadius: "10px",
                   padding: "12px 16px",
-                  background: "white",
+                  background: "var(--surface)",
                   color: "var(--accent-purple)",
                   fontWeight: 600,
                   cursor: "pointer",

@@ -172,7 +172,7 @@ function ToggleSetting({ label, defaultChecked }) {
         padding: "12px",
         borderRadius: "12px",
         border: "1px solid var(--accent-purple-surface)",
-        background: "white",
+        background: "var(--surface)",
         fontWeight: 600,
         color: "var(--info-dark)",
       }}

@@ -198,7 +198,7 @@ const buttonStyleSecondary = {
   padding: "8px 14px",
   borderRadius: "10px",
   border: "1px solid var(--success)",
-  background: "white",
+  background: "var(--surface)",
   color: "var(--success)",
   fontWeight: 600,
   cursor: "pointer",

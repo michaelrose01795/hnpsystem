@@ -677,7 +677,7 @@ export default function MyJobsPage() {
                       border: "1px solid var(--surface-light)",
                       padding: "16px 20px",
                       borderRadius: "12px",
-                      backgroundColor: "white",
+                      backgroundColor: "var(--surface)",
                       boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)",
                       cursor: "pointer",
                       transition: "all 0.3s ease",
@@ -974,7 +974,7 @@ export default function MyJobsPage() {
 
         {/* Job Count Summary */}
         <div style={{
-          backgroundColor: "white",
+          backgroundColor: "var(--surface)",
           padding: "20px",
           borderRadius: "16px",
           boxShadow: "0 2px 6px rgba(var(--primary-rgb),0.08)",

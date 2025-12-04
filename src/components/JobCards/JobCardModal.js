@@ -273,7 +273,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
     >
       <div
         style={{
-          backgroundColor: "white", // Modal card
+          backgroundColor: "var(--surface)", // Modal card
           padding: "24px", // Inner spacing
           borderRadius: "12px", // Rounded corners
           width: "100%", // Responsive
@@ -327,7 +327,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                   justifyContent: "space-between", // Space between cols
                   alignItems: "center", // Vertically center
                   padding: "12px", // Inner spacing
-                  backgroundColor: "white", // Card bg
+                  backgroundColor: "var(--surface)", // Card bg
                   borderRadius: "6px", // Rounded
                   marginBottom: "8px", // Gap between items
                   cursor: "pointer", // ✅ NEW: Show it's clickable

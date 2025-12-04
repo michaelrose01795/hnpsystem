@@ -12,7 +12,7 @@ export function MetricCard({
   return (
     <div
       style={{
-        background: "white",
+        background: "var(--surface)",
         borderRadius: "16px",
         padding: "20px",
         display: "flex",
@@ -60,7 +60,7 @@ export function SectionCard({ title, subtitle, action, children }) {
   return (
     <div
       style={{
-        background: "white",
+        background: "var(--surface)",
         borderRadius: "16px",
         padding: "20px",
         boxShadow: "0 6px 18px rgba(var(--accent-purple-rgb), 0.05)",

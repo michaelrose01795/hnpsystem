@@ -150,7 +150,7 @@ export default function Dashboard() {
             display: "flex",
             justifyContent: "flex-end",
             alignItems: "center",
-            backgroundColor: "white",
+            backgroundColor: "var(--surface)",
             padding: "12px 20px",
             borderRadius: "8px",
             boxShadow: "0 2px 6px rgba(var(--shadow-rgb),0.1)",
@@ -227,7 +227,7 @@ export default function Dashboard() {
         >
           <div
             style={{
-              backgroundColor: "white",
+              backgroundColor: "var(--surface)",
               padding: "30px",
               borderRadius: "10px",
               width: "400px",

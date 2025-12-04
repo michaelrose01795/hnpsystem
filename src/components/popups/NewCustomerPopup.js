@@ -149,7 +149,7 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
     >
       <div
         style={{
-          backgroundColor: "white",
+          backgroundColor: "var(--surface)",
           padding: "24px",
           borderRadius: "8px",
           width: "420px",
@@ -251,7 +251,7 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
                   border: "none",
                   borderBottom: "1px solid var(--accent-purple-surface)",
                   textAlign: "left",
-                  backgroundColor: "white",
+                  backgroundColor: "var(--surface)",
                   cursor: "pointer",
                   fontSize: "13px",
                 }}

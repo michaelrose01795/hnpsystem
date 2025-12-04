@@ -341,7 +341,7 @@ export default function CheckInPage() {
           flexShrink: 0
         }}>
           <div style={{
-            backgroundColor: "white",
+            backgroundColor: "var(--surface)",
             padding: "20px",
             borderRadius: "12px",
             border: "1px solid var(--surface-light)",
@@ -356,7 +356,7 @@ export default function CheckInPage() {
           </div>
 
           <div style={{
-            backgroundColor: "white",
+            backgroundColor: "var(--surface)",
             padding: "20px",
             borderRadius: "12px",
             border: "1px solid var(--surface-light)",
@@ -371,7 +371,7 @@ export default function CheckInPage() {
           </div>
 
           <div style={{
-            backgroundColor: "white",
+            backgroundColor: "var(--surface)",
             padding: "20px",
             borderRadius: "12px",
             border: "1px solid var(--surface-light)",
@@ -435,7 +435,7 @@ export default function CheckInPage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "white",
+            backgroundColor: "var(--surface)",
             borderRadius: "12px",
             border: "1px solid var(--surface-light)"
           }}>
@@ -455,7 +455,7 @@ export default function CheckInPage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "white",
+            backgroundColor: "var(--surface)",
             borderRadius: "12px",
             border: "1px solid var(--surface-light)"
           }}>
@@ -479,7 +479,7 @@ export default function CheckInPage() {
           <div style={{
             flex: 1,
             overflowY: "auto",
-            backgroundColor: "white",
+            backgroundColor: "var(--surface)",
             borderRadius: "12px",
             border: "1px solid var(--surface-light)",
             boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)"

@@ -69,7 +69,7 @@ export default function AdminUserForm({ onCreated }) {
   return (
     <div
       style={{
-        background: "white",
+        background: "var(--surface)",
         borderRadius: "16px",
         padding: "24px",
         boxShadow: "0 16px 32px rgba(var(--accent-purple-rgb), 0.08)",
@@ -217,7 +217,7 @@ const secondaryButtonStyle = {
   padding: "10px 16px",
   borderRadius: "10px",
   border: "1px solid var(--accent-purple)",
-  background: "white",
+  background: "var(--surface)",
   color: "var(--accent-purple)",
   fontWeight: 600,
   cursor: "pointer",

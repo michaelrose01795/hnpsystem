@@ -67,7 +67,7 @@ export default function ArchivedJobsPage() {
             display: "flex",
             flexWrap: "wrap",
             gap: "12px",
-            background: "white",
+            background: "var(--surface)",
             borderRadius: "12px",
             padding: "16px",
             boxShadow: "0 10px 25px rgba(var(--shadow-rgb),0.06)",
@@ -114,7 +114,7 @@ export default function ArchivedJobsPage() {
 
         <section
           style={{
-            background: "white",
+            background: "var(--surface)",
             borderRadius: "12px",
             border: "1px solid var(--info-surface)",
             boxShadow: "0 10px 25px rgba(var(--shadow-rgb),0.04)",

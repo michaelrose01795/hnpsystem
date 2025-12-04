@@ -527,7 +527,7 @@ export default function InvoiceBuilderPopup({
                 padding: "10px",
                 fontSize: "14px",
                 marginTop: "6px",
-                background: "white"
+                background: "var(--surface)"
               }}
             >
               <option value={0}>0%</option>
@@ -577,7 +577,7 @@ export default function InvoiceBuilderPopup({
                   padding: "10px 16px",
                   borderRadius: "8px",
                   border: "1px solid var(--info)",
-                  background: "white",
+                  background: "var(--surface)",
                   cursor: "pointer"
                 }}
               >
@@ -606,7 +606,7 @@ export default function InvoiceBuilderPopup({
                   padding: "10px 16px",
                   borderRadius: "8px",
                   border: "1px solid var(--info)",
-                  background: "white",
+                  background: "var(--surface)",
                   cursor: isSharing ? "not-allowed" : "pointer"
                 }}
               >
@@ -716,7 +716,7 @@ export default function InvoiceBuilderPopup({
               padding: "10px 18px",
               borderRadius: "8px",
               border: "1px solid var(--accent-purple-surface)",
-              background: "white",
+              background: "var(--surface)",
               cursor: "pointer"
             }}
           >

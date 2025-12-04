@@ -119,7 +119,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
         border: "1px solid var(--surface-light)",
         padding: "16px 20px",
         borderRadius: "12px",
-        backgroundColor: "white",
+        backgroundColor: "var(--surface)",
         boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)",
         display: "flex",
         justifyContent: "space-between",

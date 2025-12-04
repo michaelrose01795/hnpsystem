@@ -336,7 +336,7 @@ const refreshButtonStyle = {
   padding: "8px 14px",
   borderRadius: "10px",
   border: "1px solid var(--info-surface)",
-  background: "white",
+  background: "var(--surface)",
   color: "var(--accent-purple)",
   fontWeight: 600,
   cursor: "pointer",
@@ -364,7 +364,7 @@ const modalOverlayStyle = {
 };
 
 const modalContentStyle = {
-  background: "white",
+  background: "var(--surface)",
   borderRadius: "16px",
   padding: "20px",
   width: "min(900px, 100%)",
@@ -386,7 +386,7 @@ const secondaryButtonStyle = {
   padding: "8px 14px",
   borderRadius: "10px",
   border: "1px solid var(--accent-purple-surface)",
-  background: "white",
+  background: "var(--surface)",
   color: "var(--info-dark)",
   fontWeight: 600,
   cursor: "not-allowed",

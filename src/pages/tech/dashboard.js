@@ -249,7 +249,7 @@ export default function TechsDashboard() {
         }}>
           {/* Jobs Assigned */}
           <div style={{
-            backgroundColor: "white",
+            backgroundColor: "var(--surface)",
             padding: "24px",
             borderRadius: "16px",
             boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
@@ -289,7 +289,7 @@ export default function TechsDashboard() {
 
           {/* Current Job */}
           <div style={{
-            backgroundColor: "white",
+            backgroundColor: "var(--surface)",
             padding: "24px",
             borderRadius: "16px",
             boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
@@ -305,7 +305,7 @@ export default function TechsDashboard() {
 
           {/* Hours Today */}
           <div style={{
-            backgroundColor: "white",
+            backgroundColor: "var(--surface)",
             padding: "24px",
             borderRadius: "16px",
             boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
@@ -323,7 +323,7 @@ export default function TechsDashboard() {
         {/* Current Job Section */}
         {currentJob && (
           <div style={{
-            backgroundColor: "white",
+            backgroundColor: "var(--surface)",
             padding: "24px",
             borderRadius: "16px",
             boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
@@ -385,7 +385,7 @@ export default function TechsDashboard() {
         {/* Next Job Section */}
         {nextJob && !currentJob && (
           <div style={{
-            backgroundColor: "white",
+            backgroundColor: "var(--surface)",
             padding: "24px",
             borderRadius: "16px",
             boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
@@ -446,7 +446,7 @@ export default function TechsDashboard() {
 
         {/* All Jobs List */}
         <div style={{
-          backgroundColor: "white",
+          backgroundColor: "var(--surface)",
           padding: "24px",
           borderRadius: "16px",
           boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
@@ -569,7 +569,7 @@ export default function TechsDashboard() {
             onClick={() => router.push("/job-cards/myjobs")}
             style={{
               padding: "20px",
-              backgroundColor: "white",
+              backgroundColor: "var(--surface)",
               border: "1px solid var(--surface-light)",
               borderRadius: "12px",
               cursor: "pointer",
@@ -596,7 +596,7 @@ export default function TechsDashboard() {
             onClick={() => router.push("/clocking")}
             style={{
               padding: "20px",
-              backgroundColor: "white",
+              backgroundColor: "var(--surface)",
               border: "1px solid var(--surface-light)",
               borderRadius: "12px",
               cursor: "pointer",
@@ -623,7 +623,7 @@ export default function TechsDashboard() {
             onClick={() => router.push("/parts")}
             style={{
               padding: "20px",
-              backgroundColor: "white",
+              backgroundColor: "var(--surface)",
               border: "1px solid var(--surface-light)",
               borderRadius: "12px",
               cursor: "pointer",

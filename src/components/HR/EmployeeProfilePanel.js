@@ -54,7 +54,7 @@ export default function EmployeeProfilePanel({ employee }) {
               padding: "8px 14px",
               borderRadius: "999px",
               border: "1px solid var(--accent-purple)",
-              background: "white",
+              background: "var(--surface)",
               color: "var(--accent-purple)",
               fontWeight: 600,
               fontSize: "0.8rem",
@@ -89,7 +89,7 @@ export default function EmployeeProfilePanel({ employee }) {
                   padding: "6px 12px",
                   borderRadius: "8px",
                   border: "1px solid var(--info)",
-                  background: "white",
+                  background: "var(--surface)",
                   fontWeight: 600,
                   fontSize: "0.8rem",
                 }}

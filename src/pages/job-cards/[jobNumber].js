@@ -1140,7 +1140,7 @@ export default function JobCardDetailPage() {
           alignItems: "center",
           marginBottom: "16px",
           padding: "20px",
-          backgroundColor: "white",
+          backgroundColor: "var(--surface)",
           borderRadius: "12px",
           boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
           border: "1px solid var(--surface-light)",
@@ -1253,7 +1253,7 @@ export default function JobCardDetailPage() {
         }}>
           <div style={{
             padding: "16px 20px",
-            backgroundColor: "white",
+            backgroundColor: "var(--surface)",
             borderRadius: "12px",
             boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
             border: "1px solid var(--surface-light)"
@@ -1269,7 +1269,7 @@ export default function JobCardDetailPage() {
 
           <div style={{
             padding: "16px 20px",
-            backgroundColor: "white",
+            backgroundColor: "var(--surface)",
             borderRadius: "12px",
             boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
             border: "1px solid var(--surface-light)"
@@ -1291,7 +1291,7 @@ export default function JobCardDetailPage() {
           overflowX: "auto",
           marginBottom: "16px",
           padding: "8px",
-          backgroundColor: "white",
+          backgroundColor: "var(--surface)",
           borderRadius: "12px",
           boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
           border: "1px solid var(--surface-light)",
@@ -1350,7 +1350,7 @@ export default function JobCardDetailPage() {
         <div style={{
           flex: 1,
           overflowY: "auto",
-          backgroundColor: "white",
+          backgroundColor: "var(--surface)",
           borderRadius: "12px",
           boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
           border: "1px solid var(--surface-light)",
@@ -2619,7 +2619,7 @@ function SchedulingTab({
       <div
         style={{
           padding: "20px",
-          backgroundColor: "white",
+          backgroundColor: "var(--surface)",
           borderRadius: "12px",
           border: "1px solid var(--accent-purple-surface)",
           marginBottom: "24px",
@@ -2865,7 +2865,7 @@ function SchedulingTab({
       <div
         style={{
           padding: "20px",
-          backgroundColor: "white",
+          backgroundColor: "var(--surface)",
           borderRadius: "12px",
           border: "1px solid var(--accent-purple-surface)",
           marginBottom: "24px",
@@ -3277,7 +3277,7 @@ function SchedulingTab({
       <div
         style={{
           padding: "20px",
-          backgroundColor: "white",
+          backgroundColor: "var(--surface)",
           borderRadius: "12px",
           border: "1px solid var(--accent-purple-surface)",
           marginBottom: "24px",
@@ -3725,7 +3725,7 @@ function PartsTab({ jobData }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div
         style={{
-          background: "white",
+          background: "var(--surface)",
           border: "1px solid var(--surface-light)",
           borderRadius: "14px",
           padding: "16px",
@@ -4639,7 +4639,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
               borderRadius: "8px",
               border: "1px solid var(--info)",
               fontSize: "14px",
-              backgroundColor: "white"
+              backgroundColor: "var(--surface)"
             }}
           >
             <option value="">
@@ -4686,7 +4686,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
               padding: "10px 18px",
               borderRadius: "10px",
               border: "1px solid var(--info)",
-              backgroundColor: "white",
+              backgroundColor: "var(--surface)",
               fontWeight: "600",
               cursor: linking ? "not-allowed" : "pointer"
             }}
@@ -4741,7 +4741,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
                   padding: "8px 14px",
                   borderRadius: "8px",
                   border: "1px solid var(--info)",
-                  backgroundColor: "white",
+                  backgroundColor: "var(--surface)",
                   cursor: "pointer",
                   fontWeight: "600",
                   fontSize: "13px"
@@ -4918,7 +4918,7 @@ function DocumentsTab({
                   padding: "8px 12px",
                   borderRadius: "8px",
                   border: "1px solid var(--info)",
-                  backgroundColor: "white",
+                  backgroundColor: "var(--surface)",
                   fontSize: "13px",
                   fontWeight: "600",
                   cursor: "pointer"

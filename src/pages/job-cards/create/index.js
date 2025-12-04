@@ -1073,7 +1073,7 @@ export default function CreateJobCardPage() {
             <div
               style={{
                 flex: "0 0 33%",
-                background: "white",
+                background: "var(--surface)",
                 padding: "20px",
                 borderRadius: "16px",
                 boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
@@ -1252,7 +1252,7 @@ export default function CreateJobCardPage() {
             <div
               style={{
                 flex: "0 0 33%",
-                background: "white",
+                background: "var(--surface)",
                 padding: "20px",
                 borderRadius: "16px",
                 boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
@@ -1464,7 +1464,7 @@ export default function CreateJobCardPage() {
             <div
               style={{
                 flex: "0 0 33%",
-                background: "white",
+                background: "var(--surface)",
                 padding: "20px",
                 borderRadius: "16px",
                 boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
@@ -1766,7 +1766,7 @@ export default function CreateJobCardPage() {
           {/* ✅ Job Requests Section - Full Width */}
           <div
             style={{
-              background: "white",
+              background: "var(--surface)",
               padding: "20px",
               borderRadius: "16px",
               boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
@@ -1946,7 +1946,7 @@ export default function CreateJobCardPage() {
             <div
               style={{
                 flex: 1,
-                background: "white",
+                background: "var(--surface)",
                 padding: "16px",
                 borderRadius: "16px",
                 boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
@@ -2020,7 +2020,7 @@ export default function CreateJobCardPage() {
             <div
               style={{
                 flex: 1,
-                background: "white",
+                background: "var(--surface)",
                 padding: "16px",
                 borderRadius: "16px",
                 boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
@@ -2090,7 +2090,7 @@ export default function CreateJobCardPage() {
             <div
               style={{
                 flex: 1,
-                background: "white",
+                background: "var(--surface)",
                 padding: "16px",
                 borderRadius: "16px",
                 boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
@@ -2185,7 +2185,7 @@ export default function CreateJobCardPage() {
                 maxWidth: "90%",
                 maxHeight: "90vh",
                 overflowY: "auto",
-                backgroundColor: "white",
+                backgroundColor: "var(--surface)",
                 borderRadius: "18px",
                 padding: "28px",
                 boxShadow: "0 24px 60px rgba(var(--shadow-rgb),0.35)",
@@ -2317,7 +2317,7 @@ export default function CreateJobCardPage() {
                     fontWeight: "600",
                     color: "var(--accent-purple)",
                     cursor: "pointer",
-                    backgroundColor: "white",
+                    backgroundColor: "var(--surface)",
                     width: "fit-content",
                   }}
                 >
@@ -2447,7 +2447,7 @@ export default function CreateJobCardPage() {
                     padding: "14px",
                     border: "1px solid var(--info-surface)",
                     borderRadius: "12px",
-                    backgroundColor: "white",
+                    backgroundColor: "var(--surface)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
@@ -2498,7 +2498,7 @@ export default function CreateJobCardPage() {
                     padding: "12px",
                     borderRadius: "10px",
                     border: "1px solid var(--info-surface)",
-                    backgroundColor: "white",
+                    backgroundColor: "var(--surface)",
                     color: "var(--info-dark)",
                     fontWeight: "600",
                     cursor: "pointer",

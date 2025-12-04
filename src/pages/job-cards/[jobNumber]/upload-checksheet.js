@@ -135,7 +135,7 @@ export default function UploadChecksheet() {
           >
             <div
               style={{
-                background: "white",
+                background: "var(--surface)",
                 padding: "20px",
                 borderRadius: "8px",
                 textAlign: "center",

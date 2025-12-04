@@ -18,7 +18,7 @@ export default function Popup({ isOpen, onClose, children }) {
       zIndex: 1000
     }}>
       <div style={{
-        background: "white",
+        background: "var(--surface)",
         padding: "20px",
         borderRadius: "8px",
         minWidth: "300px",

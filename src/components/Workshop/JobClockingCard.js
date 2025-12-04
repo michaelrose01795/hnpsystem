@@ -239,7 +239,7 @@ export default function JobClockingCard() {
     }}>
       {/* ✅ Daily Summary Card */}
       <div style={{
-        backgroundColor: "white",
+        backgroundColor: "var(--surface)",
         borderRadius: "16px",
         padding: "24px",
         boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
@@ -335,7 +335,7 @@ export default function JobClockingCard() {
 
       {/* ✅ Currently Clocked In Jobs */}
       <div style={{
-        backgroundColor: "white",
+        backgroundColor: "var(--surface)",
         borderRadius: "16px",
         padding: "24px",
         boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
@@ -437,7 +437,7 @@ export default function JobClockingCard() {
 
       {/* ✅ Clock Into New Job Section */}
       <div style={{
-        backgroundColor: "white",
+        backgroundColor: "var(--surface)",
         borderRadius: "16px",
         padding: "24px",
         boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",

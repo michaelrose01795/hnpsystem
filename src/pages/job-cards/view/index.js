@@ -437,7 +437,7 @@ export default function ViewJobCards() {
               gap: "16px",
               alignItems: "center",
               justifyContent: "space-between",
-              background: "white",
+              background: "var(--surface)",
               borderRadius: "24px",
               padding: "24px 28px",
               border: "1px solid var(--surface-light)",
@@ -535,7 +535,7 @@ export default function ViewJobCards() {
                 gap: "6px",
                 padding: "4px",
                 borderRadius: "999px",
-                backgroundColor: "white",
+                backgroundColor: "var(--surface)",
                 border: "1px solid rgba(var(--primary-rgb),0.2)",
                 boxShadow: "0 18px 40px rgba(var(--primary-rgb),0.08)",
               }}
@@ -578,7 +578,7 @@ export default function ViewJobCards() {
               flex: 1,
               display: "flex",
               flexDirection: "column",
-              background: "white",
+              background: "var(--surface)",
               borderRadius: "28px",
               border: "1px solid var(--info-surface)",
               boxShadow: "0 24px 65px rgba(var(--shadow-rgb),0.08)",
@@ -777,7 +777,7 @@ export default function ViewJobCards() {
               <div
                 onClick={(e) => e.stopPropagation()}
                 style={{
-                  backgroundColor: "white",
+                  backgroundColor: "var(--surface)",
                   padding: "32px",
                   borderRadius: "16px",
                   maxWidth: "700px",
@@ -987,7 +987,7 @@ export default function ViewJobCards() {
                     fontSize: "14px",
                     borderRadius: "8px",
                     border: "1px solid var(--surface-light)",
-                    backgroundColor: "white",
+                    backgroundColor: "var(--surface)",
                     cursor: "pointer",
                   }}
                 >
@@ -1128,7 +1128,7 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
         border: "1px solid var(--surface-light)",
         padding: "18px",
         borderRadius: "16px",
-        backgroundColor: "white",
+        backgroundColor: "var(--surface)",
         boxShadow: "0 2px 6px rgba(var(--primary-rgb),0.04)",
         display: "flex",
         flexDirection: "column",
@@ -1200,7 +1200,7 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
                 padding: "8px 14px",
                 borderRadius: "10px",
                 border: "1px solid var(--accent-purple-surface)",
-                backgroundColor: "white",
+                backgroundColor: "var(--surface)",
                 color: "var(--info-dark)",
                 fontWeight: 600,
                 cursor: "pointer",
