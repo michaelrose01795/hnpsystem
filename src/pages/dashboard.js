@@ -169,7 +169,7 @@ export default function Dashboard() {
               cursor: "pointer",
             }}
           >
-            🔍 Search
+            Search
           </button>
         </div>
 

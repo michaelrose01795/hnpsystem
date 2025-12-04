@@ -7,12 +7,12 @@ export const sidebarSections = [
     items: [
       { label: "News Feed", href: "/newsfeed", roles: [] },
       {
-        label: "📊 Retail Dashboard",
+        label: "Retail Dashboard",
         href: "/dashboard",
         roles: ["service manager", "workshop manager", "after sales director"],
       },
       {
-        label: "🛠️ Workshop Dashboard",
+        label: "Workshop Dashboard",
         href: "/dashboard/workshop",
         roles: ["techs", "mot tester"],
       },
@@ -36,47 +36,47 @@ export const sidebarSections = [
     category: "departments",
     items: [
       {
-        label: "🔜 Next Jobs",
+        label: "Next Jobs",
         href: "/job-cards/waiting/nextjobs",
         roles: ["admin manager"],
       },
       {
-        label: "👀 View Job Card",
+        label: "View Job Card",
         href: "/job-cards/view",
         roles: ["admin manager"],
       },
       {
-        label: "📝 VHC Dashboard",
+        label: "VHC Dashboard",
         href: "/vhc/dashboard",
         roles: ["admin manager"],
       },
       {
-        label: "👥 HR Dashboard",
+        label: "HR Dashboard",
         href: "/hr",
         roles: ["admin manager"],
       },
       {
-        label: "📨 Recruitment",
+        label: "Recruitment",
         href: "/hr/recruitment",
         roles: ["admin manager"],
       },
       {
-        label: "📈 HR Reports",
+        label: "HR Reports",
         href: "/hr/reports",
         roles: ["admin manager"],
       },
       {
-        label: "⚙️ HR Settings",
+        label: "HR Settings",
         href: "/hr/settings",
         roles: ["admin manager"],
       },
       {
-        label: "👥 Team HR",
+        label: "Team HR",
         href: "/hr/employees",
         roles: ["admin manager"],
       },
       {
-        label: "🛠️ User Admin",
+        label: "User Admin",
         href: "/admin/users",
         roles: ["admin manager"],
       },
@@ -87,12 +87,12 @@ export const sidebarSections = [
     category: "departments",
     items: [
       {
-        label: "👀 View Job Cards",
+        label: "View Job Cards",
         href: "/job-cards/view",
         roles: ["service"],
       },
       {
-        label: "📝 VHC Dashboard",
+        label: "VHC Dashboard",
         href: "/vhc/dashboard",
         roles: ["service"],
       },
@@ -103,17 +103,17 @@ export const sidebarSections = [
     category: "departments",
     items: [
       {
-        label: "🔜 Next Jobs",
+        label: "Next Jobs",
         href: "/job-cards/waiting/nextjobs",
         roles: ["service manager"],
       },
       {
-        label: "👀 View Job Cards",
+        label: "View Job Cards",
         href: "/job-cards/view",
         roles: ["service manager"],
       },
       {
-        label: "📝 VHC Dashboard",
+        label: "VHC Dashboard",
         href: "/vhc/dashboard",
         roles: ["service manager"],
       },
@@ -124,22 +124,22 @@ export const sidebarSections = [
     category: "departments",
     items: [
       {
-        label: "🔜 Next Jobs",
+        label: "Next Jobs",
         href: "/job-cards/waiting/nextjobs",
         roles: ["workshop manager"],
       },
       {
-        label: "👀 View Job Cards",
+        label: "View Job Cards",
         href: "/job-cards/view",
         roles: ["workshop manager"],
       },
       {
-        label: "📝 VHC Dashboard",
+        label: "VHC Dashboard",
         href: "/vhc/dashboard",
         roles: ["workshop manager"],
       },
       {
-        label: "🧾 Consumables Tracker", // Workshop consumable planning workspace
+        label: "Consumables Tracker", // Workshop consumable planning workspace
         href: "/workshop/consumables-tracker",
         roles: ["workshop manager"],
       },
@@ -150,17 +150,17 @@ export const sidebarSections = [
     category: "departments",
     items: [
       {
-        label: "🔜 Next Jobs",
+        label: "Next Jobs",
         href: "/job-cards/waiting/nextjobs",
         roles: ["aftersales manager"],
       },
       {
-        label: "👀 View Job Cards",
+        label: "View Job Cards",
         href: "/job-cards/view",
         roles: ["aftersales manager"],
       },
       {
-        label: "📝 VHC Dashboard",
+        label: "VHC Dashboard",
         href: "/vhc/dashboard",
         roles: ["aftersales manager"],
       },
@@ -171,12 +171,12 @@ export const sidebarSections = [
     category: "departments",
     items: [
       {
-        label: "🧰 My Jobs",
+        label: "My Jobs",
         href: "/job-cards/myjobs",
         roles: ["techs"],
       },
       {
-        label: "📝 Request Consumables", // Technician consumable request portal
+        label: "Request Consumables", // Technician consumable request portal
         href: "/tech/consumables-request",
         roles: ["techs"],
       },
@@ -187,7 +187,7 @@ export const sidebarSections = [
     category: "departments",
     items: [
       {
-        label: "🧰 My Jobs",
+        label: "My Jobs",
         href: "/job-cards/myjobs",
         roles: ["mot tester"],
       },
@@ -198,27 +198,27 @@ export const sidebarSections = [
     category: "departments",
     items: [
       {
-        label: "👀 View Job Cards",
+        label: "View Job Cards",
         href: "/job-cards/view",
         roles: ["parts"],
       },
       {
-        label: "🧰 Parts Workspace",
+        label: "Parts Workspace",
         href: "/parts",
         roles: ["parts"],
       },
       {
-        label: "🚚 Deliveries",
+        label: "Deliveries",
         href: "/parts/deliveries",
         roles: ["parts"],
       },
       {
-        label: "🗓️ Delivery Planner",
+        label: "Delivery Planner",
         href: "/parts/delivery-planner",
         roles: ["parts"],
       },
       {
-        label: "📝 VHC Dashboard",
+        label: "VHC Dashboard",
         href: "/vhc/dashboard",
         roles: ["parts"],
       },
@@ -229,32 +229,32 @@ export const sidebarSections = [
     category: "departments",
     items: [
       {
-        label: "👀 View Job Cards",
+        label: "View Job Cards",
         href: "/job-cards/view",
         roles: ["parts manager"],
       },
       {
-        label: "📝 VHC Dashboard",
+        label: "VHC Dashboard",
         href: "/vhc/dashboard",
         roles: ["parts manager"],
       },
       {
-        label: "🧰 Parts Workspace",
+        label: "Parts Workspace",
         href: "/parts",
         roles: ["parts manager"],
       },
       {
-        label: "🚚 Deliveries",
+        label: "Deliveries",
         href: "/parts/deliveries",
         roles: ["parts manager"],
       },
       {
-        label: "🗓️ Delivery Planner",
+        label: "Delivery Planner",
         href: "/parts/delivery-planner",
         roles: ["parts manager"],
       },
       {
-        label: "📈 Parts Manager Dashboard",
+        label: "Parts Manager Dashboard",
         href: "/parts/manager",
         roles: ["parts manager"],
       },
@@ -265,7 +265,7 @@ export const sidebarSections = [
     category: "departments",
     items: [
       {
-        label: "🧽 Valet Jobs",
+        label: "Valet Jobs",
         href: "/valet",
         roles: ["valet service"],
       },

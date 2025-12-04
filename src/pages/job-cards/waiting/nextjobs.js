@@ -1014,8 +1014,8 @@ export default function NextJobsPage() {
           marginBottom: "12px",
           padding: "12px",
           borderRadius: "8px",
-          border: currentClocking ? "1px solid var(--success)" : "1px dashed var(--info)",
-          backgroundColor: currentClocking ? "var(--success-surface)" : "var(--info-surface)",
+          border: currentClocking ? "1px solid var(--success)" : "1px dashed var(--accent-purple)",
+          backgroundColor: currentClocking ? "var(--success-surface)" : "var(--surface-light)",
           cursor: currentClocking ? "pointer" : "default",
         }}
         onClick={() => handleOpenCurrentClocking(currentClocking, assignee.name)}
@@ -1071,7 +1071,7 @@ export default function NextJobsPage() {
             style={{
               margin: 0,
               fontSize: "13px",
-              color: "var(--info)",
+              color: "var(--accent-purple)",
             }}
           >
             Not clocked into a job
@@ -1152,7 +1152,7 @@ export default function NextJobsPage() {
                 </p>
                 <p style={{
                   fontSize: "12px",
-                  color: "var(--info)",
+                  color: "var(--accent-purple)",
                   margin: 0
                 }}>
                   {job.status}
@@ -1195,7 +1195,7 @@ export default function NextJobsPage() {
   if (rosterLoading) {
     return (
       <Layout>
-        <div style={{ padding: "40px", textAlign: "center", color: "var(--info)" }}>
+        <div style={{ padding: "40px", textAlign: "center", color: "var(--accent-purple)" }}>
           Loading roster…
         </div>
       </Layout>
@@ -1377,7 +1377,7 @@ export default function NextJobsPage() {
                             >
                               {job.jobNumber}
                             </div>
-                            <div style={{ fontSize: "13px", color: "var(--info)" }}>
+                            <div style={{ fontSize: "13px", color: "var(--text-primary)" }}>
                               {job.reg || "Reg TBC"}
                             </div>
                           </div>
@@ -1513,8 +1513,8 @@ export default function NextJobsPage() {
           >
             <div
               style={{
-                backgroundColor: "var(--surface)",
-                padding: "24px",
+                    backgroundColor: "var(--surface)",
+                    padding: "24px",
                 borderRadius: "12px",
                 width: "500px",
                 maxWidth: "90%",
@@ -1566,7 +1566,7 @@ export default function NextJobsPage() {
                     borderRadius: "8px",
                     backgroundColor:
                       feedbackMessage.type === "error" ? "var(--danger-surface)" : "var(--success)",
-                    color: feedbackMessage.type === "error" ? "var(--danger)" : "var(--info-dark)",
+                    color: feedbackMessage.type === "error" ? "var(--danger)" : "var(--text-primary)",
                     fontSize: "14px",
                     fontWeight: 600,
                     border: feedbackMessage.type === "error" ? "1px solid var(--danger)" : "1px solid var(--success)"
@@ -1578,26 +1578,26 @@ export default function NextJobsPage() {
               
               <div style={{ marginBottom: "20px" }}>
                 <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "var(--info)" }}>Job Number:</strong> {selectedJob.jobNumber}
+                  <strong style={{ color: "var(--accent-purple)" }}>Job Number:</strong> {selectedJob.jobNumber}
                 </p>
                 <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "var(--info)" }}>Status:</strong> {selectedJob.status}
+                  <strong style={{ color: "var(--accent-purple)" }}>Status:</strong> {selectedJob.status}
                 </p>
                 <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "var(--info)" }}>Make:</strong> {selectedJob.make} {selectedJob.model}
+                  <strong style={{ color: "var(--accent-purple)" }}>Make:</strong> {selectedJob.make} {selectedJob.model}
                 </p>
                 <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "var(--info)" }}>Reg:</strong> {selectedJob.reg}
+                  <strong style={{ color: "var(--accent-purple)" }}>Reg:</strong> {selectedJob.reg}
                 </p>
                 <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "var(--info)" }}>Customer:</strong> {selectedJob.customer}
+                  <strong style={{ color: "var(--accent-purple)" }}>Customer:</strong> {selectedJob.customer}
                 </p>
                 <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "var(--info)" }}>Description:</strong> {selectedJob.description}
+                  <strong style={{ color: "var(--accent-purple)" }}>Description:</strong> {selectedJob.description}
                 </p>
                 {selectedJob.assignedTech && (
                   <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                    <strong style={{ color: "var(--info)" }}>Assigned To:</strong> {selectedJob.assignedTech.name}
+                    <strong style={{ color: "var(--accent-purple)" }}>Assigned To:</strong> {selectedJob.assignedTech.name}
                   </p>
                 )}
               </div>

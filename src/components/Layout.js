@@ -385,7 +385,7 @@ export default function Layout({ children, jobNumber }) {
   });
 
   if (user) {
-    addNavItem("🙋 My Profile", "/profile", {
+    addNavItem("My Profile", "/profile", {
       keywords: ["profile", "employee profile", "my profile"],
       description: "View your personal employment info",
       section: "General",
@@ -393,15 +393,15 @@ export default function Layout({ children, jobNumber }) {
   }
 
   if (isTech) {
-    addNavItem("🧰 My Jobs", "/job-cards/myjobs", {
+    addNavItem("My Jobs", "/job-cards/myjobs", {
       keywords: ["my jobs", "jobs", "tech"],
       section: "Workshop",
     });
-    addNavItem("🔧 Start Job", "/job-cards/myjobs", {
+    addNavItem("Start Job", "/job-cards/myjobs", {
       keywords: ["start job", "tech"],
       section: "Workshop",
     });
-    addNavItem("📝 Request Consumables", "/tech/consumables-request", {
+    addNavItem("Request Consumables", "/tech/consumables-request", {
       keywords: ["consumables", "request", "supplies"],
       description: "Submit consumable restock requests to management",
       section: "Workshop",
@@ -413,14 +413,14 @@ export default function Layout({ children, jobNumber }) {
       userRoles.includes(roleName)
     )
   ) {
-    addNavItem("🔜 Next Jobs", "/job-cards/waiting/nextjobs", {
+    addNavItem("Next Jobs", "/job-cards/waiting/nextjobs", {
       keywords: ["next jobs", "waiting list", "queue"],
       section: "Workshop",
     });
   }
 
   if (userRoles.includes("workshop manager")) {
-    addNavItem("🧾 Consumables Tracker", "/workshop/consumables-tracker", {
+    addNavItem("Consumables Tracker", "/workshop/consumables-tracker", {
       keywords: ["consumables", "tracker", "budget"],
       description: "Monitor consumable spend, reminders, and supplier details",
       section: "Workshop",
@@ -428,7 +428,7 @@ export default function Layout({ children, jobNumber }) {
   }
 
   if (viewRoles.some((r) => userRoles.includes(r))) {
-    addNavItem("👀 View Job Cards", "/job-cards/view", {
+    addNavItem("View Job Cards", "/job-cards/view", {
       keywords: ["view job", "job cards"],
       description: "Browse all job cards",
       section: "Workshop",
@@ -436,17 +436,17 @@ export default function Layout({ children, jobNumber }) {
   }
 
   if (hasPartsAccess) {
-    addNavItem("🧰 Parts Workspace", "/parts", {
+    addNavItem("Parts Workspace", "/parts", {
       keywords: ["parts", "inventory", "vhc parts"],
       description: "Manage parts allocations and deliveries",
       section: "Parts",
     });
-    addNavItem("🚚 Deliveries", "/parts/deliveries", {
+    addNavItem("Deliveries", "/parts/deliveries", {
       keywords: ["parts deliveries", "goods in", "stock"],
       description: "Review inbound deliveries and update stock",
       section: "Parts",
     });
-    addNavItem("🗓️ Delivery Planner", "/parts/delivery-planner", {
+    addNavItem("Delivery Planner", "/parts/delivery-planner", {
       keywords: ["delivery planner", "routes", "outbound"],
       description: "Plan outbound parts run timing, stops, and costs",
       section: "Parts",
@@ -454,7 +454,7 @@ export default function Layout({ children, jobNumber }) {
   }
 
   if (isPartsManager) {
-    addNavItem("📈 Parts Manager Dashboard", "/parts/manager", {
+    addNavItem("Parts Manager Dashboard", "/parts/manager", {
       keywords: ["parts manager", "stock value", "parts dashboard"],
       description: "View stock, spending, and income KPIs",
       section: "Parts",
@@ -462,7 +462,7 @@ export default function Layout({ children, jobNumber }) {
   }
 
   if (userRoles.some((role) => vhcAccessRoles.has(role))) {
-    addNavItem("📝 VHC Dashboard", "/vhc/dashboard", {
+    addNavItem("VHC Dashboard", "/vhc/dashboard", {
       keywords: ["vhc", "vehicle health check", "dashboard"],
       section: "Workshop",
     });
@@ -470,18 +470,18 @@ export default function Layout({ children, jobNumber }) {
 
   const hrAccessRoles = ["hr manager", "admin manager", "owner", "admin"];
   if (userRoles.some((role) => hrAccessRoles.includes(role))) {
-    addNavItem("👥 HR Dashboard", "/hr", {
+    addNavItem("HR Dashboard", "/hr", {
       keywords: ["hr", "people", "culture", "training"],
       description: "Headcount, attendance, and compliance overview",
       section: "HR",
     });
   } else if (userRoles.some((role) => role.includes("manager"))) {
-    addNavItem("👥 Team HR", "/hr/employees", {
+    addNavItem("Team HR", "/hr/employees", {
       keywords: ["team hr", "people", "hr"],
       description: "View team employee directory and leave",
       section: "HR",
     });
-    addNavItem("🏖️ Leave", "/hr/leave", {
+    addNavItem("Leave", "/hr/leave", {
       keywords: ["leave", "holiday"],
       description: "Review departmental leave requests",
       section: "HR",
@@ -493,7 +493,7 @@ export default function Layout({ children, jobNumber }) {
     userRoles.includes("service manager") ||
     userRoles.includes("admin")
   ) {
-    addNavItem("🧽 Valet Jobs", "/valet", {
+    addNavItem("Valet Jobs", "/valet", {
       keywords: ["valet", "wash", "valeting"],
       description: "View vehicles awaiting wash",
       section: "Workshop",
@@ -603,12 +603,8 @@ export default function Layout({ children, jobNumber }) {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: "6px",
                   }}
                 >
-                  <span role="img" aria-hidden="true">
-                    📊
-                  </span>
                   Status
                 </button>
               </div>
@@ -884,9 +880,6 @@ export default function Layout({ children, jobNumber }) {
                       boxShadow: "0 6px 16px rgba(var(--primary-rgb),0.12)",
                     }}
                   >
-                    <span role="img" aria-label="deliveries">
-                      🚚
-                    </span>
                     Deliveries
                   </Link>
                 )}
@@ -906,9 +899,6 @@ export default function Layout({ children, jobNumber }) {
                     boxShadow: "0 6px 16px rgba(var(--primary-rgb),0.12)",
                   }}
                 >
-                  <span role="img" aria-label="messages">
-                    📨
-                  </span>
                   Messages
                   {messagesUnread > 0 && (
                     <span
@@ -946,7 +936,7 @@ export default function Layout({ children, jobNumber }) {
                       flexShrink: 0,
                     }}
                   >
-                    ➕ Create User
+                    Create User
                   </Link>
                 )}
               </div>

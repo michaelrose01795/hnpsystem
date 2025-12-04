@@ -441,8 +441,8 @@ export default function Sidebar({
                       cursor: "pointer",
                       border: isActive ? "none" : "1px solid var(--surface-light)",
                       boxShadow: isActive
-                        ? "0 12px 20px rgba(var(--danger-rgb), 0.25)"
-                        : "0 4px 12px rgba(var(--shadow-rgb), 0.05)",
+                        ? "0 12px 20px rgba(var(--danger-rgb), 0.35)"
+                        : "0 6px 14px rgba(var(--danger-rgb), 0.2)",
                       textDecoration: "none",
                     }}
                 >
