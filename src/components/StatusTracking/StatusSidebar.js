@@ -248,6 +248,7 @@ export default function StatusSidebar({
         position: 'relative',
         width: '100%',
         height: '100%',
+        minHeight: '100%',
         backgroundColor: '#ffffff',
         boxShadow: '0 20px 40px rgba(209,0,0,0.12)',
         borderRadius: '16px',
@@ -261,7 +262,8 @@ export default function StatusSidebar({
         right: '0',
         top: '0',
         bottom: '0',
-        height: '100vh',
+        height: '100%',
+        minHeight: '100vh',
         width: `${panelWidth}px`,
         backgroundColor: '#fff',
         boxShadow: isOpen

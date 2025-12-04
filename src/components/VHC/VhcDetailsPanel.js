@@ -34,37 +34,31 @@ const HEALTH_SECTION_CONFIG = [
   {
     key: "wheelsTyres",
     label: "Wheels & Tyres",
-    description: "Tyre tread readings, wheel condition, and spare/repair kit notes.",
     aliases: ["Wheels & Tyres"],
   },
   {
     key: "brakesHubs",
     label: "Brakes & Hubs",
-    description: "Pad and disc measurements along with hub inspection comments.",
     aliases: ["Brakes & Hubs"],
   },
   {
     key: "serviceIndicator",
     label: "Service Indicator & Under Bonnet",
-    description: "Service reminders, oil level/condition, and under-bonnet checks.",
     aliases: ["Service Indicator & Under Bonnet"],
   },
   {
     key: "externalInspection",
     label: "External",
-    description: "Bodywork, glass, and drive-in observations recorded by the technician.",
     aliases: ["External", "External / Drive-in Inspection"],
   },
   {
     key: "internalElectrics",
-    label: "Internal Electrics",
-    description: "Interior lighting, horn, wipers, HVAC, and warning lamp checks.",
+    label: "Internal",
     aliases: ["Internal / Lamps / Electrics"],
   },
   {
     key: "underside",
-    label: "Underside Inspection",
-    description: "Suspension, steering, exhaust, and leak inspections underneath the vehicle.",
+    label: "Underside",
     aliases: ["Underside", "Underside Inspection"],
   },
 ];
@@ -158,7 +152,7 @@ const CATEGORY_DEFINITIONS = [
   },
   {
     id: "internal_electrics",
-    label: "Internal / Lamps / Electrics",
+    label: "Internal",
     keywords: ["internal", "lamp", "lamp", "electrics", "interior", "dashboard"],
   },
   {
@@ -360,13 +354,9 @@ const HealthSectionCard = ({ config, section, onOpen }) => {
         }}
       >
         <div style={{ flex: 1, minWidth: "220px" }}>
-          <p style={{ margin: 0, fontSize: "13px", color: "#9ca3af", letterSpacing: "0.16em" }}>
-            Section
-          </p>
-          <h3 style={{ margin: "4px 0 6px", fontSize: "18px", fontWeight: 700, color: "#111827" }}>
+          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#111827" }}>
             {config.label}
           </h3>
-          <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>{config.description}</p>
         </div>
         <div
           style={{
@@ -404,7 +394,7 @@ const HealthSectionCard = ({ config, section, onOpen }) => {
             }}
             disabled={!onOpen}
           >
-            Open Section
+            Open
           </button>
         </div>
       </div>
@@ -1501,11 +1491,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
           >
             <div style={{ flex: 1, minWidth: "240px" }}>
               <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "#111827" }}>
-                Health check sections
+                Health check
               </h3>
-              <p style={{ margin: "6px 0 0", fontSize: "13px", color: "#6b7280" }}>
-                Open a section to review the full technician modal and make adjustments without leaving this job card.
-              </p>
             </div>
             {sectionSaveMessage ? (
               <span style={{ fontSize: "12px", fontWeight: 600, color: sectionSaveColor }}>

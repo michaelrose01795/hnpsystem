@@ -141,7 +141,7 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
     <VHCModalShell
       isOpen={isOpen}
       onClose={handleClose}
-      title="Internal Electrics"
+      title="Internal"
       hideCloseButton
       width="1280px"
       height="780px"

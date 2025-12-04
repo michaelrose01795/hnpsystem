@@ -141,7 +141,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
     <VHCModalShell
       isOpen={isOpen}
       onClose={handleClose}
-      title="Underside Inspection"
+      title="Underside"
       hideCloseButton
       width="1280px"
       height="780px"

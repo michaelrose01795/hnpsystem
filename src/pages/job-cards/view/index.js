@@ -321,6 +321,15 @@ export default function ViewJobCards() {
     activeTab === "today" ? todayStatusCounts : carryStatusCounts;
   const activeStatusFilter = activeStatusFilters[activeTab];
   const searchValue = searchValues[activeTab]?.trim().toLowerCase() || "";
+  const overviewStats = [
+    { label: "Today's Jobs", value: todayJobs.length },
+    { label: "Carry Over", value: carryOverJobs.length },
+    { label: "Total Jobs", value: jobs.length },
+  ];
+  const activeFilterLabel =
+    activeStatusFilter === "All"
+      ? "Showing every status"
+      : `Filtered by "${activeStatusFilter}"`;
 
   const filteredByStatus =
     activeStatusFilter === "All"
@@ -402,219 +411,364 @@ export default function ViewJobCards() {
   ================================ */
   return (
     <Layout>
-      <div style={{ 
-        height: "100%", 
-        display: "flex", 
-        flexDirection: "column", 
-        padding: "16px",
-        overflow: "hidden" 
-      }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          width: "100%",
+          padding: "32px 24px 40px",
+          background: "linear-gradient(180deg,#fff5f5 0%,#ffffff 45%,#f8fafc 100%)",
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "12px",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <p style={{ fontSize: "14px", color: "#666", margin: 0 }}>
-              Total Jobs: {jobs.length} · Today&apos;s Workload: {todayJobs.length} · Carry Over: {carryOverJobs.length}
-            </p>
-          </div>
-          <button
-            onClick={fetchJobs}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#d10000",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
-              transition: "background-color 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#b00000")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#d10000")}
-          >
-            🔄 Refresh
-          </button>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            borderRadius: "12px",
-            border: "1px solid #ffe0e0",
-            overflow: "hidden",
-            width: "fit-content",
-          }}
-        >
-          <button
-            onClick={() => setActiveTab("today")}
-            style={{
-              padding: "10px 24px",
-              border: "none",
-              backgroundColor: activeTab === "today" ? "#d10000" : "transparent",
-              color: activeTab === "today" ? "white" : "#7f1d1d",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "background-color 0.2s",
-            }}
-          >
-            Today&apos;s Workload
-          </button>
-          <button
-            onClick={() => setActiveTab("carryOver")}
-            style={{
-              padding: "10px 24px",
-              border: "none",
-              backgroundColor: activeTab === "carryOver" ? "#d10000" : "transparent",
-              color: activeTab === "carryOver" ? "white" : "#7f1d1d",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "background-color 0.2s",
-            }}
-          >
-            Carry Over
-          </button>
-        </div>
-
-        <div
-          style={{
-            flex: 1,
+            width: "100%",
+            maxWidth: "1400px",
             display: "flex",
             flexDirection: "column",
-            background: "white",
-            borderRadius: "20px",
-            border: "1px solid #f3f4f6",
-            boxShadow: "0 18px 40px rgba(15,23,42,0.08)",
-            padding: "20px",
-            minHeight: "0",
+            gap: "20px",
           }}
         >
           <div
             style={{
               display: "flex",
               flexWrap: "wrap",
-              gap: "12px",
+              gap: "16px",
               alignItems: "center",
-              marginBottom: "16px",
+              justifyContent: "space-between",
+              background: "white",
+              borderRadius: "24px",
+              padding: "24px 28px",
+              border: "1px solid #ffe4e6",
+              boxShadow: "0 24px 65px rgba(209,0,0,0.08)",
             }}
           >
-            <input
-              type="text"
-              placeholder="Search job number, registration, or customer"
-              value={searchValues[activeTab]}
-              onChange={(event) =>
-                handleSearchValueChange(activeTab, event.target.value)
-              }
+            <div style={{ flex: "1 1 320px" }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "13px",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#b45309",
+                }}
+              >
+                Job Overview
+              </p>
+              <h1 style={{ fontSize: "28px", margin: "6px 0", color: "#0f172a" }}>
+                Workshop workload
+              </h1>
+              <p style={{ margin: 0, color: "#64748b", fontSize: "15px" }}>
+                Monitor today&apos;s progress and outstanding carry overs in one glance.
+              </p>
+            </div>
+            <div
               style={{
-                flex: "1 1 260px",
-                minWidth: "220px",
-                padding: "10px 14px",
-                borderRadius: "999px",
-                border: "1px solid #e5e7eb",
-                fontSize: "14px",
-                outline: "none",
-                boxShadow: "inset 0 1px 2px rgba(0,0,0,0.05)",
+                display: "flex",
+                gap: "12px",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "flex-end",
               }}
-            />
+            >
+              {overviewStats.map((stat) => (
+                <div
+                  key={stat.label}
+                  style={{
+                    minWidth: "130px",
+                    padding: "10px 16px",
+                    borderRadius: "16px",
+                    background: "linear-gradient(135deg,#fee2e2,#fecdd3)",
+                    border: "1px solid #fecaca",
+                    color: "#7f1d1d",
+                    textAlign: "center",
+                  }}
+                >
+                  <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    {stat.label}
+                  </div>
+                  <div style={{ fontSize: "20px", fontWeight: 700 }}>{stat.value}</div>
+                </div>
+              ))}
+              <button
+                onClick={fetchJobs}
+                style={{
+                  padding: "12px 28px",
+                  background: "linear-gradient(135deg,#e11d48,#b91c1c)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "16px",
+                  cursor: "pointer",
+                  fontSize: "15px",
+                  fontWeight: "600",
+                  boxShadow: "0 15px 35px rgba(190,18,60,0.35)",
+                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow = "0 20px 45px rgba(190,18,60,0.45)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 15px 35px rgba(190,18,60,0.35)";
+                }}
+              >
+                🔄 Refresh
+              </button>
+            </div>
           </div>
 
           <div
             style={{
               display: "flex",
-              gap: "12px",
-              overflowX: "auto",
-              paddingBottom: "4px",
-              marginBottom: "12px",
+              flexWrap: "wrap",
+              gap: "16px",
+              alignItems: "center",
+              justifyContent: "space-between",
             }}
           >
-            {statusTabs.map((status) => {
-              const isActive = activeStatusFilter === status;
-              const count =
-                status === "All" ? baseJobs.length : statusCounts[status] || 0;
-              return (
-                <button
-                  key={status}
-                  type="button"
-                  onClick={() => handleStatusFilterChange(activeTab, status)}
-                  style={{
-                    padding: "8px 16px",
-                    border: isActive ? "2px solid #d10000" : "1px solid #d10000",
-                    backgroundColor: isActive ? "#d10000" : "white",
-                    color: isActive ? "white" : "#d10000",
-                    borderRadius: "12px",
-                    cursor: "pointer",
-                    fontWeight: isActive ? 600 : 500,
-                    fontSize: "13px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                  }}
-                >
-                  <span>{status}</span>
-                  <span style={{ fontSize: "12px", opacity: 0.75 }}>({count})</span>
-                </button>
-              );
-            })}
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "6px",
+                padding: "4px",
+                borderRadius: "999px",
+                backgroundColor: "white",
+                border: "1px solid rgba(209,0,0,0.2)",
+                boxShadow: "0 18px 40px rgba(209,0,0,0.08)",
+              }}
+            >
+              <button
+                onClick={() => setActiveTab("today")}
+                style={{
+                  padding: "12px 32px",
+                  border: "none",
+                  borderRadius: "999px",
+                  background:
+                    activeTab === "today"
+                      ? "linear-gradient(135deg,#d10000,#a10000)"
+                      : "transparent",
+                  color: activeTab === "today" ? "white" : "#7f1d1d",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                ☀️ Today&apos;s workload
+              </button>
+              <button
+                onClick={() => setActiveTab("carryOver")}
+                style={{
+                  padding: "12px 32px",
+                  border: "none",
+                  borderRadius: "999px",
+                  background:
+                    activeTab === "carryOver"
+                      ? "linear-gradient(135deg,#d10000,#a10000)"
+                      : "transparent",
+                  color: activeTab === "carryOver" ? "white" : "#7f1d1d",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                🌙 Carry over
+              </button>
+            </div>
           </div>
 
           <div
             style={{
               flex: 1,
-              overflow: "hidden",
-              borderRadius: "16px",
-              border: "1px solid #f1f5f9",
-              background: "#fff",
-              padding: "12px",
+              display: "flex",
+              flexDirection: "column",
+              background: "white",
+              borderRadius: "28px",
+              border: "1px solid #f3f4f6",
+              boxShadow: "0 24px 65px rgba(15,23,42,0.08)",
+              padding: "24px",
+              minHeight: "0",
             }}
           >
             <div
               style={{
-                height: "100%",
-                overflowY: "auto",
                 display: "flex",
-                flexDirection: "column",
+                flexWrap: "wrap",
                 gap: "12px",
+                alignItems: "stretch",
+                marginBottom: "16px",
               }}
             >
-              {sortedJobs.length === 0 ? (
-                <div
+              <div
+                style={{
+                  flex: "1 1 320px",
+                  minWidth: "240px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "12px 18px",
+                  borderRadius: "18px",
+                  border: "1px solid #e2e8f0",
+                  background: "#f8fafc",
+                  boxShadow: "inset 0 1px 1px rgba(15,23,42,0.05)",
+                }}
+              >
+                <span style={{ fontSize: "18px", color: "#94a3b8" }}>🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search job number, registration, or customer"
+                  value={searchValues[activeTab]}
+                  onChange={(event) =>
+                    handleSearchValueChange(activeTab, event.target.value)
+                  }
                   style={{
-                    padding: "32px",
-                    textAlign: "center",
-                    color: "#94a3b8",
-                    border: "1px dashed #e5e7eb",
-                    borderRadius: "12px",
-                    background: "#f9fafb",
+                    flex: 1,
+                    border: "none",
+                    outline: "none",
+                    background: "transparent",
+                    fontSize: "15px",
+                    color: "#0f172a",
                   }}
-                >
-                  {searchValue
-                    ? "No jobs match your search."
-                    : "No jobs in this status group."}
-                </div>
-              ) : (
-                sortedJobs.map((job) => (
-                  <JobListCard
-                    key={job.jobNumber}
-                    job={job}
-                    onNavigate={() => handleCardNavigation(job.jobNumber)}
-                    onQuickView={() => handleQuickView(job)}
-                  />
-                ))
-              )}
+                />
+              </div>
+              <div
+                style={{
+                  flex: "0 1 220px",
+                  minWidth: "200px",
+                  padding: "12px 18px",
+                  borderRadius: "18px",
+                  border: "1px solid #ffe4e6",
+                  background: "#fff1f2",
+                  color: "#be123c",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                }}
+              >
+                {activeFilterLabel}
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "10px",
+                padding: "12px",
+                marginBottom: "16px",
+                background: "linear-gradient(135deg,rgba(255,255,255,0.95),rgba(255,240,240,0.9))",
+                borderRadius: "18px",
+                border: "1px solid #ffe4e6",
+                boxShadow: "inset 0 1px 1px rgba(255,255,255,0.8)",
+              }}
+            >
+              {statusTabs.map((status) => {
+                const isActive = activeStatusFilter === status;
+                const count =
+                  status === "All" ? baseJobs.length : statusCounts[status] || 0;
+                return (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => handleStatusFilterChange(activeTab, status)}
+                    style={{
+                      padding: "10px 18px",
+                      borderRadius: "14px",
+                      border: "1px solid",
+                      borderColor: isActive ? "transparent" : "rgba(220,38,38,0.3)",
+                      background: isActive
+                        ? "linear-gradient(135deg,#f87171,#dc2626)"
+                        : "rgba(255,255,255,0.9)",
+                      color: isActive ? "white" : "#b91c1c",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      boxShadow: isActive
+                        ? "0 10px 25px rgba(220,38,38,0.25)"
+                        : "0 6px 16px rgba(220,38,38,0.08)",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <span>{status}</span>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        padding: "2px 10px",
+                        borderRadius: "999px",
+                        backgroundColor: isActive
+                          ? "rgba(255,255,255,0.25)"
+                          : "rgba(220,38,38,0.1)",
+                        color: isActive ? "white" : "#b91c1c",
+                      }}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div
+              style={{
+                flex: 1,
+                overflow: "hidden",
+                borderRadius: "16px",
+                border: "1px solid #f1f5f9",
+                background: "#fff",
+                padding: "12px",
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  overflowY: "auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                {sortedJobs.length === 0 ? (
+                  <div
+                    style={{
+                      padding: "32px",
+                      textAlign: "center",
+                      color: "#94a3b8",
+                      border: "1px dashed #e5e7eb",
+                      borderRadius: "12px",
+                      background: "#f9fafb",
+                    }}
+                  >
+                    {searchValue
+                      ? "No jobs match your search."
+                      : "No jobs in this status group."}
+                  </div>
+                ) : (
+                  sortedJobs.map((job) => (
+                    <JobListCard
+                      key={job.jobNumber}
+                      job={job}
+                      onNavigate={() => handleCardNavigation(job.jobNumber)}
+                      onQuickView={() => handleQuickView(job)}
+                    />
+                  ))
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* ✅ Job Popup - Enhanced with all new fields */}
-        {popupJob && (
-          <div
-            style={{
+          {/* ✅ Job Popup - Enhanced with all new fields */}
+          {popupJob && (
+            <div
+              style={{
               position: "fixed",
               top: 0,
               left: 0,
@@ -625,22 +779,22 @@ export default function ViewJobCards() {
               justifyContent: "center",
               alignItems: "center",
               zIndex: 1000,
-            }}
-            onClick={() => setPopupJob(null)}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                backgroundColor: "white",
-                padding: "32px",
-                borderRadius: "16px",
-                maxWidth: "700px",
-                width: "90%",
-                maxHeight: "85vh",
-                overflowY: "auto",
-                boxShadow: "0 20px 60px rgba(0,0,0,0.3)"
               }}
+              onClick={() => setPopupJob(null)}
             >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  backgroundColor: "white",
+                  padding: "32px",
+                  borderRadius: "16px",
+                  maxWidth: "700px",
+                  width: "90%",
+                  maxHeight: "85vh",
+                  overflowY: "auto",
+                  boxShadow: "0 20px 60px rgba(0,0,0,0.3)"
+                }}
+              >
               {/* Popup Header */}
               <div style={{ marginBottom: "24px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -941,7 +1095,8 @@ export default function ViewJobCards() {
           </div>
         )}
       </div>
-    </Layout>
+    </div>
+  </Layout>
   );
 }
 

@@ -65,6 +65,7 @@ const MODE_ROLE_MAP = {
   Sales: new Set((roleCategories.Sales || []).map((role) => role.toLowerCase())),
 };
 const NAV_DRAWER_WIDTH = 260;
+const STATUS_DRAWER_WIDTH = 280;
 
 export default function Layout({ children, jobNumber }) {
   const { user, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
@@ -517,6 +518,7 @@ export default function Layout({ children, jobNumber }) {
     padding: hideSidebar ? "0" : isTablet ? "12px" : "0 16px",
     boxSizing: "border-box",
     overflow: "visible",
+    position: "relative",
   };
   const showDesktopSidebar = !hideSidebar && !isTablet;
   const showMobileSidebar = !hideSidebar && isTablet;
@@ -1093,7 +1095,7 @@ export default function Layout({ children, jobNumber }) {
             style={{
               position: "fixed",
               top: "50%",
-              right: isStatusSidebarOpen ? "280px" : "0",
+              right: isStatusSidebarOpen ? `${STATUS_DRAWER_WIDTH}px` : "0",
               transform: "translateY(-50%)",
               width: "52px",
               height: "52px",
@@ -1119,8 +1121,8 @@ export default function Layout({ children, jobNumber }) {
               top: 0,
               right: 0,
               bottom: 0,
-              width: "280px",
-              padding: "12px",
+              width: `${STATUS_DRAWER_WIDTH}px`,
+              padding: "12px 12px 12px 0",
               boxSizing: "border-box",
               transform: isStatusSidebarOpen ? "translateX(0)" : "translateX(100%)",
               transition: "transform 0.35s ease",

@@ -62,8 +62,8 @@ const SERVICE_SOURCE_LABELS = {
 // ✅ Headings for optional sections so the dashboard mirrors the technician workspace
 const OPTIONAL_SECTION_TITLES = {
   externalInspection: "External",
-  internalElectrics: "Internal / Lamps / Electrics",
-  underside: "Underside Inspection",
+  internalElectrics: "Internal",
+  underside: "Underside",
 };
 
 // ✅ Normalise job status strings for consistent comparisons
