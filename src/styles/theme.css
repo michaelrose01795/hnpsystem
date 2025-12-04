@@ -99,5 +99,5 @@
   --accent-blue: #000000;
   --accent-blue-surface: rgba(var(--info-rgb), 0.2);
   --overlay: rgba(var(--accent-purple-rgb), 0.5);
-  --shadow-rgb: var(--accent-purple-rgb);
+  --shadow-rgb: 180, 170, 220; /* lighter shadow tint for better contrast in dark mode */
 }

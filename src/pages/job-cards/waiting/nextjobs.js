@@ -1257,11 +1257,11 @@ export default function NextJobsPage() {
       }}>
         
         {/* ✅ Outstanding Jobs Section with Drop Zone */}
-        <div 
-          style={{
-            marginBottom: "12px",
-            background: "var(--surface)",
-            borderRadius: "8px",
+            <div 
+              style={{
+                marginBottom: "12px",
+                background: "var(--surface)",
+                borderRadius: "8px",
             border: dragOverTarget === "outstanding" ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
             boxShadow: dragOverTarget === "outstanding" ? "0 4px 12px rgba(var(--primary-rgb),0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
             padding: "16px",
@@ -1286,7 +1286,7 @@ export default function NextJobsPage() {
             <h2 style={{ 
               fontSize: "18px", 
               fontWeight: "600", 
-              color: "var(--info-dark)",
+              color: "var(--accent-purple)",
               margin: 0
             }}>
               Outstanding Jobs ({outstandingJobs.length})
@@ -1321,7 +1321,7 @@ export default function NextJobsPage() {
               }}
             >
               {filteredOutstandingJobs.length === 0 ? (
-                <p style={{ color: "var(--info)", fontSize: "14px", margin: 0 }}>
+                <p style={{ color: "var(--text-primary)", fontSize: "14px", margin: 0 }}>
                   {searchTerm.trim() ? "No matching jobs found." : "No outstanding jobs."}
                 </p>
               ) : (
@@ -1394,7 +1394,7 @@ export default function NextJobsPage() {
                             {jobTypeLabel}
                           </span>
                         </div>
-                        <div style={{ fontSize: "13px", color: "var(--info-dark)" }}>
+                        <div style={{ fontSize: "13px", color: "var(--text-primary)" }}>
                           {job.customer || "Unknown customer"}
                         </div>
                         <div
@@ -1403,11 +1403,11 @@ export default function NextJobsPage() {
                             flexWrap: "wrap",
                             gap: "8px",
                             fontSize: "12px",
-                            color: "var(--info-dark)",
-                          }}
-                        >
-                          <span>
-                            <strong>Requests:</strong> {requestsCount}
+                          color: "var(--text-primary)",
+                        }}
+                      >
+                        <span>
+                          <strong>Requests:</strong> {requestsCount}
                           </span>
                           <span>
                             <strong>Appointment:</strong> {appointmentDisplay}
@@ -1430,13 +1430,13 @@ export default function NextJobsPage() {
                               borderRadius: "12px",
                               fontSize: "11px",
                               fontWeight: 600,
-                              backgroundColor: "var(--info-surface)",
-                              color: "var(--info-dark)",
+                              backgroundColor: "var(--surface-light)",
+                              color: "var(--accent-purple)",
                             }}
                           >
                             {customerStatus}
                           </span>
-                          <span style={{ fontSize: "12px", color: "var(--info)" }}>
+                          <span style={{ fontSize: "12px", color: "var(--text-primary)" }}>
                             {job.status || "Status pending"}
                           </span>
                         </div>
@@ -1450,17 +1450,17 @@ export default function NextJobsPage() {
         </div>
 
         {/* ✅ Technicians Grid Section */}
-        <div style={{ 
-          flex: "1 0 auto",
-          borderRadius: "8px",
-          boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
-          border: "1px solid var(--surface-light)",
-          background: "var(--surface)",
-          padding: "24px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "24px"
-        }}>
+            <div style={{ 
+              flex: "1 0 auto",
+              borderRadius: "8px",
+              boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
+              border: "1px solid var(--surface-light)",
+              background: "var(--surface)",
+              padding: "24px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "24px"
+            }}>
           
           <div style={{
             display: "grid",
@@ -1472,16 +1472,16 @@ export default function NextJobsPage() {
             {assignedJobs.slice(0, 6).map(renderAssigneePanel)}
           </div>
 
-          {motPanelList.length > 0 && (
-            <div>
-              <h3 style={{
-                margin: "0 0 12px 0",
-                fontSize: "18px",
-                fontWeight: "600",
-                color: "var(--info-dark)"
-              }}>
-                MOT Testers
-              </h3>
+              {motPanelList.length > 0 && (
+                <div>
+                  <h3 style={{
+                    margin: "0 0 12px 0",
+                    fontSize: "18px",
+                    fontWeight: "600",
+                    color: "var(--accent-purple)"
+                  }}>
+                    MOT Testers
+                  </h3>
               <div style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
