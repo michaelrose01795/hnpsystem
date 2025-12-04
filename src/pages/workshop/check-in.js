@@ -396,7 +396,7 @@ export default function CheckInPage() {
           flexShrink: 0
         }}>
           <input
-            type="text"
+            type="search"
             placeholder="🔍 Search by job number, reg, customer, or vehicle..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -404,12 +404,14 @@ export default function CheckInPage() {
               flex: 1,
               padding: "12px 16px",
               borderRadius: "8px",
-              border: "1px solid var(--surface-light)",
+              border: "1px solid var(--search-surface-muted)",
               fontSize: "14px",
-              outline: "none"
+              outline: "none",
+              backgroundColor: "var(--search-surface)",
+              color: "var(--search-text)"
             }}
             onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
-            onBlur={(e) => e.target.style.borderColor = "var(--surface-light)"}
+            onBlur={(e) => e.target.style.borderColor = "var(--search-surface-muted)"}
           />
 
           <button

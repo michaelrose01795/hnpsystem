@@ -275,11 +275,17 @@ const TechConsumableRequestPage = () => {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>My Requests</h2>
             <input
-              type="text"
+              type="search"
               placeholder="Search requests"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              style={{ ...inputStyle, maxWidth: "240px" }}
+              style={{
+                ...inputStyle,
+                maxWidth: "240px",
+                backgroundColor: "var(--search-surface)",
+                border: "1px solid var(--search-surface-muted)",
+                color: "var(--search-text)",
+              }}
             />
           </div>
           {successMessage && (

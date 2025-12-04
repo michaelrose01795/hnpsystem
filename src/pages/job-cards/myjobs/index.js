@@ -506,13 +506,13 @@ export default function MyJobsPage() {
           alignItems: "center",
           flexWrap: "wrap",
           padding: "12px",
-          backgroundColor: "var(--surface)",
+          backgroundColor: "var(--search-surface)",
           borderRadius: "12px",
           boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)"
         }}>
           {/* Search Input */}
           <input
-            type="text"
+            type="search"
             placeholder="Search by job number, customer, reg, or vehicle..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -521,17 +521,19 @@ export default function MyJobsPage() {
               minWidth: "220px",
               padding: "12px 16px",
               borderRadius: "8px",
-              border: "1px solid var(--accent-purple-surface)",
+              border: "1px solid var(--search-surface-muted)",
               fontSize: "14px",
               outline: "none",
-              transition: "border-color 0.2s, box-shadow 0.2s"
+              transition: "border-color 0.2s, box-shadow 0.2s",
+              backgroundColor: "var(--search-surface)",
+              color: "var(--search-text)"
             }}
             onFocus={(e) => {
               e.target.style.borderColor = "var(--primary)";
               e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
             }}
             onBlur={(e) => {
-              e.target.style.borderColor = "var(--accent-purple-surface)";
+              e.target.style.borderColor = "var(--search-surface-muted)";
               e.target.style.boxShadow = "none";
             }}
           />

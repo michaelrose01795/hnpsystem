@@ -56,11 +56,19 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
 
         {/* Search input */}
         <input
-          type="text"
+          type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name, email, or mobile"
-          style={{ width: "100%", marginBottom: "12px", padding: "6px" }}
+          style={{
+            width: "100%",
+            marginBottom: "12px",
+            padding: "8px 12px",
+            borderRadius: "8px",
+            border: "1px solid var(--search-surface-muted)",
+            backgroundColor: "var(--search-surface)",
+            color: "var(--search-text)",
+          }}
         />
 
         {/* List results */}

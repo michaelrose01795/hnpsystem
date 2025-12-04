@@ -67,24 +67,26 @@ export default function ArchivedJobsPage() {
             display: "flex",
             flexWrap: "wrap",
             gap: "12px",
-            background: "var(--surface)",
+            background: "var(--search-surface)",
             borderRadius: "12px",
             padding: "16px",
             boxShadow: "0 10px 25px rgba(var(--shadow-rgb),0.06)",
-            border: "1px solid var(--info-surface)",
+            border: "1px solid var(--search-surface-muted)",
           }}
         >
           <input
-            type="text"
+            type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search by reg, job number, or customer name"
             style={{
               flex: "1 1 260px",
               padding: "12px 16px",
-              border: "1px solid var(--info)",
+              border: "1px solid var(--search-surface-muted)",
               borderRadius: "10px",
               fontSize: "1rem",
+              background: "var(--search-surface)",
+              color: "var(--search-text)",
             }}
           />
           <button

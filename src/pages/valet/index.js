@@ -454,6 +454,7 @@ export default function ValetDashboard() {
             }}
           >
             <input
+              type="search"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Search by reg, job number, customer, or vehicle"
@@ -462,8 +463,11 @@ export default function ValetDashboard() {
                 minWidth: "240px",
                 padding: "10px 14px",
                 borderRadius: "8px",
-                border: "1px solid var(--surface-light)",
+                border: "1px solid var(--search-surface-muted)",
                 fontSize: "14px",
+                outline: "none",
+                backgroundColor: "var(--search-surface)",
+                color: "var(--search-text)",
               }}
             />
             <span style={{ fontSize: "14px", color: "var(--grey-accent)" }}>

@@ -505,7 +505,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
         {showAvailableJobs && (
           <div> {/* List container */}
             <input
-              type="text" // Search input
+              type="search" // Search input
               placeholder="🔍 Search jobs..." // Hint
               value={searchTerm} // Controlled value
               onChange={(e) => setSearchTerm(e.target.value)} // Update
@@ -514,8 +514,11 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                 padding: "10px", // Padding
                 marginBottom: "12px", // Gap
                 borderRadius: "6px", // Rounded
-                border: "1px solid var(--surface-light)", // Border
-                fontSize: "14px" // Size
+                border: "1px solid var(--search-surface-muted)", // Border
+                fontSize: "14px", // Size
+                outline: "none",
+                backgroundColor: "var(--search-surface)",
+                color: "var(--search-text)"
               }}
             />
 

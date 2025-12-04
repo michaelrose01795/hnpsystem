@@ -1862,8 +1862,9 @@ function ConsumablesTrackerPage() {
                       width: "100%",
                       padding: "10px 14px",
                       borderRadius: "10px",
-                      border: "1px solid var(--surface-light)",
-                      background: "var(--surface)",
+                      border: "1px solid var(--search-surface-muted)",
+                      background: "var(--search-surface)",
+                      color: "var(--search-text)",
                       fontSize: "0.9rem",
                       outline: "none",
                     }}

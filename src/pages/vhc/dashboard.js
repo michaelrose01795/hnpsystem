@@ -727,14 +727,14 @@ export default function VHCDashboard() {
             alignItems: "center",
             marginBottom: "12px",
             padding: "12px",
-            backgroundColor: "var(--surface)",
+            backgroundColor: "var(--search-surface)",
             borderRadius: "8px",
             boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
             flexShrink: 0,
           }}
         >
           <input
-            type="text"
+            type="search"
             placeholder="Search Registration"
             value={search.reg}
             onChange={(e) => setSearch({ ...search, reg: e.target.value })}
@@ -742,13 +742,15 @@ export default function VHCDashboard() {
               flex: 1,
               padding: "10px 16px",
               borderRadius: "8px",
-              border: "1px solid var(--surface-light)",
+              border: "1px solid var(--search-surface-muted)",
               fontSize: "14px",
               outline: "none",
+              backgroundColor: "var(--search-surface)",
+              color: "var(--search-text)",
             }}
           />
           <input
-            type="text"
+            type="search"
             placeholder="Search Job Number"
             value={search.jobNumber}
             onChange={(e) => setSearch({ ...search, jobNumber: e.target.value })}
@@ -756,13 +758,15 @@ export default function VHCDashboard() {
               flex: 1,
               padding: "10px 16px",
               borderRadius: "8px",
-              border: "1px solid var(--surface-light)",
+              border: "1px solid var(--search-surface-muted)",
               fontSize: "14px",
               outline: "none",
+              backgroundColor: "var(--search-surface)",
+              color: "var(--search-text)",
             }}
           />
           <input
-            type="text"
+            type="search"
             placeholder="Search Customer"
             value={search.customer}
             onChange={(e) => setSearch({ ...search, customer: e.target.value })}
@@ -770,9 +774,11 @@ export default function VHCDashboard() {
               flex: 1,
               padding: "10px 16px",
               borderRadius: "8px",
-              border: "1px solid var(--surface-light)",
+              border: "1px solid var(--search-surface-muted)",
               fontSize: "14px",
               outline: "none",
+              backgroundColor: "var(--search-surface)",
+              color: "var(--search-text)",
             }}
           />
         </div>

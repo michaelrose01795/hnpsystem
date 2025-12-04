@@ -130,6 +130,42 @@ const getCapacityStatusLabel = (status) => {
   return "Within capacity";
 };
 
+const DEFAULT_RETAIL_TECH_COUNT = 6;
+const DEFAULT_RETAIL_TECH_HOURS = 6;
+const DEFAULT_RETAIL_TECH_NAMES = [
+  "Retail Tech 1",
+  "Retail Tech 2",
+  "Retail Tech 3",
+  "Retail Tech 4",
+  "Retail Tech 5",
+  "Retail Tech 6",
+];
+
+const CALENDAR_SEVERITY_STYLES = {
+  green: {
+    backgroundColor: "var(--success-surface)",
+    textColor: "var(--success-dark)",
+    borderColor: "var(--success)",
+  },
+  amber: {
+    backgroundColor: "var(--warning-surface)",
+    textColor: "var(--warning)",
+    borderColor: "var(--warning)",
+  },
+  red: {
+    backgroundColor: "var(--danger-surface)",
+    textColor: "var(--danger)",
+    borderColor: "var(--danger)",
+  },
+};
+
+const getBookingSeverity = (percent) => {
+  if (Number.isNaN(percent)) return "green";
+  if (percent >= 86) return "red";
+  if (percent >= 65) return "amber";
+  return "green";
+};
+
 const STAFF_ROLES = new Set([
   "service advisor",
   "technician",
@@ -247,7 +283,7 @@ const buildTechAvailabilityMap = (records = []) => {
         latestClockIn: entry.clock_in,
         latestClockOut: entry.clock_out || null,
         currentlyClockedIn: !entry.clock_out,
-        availableHours: deriveAvailableHours(entry) ?? 5,
+        availableHours: deriveAvailableHours(entry) ?? DEFAULT_RETAIL_TECH_HOURS,
       };
       availability[dateKey].techs.push(techRecord);
     }
@@ -310,7 +346,6 @@ export default function Appointments() {
   const [techAvailability, setTechAvailability] = useState({});
   const [isTechAvailabilityLoading, setIsTechAvailabilityLoading] = useState(false);
   const [techAvailabilityError, setTechAvailabilityError] = useState("");
-  const [showTechHoursEditor, setShowTechHoursEditor] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [timeSlots] = useState(generateTimeSlots());
   const [isLoading, setIsLoading] = useState(false);
@@ -321,6 +356,8 @@ export default function Appointments() {
   const [showStaffOffPopup, setShowStaffOffPopup] = useState(false);
   const [staffOffPopupDetails, setStaffOffPopupDetails] = useState([]);
   const [staffOffPopupDate, setStaffOffPopupDate] = useState(null);
+  const [activeDayTab, setActiveDayTab] = useState("jobs");
+  const [techHoursOverrides, setTechHoursOverrides] = useState({});
 
   // ---------------- Fetch Jobs ----------------
   const fetchJobs = async () => {
@@ -797,22 +834,70 @@ export default function Appointments() {
   };
 
   // ---------------- Utilities ----------------
-  const formatDate = (dateObj) => 
+  const formatDate = (dateObj) =>
     dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-  
-  const formatDateNoYear = (dateObj) => 
+
+  const formatDateNoYear = (dateObj) =>
     dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-  
-  const isSaturday = (date) => date.getDay() === 6;
-  
-  const getTechHoursForDay = (date) => {
-    const dateKey = date.toDateString();
-    const dayData = techAvailability[dateKey];
-    if (dayData?.totalTechs >= 0) {
-      return dayData.totalTechs;
+
+  const getDayTechSummary = (date) => {
+    if (!date) {
+      return {
+        dateKey: "",
+        techs: [],
+        totalTechs: DEFAULT_RETAIL_TECH_COUNT,
+        totalAvailableHours: DEFAULT_RETAIL_TECH_COUNT * DEFAULT_RETAIL_TECH_HOURS,
+      };
     }
-    return 0;
+
+    const dateKey = date.toDateString();
+    const dayData = techAvailability[dateKey] || { techs: [] };
+    const storedTechs = Array.isArray(dayData.techs) ? dayData.techs : [];
+    const overridesForDay = techHoursOverrides[dateKey] || {};
+
+    const normalizedTechs = storedTechs.map((tech, index) => {
+      const techId = tech.techId ?? tech.user?.user_id ?? `${dateKey}-tech-${index}`;
+      const overrideHours = parseHoursValue(overridesForDay[techId]);
+      const baseAvailable = parseHoursValue(tech.availableHours);
+      const availableHours = overrideHours ?? baseAvailable ?? DEFAULT_RETAIL_TECH_HOURS;
+      return {
+        ...tech,
+        techId,
+        availableHours,
+      };
+    });
+
+    const placeholders = [];
+    for (let idx = normalizedTechs.length; idx < DEFAULT_RETAIL_TECH_COUNT; idx += 1) {
+      const placeholderId = `${dateKey}-retail-placeholder-${idx}`;
+      const overrideHours = parseHoursValue(overridesForDay[placeholderId]);
+      placeholders.push({
+        techId: placeholderId,
+        name: DEFAULT_RETAIL_TECH_NAMES[idx] || `Retail Tech ${idx + 1}`,
+        availableHours: overrideHours ?? DEFAULT_RETAIL_TECH_HOURS,
+        totalHours: 0,
+        segments: [],
+        currentlyClockedIn: false,
+        isPlaceholder: true,
+        workType: "retail",
+      });
+    }
+
+    const finalTechs = [...normalizedTechs, ...placeholders];
+    const totalAvailableHours = finalTechs.reduce(
+      (sum, tech) => sum + (parseHoursValue(tech.availableHours) ?? 0),
+      0
+    );
+
+    return {
+      dateKey,
+      techs: finalTechs,
+      totalTechs: Math.max(finalTechs.length, DEFAULT_RETAIL_TECH_COUNT),
+      totalAvailableHours,
+    };
   };
+
+  const getTechHoursForDay = (date) => getDayTechSummary(date).totalTechs;
 
   const getEarliestTechStartForDate = (date) => {
     const dateKey = date.toDateString();
@@ -843,7 +928,27 @@ export default function Appointments() {
     return finish.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   };
   
-  const toggleTechHoursEditor = () => setShowTechHoursEditor(!showTechHoursEditor);
+  const handleTechAvailabilityChange = (dateKey, techId, rawValue) => {
+    setTechHoursOverrides((prev) => {
+      const dayOverrides = { ...(prev[dateKey] || {}) };
+      const parsedValue = parseHoursValue(rawValue);
+
+      if (parsedValue === null) {
+        delete dayOverrides[techId];
+      } else {
+        dayOverrides[techId] = parsedValue;
+      }
+
+      const next = { ...prev };
+      if (Object.keys(dayOverrides).length === 0) {
+        delete next[dateKey];
+      } else {
+        next[dateKey] = dayOverrides;
+      }
+
+      return next;
+    });
+  };
 
   const normalizeJobCategoryLabel = (rawLabel) => {
     if (!rawLabel || typeof rawLabel !== "string") return null;
@@ -994,9 +1099,8 @@ export default function Appointments() {
 
   // ---------------- Filtered Jobs for Selected Day ----------------
   const jobsForDay = jobs.filter((j) => j.appointment?.date === selectedDay.toISOString().split("T")[0]);
-  const selectedDayKey = selectedDay.toDateString();
-  const techAvailabilityForSelectedDay = techAvailability[selectedDayKey] || { totalTechs: 0, techs: [] };
-  const techsForSelectedDay = techAvailabilityForSelectedDay.techs || [];
+  const techSummaryForSelectedDay = getDayTechSummary(selectedDay);
+  const techsForSelectedDay = techSummaryForSelectedDay.techs;
   const checkinStatsForSelectedDay = getCheckinStatsForDate(selectedDay);
 
   const totalBookedTechHours = techsForSelectedDay.reduce(
@@ -1004,10 +1108,7 @@ export default function Appointments() {
     0
   );
 
-  const totalAvailableTechHours = techsForSelectedDay.reduce(
-    (sum, tech) => sum + (parseHoursValue(tech.availableHours) || 5),
-    0
-  );
+  const totalAvailableTechHours = techSummaryForSelectedDay.totalAvailableHours;
 
   const totalCapacityStatus = getCapacityStatus(totalBookedTechHours, totalAvailableTechHours);
   const totalCapacityBadgeStyle = getStatusBadgeStyle(totalCapacityStatus);
@@ -1068,7 +1169,7 @@ export default function Appointments() {
           </button>
 
           <input 
-            type="text" 
+            type="search" 
             value={searchQuery} 
             onChange={(e) => setSearchQuery(e.target.value)} 
             placeholder="Search by Job #, Name, Reg, or Vehicle..." 
@@ -1077,12 +1178,14 @@ export default function Appointments() {
               flex: 1, 
               padding: "10px 16px", 
               borderRadius: "8px", 
-              border: "1px solid var(--surface-light)", 
+              border: "1px solid var(--search-surface-muted)", 
               fontSize: "14px",
-              outline: "none"
+              outline: "none",
+              backgroundColor: "var(--search-surface)",
+              color: "var(--search-text)",
             }}
             onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
-            onBlur={(e) => e.target.style.borderColor = "var(--surface-light)"}
+            onBlur={(e) => e.target.style.borderColor = "var(--search-surface-muted)"}
           />
 
           <input 
@@ -1182,17 +1285,35 @@ export default function Appointments() {
                   const dateKey = date.toDateString();
                   const counts = getJobCounts(date);
                   const staffEntries = staffAbsences[dateKey] || [];
-                  const isSelected = selectedDay.toDateString() === date.toDateString();
-                  const isSat = isSaturday(date);
+                  const isSelected = selectedDay.toDateString() === dateKey;
+                  const dayTechSummary = getDayTechSummary(date);
+                  const bookedHours = parseFloat(counts.totalHours) || 0;
+                  const totalAvailableHours =
+                    dayTechSummary.totalAvailableHours || DEFAULT_RETAIL_TECH_COUNT * DEFAULT_RETAIL_TECH_HOURS;
+                  const bookingPercent = totalAvailableHours > 0 ? (bookedHours / totalAvailableHours) * 100 : 0;
+                  const severity = getBookingSeverity(bookingPercent);
+                  const severityStyle = CALENDAR_SEVERITY_STYLES[severity] || {};
+                  const defaultRowBackground = severityStyle.backgroundColor || "var(--surface)";
+                  const rowBackground = isSelected ? "var(--surface-light)" : defaultRowBackground;
+                  const borderLeftStyle = isSelected
+                    ? "4px solid var(--primary)"
+                    : severityStyle.borderColor
+                    ? `4px solid ${severityStyle.borderColor}`
+                    : "4px solid transparent";
+                  const bookingPercentDisplay = Number.isFinite(bookingPercent)
+                    ? bookingPercent.toFixed(0)
+                    : "0";
+                  const availabilityLabelColor = severityStyle.textColor || "var(--text-primary)";
                 
                 return (
-                  <tr 
-                    key={dateKey} 
-                    onClick={() => setSelectedDay(date)} 
-                    style={{ 
-                      cursor: "pointer", 
-                      backgroundColor: isSelected ? "var(--surface-light)" : isSat ? "var(--warning-surface)" : "var(--surface)",
-                      transition: "background-color 0.2s"
+                  <tr
+                    key={dateKey}
+                    onClick={() => setSelectedDay(date)}
+                    style={{
+                      cursor: "pointer",
+                      backgroundColor: rowBackground,
+                      transition: "background-color 0.2s",
+                      borderLeft: borderLeftStyle,
                     }}
                     onMouseEnter={(e) => {
                       if (!isSelected) {
@@ -1201,15 +1322,38 @@ export default function Appointments() {
                     }}
                     onMouseLeave={(e) => {
                       if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = isSat ? "var(--warning-surface)" : "var(--surface)";
+                        e.currentTarget.style.backgroundColor = defaultRowBackground;
                       }
                     }}
                   >
                     <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: isSelected ? "600" : "400" }}>
                       {formatDate(date)}
                     </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
-                      {getTechHoursForDay(date)} techs
+                    <td
+                      style={{
+                        padding: "10px 12px",
+                        borderBottom: "1px solid var(--surface-light)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: "600",
+                          color: availabilityLabelColor,
+                        }}
+                      >
+                        {dayTechSummary.totalTechs} tech
+                        {dayTechSummary.totalTechs !== 1 ? "s" : ""} · {totalAvailableHours.toFixed(1)}h avail
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          color: "var(--grey-accent)",
+                          marginTop: "2px",
+                        }}
+                      >
+                        {bookingPercentDisplay}% booked
+                      </div>
                     </td>
                     <td style={{ 
                       padding: "10px 12px", 
@@ -1338,41 +1482,60 @@ export default function Appointments() {
 
           <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
             <button
+              onClick={() => setActiveDayTab("jobs")}
               style={{
                 padding: "8px 16px",
-                border: "2px solid var(--primary)",
-                backgroundColor: "var(--surface-light)",
-                color: "var(--primary)",
+                border: activeDayTab === "jobs" ? "2px solid var(--primary)" : "1px solid var(--surface-light)",
+                backgroundColor: activeDayTab === "jobs" ? "var(--surface-light)" : "white",
+                color: activeDayTab === "jobs" ? "var(--text-primary)" : "var(--grey-accent)",
                 borderRadius: "8px",
                 cursor: "pointer",
-                fontWeight: "600",
-                fontSize: "13px"
+                fontWeight: activeDayTab === "jobs" ? "600" : "500",
+                fontSize: "13px",
+                transition: "all 0.2s"
+              }}
+              onMouseEnter={(e) => {
+                if (activeDayTab !== "jobs") {
+                  e.currentTarget.style.backgroundColor = "var(--surface)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeDayTab !== "jobs") {
+                  e.currentTarget.style.backgroundColor = "white";
+                }
               }}
             >
               All Jobs ({sortedJobs.length})
             </button>
             
             <button
-              onClick={toggleTechHoursEditor}
+              onClick={() => setActiveDayTab("tech-hours")}
               style={{
                 padding: "8px 16px",
-                border: "1px solid var(--surface-light)",
-                backgroundColor: showTechHoursEditor ? "var(--surface-light)" : "white",
-                color: "var(--grey-accent)",
+                border: activeDayTab === "tech-hours" ? "2px solid var(--primary)" : "1px solid var(--surface-light)",
+                backgroundColor: activeDayTab === "tech-hours" ? "var(--surface-light)" : "white",
+                color: activeDayTab === "tech-hours" ? "var(--text-primary)" : "var(--grey-accent)",
                 borderRadius: "8px",
                 cursor: "pointer",
-                fontWeight: "500",
+                fontWeight: activeDayTab === "tech-hours" ? "600" : "500",
                 fontSize: "13px",
                 transition: "all 0.2s"
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = "var(--surface)"}
-              onMouseLeave={(e) => e.target.style.backgroundColor = showTechHoursEditor ? "var(--surface-light)" : "white"}
+              onMouseEnter={(e) => {
+                if (activeDayTab !== "tech-hours") {
+                  e.currentTarget.style.backgroundColor = "var(--surface)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeDayTab !== "tech-hours") {
+                  e.currentTarget.style.backgroundColor = "white";
+                }
+              }}
             >
               Tech Hours
             </button>
           </div>
-
-          {showTechHoursEditor && (
+          {activeDayTab === "tech-hours" && (
             <div style={{ 
               marginBottom: "16px", 
               padding: "16px", 
@@ -1380,163 +1543,158 @@ export default function Appointments() {
               borderRadius: "8px", 
               background: "var(--surface-light)" 
             }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-              <div>
-                <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-secondary)" }}>
-                  Live Tech Availability — {formatDateNoYear(selectedDay)}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                <div>
+                  <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-secondary)" }}>
+                    Live Tech Availability — {formatDateNoYear(selectedDay)}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--grey-accent)" }}>
+                    Source: {TECH_AVAILABILITY_TABLE === "tech_hours" ? "tech_hours" : "job_clocking"} table
+                  </div>
                 </div>
-                <div style={{ fontSize: "12px", color: "var(--grey-accent)" }}>
-                  Source: {TECH_AVAILABILITY_TABLE === "tech_hours" ? "tech_hours" : "job_clocking"} table
-                </div>
-              </div>
-              <span style={{ 
-                padding: "4px 12px", 
-                borderRadius: "999px", 
-                backgroundColor: "var(--surface-light)", 
-                color: "var(--primary)", 
-                fontWeight: "600", 
-                fontSize: "13px" 
-              }}>
-                {getTechHoursForDay(selectedDay)} tech{getTechHoursForDay(selectedDay) === 1 ? "" : "s"}
-              </span>
-            </div>
-            <div style={{ 
-              marginBottom: "12px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: "6px"
-            }}>
-              <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>
-                Booked {totalBookedTechHours.toFixed(1)}h
-              </div>
-              <div style={{ fontSize: "12px", color: "var(--grey-accent-dark)" }}>
-                of {totalAvailableTechHours.toFixed(1)}h available
-              </div>
-              <span 
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                <span style={{
+                  padding: "4px 12px",
                   borderRadius: "999px",
-                  padding: "4px 10px",
-                  fontSize: "12px",
+                  backgroundColor: "var(--surface-light)",
+                  color: "var(--primary)",
                   fontWeight: "600",
-                  ...totalCapacityBadgeStyle
-                }}
-              >
-                {totalCapacityLabel}
-              </span>
-            </div>
-
-            {techAvailabilityError && (
-              <div style={{ 
-                  marginBottom: "10px", 
-                  padding: "10px 12px", 
-                  background: "var(--surface-light)", 
-                  borderRadius: "6px", 
-                  color: "var(--danger)", 
-                  fontSize: "13px" 
+                  fontSize: "13px"
+                }}>
+                  {techSummaryForSelectedDay.totalTechs} tech{techSummaryForSelectedDay.totalTechs !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div style={{
+                marginBottom: "12px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "6px"
+              }}>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>
+                  Booked {totalBookedTechHours.toFixed(1)}h
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--grey-accent-dark)" }}>
+                  of {totalAvailableTechHours.toFixed(1)}h available
+                </div>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "999px",
+                    padding: "4px 10px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    ...totalCapacityBadgeStyle
+                  }}
+                >
+                  {totalCapacityLabel}
+                </span>
+              </div>
+              {techAvailabilityError && (
+                <div style={{
+                  marginBottom: "10px",
+                  padding: "10px 12px",
+                  background: "var(--surface-light)",
+                  borderRadius: "6px",
+                  color: "var(--danger)",
+                  fontSize: "13px"
                 }}>
                   {techAvailabilityError}
                 </div>
               )}
-
               {isTechAvailabilityLoading ? (
                 <div style={{ padding: "10px 0", color: "var(--grey-accent)", fontSize: "13px" }}>
                   Loading live tech availability...
                 </div>
-              ) : techsForSelectedDay.length > 0 ? (
+              ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {techsForSelectedDay.map((tech) => {
-                const latestSegment = tech.segments[tech.segments.length - 1];
-                const latestJobDisplay = latestSegment
-                  ? `Job ${latestSegment.jobNumber || "-"} (${latestSegment.workType})`
-                  : "No jobs recorded";
-                const latestClockIn = tech.latestClockIn
-                  ? new Date(tech.latestClockIn).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
-                  : "-";
-                const latestClockOut = tech.latestClockOut
-                  ? new Date(tech.latestClockOut).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
-                  : "-";
-                const availableHours = parseHoursValue(tech.availableHours) || 5;
-                const bookedHours = parseHoursValue(tech.totalHours) || 0;
-                const techCapacityStatus = getCapacityStatus(bookedHours, availableHours);
-                const techBadgeStyle = getStatusBadgeStyle(techCapacityStatus);
-                const techStatusLabel = getCapacityStatusLabel(techCapacityStatus);
+                  {techsForSelectedDay.map((tech) => {
+                    const latestSegment = tech.segments[tech.segments.length - 1];
+                    const latestJobDisplay = latestSegment
+                      ? `Job ${latestSegment.jobNumber || "-"} (${latestSegment.workType})`
+                      : "No jobs recorded";
+                    const latestClockIn = tech.latestClockIn
+                      ? new Date(tech.latestClockIn).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+                      : "-";
+                    const latestClockOut = tech.latestClockOut
+                      ? new Date(tech.latestClockOut).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+                      : "-";
+                    const availableHoursValue = parseHoursValue(tech.availableHours) ?? DEFAULT_RETAIL_TECH_HOURS;
+                    const totalLogged = parseHoursValue(tech.totalHours) ?? 0;
 
-                return (
-                  <div 
-                    key={tech.techId} 
-                    style={{ 
-                          display: "flex", 
-                          justifyContent: "space-between", 
-                          alignItems: "center", 
-                          padding: "10px 12px", 
-                          background: "var(--surface)", 
-                          borderRadius: "8px", 
+                    return (
+                      <div
+                        key={tech.techId}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "10px 12px",
+                          background: "var(--surface)",
+                          borderRadius: "8px",
                           border: "1px solid var(--surface-light)",
                           boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.04)"
                         }}
                       >
                         <div>
                           <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-secondary)" }}>
-                            {tech.name}
+                            {tech.name || "Retail Technician"}
                           </div>
                           <div style={{ fontSize: "12px", color: "var(--grey-accent)" }}>
                             {latestJobDisplay}
                           </div>
-                        <div style={{ fontSize: "12px", color: "var(--grey-accent-light)", marginTop: "4px" }}>
-                          Shift: {latestClockIn} – {tech.currentlyClockedIn ? "Present" : latestClockOut}
-                          {" · "}
-                          {tech.totalHours > 0 ? `${tech.totalHours}h logged` : "0h recorded"}
+                          <div style={{ fontSize: "12px", color: "var(--grey-accent-light)", marginTop: "4px" }}>
+                            Shift: {latestClockIn} – {tech.currentlyClockedIn ? "Present" : latestClockOut}
+                            {" · "}
+                            {totalLogged > 0 ? `${totalLogged.toFixed(1)}h logged` : "0h recorded"}
+                          </div>
                         </div>
-                        <div style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "6px", flexWrap: "wrap" }}>
-                          <span style={{ fontSize: "12px", color: "var(--grey-accent-dark)" }}>
-                            {bookedHours.toFixed(1)}h booked
-                          </span>
-                          <span style={{ fontSize: "12px", color: "var(--grey-accent)" }}>
-                            of {availableHours.toFixed(1)}h available
-                          </span>
-                          <span
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
+                          <label style={{ fontSize: "11px", color: "var(--grey-accent)", fontWeight: "600" }}>
+                            Availability
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            value={availableHoursValue}
+                            onChange={(event) =>
+                              handleTechAvailabilityChange(
+                                techSummaryForSelectedDay.dateKey || selectedDay.toDateString(),
+                                tech.techId,
+                                event.target.value
+                              )
+                            }
                             style={{
-                              borderRadius: "999px",
-                              padding: "4px 10px",
-                              fontSize: "11px",
-                              fontWeight: "600",
-                              ...techBadgeStyle,
+                              width: "80px",
+                              padding: "6px 8px",
+                              borderRadius: "8px",
+                              border: "1px solid var(--surface-light)",
+                              fontSize: "14px",
+                              textAlign: "right",
+                              fontFamily: "inherit",
+                              background: "var(--surface)"
                             }}
-                          >
-                            {techStatusLabel}
+                          />
+                          <span style={{ fontSize: "11px", color: "var(--grey-accent-dark)" }}>
+                            hours (manual override)
                           </span>
                         </div>
-                      </div>
-                      <span style={{ 
-                        padding: "6px 12px", 
-                          borderRadius: "999px", 
-                          fontSize: "12px", 
-                          fontWeight: "600", 
-                          backgroundColor: tech.currentlyClockedIn ? "var(--success-surface)" : "var(--surface)",
-                          color: tech.currentlyClockedIn ? "var(--success-dark)" : "var(--grey-accent)" 
-                        }}>
-                          {tech.currentlyClockedIn ? "Clocked In" : "Clocked Out"}
-                        </span>
                       </div>
                     );
                   })}
-                </div>
-              ) : (
-                <div style={{ padding: "12px 0", fontSize: "13px", color: "var(--grey-accent)" }}>
-                  No tech availability recorded for this day yet.
                 </div>
               )}
             </div>
           )}
 
-          {/* ✅ Enhanced Jobs Table */}
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+          {activeDayTab === "jobs" && (
+            <>
+              {/* ✅ Enhanced Jobs Table */}
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
                 <tr>
                 {[
@@ -1712,8 +1870,9 @@ export default function Appointments() {
               </tbody>
             </table>
           </div>
+            </>
+          )}
         </div>
-
         {/* Add Note Popup */}
         <Popup isOpen={showNotePopup} onClose={() => setShowNotePopup(false)}>
           <h3 style={{ marginTop: 0, marginBottom: "16px", fontSize: "20px", fontWeight: "600" }}>

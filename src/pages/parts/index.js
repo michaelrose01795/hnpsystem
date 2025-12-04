@@ -1451,7 +1451,7 @@ function PartsPortalPage() {
           <div style={cardStyle}>
             <h2 style={sectionTitleStyle}>Stock Catalogue</h2>
             <input
-              type="text"
+              type="search"
               placeholder="Search part number, description, OEM code"
               value={inventorySearch}
               onChange={(event) => setInventorySearch(event.target.value)}
@@ -1459,8 +1459,11 @@ function PartsPortalPage() {
                 width: "100%",
                 padding: "12px",
                 borderRadius: "8px",
-                border: "1px solid var(--surface-light)",
+                border: "1px solid var(--search-surface-muted)",
                 marginBottom: "12px",
+                outline: "none",
+                backgroundColor: "var(--search-surface)",
+                color: "var(--search-text)",
               }}
             />
 

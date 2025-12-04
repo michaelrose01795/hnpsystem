@@ -1260,7 +1260,7 @@ export default function NextJobsPage() {
             <div 
               style={{
                 marginBottom: "12px",
-                background: "var(--surface)",
+                background: "var(--search-surface)",
                 borderRadius: "8px",
             border: dragOverTarget === "outstanding" ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
             boxShadow: dragOverTarget === "outstanding" ? "0 4px 12px rgba(var(--primary-rgb),0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
@@ -1270,7 +1270,7 @@ export default function NextJobsPage() {
             minHeight: OUTSTANDING_GRID_MAX_HEIGHT_PX,
             flexShrink: 0,
             transition: "all 0.2s ease",
-            backgroundColor: dragOverTarget === "outstanding" ? "var(--surface-light)" : "var(--surface)" // Highlight entire box
+            backgroundColor: dragOverTarget === "outstanding" ? "var(--search-surface-muted)" : "var(--search-surface)" // Highlight entire box
           }}
           onDragOver={handleDragOver}
           onDragEnter={(e) => handleDragEnterSection("outstanding", e)}
@@ -1294,7 +1294,7 @@ export default function NextJobsPage() {
           </div>
           
           <input
-            type="text"
+            type="search"
             placeholder="Search job number, reg, or customer..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)} // Update search term
@@ -1302,13 +1302,15 @@ export default function NextJobsPage() {
               padding: "10px 12px",
               marginBottom: "12px",
               borderRadius: "8px",
-              border: "1px solid var(--surface-light)",
+              border: "1px solid var(--search-surface-muted)",
+              backgroundColor: "var(--search-surface)",
+              color: "var(--search-text)",
               fontSize: "14px",
               outline: "none",
               transition: "border-color 0.2s"
             }}
             onFocus={(e) => e.currentTarget.style.borderColor = "var(--primary)"}
-            onBlur={(e) => e.currentTarget.style.borderColor = "var(--surface-light)"}
+            onBlur={(e) => e.currentTarget.style.borderColor = "var(--search-surface-muted)"}
           />
 
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>

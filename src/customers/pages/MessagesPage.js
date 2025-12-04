@@ -813,9 +813,9 @@ export default function CustomerMessagesPage() {
                     value={composerSearch}
                     onChange={(event) => setComposerSearch(event.target.value)}
                     placeholder="Find teammates by name or email"
-                    className="w-full rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-sm text-slate-900 focus:border-[var(--primary)] focus:outline-none"
+                    className="w-full rounded-2xl border border-[var(--search-surface-muted)] bg-[var(--search-surface)] px-4 py-3 text-sm text-[var(--search-text)] focus:border-[var(--primary)] focus:outline-none"
                   />
-                  <div className="max-h-60 overflow-y-auto space-y-2 rounded-2xl border border-[var(--surface-light)] bg-white p-3">
+                  <div className="max-h-60 overflow-y-auto space-y-2 rounded-2xl border border-[var(--search-surface-muted)] bg-[var(--search-surface)] p-3">
                     {composerLoading && (
                       <p className="text-sm text-slate-500">Searching your roster…</p>
                     )}

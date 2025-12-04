@@ -351,7 +351,7 @@ export default function StatusSidebar({
             <form onSubmit={handleSearch} style={{ marginTop: '12px' }}>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input
-                  type="text"
+                  type="search"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Enter job number..."
@@ -359,11 +359,11 @@ export default function StatusSidebar({
                     flex: 1,
                     padding: '10px 14px',
                     borderRadius: '8px',
-                    border: '2px solid var(--surface-light)',
+                    border: '2px solid var(--search-surface-muted)',
                     fontSize: '14px',
-                    color: 'var(--text-primary)',
+                    color: 'var(--search-text)',
                     outline: 'none',
-                    backgroundColor: 'var(--surface)',
+                    backgroundColor: 'var(--search-surface)',
                     boxShadow: '0 2px 4px rgba(var(--shadow-rgb),0.02)'
                   }}
                 />

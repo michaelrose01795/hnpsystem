@@ -865,8 +865,9 @@ function MessagesPage() {
                   width: "100%",
                   padding: "12px 14px",
                   borderRadius: radii.lg,
-                  border: `1px solid ${palette.border}`,
-                  backgroundColor: "var(--surface)",
+                  border: "1px solid var(--search-surface-muted)",
+                  backgroundColor: "var(--search-surface)",
+                  color: "var(--search-text)",
                 }}
               />
 
@@ -1296,10 +1297,10 @@ function MessagesPage() {
                   <div
                     style={{
                       marginTop: "12px",
-                      border: `1px dashed ${palette.border}`,
+                      border: "1px dashed var(--search-surface-muted)",
                       borderRadius: "16px",
                       padding: "12px",
-                      backgroundColor: "var(--surface)",
+                      backgroundColor: "var(--search-surface)",
                       display: "flex",
                       flexDirection: "column",
                       gap: "10px",
@@ -1317,8 +1318,9 @@ function MessagesPage() {
                         width: "100%",
                         padding: "10px 12px",
                         borderRadius: radii.lg,
-                        border: `1px solid ${palette.border}`,
-                        backgroundColor: "var(--surface)",
+                        border: "1px solid var(--search-surface-muted)",
+                        backgroundColor: "var(--search-surface)",
+                        color: "var(--search-text)",
                       }}
                     />
                     {groupSearchTerm.trim().length > 0 && groupSearchTerm.trim().length < 2 && (

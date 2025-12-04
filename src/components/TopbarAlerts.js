@@ -44,6 +44,8 @@ export default function TopbarAlerts() {
   const { alerts, dismissAlert } = useAlerts();
   if (!alerts.length) return null;
 
+  const latestAlerts = alerts.slice(-1);
+
   return (
     <div
       style={{
@@ -57,7 +59,7 @@ export default function TopbarAlerts() {
         maxWidth: "360px",
       }}
     >
-      {alerts.map((alert) => {
+      {latestAlerts.map((alert) => {
         const tone = getTone(alert.type);
         return (
           <div

@@ -227,17 +227,18 @@ export default function Dashboard() {
         >
           <div
             style={{
-              backgroundColor: "var(--surface)",
+              backgroundColor: "var(--search-surface)",
               padding: "30px",
               borderRadius: "10px",
               width: "400px",
               maxWidth: "90%",
               boxShadow: "0 20px 45px rgba(var(--shadow-rgb),0.2)",
+              border: "1px solid var(--search-surface-muted)",
             }}
           >
             <h2 style={{ marginBottom: "16px", color: "var(--primary)" }}>Search Jobs</h2>
             <input
-              type="text"
+              type="search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by job number, reg, or customer"
@@ -245,8 +246,11 @@ export default function Dashboard() {
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "6px",
-                border: "1px solid var(--surface-light)",
+                border: "1px solid var(--search-surface-muted)",
                 marginBottom: "12px",
+                outline: "none",
+                backgroundColor: "var(--search-surface)",
+                color: "var(--search-text)",
               }}
             />
             <button

@@ -7,6 +7,13 @@
   box-sizing: border-box;
 }
 
+*,
+*::before,
+*::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
 html,
 body,
 #__next {
@@ -16,7 +23,7 @@ body,
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-  background: var(--background);
+  background: var(--layer-gradient);
   color: var(--text-primary);
   line-height: 1.35;
   min-height: 100%;
@@ -80,12 +87,12 @@ button {
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s;
+  transition: background 0.2s;
   transform: none;
+  box-shadow: none;
 }
 button:hover {
   background: var(--primary-light);
-  box-shadow: 0 1px 4px rgba(var(--shadow-rgb), 0.25);
 }
 
 /* Inputs, Textareas & Selects */
@@ -93,6 +100,7 @@ input[type="text"],
 input[type="number"],
 input[type="email"],
 input[type="date"],
+input[type="search"],
 textarea,
 select {
   width: 100%;
@@ -105,20 +113,28 @@ select {
   outline: none;
   background-color: var(--surface-light);
   color: var(--text-primary);
-  box-shadow: 0 2px 4px rgba(var(--shadow-rgb), 0.08);
+  box-shadow: none;
+}
+
+input[type="search"] {
+  background-color: var(--search-surface);
+  border-color: var(--search-surface-muted);
+  color: var(--search-text);
+}
+
+input[type="search"]::placeholder {
+  color: var(--grey-accent);
 }
 input:hover,
 textarea:hover,
 select:hover {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
 }
 input:focus,
 textarea:focus,
 select:focus {
   border-color: var(--primary-light);
   background-color: var(--surface);
-  box-shadow: 0 4px 8px rgba(var(--primary-rgb), 0.12);
 }
 
 /* Placeholder style */
@@ -143,79 +159,36 @@ section,
 div.card,
 div.news-card {
   border-radius: 10px;
-  background-color: var(--surface);
   padding: 14px;
-  margin-bottom: 14px; /* tighter spacing between cards */
-  box-shadow:
-    0 4px 10px rgba(var(--shadow-rgb), 0.06),
-    0 0 12px rgba(var(--primary-rgb), 0.06); /* subtle glow */
-  transition: all 0.3s ease, box-shadow 0.4s ease;
+  margin-bottom: 14px;
+  background: var(--layer-section-level-1);
+  border: 1px solid var(--border);
+  transition: background 0.3s ease;
 }
-section:hover,
-div.card:hover,
-div.news-card:hover {
-  transform: translateY(-3px); /* floating lift */
-  box-shadow:
-    0 8px 16px rgba(var(--shadow-rgb), 0.16),
-    0 0 18px rgba(var(--primary-rgb), 0.18); /* stronger glow on hover */
-  border-color: var(--primary-light);
+section:nth-of-type(4n + 1),
+div.card:nth-of-type(4n + 1),
+div.news-card:nth-of-type(4n + 1) {
+  background: var(--layer-section-level-1);
+}
+section:nth-of-type(4n + 2),
+div.card:nth-of-type(4n + 2),
+div.news-card:nth-of-type(4n + 2) {
+  background: var(--layer-section-level-2);
+}
+section:nth-of-type(4n + 3),
+div.card:nth-of-type(4n + 3),
+div.news-card:nth-of-type(4n + 3) {
+  background: var(--layer-section-level-3);
+}
+section:nth-of-type(4n),
+div.card:nth-of-type(4n),
+div.news-card:nth-of-type(4n) {
+  background: var(--layer-section-level-4);
 }
 
-/* Optional: glowing effect for headings inside cards */
 div.news-card h3,
 div.card h3 {
-  transition: text-shadow 0.3s ease;
-}
-div.news-card:hover h3,
-div.card:hover h3 {
-  text-shadow: 0 0 8px rgba(var(--primary-rgb), 0.6);
-}
-
-/* Dark mode overrides: flatter sections/buttons + layered greys */
-:root[data-theme="dark"] #__next {
-  background: var(--layer-gradient);
-}
-
-:root[data-theme="dark"] button {
-  box-shadow: none;
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-:root[data-theme="dark"] button:hover {
-  box-shadow: none;
-  background: var(--primary-light);
-}
-
-:root[data-theme="dark"] section,
-:root[data-theme="dark"] div.card,
-:root[data-theme="dark"] div.news-card {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: var(--layer-section-medium);
-  box-shadow: none;
-}
-
-:root[data-theme="dark"] section:nth-of-type(4n + 1),
-:root[data-theme="dark"] div.card:nth-of-type(4n + 1),
-:root[data-theme="dark"] div.news-card:nth-of-type(4n + 1) {
-  background: var(--layer-section-light);
-}
-
-:root[data-theme="dark"] section:nth-of-type(4n + 2),
-:root[data-theme="dark"] div.card:nth-of-type(4n + 2),
-:root[data-theme="dark"] div.news-card:nth-of-type(4n + 2) {
-  background: var(--layer-section-medium);
-}
-
-:root[data-theme="dark"] section:nth-of-type(4n + 3),
-:root[data-theme="dark"] div.card:nth-of-type(4n + 3),
-:root[data-theme="dark"] div.news-card:nth-of-type(4n + 3) {
-  background: var(--layer-section-dark);
-}
-
-:root[data-theme="dark"] section:nth-of-type(4n),
-:root[data-theme="dark"] div.card:nth-of-type(4n),
-:root[data-theme="dark"] div.news-card:nth-of-type(4n) {
-  background: var(--layer-section-deep);
+  text-shadow: none;
 }
 
 /* ========================================================= */
@@ -259,133 +232,6 @@ div.card:hover h3 {
 }
 
 /* ========================================================= */
-/* === Dark Mode Overrides === */
-/* ========================================================= */
-body.dark-mode {
-  background-color: var(--background) !important;
-  color: var(--text-primary) !important;
-}
-
-/* Smooth transition for all main elements */
-body,
-div,
-section,
-main,
-header,
-aside {
-  transition: background-color 0.3s, color 0.3s;
-}
-
-/* Dark mode containers & layout */
-body.dark-mode div,
-body.dark-mode section,
-body.dark-mode main,
-body.dark-mode header,
-body.dark-mode aside {
-  background-color: inherit !important;
-  color: inherit !important;
-}
-
-/* Strip gradients in dark mode for sections, cards, tabs, and buttons */
-body.dark-mode [style*="linear-gradient"],
-body.dark-mode [class*="bg-gradient"] {
-  background-image: none !important;
-}
-
-body.dark-mode section[style*="linear-gradient"],
-body.dark-mode div[style*="linear-gradient"],
-body.dark-mode main[style*="linear-gradient"],
-body.dark-mode header[style*="linear-gradient"],
-body.dark-mode aside[style*="linear-gradient"] {
-  background-color: var(--surface) !important;
-}
-
-body.dark-mode button[style*="linear-gradient"],
-body.dark-mode a[style*="linear-gradient"],
-body.dark-mode .tab[style*="linear-gradient"],
-body.dark-mode .tab-button[style*="linear-gradient"] {
-  background-color: var(--primary) !important;
-  border-color: var(--primary) !important;
-  color: var(--text-inverse) !important;
-}
-
-/* Popups & modals */
-body.dark-mode .popup,
-body.dark-mode .modal,
-body.dark-mode .dialog,
-body.dark-mode .overlay,
-body.dark-mode [class*="popup"],
-body.dark-mode [class*="modal"],
-body.dark-mode [class*="dialog"] {
-  background-color: var(--surface) !important;
-  color: var(--text-primary) !important;
-  border: 1px solid var(--border) !important;
-  box-shadow: 0 12px 28px rgba(var(--shadow-rgb), 0.35) !important;
-}
-
-/* Popup blur + grey lock effect */
-.popup-backdrop,
-.modal-backdrop,
-.dialog-backdrop {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(8, 9, 14, 0.78);
-  backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.25rem;
-  z-index: 1100;
-  transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
-}
-
-body.dark-mode .popup-backdrop {
-  background-color: rgba(5, 5, 8, 0.85);
-}
-
-.popup-card {
-  width: min(520px, 100%);
-  background: var(--surface);
-  color: var(--text-primary);
-  border-radius: 18px;
-  border: 1px solid var(--border);
-  box-shadow: 0 24px 60px rgba(var(--shadow-rgb), 0.32);
-}
-
-/* Buttons in dark mode */
-body.dark-mode button {
-  background-color: var(--primary) !important;
-  color: var(--surface) !important;
-  border: 1px solid var(--primary-light) !important;
-}
-body.dark-mode button:hover {
-  background-color: var(--primary) !important;
-}
-
-/* Inputs, selects, and textareas in dark mode */
-body.dark-mode input,
-body.dark-mode textarea,
-body.dark-mode select {
-  background-color: var(--surface) !important;
-  color: var(--text-primary) !important;
-  border-color: var(--border) !important;
-  box-shadow: none !important;
-}
-
-/* Links in dark mode */
-body.dark-mode a {
-  color: var(--primary) !important;
-}
-body.dark-mode a:hover {
-  color: var(--primary-light) !important;
-}
-
-/* Labels in dark mode */
-body.dark-mode label {
-  color: var(--text-primary) !important;
-}
-
-/* ========================================================= */
 /* === Misc / Utility Enhancements === */
 /* ========================================================= */
 hr {
@@ -402,12 +248,12 @@ hr {
 }
 
 .shadow-soft {
-  box-shadow: 0 2px 10px rgba(var(--shadow-rgb), 0.05);
-  transition: all 0.3s ease;
+  box-shadow: none !important;
+  transition: background-color 0.3s ease;
 }
 .shadow-soft:hover {
-  box-shadow: 0 6px 20px rgba(var(--shadow-rgb), 0.1);
-  transform: translateY(-2px);
+  box-shadow: none !important;
+  transform: none !important;
 }
 
 /* Main content wrapper spacing */

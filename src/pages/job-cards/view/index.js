@@ -510,13 +510,13 @@ export default function ViewJobCards() {
                   gap: "12px",
                   padding: "12px 18px",
                   borderRadius: "18px",
-                  border: "1px solid var(--info-surface)",
-                  background: "var(--info-surface)",
+                  border: "1px solid var(--search-surface-muted)",
+                  background: "var(--search-surface)",
                   boxShadow: "inset 0 1px 1px rgba(var(--shadow-rgb),0.05)",
                 }}
               >
                 <input
-                  type="text"
+                  type="search"
                   placeholder="Search job number, registration, or customer"
                   value={searchValues[activeTab]}
                   onChange={(event) =>
@@ -528,7 +528,7 @@ export default function ViewJobCards() {
                     outline: "none",
                     background: "transparent",
                     fontSize: "15px",
-                    color: "var(--accent-purple)",
+                    color: "var(--search-text)",
                   }}
                 />
               </div>

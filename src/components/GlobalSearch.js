@@ -201,10 +201,12 @@ const GlobalSearch = ({
     }
   };
 
-  const borderColor = isFocused ? accentColor : isDarkMode ? "var(--text-secondary)" : "var(--surface-light)";
-  const backgroundColor = isDarkMode ? "var(--text-primary)" : "var(--surface)";
-  const textColor = isDarkMode ? "var(--surface)" : "var(--text-primary)";
-  const placeholderColor = isDarkMode ? "var(--grey-accent)" : "var(--border)";
+  const searchBackground = isDarkMode ? "var(--search-surface)" : "var(--surface)";
+  const baseBorderColor = isDarkMode ? "rgba(var(--accent-purple-rgb), 0.65)" : "var(--surface-light)";
+  const borderColor = isFocused ? accentColor : baseBorderColor;
+  const textColor = isDarkMode ? "var(--search-text)" : "var(--text-primary)";
+  const placeholderColor = isDarkMode ? "rgba(10, 10, 12, 0.6)" : "var(--border)";
+  const drawerBorderColor = isDarkMode ? "rgba(var(--accent-purple-rgb), 0.45)" : "var(--surface)";
 
   return (
     <div
@@ -216,7 +218,7 @@ const GlobalSearch = ({
           display: "flex",
           alignItems: "center",
           gap: "8px",
-          backgroundColor,
+          backgroundColor: searchBackground,
           border: `1px solid ${borderColor}`,
           borderRadius: "999px",
           padding: "8px 12px",
@@ -243,9 +245,9 @@ const GlobalSearch = ({
             flex: 1,
             border: "none",
             outline: "none",
-            backgroundColor: "transparent",
-            color: textColor,
-            fontSize: "0.95rem",
+              backgroundColor: "transparent",
+              color: textColor,
+              fontSize: "0.95rem",
           }}
         />
 
@@ -259,7 +261,7 @@ const GlobalSearch = ({
               setFeedback("Search job numbers, customers, registrations…");
             }}
             style={{
-              background: "none",
+            background: "none",
               border: "none",
               cursor: "pointer",
               fontSize: "0.9rem",
@@ -281,8 +283,8 @@ const GlobalSearch = ({
             right: 0,
             padding: "12px 16px",
             borderRadius: "12px",
-            backgroundColor,
-            border: `1px solid ${isDarkMode ? "var(--text-secondary)" : "var(--surface)"}`,
+            backgroundColor: searchBackground,
+            border: `1px solid ${drawerBorderColor}`,
             boxShadow: "0 10px 30px rgba(var(--shadow-rgb),0.15)",
             color: textColor,
             fontSize: "0.85rem",
@@ -300,10 +302,10 @@ const GlobalSearch = ({
             top: "calc(100% + 12px)",
             left: 0,
             right: 0,
-            backgroundColor,
+            backgroundColor: searchBackground,
             borderRadius: "16px",
             boxShadow: "0 15px 40px rgba(var(--shadow-rgb),0.15)",
-            border: `1px solid ${isDarkMode ? "var(--text-secondary)" : "var(--surface-light)"}`,
+            border: `1px solid ${drawerBorderColor}`,
             overflow: "hidden",
             zIndex: 40,
           }}
@@ -332,7 +334,7 @@ const GlobalSearch = ({
                   borderBottom:
                     index === combinedResults.length - 1
                       ? "none"
-                      : `1px solid ${isDarkMode ? "var(--text-primary)" : "var(--surface)"}`,
+                      : `1px solid ${isDarkMode ? "rgba(var(--accent-purple-rgb), 0.3)" : "var(--surface)"}`,
                   backgroundColor: itemBackground,
                   color: itemColor,
                   cursor: "pointer",
@@ -359,8 +361,8 @@ const GlobalSearch = ({
                     fontSize: "0.7rem",
                     padding: "4px 8px",
                     borderRadius: "999px",
-                    backgroundColor: active ? accentColor : "var(--surface)",
-                    color: active ? "var(--surface)" : "var(--grey-accent)",
+                    backgroundColor: active ? accentColor : "var(--search-surface-muted)",
+                    color: active ? "var(--surface)" : textColor,
                     textTransform: "uppercase",
                     fontWeight: 700,
                     letterSpacing: "0.05em",
@@ -386,8 +388,8 @@ const GlobalSearch = ({
               right: 0,
               padding: "16px",
               borderRadius: "12px",
-              backgroundColor,
-              border: `1px solid ${isDarkMode ? "var(--text-secondary)" : "var(--surface)"}`,
+              backgroundColor: searchBackground,
+              border: `1px solid ${drawerBorderColor}`,
               boxShadow: "0 10px 30px rgba(var(--shadow-rgb),0.15)",
               color: textColor,
               fontSize: "0.85rem",

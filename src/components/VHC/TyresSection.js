@@ -84,7 +84,7 @@ export default function TyresSection({
           Search Tyre
         </label>
         <input
-          type="text"
+          type="search"
           value={query}
           placeholder="Search by make, size, load, or speed"
           onChange={(event) => setQuery(event.target.value)}
@@ -96,10 +96,10 @@ export default function TyresSection({
             width: "100%",
             padding: "12px 14px",
             borderRadius: "12px",
-            border: `1px solid ${palette.border}`,
-            backgroundColor: "var(--surface)",
+            border: "1px solid var(--search-surface-muted)",
+            backgroundColor: "var(--search-surface)",
             fontSize: "14px",
-            color: palette.textPrimary,
+            color: "var(--search-text)",
             boxShadow: isFocused ? "0 0 0 3px rgba(var(--primary-rgb),0.18)" : "inset 0 1px 2px rgba(var(--shadow-rgb),0.08)",
             transition: "box-shadow 0.2s ease, border-color 0.2s ease",
           }}
@@ -111,9 +111,9 @@ export default function TyresSection({
               top: "calc(100% + 8px)",
               left: 0,
               right: 0,
-              backgroundColor: "var(--surface)",
+              backgroundColor: "var(--search-surface)",
               borderRadius: "12px",
-              border: `1px solid ${palette.border}`,
+              border: "1px solid var(--search-surface-muted)",
               boxShadow: "0 18px 36px rgba(var(--shadow-rgb),0.12)",
               maxHeight: "220px",
               overflowY: "auto",
@@ -140,7 +140,7 @@ export default function TyresSection({
                   gap: "4px",
                 }}
                 onMouseEnter={(event) => {
-                  event.currentTarget.style.backgroundColor = "var(--surface-light)";
+                  event.currentTarget.style.backgroundColor = "var(--search-surface-muted)";
                 }}
                 onMouseLeave={(event) => {
                   event.currentTarget.style.backgroundColor = "transparent";

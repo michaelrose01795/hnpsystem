@@ -285,12 +285,13 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
       <div
         style={{
           width: "min(600px, 100%)",
-          background: "var(--surface)",
+          background: "var(--search-surface)",
           borderRadius: "24px",
           padding: "26px",
           display: "flex",
           flexDirection: "column",
           gap: "14px",
+          border: "1px solid var(--search-surface-muted)",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -318,10 +319,17 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
         </div>
 
         <input
+          type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={type === "car" ? "Search bays or overflow" : "Search key safes, drawers"}
-          style={{ padding: "10px 14px", borderRadius: "12px", border: "1px solid var(--accent-purple-surface)" }}
+          style={{
+            padding: "10px 14px",
+            borderRadius: "12px",
+            border: "1px solid var(--search-surface-muted)",
+            backgroundColor: "var(--search-surface)",
+            color: "var(--search-text)",
+          }}
         />
 
         <div style={{ maxHeight: "320px", overflow: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -331,8 +339,8 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
               style={{
                 padding: "14px",
                 borderRadius: "16px",
-                border: "1px solid var(--accent-purple-surface)",
-                background: "var(--surface)",
+                border: "1px solid var(--search-surface-muted)",
+                background: "var(--search-surface)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -364,7 +372,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
               style={{
                 padding: "18px",
                 borderRadius: "16px",
-                border: "1px dashed var(--info-surface)",
+                border: "1px dashed var(--search-surface-muted)",
                 textAlign: "center",
                 color: "var(--info)",
               }}
