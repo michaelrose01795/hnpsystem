@@ -159,6 +159,24 @@ const CALENDAR_SEVERITY_STYLES = {
   },
 };
 
+const SATURDAY_SEVERITY_STYLES = {
+  green: {
+    backgroundColor: "var(--success-dark)",
+    textColor: "var(--surface)",
+    borderColor: "var(--success)",
+  },
+  amber: {
+    backgroundColor: "var(--warning-dark)",
+    textColor: "var(--surface)",
+    borderColor: "var(--warning)",
+  },
+  red: {
+    backgroundColor: "var(--danger-dark)",
+    textColor: "var(--surface)",
+    borderColor: "var(--danger)",
+  },
+};
+
 const getBookingSeverity = (percent) => {
   if (Number.isNaN(percent)) return "green";
   if (percent >= 86) return "red";
@@ -1282,28 +1300,31 @@ export default function Appointments() {
             </thead>
             <tbody>
                 {dates.map((date) => {
-                  const dateKey = date.toDateString();
-                  const counts = getJobCounts(date);
-                  const staffEntries = staffAbsences[dateKey] || [];
-                  const isSelected = selectedDay.toDateString() === dateKey;
-                  const dayTechSummary = getDayTechSummary(date);
-                  const bookedHours = parseFloat(counts.totalHours) || 0;
-                  const totalAvailableHours =
-                    dayTechSummary.totalAvailableHours || DEFAULT_RETAIL_TECH_COUNT * DEFAULT_RETAIL_TECH_HOURS;
-                  const bookingPercent = totalAvailableHours > 0 ? (bookedHours / totalAvailableHours) * 100 : 0;
-                  const severity = getBookingSeverity(bookingPercent);
-                  const severityStyle = CALENDAR_SEVERITY_STYLES[severity] || {};
-                  const defaultRowBackground = severityStyle.backgroundColor || "var(--surface)";
-                  const rowBackground = isSelected ? "var(--surface-light)" : defaultRowBackground;
-                  const borderLeftStyle = isSelected
-                    ? "4px solid var(--primary)"
-                    : severityStyle.borderColor
-                    ? `4px solid ${severityStyle.borderColor}`
-                    : "4px solid transparent";
-                  const bookingPercentDisplay = Number.isFinite(bookingPercent)
-                    ? bookingPercent.toFixed(0)
-                    : "0";
-                  const availabilityLabelColor = severityStyle.textColor || "var(--text-primary)";
+                const dateKey = date.toDateString();
+                const counts = getJobCounts(date);
+                const staffEntries = staffAbsences[dateKey] || [];
+                const isSelected = selectedDay.toDateString() === dateKey;
+                const dayTechSummary = getDayTechSummary(date);
+                const bookedHours = parseFloat(counts.totalHours) || 0;
+                const totalAvailableHours =
+                  dayTechSummary.totalAvailableHours || DEFAULT_RETAIL_TECH_COUNT * DEFAULT_RETAIL_TECH_HOURS;
+                const bookingPercent = totalAvailableHours > 0 ? (bookedHours / totalAvailableHours) * 100 : 0;
+                const severity = getBookingSeverity(bookingPercent);
+                const isWeekendSaturday = date.getDay() === 6;
+                const severityStyleSource = isWeekendSaturday ? SATURDAY_SEVERITY_STYLES : CALENDAR_SEVERITY_STYLES;
+                const severityStyle = severityStyleSource[severity] || CALENDAR_SEVERITY_STYLES[severity] || {};
+                const defaultRowBackground = severityStyle.backgroundColor || "var(--surface)";
+                const rowBackground = isSelected ? "var(--surface-light)" : defaultRowBackground;
+                const severityBorderLeft =
+                  severityStyle.borderColor ? `4px solid ${severityStyle.borderColor}` : "4px solid transparent";
+                const computedBorderLeftStyle = isSelected ? "4px solid var(--primary)" : severityBorderLeft;
+                const bookingPercentDisplay = Number.isFinite(bookingPercent)
+                  ? bookingPercent.toFixed(0)
+                  : "0";
+                const availabilityLabelColor = severityStyle.textColor || "var(--text-primary)";
+                const todayShadow = isSameDate(date, new Date()) ? "0 0 0 2px var(--primary)" : "none";
+                const hoverShadow = "0 0 0 2px var(--primary)";
+                const baseBoxShadow = isSelected ? hoverShadow : todayShadow;
                 
                 return (
                   <tr
@@ -1313,16 +1334,17 @@ export default function Appointments() {
                       cursor: "pointer",
                       backgroundColor: rowBackground,
                       transition: "background-color 0.2s",
-                      borderLeft: borderLeftStyle,
+                      borderLeft: computedBorderLeftStyle,
+                      boxShadow: baseBoxShadow,
                     }}
                     onMouseEnter={(e) => {
                       if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = "var(--surface)";
+                        e.currentTarget.style.boxShadow = hoverShadow;
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = defaultRowBackground;
+                        e.currentTarget.style.boxShadow = baseBoxShadow;
                       }
                     }}
                   >

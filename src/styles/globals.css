@@ -241,6 +241,18 @@ hr {
   margin: 10px 0;
 }
 
+.bg-core-purple,
+[class*="bg-[var(--primary)"] {
+  color: var(--text-inverse);
+}
+[class*="bg-[var(--primary)"] * {
+  color: inherit !important;
+}
+[style*="background: var(--primary)"],
+[style*="background-color: var(--primary)"] {
+  color: var(--text-inverse);
+}
+
 .text-gradient {
   background: var(--primary);
   -webkit-background-clip: text;
