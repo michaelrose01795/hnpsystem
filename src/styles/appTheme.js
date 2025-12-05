@@ -1,4 +1,4 @@
-// file location: src/styles/appTheme.js
+// file location: src/styles/appTheme.js 
 // Centralised styling tokens for the VHC workspace and broader app shell.
 
 const palette = {
