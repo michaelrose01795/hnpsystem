@@ -50,6 +50,10 @@
   --calendar-saturday-row-bg: #fff8ed;
   --calendar-amber-selected-bg: #ffe2c4;
   --calendar-red-selected-bg: #ffd6d6;
+  --calendar-today-row-bg: linear-gradient(90deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.03));
+  --calendar-today-row-border: rgba(var(--primary-rgb), 0.35);
+  --calendar-today-pill-bg: rgba(var(--primary-rgb), 0.16);
+  --calendar-today-pill-text: var(--text-primary);
   --search-surface: var(--surface);
   --search-surface-muted: var(--surface-light);
   --search-text: #000000;
@@ -114,6 +118,10 @@
   --calendar-saturday-row-bg: #1c1a27;
   --calendar-amber-selected-bg: #3b2a40;
   --calendar-red-selected-bg: #2c1f33;
+  --calendar-today-row-bg: linear-gradient(90deg, rgba(var(--primary-rgb), 0.22), rgba(var(--primary-rgb), 0.12));
+  --calendar-today-row-border: rgba(var(--primary-rgb), 0.55);
+  --calendar-today-pill-bg: rgba(var(--primary-rgb), 0.26);
+  --calendar-today-pill-text: var(--text-primary);
   --search-surface: var(--accent-purple);
   --search-surface-muted: rgba(var(--accent-purple-rgb), 0.9);
   --search-text: #000000;
