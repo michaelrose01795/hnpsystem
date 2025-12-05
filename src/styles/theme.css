@@ -46,9 +46,11 @@
   --accent-orange-rgb: 251, 146, 60;
   --accent-blue: #0ea5e9;
   --accent-blue-surface: #e0f2fe;
+  --calendar-selection-border: #facc15;
+  --calendar-saturday-row-bg: #fff8ed;
   --search-surface: var(--surface);
   --search-surface-muted: var(--surface-light);
-  --search-text: var(--text-primary);
+  --search-text: #000000;
   --overlay: rgba(var(--primary-rgb), 0.35);
   --shadow-rgb: 209, 0, 0;
   --layer-gradient: linear-gradient(180deg, #ffffff 0%, #fbfbfb 30%, #f5f5f5 60%, #efefef 100%);
@@ -106,9 +108,11 @@
   --accent-orange-rgb: 209, 193, 255;
   --accent-blue: #8f7cfb;
   --accent-blue-surface: rgba(var(--info-rgb), 0.2);
+  --calendar-selection-border: #f4b23a;
+  --calendar-saturday-row-bg: #1c1a27;
   --search-surface: var(--accent-purple);
   --search-surface-muted: rgba(var(--accent-purple-rgb), 0.9);
-  --search-text: var(--text-inverse);
+  --search-text: #000000;
   --overlay: rgba(var(--accent-purple-rgb), 0.5);
   --shadow-rgb: 180, 170, 220;
   --layer-gradient: linear-gradient(180deg, #1f2027 0%, #181a21 35%, #12121a 70%, #0d0d12 100%);

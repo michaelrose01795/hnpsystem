@@ -142,11 +142,6 @@ const DEFAULT_RETAIL_TECH_NAMES = [
 ];
 
 const CALENDAR_SEVERITY_STYLES = {
-  green: {
-    backgroundColor: "var(--success-surface)",
-    textColor: "var(--success-dark)",
-    borderColor: "var(--success)",
-  },
   amber: {
     backgroundColor: "var(--warning-surface)",
     textColor: "var(--warning)",
@@ -160,11 +155,6 @@ const CALENDAR_SEVERITY_STYLES = {
 };
 
 const SATURDAY_SEVERITY_STYLES = {
-  green: {
-    backgroundColor: "var(--success-dark)",
-    textColor: "var(--surface)",
-    borderColor: "var(--success)",
-  },
   amber: {
     backgroundColor: "var(--warning-dark)",
     textColor: "var(--surface)",
@@ -1156,113 +1146,99 @@ export default function Appointments() {
       <div style={{ height: "100%", display: "flex", flexDirection: "column", padding: "8px 16px" }}>
 
         {/* Top Bar */}
-        <div style={{ 
-          display: "flex", 
-          gap: "12px", 
-          alignItems: "center", 
-          marginBottom: "12px", 
-          padding: "12px", 
-          backgroundColor: "var(--surface)", 
-          borderRadius: "8px", 
-          boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)" 
-        }}>
-          <button 
-            onClick={() => handleAddNote(selectedDay)} 
-            disabled={isLoading} 
-            style={{ 
-              padding: "10px 20px", 
-              backgroundColor: isLoading ? "var(--background)" : "var(--primary)", 
-              color: "white", 
-              border: "none", 
-              borderRadius: "8px", 
-              cursor: isLoading ? "not-allowed" : "pointer", 
-              fontWeight: "500", 
-              fontSize: "14px",
-              transition: "background-color 0.2s"
-            }}
-            onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = "var(--danger)")}
-            onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = "var(--primary)")}
-          >
-            Add Note
-          </button>
-
-          <input 
-            type="search" 
-            value={searchQuery} 
-            onChange={(e) => setSearchQuery(e.target.value)} 
-            placeholder="Search by Job #, Name, Reg, or Vehicle..." 
-            disabled={isLoading} 
-            style={{ 
-              flex: 1, 
-              padding: "10px 16px", 
-              borderRadius: "8px", 
-              border: "1px solid var(--search-surface-muted)", 
-              fontSize: "14px",
-              outline: "none",
-              backgroundColor: "var(--search-surface)",
-              color: "var(--search-text)",
-            }}
-            onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
-            onBlur={(e) => e.target.style.borderColor = "var(--search-surface-muted)"}
-          />
-
-          <input 
-            type="text" 
-            value={jobNumber} 
-            onChange={(e) => setJobNumber(e.target.value)} 
-            placeholder="Job Number" 
-            disabled={isLoading} 
-            style={{ 
-              width: "140px", 
-              padding: "10px 16px", 
-              borderRadius: "8px", 
-              border: "1px solid var(--surface-light)", 
-              fontSize: "14px",
-              outline: "none"
-            }}
-            onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
-            onBlur={(e) => e.target.style.borderColor = "var(--surface-light)"}
-          />
-
-          <select 
-            value={time} 
-            onChange={(e) => setTime(e.target.value)} 
-            disabled={isLoading} 
-            style={{ 
-              width: "120px", 
-              padding: "10px 12px", 
-              borderRadius: "8px", 
-              border: "1px solid var(--surface-light)", 
-              fontSize: "14px",
-              cursor: "pointer",
-              outline: "none"
-            }}
-          >
-            <option value="">Select time</option>
-            {timeSlots.map((slot) => (
-              <option key={slot} value={slot}>{slot}</option>
-            ))}
-          </select>
-
-          <button 
-            onClick={() => handleAddAppointment(selectedDay.toISOString().split("T")[0])} 
-            disabled={isLoading} 
-            style={{ 
-              padding: "10px 20px", 
-              backgroundColor: isLoading ? "var(--background)" : "var(--primary)", 
-              color: "white", 
-              border: "none", 
-              borderRadius: "8px", 
-              cursor: isLoading ? "not-allowed" : "pointer", 
-              fontWeight: "600", 
-              fontSize: "14px",
-              transition: "background-color 0.2s"
-            }}
-            onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = "var(--danger)")}
-            onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = "var(--primary)")}
-          >
-            {isLoading ? "Booking..." : "Book Appointment"}
-          </button>
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            alignItems: "center",
+            marginBottom: "12px",
+            padding: "12px",
+            backgroundColor: "var(--surface)",
+            borderRadius: "8px",
+            boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
+          }}
+        >
+          <div style={{ flex: "1 1 50%" }}>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by Job #, Name, Reg, or Vehicle..."
+              disabled={isLoading}
+              style={{
+                width: "100%",
+                padding: "10px 16px",
+                borderRadius: "8px",
+                border: "1px solid var(--search-surface-muted)",
+                fontSize: "14px",
+                outline: "none",
+                backgroundColor: "var(--search-surface)",
+                color: "var(--search-text)",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+              onBlur={(e) => (e.target.style.borderColor = "var(--search-surface-muted)")}
+            />
+          </div>
+          <div style={{ flex: "1 1 50%", display: "flex", gap: "12px" }}>
+            <input
+              type="text"
+              value={jobNumber}
+              onChange={(e) => setJobNumber(e.target.value)}
+              placeholder="Job Number"
+              disabled={isLoading}
+              style={{
+                flex: 1,
+                padding: "10px 16px",
+                borderRadius: "8px",
+                border: "1px solid var(--surface-light)",
+                fontSize: "14px",
+                outline: "none",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+              onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+            />
+            <select
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              disabled={isLoading}
+              style={{
+                flex: 1,
+                padding: "10px 16px",
+                borderRadius: "8px",
+                border: "1px solid var(--surface-light)",
+                fontSize: "14px",
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              <option value="">Select time</option>
+              {timeSlots.map((slot) => (
+                <option key={slot} value={slot}>
+                  {slot}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => handleAddAppointment(selectedDay.toISOString().split("T")[0])}
+              disabled={isLoading}
+              style={{
+                flex: 1,
+                padding: "10px 16px",
+                backgroundColor: isLoading ? "var(--background)" : "var(--primary)",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: isLoading ? "not-allowed" : "pointer",
+                fontWeight: "600",
+                fontSize: "14px",
+                transition: "background-color 0.2s",
+              }}
+              onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = "var(--danger)")}
+              onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = "var(--primary)")}
+            >
+              {isLoading ? "Booking..." : "Book Appointment"}
+            </button>
+          </div>
         </div>
 
         {/* Calendar Table Container */}
@@ -1312,19 +1288,30 @@ export default function Appointments() {
                 const severity = getBookingSeverity(bookingPercent);
                 const isWeekendSaturday = date.getDay() === 6;
                 const severityStyleSource = isWeekendSaturday ? SATURDAY_SEVERITY_STYLES : CALENDAR_SEVERITY_STYLES;
-                const severityStyle = severityStyleSource[severity] || CALENDAR_SEVERITY_STYLES[severity] || {};
-                const defaultRowBackground = severityStyle.backgroundColor || "var(--surface)";
-                const rowBackground = isSelected ? "var(--surface-light)" : defaultRowBackground;
+                const severityStyle = severityStyleSource[severity];
+                const isCalmDay = severity === "green" || !severityStyle;
+                const defaultRowBackground = isCalmDay
+                  ? isWeekendSaturday
+                    ? "var(--calendar-saturday-row-bg)"
+                    : "var(--surface)"
+                  : severityStyle.backgroundColor || (isWeekendSaturday ? "var(--calendar-saturday-row-bg)" : "var(--surface)");
+                const rowBackground = defaultRowBackground;
                 const severityBorderLeft =
-                  severityStyle.borderColor ? `4px solid ${severityStyle.borderColor}` : "4px solid transparent";
-                const computedBorderLeftStyle = isSelected ? "4px solid var(--primary)" : severityBorderLeft;
+                  !isCalmDay && severityStyle?.borderColor
+                    ? `4px solid ${severityStyle.borderColor}`
+                    : "4px solid transparent";
                 const bookingPercentDisplay = Number.isFinite(bookingPercent)
                   ? bookingPercent.toFixed(0)
                   : "0";
-                const availabilityLabelColor = severityStyle.textColor || "var(--text-primary)";
-                const todayShadow = isSameDate(date, new Date()) ? "0 0 0 2px var(--primary)" : "none";
-                const hoverShadow = "0 0 0 2px var(--primary)";
-                const baseBoxShadow = isSelected ? hoverShadow : todayShadow;
+                const availabilityLabelColor = isCalmDay
+                  ? "var(--text-secondary)"
+                  : severityStyle?.textColor || "var(--text-primary)";
+                const todayShadow = isSameDate(date, new Date()) ? "0 0 0 2px var(--primary)" : null;
+                const selectedShadow = isSelected ? "0 0 0 2px var(--calendar-selection-border)" : null;
+                const baseShadows = [todayShadow, selectedShadow].filter(Boolean).join(", ");
+                const baseBoxShadow = baseShadows || "none";
+                const hoverShadow = "0 0 0 2px var(--accent-purple)";
+                const hoverComposite = baseShadows ? `${baseShadows}, ${hoverShadow}` : hoverShadow;
                 
                 return (
                   <tr
@@ -1334,18 +1321,14 @@ export default function Appointments() {
                       cursor: "pointer",
                       backgroundColor: rowBackground,
                       transition: "background-color 0.2s",
-                      borderLeft: computedBorderLeftStyle,
+                      borderLeft: severityBorderLeft,
                       boxShadow: baseBoxShadow,
                     }}
                     onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.boxShadow = hoverShadow;
-                      }
+                      e.currentTarget.style.boxShadow = hoverComposite;
                     }}
                     onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.boxShadow = baseBoxShadow;
-                      }
+                      e.currentTarget.style.boxShadow = baseBoxShadow;
                     }}
                   >
                     <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: isSelected ? "600" : "400" }}>
