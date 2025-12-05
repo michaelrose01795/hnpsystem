@@ -1290,12 +1290,23 @@ export default function Appointments() {
                 const severityStyleSource = isWeekendSaturday ? SATURDAY_SEVERITY_STYLES : CALENDAR_SEVERITY_STYLES;
                 const severityStyle = severityStyleSource[severity];
                 const isCalmDay = severity === "green" || !severityStyle;
+                const isToday = isSameDate(date, new Date());
                 const defaultRowBackground = isCalmDay
                   ? isWeekendSaturday
                     ? "var(--calendar-saturday-row-bg)"
                     : "var(--surface)"
                   : severityStyle.backgroundColor || (isWeekendSaturday ? "var(--calendar-saturday-row-bg)" : "var(--surface)");
-                const rowBackground = defaultRowBackground;
+                let rowBackground = defaultRowBackground;
+                if (!isToday && isSelected) {
+                  if (!isCalmDay) {
+                    rowBackground =
+                      severity === "amber"
+                        ? "var(--calendar-amber-selected-bg)"
+                        : "var(--calendar-red-selected-bg)";
+                  } else {
+                    rowBackground = isWeekendSaturday ? "var(--surface)" : "var(--calendar-saturday-row-bg)";
+                  }
+                }
                 const severityBorderLeft =
                   !isCalmDay && severityStyle?.borderColor
                     ? `4px solid ${severityStyle.borderColor}`
@@ -1306,7 +1317,7 @@ export default function Appointments() {
                 const availabilityLabelColor = isCalmDay
                   ? "var(--text-secondary)"
                   : severityStyle?.textColor || "var(--text-primary)";
-                const todayShadow = isSameDate(date, new Date()) ? "0 0 0 2px var(--primary)" : null;
+                const todayShadow = isToday ? "0 0 0 2px var(--primary)" : null;
                 const selectedShadow = isSelected ? "0 0 0 2px var(--calendar-selection-border)" : null;
                 const baseShadows = [todayShadow, selectedShadow].filter(Boolean).join(", ");
                 const baseBoxShadow = baseShadows || "none";

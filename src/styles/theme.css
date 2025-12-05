@@ -48,6 +48,8 @@
   --accent-blue-surface: #e0f2fe;
   --calendar-selection-border: #facc15;
   --calendar-saturday-row-bg: #fff8ed;
+  --calendar-amber-selected-bg: #ffe2c4;
+  --calendar-red-selected-bg: #ffd6d6;
   --search-surface: var(--surface);
   --search-surface-muted: var(--surface-light);
   --search-text: #000000;
@@ -110,6 +112,8 @@
   --accent-blue-surface: rgba(var(--info-rgb), 0.2);
   --calendar-selection-border: #f4b23a;
   --calendar-saturday-row-bg: #1c1a27;
+  --calendar-amber-selected-bg: #3b2a40;
+  --calendar-red-selected-bg: #2c1f33;
   --search-surface: var(--accent-purple);
   --search-surface-muted: rgba(var(--accent-purple-rgb), 0.9);
   --search-text: #000000;
