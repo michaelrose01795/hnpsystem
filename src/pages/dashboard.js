@@ -10,6 +10,7 @@ import ServiceManagerDashboard from "@/components/dashboards/ServiceManagerDashb
 import AfterSalesManagerDashboard from "@/components/dashboards/AfterSalesManagerDashboard"; // import after sales manager dashboard
 import RetailManagersDashboard from "@/components/dashboards/RetailManagersDashboard"; // import retail managers dashboard component
 import { roleCategories } from "@/config/users"; // import role category definitions
+import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
 const retailManagerRoles = (roleCategories?.Retail || []) // build a list of retail manager roles
   .filter((roleName) => /manager|director/i.test(roleName)) // keep only manager or director titles
@@ -213,27 +214,18 @@ export default function Dashboard() {
       {showSearch && (
         <div
           style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            backgroundColor: "rgba(var(--shadow-rgb),0.5)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1000,
+            ...popupOverlayStyles,
+            zIndex: 1300,
           }}
         >
           <div
             style={{
-              backgroundColor: "var(--search-surface)",
+              ...popupCardStyles,
               padding: "30px",
-              borderRadius: "10px",
-              width: "400px",
-              maxWidth: "90%",
-              boxShadow: "0 20px 45px rgba(var(--shadow-rgb),0.2)",
+              width: "min(420px, 90%)",
+              backgroundColor: "var(--search-surface)",
               border: "1px solid var(--search-surface-muted)",
+              color: "var(--search-text)",
             }}
           >
             <h2 style={{ marginBottom: "16px", color: "var(--primary)" }}>Search Jobs</h2>

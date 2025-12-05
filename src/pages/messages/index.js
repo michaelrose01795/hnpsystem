@@ -1304,9 +1304,10 @@ function MessagesPage() {
                       display: "flex",
                       flexDirection: "column",
                       gap: "10px",
+                      color: "var(--search-text)",
                     }}
                   >
-                    <strong style={{ fontSize: "0.85rem", color: palette.accent }}>
+                    <strong style={{ fontSize: "0.85rem", color: "var(--search-text)" }}>
                       Manage group members
                     </strong>
                     <input
@@ -1324,12 +1325,12 @@ function MessagesPage() {
                       }}
                     />
                     {groupSearchTerm.trim().length > 0 && groupSearchTerm.trim().length < 2 && (
-                      <p style={{ margin: 0, fontSize: "0.75rem", color: palette.textMuted }}>
+                      <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--search-text)" }}>
                         Keep typing at least 2 letters to search.
                       </p>
                     )}
                     {groupSearchLoading && (
-                      <p style={{ margin: 0, fontSize: "0.8rem", color: palette.textMuted }}>
+                      <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--search-text)" }}>
                         Looking up colleagues…
                       </p>
                     )}

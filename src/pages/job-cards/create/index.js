@@ -19,6 +19,7 @@ import { addJobToDatabase, addJobFile } from "@/lib/database/jobs";
 import { supabase } from "@/lib/supabaseClient"; // import supabase client for job request inserts
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import new customer popup
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
+import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
 const JOB_TYPE_RULES = [
   { label: "MOT", keywords: ["mot"] },
@@ -2124,30 +2125,20 @@ export default function CreateJobCardPage() {
         {showDocumentsPopup && (
           <div
             style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(var(--shadow-rgb),0.55)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 1100,
+              ...popupOverlayStyles,
+              zIndex: 1300,
             }}
             onClick={() => setShowDocumentsPopup(false)}
           >
             <div
               onClick={(e) => e.stopPropagation()}
               style={{
+                ...popupCardStyles,
                 width: "520px",
                 maxWidth: "90%",
                 maxHeight: "90vh",
                 overflowY: "auto",
-                backgroundColor: "var(--surface)",
-                borderRadius: "18px",
                 padding: "28px",
-                boxShadow: "0 24px 60px rgba(var(--shadow-rgb),0.35)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",

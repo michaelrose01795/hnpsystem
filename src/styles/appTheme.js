@@ -411,6 +411,29 @@ export const vhcModalContentStyles = {
   },
 };
 
+export const popupOverlayStyles = {
+  position: "fixed",
+  inset: 0,
+  backgroundColor: "rgba(8, 9, 14, 0.78)",
+  backdropFilter: "blur(8px)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "24px",
+  zIndex: 1200,
+};
+
+export const popupCardStyles = {
+  width: "min(640px, 100%)",
+  maxHeight: "90vh",
+  background: palette.modalGradient,
+  borderRadius: radii.xl,
+  border: `1px solid ${palette.border}`,
+  boxShadow: "0 28px 68px rgba(var(--shadow-rgb), 0.28)",
+  color: palette.textPrimary,
+  overflowY: "auto",
+};
+
 export const appShellTheme = {
   palette,
   radii,

@@ -7,6 +7,7 @@ import Layout from "@/components/Layout"; // import layout wrapper
 import { useNextAction } from "@/context/NextActionContext"; // import next action context
 import { useRouter } from "next/router"; // for navigation
 import { getAllJobs, updateJobStatus } from "@/lib/database/jobs"; // import database functions
+import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
 const TODAY_STATUSES = [
   "Booked",
@@ -513,6 +514,7 @@ export default function ViewJobCards() {
                   border: "1px solid var(--search-surface-muted)",
                   background: "var(--search-surface)",
                   boxShadow: "inset 0 1px 1px rgba(var(--shadow-rgb),0.05)",
+                  color: "var(--search-text)",
                 }}
               >
                 <input
@@ -666,30 +668,21 @@ export default function ViewJobCards() {
           {popupJob && (
             <div
               style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              backgroundColor: "rgba(var(--shadow-rgb),0.5)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 1000,
+                ...popupOverlayStyles,
+                zIndex: 1200,
               }}
               onClick={() => setPopupJob(null)}
             >
               <div
                 onClick={(e) => e.stopPropagation()}
                 style={{
-                  backgroundColor: "var(--surface)",
+                  ...popupCardStyles,
                   padding: "32px",
-                  borderRadius: "16px",
                   maxWidth: "700px",
                   width: "90%",
                   maxHeight: "85vh",
                   overflowY: "auto",
-                  boxShadow: "0 20px 60px rgba(var(--shadow-rgb),0.3)"
+                  boxShadow: "0 20px 60px rgba(var(--shadow-rgb),0.3)",
                 }}
               >
               {/* Popup Header */}

@@ -9,6 +9,7 @@ import {
 } from "@/lib/partsPipeline";
 import { supabase } from "@/lib/supabaseClient";
 import DeliverySchedulerModal from "@/components/Parts/DeliverySchedulerModal";
+import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
 const PRE_PICK_OPTIONS = [
   { value: "", label: "Not assigned" },
@@ -621,19 +622,19 @@ function PartsPortalPage() {
     return (
       <div
         style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(var(--shadow-rgb),0.4)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
+          ...popupOverlayStyles,
+          zIndex: 1400,
         }}
       >
-        <div style={{ ...cardStyle, width: "520px", maxHeight: "90vh", overflowY: "auto" }}>
+        <div
+          style={{
+            ...popupCardStyles,
+            width: "min(520px, 90vw)",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            padding: "28px",
+          }}
+        >
           <h2 style={{ ...sectionTitleStyle, marginBottom: "16px" }}>
             Add Part to Job {jobData?.jobNumber || ""}
           </h2>
@@ -796,16 +797,19 @@ function PartsPortalPage() {
     return (
       <div
         style={{
-          position: "fixed",
-          inset: 0,
-          backgroundColor: "rgba(var(--shadow-rgb),0.4)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
+          ...popupOverlayStyles,
+          zIndex: 1500,
         }}
       >
-        <div style={{ ...cardStyle, width: "520px", maxHeight: "90vh", overflowY: "auto" }}>
+        <div
+          style={{
+            ...popupCardStyles,
+            width: "min(520px, 90vw)",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            padding: "28px",
+          }}
+        >
           <h2 style={{ ...sectionTitleStyle, marginBottom: "16px" }}>Log Delivery</h2>
 
           <label style={{ display: "block", marginBottom: "12px" }}>

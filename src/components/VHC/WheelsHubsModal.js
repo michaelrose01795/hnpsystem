@@ -1,6 +1,6 @@
 // file location: src/components/VHC/WheelsHubsModal.js
 import React, { useMemo, useState } from "react"; // Import React for modal composition
-import themeConfig from "@/styles/appTheme"; // Use shared theme tokens for consistent styling
+import themeConfig, { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme"; // Use shared theme tokens for consistent styling
 import TyresSection from "@/components/VHC/TyresSection"; // Reuse tyre search component for managers and technicians
 import { getTyreDetails } from "@/lib/tyre/tyreAPI"; // Access placeholder tyre lookup helper
 
@@ -53,26 +53,19 @@ export default function WheelsHubsModal({
   return (
     <div
       style={{
-        position: "fixed", // Overlay over the whole viewport
-        inset: 0, // Stretch across the viewport
-        backgroundColor: "rgba(var(--shadow-rgb),0.45)", // Dim background behind modal
-        display: "flex", // Use flexbox for centring
-        alignItems: "center", // Vertically centre modal
-        justifyContent: "center", // Horizontally centre modal
-        zIndex: 1000, // Ensure modal sits on top of other UI
-        padding: "24px", // Add padding around modal for smaller screens
+        ...popupOverlayStyles,
+        zIndex: 1300,
+        padding: "24px",
       }}
       onClick={onClose}
     >
       <div
         onClick={(event) => event.stopPropagation()}
         style={{
+          ...popupCardStyles,
           width: "min(780px, 100%)", // Limit modal width for readability
           maxHeight: "90vh", // Prevent overflow from exceeding viewport height
           overflowY: "auto", // Allow scrolling when content is tall
-          backgroundColor: "var(--surface)", // Use white modal background
-          borderRadius: "20px", // Rounded modal corners
-          boxShadow: "0 24px 60px rgba(var(--shadow-rgb),0.25)", // Strong elevation shadow
           padding: "28px", // Internal padding for modal content
           display: "flex", // Use flex layout for vertical stacking
           flexDirection: "column", // Stack children vertically

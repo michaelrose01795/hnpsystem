@@ -7,6 +7,7 @@ import { useUser } from "@/context/UserContext";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { addConsumableOrder, listConsumablesForTracker } from "@/lib/database/consumables";
+import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
 const containerStyle = {
   flex: 1,
@@ -116,24 +117,16 @@ const orderHistoryRowStyle = {
 };
 
 const orderModalOverlayStyle = {
-  position: "fixed",
-  inset: 0,
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
+  ...popupOverlayStyles,
+  zIndex: 1200,
   padding: "16px",
-  backgroundColor: "rgba(var(--shadow-rgb),0.55)",
-  zIndex: 20,
 };
 
 const orderModalStyle = {
-  background: "var(--surface)",
-  borderRadius: "18px",
-  padding: "24px",
+  ...popupCardStyles,
   width: "100%",
   maxWidth: "520px",
-  boxShadow: "0 20px 45px rgba(var(--shadow-rgb),0.25)",
-  border: "1px solid var(--surface-light)",
+  padding: "28px",
   position: "relative",
 };
 
@@ -296,24 +289,16 @@ function toneToStyles(tone) {
 }
 
 const duplicateOverlayStyle = {
-  position: "fixed",
-  inset: 0,
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  backgroundColor: "rgba(var(--shadow-rgb),0.45)",
-  zIndex: 10,
+  ...popupOverlayStyles,
+  zIndex: 1300,
   padding: "16px",
 };
 
 const duplicateModalStyle = {
-  background: "var(--surface)",
-  borderRadius: "18px",
+  ...popupCardStyles,
   padding: "24px",
   maxWidth: "540px",
   width: "100%",
-  boxShadow: "0 20px 45px rgba(var(--shadow-rgb),0.25)",
-  border: "1px solid var(--surface-light)",
 };
 
 const statusBadgeStyles = {

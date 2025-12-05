@@ -1,7 +1,12 @@
 // file location: src/components/VHC/BrakesHubsDetailsModal.js
 import React, { useEffect, useMemo, useState } from "react";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
-import themeConfig, { createVhcButtonStyle, vhcModalContentStyles } from "@/styles/appTheme";
+import themeConfig, {
+  createVhcButtonStyle,
+  vhcModalContentStyles,
+  popupOverlayStyles,
+  popupCardStyles,
+} from "@/styles/appTheme";
 import BrakeDiagram from "@/components/VHC/BrakeDiagram";
 
 const palette = themeConfig.palette;
@@ -359,23 +364,15 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   };
 
   const popupOverlayStyle = {
-    position: "absolute",
-    inset: 0,
-    background: "rgba(var(--shadow-rgb),0.45)",
-    backdropFilter: "blur(6px)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 50,
+    ...popupOverlayStyles,
+    zIndex: 1200,
+    padding: "24px",
   };
 
   const popupCardStyle = {
-    width: "360px",
+    ...popupCardStyles,
+    width: "min(360px, 90vw)",
     padding: "24px",
-    borderRadius: "18px",
-    background: palette.surface,
-    border: `1px solid ${palette.border}`,
-    boxShadow: "0 18px 36px rgba(var(--shadow-rgb),0.18)",
     display: "flex",
     flexDirection: "column",
     gap: "12px",

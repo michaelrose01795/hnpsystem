@@ -6,6 +6,7 @@ import AdminUserForm from "@/components/Admin/AdminUserForm";
 import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
 import { useRoster } from "@/context/RosterContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
+import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
 export default function AdminUserManagement() {
   const { usersByRole, usersByRoleDetailed, allUsers, isLoading: rosterLoading } = useRoster();
@@ -355,25 +356,18 @@ const dangerButtonStyle = {
 };
 
 const modalOverlayStyle = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(var(--shadow-rgb),0.4)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
+  ...popupOverlayStyles,
+  zIndex: 1500,
   padding: "20px",
-  zIndex: 1000,
 };
 
 const modalContentStyle = {
-  background: "var(--surface)",
-  borderRadius: "16px",
-  padding: "20px",
+  ...popupCardStyles,
   width: "min(900px, 100%)",
-  boxShadow: "0 15px 40px rgba(var(--shadow-rgb),0.25)",
   display: "flex",
   flexDirection: "column",
   gap: "12px",
+  padding: "24px",
 };
 
 const modalCloseButtonStyle = {

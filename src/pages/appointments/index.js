@@ -351,6 +351,7 @@ export default function Appointments() {
   const [jobNumber, setJobNumber] = useState("");
   const [time, setTime] = useState("");
   const [highlightJob, setHighlightJob] = useState("");
+  const [jobParamActive, setJobParamActive] = useState(true);
   const [techAvailability, setTechAvailability] = useState({});
   const [isTechAvailabilityLoading, setIsTechAvailabilityLoading] = useState(false);
   const [techAvailabilityError, setTechAvailabilityError] = useState("");
@@ -613,9 +614,13 @@ export default function Appointments() {
     };
   }, [dates, fetchTechAvailability]);
 
+  useEffect(() => {
+    setJobParamActive(true);
+  }, [jobQueryParam]);
+
   // ✅ Handle jobNumber from URL parameters
   useEffect(() => {
-    if (!router.isReady) return;
+    if (!router.isReady || !jobParamActive) return;
     const jobParam = typeof jobQueryParam === "string" ? jobQueryParam : "";
     if (jobParam.trim().length > 0) {
       setJobNumber(jobParam);
@@ -625,7 +630,7 @@ export default function Appointments() {
         setTime(existingJob.appointment.time);
       }
     }
-  }, [router.isReady, jobQueryParam, jobs]);
+  }, [router.isReady, jobParamActive, jobQueryParam, jobs]);
 
   // ---------------- Notes ----------------
   const handleAddNote = (date) => {
@@ -655,6 +660,13 @@ export default function Appointments() {
     },
     [router]
   );
+
+  const handleJobNumberInputChange = (event) => {
+    if (jobParamActive) {
+      setJobParamActive(false);
+    }
+    setJobNumber(event.target.value);
+  };
 
   // ---------------- Add / Update Appointment ----------------
   const handleAddAppointment = async (customDate) => {
@@ -763,6 +775,7 @@ export default function Appointments() {
       );
 
       // ✅ Clear form
+      setJobParamActive(false);
       setJobNumber("");
       setTime("");
       setCurrentNote("");
@@ -1183,7 +1196,7 @@ export default function Appointments() {
             <input
               type="text"
               value={jobNumber}
-              onChange={(e) => setJobNumber(e.target.value)}
+              onChange={handleJobNumberInputChange}
               placeholder="Job Number"
               disabled={isLoading}
               style={{

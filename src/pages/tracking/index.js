@@ -7,6 +7,7 @@ import { useUser } from "@/context/UserContext";
 import { buildApiUrl } from "@/utils/apiClient";
 import { fetchTrackingSnapshot } from "@/lib/database/tracking";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
 const CAR_LOCATIONS = [
   { id: "service-side", label: "Service side" },
@@ -271,27 +272,21 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
   return (
     <div
       style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(var(--shadow-rgb),0.55)",
-        backdropFilter: "blur(4px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
-        zIndex: 50,
+        ...popupOverlayStyles,
+        zIndex: 200,
       }}
     >
       <div
         style={{
+          ...popupCardStyles,
           width: "min(600px, 100%)",
           background: "var(--search-surface)",
-          borderRadius: "24px",
           padding: "26px",
           display: "flex",
           flexDirection: "column",
           gap: "14px",
           border: "1px solid var(--search-surface-muted)",
+          color: "var(--search-text)",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -341,6 +336,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
                 borderRadius: "16px",
                 border: "1px solid var(--search-surface-muted)",
                 background: "var(--search-surface)",
+                color: "var(--search-text)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -374,7 +370,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
                 borderRadius: "16px",
                 border: "1px dashed var(--search-surface-muted)",
                 textAlign: "center",
-                color: "var(--info)",
+                color: "var(--search-text)",
               }}
             >
               No locations found.
@@ -410,23 +406,15 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
   return (
     <div
       style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(var(--shadow-rgb),0.55)",
-        backdropFilter: "blur(4px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
-        zIndex: 60,
+        ...popupOverlayStyles,
+        zIndex: 220,
       }}
     >
       <form
         onSubmit={handleSubmit}
         style={{
+          ...popupCardStyles,
           width: "min(720px, 100%)",
-          background: "var(--surface)",
-          borderRadius: "24px",
           padding: "28px",
           display: "flex",
           flexDirection: "column",

@@ -1,7 +1,12 @@
 // file location: src/components/VHC/ServiceIndicatorDetailsModal.js
 import React, { useEffect, useMemo, useState } from "react";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
-import themeConfig, { createVhcButtonStyle, vhcModalContentStyles } from "@/styles/appTheme";
+import themeConfig, {
+  createVhcButtonStyle,
+  vhcModalContentStyles,
+  popupOverlayStyles,
+  popupCardStyles,
+} from "@/styles/appTheme";
 
 const palette = themeConfig.palette;
 
@@ -439,25 +444,16 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
       {showConcernModal ? (
         <div
           style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(var(--shadow-rgb),0.55)",
-            backdropFilter: "blur(6px)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 10,
+            ...popupOverlayStyles,
+            zIndex: 1300,
+            padding: "24px",
           }}
         >
           <div
             style={{
-              width: "460px",
-              maxWidth: "92%",
+              ...popupCardStyles,
+              width: "min(460px, 92%)",
               maxHeight: "86%",
-              background: palette.surface,
-              borderRadius: "20px",
-              border: `1px solid ${palette.border}`,
-              boxShadow: "0 18px 36px rgba(var(--shadow-rgb),0.20)",
               padding: "24px",
               display: "flex",
               flexDirection: "column",

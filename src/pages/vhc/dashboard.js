@@ -731,6 +731,7 @@ export default function VHCDashboard() {
             borderRadius: "8px",
             boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
             flexShrink: 0,
+            color: "var(--search-text)",
           }}
         >
           <input

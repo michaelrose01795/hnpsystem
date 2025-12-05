@@ -9,6 +9,8 @@ import themeConfig, {
   vhcLayoutStyles,
   createVhcButtonStyle,
   vhcCardStates,
+  popupOverlayStyles,
+  popupCardStyles,
 } from "@/styles/appTheme";
 
 // 🧩 Import database helper
@@ -584,26 +586,18 @@ export default function VHCPAGE() {
         {!isEmbeddedView && showSummaryModal && (
           <div
             style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(var(--shadow-rgb),0.55)",
-              backdropFilter: "blur(4px)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              ...popupOverlayStyles,
               zIndex: 200,
               padding: "16px",
             }}
           >
             <div
               style={{
+                ...popupCardStyles,
                 width: "min(720px, 100%)",
                 maxHeight: "90vh",
                 overflow: "hidden",
-                background: "var(--surface)",
-                borderRadius: "20px",
                 border: "1px solid var(--accent-purple-surface)",
-                boxShadow: "0 20px 50px rgba(var(--shadow-rgb),0.18)",
                 display: "flex",
                 flexDirection: "column",
               }}

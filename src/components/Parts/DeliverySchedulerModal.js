@@ -1,15 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 const cardStyle = {
-  borderRadius: "18px",
-  border: "1px solid var(--surface-light)",
-  background: "var(--surface)",
-  padding: "20px",
-  boxShadow: "0 20px 40px rgba(var(--shadow-rgb),0.2)",
-  width: "min(520px, 100%)",
+  ...popupCardStyles,
+  padding: "28px",
+  width: "min(560px, 100%)",
+  boxShadow: "0 28px 60px rgba(var(--shadow-rgb),0.28)",
 };
 
 const buttonStyle = {
@@ -132,16 +131,7 @@ export default function DeliverySchedulerModal({
     <div
       role="dialog"
       aria-modal="true"
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(var(--shadow-rgb),0.6)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-        zIndex: 200,
-      }}
+      style={{ ...popupOverlayStyles, zIndex: 200 }}
     >
       <div style={cardStyle}>
         <div

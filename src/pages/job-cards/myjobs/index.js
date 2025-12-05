@@ -508,7 +508,8 @@ export default function MyJobsPage() {
           padding: "12px",
           backgroundColor: "var(--search-surface)",
           borderRadius: "12px",
-          boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)"
+          boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
+          color: "var(--search-text)"
         }}>
           {/* Search Input */}
           <input

@@ -5,13 +5,15 @@ import React, { useState, useRef, useEffect } from "react"; // React hooks for s
 import { useRouter } from "next/router"; // Next.js router for navigation
 import { useUser } from "@/context/UserContext"; // Custom user context (dev auth user)
 import { useConfirmation } from "@/context/ConfirmationContext";
-import { // Job clocking functions to start/stop time on jobs
+import {
+  // Job clocking functions to start/stop time on jobs
   clockInToJob,
   clockOutFromJob,
   getUserActiveJobs
 } from "@/lib/database/jobClocking"; // DB: job clocking
 import { getAllJobs } from "@/lib/database/jobs"; // DB: fetch list of jobs
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
+import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
 /* -------------------------- UI COMPONENT -------------------------- */
 
@@ -262,27 +264,20 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
   return (
     <div
       style={{
-        position: "fixed", // Full-screen overlay
-        inset: 0, // Cover viewport
-        backgroundColor: "rgba(var(--shadow-rgb),0.6)", // Dim backdrop
-        display: "flex", // Center content
-        justifyContent: "center", // Horizontally centered
-        alignItems: "center", // Vertically centered
-        zIndex: 1000, // On top
-        padding: "20px" // Page padding
+        ...popupOverlayStyles,
+        padding: "20px",
       }}
       onClick={onClose} // Click backdrop to close
     >
       <div
         style={{
-          backgroundColor: "var(--surface)", // Modal card
-          padding: "24px", // Inner spacing
-          borderRadius: "12px", // Rounded corners
+          ...popupCardStyles,
           width: "100%", // Responsive
           maxWidth: "600px", // Max width
           maxHeight: "90vh", // Constrain height
           overflowY: "auto", // Scroll content
-          boxShadow: "0 8px 32px rgba(var(--shadow-rgb),0.2)" // Shadow
+          padding: "24px", // Inner spacing
+          borderRadius: "20px",
         }}
         onClick={(e) => e.stopPropagation()} // Prevent overlay close when clicking inside
       >

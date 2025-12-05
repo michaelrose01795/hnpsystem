@@ -72,6 +72,7 @@ export default function ArchivedJobsPage() {
             padding: "16px",
             boxShadow: "0 10px 25px rgba(var(--shadow-rgb),0.06)",
             border: "1px solid var(--search-surface-muted)",
+            color: "var(--search-text)",
           }}
         >
           <input

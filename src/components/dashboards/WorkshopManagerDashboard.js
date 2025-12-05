@@ -6,6 +6,7 @@ import { getJobsByDate } from "@/lib/database/jobs";
 import { useClockingContext } from "@/context/ClockingContext";
 import dayjs from "dayjs";
 import { consumableOrderHistory } from "@/lib/data/consumablesSample";
+import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
 const monthKey = (dateString) => dayjs(dateString).format("YYYY-MM");
 const monthLabel = (key) => dayjs(`${key}-01`).format("MMMM YYYY");
@@ -72,27 +73,14 @@ export default function WorkshopManagerDashboard() {
   const monthOptions = availableConsumableMonths.length ? availableConsumableMonths : [selectedMonth];
 
   const modalOverlayStyle = {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    backgroundColor: "rgba(var(--shadow-rgb),0.45)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "20px",
-    zIndex: 1000,
+    ...popupOverlayStyles,
+    zIndex: 1400,
   };
 
   const modalCardStyle = {
-    backgroundColor: "var(--surface)",
-    borderRadius: "16px",
-    padding: "24px",
+    ...popupCardStyles,
     width: "min(960px, 100%)",
-    maxHeight: "90vh",
-    overflow: "auto",
-    boxShadow: "0 30px 60px rgba(var(--shadow-rgb),0.2)",
+    padding: "32px",
   };
 
   return (

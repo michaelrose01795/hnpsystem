@@ -5,6 +5,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
+import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
 export default function UploadChecksheet() {
   const router = useRouter();
@@ -121,26 +122,16 @@ export default function UploadChecksheet() {
         {showStatusPopup && (
           <div
             style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100vw",
-              height: "100vh",
-              backgroundColor: "rgba(var(--shadow-rgb),0.6)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 1000,
+              ...popupOverlayStyles,
+              zIndex: 1200,
             }}
           >
             <div
               style={{
-                background: "var(--surface)",
-                padding: "20px",
-                borderRadius: "8px",
+                ...popupCardStyles,
                 textAlign: "center",
-                width: "300px",
-                boxShadow: "0 4px 10px rgba(var(--shadow-rgb),0.2)",
+                width: "min(360px, 100%)",
+                padding: "24px",
               }}
             >
               <h3 style={{ color: "var(--primary)" }}>Update Job Status</h3>

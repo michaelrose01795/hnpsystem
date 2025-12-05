@@ -118,6 +118,7 @@ export default function TyresSection({
               maxHeight: "220px",
               overflowY: "auto",
               zIndex: 30,
+              color: "var(--search-text)",
             }}
           >
             {results.map((tyre) => (
@@ -146,10 +147,10 @@ export default function TyresSection({
                   event.currentTarget.style.backgroundColor = "transparent";
                 }}
               >
-                <span style={{ fontWeight: 600, fontSize: "14px", color: palette.textPrimary }}>
+                <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--search-text)" }}>
                   {`${tyre.make} ${tyre.size} ${tyre.load}${tyre.speed}`}
                 </span>
-                <span style={{ fontSize: "12px", color: palette.textMuted }}>
+                <span style={{ fontSize: "12px", color: "var(--search-text)" }}>
                   £{tyre.cost_company.toFixed(2)} company • £{tyre.cost_customer.toFixed(2)} customer • {tyre.availability}
                 </span>
               </button>

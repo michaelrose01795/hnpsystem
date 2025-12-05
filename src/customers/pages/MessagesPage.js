@@ -815,18 +815,18 @@ export default function CustomerMessagesPage() {
                     placeholder="Find teammates by name or email"
                     className="w-full rounded-2xl border border-[var(--search-surface-muted)] bg-[var(--search-surface)] px-4 py-3 text-sm text-[var(--search-text)] focus:border-[var(--primary)] focus:outline-none"
                   />
-                  <div className="max-h-60 overflow-y-auto space-y-2 rounded-2xl border border-[var(--search-surface-muted)] bg-[var(--search-surface)] p-3">
+                  <div className="max-h-60 overflow-y-auto space-y-2 rounded-2xl border border-[var(--search-surface-muted)] bg-[var(--search-surface)] p-3 text-[var(--search-text)]">
                     {composerLoading && (
-                      <p className="text-sm text-slate-500">Searching your roster…</p>
+                      <p className="text-sm text-[var(--search-text)]">Searching your roster…</p>
                     )}
                     {!composerLoading && composerError && (
-                      <p className="text-sm text-red-600">{composerError}</p>
+                      <p className="text-sm text-[var(--search-text)]">{composerError}</p>
                     )}
                     {!composerLoading && !composerError && !composerHasSearch && (
-                      <p className="text-sm text-slate-500">Type a name to see matching users.</p>
+                      <p className="text-sm text-[var(--search-text)]">Type a name to see matching users.</p>
                     )}
                     {!composerLoading && !composerError && composerHasSearch && composerResults.length === 0 && (
-                      <p className="text-sm text-slate-500">No users match that search.</p>
+                      <p className="text-sm text-[var(--search-text)]">No users match that search.</p>
                     )}
                     {!composerLoading && !composerError && composerResults.length > 0 && (
                       <div className="space-y-2">

@@ -1,7 +1,12 @@
 // file location: src/components/VHC/ExternalDetailsModal.js
 import React, { useState } from "react";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
-import themeConfig, { createVhcButtonStyle, vhcModalContentStyles } from "@/styles/appTheme";
+import themeConfig, {
+  createVhcButtonStyle,
+  vhcModalContentStyles,
+  popupOverlayStyles,
+  popupCardStyles,
+} from "@/styles/appTheme";
 
 const palette = themeConfig.palette;
 
@@ -236,25 +241,16 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
       {activeConcern.open ? (
         <div
           style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(var(--shadow-rgb),0.55)",
-            backdropFilter: "blur(6px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10,
+            ...popupOverlayStyles,
+            zIndex: 1400,
+            padding: "24px",
           }}
         >
           <div
             style={{
-              width: "420px",
-              maxWidth: "90%",
+              ...popupCardStyles,
+              width: "min(420px, 90%)",
               maxHeight: "86%",
-              background: palette.surface,
-              borderRadius: "20px",
-              border: `1px solid ${palette.border}`,
-              boxShadow: "0 18px 36px rgba(var(--shadow-rgb),0.20)",
               padding: "24px",
               display: "flex",
               flexDirection: "column",

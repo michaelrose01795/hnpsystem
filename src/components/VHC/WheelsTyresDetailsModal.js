@@ -1,7 +1,12 @@
 // file location: src/components/VHC/WheelsTyresDetailsModal.js
 import React, { useEffect, useMemo, useState } from "react";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
-import themeConfig, { createVhcButtonStyle, vhcModalContentStyles } from "@/styles/appTheme";
+import themeConfig, {
+  createVhcButtonStyle,
+  vhcModalContentStyles,
+  popupOverlayStyles,
+  popupCardStyles,
+} from "@/styles/appTheme";
 import TyreDiagram, { getReadingStatus } from "@/components/VHC/TyreDiagram";
 import TyresSection from "@/components/VHC/TyresSection"; // Import shared tyre search component
 
@@ -1012,24 +1017,15 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
       {concernTarget ? (
         <div
           style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(var(--shadow-rgb),0.55)",
-            backdropFilter: "blur(6px)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 20,
+            ...popupOverlayStyles,
+            zIndex: 1200,
+            padding: "24px",
           }}
         >
           <div
             style={{
-              width: "420px",
-              maxWidth: "92%",
-              borderRadius: "20px",
-              border: `1px solid ${palette.border}`,
-              background: palette.surface,
-              boxShadow: "0 18px 36px rgba(var(--shadow-rgb),0.20)",
+              ...popupCardStyles,
+              width: "min(420px, 92%)",
               padding: "24px",
               display: "flex",
               flexDirection: "column",

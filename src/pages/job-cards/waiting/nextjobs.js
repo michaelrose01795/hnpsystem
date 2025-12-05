@@ -7,7 +7,7 @@ import Layout from "@/components/Layout"; // Main layout wrapper
 import { useUser } from "@/context/UserContext"; // Logged-in user context
 import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router"; // Next.js router for navigation
-import { 
+import {
   assignTechnicianToJob, 
   unassignTechnicianFromJob, 
   updateJobPosition 
@@ -15,6 +15,7 @@ import {
 import { getTechnicianUsers, getMotTesterUsers } from "@/lib/database/users";
 import { normalizeDisplayName } from "@/utils/nameUtils";
 import { supabase } from "@/lib/supabaseClient";
+import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
 // Layout constants ensure consistent panel sizing and scroll thresholds
 const VISIBLE_JOBS_PER_PANEL = 5;
@@ -1270,7 +1271,8 @@ export default function NextJobsPage() {
             minHeight: OUTSTANDING_GRID_MAX_HEIGHT_PX,
             flexShrink: 0,
             transition: "all 0.2s ease",
-            backgroundColor: dragOverTarget === "outstanding" ? "var(--search-surface-muted)" : "var(--search-surface)" // Highlight entire box
+            backgroundColor: dragOverTarget === "outstanding" ? "var(--search-surface-muted)" : "var(--search-surface)", // Highlight entire box
+            color: "var(--search-text)"
           }}
           onDragOver={handleDragOver}
           onDragEnter={(e) => handleDragEnterSection("outstanding", e)}
@@ -1500,29 +1502,17 @@ export default function NextJobsPage() {
         {selectedJob && (
           <div
             style={{
-              backgroundColor: "rgba(var(--shadow-rgb),0.5)", // Semi-transparent overlay
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 1000,
+              ...popupOverlayStyles,
+              zIndex: 1200,
             }}
             onClick={handleCloseJobDetails} // Close when clicking overlay
           >
             <div
               style={{
-                    backgroundColor: "var(--surface)",
-                    padding: "24px",
-                borderRadius: "12px",
-                width: "500px",
-                maxWidth: "90%",
-                boxShadow: "0 8px 24px rgba(var(--shadow-rgb),0.3)",
-                border: "1px solid var(--surface-light)",
-                position: "relative"
+                ...popupCardStyles,
+                padding: "24px",
+                width: "min(500px, 90%)",
+                position: "relative",
               }}
               onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
             >
@@ -1694,28 +1684,16 @@ export default function NextJobsPage() {
         {assignPopup && (
           <div
             style={{
-              backgroundColor: "rgba(var(--shadow-rgb),0.5)", // Semi-transparent overlay
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 1001, // Above job details popup
+              ...popupOverlayStyles,
+              zIndex: 1300, // Above job details popup
             }}
             onClick={() => setAssignPopup(false)} // Close when clicking overlay
           >
             <div
               style={{
-                backgroundColor: "var(--surface)",
+                ...popupCardStyles,
+                width: "min(450px, 90%)",
                 padding: "24px",
-                borderRadius: "12px",
-                width: "450px",
-                maxWidth: "90%",
-                boxShadow: "0 8px 24px rgba(var(--shadow-rgb),0.3)",
-                border: "1px solid var(--surface-light)"
               }}
               onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
             >
