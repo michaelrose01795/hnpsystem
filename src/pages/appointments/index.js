@@ -1491,25 +1491,6 @@ export default function Appointments() {
           </div>
 
           <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
-            <div style={{ flex: "1", minWidth: "140px", background: "var(--surface)", borderRadius: "10px", padding: "12px", border: "1px solid var(--surface-light)" }}>
-              <div style={{ fontSize: "12px", color: "var(--grey-accent)", marginBottom: "6px" }}>Total Appointments</div>
-              <div style={{ fontSize: "20px", fontWeight: "700", color: "var(--text-primary)" }}>{checkinStatsForSelectedDay.total}</div>
-            </div>
-            <div style={{ flex: "1", minWidth: "140px", background: "var(--surface)", borderRadius: "10px", padding: "12px", border: "1px solid var(--surface-light)" }}>
-              <div style={{ fontSize: "12px", color: "var(--grey-accent)", marginBottom: "6px" }}>Checked In</div>
-              <div style={{ fontSize: "20px", fontWeight: "700", color: "var(--text-primary)" }}>{checkinStatsForSelectedDay.checkedIn}</div>
-            </div>
-            <div style={{ flex: "1", minWidth: "140px", background: "var(--surface)", borderRadius: "10px", padding: "12px", border: "1px solid var(--surface-light)" }}>
-              <div style={{ fontSize: "12px", color: "var(--grey-accent)", marginBottom: "6px" }}>
-                {isSameDate(selectedDay, new Date()) ? "Awaiting Check-in" : "Awaiting (today only)"}
-              </div>
-              <div style={{ fontSize: "20px", fontWeight: "700", color: "var(--text-primary)" }}>
-                {isSameDate(selectedDay, new Date()) ? checkinStatsForSelectedDay.awaiting : "-"}
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
             <button
               onClick={() => setActiveDayTab("jobs")}
               style={{

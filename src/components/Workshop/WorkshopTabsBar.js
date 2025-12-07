@@ -14,7 +14,7 @@ export const workshopTabs = [
 export const workshopQuickActions = [
   { href: "/job-cards/create", label: "Create Job Card" },
   { href: "/job-cards/appointments", label: "Appointments" },
-  { href: "/workshop/check-in", label: "Check In" },
+  { href: "/appointments", label: "Check In" },
 ];
 
 export default function WorkshopTabsBar() {

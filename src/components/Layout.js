@@ -56,7 +56,7 @@ const PARTS_NAV_ROLES = new Set(["parts", "parts manager"]);
 const SERVICE_ACTION_LINKS = [
   { label: "Create Job Card", href: "/job-cards/create" },
   { label: "Appointments", href: "/job-cards/appointments" },
-  { label: "Check In", href: "/workshop/check-in" },
+  { label: "Check In", href: "/appointments" },
 ];
 
 const MODE_STORAGE_KEY = "appModeSelection";

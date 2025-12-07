@@ -53,7 +53,7 @@ const formatCurrency = (value) =>
 const quickActions = [
   { label: "Create Job Card", href: "/job-cards/create" },
   { label: "Appointments", href: "/job-cards/appointments" },
-  { label: "Check In", href: "/workshop/check-in" },
+  { label: "Check In", href: "/appointments" },
 ];
 
 
