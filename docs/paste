@@ -1,622 +1,72 @@
--- file location: /database/seed_mock_data_final.sql
-
--- =====================================================
--- HUMPHRIES & PARKS DMS - COMPREHENSIVE MOCK DATA
--- =====================================================
--- FINAL CORRECTED VERSION: Handles mixed UUID/Integer schema
--- - customers.id = UUID
--- - vehicles.customer_id = UUID (FK to customers.id)
--- - jobs.customer_id = INTEGER (stores vehicle.vehicle_id)
--- - appointments.customer_id = INTEGER
--- =====================================================
-
-BEGIN;
-
--- =====================================================
--- 1. USERS & AUTHENTICATION
--- =====================================================
-
--- First, let's clear existing data if any
-TRUNCATE users, customers, vehicles, jobs, appointments, vhc_checks, vhc_send_history, 
-         vhc_authorizations, job_clocking, job_notes, job_writeups, parts_catalog,
-         parts_deliveries, parts_delivery_items, parts_job_items, message_threads,
-         message_thread_members, messages, notifications, hr_employee_profiles,
-         time_records, appointment_day_capacity, activity_logs CASCADE;
-
--- Admin & Management
-INSERT INTO users (user_id, first_name, last_name, email, password_hash, role, phone, created_at) VALUES
-(1, 'Julie', 'Thompson', 'julie@hnp.co.uk', '$2b$10$XYZ123...', 'Admin Manager', '07700900001', NOW() - INTERVAL '2 years'),
-(2, 'David', 'Wilson', 'david.wilson@hnp.co.uk', '$2b$10$XYZ123...', 'General Manager', '07700900002', NOW() - INTERVAL '2 years'),
-(3, 'Sarah', 'Mitchell', 'sarah.mitchell@hnp.co.uk', '$2b$10$XYZ123...', 'Workshop Manager', '07700900003', NOW() - INTERVAL '18 months'),
-(4, 'Robert', 'Clarke', 'robert.clarke@hnp.co.uk', '$2b$10$XYZ123...', 'Service Manager', '07700900004', NOW() - INTERVAL '18 months'),
-(5, 'Emma', 'Richards', 'emma.richards@hnp.co.uk', '$2b$10$XYZ123...', 'Parts Manager', '07700900005', NOW() - INTERVAL '1 year');
-
--- Workshop Technicians
-INSERT INTO users (user_id, first_name, last_name, email, password_hash, role, phone, created_at) VALUES
-(6, 'James', 'Anderson', 'james.anderson@hnp.co.uk', '$2b$10$XYZ123...', 'Senior Technician', '07700900006', NOW() - INTERVAL '3 years'),
-(7, 'Michael', 'Brown', 'michael.brown@hnp.co.uk', '$2b$10$XYZ123...', 'Senior Technician', '07700900007', NOW() - INTERVAL '3 years'),
-(8, 'Thomas', 'Davis', 'thomas.davis@hnp.co.uk', '$2b$10$XYZ123...', 'Technician', '07700900008', NOW() - INTERVAL '2 years'),
-(9, 'Daniel', 'Evans', 'daniel.evans@hnp.co.uk', '$2b$10$XYZ123...', 'Technician', '07700900009', NOW() - INTERVAL '2 years'),
-(10, 'Christopher', 'Taylor', 'chris.taylor@hnp.co.uk', '$2b$10$XYZ123...', 'Technician', '07700900010', NOW() - INTERVAL '1 year'),
-(11, 'Matthew', 'Johnson', 'matt.johnson@hnp.co.uk', '$2b$10$XYZ123...', 'Junior Technician', '07700900011', NOW() - INTERVAL '6 months'),
-(12, 'Andrew', 'White', 'andrew.white@hnp.co.uk', '$2b$10$XYZ123...', 'Junior Technician', '07700900012', NOW() - INTERVAL '6 months');
-
--- MOT Testers
-INSERT INTO users (user_id, first_name, last_name, email, password_hash, role, phone, created_at) VALUES
-(13, 'Peter', 'Harris', 'peter.harris@hnp.co.uk', '$2b$10$XYZ123...', 'MOT Tester', '07700900013', NOW() - INTERVAL '4 years'),
-(14, 'Richard', 'Martin', 'richard.martin@hnp.co.uk', '$2b$10$XYZ123...', 'MOT Tester', '07700900014', NOW() - INTERVAL '2 years');
-
--- Parts Department
-INSERT INTO users (user_id, first_name, last_name, email, password_hash, role, phone, created_at) VALUES
-(15, 'Sophie', 'Green', 'sophie.green@hnp.co.uk', '$2b$10$XYZ123...', 'Parts Advisor', '07700900015', NOW() - INTERVAL '2 years'),
-(16, 'Oliver', 'Wood', 'oliver.wood@hnp.co.uk', '$2b$10$XYZ123...', 'Parts Advisor', '07700900016', NOW() - INTERVAL '1 year'),
-(17, 'Charlotte', 'Baker', 'charlotte.baker@hnp.co.uk', '$2b$10$XYZ123...', 'Parts Assistant', '07700900017', NOW() - INTERVAL '8 months');
-
--- Service Advisors
-INSERT INTO users (user_id, first_name, last_name, email, password_hash, role, phone, created_at) VALUES
-(18, 'Jessica', 'Turner', 'jessica.turner@hnp.co.uk', '$2b$10$XYZ123...', 'Service Advisor', '07700900018', NOW() - INTERVAL '3 years'),
-(19, 'Hannah', 'Scott', 'hannah.scott@hnp.co.uk', '$2b$10$XYZ123...', 'Service Advisor', '07700900019', NOW() - INTERVAL '2 years'),
-(20, 'Amy', 'Cooper', 'amy.cooper@hnp.co.uk', '$2b$10$XYZ123...', 'Service Advisor', '07700900020', NOW() - INTERVAL '1 year');
-
--- Sales Department
-INSERT INTO users (user_id, first_name, last_name, email, password_hash, role, phone, created_at) VALUES
-(21, 'George', 'Hughes', 'george.hughes@hnp.co.uk', '$2b$10$XYZ123...', 'Sales Manager', '07700900021', NOW() - INTERVAL '5 years'),
-(22, 'William', 'Morris', 'william.morris@hnp.co.uk', '$2b$10$XYZ123...', 'Sales Executive', '07700900022', NOW() - INTERVAL '3 years'),
-(23, 'Jack', 'Robinson', 'jack.robinson@hnp.co.uk', '$2b$10$XYZ123...', 'Sales Executive', '07700900023', NOW() - INTERVAL '2 years'),
-(24, 'Emily', 'Watson', 'emily.watson@hnp.co.uk', '$2b$10$XYZ123...', 'Sales Executive', '07700900024', NOW() - INTERVAL '1 year');
-
--- Accounts Department
-INSERT INTO users (user_id, first_name, last_name, email, password_hash, role, phone, created_at) VALUES
-(25, 'Victoria', 'Phillips', 'victoria.phillips@hnp.co.uk', '$2b$10$XYZ123...', 'Accounts Manager', '07700900025', NOW() - INTERVAL '6 years'),
-(26, 'Laura', 'Edwards', 'laura.edwards@hnp.co.uk', '$2b$10$XYZ123...', 'Accounts Assistant', '07700900026', NOW() - INTERVAL '2 years'),
-(27, 'Rachel', 'Collins', 'rachel.collins@hnp.co.uk', '$2b$10$XYZ123...', 'Credit Controller', '07700900027', NOW() - INTERVAL '1 year');
-
--- Reception & Admin
-INSERT INTO users (user_id, first_name, last_name, email, password_hash, role, phone, created_at) VALUES
-(28, 'Katie', 'Stewart', 'katie.stewart@hnp.co.uk', '$2b$10$XYZ123...', 'Receptionist', '07700900028', NOW() - INTERVAL '3 years'),
-(29, 'Lucy', 'Barnes', 'lucy.barnes@hnp.co.uk', '$2b$10$XYZ123...', 'Receptionist', '07700900029', NOW() - INTERVAL '1 year'),
-(30, 'Grace', 'Fisher', 'grace.fisher@hnp.co.uk', '$2b$10$XYZ123...', 'Admin Assistant', '07700900030', NOW() - INTERVAL '2 years');
-
--- Valeting & Detailing
-INSERT INTO users (user_id, first_name, last_name, email, password_hash, role, phone, created_at) VALUES
-(31, 'Ryan', 'Moore', 'ryan.moore@hnp.co.uk', '$2b$10$XYZ123...', 'Valet Supervisor', '07700900031', NOW() - INTERVAL '4 years'),
-(32, 'Connor', 'Walker', 'connor.walker@hnp.co.uk', '$2b$10$XYZ123...', 'Valeter', '07700900032', NOW() - INTERVAL '2 years'),
-(33, 'Lewis', 'Hall', 'lewis.hall@hnp.co.uk', '$2b$10$XYZ123...', 'Valeter', '07700900033', NOW() - INTERVAL '1 year');
-
--- Body Shop / Painting
-INSERT INTO users (user_id, first_name, last_name, email, password_hash, role, phone, created_at) VALUES
-(34, 'Mark', 'Young', 'mark.young@hnp.co.uk', '$2b$10$XYZ123...', 'Paint Shop Manager', '07700900034', NOW() - INTERVAL '8 years'),
-(35, 'Paul', 'King', 'paul.king@hnp.co.uk', '$2b$10$XYZ123...', 'Body Technician', '07700900035', NOW() - INTERVAL '5 years'),
-(36, 'Simon', 'Wright', 'simon.wright@hnp.co.uk', '$2b$10$XYZ123...', 'Spray Painter', '07700900036', NOW() - INTERVAL '4 years'),
-(37, 'Adam', 'Hill', 'adam.hill@hnp.co.uk', '$2b$10$XYZ123...', 'Body Shop Technician', '07700900037', NOW() - INTERVAL '2 years');
-
--- Parts Drivers
-INSERT INTO users (user_id, first_name, last_name, email, password_hash, role, phone, created_at) VALUES
-(38, 'Brandon', 'Adams', 'brandon.adams@hnp.co.uk', '$2b$10$XYZ123...', 'Parts Driver', '07700900038', NOW() - INTERVAL '3 years'),
-(39, 'Kyle', 'Campbell', 'kyle.campbell@hnp.co.uk', '$2b$10$XYZ123...', 'Parts Driver', '07700900039', NOW() - INTERVAL '1 year');
-
--- Additional Workshop Support
-INSERT INTO users (user_id, first_name, last_name, email, password_hash, role, phone, created_at) VALUES
-(40, 'Nathan', 'Bell', 'nathan.bell@hnp.co.uk', '$2b$10$XYZ123...', 'Apprentice Technician', '07700900040', NOW() - INTERVAL '1 year'),
-(41, 'Joshua', 'Ward', 'joshua.ward@hnp.co.uk', '$2b$10$XYZ123...', 'Apprentice Technician', '07700900041', NOW() - INTERVAL '8 months'),
-(42, 'Dylan', 'Reed', 'dylan.reed@hnp.co.uk', '$2b$10$XYZ123...', 'Workshop Assistant', '07700900042', NOW() - INTERVAL '6 months'),
-(43, 'Tyler', 'Cox', 'tyler.cox@hnp.co.uk', '$2b$10$XYZ123...', 'Workshop Assistant', '07700900043', NOW() - INTERVAL '4 months');
-
--- Reset sequence for users
-SELECT setval('users_user_id_seq', 43);
-
--- =====================================================
--- 2. CUSTOMERS (with UUIDs)
--- =====================================================
-
-INSERT INTO customers (id, firstname, lastname, name, email, mobile, telephone, address, postcode, contact_preference, created_at) VALUES
--- Retail Customers (UUIDs)
-('a0000001-0000-0000-0000-000000000001'::uuid, 'John', 'Smith', 'John Smith', 'john.smith@email.com', '07700900101', '01234567891', '12 High Street, Bedford', 'MK40 1AA', 'email', NOW() - INTERVAL '3 years'),
-('a0000002-0000-0000-0000-000000000002'::uuid, 'Mary', 'Johnson', 'Mary Johnson', 'mary.johnson@email.com', '07700900102', '01234567892', '45 Station Road, Luton', 'LU1 2BB', 'mobile', NOW() - INTERVAL '2 years'),
-('a0000003-0000-0000-0000-000000000003'::uuid, 'David', 'Williams', 'David Williams', 'david.williams@email.com', '07700900103', '01234567893', '78 Park Avenue, Milton Keynes', 'MK2 3CC', 'email', NOW() - INTERVAL '2 years'),
-('a0000004-0000-0000-0000-000000000004'::uuid, 'Sarah', 'Brown', 'Sarah Brown', 'sarah.brown@email.com', '07700900104', '01234567894', '23 Church Lane, Dunstable', 'LU5 4DD', 'email', NOW() - INTERVAL '18 months'),
-('a0000005-0000-0000-0000-000000000005'::uuid, 'James', 'Jones', 'James Jones', 'james.jones@email.com', '07700900105', '01234567895', '56 Main Street, Leighton Buzzard', 'LU7 5EE', 'mobile', NOW() - INTERVAL '18 months'),
-('a0000006-0000-0000-0000-000000000006'::uuid, 'Emma', 'Taylor', 'Emma Taylor', 'emma.taylor@email.com', '07700900106', '01234567896', '89 Queens Road, Biggleswade', 'SG18 6FF', 'email', NOW() - INTERVAL '1 year'),
-('a0000007-0000-0000-0000-000000000007'::uuid, 'Robert', 'Davies', 'Robert Davies', 'robert.davies@email.com', '07700900107', '01234567897', '34 King Street, Ampthill', 'MK45 7GG', 'email', NOW() - INTERVAL '1 year'),
-('a0000008-0000-0000-0000-000000000008'::uuid, 'Linda', 'Evans', 'Linda Evans', 'linda.evans@email.com', '07700900108', '01234567898', '67 Victoria Street, Flitwick', 'MK45 8HH', 'mobile', NOW() - INTERVAL '10 months'),
-('a0000009-0000-0000-0000-000000000009'::uuid, 'Michael', 'Wilson', 'Michael Wilson', 'michael.wilson@email.com', '07700900109', '01234567899', '90 London Road, Sandy', 'SG19 9JJ', 'email', NOW() - INTERVAL '8 months'),
-('a0000010-0000-0000-0000-000000000010'::uuid, 'Patricia', 'Thomas', 'Patricia Thomas', 'patricia.thomas@email.com', '07700900110', '01234567900', '12 Bedford Road, Hitchin', 'SG4 1KK', 'email', NOW() - INTERVAL '6 months'),
-('a0000011-0000-0000-0000-000000000011'::uuid, 'Richard', 'Roberts', 'Richard Roberts', 'richard.roberts@email.com', '07700900111', '01234567901', '45 Cambridge Road, Potton', 'SG19 2LL', 'mobile', NOW() - INTERVAL '6 months'),
-('a0000012-0000-0000-0000-000000000012'::uuid, 'Susan', 'Walker', 'Susan Walker', 'susan.walker@email.com', '07700900112', '01234567902', '78 Mill Lane, Shefford', 'SG17 3MM', 'email', NOW() - INTERVAL '4 months'),
-('a0000013-0000-0000-0000-000000000013'::uuid, 'Thomas', 'Robinson', 'Thomas Robinson', 'thomas.robinson@email.com', '07700900113', '01234567903', '23 High Road, Barton-le-Clay', 'MK45 4NN', 'email', NOW() - INTERVAL '3 months'),
-('a0000014-0000-0000-0000-000000000014'::uuid, 'Jennifer', 'Wright', 'Jennifer Wright', 'jennifer.wright@email.com', '07700900114', '01234567904', '56 Station Avenue, Arlesey', 'SG15 5PP', 'mobile', NOW() - INTERVAL '2 months'),
-('a0000015-0000-0000-0000-000000000015'::uuid, 'Christopher', 'Thompson', 'Christopher Thompson', 'chris.thompson@email.com', '07700900115', '01234567905', '89 Green Lane, Stotfold', 'SG5 6QQ', 'email', NOW() - INTERVAL '1 month'),
-
--- Fleet/Business Customers (UUIDs)
-('b0000001-0000-0000-0000-000000000001'::uuid, NULL, NULL, 'ABC Logistics Ltd', 'fleet@abclogistics.co.uk', '07700900201', '01234111111', 'Unit 5 Industrial Estate, Bedford', 'MK42 0RR', 'email', NOW() - INTERVAL '5 years'),
-('b0000002-0000-0000-0000-000000000002'::uuid, NULL, NULL, 'XYZ Construction', 'accounts@xyzconstruction.co.uk', '07700900202', '01234222222', '23 Trade Park, Luton', 'LU3 1SS', 'email', NOW() - INTERVAL '4 years'),
-('b0000003-0000-0000-0000-000000000003'::uuid, NULL, NULL, 'QuickCab Taxis', 'admin@quickcab.co.uk', '07700900203', '01234333333', '78 Depot Road, Milton Keynes', 'MK10 2TT', 'mobile', NOW() - INTERVAL '3 years'),
-('b0000004-0000-0000-0000-000000000004'::uuid, NULL, NULL, 'Premier Care Services', 'fleet@premiercare.co.uk', '07700900204', '01234444444', '45 Business Centre, Dunstable', 'LU6 3UU', 'email', NOW() - INTERVAL '2 years'),
-('b0000005-0000-0000-0000-000000000005'::uuid, NULL, NULL, 'County Council Fleet', 'transport@county.gov.uk', '07700900205', '01234555555', 'County Hall, Bedford', 'MK40 4VV', 'email', NOW() - INTERVAL '10 years');
-
--- =====================================================
--- 3. VEHICLES (customer_id is UUID FK to customers.id)
--- =====================================================
-
-INSERT INTO vehicles (vehicle_id, reg_number, registration, make, model, make_model, year, vin, chassis, engine_number, engine, colour, fuel_type, transmission, body_style, engine_capacity, mileage, mot_due, tax_status, tax_due_date, co2_emissions, customer_id, wheelplan, month_of_first_registration, warranty_type, warranty_expiry, service_plan_supplier, service_plan_type, service_plan_expiry, created_at) VALUES
-
--- Customer 1 - John Smith vehicles
-(1, 'AB12CDE', 'AB12CDE', 'Ford', 'Focus', 'Ford Focus', 2019, 'WF0AXXGCDA123456', 'WF0AXXGCDA123456', 'AB123456', 'AB123456', 'Blue', 'Petrol', 'Manual', 'Hatchback', 1500, 45000, '2025-06-15', 'Taxed', '2025-12-01', 120, 'a0000001-0000-0000-0000-000000000001'::uuid, '4x4', '2019-03', 'Manufacturer', '2025-03-01', 'Ford Service Plan', 'Full Service', '2025-06-01', NOW() - INTERVAL '3 years'),
-
-(2, 'CD34EFG', 'CD34EFG', 'Vauxhall', 'Astra', 'Vauxhall Astra', 2020, 'W0VSE6EP0L123456', 'W0VSE6EP0L123456', 'CD345678', 'CD345678', 'Silver', 'Diesel', 'Automatic', 'Hatchback', 1600, 32000, '2025-08-20', 'Taxed', '2025-11-15', 105, 'a0000002-0000-0000-0000-000000000002'::uuid, '4x4', '2020-02', 'Extended', '2026-02-01', NULL, NULL, NULL, NOW() - INTERVAL '2 years'),
-
-(3, 'EF56GHI', 'EF56GHI', 'BMW', '3 Series', 'BMW 3 Series', 2021, 'WBA8E1G50L123456', 'WBA8E1G50L123456', 'EF567890', 'EF567890', 'Black', 'Diesel', 'Automatic', 'Saloon', 2000, 28000, '2025-10-10', 'Taxed', '2026-01-10', 115, 'a0000003-0000-0000-0000-000000000003'::uuid, '4x4', '2021-03', 'Manufacturer', '2026-03-01', 'BMW Service Inclusive', 'Full Service', '2026-10-01', NOW() - INTERVAL '2 years'),
-
-(4, 'GH78IJK', 'GH78IJK', 'Volkswagen', 'Golf', 'Volkswagen Golf', 2018, '3VW5T7AJ1JM123456', '3VW5T7AJ1JM123456', 'GH789012', 'GH789012', 'White', 'Petrol', 'Manual', 'Hatchback', 1400, 58000, '2025-04-22', 'Taxed', '2025-10-22', 110, 'a0000004-0000-0000-0000-000000000004'::uuid, '4x4', '2018-04', NULL, NULL, NULL, NULL, NULL, NOW() - INTERVAL '18 months'),
-
-(5, 'IJ90KLM', 'IJ90KLM', 'Mercedes-Benz', 'C-Class', 'Mercedes-Benz C-Class', 2022, 'WDD2050071F123456', 'WDD2050071F123456', 'IJ901234', 'IJ901234', 'Grey', 'Hybrid', 'Automatic', 'Saloon', 2000, 15000, '2026-02-15', 'Taxed', '2026-02-15', 95, 'a0000005-0000-0000-0000-000000000005'::uuid, '4x4', '2022-02', 'Manufacturer', '2027-02-01', 'Mercedes Service Care', 'Full Service', '2027-02-15', NOW() - INTERVAL '18 months'),
-
-(6, 'KL12MNO', 'KL12MNO', 'Audi', 'A4', 'Audi A4', 2020, 'WAUZZZ8K1LA123456', 'WAUZZZ8K1LA123456', 'KL123456', 'KL123456', 'Red', 'Diesel', 'Automatic', 'Saloon', 2000, 35000, '2025-09-08', 'Taxed', '2026-03-08', 120, 'a0000006-0000-0000-0000-000000000006'::uuid, '4x4', '2020-09', 'Extended', '2025-09-01', 'Audi Service Plan', 'Full Service', '2025-09-08', NOW() - INTERVAL '1 year'),
-
-(7, 'MN34PQR', 'MN34PQR', 'Nissan', 'Qashqai', 'Nissan Qashqai', 2019, 'SJNFDAJ11U1123456', 'SJNFDAJ11U1123456', 'MN345678', 'MN345678', 'Blue', 'Petrol', 'Manual', 'SUV', 1600, 42000, '2025-07-12', 'Taxed', '2025-12-12', 135, 'a0000007-0000-0000-0000-000000000007'::uuid, '4x4', '2019-07', NULL, NULL, NULL, NULL, NULL, NOW() - INTERVAL '1 year'),
-
-(8, 'OP56RST', 'OP56RST', 'Toyota', 'Corolla', 'Toyota Corolla', 2021, 'NMTKHBH20M0123456', 'NMTKHBH20M0123456', 'OP567890', 'OP567890', 'White', 'Hybrid', 'Automatic', 'Hatchback', 1800, 22000, '2025-11-20', 'Taxed', '2026-05-20', 85, 'a0000008-0000-0000-0000-000000000008'::uuid, '4x4', '2021-05', 'Manufacturer', '2026-05-01', 'Toyota Care', 'Full Service', '2026-11-20', NOW() - INTERVAL '10 months'),
-
-(9, 'QR78UVW', 'QR78UVW', 'Honda', 'Civic', 'Honda Civic', 2020, 'SHHFK8670LU123456', 'SHHFK8670LU123456', 'QR789012', 'QR789012', 'Silver', 'Petrol', 'Manual', 'Hatchback', 1500, 38000, '2025-08-15', 'Taxed', '2026-02-15', 115, 'a0000009-0000-0000-0000-000000000009'::uuid, '4x4', '2020-02', NULL, NULL, NULL, NULL, NULL, NOW() - INTERVAL '8 months'),
-
-(10, 'ST90XYZ', 'ST90XYZ', 'Peugeot', '3008', 'Peugeot 3008', 2022, 'VF3UDHZN0MS123456', 'VF3UDHZN0MS123456', 'ST901234', 'ST901234', 'Black', 'Diesel', 'Automatic', 'SUV', 1500, 18000, '2026-01-10', 'Taxed', '2026-01-10', 125, 'a0000010-0000-0000-0000-000000000010'::uuid, '4x4', '2022-01', 'Manufacturer', '2027-01-01', 'Peugeot Service Plan', 'Full Service', '2026-01-10', NOW() - INTERVAL '6 months'),
-
-(11, 'UV12ABC', 'UV12ABC', 'Hyundai', 'Tucson', 'Hyundai Tucson', 2021, 'KMHJ381CBMU123456', 'KMHJ381CBMU123456', 'UV123456', 'UV123456', 'Grey', 'Petrol', 'Automatic', 'SUV', 1600, 25000, '2025-12-05', 'Taxed', '2026-06-05', 140, 'a0000011-0000-0000-0000-000000000011'::uuid, '4x4', '2021-06', 'Manufacturer', '2026-06-01', 'Hyundai Care', 'Full Service', '2025-12-05', NOW() - INTERVAL '6 months'),
-
-(12, 'WX34DEF', 'WX34DEF', 'Skoda', 'Octavia', 'Skoda Octavia', 2019, 'TMBJN7NE5K0123456', 'TMBJN7NE5K0123456', 'WX345678', 'WX345678', 'White', 'Diesel', 'Manual', 'Estate', 2000, 52000, '2025-05-18', 'Taxed', '2025-11-18', 110, 'a0000012-0000-0000-0000-000000000012'::uuid, '4x4', '2019-05', NULL, NULL, NULL, NULL, NULL, NOW() - INTERVAL '4 months'),
-
-(13, 'YZ56GHI', 'YZ56GHI', 'Kia', 'Sportage', 'Kia Sportage', 2020, 'KNADM4A37K6123456', 'KNADM4A37K6123456', 'YZ567890', 'YZ567890', 'Red', 'Diesel', 'Automatic', 'SUV', 2000, 35000, '2025-09-25', 'Taxed', '2026-03-25', 145, 'a0000013-0000-0000-0000-000000000013'::uuid, '4x4', '2020-03', 'Extended', '2027-03-01', 'Kia Care', 'Full Service', '2025-09-25', NOW() - INTERVAL '3 months'),
-
-(14, 'AB78JKL', 'AB78JKL', 'Mazda', 'CX-5', 'Mazda CX-5', 2021, 'JM3KFBDM9M0123456', 'JM3KFBDM9M0123456', 'AB789012', 'AB789012', 'Blue', 'Petrol', 'Automatic', 'SUV', 2500, 28000, '2025-10-30', 'Taxed', '2026-04-30', 155, 'a0000014-0000-0000-0000-000000000014'::uuid, '4x4', '2021-04', 'Manufacturer', '2026-04-01', NULL, NULL, NULL, NOW() - INTERVAL '2 months'),
-
-(15, 'CD90MNO', 'CD90MNO', 'Renault', 'Megane', 'Renault Megane', 2019, 'VF1RFB00555123456', 'VF1RFB00555123456', 'CD901234', 'CD901234', 'Silver', 'Diesel', 'Manual', 'Hatchback', 1500, 48000, '2025-06-08', 'Taxed', '2025-12-08', 100, 'a0000015-0000-0000-0000-000000000015'::uuid, '4x4', '2019-06', NULL, NULL, NULL, NULL, NULL, NOW() - INTERVAL '1 month'),
-
--- Fleet Vehicles
-(16, 'FL19ABC', 'FL19ABC', 'Ford', 'Transit', 'Ford Transit', 2019, 'WF0BXXTTG123456', 'WF0BXXTTG123456', 'FL123456', 'FL123456', 'White', 'Diesel', 'Manual', 'Van', 2000, 85000, '2025-07-01', 'Taxed', '2025-12-31', 180, 'b0000001-0000-0000-0000-000000000001'::uuid, '4x2', '2019-01', NULL, NULL, NULL, NULL, NULL, NOW() - INTERVAL '5 years'),
-
-(17, 'FL19DEF', 'FL19DEF', 'Ford', 'Transit', 'Ford Transit', 2019, 'WF0BXXTTG123457', 'WF0BXXTTG123457', 'FL123457', 'FL123457', 'White', 'Diesel', 'Manual', 'Van', 2000, 92000, '2025-07-15', 'Taxed', '2025-12-31', 180, 'b0000001-0000-0000-0000-000000000001'::uuid, '4x2', '2019-01', NULL, NULL, NULL, NULL, NULL, NOW() - INTERVAL '5 years'),
-
-(18, 'FL20GHI', 'FL20GHI', 'Mercedes-Benz', 'Sprinter', 'Mercedes-Benz Sprinter', 2020, 'WDB9066331S123456', 'WDB9066331S123456', 'FL123458', 'FL123458', 'White', 'Diesel', 'Manual', 'Van', 2200, 75000, '2025-08-20', 'Taxed', '2025-12-31', 200, 'b0000002-0000-0000-0000-000000000002'::uuid, '4x2', '2020-02', NULL, NULL, NULL, NULL, NULL, NOW() - INTERVAL '4 years'),
-
-(19, 'FL21JKL', 'FL21JKL', 'Toyota', 'Hilux', 'Toyota Hilux', 2021, 'MROO2D16005123456', 'MROO2D16005123456', 'FL123459', 'FL123459', 'Silver', 'Diesel', 'Manual', 'Pickup', 2800, 45000, '2025-09-10', 'Taxed', '2026-03-10', 220, 'b0000002-0000-0000-0000-000000000002'::uuid, '4x4', '2021-03', 'Extended', '2026-03-01', NULL, NULL, NULL, NOW() - INTERVAL '3 years'),
-
-(20, 'TX21MNO', 'TX21MNO', 'Skoda', 'Octavia', 'Skoda Octavia', 2021, 'TMBJN7NE5M0123457', 'TMBJN7NE5M0123457', 'TX123456', 'TX123456', 'Black', 'Diesel', 'Manual', 'Saloon', 2000, 95000, '2025-10-05', 'Taxed', '2026-04-05', 115, 'b0000003-0000-0000-0000-000000000003'::uuid, '4x4', '2021-04', NULL, NULL, NULL, NULL, NULL, NOW() - INTERVAL '3 years'),
-
-(21, 'TX21PQR', 'TX21PQR', 'Skoda', 'Octavia', 'Skoda Octavia', 2021, 'TMBJN7NE5M0123458', 'TMBJN7NE5M0123458', 'TX123457', 'TX123457', 'Black', 'Diesel', 'Manual', 'Saloon', 2000, 102000, '2025-10-15', 'Taxed', '2026-04-15', 115, 'b0000003-0000-0000-0000-000000000003'::uuid, '4x4', '2021-04', NULL, NULL, NULL, NULL, NULL, NOW() - INTERVAL '3 years'),
-
-(22, 'TX22STU', 'TX22STU', 'Toyota', 'Prius', 'Toyota Prius', 2022, 'JTDKARFU3M3123456', 'JTDKARFU3M3123456', 'TX123458', 'TX123458', 'White', 'Hybrid', 'Automatic', 'Hatchback', 1800, 68000, '2026-01-20', 'Taxed', '2026-01-20', 70, 'b0000003-0000-0000-0000-000000000003'::uuid, '4x4', '2022-01', 'Manufacturer', '2027-01-01', NULL, NULL, NULL, NOW() - INTERVAL '2 years'),
-
-(23, 'CA20VWX', 'CA20VWX', 'Ford', 'Focus', 'Ford Focus', 2020, 'WF0AXXGCDL123456', 'WF0AXXGCDL123456', 'CA123456', 'CA123456', 'Silver', 'Petrol', 'Manual', 'Estate', 1500, 55000, '2025-08-12', 'Taxed', '2026-02-12', 125, 'b0000004-0000-0000-0000-000000000004'::uuid, '4x4', '2020-02', NULL, NULL, NULL, NULL, NULL, NOW() - INTERVAL '2 years'),
-
-(24, 'CA21YZA', 'CA21YZA', 'Vauxhall', 'Vivaro', 'Vauxhall Vivaro', 2021, 'W0VSE6EM0M123456', 'W0VSE6EM0M123456', 'CA123457', 'CA123457', 'White', 'Diesel', 'Manual', 'Van', 2000, 42000, '2025-11-08', 'Taxed', '2026-05-08', 170, 'b0000004-0000-0000-0000-000000000004'::uuid, '4x2', '2021-05', NULL, NULL, NULL, NULL, NULL, NOW() - INTERVAL '2 years'),
-
-(25, 'GV20BCD', 'GV20BCD', 'Ford', 'Ranger', 'Ford Ranger', 2020, 'WF0UXXTTGLK123456', 'WF0UXXTTGLK123456', 'GV123456', 'GV123456', 'Grey', 'Diesel', 'Automatic', 'Pickup', 2000, 58000, '2025-09-22', 'Taxed', '2026-03-22', 210, 'b0000005-0000-0000-0000-000000000005'::uuid, '4x4', '2020-03', NULL, NULL, NULL, NULL, NULL, NOW() - INTERVAL '10 years');
-
--- Reset sequence
-SELECT setval('vehicles_vehicle_id_seq', 25);
-
--- =====================================================
--- 4. JOBS 
--- NOTE: Based on your schema, jobs.customer_id appears to be INTEGER
--- We'll use vehicle_id as the reference
--- =====================================================
-
-INSERT INTO jobs (job_number, customer_id, customer, vehicle_id, vehicle_reg, vehicle_make_model, type, status, description, assigned_to, vhc_required, waiting_status, job_source, job_categories, requests, mileage_at_service, checked_in_at, workshop_started_at, vhc_completed_at, created_at, updated_at, status_updated_at, status_updated_by) VALUES
-
--- Active jobs - customer_id uses vehicle_id for reference
-('JOB-2025-0001', 1, 'John Smith', 1, 'AB12CDE', 'Ford Focus', 'Service', 'In Progress', 'Annual service + brake inspection', 6, true, 'Waiting', 'Walk-in', ARRAY['Service', 'Brakes'], '{"service_type": "Annual Service", "customer_requests": ["Check brakes", "Oil change"]}', 45230, NOW() - INTERVAL '3 hours', NOW() - INTERVAL '2 hours', NULL, NOW() - INTERVAL '4 hours', NOW(), NOW() - INTERVAL '2 hours', 'James Anderson'),
-
-('JOB-2025-0002', 3, 'David Williams', 3, 'EF56GHI', 'BMW 3 Series', 'Service', 'Awaiting Parts', 'Major service + VHC findings', 7, true, 'Waiting for Parts', 'Appointment', ARRAY['Service', 'VHC'], '{"service_type": "Major Service", "vhc_findings": ["Worn brake pads", "Tyres need replacing"]}', 28450, NOW() - INTERVAL '1 day 5 hours', NOW() - INTERVAL '1 day 4 hours', NOW() - INTERVAL '1 day 2 hours', NOW() - INTERVAL '1 day', NOW(), NOW() - INTERVAL '5 hours', 'Michael Brown'),
-
-('JOB-2025-0003', 5, 'James Jones', 5, 'IJ90KLM', 'Mercedes-Benz C-Class', 'Service', 'VHC Sent', '12000 mile service', 8, true, 'Waiting for Customer', 'Appointment', ARRAY['Service'], '{"service_type": "12000 Mile Service"}', 15200, NOW() - INTERVAL '6 hours', NOW() - INTERVAL '5 hours', NOW() - INTERVAL '2 hours', NOW() - INTERVAL '6 hours', NOW(), NOW() - INTERVAL '1 hour', 'Thomas Davis'),
-
-('JOB-2025-0004', 16, 'ABC Logistics Ltd', 16, 'FL19ABC', 'Ford Transit', 'Repair', 'In Progress', 'Clutch replacement + brake service', 9, false, 'Waiting', 'Phone', ARRAY['Repair', 'Brakes'], '{"issue": "Clutch slipping", "customer_requests": ["Replace clutch", "Check brakes"]}', 85600, NOW() - INTERVAL '2 hours', NOW() - INTERVAL '1.5 hours', NULL, NOW() - INTERVAL '3 hours', NOW(), NOW() - INTERVAL '1.5 hours', 'Daniel Evans'),
-
-('JOB-2025-0005', 6, 'Emma Taylor', 6, 'KL12MNO', 'Audi A4', 'MOT', 'In Progress', 'MOT test', 13, false, NULL, 'Walk-in', ARRAY['MOT'], '{"test_type": "MOT"}', 35200, NOW() - INTERVAL '1 hour', NOW() - INTERVAL '45 minutes', NULL, NOW() - INTERVAL '1.5 hours', NOW(), NOW() - INTERVAL '45 minutes', 'Peter Harris'),
-
-('JOB-2025-0006', 8, 'Linda Evans', 8, 'OP56RST', 'Toyota Corolla', 'Service', 'Checked In', 'Hybrid system check + service', 10, true, NULL, 'Appointment', ARRAY['Service', 'Hybrid'], '{"service_type": "Hybrid Service", "concerns": ["Battery warning light"]}', 22350, NOW() - INTERVAL '30 minutes', NULL, NULL, NOW() - INTERVAL '40 minutes', NOW(), NOW() - INTERVAL '30 minutes', 'Christopher Taylor'),
-
-('JOB-2025-0007', 20, 'QuickCab Taxis', 20, 'TX21MNO', 'Skoda Octavia', 'Service', 'Awaiting Additional Work Authorization', 'Standard service + VHC findings', 6, true, 'Waiting for Customer', 'Fleet', ARRAY['Service', 'VHC'], '{"service_type": "Standard Service"}', 95450, NOW() - INTERVAL '1 day', NOW() - INTERVAL '23 hours', NOW() - INTERVAL '21 hours', NOW() - INTERVAL '1 day 2 hours', NOW(), NOW() - INTERVAL '3 hours', 'James Anderson'),
-
-('JOB-2025-0008', 10, 'Patricia Thomas', 10, 'ST90XYZ', 'Peugeot 3008', 'Repair', 'Additional Work in Progress', 'Engine warning light + full diagnostics', 7, true, 'Waiting', 'Phone', ARRAY['Diagnostics', 'Repair'], '{"issue": "Engine management light on", "diagnostics_required": true}', 18250, NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day 23 hours', NOW() - INTERVAL '1 day 20 hours', NOW() - INTERVAL '2 days', NOW(), NOW() - INTERVAL '4 hours', 'Michael Brown'),
-
--- Completed jobs
-('JOB-2025-0009', 2, 'Mary Johnson', 2, 'CD34EFG', 'Vauxhall Astra', 'Service', 'Completed', 'Annual service completed', 8, true, NULL, 'Appointment', ARRAY['Service'], '{"service_type": "Annual Service"}', 32120, NOW() - INTERVAL '3 days 5 hours', NOW() - INTERVAL '3 days 4 hours', NOW() - INTERVAL '3 days 2 hours', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days', 'Thomas Davis'),
-
-('JOB-2025-0010', 4, 'Sarah Brown', 4, 'GH78IJK', 'Volkswagen Golf', 'MOT', 'Completed', 'MOT passed', 13, false, NULL, 'Walk-in', ARRAY['MOT'], '{"test_type": "MOT"}', 58150, NOW() - INTERVAL '2 days 3 hours', NOW() - INTERVAL '2 days 2 hours', NULL, NOW() - INTERVAL '2 days 4 hours', NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days', 'Peter Harris'),
-
--- Upcoming appointments
-('JOB-2025-0011', 11, 'Richard Roberts', 11, 'UV12ABC', 'Hyundai Tucson', 'Service', 'Booked', 'Annual service booked', NULL, true, NULL, 'Appointment', ARRAY['Service'], '{"service_type": "Annual Service"}', NULL, NULL, NULL, NULL, NOW() + INTERVAL '2 days', NOW(), NOW(), 'System'),
-
-('JOB-2025-0012', 12, 'Susan Walker', 12, 'WX34DEF', 'Skoda Octavia', 'MOT', 'Booked', 'MOT test booked', NULL, false, NULL, 'Appointment', ARRAY['MOT'], '{"test_type": "MOT"}', NULL, NULL, NULL, NULL, NOW() + INTERVAL '3 days', NOW(), NOW(), 'System');
-
--- =====================================================
--- 5. APPOINTMENTS (customer_id is INTEGER - we'll use vehicle_id)
--- =====================================================
-
-INSERT INTO appointments (job_id, customer_id, scheduled_time, status, notes, created_at) VALUES
-(1, 1, NOW() - INTERVAL '4 hours', 'completed', 'Annual service appointment', NOW() - INTERVAL '1 week'),
-(2, 3, NOW() - INTERVAL '1 day 5 hours', 'completed', 'Major service appointment', NOW() - INTERVAL '2 weeks'),
-(3, 5, NOW() - INTERVAL '6 hours', 'completed', '12000 mile service', NOW() - INTERVAL '1 week'),
-(6, 8, NOW() - INTERVAL '40 minutes', 'completed', 'Hybrid service appointment', NOW() - INTERVAL '3 days'),
-(11, 11, NOW() + INTERVAL '2 days' + INTERVAL '9 hours', 'booked', 'Annual service appointment', NOW()),
-(12, 12, NOW() + INTERVAL '3 days' + INTERVAL '10 hours', 'booked', 'MOT test', NOW());
-
--- Jobs will now have IDs 1-18
-
--- =====================================================
--- 5. APPOINTMENTS
--- =====================================================
-
--- NOTE: Using integer customer_id and job_id
-
-INSERT INTO appointments (job_id, customer_id, scheduled_time, status, notes, created_at) VALUES
-(1, 1, NOW() - INTERVAL '4 hours', 'completed', 'Annual service appointment', NOW() - INTERVAL '1 week'),
-(2, 3, NOW() - INTERVAL '1 day 5 hours', 'completed', 'Major service appointment', NOW() - INTERVAL '2 weeks'),
-(3, 5, NOW() - INTERVAL '6 hours', 'completed', '12000 mile service', NOW() - INTERVAL '1 week'),
-(6, 8, NOW() - INTERVAL '40 minutes', 'completed', 'Hybrid service appointment', NOW() - INTERVAL '3 days'),
-(7, 18, NOW() - INTERVAL '1 day 2 hours', 'completed', 'Fleet service booking', NOW() - INTERVAL '1 week'),
-(9, 2, NOW() - INTERVAL '3 days 5 hours', 'completed', 'Annual service', NOW() - INTERVAL '2 weeks'),
-(11, 7, NOW() - INTERVAL '5 days', 'completed', 'Major service + timing belt', NOW() - INTERVAL '3 weeks'),
-(13, 9, NOW() - INTERVAL '6 days', 'completed', 'Standard service', NOW() - INTERVAL '2 weeks'),
-
--- Upcoming appointments
-(14, 11, NOW() + INTERVAL '2 days' + INTERVAL '9 hours', 'booked', 'Annual service appointment', NOW()),
-(15, 12, NOW() + INTERVAL '3 days' + INTERVAL '10 hours', 'booked', 'MOT test', NOW()),
-(16, 19, NOW() + INTERVAL '1 day' + INTERVAL '8 hours 30 minutes', 'booked', 'Fleet service', NOW() - INTERVAL '3 days'),
-(17, 13, NOW() + INTERVAL '4 days' + INTERVAL '14 hours', 'booked', 'Major service + MOT', NOW() - INTERVAL '1 day'),
-(18, 14, NOW() + INTERVAL '5 days' + INTERVAL '11 hours', 'booked', 'Air conditioning service', NOW() - INTERVAL '2 days');
-
-
-SELECT setval('appointments_appointment_id_seq', 13);
-
--- =====================================================
--- 12. PARTS CATALOG
--- =====================================================
-
-INSERT INTO parts_catalog (id, part_number, name, description, category, supplier, oem_reference, unit_cost, unit_price, qty_in_stock, qty_reserved, qty_on_order, reorder_level, storage_location, service_default_zone, notes, is_active, created_at) VALUES
-
--- Oil Filters
-('p0000001-0000-0000-0000-000000000001'::uuid, 'OF-FRD-001', 'Oil Filter - Ford Focus/Fiesta 1.5', 'Standard oil filter for Ford 1.5L engines', 'Filters', 'Mann Filter', '1848220', 4.50, 12.99, 25, 3, 0, 10, 'Shelf A1', 'A', 'Fits Focus, Fiesta, EcoSport', true, NOW() - INTERVAL '2 years'),
-('p0000002-0000-0000-0000-000000000002'::uuid, 'OF-VAU-001', 'Oil Filter - Vauxhall Astra 1.6', 'OE quality oil filter', 'Filters', 'Bosch', '95599878', 5.20, 14.99, 18, 2, 0, 10, 'Shelf A1', 'A', 'Fits Astra, Insignia 1.6L', true, NOW() - INTERVAL '2 years'),
-('p0000003-0000-0000-0000-000000000003'::uuid, 'OF-BMW-001', 'Oil Filter - BMW 3 Series 2.0D', 'Genuine BMW oil filter', 'Filters', 'BMW', '11428507683', 8.95, 24.99, 12, 1, 0, 8, 'Shelf A1', 'A', 'Diesel engines', true, NOW() - INTERVAL '2 years'),
-('p0000004-0000-0000-0000-000000000004'::uuid, 'OF-VW-001', 'Oil Filter - VW/Audi 1.4-2.0', 'Universal VAG oil filter', 'Filters', 'Mann Filter', '03C115561H', 6.50, 16.99, 30, 2, 0, 12, 'Shelf A1', 'A', 'Fits most VAG group vehicles', true, NOW() - INTERVAL '2 years'),
-('p0000005-0000-0000-0000-000000000005'::uuid, 'OF-TOY-001', 'Oil Filter - Toyota Hybrid', 'Toyota Corolla hybrid oil filter', 'Filters', 'Toyota', '04152YZZA6', 7.20, 18.99, 15, 1, 0, 10, 'Shelf A1', 'A', 'Corolla, C-HR hybrid', true, NOW() - INTERVAL '1 year'),
-
--- Air Filters
-('p0000006-0000-0000-0000-000000000006'::uuid, 'AF-FRD-001', 'Air Filter - Ford Focus 1.5', 'Engine air filter', 'Filters', 'Mann Filter', 'C16114/1', 8.50, 19.99, 20, 1, 0, 8, 'Shelf A2', 'A', NULL, true, NOW() - INTERVAL '2 years'),
-('p0000007-0000-0000-0000-000000000007'::uuid, 'AF-VAU-001', 'Air Filter - Vauxhall Astra', 'Engine air filter', 'Filters', 'Bosch', '13271191', 9.20, 21.99, 15, 0, 0, 8, 'Shelf A2', 'A', NULL, true, NOW() - INTERVAL '2 years'),
-('p0000008-0000-0000-0000-000000000008'::uuid, 'CF-UNIV-001', 'Cabin Filter - Universal', 'Standard cabin pollen filter', 'Filters', 'Mann Filter', 'CU2442', 6.80, 15.99, 40, 4, 0, 15, 'Shelf A2', 'A', 'Fits multiple vehicles', true, NOW() - INTERVAL '2 years'),
-
--- Brake Pads
-('p0000009-0000-0000-0000-000000000009'::uuid, 'BP-FRD-F001', 'Brake Pads Front - Ford Focus', 'Front brake pad set', 'Brakes', 'Brembo', 'P24094', 25.00, 64.99, 12, 2, 0, 6, 'Shelf B1', 'B', 'Premium quality', true, NOW() - INTERVAL '2 years'),
-('p0000010-0000-0000-0000-000000000010'::uuid, 'BP-BMW-F001', 'Brake Pads Front - BMW 3 Series', 'Front brake pad set', 'Brakes', 'ATE', '13046073462', 35.00, 89.99, 8, 2, 5, 5, 'Shelf B1', 'B', 'OE quality', true, NOW() - INTERVAL '2 years'),
-('p0000011-0000-0000-0000-000000000011'::uuid, 'BP-VW-F001', 'Brake Pads Front - VW Golf', 'Front brake pad set', 'Brakes', 'Pagid', '5K0698151B', 28.00, 72.99, 10, 0, 0, 5, 'Shelf B1', 'B', NULL, true, NOW() - INTERVAL '2 years'),
-('p0000012-0000-0000-0000-000000000012'::uuid, 'BP-BMW-R001', 'Brake Pads Rear - BMW 3 Series', 'Rear brake pad set', 'Brakes', 'ATE', '34216873093', 32.00, 82.99, 6, 0, 0, 4, 'Shelf B1', 'B', NULL, true, NOW() - INTERVAL '2 years'),
-
--- Brake Discs
-('p0000013-0000-0000-0000-000000000013'::uuid, 'BD-BMW-F001', 'Brake Discs Front - BMW 3 Series', 'Front brake disc pair', 'Brakes', 'Brembo', '34116792219', 85.00, 219.99, 4, 2, 0, 2, 'Shelf B2', 'B', 'Sold as pair', true, NOW() - INTERVAL '2 years'),
-('p0000014-0000-0000-0000-000000000014'::uuid, 'BD-FRD-F001', 'Brake Discs Front - Ford Focus', 'Front brake disc pair', 'Brakes', 'Brembo', '1854893', 45.00, 119.99, 6, 0, 0, 3, 'Shelf B2', 'B', 'Sold as pair', true, NOW() - INTERVAL '2 years'),
-
--- Tyres
-('p0000015-0000-0000-0000-000000000015'::uuid, 'TYR-205-55-16', 'Tyre 205/55R16', 'Standard tyre 205/55R16 91V', 'Tyres', 'Michelin', 'PRIMACY4-205-55-16', 65.00, 139.99, 8, 4, 10, 4, 'Tyre Rack', 'C', 'Popular size', true, NOW() - INTERVAL '1 year'),
-('p0000016-0000-0000-0000-000000000016'::uuid, 'TYR-225-45-17', 'Tyre 225/45R17', 'Performance tyre 225/45R17 94Y', 'Tyres', 'Continental', 'SC5-225-45-17', 85.00, 179.99, 6, 0, 0, 4, 'Tyre Rack', 'C', 'Premium touring', true, NOW() - INTERVAL '1 year'),
-('p0000017-0000-0000-0000-000000000017'::uuid, 'TYR-215-60-16', 'Tyre 215/60R16', 'SUV tyre 215/60R16 95H', 'Tyres', 'Bridgestone', 'TURANZA-215-60-16', 70.00, 149.99, 10, 0, 0, 4, 'Tyre Rack', 'C', 'SUV fitment', true, NOW() - INTERVAL '1 year'),
-
--- Batteries
-('p0000018-0000-0000-0000-000000000018'::uuid, 'BAT-063', 'Battery 063 - 45Ah', 'Car battery 12V 45Ah', 'Electrical', 'Bosch', 'S4001', 45.00, 89.99, 8, 0, 0, 4, 'Battery Store', 'D', '3 year warranty', true, NOW() - INTERVAL '2 years'),
-('p0000019-0000-0000-0000-000000000019'::uuid, 'BAT-075', 'Battery 075 - 60Ah', 'Car battery 12V 60Ah', 'Electrical', 'Bosch', 'S4005', 55.00, 109.99, 6, 0, 0, 3, 'Battery Store', 'D', '3 year warranty', true, NOW() - INTERVAL '2 years'),
-('p0000020-0000-0000-0000-000000000020'::uuid, 'BAT-096', 'Battery 096 - 70Ah AGM', 'AGM battery 12V 70Ah', 'Electrical', 'Varta', 'AGM-096', 95.00, 189.99, 4, 0, 0, 2, 'Battery Store', 'D', 'Stop-start vehicles', true, NOW() - INTERVAL '1 year'),
-
--- Bulbs
-('p0000021-0000-0000-0000-000000000021'::uuid, 'BULB-H7', 'Headlight Bulb H7', 'H7 12V 55W bulb', 'Electrical', 'Osram', 'H7-64210', 3.50, 8.99, 50, 2, 0, 20, 'Shelf E1', 'A', 'Standard halogen', true, NOW() - INTERVAL '2 years'),
-('p0000022-0000-0000-0000-000000000022'::uuid, 'BULB-H4', 'Headlight Bulb H4', 'H4 12V 60/55W bulb', 'Electrical', 'Philips', 'H4-12342', 4.20, 9.99, 40, 1, 0, 20, 'Shelf E1', 'A', 'Standard halogen', true, NOW() - INTERVAL '2 years'),
-('p0000023-0000-0000-0000-000000000023'::uuid, 'BULB-P21W', 'Brake/Indicator Bulb P21W', 'P21W 12V bulb', 'Electrical', 'Ring', 'P21W-R382', 0.80, 1.99, 100, 0, 0, 30, 'Shelf E1', 'A', NULL, true, NOW() - INTERVAL '2 years'),
-
--- Wipers
-('p0000024-0000-0000-0000-000000000024'::uuid, 'WIP-22', 'Wiper Blade 22"', 'Standard wiper blade 22"', 'Wipers', 'Bosch', 'AERO-22', 8.00, 16.99, 20, 2, 0, 10, 'Shelf E2', 'A', NULL, true, NOW() - INTERVAL '1 year'),
-('p0000025-0000-0000-0000-000000000025'::uuid, 'WIP-24', 'Wiper Blade 24"', 'Standard wiper blade 24"', 'Wipers', 'Bosch', 'AERO-24', 9.00, 17.99, 18, 0, 0, 10, 'Shelf E2', 'A', NULL, true, NOW() - INTERVAL '1 year'),
-
--- Engine Oil
-('p0000026-0000-0000-0000-000000000026'::uuid, 'OIL-5W30-5L', 'Engine Oil 5W-30 Fully Synthetic 5L', 'Premium fully synthetic oil', 'Fluids', 'Castrol', 'EDGE-5W30-5L', 28.00, 54.99, 30, 8, 0, 15, 'Oil Store', 'A', 'Most popular', true, NOW() - INTERVAL '2 years'),
-('p0000027-0000-0000-0000-000000000027'::uuid, 'OIL-5W30-1L', 'Engine Oil 5W-30 Fully Synthetic 1L', 'Premium fully synthetic oil', 'Fluids', 'Castrol', 'EDGE-5W30-1L', 7.50, 14.99, 25, 3, 0, 12, 'Oil Store', 'A', 'Top up bottle', true, NOW() - INTERVAL '2 years'),
-('p0000028-0000-0000-0000-000000000028'::uuid, 'OIL-10W40-5L', 'Engine Oil 10W-40 Semi-Synthetic 5L', 'Semi-synthetic oil', 'Fluids', 'Mobil', 'SUPER-10W40-5L', 22.00, 42.99, 20, 2, 0, 10, 'Oil Store', 'A', 'Commercial vehicles', true, NOW() - INTERVAL '2 years'),
-
--- Brake Fluid
-('p0000029-0000-0000-0000-000000000029'::uuid, 'BF-DOT4-1L', 'Brake Fluid DOT 4 1L', 'Premium brake fluid', 'Fluids', 'ATE', 'DOT4-1L', 6.50, 12.99, 40, 4, 0, 15, 'Fluid Store', 'A', NULL, true, NOW() - INTERVAL '2 years'),
-('p0000030-0000-0000-0000-000000000030'::uuid, 'BF-DOT5.1-1L', 'Brake Fluid DOT 5.1 1L', 'High performance brake fluid', 'Fluids', 'Motul', 'DOT5.1-1L', 9.50, 18.99, 15, 0, 0, 8, 'Fluid Store', 'B', 'Performance vehicles', true, NOW() - INTERVAL '1 year'),
-
--- Coolant
-('p0000031-0000-0000-0000-000000000031'::uuid, 'COOL-RED-5L', 'Coolant Red OAT 5L', 'Red organic coolant concentrate', 'Fluids', 'Comma', 'RED-OAT-5L', 12.00, 24.99, 25, 2, 0, 10, 'Fluid Store', 'A', 'Most VAG vehicles', true, NOW() - INTERVAL '2 years'),
-('p0000032-0000-0000-0000-000000000032'::uuid, 'COOL-BLUE-5L', 'Coolant Blue Hybrid 5L', 'Blue hybrid coolant concentrate', 'Fluids', 'Comma', 'BLUE-HYB-5L', 12.00, 24.99, 20, 1, 0, 10, 'Fluid Store', 'A', 'Asian vehicles', true, NOW() - INTERVAL '2 years'),
-
--- Spark Plugs
-('p0000033-0000-0000-0000-000000000033'::uuid, 'SP-NGK-001', 'Spark Plugs NGK Laser Platinum', 'Premium spark plugs set of 4', 'Ignition', 'NGK', 'PFR6N11', 24.00, 54.99, 20, 4, 0, 8, 'Shelf F1', 'A', 'Long life', true, NOW() - INTERVAL '2 years'),
-('p0000034-0000-0000-0000-000000000034'::uuid, 'SP-DENSO-001', 'Spark Plugs Denso Iridium', 'Iridium spark plugs set of 4', 'Ignition', 'Denso', 'IK20', 28.00, 64.99, 15, 0, 0, 6, 'Shelf F1', 'A', 'Premium quality', true, NOW() - INTERVAL '1 year'),
-
--- Timing Belt Kits
-('p0000035-0000-0000-0000-000000000035'::uuid, 'TB-VAG-001', 'Timing Belt Kit VW/Audi 2.0 TDI', 'Complete timing belt kit with water pump', 'Timing', 'Gates', 'KP25578XS', 145.00, 349.99, 3, 0, 0, 2, 'Shelf F2', 'B', 'Includes water pump', true, NOW() - INTERVAL '2 years'),
-('p0000036-0000-0000-0000-000000000036'::uuid, 'TB-FRD-001', 'Timing Belt Kit Ford 1.6 TDCi', 'Complete timing belt kit', 'Timing', 'INA', '530054930', 125.00, 299.99, 2, 1, 0, 2, 'Shelf F2', 'B', NULL, true, NOW() - INTERVAL '2 years'),
-('p0000037-0000-0000-0000-000000000037'::uuid, 'TB-NIS-001', 'Timing Belt Kit Nissan Qashqai 1.6', 'Complete timing belt kit', 'Timing', 'Gates', 'K025578XS', 135.00, 324.99, 2, 1, 0, 2, 'Shelf F2', 'B', NULL, true, NOW() - INTERVAL '1 year'),
-
--- Suspension Components
-('p0000038-0000-0000-0000-000000000038'::uuid, 'SHOCK-FRD-F', 'Front Shock Absorber Ford Focus', 'Front shock absorber single', 'Suspension', 'Monroe', 'E4608', 35.00, 79.99, 8, 0, 0, 4, 'Shelf G1', 'B', 'Sold individually', true, NOW() - INTERVAL '1 year'),
-('p0000039-0000-0000-0000-000000000039'::uuid, 'SPRING-BMW-F', 'Front Coil Spring BMW 3 Series', 'Front coil spring', 'Suspension', 'Eibach', 'E10-20-030-02', 42.00, 94.99, 4, 0, 0, 2, 'Shelf G1', 'B', NULL, true, NOW() - INTERVAL '1 year'),
-('p0000040-0000-0000-0000-000000000040'::uuid, 'ARB-LINK-UNIV', 'Anti-Roll Bar Link Universal', 'Drop link universal fit', 'Suspension', 'Lemforder', 'LEM-30348', 8.50, 18.99, 20, 2, 0, 10, 'Shelf G1', 'A', 'Multiple applications', true, NOW() - INTERVAL '2 years'),
-
--- Clutch Components
-('p0000041-0000-0000-0000-000000000041'::uuid, 'CLUTCH-FRD-TRAN', 'Clutch Kit Ford Transit 2.0', 'Complete clutch kit', 'Transmission', 'LUK', '624304609', 185.00, 449.99, 2, 1, 0, 1, 'Shelf H1', 'C', 'Heavy duty', true, NOW() - INTERVAL '2 years'),
-('p0000042-0000-0000-0000-000000000042'::uuid, 'CLUTCH-VW-GOLF', 'Clutch Kit VW Golf 1.4 TSI', 'Complete clutch kit with DMF', 'Transmission', 'Sachs', '2290601003', 295.00, 699.99, 1, 0, 2, 1, 'Shelf H1', 'C', 'Dual mass flywheel included', true, NOW() - INTERVAL '1 year'),
-
--- Exhaust Components
-('p0000043-0000-0000-0000-000000000043'::uuid, 'CAT-BMW-320D', 'Catalytic Converter BMW 320d', 'OE quality catalytic converter', 'Exhaust', 'BM Cats', 'BM91715H', 425.00, 899.99, 1, 1, 2, 1, 'Exhaust Store', 'C', 'Type approved', true, NOW() - INTERVAL '1 year'),
-('p0000044-0000-0000-0000-000000000044'::uuid, 'EXH-GASKET-UNIV', 'Exhaust Gasket Universal', 'Universal exhaust gasket', 'Exhaust', 'Klarius', 'GAS-50', 2.50, 5.99, 50, 3, 0, 20, 'Shelf H2', 'A', NULL, true, NOW() - INTERVAL '2 years'),
-('p0000045-0000-0000-0000-000000000045'::uuid, 'LAMBDA-UNIV-001', 'Lambda Sensor Universal', 'Universal oxygen sensor', 'Exhaust', 'Bosch', 'LSU4.9', 45.00, 99.99, 8, 0, 0, 4, 'Shelf H2', 'B', 'Wide application', true, NOW() - INTERVAL '1 year'),
-
--- Diesel Particulate Filters
-('p0000046-0000-0000-0000-000000000046'::uuid, 'DPF-VAG-2.0TDI', 'DPF VW/Audi 2.0 TDI', 'Diesel particulate filter', 'Exhaust', 'BM Cats', 'BM11111H', 385.00, 849.99, 1, 0, 0, 1, 'Exhaust Store', 'C', 'High cost - order when needed', true, NOW() - INTERVAL '1 year'),
-
--- Air Con Components
-('p0000047-0000-0000-0000-000000000047'::uuid, 'AC-GAS-R134A', 'Air Con Gas R134a 1kg', 'Refrigerant gas', 'Air Con', 'Waeco', 'R134A-1KG', 35.00, 69.99, 10, 1, 0, 5, 'AC Store', 'B', 'Requires cert', true, NOW() - INTERVAL '2 years'),
-('p0000048-0000-0000-0000-000000000048'::uuid, 'AC-FILTER-UNIV', 'Air Con Pollen Filter Universal', 'Carbon pollen filter', 'Air Con', 'Mann Filter', 'CUK2442', 8.50, 18.99, 25, 2, 0, 12, 'Shelf A2', 'A', NULL, true, NOW() - INTERVAL '1 year'),
-
--- Commercial Vehicle Parts
-('p0000049-0000-0000-0000-000000000049'::uuid, 'OF-TRANSIT-2.0', 'Oil Filter Ford Transit 2.0', 'Commercial oil filter', 'Filters', 'Mann Filter', 'W7008', 6.50, 15.99, 20, 2, 0, 10, 'Shelf A1', 'A', 'Transit/Ranger', true, NOW() - INTERVAL '2 years'),
-('p0000050-0000-0000-0000-000000000050'::uuid, 'BP-TRANSIT-F', 'Brake Pads Front Transit', 'Heavy duty front pads', 'Brakes', 'Ferodo', 'FDB1531', 38.00, 89.99, 6, 0, 0, 4, 'Shelf B1', 'B', NULL, true, NOW() - INTERVAL '2 years');
-
--- =====================================================
--- 13. PARTS DELIVERIES
--- =====================================================
-
-INSERT INTO parts_deliveries (id, supplier, order_reference, status, expected_date, received_date, notes, created_by, created_at) VALUES
--- Recent deliveries (received)
-('d0000001-0000-0000-0000-000000000001'::uuid, 'Euro Car Parts', 'ECP-20251105-001', 'received', '2025-11-05', '2025-11-05', 'Morning delivery - all items checked in', 'p0000005-0000-0000-0000-000000000005'::uuid, NOW() - INTERVAL '6 days'),
-('d0000002-0000-0000-0000-000000000002'::uuid, 'GSF Car Parts', 'GSF-20251106-045', 'received', '2025-11-06', '2025-11-06', 'Afternoon delivery', 'p0000005-0000-0000-0000-000000000005'::uuid, NOW() - INTERVAL '5 days'),
-('d0000003-0000-0000-0000-000000000003'::uuid, 'BMW Parts', 'BMW-20251107-123', 'received', '2025-11-07', '2025-11-07', 'Dealer parts - signed for', 'p0000005-0000-0000-0000-000000000005'::uuid, NOW() - INTERVAL '4 days'),
-
--- Pending deliveries (ordered/in transit)
-('d0000004-0000-0000-0000-000000000004'::uuid, 'Euro Car Parts', 'ECP-20251110-089', 'in_transit', '2025-11-11', NULL, 'Parts for JOB-2025-0002 - urgent', 'p0000005-0000-0000-0000-000000000005'::uuid, NOW() - INTERVAL '1 day'),
-('d0000005-0000-0000-0000-000000000005'::uuid, 'BM Cats', 'BMC-20251109-033', 'in_transit', '2025-11-12', NULL, 'Cat converter for JOB-2025-0008', 'p0000005-0000-0000-0000-000000000005'::uuid, NOW() - INTERVAL '2 days'),
-('d0000006-0000-0000-0000-000000000006'::uuid, 'Castrol Trade', 'CAS-20251110-567', 'ordering', '2025-11-13', NULL, 'Monthly oil stock replenishment', 'p0000005-0000-0000-0000-000000000005'::uuid, NOW()),
-('d0000007-0000-0000-0000-000000000007'::uuid, 'Michelin Tyres', 'MCH-20251110-234', 'in_transit', '2025-11-12', NULL, 'Tyre delivery for JOB-2025-0002', 'p0000005-0000-0000-0000-000000000005'::uuid, NOW() - INTERVAL '1 day');
-
--- =====================================================
--- 14. PARTS DELIVERY ITEMS
--- =====================================================
-
-INSERT INTO parts_delivery_items (id, delivery_id, part_id, job_id, quantity_ordered, quantity_received, unit_cost, unit_price, status, created_at) VALUES
--- Delivered items
-('i0000001-0000-0000-0000-000000000001'::uuid, 'd0000001-0000-0000-0000-000000000001'::uuid, 'p0000001-0000-0000-0000-000000000001'::uuid, NULL, 20, 20, 4.50, 12.99, 'received', NOW() - INTERVAL '6 days'),
-('i0000002-0000-0000-0000-000000000002'::uuid, 'd0000001-0000-0000-0000-000000000001'::uuid, 'p0000026-0000-0000-0000-000000000026'::uuid, NULL, 10, 10, 28.00, 54.99, 'received', NOW() - INTERVAL '6 days'),
-('i0000003-0000-0000-0000-000000000003'::uuid, 'd0000002-0000-0000-0000-000000000002'::uuid, 'p0000009-0000-0000-0000-000000000009'::uuid, NULL, 5, 5, 25.00, 64.99, 'received', NOW() - INTERVAL '5 days'),
-('i0000004-0000-0000-0000-000000000004'::uuid, 'd0000003-0000-0000-0000-000000000003'::uuid, 'p0000010-0000-0000-0000-000000000010'::uuid, NULL, 5, 5, 35.00, 89.99, 'received', NOW() - INTERVAL '4 days'),
-
--- Pending items
-('i0000005-0000-0000-0000-000000000005'::uuid, 'd0000004-0000-0000-0000-000000000004'::uuid, 'p0000010-0000-0000-0000-000000000010'::uuid, 2, 2, 0, 35.00, 89.99, 'ordered', NOW() - INTERVAL '1 day'),
-('i0000006-0000-0000-0000-000000000006'::uuid, 'd0000004-0000-0000-0000-000000000004'::uuid, 'p0000013-0000-0000-0000-000000000013'::uuid, 2, 2, 0, 85.00, 219.99, 'ordered', NOW() - INTERVAL '1 day'),
-('i0000007-0000-0000-0000-000000000007'::uuid, 'd0000004-0000-0000-0000-000000000004'::uuid, 'p0000015-0000-0000-0000-000000000015'::uuid, 2, 4, 0, 65.00, 139.99, 'ordered', NOW() - INTERVAL '1 day'),
-
-('i0000008-0000-0000-0000-000000000008'::uuid, 'd0000005-0000-0000-0000-000000000005'::uuid, 'p0000043-0000-0000-0000-000000000043'::uuid, 8, 1, 0, 425.00, 899.99, 'ordered', NOW() - INTERVAL '2 days'),
-('i0000009-0000-0000-0000-000000000009'::uuid, 'd0000005-0000-0000-0000-000000000005'::uuid, 'p0000045-0000-0000-0000-000000000045'::uuid, 8, 1, 0, 45.00, 99.99, 'ordered', NOW() - INTERVAL '2 days'),
-
-('i0000010-0000-0000-0000-000000000010'::uuid, 'd0000006-0000-0000-0000-000000000006'::uuid, 'p0000026-0000-0000-0000-000000000026'::uuid, NULL, 20, 0, 28.00, 54.99, 'ordering', NOW()),
-('i0000011-0000-0000-0000-000000000011'::uuid, 'd0000006-0000-0000-0000-000000000006'::uuid, 'p0000027-0000-0000-0000-000000000027'::uuid, NULL, 15, 0, 7.50, 14.99, 'ordering', NOW()),
-
-('i0000012-0000-0000-0000-000000000012'::uuid, 'd0000007-0000-0000-0000-000000000007'::uuid, 'p0000015-0000-0000-0000-000000000015'::uuid, 2, 4, 0, 65.00, 139.99, 'ordered', NOW() - INTERVAL '1 day');
-
--- =====================================================
--- 15. PARTS JOB ITEMS (VHC Recommendations)
--- =====================================================
-
-INSERT INTO parts_job_items (id, job_id, part_id, quantity_requested, quantity_allocated, quantity_fitted, status, origin, unit_cost, unit_price, created_at) VALUES
--- JOB-2025-0001 items (approved parts)
-('j0000001-0000-0000-0000-000000000001'::uuid, 1, 'p0000001-0000-0000-0000-000000000001'::uuid, 1, 1, 1, 'fitted', 'service', 4.50, 12.99, NOW() - INTERVAL '3 hours'),
-('j0000002-0000-0000-0000-000000000002'::uuid, 1, 'p0000026-0000-0000-0000-000000000026'::uuid, 1, 1, 1, 'fitted', 'service', 28.00, 54.99, NOW() - INTERVAL '3 hours'),
-
--- JOB-2025-0002 items (awaiting parts)
-('j0000003-0000-0000-0000-000000000003'::uuid, 2, 'p0000010-0000-0000-0000-000000000010'::uuid, 1, 1, 0, 'allocated', 'vhc', 35.00, 89.99, NOW() - INTERVAL '5 hours'),
-('j0000004-0000-0000-0000-000000000004'::uuid, 2, 'p0000013-0000-0000-0000-000000000013'::uuid, 1, 1, 0, 'allocated', 'vhc', 85.00, 219.99, NOW() - INTERVAL '5 hours'),
-('j0000005-0000-0000-0000-000000000005'::uuid, 2, 'p0000015-0000-0000-0000-000000000015'::uuid, 4, 4, 0, 'allocated', 'vhc', 65.00, 139.99, NOW() - INTERVAL '5 hours'),
-
--- JOB-2025-0003 items (VHC sent, awaiting approval)
-('j0000006-0000-0000-0000-000000000006'::uuid, 3, 'p0000008-0000-0000-0000-000000000008'::uuid, 1, 0, 0, 'pending', 'vhc', 6.80, 15.99, NOW() - INTERVAL '1 hour 30 minutes'),
-('j0000007-0000-0000-0000-000000000007'::uuid, 3, 'p0000024-0000-0000-0000-000000000024'::uuid, 2, 0, 0, 'pending', 'vhc', 8.00, 16.99, NOW() - INTERVAL '1 hour 30 minutes'),
-
--- JOB-2025-0004 items (clutch job)
-('j0000008-0000-0000-0000-000000000008'::uuid, 4, 'p0000041-0000-0000-0000-000000000041'::uuid, 1, 1, 0, 'allocated', 'repair', 185.00, 449.99, NOW() - INTERVAL '2 hours'),
-
--- JOB-2025-0007 items (fleet - awaiting authorization)
-('j0000009-0000-0000-0000-000000000009'::uuid, 7, 'p0000009-0000-0000-0000-000000000009'::uuid, 1, 0, 0, 'pending', 'vhc', 25.00, 64.99, NOW() - INTERVAL '3 hours'),
-('j0000010-0000-0000-0000-000000000010'::uuid, 7, 'p0000015-0000-0000-0000-000000000015'::uuid, 2, 0, 0, 'pending', 'vhc', 65.00, 139.99, NOW() - INTERVAL '3 hours'),
-
--- JOB-2025-0008 items (authorized additional work)
-('j0000011-0000-0000-0000-000000000011'::uuid, 8, 'p0000043-0000-0000-0000-000000000043'::uuid, 1, 1, 0, 'allocated', 'additional', 425.00, 899.99, NOW() - INTERVAL '4 hours'),
-('j0000012-0000-0000-0000-000000000012'::uuid, 8, 'p0000045-0000-0000-0000-000000000045'::uuid, 1, 1, 0, 'allocated', 'additional', 45.00, 99.99, NOW() - INTERVAL '4 hours');
-
--- =====================================================
--- 16. MESSAGES & THREADS
--- =====================================================
-
-INSERT INTO message_threads (thread_id, thread_type, title, unique_hash, created_by, created_at, updated_at) VALUES
-(1, 'direct', NULL, hash_user_pair(18, 6), 18, NOW() - INTERVAL '5 days', NOW() - INTERVAL '2 hours'),
-(2, 'direct', NULL, hash_user_pair(3, 6), 3, NOW() - INTERVAL '4 days', NOW() - INTERVAL '1 day'),
-(3, 'group', 'Workshop Team', NULL, 3, NOW() - INTERVAL '1 month', NOW() - INTERVAL '3 hours'),
-(4, 'direct', NULL, hash_user_pair(5, 15), 5, NOW() - INTERVAL '2 days', NOW() - INTERVAL '5 hours'),
-(5, 'direct', NULL, hash_user_pair(18, 7), 18, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 hour');
-
-SELECT setval('message_threads_thread_id_seq', 5);
-
-INSERT INTO message_thread_members (member_id, thread_id, user_id, role, joined_at, last_read_at) VALUES
--- Thread 1: Jessica (SA) and James (Tech)
-(1, 1, 18, 'member', NOW() - INTERVAL '5 days', NOW() - INTERVAL '2 hours'),
-(2, 1, 6, 'member', NOW() - INTERVAL '5 days', NOW() - INTERVAL '3 hours'),
-
--- Thread 2: Sarah (Manager) and James (Tech)
-(3, 2, 3, 'admin', NOW() - INTERVAL '4 days', NOW() - INTERVAL '1 day'),
-(4, 2, 6, 'member', NOW() - INTERVAL '4 days', NOW() - INTERVAL '1 day'),
-
--- Thread 3: Workshop Team group
-(5, 3, 3, 'admin', NOW() - INTERVAL '1 month', NOW() - INTERVAL '3 hours'),
-(6, 3, 6, 'member', NOW() - INTERVAL '1 month', NOW() - INTERVAL '4 hours'),
-(7, 3, 7, 'member', NOW() - INTERVAL '1 month', NOW() - INTERVAL '3 hours'),
-(8, 3, 8, 'member', NOW() - INTERVAL '1 month', NOW() - INTERVAL '5 hours'),
-(9, 3, 9, 'member', NOW() - INTERVAL '1 month', NOW() - INTERVAL '1 day'),
-(10, 3, 10, 'member', NOW() - INTERVAL '1 month', NOW() - INTERVAL '6 hours'),
-
--- Thread 4: Emma (Parts) and Sophie (Parts)
-(11, 4, 5, 'member', NOW() - INTERVAL '2 days', NOW() - INTERVAL '5 hours'),
-(12, 4, 15, 'member', NOW() - INTERVAL '2 days', NOW() - INTERVAL '6 hours'),
-
--- Thread 5: Jessica (SA) and Michael (Tech)
-(13, 5, 18, 'member', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 hour'),
-(14, 5, 7, 'member', NOW() - INTERVAL '1 day', NOW() - INTERVAL '2 hours');
-
-SELECT setval('message_thread_members_member_id_seq', 14);
-
-INSERT INTO messages (message_id, thread_id, sender_id, content, read, created_at) VALUES
--- Thread 1: SA to Tech about brake job
-(1, 1, 18, 'James, customer on JOB-2025-0001 asking about the brake pads. What did you find?', true, NOW() - INTERVAL '3 hours'),
-(2, 1, 6, 'Front pads are at 40%. Not urgent but recommend within 5000 miles. I''ve noted it on VHC.', true, NOW() - INTERVAL '2 hours 50 minutes'),
-(3, 1, 18, 'Perfect, thanks. Will let customer know.', true, NOW() - INTERVAL '2 hours 45 minutes'),
-
--- Thread 2: Manager to Tech
-(4, 2, 3, 'James, can you prioritize the fleet jobs this week? We have several taxis due.', true, NOW() - INTERVAL '1 day 2 hours'),
-(5, 2, 6, 'Will do. I have the Skoda taxi in bay 3 now. Should be done by end of day.', true, NOW() - INTERVAL '1 day 1 hour'),
-
--- Thread 3: Workshop Team group chat
-(6, 3, 3, 'Morning team - busy day ahead. 3 MOTs and 5 services booked.', true, NOW() - INTERVAL '5 hours'),
-(7, 3, 6, 'I can take 2 of the services', true, NOW() - INTERVAL '4 hours 50 minutes'),
-(8, 3, 7, 'I''ll handle the BMW major service', true, NOW() - INTERVAL '4 hours 45 minutes'),
-(9, 3, 10, 'I can do the Toyota hybrid service', true, NOW() - INTERVAL '4 hours 40 minutes'),
-(10, 3, 3, 'Great, thanks all. Peter and Richard - you''re on MOTs', true, NOW() - INTERVAL '4 hours 30 minutes'),
-(11, 3, 7, 'Just finished VHC on the BMW - found several items. Sending report to customer now.', true, NOW() - INTERVAL '3 hours'),
-
--- Thread 4: Parts department
-(12, 4, 5, 'Sophie, can you check if we have 4x 205/55R16 tyres in stock?', true, NOW() - INTERVAL '6 hours'),
-(13, 4, 15, 'Yes, we have 8 in stock. Need them for a job?', true, NOW() - INTERVAL '5 hours 50 minutes'),
-(14, 4, 5, 'Yes, JOB-2025-0002. Can you reserve 4 for me?', true, NOW() - INTERVAL '5 hours 45 minutes'),
-(15, 4, 15, 'Done. They''re in the parts hold area.', true, NOW() - INTERVAL '5 hours 40 minutes'),
-
--- Thread 5: Recent SA to Tech
-(16, 5, 18, 'Michael, customer on the phone about JOB-2025-0008. When will the cat be fitted?', false, NOW() - INTERVAL '1 hour'),
-(17, 5, 7, 'Parts arriving tomorrow morning. Should have it done by Thursday afternoon.', true, NOW() - INTERVAL '50 minutes');
-
-SELECT setval('messages_message_id_seq', 17);
-
--- =====================================================
--- 17. NOTIFICATIONS
--- =====================================================
-
-INSERT INTO notifications (notification_id, user_id, type, message, read, target_role, job_number, created_at) VALUES
--- Unread notifications
-(1, 6, 'job_assigned', 'You have been assigned to JOB-2025-0001', false, NULL, 'JOB-2025-0001', NOW() - INTERVAL '4 hours'),
-(2, 7, 'parts_arrived', 'Parts have arrived for JOB-2025-0002', false, NULL, 'JOB-2025-0002', NOW() - INTERVAL '30 minutes'),
-(3, 18, 'vhc_completed', 'VHC completed for JOB-2025-0003', false, NULL, 'JOB-2025-0003', NOW() - INTERVAL '1 hour 30 minutes'),
-(4, 5, 'low_stock', 'Oil Filter OF-FRD-001 is below reorder level', false, 'Parts Manager', NULL, NOW() - INTERVAL '2 days'),
-(5, 19, 'customer_waiting', 'Customer waiting for JOB-2025-0005', false, 'Service Advisor', 'JOB-2025-0005', NOW() - INTERVAL '1 hour'),
-
--- Read notifications
-(6, 6, 'job_assigned', 'You have been assigned to JOB-2025-0011', true, NULL, 'JOB-2025-0011', NOW() - INTERVAL '5 days'),
-(7, 18, 'vhc_approved', 'Customer approved VHC for JOB-2025-0008', true, NULL, 'JOB-2025-0008', NOW() - INTERVAL '5 hours'),
-(8, 7, 'parts_ordered', 'Parts ordered for JOB-2025-0008', true, NULL, 'JOB-2025-0008', NOW() - INTERVAL '2 days'),
-(9, 3, 'job_completed', 'JOB-2025-0009 has been completed', true, 'Workshop Manager', 'JOB-2025-0009', NOW() - INTERVAL '3 days'),
-(10, 3, 'job_completed', 'JOB-2025-0010 has been completed', true, 'Workshop Manager', 'JOB-2025-0010', NOW() - INTERVAL '2 days');
-
-SELECT setval('notifications_notification_id_seq', 10);
-
--- =====================================================
--- 18. HR EMPLOYEE PROFILES
--- =====================================================
-
-INSERT INTO hr_employee_profiles (profile_id, user_id, department, job_title, employment_type, start_date, manager_id, emergency_contact, created_at) VALUES
-(1, 1, 'Admin', 'Admin Manager', 'Full-time', '2023-01-15', 2, '{"name": "Michael Thompson", "phone": "07700800001", "relationship": "Spouse"}'::jsonb, NOW() - INTERVAL '2 years'),
-(2, 2, 'Management', 'General Manager', 'Full-time', '2022-06-01', NULL, '{"name": "Sandra Wilson", "phone": "07700800002", "relationship": "Spouse"}'::jsonb, NOW() - INTERVAL '2 years'),
-(3, 3, 'Workshop', 'Workshop Manager', 'Full-time', '2023-05-10', 2, '{"name": "John Mitchell", "phone": "07700800003", "relationship": "Spouse"}'::jsonb, NOW() - INTERVAL '18 months'),
-(4, 4, 'Workshop', 'Service Manager', 'Full-time', '2023-05-10', 2, '{"name": "Emma Clarke", "phone": "07700800004", "relationship": "Partner"}'::jsonb, NOW() - INTERVAL '18 months'),
-(5, 5, 'Parts', 'Parts Manager', 'Full-time', '2024-01-08', 2, '{"name": "David Richards", "phone": "07700800005", "relationship": "Husband"}'::jsonb, NOW() - INTERVAL '1 year'),
-(6, 6, 'Workshop', 'Senior Technician', 'Full-time', '2022-01-10', 3, '{"name": "Sarah Anderson", "phone": "07700800006", "relationship": "Wife"}'::jsonb, NOW() - INTERVAL '3 years'),
-(7, 7, 'Workshop', 'Senior Technician', 'Full-time', '2022-02-14', 3, '{"name": "Lisa Brown", "phone": "07700800007", "relationship": "Wife"}'::jsonb, NOW() - INTERVAL '3 years'),
-(8, 8, 'Workshop', 'Technician', 'Full-time', '2023-03-20', 3, '{"name": "Karen Davis", "phone": "07700800008", "relationship": "Partner"}'::jsonb, NOW() - INTERVAL '2 years'),
-(9, 9, 'Workshop', 'Technician', 'Full-time', '2023-04-15', 3, '{"name": "Rachel Evans", "phone": "07700800009", "relationship": "Sister"}'::jsonb, NOW() - INTERVAL '2 years'),
-(10, 10, 'Workshop', 'Technician', 'Full-time', '2024-01-22', 3, '{"name": "Helen Taylor", "phone": "07700800010", "relationship": "Mother"}'::jsonb, NOW() - INTERVAL '1 year');
-
-SELECT setval('hr_employee_profiles_profile_id_seq', 10);
-
--- =====================================================
--- 19. TIME RECORDS (Daily clocking)
--- =====================================================
-
-INSERT INTO time_records (id, user_id, date, clock_in, clock_out, hours_worked, break_minutes, notes, created_at) VALUES
--- Today's records (some still clocked in)
-(1, 6, CURRENT_DATE, CURRENT_DATE + TIME '08:00:00', NULL, NULL, 0, NULL, NOW()),
-(2, 7, CURRENT_DATE, CURRENT_DATE + TIME '08:15:00', NULL, NULL, 0, NULL, NOW()),
-(3, 8, CURRENT_DATE, CURRENT_DATE + TIME '08:30:00', NULL, NULL, 0, NULL, NOW()),
-(4, 18, CURRENT_DATE, CURRENT_DATE + TIME '08:00:00', NULL, NULL, 0, NULL, NOW()),
-(5, 15, CURRENT_DATE, CURRENT_DATE + TIME '08:30:00', NULL, NULL, 0, NULL, NOW()),
-
--- Yesterday's records (completed)
-(6, 6, CURRENT_DATE - 1, CURRENT_DATE - 1 + TIME '08:00:00', CURRENT_DATE - 1 + TIME '17:00:00', 8.5, 30, NULL, NOW() - INTERVAL '1 day'),
-(7, 7, CURRENT_DATE - 1, CURRENT_DATE - 1 + TIME '08:15:00', CURRENT_DATE - 1 + TIME '17:15:00', 8.5, 30, NULL, NOW() - INTERVAL '1 day'),
-(8, 8, CURRENT_DATE - 1, CURRENT_DATE - 1 + TIME '08:30:00', CURRENT_DATE - 1 + TIME '17:30:00', 8.5, 30, NULL, NOW() - INTERVAL '1 day'),
-(9, 9, CURRENT_DATE - 1, CURRENT_DATE - 1 + TIME '08:00:00', CURRENT_DATE - 1 + TIME '17:00:00', 8.5, 30, NULL, NOW() - INTERVAL '1 day'),
-(10, 10, CURRENT_DATE - 1, CURRENT_DATE - 1 + TIME '08:30:00', CURRENT_DATE - 1 + TIME '17:30:00', 8.5, 30, NULL, NOW() - INTERVAL '1 day'),
-(11, 18, CURRENT_DATE - 1, CURRENT_DATE - 1 + TIME '08:00:00', CURRENT_DATE - 1 + TIME '17:00:00', 8.5, 30, NULL, NOW() - INTERVAL '1 day'),
-(12, 19, CURRENT_DATE - 1, CURRENT_DATE - 1 + TIME '08:00:00', CURRENT_DATE - 1 + TIME '17:00:00', 8.5, 30, NULL, NOW() - INTERVAL '1 day'),
-(13, 15, CURRENT_DATE - 1, CURRENT_DATE - 1 + TIME '08:30:00', CURRENT_DATE - 1 + TIME '17:30:00', 8.5, 30, NULL, NOW() - INTERVAL '1 day');
-
-SELECT setval('time_records_id_seq', 13);
-
--- =====================================================
--- 20. APPOINTMENT DAY CAPACITY
--- =====================================================
-
-INSERT INTO appointment_day_capacity (capacity_id, day, technicians_available, notes, created_by, created_at) VALUES
-(1, CURRENT_DATE, 6, 'Normal capacity', 3, NOW() - INTERVAL '1 week'),
-(2, CURRENT_DATE + 1, 6, 'Normal capacity', 3, NOW() - INTERVAL '1 week'),
-(3, CURRENT_DATE + 2, 5, 'Daniel on training course', 3, NOW() - INTERVAL '1 week'),
-(4, CURRENT_DATE + 3, 6, 'Normal capacity', 3, NOW() - INTERVAL '1 week'),
-(5, CURRENT_DATE + 4, 6, 'Normal capacity', 3, NOW() - INTERVAL '1 week'),
-(6, CURRENT_DATE + 7, 4, 'James and Michael on annual leave', 3, NOW() - INTERVAL '1 week');
-
-SELECT setval('appointment_day_capacity_capacity_id_seq', 6);
-
--- =====================================================
--- 21. ACTIVITY LOGS
--- =====================================================
-
-INSERT INTO activity_logs (log_id, user_id, action, table_name, record_id, timestamp) VALUES
-(1, 18, 'INSERT', 'jobs', 1, NOW() - INTERVAL '4 hours'),
-(2, 6, 'UPDATE', 'jobs', 1, NOW() - INTERVAL '2 hours'),
-(3, 6, 'INSERT', 'vhc_checks', 1, NOW() - INTERVAL '2 hours'),
-(4, 19, 'INSERT', 'jobs', 2, NOW() - INTERVAL '1 day 5 hours'),
-(5, 7, 'UPDATE', 'jobs', 2, NOW() - INTERVAL '1 day 2 hours'),
-(6, 7, 'INSERT', 'vhc_send_history', 1, NOW() - INTERVAL '1 day 3 hours'),
-(7, 5, 'INSERT', 'parts_deliveries', 4, NOW() - INTERVAL '1 day'),
-(8, 18, 'INSERT', 'messages', 16, NOW() - INTERVAL '1 hour'),
-(9, 15, 'UPDATE', 'parts_catalog', 15, NOW() - INTERVAL '2 hours'),
-(10, 3, 'INSERT', 'appointment_day_capacity', 6, NOW() - INTERVAL '1 week');
-
-SELECT setval('activity_logs_log_id_seq', 10);
-
--- =====================================================
--- COMMIT TRANSACTION
--- =====================================================
-
-COMMIT;
-
--- =====================================================
--- SUMMARY
--- =====================================================
--- This script has populated:
--- - 43 Users across all departments
--- - 20 Customers (retail and fleet)
--- - 25 Vehicles
--- - 18 Jobs (active, completed, and upcoming)
--- - 36 VHC Checks across multiple jobs
--- - 50 Parts in catalog with realistic stock levels
--- - 7 Parts deliveries (received and pending)
--- - Parts job items, delivery items, and stock movements
--- - Messages, notifications, and communication threads
--- - HR profiles, time records, and capacity planning
--- - Activity logs for audit trail
--- =====================================================
+Brake Modal Enhancement - Complete Requirements
+
+I need to modify the Brakes and Hub modal in my vehicle inspection system with the following requirements:
+
+1. Drum Brakes vs Disc Brakes - Mutually Exclusive
+Requirement: For the rear axle, drum brakes should replace BOTH brake pads AND brake discs (not just discs, not alongside them).
+
+When drum brakes are selected, hide the entire rear pads section and rear discs section - show ONLY the drum brakes section
+When disc brakes are selected, completely ignore any drum brake data
+When drum brakes are selected, completely ignore any disc/pad data from the rear axle
+Add a "Switch to Drum Brakes" button in the rear disc section
+Add a "Switch to Disc Brakes" button in the drum section
+2. Drum Brake Status Options
+Requirement: Simplify the drum brake workflow with three clear options:
+
+Good - Maps to Green status
+Monitor - Automatically maps to Amber status (no additional severity selection needed)
+Replace - Maps to Red status
+Remove the "Not checked" option entirely
+3. Brake Diagram Display
+Requirement: Update the brake diagram to show drum brake status:
+
+When drum brakes are selected, display the text "drum" in the rear brake positions (instead of pad measurements)
+Color code the drum display:
+Green if "Good" is selected
+Amber if "Monitor" is selected
+Red if "Replace" is selected
+4. Input Focus Fix
+Requirement: Fix the measurement input fields so users can type complete numbers without losing focus:
+
+When typing "13", the user should be able to type "1" then "3" without the input field losing focus
+Currently, typing "1" triggers a state update that removes focus, requiring the user to click back into the field to type "3"
+Batch state updates for pad measurements to prevent this issue
+5. Data Persistence and Validation
+Requirement: Implement smart data handling for drum vs disc selection:
+
+When drum brakes are selected:
+
+Do NOT save rear pads or rear discs data to the database
+BUT preserve the data in component state (in memory) so if the user accidentally switches to drums, they can switch back without losing their work
+When disc brakes are selected:
+
+Do NOT save drum brake data to the database
+BUT preserve drum data in component state for switching back
+6. Complete Button Logic
+Requirement: Dynamic completion validation based on brake type:
+
+For disc brake mode (rear discs selected):
+
+Require: Front pads filled + Front discs filled + Rear pads filled + Rear discs filled
+Complete button is active when all four sections are completed
+For drum brake mode (rear drums selected):
+
+Require: Front pads filled + Front discs filled + Rear drums status selected
+Complete button is active when all three sections are completed
+Rear pads/discs completion status is IGNORED
+Switching behavior:
+
+If rear pads/discs are filled out and complete button is active
+User clicks "Switch to Drum Brakes"
+Complete button should immediately become INACTIVE
+Complete button stays inactive until drum brake status is selected
+7. Concern Functionality
+Requirement: All brake status buttons (Good, Monitor, Replace) should integrate with the existing concern system:
+
+Users can add concerns for any brake component
+Concerns should use the same modal/workflow as other sections
+Concerns should escalate severity appropriately
+Files to Modify
+/src/components/VHC/BrakesHubsDetailsModal.js - Main modal component
+/src/components/VHC/BrakeDiagram.js - Diagram display component
+/src/lib/vhc/summary.js - Summary helper for data processing
