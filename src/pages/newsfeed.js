@@ -353,82 +353,108 @@ export default function NewsFeed() {
       </div>
 
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            backdropFilter: "blur(4px)",
+            overflow: "auto"
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setModalOpen(false);
+              resetModal();
+            }
+          }}
+        >
           <div
-            className="bg-[var(--surface)] border border-[var(--surface-light)] rounded-[32px] shadow-2xl w-full max-w-3xl"
+            className="bg-[var(--surface)] border border-[var(--surface-light)] rounded-[32px] shadow-2xl w-full max-w-2xl my-8"
             role="dialog"
             aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
           >
+            {/* Header */}
             <div className="px-8 py-6 flex justify-between items-center border-b border-[var(--surface-light)]">
-              <h3 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>
-                Share an update
+              <h3 className="text-2xl font-bold" style={{ color: "var(--primary)" }}>
+                Share an Update
               </h3>
               <button
-                onClick={() => setModalOpen(false)}
+                onClick={() => {
+                  setModalOpen(false);
+                  resetModal();
+                }}
                 type="button"
                 aria-label="Close update modal"
-                className="text-gray-500 hover:text-gray-300 transition-colors"
+                className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-200 hover:bg-[var(--surface-light)] transition-all text-2xl"
               >
                 ✕
               </button>
             </div>
 
-            <div className="px-8 py-6 space-y-5">
-              <div className="flex flex-col gap-2">
-                <label className="font-semibold text-sm text-gray-400" htmlFor="news-title">
+            {/* Content */}
+            <div className="px-8 py-6 space-y-6">
+              {/* Title Field */}
+              <div className="flex flex-col gap-3">
+                <label className="font-bold text-sm uppercase tracking-wide" style={{ color: "var(--primary)" }} htmlFor="news-title">
                   Title
                 </label>
                 <input
                   id="news-title"
                   type="text"
+                  placeholder="Enter update title..."
                   value={formState.title}
                   onChange={(event) =>
                     setFormState((previous) => ({ ...previous, title: event.target.value }))
                   }
-                  className="w-full px-4 py-3 rounded-xl border border-[var(--surface-light)] bg-[var(--surface-light)] text-sm text-[var(--text-primary)] transition focus:border-[var(--primary)] focus:outline-none"
+                  className="w-full px-4 py-3 rounded-xl border-2 border-[var(--surface-light)] bg-[var(--surface-light)] text-base text-[var(--text-primary)] transition focus:border-[var(--primary)] focus:outline-none"
                 />
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="font-semibold text-sm text-gray-400" htmlFor="news-content">
+              {/* Description Field */}
+              <div className="flex flex-col gap-3">
+                <label className="font-bold text-sm uppercase tracking-wide" style={{ color: "var(--primary)" }} htmlFor="news-content">
                   Description
                 </label>
                 <textarea
                   id="news-content"
-                  rows={4}
+                  rows={5}
+                  placeholder="Write your update details..."
                   value={formState.content}
                   onChange={(event) =>
                     setFormState((previous) => ({ ...previous, content: event.target.value }))
                   }
-                  className="w-full px-4 py-3 rounded-xl border border-[var(--surface-light)] bg-[var(--surface-light)] text-sm text-[var(--text-primary)] transition focus:border-[var(--primary)] focus:outline-none"
+                  className="w-full px-4 py-3 rounded-xl border-2 border-[var(--surface-light)] bg-[var(--surface-light)] text-base text-[var(--text-primary)] transition focus:border-[var(--primary)] focus:outline-none resize-none"
                 />
               </div>
 
-              <div className="flex flex-col gap-2 relative" ref={departmentMenuRef}>
-                <label className="font-semibold text-sm text-gray-400">Visible to</label>
+              {/* Departments Field */}
+              <div className="flex flex-col gap-3 relative" ref={departmentMenuRef}>
+                <label className="font-bold text-sm uppercase tracking-wide" style={{ color: "var(--primary)" }}>
+                  Visible to Departments
+                </label>
                 <button
                   type="button"
                   onClick={() => setDepartmentMenuOpen((previous) => !previous)}
-                  className="w-full flex justify-between items-center px-4 py-3 rounded-xl border border-[var(--surface-light)] bg-[var(--surface-light)] text-sm text-[var(--text-primary)]"
+                  className="w-full flex justify-between items-center px-4 py-3 rounded-xl border-2 border-[var(--surface-light)] bg-[var(--surface-light)] text-base text-[var(--text-primary)] hover:border-[var(--primary)] transition-all"
                 >
-                  <span>{departmentsSummary}</span>
-                  <span className="text-[0.85rem] text-gray-400">
+                  <span className="font-medium">{departmentsSummary}</span>
+                  <span className="text-sm font-semibold px-3 py-1 rounded-lg" style={{ backgroundColor: "var(--primary)", color: "white" }}>
                     {departmentMenuOpen ? "Close" : "Select"}
                   </span>
                 </button>
                 {departmentMenuOpen && (
-                  <div className="absolute top-full mt-2 left-0 right-0 bg-[var(--surface)] rounded-2xl border border-[var(--surface-light)] shadow-lg z-10 max-h-56 overflow-auto py-3">
+                  <div className="absolute top-full mt-2 left-0 right-0 bg-[var(--surface)] rounded-2xl border-2 border-[var(--surface-light)] shadow-2xl z-10 max-h-64 overflow-auto">
                     {AVAILABLE_DEPARTMENTS.map((department) => (
                       <label
                         key={department}
-                        className="flex items-center justify-between px-4 py-2 text-sm cursor-pointer hover:bg-[var(--surface-light)]"
+                        className="flex items-center justify-between px-5 py-3 text-base cursor-pointer hover:bg-[var(--surface-light)] transition-colors border-b border-[var(--surface-light)] last:border-b-0"
                       >
-                        <span>{department}</span>
+                        <span className="font-medium">{department}</span>
                         <input
                           type="checkbox"
                           checked={formState.departments.includes(department)}
                           onChange={() => handleDepartmentToggle(department)}
-                          className="w-4 h-4 text-[var(--primary)] border rounded focus:ring-0"
+                          className="w-5 h-5 text-[var(--primary)] border-2 rounded focus:ring-0"
                         />
                       </label>
                     ))}
@@ -436,35 +462,39 @@ export default function NewsFeed() {
                 )}
               </div>
 
+              {/* Error Message */}
               {notificationError && (
-                <p className="text-sm text-[var(--danger)]">{notificationError}</p>
+                <div className="px-4 py-3 rounded-xl bg-red-50 border-2 border-red-200">
+                  <p className="text-sm font-semibold text-red-600">{notificationError}</p>
+                </div>
               )}
+            </div>
 
-              <div className="flex justify-end gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setModalOpen(false);
-                    resetModal();
-                  }}
-                  className="px-4 py-2 rounded-xl border border-[var(--surface-light)] text-sm font-semibold text-[var(--text-primary)] transition hover:border-[var(--primary-light)]"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCreateUpdate}
-                  disabled={saving}
-                  className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition"
-                  style={{
-                    backgroundColor: "var(--primary)",
-                    opacity: saving ? 0.65 : 1,
-                    border: "1px solid var(--primary-dark)",
-                  }}
-                >
-                  {saving ? "Publishing…" : "Add update"}
-                </button>
-              </div>
+            {/* Footer Actions */}
+            <div className="px-8 py-6 flex justify-end gap-3 border-t border-[var(--surface-light)]">
+              <button
+                type="button"
+                onClick={() => {
+                  setModalOpen(false);
+                  resetModal();
+                }}
+                className="px-6 py-3 rounded-xl border-2 border-[var(--surface-light)] text-base font-bold text-[var(--text-primary)] transition hover:border-[var(--primary)] hover:bg-[var(--surface-light)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateUpdate}
+                disabled={saving}
+                className="px-6 py-3 rounded-xl text-base font-bold text-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                style={{
+                  backgroundColor: "var(--primary)",
+                  opacity: saving ? 0.6 : 1,
+                  border: "2px solid var(--primary-dark)",
+                }}
+              >
+                {saving ? "Publishing…" : "Publish Update"}
+              </button>
             </div>
           </div>
         </div>

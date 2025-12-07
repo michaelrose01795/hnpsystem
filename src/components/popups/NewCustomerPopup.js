@@ -133,141 +133,576 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
 
   // ✅ UI layout for popup
   return (
-    <div className="popup-backdrop">
+    <div
+      className="popup-backdrop"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && typeof onClose === "function") {
+          onClose();
+        }
+      }}
+    >
       <div
         className="popup-card"
         style={{
-          padding: "24px",
-          borderRadius: "10px",
-          width: "420px",
+          borderRadius: "32px",
+          width: "100%",
+          maxWidth: "650px",
           maxHeight: "90vh",
           overflowY: "auto",
+          border: "1px solid var(--surface-light)",
         }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <h3 style={{ marginTop: 0 }}>Add New Customer</h3>
-
-        {/* Form fields */}
-        {[
-          { label: "First Name", value: firstName, setter: setFirstName },
-          { label: "Last Name", value: lastName, setter: setLastName },
-          { label: "Number", value: number, setter: setNumber },
-          { label: "Street", value: street, setter: setStreet },
-          { label: "Town/City", value: town, setter: setTown },
-          { label: "Country", value: country, setter: setCountry },
-          {
-            label: "Postcode",
-            value: postcode,
-            setter: handlePostcodeChange,
-            helper: (
-              <button
-                type="button"
-                onClick={handleAddressLookup}
-                disabled={lookupState.loading}
-                style={{
-                  marginTop: "4px",
-                  padding: "6px 10px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--info)",
-                  backgroundColor: lookupState.loading ? "var(--info-surface)" : "var(--info-surface)",
-                  color: "var(--accent-purple)",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  cursor: lookupState.loading ? "not-allowed" : "pointer",
-                }}
-              >
-                {lookupState.loading ? "Searching…" : "Lookup address"}
-              </button>
-            ),
-          },
-          { label: "Email", value: email, setter: setEmail, type: "email" },
-          { label: "Mobile", value: mobile, setter: setMobile },
-          { label: "Telephone", value: telephone, setter: setTelephone },
-        ].map(({ label, value, setter, type = "text", helper }) => (
-          <div key={label} style={{ marginBottom: "8px" }}>
-            <label style={{ display: "block", marginBottom: "4px", fontWeight: "600" }}>{label}:</label>
-            <input
-              type={type}
-              value={value}
-              onChange={(e) => setter(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "8px 10px",
-                borderRadius: "8px",
-                border: "1px solid var(--info)",
-                fontSize: "14px",
-              }}
-            />
-            {helper}
-          </div>
-        ))}
-
-        {lookupState.error && (
-          <div
-            style={{
-              marginBottom: "12px",
-              padding: "8px 10px",
-              borderRadius: "8px",
-              border: "1px solid var(--danger-surface)",
-              backgroundColor: "var(--danger-surface)",
-              color: "var(--danger)",
-              fontSize: "13px",
-            }}
-          >
-            {lookupState.error}
-          </div>
-        )}
-
-        {lookupState.suggestions.length > 0 && (
-          <div
-            style={{
-              marginBottom: "12px",
-              border: "1px solid var(--accent-purple-surface)",
-              borderRadius: "10px",
-              maxHeight: "160px",
-              overflowY: "auto",
-            }}
-          >
-            {lookupState.suggestions.map((suggestion) => (
-              <button
-                key={suggestion.id}
-                type="button"
-                onClick={() => applyAddressSuggestion(suggestion)}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  border: "none",
-                  borderBottom: "1px solid var(--accent-purple-surface)",
-                  textAlign: "left",
-                  backgroundColor: "var(--surface)",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                }}
-              >
-                {suggestion.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Buttons */}
+        {/* Header */}
         <div
           style={{
+            padding: "24px 32px",
+            borderBottom: "1px solid var(--surface-light)",
             display: "flex",
             justifyContent: "space-between",
-            marginTop: "12px",
+            alignItems: "center",
           }}
         >
-          <button onClick={onClose} style={{ padding: "8px 16px" }}>
-            Close
+          <h3
+            style={{
+              margin: 0,
+              fontSize: "28px",
+              fontWeight: "bold",
+              color: "var(--primary)",
+            }}
+          >
+            Add New Customer
+          </h3>
+          <button
+            onClick={onClose}
+            type="button"
+            aria-label="Close customer modal"
+            style={{
+              width: "40px",
+              height: "40px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "12px",
+              border: "none",
+              backgroundColor: "transparent",
+              color: "#888",
+              fontSize: "24px",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--surface-light)";
+              e.currentTarget.style.color = "#666";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = "#888";
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Content */}
+        <div style={{ padding: "32px" }}>
+          {/* Personal Information Section */}
+          <div style={{ marginBottom: "32px" }}>
+            <h4
+              style={{
+                margin: "0 0 16px 0",
+                fontSize: "14px",
+                fontWeight: "bold",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                color: "var(--primary)",
+              }}
+            >
+              Personal Information
+            </h4>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "#666",
+                  }}
+                >
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Enter first name"
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    border: "2px solid var(--surface-light)",
+                    backgroundColor: "var(--surface-light)",
+                    fontSize: "15px",
+                    transition: "border-color 0.2s",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                />
+              </div>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "#666",
+                  }}
+                >
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Enter last name"
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    border: "2px solid var(--surface-light)",
+                    backgroundColor: "var(--surface-light)",
+                    fontSize: "15px",
+                    transition: "border-color 0.2s",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Address Section */}
+          <div style={{ marginBottom: "32px" }}>
+            <h4
+              style={{
+                margin: "0 0 16px 0",
+                fontSize: "14px",
+                fontWeight: "bold",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                color: "var(--primary)",
+              }}
+            >
+              Address
+            </h4>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: "16px" }}>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "#666",
+                    }}
+                  >
+                    Number
+                  </label>
+                  <input
+                    type="text"
+                    value={number}
+                    onChange={(e) => setNumber(e.target.value)}
+                    placeholder="No."
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "12px",
+                      border: "2px solid var(--surface-light)",
+                      backgroundColor: "var(--surface-light)",
+                      fontSize: "15px",
+                      transition: "border-color 0.2s",
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                  />
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "#666",
+                    }}
+                  >
+                    Street
+                  </label>
+                  <input
+                    type="text"
+                    value={street}
+                    onChange={(e) => setStreet(e.target.value)}
+                    placeholder="Street name"
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "12px",
+                      border: "2px solid var(--surface-light)",
+                      backgroundColor: "var(--surface-light)",
+                      fontSize: "15px",
+                      transition: "border-color 0.2s",
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                  />
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "#666",
+                    }}
+                  >
+                    Town/City
+                  </label>
+                  <input
+                    type="text"
+                    value={town}
+                    onChange={(e) => setTown(e.target.value)}
+                    placeholder="Town or city"
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "12px",
+                      border: "2px solid var(--surface-light)",
+                      backgroundColor: "var(--surface-light)",
+                      fontSize: "15px",
+                      transition: "border-color 0.2s",
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                  />
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "#666",
+                    }}
+                  >
+                    Country
+                  </label>
+                  <input
+                    type="text"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    placeholder="Country"
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "12px",
+                      border: "2px solid var(--surface-light)",
+                      backgroundColor: "var(--surface-light)",
+                      fontSize: "15px",
+                      transition: "border-color 0.2s",
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                  />
+                </div>
+              </div>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "#666",
+                  }}
+                >
+                  Postcode
+                </label>
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <input
+                    type="text"
+                    value={postcode}
+                    onChange={(e) => handlePostcodeChange(e.target.value)}
+                    placeholder="Enter postcode"
+                    style={{
+                      flex: 1,
+                      padding: "12px 16px",
+                      borderRadius: "12px",
+                      border: "2px solid var(--surface-light)",
+                      backgroundColor: "var(--surface-light)",
+                      fontSize: "15px",
+                      transition: "border-color 0.2s",
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddressLookup}
+                    disabled={lookupState.loading}
+                    style={{
+                      padding: "12px 24px",
+                      borderRadius: "12px",
+                      border: "2px solid var(--primary)",
+                      backgroundColor: "var(--primary)",
+                      color: "white",
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      cursor: lookupState.loading ? "not-allowed" : "pointer",
+                      opacity: lookupState.loading ? 0.6 : 1,
+                      transition: "all 0.2s",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {lookupState.loading ? "Searching…" : "Lookup"}
+                  </button>
+                </div>
+              </div>
+
+              {lookupState.error && (
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    border: "2px solid #fecaca",
+                    backgroundColor: "#fef2f2",
+                    color: "#dc2626",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                  }}
+                >
+                  {lookupState.error}
+                </div>
+              )}
+
+              {lookupState.suggestions.length > 0 && (
+                <div
+                  style={{
+                    border: "2px solid var(--surface-light)",
+                    borderRadius: "12px",
+                    maxHeight: "200px",
+                    overflowY: "auto",
+                    backgroundColor: "var(--surface)",
+                  }}
+                >
+                  {lookupState.suggestions.map((suggestion, index) => (
+                    <button
+                      key={suggestion.id}
+                      type="button"
+                      onClick={() => applyAddressSuggestion(suggestion)}
+                      style={{
+                        width: "100%",
+                        padding: "14px 16px",
+                        border: "none",
+                        borderBottom: index < lookupState.suggestions.length - 1 ? "1px solid var(--surface-light)" : "none",
+                        textAlign: "left",
+                        backgroundColor: "var(--surface)",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        transition: "background-color 0.2s",
+                      }}
+                      onMouseEnter={(e) => (e.target.style.backgroundColor = "var(--surface-light)")}
+                      onMouseLeave={(e) => (e.target.style.backgroundColor = "var(--surface)")}
+                    >
+                      {suggestion.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Contact Information Section */}
+          <div style={{ marginBottom: "24px" }}>
+            <h4
+              style={{
+                margin: "0 0 16px 0",
+                fontSize: "14px",
+                fontWeight: "bold",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                color: "var(--primary)",
+              }}
+            >
+              Contact Information
+            </h4>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "#666",
+                  }}
+                >
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="customer@example.com"
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    border: "2px solid var(--surface-light)",
+                    backgroundColor: "var(--surface-light)",
+                    fontSize: "15px",
+                    transition: "border-color 0.2s",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "#666",
+                    }}
+                  >
+                    Mobile
+                  </label>
+                  <input
+                    type="text"
+                    value={mobile}
+                    onChange={(e) => setMobile(e.target.value)}
+                    placeholder="Mobile number"
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "12px",
+                      border: "2px solid var(--surface-light)",
+                      backgroundColor: "var(--surface-light)",
+                      fontSize: "15px",
+                      transition: "border-color 0.2s",
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                  />
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "#666",
+                    }}
+                  >
+                    Telephone
+                  </label>
+                  <input
+                    type="text"
+                    value={telephone}
+                    onChange={(e) => setTelephone(e.target.value)}
+                    placeholder="Telephone number"
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "12px",
+                      border: "2px solid var(--surface-light)",
+                      backgroundColor: "var(--surface-light)",
+                      fontSize: "15px",
+                      transition: "border-color 0.2s",
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div
+          style={{
+            padding: "24px 32px",
+            borderTop: "1px solid var(--surface-light)",
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "12px",
+          }}
+        >
+          <button
+            onClick={onClose}
+            type="button"
+            style={{
+              padding: "12px 24px",
+              borderRadius: "12px",
+              border: "2px solid var(--surface-light)",
+              backgroundColor: "transparent",
+              fontSize: "15px",
+              fontWeight: "bold",
+              color: "var(--text-primary)",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "var(--primary)";
+              e.currentTarget.style.backgroundColor = "var(--surface-light)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--surface-light)";
+              e.currentTarget.style.backgroundColor = "transparent";
+            }}
+          >
+            Cancel
           </button>
           <button
             onClick={handleAdd}
             disabled={loading}
+            type="button"
             style={{
-              padding: "8px 16px",
+              padding: "12px 24px",
+              borderRadius: "12px",
+              border: "2px solid var(--primary-dark)",
               backgroundColor: "var(--primary)",
               color: "white",
+              fontSize: "15px",
+              fontWeight: "bold",
+              cursor: loading ? "not-allowed" : "pointer",
               opacity: loading ? 0.6 : 1,
+              transition: "all 0.2s",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 0, 0, 0.2)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+              }
             }}
           >
             {loading ? "Saving..." : "Add Customer"}

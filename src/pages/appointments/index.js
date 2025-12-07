@@ -1501,7 +1501,7 @@ export default function Appointments() {
               style={{
                 padding: "8px 16px",
                 border: activeDayTab === "jobs" ? "2px solid var(--primary)" : "1px solid var(--surface-light)",
-                backgroundColor: activeDayTab === "jobs" ? "var(--surface-light)" : "white",
+                backgroundColor: activeDayTab === "jobs" ? "var(--surface-light)" : "var(--surface)",
                 color: activeDayTab === "jobs" ? "var(--text-primary)" : "var(--grey-accent)",
                 borderRadius: "8px",
                 cursor: "pointer",
@@ -1516,7 +1516,7 @@ export default function Appointments() {
               }}
               onMouseLeave={(e) => {
                 if (activeDayTab !== "jobs") {
-                  e.currentTarget.style.backgroundColor = "white";
+                  e.currentTarget.style.backgroundColor = "var(--surface)";
                 }
               }}
             >
@@ -1528,7 +1528,7 @@ export default function Appointments() {
               style={{
                 padding: "8px 16px",
                 border: activeDayTab === "tech-hours" ? "2px solid var(--primary)" : "1px solid var(--surface-light)",
-                backgroundColor: activeDayTab === "tech-hours" ? "var(--surface-light)" : "white",
+                backgroundColor: activeDayTab === "tech-hours" ? "var(--surface-light)" : "var(--surface)",
                 color: activeDayTab === "tech-hours" ? "var(--text-primary)" : "var(--grey-accent)",
                 borderRadius: "8px",
                 cursor: "pointer",
@@ -1543,7 +1543,7 @@ export default function Appointments() {
               }}
               onMouseLeave={(e) => {
                 if (activeDayTab !== "tech-hours") {
-                  e.currentTarget.style.backgroundColor = "white";
+                  e.currentTarget.style.backgroundColor = "var(--surface)";
                 }
               }}
             >
@@ -1841,7 +1841,7 @@ export default function Appointments() {
                               disabled={isCurrentlyCheckingIn}
                               style={{
                                 padding: "8px 16px",
-                                backgroundColor: isCurrentlyCheckingIn ? "var(--background)" : "var(--info)",
+                                backgroundColor: isCurrentlyCheckingIn ? "var(--background)" : "var(--primary)",
                                 color: "white",
                                 border: "none",
                                 borderRadius: "6px",
@@ -1852,12 +1852,12 @@ export default function Appointments() {
                               }}
                               onMouseEnter={(e) => {
                                 if (!isCurrentlyCheckingIn) {
-                                  e.currentTarget.style.backgroundColor = "var(--info-dark)";
+                                  e.currentTarget.style.backgroundColor = "var(--primary-dark)";
                                 }
                               }}
                               onMouseLeave={(e) => {
                                 if (!isCurrentlyCheckingIn) {
-                                  e.currentTarget.style.backgroundColor = "var(--info)";
+                                  e.currentTarget.style.backgroundColor = "var(--primary)";
                                 }
                               }}
                             >

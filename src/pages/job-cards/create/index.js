@@ -997,7 +997,7 @@ export default function CreateJobCardPage() {
           padding: "16px",
           overflow: "hidden",
           transition: "background 0.3s ease",
-          background: getBackgroundColor(waitingStatus, jobSource),
+          background: "var(--background)",
         }}
       >
         {/* ✅ Header Section - Modern Design */}
@@ -1027,34 +1027,33 @@ export default function CreateJobCardPage() {
             onClick={handleSaveJob}
             style={{
               padding: "12px 28px",
-              backgroundColor: "var(--info)",
+              backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "8px",
               fontWeight: "600",
               fontSize: "15px",
               cursor: "pointer",
-              boxShadow: "0 4px 8px rgba(var(--info-rgb), 0.2)",
+              boxShadow: "0 4px 8px rgba(var(--primary-rgb), 0.2)",
               transition: "all 0.2s",
             }}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = "var(--info-dark)";
-              e.target.style.boxShadow = "0 6px 12px rgba(var(--info-rgb), 0.3)";
+              e.target.style.backgroundColor = "var(--primary-dark)";
+              e.target.style.boxShadow = "0 6px 12px rgba(var(--primary-rgb), 0.3)";
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = "var(--info)";
-              e.target.style.boxShadow = "0 4px 8px rgba(var(--info-rgb), 0.2)";
+              e.target.style.backgroundColor = "var(--primary)";
+              e.target.style.boxShadow = "0 4px 8px rgba(var(--primary-rgb), 0.2)";
             }}
           >
             Save Job Card
           </button>
         </div>
 
-        {/* ✅ Scrollable Content Area */}
+        {/* ✅ Content Area */}
         <div
           style={{
             flex: 1,
-            overflowY: "auto",
             display: "flex",
             flexDirection: "column",
             gap: "16px",
@@ -1114,8 +1113,8 @@ export default function CreateJobCardPage() {
                         cursor: "pointer",
                         padding: "8px 12px",
                         borderRadius: "8px",
-                        border: waitingStatus === status ? "2px solid var(--primary)" : "2px solid var(--surface-light)",
-                        backgroundColor: waitingStatus === status ? "var(--surface-light)" : "white",
+                        border: waitingStatus === status ? "2px solid var(--primary)" : "2px solid var(--border)",
+                        backgroundColor: waitingStatus === status ? "var(--surface-light)" : "var(--surface)",
                         transition: "all 0.2s",
                       }}
                     >
@@ -1156,8 +1155,8 @@ export default function CreateJobCardPage() {
                         cursor: "pointer",
                         padding: "8px 12px",
                         borderRadius: "8px",
-                        border: jobSource === src ? "2px solid var(--primary)" : "2px solid var(--surface-light)",
-                        backgroundColor: jobSource === src ? "var(--surface-light)" : "white",
+                        border: jobSource === src ? "2px solid var(--primary)" : "2px solid var(--border)",
+                        backgroundColor: jobSource === src ? "var(--surface-light)" : "var(--surface)",
                         transition: "all 0.2s",
                       }}
                     >
@@ -1935,9 +1934,9 @@ export default function CreateJobCardPage() {
                       style={{
                         padding: "8px 14px",
                         borderRadius: "999px",
-                        border: "1px solid",
-                        borderColor: cosmeticDamagePresent === choice ? "var(--primary)" : "var(--accent-purple-surface)",
-                        backgroundColor: cosmeticDamagePresent === choice ? "var(--danger-surface)" : "white",
+                        border: "2px solid",
+                        borderColor: cosmeticDamagePresent === choice ? "var(--primary)" : "var(--border)",
+                        backgroundColor: cosmeticDamagePresent === choice ? "var(--surface-light)" : "var(--surface)",
                         color: "var(--text-primary)",
                         fontSize: "13px",
                         fontWeight: "600",
@@ -2022,9 +2021,9 @@ export default function CreateJobCardPage() {
                       padding: "10px",
                       borderRadius: "8px",
                       border: "2px solid",
-                      borderColor: vhcRequired === choice ? "var(--primary)" : "var(--accent-purple-surface)",
-                      backgroundColor: vhcRequired === choice ? "var(--danger-surface)" : "var(--info-surface)",
-                      color: "var(--accent-purple)",
+                      borderColor: vhcRequired === choice ? "var(--primary)" : "var(--border)",
+                      backgroundColor: vhcRequired === choice ? "var(--surface-light)" : "var(--surface)",
+                      color: "var(--text-primary)",
                       fontWeight: "600",
                       fontSize: "13px",
                       cursor: "pointer",

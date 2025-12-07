@@ -15,9 +15,5 @@ export default function LegacyAppointmentsRedirectPage() {
     router.replace("/appointments");
   }, [router]);
 
-  return (
-    <div style={{ padding: "32px", fontFamily: "inherit" }}>
-      Redirecting to the live appointments calendar...
-    </div>
-  );
+  return null;
 }
