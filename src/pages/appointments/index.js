@@ -1310,15 +1310,20 @@ export default function Appointments() {
                     : "var(--surface)"
                   : severityStyle.backgroundColor || (isWeekendSaturday ? "var(--calendar-saturday-row-bg)" : "var(--surface)");
                 let rowBackground = defaultRowBackground;
-                if (!isToday && isSelected) {
-                  if (!isCalmDay) {
-                    rowBackground =
-                      severity === "amber"
-                        ? "var(--calendar-amber-selected-bg)"
-                        : "var(--calendar-red-selected-bg)";
-                  } else {
-                    rowBackground = isWeekendSaturday ? "var(--surface)" : "var(--calendar-saturday-row-bg)";
-                  }
+
+                // Selected date (dark red/purple fill)
+                if (isSelected && !isToday) {
+                  rowBackground = "rgba(var(--danger-rgb), 0.3)"; // Dark red/purple for selected
+                }
+
+                // Today's date (light red/purple fill) - overrides selected if both
+                if (isToday && !isSelected) {
+                  rowBackground = "rgba(var(--danger-rgb), 0.1)"; // Light red/purple for today
+                }
+
+                // Both today AND selected (dark red/purple fill)
+                if (isToday && isSelected) {
+                  rowBackground = "rgba(var(--danger-rgb), 0.3)"; // Dark red/purple for selected today
                 }
                 const severityBorderLeft =
                   !isCalmDay && severityStyle?.borderColor
@@ -1668,6 +1673,7 @@ export default function Appointments() {
                           <input
                             type="number"
                             min="0"
+                            max="6"
                             step="0.5"
                             value={availableHoursValue}
                             onChange={(event) =>

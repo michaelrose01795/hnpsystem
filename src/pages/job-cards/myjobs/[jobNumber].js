@@ -554,35 +554,296 @@ export default function TechJobDetailPage() {
   const getVhcButtonText = () => {
     const jobCardStatus = jobData?.jobCard?.status;
     if (!jobData?.jobCard?.vhcRequired) return "VHC Not Required";
-    if (["VHC Complete", "VHC Sent"].includes(jobCardStatus)) return "✅ VHC Complete";
-    if (vhcChecks.length === 0) return "🚀 Start VHC";
-    return "📋 Continue VHC";
+
+    // Reopen mode - VHC is complete or sent
+    if (["VHC Complete", "VHC Sent"].includes(jobCardStatus)) {
+      return "🔄 Reopen VHC";
+    }
+
+    // In progress - checks exist but not complete
+    if (vhcChecks.length > 0) {
+      return "📋 VHC in Progress";
+    }
+
+    // Fresh start - no checks exist
+    return "🚀 Start VHC";
+  };
+
+  // Helper: Get VHC button color based on state
+  const getVhcButtonColor = () => {
+    const jobCardStatus = jobData?.jobCard?.status;
+    if (!jobData?.jobCard?.vhcRequired) return "var(--surface-light)";
+
+    if (["VHC Complete", "VHC Sent"].includes(jobCardStatus)) {
+      return "var(--warning)"; // Orange for reopen
+    }
+
+    if (vhcChecks.length > 0) {
+      return "var(--primary)"; // Primary for in-progress
+    }
+
+    return "var(--info)"; // Blue for start
   };
 
   // Helper: Get VHC status message
   const getVhcStatusMessage = () => {
     const jobCardStatus = jobData?.jobCard?.status;
-    if (!jobData?.jobCard?.vhcRequired) return "This job does not require a Vehicle Health Check.";
+    if (!jobData?.jobCard?.vhcRequired) return "";
+
     if (["VHC Complete", "VHC Sent"].includes(jobCardStatus)) {
-      return "VHC completed. Review or resend if required.";
+      return "VHC completed. Click 'Reopen VHC' to view or make changes.";
     }
-    if (vhcChecks.length === 0) return "Ready to start the Vehicle Health Check.";
-    return "Continue working through the outstanding VHC items.";
+
+    if (vhcChecks.length > 0) {
+      return "VHC in progress. Continue where you left off.";
+    }
+
+    return "VHC not started. Click to begin the vehicle health check.";
   };
 
-  // Helper: Calculate VHC summary (red and amber items)
-  const getVhcSummary = () => {
-    const redItems = vhcChecks.filter(c => 
-      c.section === "Brakes" || c.severity === "Red"
+  // Helper: Extract ALL concerns and measurements from VHC checksheet data
+  const extractAllVhcItems = () => {
+    const items = [];
+
+    if (!jobData?.vhcChecks || jobData.vhcChecks.length === 0) {
+      return { red: [], amber: [], green: [] };
+    }
+
+    // Find the VHC checksheet blob
+    const vhcChecksheet = jobData.vhcChecks.find(
+      check => check.section === "VHC_CHECKSHEET" || check.section === "VHC Checksheet"
     );
-    const amberItems = vhcChecks.filter(c => 
-      c.section === "Tyres" || c.severity === "Amber"
-    );
-    
-    return { redCount: redItems.length, amberCount: amberItems.length };
+
+    if (!vhcChecksheet || !vhcChecksheet.data) {
+      return { red: [], amber: [], green: [] };
+    }
+
+    const data = vhcChecksheet.data;
+
+    // 1. EXTRACT TYRE MEASUREMENTS
+    if (data.wheelsTyres) {
+      const wheels = ["NSF", "OSF", "NSR", "OSR"];
+      wheels.forEach(wheel => {
+        const wheelData = data.wheelsTyres[wheel];
+        if (wheelData && wheelData.tread) {
+          const { outer, middle, inner } = wheelData.tread;
+
+          const measurements = [outer, middle, inner].filter(Boolean).map(Number);
+          if (measurements.length > 0) {
+            const minTread = Math.min(...measurements);
+            let status = "green";
+            if (minTread < 1.6) status = "red";
+            else if (minTread < 3.0) status = "amber";
+
+            items.push({
+              section: "Wheels & Tyres",
+              title: `${wheel} Tyre Tread Depth`,
+              description: `Outer: ${outer}mm, Middle: ${middle}mm, Inner: ${inner}mm`,
+              status,
+              measurement: minTread,
+              type: "measurement"
+            });
+          }
+        }
+
+        // Extract tyre concerns
+        if (wheelData && Array.isArray(wheelData.concerns)) {
+          wheelData.concerns.forEach(concern => {
+            items.push({
+              section: "Wheels & Tyres",
+              title: `${wheel} - ${concern.title || "Concern"}`,
+              description: concern.text || concern.description || "",
+              status: (concern.status || "green").toLowerCase(),
+              type: "concern"
+            });
+          });
+        }
+      });
+    }
+
+    // 2. EXTRACT BRAKE MEASUREMENTS
+    if (Array.isArray(data.brakesHubs)) {
+      const sides = ["NSF", "OSF", "NSR", "OSR"];
+
+      data.brakesHubs.forEach(axleData => {
+        if (!axleData) return;
+
+        // Extract pad measurements
+        if (axleData.pad) {
+          sides.forEach(side => {
+            const padData = axleData.pad[side];
+            if (padData && padData.measurement) {
+              const measurement = Number(padData.measurement);
+              let status = "green";
+              if (measurement < 2) status = "red";
+              else if (measurement < 4) status = "amber";
+
+              items.push({
+                section: "Brakes & Hubs",
+                title: `${side} Brake Pad Thickness`,
+                description: `${measurement}mm remaining`,
+                status,
+                measurement,
+                type: "measurement"
+              });
+            }
+
+            // Extract pad concerns
+            if (padData && Array.isArray(padData.concerns)) {
+              padData.concerns.forEach(concern => {
+                items.push({
+                  section: "Brakes & Hubs",
+                  title: `${side} Pad - ${concern.title || "Concern"}`,
+                  description: concern.text || concern.description || "",
+                  status: (concern.status || "green").toLowerCase(),
+                  type: "concern"
+                });
+              });
+            }
+          });
+        }
+
+        // Extract disc measurements
+        if (axleData.disc) {
+          sides.forEach(side => {
+            const discData = axleData.disc[side];
+            if (discData && discData.measurement) {
+              const measurement = Number(discData.measurement);
+              let status = "green";
+              if (measurement < 22) status = "red";
+              else if (measurement < 25) status = "amber";
+
+              items.push({
+                section: "Brakes & Hubs",
+                title: `${side} Brake Disc Thickness`,
+                description: `${measurement}mm remaining`,
+                status,
+                measurement,
+                type: "measurement"
+              });
+            }
+
+            // Extract disc concerns
+            if (discData && Array.isArray(discData.concerns)) {
+              discData.concerns.forEach(concern => {
+                items.push({
+                  section: "Brakes & Hubs",
+                  title: `${side} Disc - ${concern.title || "Concern"}`,
+                  description: concern.text || concern.description || "",
+                  status: (concern.status || "green").toLowerCase(),
+                  type: "concern"
+                });
+              });
+            }
+          });
+        }
+      });
+    }
+
+    // 3. EXTRACT SERVICE INDICATOR & OIL STATUS
+    if (data.serviceIndicator) {
+      const si = data.serviceIndicator;
+
+      if (si.serviceChoice) {
+        const labels = {
+          reset: "Service Reminder Reset",
+          not_required: "Service Reminder Not Required",
+          no_reminder: "Doesn't Have a Service Reminder",
+          indicator_on: "Service Indicator On"
+        };
+
+        items.push({
+          section: "Service Indicator",
+          title: "Service Reminder Status",
+          description: labels[si.serviceChoice] || si.serviceChoice,
+          status: si.serviceChoice === "indicator_on" ? "amber" : "green",
+          type: "info"
+        });
+      }
+
+      if (si.oilStatus) {
+        items.push({
+          section: "Service Indicator",
+          title: "Oil Status",
+          description: `Oil level check: ${si.oilStatus}`,
+          status: si.oilStatus === "No" ? "red" : "green",
+          type: "info"
+        });
+      }
+
+      if (Array.isArray(si.concerns)) {
+        si.concerns.forEach(concern => {
+          items.push({
+            section: "Service Indicator",
+            title: concern.source || "Under Bonnet",
+            description: concern.text || concern.description || "",
+            status: (concern.status || "green").toLowerCase(),
+            type: "concern"
+          });
+        });
+      }
+    }
+
+    // 4-6. EXTRACT CONCERNS FROM OTHER SECTIONS
+    const sections = [
+      { key: 'externalInspection', name: 'External Inspection' },
+      { key: 'internalElectrics', name: 'Internal & Electrics' },
+      { key: 'underside', name: 'Underside' }
+    ];
+
+    sections.forEach(({ key, name }) => {
+      if (data[key]) {
+        const sectionData = data[key];
+
+        if (Array.isArray(sectionData)) {
+          sectionData.forEach(category => {
+            if (category && Array.isArray(category.concerns)) {
+              category.concerns.forEach(concern => {
+                items.push({
+                  section: name,
+                  title: category.name || name,
+                  description: concern.text || concern.description || "",
+                  status: (concern.status || "green").toLowerCase(),
+                  type: "concern"
+                });
+              });
+            }
+          });
+        } else if (typeof sectionData === "object") {
+          Object.entries(sectionData).forEach(([subsystem, subsystemData]) => {
+            if (subsystemData && Array.isArray(subsystemData.concerns)) {
+              subsystemData.concerns.forEach(concern => {
+                items.push({
+                  section: name,
+                  title: subsystem,
+                  description: concern.text || concern.description || "",
+                  status: (concern.status || "green").toLowerCase(),
+                  type: "concern"
+                });
+              });
+            }
+          });
+        }
+      }
+    });
+
+    // Categorize by status
+    const buckets = { red: [], amber: [], green: [] };
+    items.forEach(item => {
+      const status = (item.status || "green").toLowerCase();
+      if (status.includes("red") || status === "danger") {
+        buckets.red.push(item);
+      } else if (status.includes("amber") || status === "advisory" || status === "warning") {
+        buckets.amber.push(item);
+      } else {
+        buckets.green.push(item);
+      }
+    });
+
+    return buckets;
   };
 
-  const vhcSummary = getVhcSummary();
+  const vhcItems = extractAllVhcItems();
 
   const techsList = usersByRole?.["Techs"] || [];
   const motTestersList = usersByRole?.["MOT Tester"] || [];
@@ -815,17 +1076,17 @@ export default function TechJobDetailPage() {
           >
             ← Back
           </button>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ 
-              color: "var(--primary)", 
-              fontSize: "28px", 
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+            <h1 style={{
+              color: "var(--primary)",
+              fontSize: "28px",
               fontWeight: "700",
-              margin: "0 0 4px 0"
+              margin: "0"
             }}>
               Job #{jobCard.jobNumber}
             </h1>
             <p style={{ color: "var(--grey-accent)", fontSize: "14px", margin: 0 }}>
-              {customer.firstName} {customer.lastName} | {vehicle.reg}
+              {customer.firstName} {customer.lastName} • {vehicle.reg} • {vehicle.makeModel}
             </p>
           </div>
           <div style={{
@@ -852,59 +1113,6 @@ export default function TechJobDetailPage() {
             <span style={{ fontSize: "12px", color: "var(--info)" }}>
               Updated {formatDateTime(jobCard.updatedAt)}
             </span>
-          </div>
-        </div>
-
-        {/* Job Summary Card */}
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "20px 24px",
-          borderRadius: "8px",
-          backgroundColor: "var(--surface)",
-          border: "1px solid var(--surface-light)",
-          boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
-          gap: "24px",
-          marginBottom: "12px",
-          flexShrink: 0
-        }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <span style={{ fontSize: "12px", color: "var(--primary)", fontWeight: "600", letterSpacing: "0.06em" }}>
-              JOB SUMMARY
-            </span>
-            <h2 style={{
-              color: "var(--info-dark)",
-              fontSize: "28px",
-              fontWeight: "700",
-              margin: 0
-            }}>
-              #{jobCard.jobNumber} • {vehicle.reg}
-            </h2>
-            <span style={{ fontSize: "15px", color: "var(--info)" }}>
-              {customer.firstName} {customer.lastName} • {vehicle.makeModel}
-            </span>
-          </div>
-
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "20px",
-            borderLeft: "1px solid var(--surface-light)",
-            paddingLeft: "20px"
-          }}>
-            <div style={{ textAlign: "center" }}>
-              <span style={{ fontSize: "12px", color: "var(--info)", fontWeight: "600" }}>Booked</span>
-              <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--info-dark)" }}>
-                {formatDateTime(jobCard.createdAt)}
-              </div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <span style={{ fontSize: "12px", color: "var(--info)", fontWeight: "600" }}>Advisor</span>
-              <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--info-dark)" }}>
-                {jobCard.serviceAdvisor || "TBC"}
-              </div>
-            </div>
           </div>
         </div>
 
@@ -1140,13 +1348,13 @@ export default function TechJobDetailPage() {
                   Vehicle Health Check
                 </h3>
                 
-                {/* Start/Continue VHC Button */}
+                {/* Dynamic VHC Action Button */}
                 <button
                   onClick={handleVhcClick}
                   disabled={!jobRequiresVhc}
                   style={{
                     padding: "12px 24px",
-                    backgroundColor: jobRequiresVhc ? "var(--primary)" : "var(--surface-light)",
+                    backgroundColor: jobRequiresVhc ? getVhcButtonColor() : "var(--surface-light)",
                     color: "white",
                     border: "none",
                     borderRadius: "8px",
@@ -1158,13 +1366,13 @@ export default function TechJobDetailPage() {
                   }}
                   onMouseEnter={(e) => {
                     if (jobRequiresVhc) {
-                      e.currentTarget.style.backgroundColor = "var(--primary-dark)";
+                      e.currentTarget.style.transform = "translateY(-2px)";
                       e.currentTarget.style.boxShadow = "0 6px 16px rgba(var(--primary-rgb),0.3)";
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (jobRequiresVhc) {
-                      e.currentTarget.style.backgroundColor = "var(--primary)";
+                      e.currentTarget.style.transform = "translateY(0)";
                       e.currentTarget.style.boxShadow = "0 4px 12px rgba(var(--primary-rgb),0.2)";
                     }
                   }}
@@ -1172,7 +1380,9 @@ export default function TechJobDetailPage() {
                   {getVhcButtonText()}
                 </button>
               </div>
-              <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
+
+              {/* Status Message */}
+              <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "-12px" }}>
                 {getVhcStatusMessage()}
               </div>
 
@@ -1199,7 +1409,7 @@ export default function TechJobDetailPage() {
               {/* VHC Required - Show Summary */}
               {jobRequiresVhc && (
                 <>
-                  {/* VHC Summary Stats */}
+                  {/* Count Cards: RED, AMBER, GREEN */}
                   <div style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(3, 1fr)",
@@ -1214,7 +1424,7 @@ export default function TechJobDetailPage() {
                       textAlign: "center"
                     }}>
                       <div style={{ fontSize: "32px", fontWeight: "700", color: "var(--danger)" }}>
-                        {vhcSummary.redCount}
+                        {vhcItems.red.length}
                       </div>
                       <div style={{ fontSize: "13px", color: "var(--danger)", fontWeight: "600", marginTop: "4px" }}>
                         RED ITEMS
@@ -1228,7 +1438,7 @@ export default function TechJobDetailPage() {
                       textAlign: "center"
                     }}>
                       <div style={{ fontSize: "32px", fontWeight: "700", color: "var(--warning)" }}>
-                        {vhcSummary.amberCount}
+                        {vhcItems.amber.length}
                       </div>
                       <div style={{ fontSize: "13px", color: "var(--danger-dark)", fontWeight: "600", marginTop: "4px" }}>
                         AMBER ITEMS
@@ -1236,22 +1446,22 @@ export default function TechJobDetailPage() {
                     </div>
                     <div style={{
                       padding: "20px",
-                      backgroundColor: "var(--info-surface)",
+                      backgroundColor: "var(--success-surface)",
                       borderRadius: "12px",
-                      border: "1px solid var(--info)",
+                      border: "1px solid var(--success)",
                       textAlign: "center"
                     }}>
-                      <div style={{ fontSize: "32px", fontWeight: "700", color: "var(--info-dark)" }}>
-                        {vhcChecks.length}
+                      <div style={{ fontSize: "32px", fontWeight: "700", color: "var(--success)" }}>
+                        {vhcItems.green.length}
                       </div>
-                      <div style={{ fontSize: "13px", color: "var(--info-dark)", fontWeight: "600", marginTop: "4px" }}>
-                        TOTAL CHECKS
+                      <div style={{ fontSize: "13px", color: "var(--success-dark)", fontWeight: "600", marginTop: "4px" }}>
+                        GREEN ITEMS
                       </div>
                     </div>
                   </div>
 
-                  {/* VHC Checks List */}
-                  {vhcChecks.length === 0 ? (
+                  {/* Detailed Items List */}
+                  {(vhcItems.red.length + vhcItems.amber.length + vhcItems.green.length) === 0 ? (
                     <div style={{
                       textAlign: "center",
                       padding: "40px",
@@ -1261,87 +1471,197 @@ export default function TechJobDetailPage() {
                       border: "1px solid var(--surface-light)"
                     }}>
                       <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
-                      <p style={{ fontSize: "16px", fontWeight: "600" }}>No VHC Checks Added Yet</p>
+                      <p style={{ fontSize: "16px", fontWeight: "600" }}>No VHC Items Recorded Yet</p>
                       <p style={{ fontSize: "14px", color: "var(--info)", marginTop: "8px" }}>
-                        Click &quot;Start VHC&quot; above to begin the vehicle health check.
+                        Click &quot;{getVhcButtonText()}&quot; above to begin the vehicle health check.
                       </p>
                     </div>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                      <h4 style={{ 
-                        fontSize: "14px", 
-                        fontWeight: "600", 
-                        color: "var(--info)", 
-                        textTransform: "uppercase", 
+                      <h4 style={{
+                        fontSize: "14px",
+                        fontWeight: "600",
+                        color: "var(--info)",
+                        textTransform: "uppercase",
                         letterSpacing: "0.05em",
                         marginBottom: "8px"
                       }}>
-                        Items Found ({vhcChecks.length})
+                        All Items ({vhcItems.red.length + vhcItems.amber.length + vhcItems.green.length})
                       </h4>
-                      {vhcChecks.map(check => {
-                        const isRed = check.section === "Brakes" || check.severity === "Red";
-                        const isAmber = check.section === "Tyres" || check.severity === "Amber";
-                        const badgeColor = isRed ? "var(--danger)" : isAmber ? "var(--warning)" : "var(--info)";
-                        const bgColor = isRed ? "var(--danger-surface)" : isAmber ? "var(--warning-surface)" : "var(--info-surface)";
-                        const borderColor = isRed ? "var(--danger-surface)" : isAmber ? "var(--warning-surface)" : "var(--accent-purple-surface)";
 
-                        return (
-                          <div key={check.vhc_id} style={{
-                            padding: "16px",
-                            border: `1px solid ${borderColor}`,
-                            borderLeft: `4px solid ${badgeColor}`,
-                            borderRadius: "12px",
-                            backgroundColor: bgColor,
-                            boxShadow: "0 2px 6px rgba(var(--shadow-rgb),0.06)"
-                          }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-                                  <span style={{
-                                    padding: "4px 10px",
-                                    backgroundColor: badgeColor,
-                                    borderRadius: "6px",
-                                    fontSize: "11px",
-                                    fontWeight: "700",
-                                    color: "white",
-                                    letterSpacing: "0.05em",
-                                    textTransform: "uppercase"
-                                  }}>
-                                    {isRed ? "RED" : isAmber ? "AMBER" : "INFO"}
-                                  </span>
-                                  <span style={{
-                                    fontSize: "12px",
-                                    color: "var(--info)",
-                                    fontWeight: "600"
-                                  }}>
-                                    {check.section}
-                                  </span>
-                                </div>
-                                <p style={{ fontSize: "16px", fontWeight: "600", margin: "0 0 6px 0", color: "var(--info-dark)" }}>
-                                  {check.issue_title}
-                                </p>
-                                <p style={{ fontSize: "14px", color: "var(--info)", margin: 0, lineHeight: 1.5 }}>
-                                  {check.issue_description}
-                                </p>
-                              </div>
-                              {check.measurement && (
-                                <div style={{
-                                  padding: "10px 18px",
-                                  backgroundColor: "var(--surface)",
-                                  color: badgeColor,
-                                  borderRadius: "10px",
-                                  fontSize: "18px",
+                      {/* Red Items */}
+                      {vhcItems.red.map((item, idx) => (
+                        <div key={`red-${idx}`} style={{
+                          padding: "16px",
+                          border: "1px solid var(--danger-surface)",
+                          borderLeft: "4px solid var(--danger)",
+                          borderRadius: "12px",
+                          backgroundColor: "var(--danger-surface)",
+                          boxShadow: "0 2px 6px rgba(var(--shadow-rgb),0.06)"
+                        }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+                                <span style={{
+                                  padding: "4px 10px",
+                                  backgroundColor: "var(--danger)",
+                                  borderRadius: "6px",
+                                  fontSize: "11px",
                                   fontWeight: "700",
-                                  border: `2px solid ${badgeColor}`,
-                                  marginLeft: "16px"
+                                  color: "white",
+                                  letterSpacing: "0.05em",
+                                  textTransform: "uppercase"
                                 }}>
-                                  £{parseFloat(check.measurement).toFixed(2)}
-                                </div>
-                              )}
+                                  RED
+                                </span>
+                                <span style={{
+                                  fontSize: "12px",
+                                  color: "var(--info)",
+                                  fontWeight: "600"
+                                }}>
+                                  {item.section}
+                                </span>
+                              </div>
+                              <p style={{ fontSize: "16px", fontWeight: "600", margin: "0 0 6px 0", color: "var(--info-dark)" }}>
+                                {item.title}
+                              </p>
+                              <p style={{ fontSize: "14px", color: "var(--info)", margin: 0, lineHeight: 1.5 }}>
+                                {item.description}
+                              </p>
                             </div>
+                            {item.measurement && (
+                              <div style={{
+                                padding: "10px 18px",
+                                backgroundColor: "var(--surface)",
+                                color: "var(--danger)",
+                                borderRadius: "10px",
+                                fontSize: "18px",
+                                fontWeight: "700",
+                                border: "2px solid var(--danger)",
+                                marginLeft: "16px"
+                              }}>
+                                {item.measurement}mm
+                              </div>
+                            )}
                           </div>
-                        );
-                      })}
+                        </div>
+                      ))}
+
+                      {/* Amber Items */}
+                      {vhcItems.amber.map((item, idx) => (
+                        <div key={`amber-${idx}`} style={{
+                          padding: "16px",
+                          border: "1px solid var(--warning-surface)",
+                          borderLeft: "4px solid var(--warning)",
+                          borderRadius: "12px",
+                          backgroundColor: "var(--warning-surface)",
+                          boxShadow: "0 2px 6px rgba(var(--shadow-rgb),0.06)"
+                        }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+                                <span style={{
+                                  padding: "4px 10px",
+                                  backgroundColor: "var(--warning)",
+                                  borderRadius: "6px",
+                                  fontSize: "11px",
+                                  fontWeight: "700",
+                                  color: "white",
+                                  letterSpacing: "0.05em",
+                                  textTransform: "uppercase"
+                                }}>
+                                  AMBER
+                                </span>
+                                <span style={{
+                                  fontSize: "12px",
+                                  color: "var(--info)",
+                                  fontWeight: "600"
+                                }}>
+                                  {item.section}
+                                </span>
+                              </div>
+                              <p style={{ fontSize: "16px", fontWeight: "600", margin: "0 0 6px 0", color: "var(--info-dark)" }}>
+                                {item.title}
+                              </p>
+                              <p style={{ fontSize: "14px", color: "var(--info)", margin: 0, lineHeight: 1.5 }}>
+                                {item.description}
+                              </p>
+                            </div>
+                            {item.measurement && (
+                              <div style={{
+                                padding: "10px 18px",
+                                backgroundColor: "var(--surface)",
+                                color: "var(--warning)",
+                                borderRadius: "10px",
+                                fontSize: "18px",
+                                fontWeight: "700",
+                                border: "2px solid var(--warning)",
+                                marginLeft: "16px"
+                              }}>
+                                {item.measurement}mm
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Green Items */}
+                      {vhcItems.green.map((item, idx) => (
+                        <div key={`green-${idx}`} style={{
+                          padding: "16px",
+                          border: "1px solid var(--success-surface)",
+                          borderLeft: "4px solid var(--success)",
+                          borderRadius: "12px",
+                          backgroundColor: "var(--success-surface)",
+                          boxShadow: "0 2px 6px rgba(var(--shadow-rgb),0.06)"
+                        }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+                                <span style={{
+                                  padding: "4px 10px",
+                                  backgroundColor: "var(--success)",
+                                  borderRadius: "6px",
+                                  fontSize: "11px",
+                                  fontWeight: "700",
+                                  color: "white",
+                                  letterSpacing: "0.05em",
+                                  textTransform: "uppercase"
+                                }}>
+                                  GREEN
+                                </span>
+                                <span style={{
+                                  fontSize: "12px",
+                                  color: "var(--info)",
+                                  fontWeight: "600"
+                                }}>
+                                  {item.section}
+                                </span>
+                              </div>
+                              <p style={{ fontSize: "16px", fontWeight: "600", margin: "0 0 6px 0", color: "var(--info-dark)" }}>
+                                {item.title}
+                              </p>
+                              <p style={{ fontSize: "14px", color: "var(--info)", margin: 0, lineHeight: 1.5 }}>
+                                {item.description}
+                              </p>
+                            </div>
+                            {item.measurement && (
+                              <div style={{
+                                padding: "10px 18px",
+                                backgroundColor: "var(--surface)",
+                                color: "var(--success)",
+                                borderRadius: "10px",
+                                fontSize: "18px",
+                                fontWeight: "700",
+                                border: "2px solid var(--success)",
+                                marginLeft: "16px"
+                              }}>
+                                {item.measurement}mm
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </>

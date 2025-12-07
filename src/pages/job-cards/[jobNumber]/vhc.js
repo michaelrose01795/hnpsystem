@@ -67,6 +67,13 @@ const deriveSectionStatusFromSavedData = (savedData = {}) => {
   return derived;
 };
 
+// Helper: Check if a concern is locked (approved or declined)
+const isConcernLocked = (concern) => {
+  if (!concern || typeof concern !== "object") return false;
+  const status = (concern.status || "").toLowerCase();
+  return status.includes("approved") || status.includes("declined") || status.includes("authorized");
+};
+
 // 🎨 Shared VHC design tokens so dashboard + tech view stay aligned
 const styles = vhcLayoutStyles;
 
@@ -112,6 +119,7 @@ export default function VHCPAGE() {
 
   const [activeSection, setActiveSection] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isReopenMode, setIsReopenMode] = useState(false);
 
   const markSectionState = useCallback((sectionKey, nextState) => {
     if (!trackedSectionKeys.has(sectionKey)) return;
@@ -144,6 +152,10 @@ export default function VHCPAGE() {
         const job = await getJobByNumberOrReg(jobNumber);
         if (job) {
           setJobInfo(job);
+
+          // ✅ DETECT REOPEN MODE
+          const jobStatus = job?.jobCard?.status || "";
+          setIsReopenMode(["VHC Complete", "VHC Sent"].includes(jobStatus));
         }
         if (job?.vhcChecks?.length > 0 && job.vhcChecks[0].data) {
           setVhcData((prev) => ({
@@ -226,11 +238,29 @@ export default function VHCPAGE() {
 
   const handleComplete = async () => {
     if (!mandatoryComplete) return;
+    if (isReopenMode) {
+      alert("Cannot complete VHC in reopen mode - it is already marked as complete.");
+      return;
+    }
+
     const success = await persistVhcData(vhcData);
     if (!success) {
       alert("We couldn't save your VHC data. Please try again.");
       return;
     }
+
+    // ✅ UPDATE JOB STATUS TO "VHC Complete"
+    try {
+      const jobCardId = jobInfo?.jobCard?.id;
+      if (jobCardId) {
+        const { updateJobStatus } = await import("@/lib/database/jobs");
+        await updateJobStatus(jobCardId, "VHC Complete");
+      }
+    } catch (statusError) {
+      console.error("❌ Failed to update job status:", statusError);
+      // Continue navigation even if status update fails
+    }
+
     const targetJobNumber = jobInfo?.jobNumber || jobNumber;
     router.push(
       targetJobNumber ? `/job-cards/myjobs/${targetJobNumber}` : "/job-cards/myjobs"
@@ -518,6 +548,45 @@ export default function VHCPAGE() {
           </div>
         </div>
 
+        {/* Reopen Mode Warning Banner */}
+        {isReopenMode && (
+          <div style={{
+            padding: "16px 20px",
+            backgroundColor: "var(--warning-surface)",
+            border: "1px solid var(--warning)",
+            borderRadius: "12px",
+            marginBottom: "12px",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            boxShadow: "0 4px 12px rgba(var(--warning-rgb),0.16)"
+          }}>
+            <div style={{
+              fontSize: "24px",
+              flexShrink: 0
+            }}>
+              ⚠️
+            </div>
+            <div style={{ flex: 1 }}>
+              <h4 style={{
+                margin: "0 0 4px 0",
+                fontSize: "16px",
+                fontWeight: "700",
+                color: "var(--warning)"
+              }}>
+                Reopen Mode - VHC Already Completed
+              </h4>
+              <p style={{
+                margin: 0,
+                fontSize: "14px",
+                color: "var(--info-dark)"
+              }}>
+                This VHC has been marked as complete. You can view and edit items, but you cannot change the completion status. Items that have been approved or declined by the customer are locked.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div style={styles.mainCard}>
         <div style={styles.sectionHeader}>
           <h2 style={styles.sectionTitle}>Mandatory Sections</h2>
@@ -568,8 +637,8 @@ export default function VHCPAGE() {
             <button
               type="button"
               onClick={handleComplete}
-              disabled={!mandatoryComplete}
-              style={buttonStyle("primary", !mandatoryComplete)}
+              disabled={!mandatoryComplete || isReopenMode}
+              style={buttonStyle("primary", !mandatoryComplete || isReopenMode)}
               onMouseEnter={(e) => {
                 if (e.currentTarget.disabled) return;
                 e.currentTarget.style.transform = "translateY(-2px)";
@@ -577,8 +646,9 @@ export default function VHCPAGE() {
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
               }}
+              title={isReopenMode ? "Cannot complete in reopen mode - VHC already marked complete" : ""}
             >
-              Complete VHC
+              {isReopenMode ? "🔒 VHC Already Complete" : "Complete VHC"}
             </button>
           </div>
         </div>
@@ -713,6 +783,8 @@ export default function VHCPAGE() {
             initialData={vhcData.wheelsTyres}
             onClose={(draft) => handleSectionDismiss("wheelsTyres", draft)}
             onComplete={(data) => handleSectionComplete("wheelsTyres", data)}
+            isReopenMode={isReopenMode}
+            isConcernLocked={isConcernLocked}
           />
         )}
         {activeSection === "brakesHubs" && (
@@ -721,6 +793,8 @@ export default function VHCPAGE() {
             initialData={vhcData.brakesHubs}
             onClose={(draft) => handleSectionDismiss("brakesHubs", draft)}
             onComplete={(data) => handleSectionComplete("brakesHubs", data)}
+            isReopenMode={isReopenMode}
+            isConcernLocked={isConcernLocked}
           />
         )}
         {activeSection === "serviceIndicator" && (
@@ -729,6 +803,8 @@ export default function VHCPAGE() {
             initialData={vhcData.serviceIndicator}
             onClose={(draft) => handleSectionDismiss("serviceIndicator", draft)}
             onComplete={(data) => handleSectionComplete("serviceIndicator", data)}
+            isReopenMode={isReopenMode}
+            isConcernLocked={isConcernLocked}
           />
         )}
         {activeSection === "externalInspection" && (
@@ -737,6 +813,8 @@ export default function VHCPAGE() {
             initialData={vhcData.externalInspection}
             onClose={(draft) => handleSectionDismiss("externalInspection", draft)}
             onComplete={(data) => handleSectionComplete("externalInspection", data)}
+            isReopenMode={isReopenMode}
+            isConcernLocked={isConcernLocked}
           />
         )}
         {activeSection === "internalElectrics" && (
@@ -745,6 +823,8 @@ export default function VHCPAGE() {
             initialData={vhcData.internalElectrics}
             onClose={(draft) => handleSectionDismiss("internalElectrics", draft)}
             onComplete={(data) => handleSectionComplete("internalElectrics", data)}
+            isReopenMode={isReopenMode}
+            isConcernLocked={isConcernLocked}
           />
         )}
         {activeSection === "underside" && (
@@ -753,6 +833,8 @@ export default function VHCPAGE() {
             initialData={vhcData.underside}
             onClose={(draft) => handleSectionDismiss("underside", draft)}
             onComplete={(data) => handleSectionComplete("underside", data)}
+            isReopenMode={isReopenMode}
+            isConcernLocked={isConcernLocked}
           />
         )}
     </div>
