@@ -356,10 +356,16 @@ export default function NewsFeed() {
         <div
           className="fixed inset-0 flex items-center justify-center p-4"
           style={{
-            backgroundColor: "rgba(0, 0, 0, 0.6)",
-            backdropFilter: "blur(4px)",
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
             overflow: "auto",
-            zIndex: 1300
+            zIndex: 9999,
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0
           }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
@@ -372,6 +378,10 @@ export default function NewsFeed() {
             className="bg-[var(--surface)] border border-[var(--surface-light)] rounded-[32px] shadow-2xl w-full max-w-2xl my-8"
             role="dialog"
             aria-modal="true"
+            style={{
+              position: "relative",
+              zIndex: 10000
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
