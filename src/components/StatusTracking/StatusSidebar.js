@@ -232,12 +232,10 @@ export default function StatusSidebar({
         height: 'calc(100vh - 170px)',
         width: 'auto',
         backgroundColor: 'var(--surface)',
-        boxShadow: isOpen
-          ? '0 20px 40px rgba(var(--shadow-rgb),0.15)'
-          : 'none',
+        boxShadow: 'none',
         borderRadius: '20px',
         transform: isOpen ? 'translateY(0)' : 'translateY(calc(100% + 32px))',
-        transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+        transition: 'transform 0.3s ease-in-out',
         zIndex: 50,
         display: 'flex',
         flexDirection: 'column',
@@ -250,7 +248,7 @@ export default function StatusSidebar({
         height: '100%',
         minHeight: '100%',
         backgroundColor: 'var(--surface)',
-        boxShadow: '0 20px 40px rgba(var(--primary-rgb),0.12)',
+        boxShadow: 'none',
         borderRadius: '16px',
         border: '1px solid var(--surface-light)',
         display: 'flex',
@@ -266,12 +264,10 @@ export default function StatusSidebar({
         minHeight: '100vh',
         width: `${panelWidth}px`,
         backgroundColor: 'var(--surface)',
-        boxShadow: isOpen
-          ? '-8px 0 32px rgba(var(--shadow-rgb),0.15), 0 8px 32px rgba(var(--shadow-rgb),0.1)'
-          : 'none',
+        boxShadow: 'none',
         borderRadius: '0px',
         transform: isOpen ? 'translateX(0)' : `translateX(${panelWidth}px)`,
-        transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+        transition: 'transform 0.3s ease-in-out',
         zIndex: 50,
         display: 'flex',
         flexDirection: 'column',

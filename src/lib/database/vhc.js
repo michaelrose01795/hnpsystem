@@ -64,16 +64,34 @@ const SEND_HISTORY_COLUMNS = [ // Canonical column list for vhc_send_history.
   "created_at", // Timestamp when the log row was created.
 ].join(", "); // Join columns for selects.
 
-const mapCheckRow = (row = {}) => ({ // Convert snake_case database row into camelCase object.
-  id: row.vhc_id, // Primary key value.
-  jobId: row.job_id, // Job reference.
-  section: row.section, // Section label.
-  issueTitle: row.issue_title, // Issue title text.
-  issueDescription: row.issue_description, // Issue description text.
-  measurement: row.measurement, // Optional measurement.
-  createdAt: row.created_at, // Creation timestamp.
-  updatedAt: row.updated_at, // Update timestamp.
-}); // Close mapper helper.
+const mapCheckRow = (row = {}) => { // Convert snake_case database row into camelCase object.
+  let structuredData = null;
+  const candidate = row.issue_description;
+
+  // Try to parse JSON from issue_description (for VHC checksheet data)
+  if (candidate) {
+    try {
+      const parsed = typeof candidate === "string" ? JSON.parse(candidate) : candidate;
+      if (parsed && typeof parsed === "object") {
+        structuredData = parsed;
+      }
+    } catch (_err) {
+      // Ignore parse errors – some legacy rows store plain text
+    }
+  }
+
+  return {
+    id: row.vhc_id, // Primary key value.
+    jobId: row.job_id, // Job reference.
+    section: row.section, // Section label.
+    issueTitle: row.issue_title, // Issue title text.
+    issueDescription: row.issue_description, // Issue description text (raw).
+    data: structuredData, // Parsed JSON data if available.
+    measurement: row.measurement, // Optional measurement.
+    createdAt: row.created_at, // Creation timestamp.
+    updatedAt: row.updated_at, // Update timestamp.
+  };
+}; // Close mapper helper.
 
 const mapWorkflowRow = (row = {}) => ({ // Normalize workflow summary rows.
   jobId: row.job_id, // Job reference.

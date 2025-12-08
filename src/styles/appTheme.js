@@ -29,9 +29,9 @@ const radii = {
 };
 
 const shadows = {
-  sm: "0 4px 12px rgba(var(--shadow-rgb), 0.08)",
-  md: "0 8px 20px rgba(var(--shadow-rgb), 0.12)",
-  lg: "0 16px 36px rgba(var(--shadow-rgb), 0.16)",
+  sm: "none",
+  md: "none",
+  lg: "none",
 };
 
 export const vhcCardStates = {
@@ -63,8 +63,8 @@ export const createVhcButtonStyle = (variant = "primary", { disabled = false } =
     fontWeight: "600",
     border: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    transition: "transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
-    boxShadow: disabled ? "none" : shadows.sm,
+    transition: "transform 0.2s ease, background-color 0.2s ease",
+    boxShadow: "none",
   };
 
   if (variant === "secondary") {
@@ -107,7 +107,7 @@ export const vhcLayoutStyles = {
     border: `1px solid ${palette.border}`,
     borderRadius: radii.xl,
     padding: "24px",
-    boxShadow: shadows.sm,
+    boxShadow: "none",
     display: "flex",
     flexDirection: "column",
     gap: "18px",
@@ -193,7 +193,7 @@ export const vhcLayoutStyles = {
     borderRadius: "24px",
     border: `1px solid ${palette.border}`,
     background: "var(--surface)",
-    boxShadow: shadows.sm,
+    boxShadow: "none",
     overflow: "hidden",
   },
   sectionHeader: {
@@ -224,16 +224,16 @@ export const vhcLayoutStyles = {
     backgroundColor: palette.surface,
     borderRadius: radii.lg,
     padding: "20px",
-    boxShadow: shadows.sm,
+    boxShadow: "none",
     cursor: "pointer",
-    transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+    transition: "transform 0.2s ease, border-color 0.2s ease",
     display: "flex",
     flexDirection: "column",
     gap: "12px",
   },
   sectionCardHover: {
     transform: "translateY(-3px)",
-    boxShadow: shadows.md,
+    boxShadow: "none",
     borderColor: palette.accent,
   },
   cardTitle: {
@@ -288,7 +288,7 @@ export const vhcModalStyles = {
     background: palette.modalGradient,
     borderRadius: radii.xl,
     border: `1px solid ${palette.border}`,
-    boxShadow: shadows.lg,
+    boxShadow: "none",
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
@@ -347,7 +347,7 @@ export const vhcModalContentStyles = {
     borderRadius: radii.lg,
     border: `1px solid ${palette.border}`,
     background: palette.accentSurface,
-    boxShadow: "0 6px 16px rgba(var(--primary-rgb),0.12)",
+    boxShadow: "none",
   },
   summaryTextBlock: {
     display: "flex",
@@ -396,9 +396,9 @@ export const vhcModalContentStyles = {
     backgroundColor: palette.surface,
     borderRadius: radii.lg,
     padding: "20px",
-    boxShadow: shadows.sm,
+    boxShadow: "none",
     cursor: "pointer",
-    transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+    transition: "transform 0.2s ease, border-color 0.2s ease",
     display: "flex",
     flexDirection: "column",
     gap: "12px",
@@ -406,7 +406,7 @@ export const vhcModalContentStyles = {
   },
   baseCardHover: {
     transform: "translateY(-3px)",
-    boxShadow: shadows.md,
+    boxShadow: "none",
     borderColor: palette.accent,
   },
 };
@@ -429,7 +429,7 @@ export const popupCardStyles = {
   background: palette.modalGradient,
   borderRadius: radii.xl,
   border: `1px solid ${palette.border}`,
-  boxShadow: "0 28px 68px rgba(var(--shadow-rgb), 0.28)",
+  boxShadow: "none",
   color: palette.textPrimary,
   overflowY: "auto",
 };

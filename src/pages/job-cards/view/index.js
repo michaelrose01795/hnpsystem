@@ -920,7 +920,7 @@ export default function ViewJobCards() {
                 </button>
 
                 <button
-                  onClick={() => router.push(`/job-cards/${popupJob.jobNumber}/vhc`)}
+                  onClick={() => router.push(`/job-cards/myjobs/${popupJob.jobNumber}?tab=vhc`)}
                   style={{
                     flex: 1,
                     padding: "12px 20px",

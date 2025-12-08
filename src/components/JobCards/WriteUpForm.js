@@ -105,7 +105,7 @@ const sectionBoxStyle = {
   backgroundColor: "var(--info-surface)",
   padding: "18px",
   borderRadius: "16px",
-  boxShadow: "0 12px 24px rgba(var(--accent-purple-rgb), 0.05)",
+  boxShadow: "none",
   border: "1px solid var(--accent-purple-surface)",
   display: "flex",
   flexDirection: "column",
@@ -161,7 +161,7 @@ const modernButtonStyle = {
   fontWeight: 600,
   fontSize: "14px",
   cursor: "pointer",
-  transition: "transform 0.15s ease, box-shadow 0.15s ease",
+  transition: "transform 0.15s ease",
 };
 
 const sectionHeaderStyle = {
@@ -220,7 +220,7 @@ const rectificationCardStyle = (completed) => ({
   display: "flex",
   flexDirection: "column",
   gap: "8px",
-  boxShadow: "0 4px 10px rgba(var(--shadow-rgb),0.05)",
+  boxShadow: "none",
 });
 
 const rectRowHeaderStyle = {
@@ -250,7 +250,7 @@ const causeRowStyle = {
   display: "flex",
   flexDirection: "column",
   gap: "12px",
-  boxShadow: "0 4px 16px rgba(var(--shadow-rgb),0.04)",
+  boxShadow: "none",
 };
 
 const generateCauseId = () => {
@@ -1035,7 +1035,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
           padding: "16px",
           backgroundColor: "var(--surface)",
           borderRadius: "16px",
-          boxShadow: "0 10px 30px rgba(var(--shadow-rgb),0.08)",
+          boxShadow: "none",
           flexShrink: 0
         }}>
           <button
@@ -1044,7 +1044,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
               ...modernButtonStyle,
               backgroundColor: "var(--accent-purple)",
               color: "white",
-              boxShadow: "0 6px 12px rgba(var(--shadow-rgb),0.2)",
+              boxShadow: "none",
             }}
           >
             ← Back to job
@@ -1079,7 +1079,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       <div style={{
         flex: 1,
         borderRadius: "8px",
-        boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
+        boxShadow: "none",
         border: "1px solid var(--surface-light)",
         background: "var(--surface)",
         padding: "24px",
@@ -1294,7 +1294,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
                     padding: "16px",
                     borderRadius: "8px",
                     border: "1px solid var(--surface-light)",
-                    boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
+                    boxShadow: "none",
                     display: "flex",
                     flexDirection: "column",
                     minHeight: "140px",
@@ -1344,7 +1344,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
             ...modernButtonStyle,
             backgroundColor: "var(--info-dark)",
             color: "white",
-            boxShadow: "0 6px 12px rgba(var(--shadow-rgb),0.25)",
+            boxShadow: "none",
           }}
         >
           ← Back to job
@@ -1356,7 +1356,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
             ...modernButtonStyle,
             backgroundColor: "var(--primary)",
             color: "white",
-            boxShadow: "0 6px 12px rgba(var(--primary-rgb),0.2)",
+            boxShadow: "none",
           }}
         >
           📋 Check sheet
@@ -1368,7 +1368,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
             ...modernButtonStyle,
             backgroundColor: "var(--primary)",
             color: "white",
-            boxShadow: "0 6px 12px rgba(var(--primary-rgb),0.2)",
+            boxShadow: "none",
           }}
         >
           🚗 Vehicle details
@@ -1381,7 +1381,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
             ...modernButtonStyle,
             backgroundColor: saving ? "var(--info)" : "var(--info)",
             color: "white",
-            boxShadow: "0 6px 12px rgba(var(--info-rgb), 0.25)",
+            boxShadow: "none",
           }}
         >
           {saving ? "💾 Saving..." : "💾 Save write-up"}
@@ -1416,7 +1416,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
               backgroundColor: "var(--surface)",
               borderRadius: "18px",
               padding: "32px",
-              boxShadow: "0 24px 60px rgba(var(--shadow-rgb),0.35)",
+              boxShadow: "none",
               display: "flex",
               flexDirection: "column",
               gap: "16px",

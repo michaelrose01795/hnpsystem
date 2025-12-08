@@ -892,9 +892,8 @@ export default function TechJobDetailPage() {
       alert("VHC is not required for this job.");
       return;
     }
-    // Navigate to VHC builder page
-    const targetJobNumber = jobData?.jobCard?.jobNumber || jobNumber;
-    router.push(`/job-cards/${targetJobNumber}/vhc`);
+    // Switch to VHC tab
+    setSelectedTab("vhc");
   };
 
   // Helper: Get dynamic VHC button text based on job status

@@ -171,8 +171,8 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
           color: spareActive ? "var(--surface)" : palette.textPrimary,
           fontWeight: 600,
           cursor: onSpareSelect ? "pointer" : "default",
-          boxShadow: spareActive ? shadows.md : shadows.sm,
-          transition: "transform 0.2s ease, box-shadow 0.2s ease",
+          boxShadow: "none",
+          transition: "transform 0.2s ease",
         }}
       >
         Spare / Kit

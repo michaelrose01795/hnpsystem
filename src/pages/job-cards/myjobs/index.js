@@ -640,7 +640,7 @@ export default function MyJobsPage() {
                 const handleVhcBadgeClick = (event) => {
                   if (!vhcRequired || !job.jobNumber) return;
                   event.stopPropagation();
-                  router.push(`/job-cards/${job.jobNumber}/vhc`);
+                  router.push(`/job-cards/myjobs/${job.jobNumber}?tab=vhc`);
                 };
 
                 const handleVhcBadgeKeyDown = (event) => {

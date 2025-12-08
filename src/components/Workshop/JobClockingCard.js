@@ -244,7 +244,7 @@ export default function JobClockingCard() {
         backgroundColor: "var(--surface)",
         borderRadius: "16px",
         padding: "24px",
-        boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+        boxShadow: "none",
         border: "1px solid var(--surface-light)"
       }}>
         <div style={{
@@ -340,7 +340,7 @@ export default function JobClockingCard() {
         backgroundColor: "var(--surface)",
         borderRadius: "16px",
         padding: "24px",
-        boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+        boxShadow: "none",
         border: "1px solid var(--surface-light)"
       }}>
         <h3 style={{
@@ -442,7 +442,7 @@ export default function JobClockingCard() {
         backgroundColor: "var(--surface)",
         borderRadius: "16px",
         padding: "24px",
-        boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+        boxShadow: "none",
         border: "1px solid var(--surface-light)"
       }}>
         <div style={{

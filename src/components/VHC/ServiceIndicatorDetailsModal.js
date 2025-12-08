@@ -290,14 +290,6 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                       textAlign: "left",
                       cursor: "pointer",
                     }}
-                    onMouseEnter={(e) => {
-                      if (isActive) return;
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                    }}
-                    onMouseLeave={(e) => {
-                      if (isActive) return;
-                      e.currentTarget.style.transform = "translateY(0)";
-                    }}
                   >
                     {option.label}
                   </button>
@@ -331,14 +323,6 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                       color: isActive ? "var(--surface)" : palette.textPrimary,
                       fontWeight: 600,
                       cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (isActive) return;
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                    }}
-                    onMouseLeave={(e) => {
-                      if (isActive) return;
-                      e.currentTarget.style.transform = "translateY(0)";
                     }}
                   >
                     {option}
@@ -388,12 +372,6 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                       textAlign: "left",
                       position: "relative",
                       cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-3px)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
                     }}
                   >
                     {item}

@@ -206,13 +206,12 @@ div.card h3 {
 
 .sidebar-action {
   text-decoration: none !important;
-  transition: transform 0.2s ease, box-shadow 0.2s ease,
+  transition: transform 0.2s ease,
     background 0.2s ease, color 0.2s ease;
 }
 
 .sidebar-action:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(var(--danger-rgb), 0.25);
   text-decoration: none !important;
 }
 
@@ -250,12 +249,6 @@ hr {
   -webkit-text-fill-color: transparent;
 }
 
-.shadow-soft {
-  transition: all 0.2s ease;
-}
-.shadow-soft:hover {
-  transform: translateY(-2px);
-}
 
 /* Main content wrapper spacing */
 div#main-content {

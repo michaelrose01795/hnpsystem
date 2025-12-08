@@ -31,7 +31,7 @@ export default function WorkshopTabsBar() {
         borderRadius: "18px",
         padding: "18px",
         border: "1px solid var(--surface-light)",
-        boxShadow: "0 16px 30px rgba(var(--primary-rgb), 0.08)",
+        boxShadow: "none",
         marginBottom: "22px",
       }}
     >
@@ -69,9 +69,7 @@ export default function WorkshopTabsBar() {
                   fontWeight: 600,
                   fontSize: "0.85rem",
                   textDecoration: "none",
-                  boxShadow: active
-                    ? "0 8px 20px rgba(var(--primary-rgb), 0.25)"
-                    : "inset 0 -1px 0 rgba(var(--primary-rgb), 0.06)",
+                  boxShadow: "none",
                   transition: "background-color 0.2s ease, color 0.2s ease",
                   whiteSpace: "nowrap",
                 }}

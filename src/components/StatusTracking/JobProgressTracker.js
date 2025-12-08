@@ -150,28 +150,22 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                   border: isCurrent
                     ? "1px solid rgba(var(--danger-rgb), 0.35)"
                     : "1px solid rgba(var(--background-rgb), 0.8)",
-                  boxShadow: isCurrent
-                    ? "0 8px 20px rgba(var(--danger-rgb), 0.15)"
-                    : "0 4px 12px rgba(var(--shadow-rgb),0.08)",
+                  boxShadow: "none",
                   padding: "16px 18px",
                   display: "flex",
                   flexDirection: "column",
                   gap: "6px",
                   fontFamily: "'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif",
-                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                  transition: "transform 0.2s ease",
                   minHeight: "96px",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = isCurrent
-                    ? "0 10px 24px rgba(var(--danger-rgb), 0.25)"
-                    : "0 8px 18px rgba(var(--shadow-rgb),0.14)";
+                  e.currentTarget.style.boxShadow = "none";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = isCurrent
-                    ? "0 8px 20px rgba(var(--danger-rgb), 0.15)"
-                    : "0 4px 12px rgba(var(--shadow-rgb),0.08)";
+                  e.currentTarget.style.boxShadow = "none";
                 }}
               >
                 <div style={{ textAlign: "left", minWidth: 0 }}>

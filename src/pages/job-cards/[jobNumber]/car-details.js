@@ -58,7 +58,7 @@ export default function CarDetailsPage() {
   }, [jobNumber]);
 
   const handleBack = () => router.back();
-  const handleVHC = () => router.push(`/job-cards/${jobNumber}/vhc`);
+  const handleVHC = () => router.push(`/job-cards/myjobs/${jobNumber}?tab=vhc`);
   const handleWriteUp = () => router.push(`/job-cards/${jobNumber}/write-up`);
   const handleCheckBox = () => router.push(`/job-cards/${jobNumber}/check-box`);
 

@@ -662,7 +662,7 @@ export default function Layout({ children, jobNumber }) {
                     background: "var(--surface)",
                     fontWeight: 600,
                     color: colors.accent,
-                    boxShadow: "0 6px 14px rgba(var(--shadow-rgb),0.08)",
+                    boxShadow: "none",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
@@ -706,7 +706,7 @@ export default function Layout({ children, jobNumber }) {
                     background: colors.mainBg,
                     borderTopRightRadius: "28px",
                     borderBottomRightRadius: "28px",
-                    boxShadow: "20px 0 40px rgba(var(--shadow-rgb),0.35)",
+                    boxShadow: "none",
                     padding: "24px 20px",
                     display: "flex",
                     flexDirection: "column",
@@ -733,7 +733,7 @@ export default function Layout({ children, jobNumber }) {
               background: "rgba(var(--surface-rgb), 0.92)",
               borderRadius: "16px",
               border: "1px solid rgba(var(--primary-rgb),0.12)",
-              boxShadow: "0 10px 20px rgba(var(--primary-rgb),0.12)",
+              boxShadow: "none",
               padding: isMobile ? "10px 12px" : "12px 14px",
               display: "flex",
               flexDirection: "column",
@@ -872,7 +872,7 @@ export default function Layout({ children, jobNumber }) {
                       color: colors.accent,
                       fontWeight: 600,
                       cursor: "pointer",
-                      boxShadow: "0 4px 10px rgba(var(--primary-rgb),0.12)",
+                      boxShadow: "none",
                       fontSize: "0.85rem",
                       minWidth: "auto",
                     }}
@@ -913,11 +913,9 @@ export default function Layout({ children, jobNumber }) {
                           fontWeight: 600,
                           fontSize: "0.85rem",
                           textDecoration: "none",
-                          boxShadow: active
-                            ? "0 12px 24px rgba(var(--primary-rgb), 0.2)"
-                            : "0 6px 16px rgba(var(--primary-rgb), 0.1)",
+                          boxShadow: "none",
                           transition:
-                            "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+                            "background-color 0.2s ease, color 0.2s ease",
                           whiteSpace: "nowrap",
                         }}
                       >
@@ -973,7 +971,7 @@ export default function Layout({ children, jobNumber }) {
                       color: "var(--primary-dark)",
                       fontWeight: 600,
                       textDecoration: "none",
-                      boxShadow: "0 6px 16px rgba(var(--primary-rgb),0.12)",
+                      boxShadow: "none",
                     }}
                   >
                     Deliveries
@@ -989,7 +987,7 @@ export default function Layout({ children, jobNumber }) {
                       color: "var(--surface)",
                       fontWeight: 600,
                       textDecoration: "none",
-                      boxShadow: "0 12px 20px rgba(var(--primary-rgb),0.22)",
+                      boxShadow: "none",
                       whiteSpace: "nowrap",
                       flexShrink: 0,
                     }}
@@ -1026,9 +1024,7 @@ export default function Layout({ children, jobNumber }) {
                     color: currentJob?.jobNumber ? "var(--surface)" : "var(--info)",
                     fontWeight: 600,
                     cursor: currentJob?.jobNumber ? "pointer" : "not-allowed",
-                    boxShadow: currentJob?.jobNumber
-                      ? "0 8px 18px rgba(var(--primary-rgb),0.18)"
-                      : "none",
+                    boxShadow: "none",
                     transition: "all 0.2s ease",
                     width: isMobile ? "100%" : "auto",
                   }}
@@ -1046,7 +1042,7 @@ export default function Layout({ children, jobNumber }) {
                     color: "var(--primary)",
                     fontWeight: 600,
                     cursor: "pointer",
-                    boxShadow: "0 6px 14px rgba(var(--primary-rgb),0.12)",
+                    boxShadow: "none",
                     transition: "all 0.2s ease",
                     width: isMobile ? "100%" : "auto",
                   }}
@@ -1073,7 +1069,7 @@ export default function Layout({ children, jobNumber }) {
               background: "var(--surface)",
               borderRadius: hideSidebar ? "0px" : "28px",
               border: hideSidebar ? "none" : "1px solid var(--surface-light)",
-              boxShadow: hideSidebar ? "none" : "0 32px 64px rgba(var(--primary-rgb),0.1)",
+              boxShadow: "none",
               padding: hideSidebar ? "0" : isMobile ? "18px 14px" : "32px",
               overflow: "visible",
             }}
@@ -1103,7 +1099,7 @@ export default function Layout({ children, jobNumber }) {
             color: "var(--surface)",
             fontSize: "20px",
             fontWeight: 700,
-            boxShadow: "0 12px 30px rgba(var(--shadow-rgb),0.18)",
+            boxShadow: "none",
             cursor: "pointer",
             zIndex: 160,
           }}
@@ -1134,7 +1130,7 @@ export default function Layout({ children, jobNumber }) {
               color: "var(--surface)",
               fontSize: "20px",
               fontWeight: 700,
-              boxShadow: "0 12px 30px rgba(var(--shadow-rgb),0.18)",
+              boxShadow: "none",
               cursor: "pointer",
               zIndex: 140,
             }}

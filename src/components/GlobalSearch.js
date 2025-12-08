@@ -222,9 +222,7 @@ const GlobalSearch = ({
           border: `1px solid ${borderColor}`,
           borderRadius: "999px",
           padding: "8px 12px",
-          boxShadow: isFocused
-            ? `0 0 0 3px ${accentColor}22`
-            : "0 8px 20px rgba(var(--shadow-rgb),0.08)",
+          boxShadow: "none",
           transition: "all 0.2s ease",
         }}
       >
@@ -285,7 +283,7 @@ const GlobalSearch = ({
             borderRadius: "12px",
             backgroundColor: searchBackground,
             border: `1px solid ${drawerBorderColor}`,
-            boxShadow: "0 10px 30px rgba(var(--shadow-rgb),0.15)",
+            boxShadow: "none",
             color: textColor,
             fontSize: "0.85rem",
             zIndex: 30,
@@ -304,7 +302,7 @@ const GlobalSearch = ({
             right: 0,
             backgroundColor: searchBackground,
             borderRadius: "16px",
-            boxShadow: "0 15px 40px rgba(var(--shadow-rgb),0.15)",
+            boxShadow: "none",
             border: `1px solid ${drawerBorderColor}`,
             overflow: "hidden",
             zIndex: 40,
@@ -390,7 +388,7 @@ const GlobalSearch = ({
               borderRadius: "12px",
               backgroundColor: searchBackground,
               border: `1px solid ${drawerBorderColor}`,
-              boxShadow: "0 10px 30px rgba(var(--shadow-rgb),0.15)",
+              boxShadow: "none",
               color: textColor,
               fontSize: "0.85rem",
               zIndex: 30,

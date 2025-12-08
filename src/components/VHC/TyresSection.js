@@ -100,8 +100,8 @@ export default function TyresSection({
             backgroundColor: "var(--search-surface)",
             fontSize: "14px",
             color: "var(--search-text)",
-            boxShadow: isFocused ? "0 0 0 3px rgba(var(--primary-rgb),0.18)" : "inset 0 1px 2px rgba(var(--shadow-rgb),0.08)",
-            transition: "box-shadow 0.2s ease, border-color 0.2s ease",
+            boxShadow: "none",
+            transition: "border-color 0.2s ease",
           }}
         />
         {isFocused && results.length > 0 && (
