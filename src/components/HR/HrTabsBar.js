@@ -60,7 +60,7 @@ export default function HrTabsBar() {
                 fontSize: "0.85rem",
                 textDecoration: "none",
                 border: isActive ? "1px solid var(--accent-purple)" : "1px solid var(--accent-purple-surface)",
-                boxShadow: "none", 0.25)" : "inset 0 -1px 0 rgba(var(--accent-purple-rgb), 0.05)",
+                boxShadow: isActive ? "0 2px 8px rgba(0, 0, 0, 0.25)" : "inset 0 -1px 0 rgba(var(--accent-purple-rgb), 0.05)",
                 transition: "background-color 0.2s ease, color 0.2s ease",
                 textAlign: "center",
               }}

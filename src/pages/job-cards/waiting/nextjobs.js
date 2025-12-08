@@ -989,7 +989,7 @@ export default function NextJobsPage() {
               height: PANEL_HEIGHT_PX,
               minHeight: PANEL_HEIGHT_PX,
               maxHeight: PANEL_HEIGHT_PX,
-              boxShadow: "none",0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.14)",
+              boxShadow: dragOverTarget === assignee.name ? "0 4px 12px rgba(0, 0, 0, 0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.14)",
               transition: "all 0.2s ease",
               backgroundColor: dragOverTarget === assignee.name ? "var(--surface-light)" : "var(--surface)"
             }}
@@ -1264,7 +1264,7 @@ export default function NextJobsPage() {
                 background: "var(--search-surface)",
                 borderRadius: "8px",
             border: dragOverTarget === "outstanding" ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
-            boxShadow: "none",0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
+            boxShadow: dragOverTarget === "outstanding" ? "0 4px 12px rgba(0, 0, 0, 0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
             padding: "16px",
             display: "flex",
             flexDirection: "column",

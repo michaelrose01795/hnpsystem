@@ -4996,7 +4996,7 @@ function DocumentsTab({
                 backgroundColor: isActive ? "rgba(var(--primary-rgb),0.05)" : "white",
                 cursor: "pointer",
                 textAlign: "left",
-                boxShadow: "none",0.12)" : "none"
+                boxShadow: isActive ? "0 4px 12px rgba(0, 0, 0, 0.12)" : "none"
               }}
             >
               <span style={{ fontSize: "18px" }}>{category.icon}</span>

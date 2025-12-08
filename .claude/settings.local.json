@@ -3,7 +3,8 @@
     "allow": [
       "Bash(find:*)",
       "Bash(grep:*)",
-      "Bash(node -c:*)"
+      "Bash(node -c:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

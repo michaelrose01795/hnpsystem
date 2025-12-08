@@ -1235,7 +1235,7 @@ export default function TrackingDashboard() {
                     color: isActive ? "var(--primary)" : "var(--info-dark)",
                     fontWeight: 600,
                     cursor: "pointer",
-                    boxShadow: "none", 0.08)" : "none",
+                    boxShadow: isActive ? "0 2px 8px rgba(0, 0, 0, 0.08)" : "none",
                   }}
                 >
                   {tab.label}
