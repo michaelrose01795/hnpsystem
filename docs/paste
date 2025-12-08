@@ -1,5 +1,9 @@
 why do i get "invalid input syntax for type uuid: "m gloves"" when insdie the popup "Order [consumble]"
 
+remove the Workshop Consumables Tracker section, show the budget for in the monthly logs next to the title "Monthly Logs"
+
+move the Adjust Consumables Budget for under the title for so the budget which is now going to be shown next to the monthly logs can be edited and that will be linked to the Adjust Consumables Budget for section (Adjust Consumables Budget for section can then be removed from the page )
+
 
 
 
