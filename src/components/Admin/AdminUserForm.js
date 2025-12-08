@@ -72,7 +72,7 @@ export default function AdminUserForm({ onCreated }) {
         background: "var(--surface)",
         borderRadius: "16px",
         padding: "24px",
-        boxShadow: "0 16px 32px rgba(var(--accent-purple-rgb), 0.08)",
+        boxShadow: "none",
         display: "flex",
         flexDirection: "column",
         gap: "18px",

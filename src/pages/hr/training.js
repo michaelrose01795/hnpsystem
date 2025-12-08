@@ -192,7 +192,7 @@ function ComplianceCard({ title, percent, status }) {
         background: "var(--surface)",
         padding: "18px",
         borderRadius: "12px",
-        boxShadow: "0 10px 24px rgba(var(--accent-purple-rgb), 0.08)",
+        boxShadow: "none",
         display: "flex",
         flexDirection: "column",
         gap: "8px",

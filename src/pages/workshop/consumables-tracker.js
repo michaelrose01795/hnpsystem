@@ -23,7 +23,7 @@ const workspaceShellStyle = {
   display: "flex",
   flexDirection: "column",
   borderRadius: "24px",
-  boxShadow: "0 4px 12px rgba(var(--shadow-rgb),0.08)",
+  boxShadow: "none",
   border: "1px solid var(--surface-light)",
   background: "var(--surface)",
   padding: "24px",
@@ -46,7 +46,7 @@ const cardStyle = {
   backgroundColor: "var(--surface)",
   borderRadius: "16px",
   padding: "20px",
-  boxShadow: "0 18px 30px rgba(var(--primary-rgb),0.12)",
+  boxShadow: "none",
   border: "1px solid var(--surface-light)",
 };
 
@@ -147,7 +147,7 @@ const orderModalButtonStyle = {
   border: "none",
   cursor: "pointer",
   fontWeight: 600,
-  boxShadow: "0 10px 20px rgba(var(--primary-rgb),0.15)",
+  boxShadow: "none",
 };
 
 const orderModalSecondaryButtonStyle = {
@@ -179,7 +179,7 @@ const orderButtonStyle = {
   color: "var(--surface)",
   fontWeight: 600,
   cursor: "pointer",
-  boxShadow: "0 10px 18px rgba(var(--primary-rgb),0.18)",
+  boxShadow: "none",
 };
 
 function normalizeConsumableName(value) {
@@ -1126,7 +1126,7 @@ function ConsumablesTrackerPage() {
                       color: "var(--surface)",
                       fontWeight: 600,
                       cursor: "pointer",
-                      boxShadow: "0 12px 22px rgba(var(--primary-rgb),0.2)",
+                      boxShadow: "none",
                     }}
                   >
                     Dismiss

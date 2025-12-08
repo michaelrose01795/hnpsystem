@@ -1034,7 +1034,7 @@ export default function CreateJobCardPage() {
               fontWeight: "600",
               fontSize: "15px",
               cursor: "pointer",
-              boxShadow: "0 4px 8px rgba(var(--primary-rgb), 0.2)",
+              boxShadow: "none",
               transition: "all 0.2s",
             }}
             onMouseEnter={(e) => {
@@ -1068,7 +1068,7 @@ export default function CreateJobCardPage() {
                 background: "var(--surface)",
                 padding: "20px",
                 borderRadius: "16px",
-                boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+                boxShadow: "none",
                 border: "1px solid var(--surface-light)",
                 display: "flex",
                 flexDirection: "column",
@@ -1214,7 +1214,7 @@ export default function CreateJobCardPage() {
                 background: "var(--surface)",
                 padding: "20px",
                 borderRadius: "16px",
-                boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+                boxShadow: "none",
                 border: "1px solid var(--surface-light)",
                 display: "flex",
                 flexDirection: "column",
@@ -1426,7 +1426,7 @@ export default function CreateJobCardPage() {
                 background: "var(--surface)",
                 padding: "20px",
                 borderRadius: "16px",
-                boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+                boxShadow: "none",
                 border: "1px solid var(--surface-light)",
                 display: "flex",
                 flexDirection: "column",
@@ -1728,7 +1728,7 @@ export default function CreateJobCardPage() {
               background: "var(--surface)",
               padding: "20px",
               borderRadius: "16px",
-              boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+              boxShadow: "none",
               border: "1px solid var(--surface-light)",
             }}
           >
@@ -1908,7 +1908,7 @@ export default function CreateJobCardPage() {
                 background: "var(--surface)",
                 padding: "16px",
                 borderRadius: "16px",
-                boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+                boxShadow: "none",
                 border: "1px solid var(--surface-light)",
               }}
             >
@@ -1982,7 +1982,7 @@ export default function CreateJobCardPage() {
                 background: "var(--surface)",
                 padding: "16px",
                 borderRadius: "16px",
-                boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+                boxShadow: "none",
                 border: "1px solid var(--surface-light)",
                 display: "flex",
                 flexDirection: "column",
@@ -2052,7 +2052,7 @@ export default function CreateJobCardPage() {
                 background: "var(--surface)",
                 padding: "16px",
                 borderRadius: "16px",
-                boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+                boxShadow: "none",
                 border: "1px solid var(--surface-light)",
                 display: "flex",
                 flexDirection: "column",
@@ -2097,7 +2097,7 @@ export default function CreateJobCardPage() {
                   fontSize: "14px",
                   cursor: "pointer",
                   transition: "background-color 0.2s, transform 0.2s",
-                  boxShadow: "0 4px 12px rgba(var(--shadow-rgb),0.12)",
+                  boxShadow: "none",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = "var(--primary-dark)";
@@ -2473,7 +2473,7 @@ export default function CreateJobCardPage() {
                     color: "white",
                     fontWeight: "600",
                     cursor: isUploadingDocuments ? "not-allowed" : "pointer",
-                    boxShadow: "0 10px 20px rgba(var(--accent-purple-rgb), 0.25)",
+                    boxShadow: "none",
                     opacity: isUploadingDocuments ? 0.7 : 1,
                   }}
                 >

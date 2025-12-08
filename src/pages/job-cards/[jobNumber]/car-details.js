@@ -66,7 +66,7 @@ export default function CarDetailsPage() {
     backgroundColor: "var(--surface)",
     padding: "16px",
     borderRadius: "8px",
-    boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.1)"
+    boxShadow: "none"
   };
 
   const gridStyle = {

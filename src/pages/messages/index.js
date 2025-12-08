@@ -23,7 +23,7 @@ const cardStyle = {
   border: `1px solid ${palette.border}`,
   borderRadius: "22px",
   padding: "20px",
-  boxShadow: shadows.sm,
+  boxShadow: "none",
   display: "flex",
   flexDirection: "column",
   gap: "14px",
@@ -127,7 +127,7 @@ const AvatarBadge = ({ name }) => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: "0 4px 10px rgba(var(--shadow-rgb),0.08)",
+        boxShadow: "none",
       }}
     >
       {initial}
@@ -150,7 +150,7 @@ const MessageBubble = ({ message, isMine }) => {
     backgroundColor: isMine ? palette.accent : "var(--surface)",
     color: isMine ? "var(--surface)" : palette.textPrimary,
     maxWidth: "480px",
-    boxShadow: isMine ? shadows.md : "0 8px 20px rgba(var(--shadow-rgb),0.08)",
+    boxShadow: "none",0.08)",
     lineHeight: 1.45,
   };
 
@@ -1217,7 +1217,7 @@ function MessagesPage() {
                             border: `1px solid ${palette.border}`,
                             padding: "12px",
                             backgroundColor: "var(--surface)",
-                            boxShadow: shadows.sm,
+                            boxShadow: "none",
                           }}
                         >
                           <p style={{ margin: 0, color: palette.textPrimary }}>{note.message || "System update"}</p>

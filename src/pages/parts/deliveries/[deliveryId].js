@@ -29,7 +29,7 @@ const stopCardStyle = {
   border: "1px solid var(--surface-light)",
   background: "var(--surface)",
   padding: "18px",
-  boxShadow: "0 12px 30px rgba(var(--shadow-rgb), 0.08)",
+  boxShadow: "none",
 };
 
 const buttonStyle = {
@@ -728,7 +728,7 @@ export default function DeliveryRoutePage() {
             border: "1px solid var(--surface-light)",
             background: "var(--surface)",
             padding: "22px",
-            boxShadow: "0 12px 30px rgba(var(--shadow-rgb), 0.08)",
+            boxShadow: "none",
             display: "flex",
             flexDirection: "column",
             gap: "10px",
@@ -865,7 +865,7 @@ export default function DeliveryRoutePage() {
                 maxHeight: "90vh",
                 overflowY: "auto",
                 padding: "24px",
-                boxShadow: "0 20px 40px rgba(var(--shadow-rgb), 0.25)",
+                boxShadow: "none",
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",

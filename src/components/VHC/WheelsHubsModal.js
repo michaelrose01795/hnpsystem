@@ -184,7 +184,7 @@ export default function WheelsHubsModal({
               color: "var(--surface)",
               fontWeight: 700,
               cursor: "pointer",
-              boxShadow: "0 18px 28px rgba(var(--primary-rgb),0.25)",
+              boxShadow: "none",
             }}
           >
             Order Tyre

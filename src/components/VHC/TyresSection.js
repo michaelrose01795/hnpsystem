@@ -65,7 +65,7 @@ export default function TyresSection({
         border: `1px solid ${palette.border}`, // Provide subtle border
         borderRadius: "16px", // Match rounded card styling
         padding: "16px", // Add internal spacing
-        boxShadow: "0 10px 24px rgba(var(--shadow-rgb),0.08)", // Apply soft shadow for elevation
+        boxShadow: "none", // Apply soft for elevation
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -114,7 +114,7 @@ export default function TyresSection({
               backgroundColor: "var(--search-surface)",
               borderRadius: "12px",
               border: "1px solid var(--search-surface-muted)",
-              boxShadow: "0 18px 36px rgba(var(--shadow-rgb),0.12)",
+              boxShadow: "none",
               maxHeight: "220px",
               overflowY: "auto",
               zIndex: 30,

@@ -207,7 +207,7 @@ export default function AfterSalesManagerDashboard() {
           borderRadius: "18px",
           background: "var(--warning-surface)",
           border: "1px solid var(--warning)",
-          boxShadow: "0 24px 50px rgba(var(--warning-rgb), 0.18)",
+          boxShadow: "none",
           display: "flex",
           flexDirection: "column",
           gap: "6px",
@@ -229,7 +229,7 @@ export default function AfterSalesManagerDashboard() {
           padding: "14px 20px",
           borderRadius: "16px",
           border: "1px solid var(--warning)",
-          boxShadow: "0 18px 40px rgba(var(--warning-rgb), 0.12)",
+          boxShadow: "none",
         }}
       >
         {quickActions.map((action) => (
@@ -248,7 +248,7 @@ export default function AfterSalesManagerDashboard() {
               fontWeight: 600,
               fontSize: "0.9rem",
               textDecoration: "none",
-              boxShadow: "0 12px 28px rgba(var(--warning-rgb), 0.15)",
+              boxShadow: "none",
             }}
           >
             {action.label}
@@ -274,7 +274,7 @@ export default function AfterSalesManagerDashboard() {
               display: "flex",
               flexDirection: "column",
               gap: "6px",
-              boxShadow: "0 18px 40px rgba(var(--shadow-rgb),0.08)",
+              boxShadow: "none",
             }}
           >
             <span style={{ textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)", fontSize: "0.78rem" }}>
@@ -299,7 +299,7 @@ export default function AfterSalesManagerDashboard() {
             borderRadius: "18px",
             padding: "20px",
             border: "1px solid var(--warning)",
-            boxShadow: "0 24px 50px rgba(var(--warning-rgb), 0.12)",
+            boxShadow: "none",
             display: "flex",
             flexDirection: "column",
             gap: "16px",
@@ -354,7 +354,7 @@ export default function AfterSalesManagerDashboard() {
             borderRadius: "18px",
             padding: "20px",
             border: "1px solid var(--warning)",
-            boxShadow: "0 24px 50px rgba(var(--warning-rgb), 0.12)",
+            boxShadow: "none",
             display: "flex",
             flexDirection: "column",
             gap: "16px",
@@ -406,7 +406,7 @@ export default function AfterSalesManagerDashboard() {
             borderRadius: "18px",
             padding: "20px",
             border: "1px solid var(--warning)",
-            boxShadow: "0 24px 50px rgba(var(--warning-rgb), 0.12)",
+            boxShadow: "none",
             display: "flex",
             flexDirection: "column",
             gap: "12px",
@@ -453,7 +453,7 @@ export default function AfterSalesManagerDashboard() {
             borderRadius: "18px",
             padding: "20px",
             border: "1px solid var(--warning)",
-            boxShadow: "0 24px 50px rgba(var(--warning-rgb), 0.12)",
+            boxShadow: "none",
             display: "flex",
             flexDirection: "column",
             gap: "14px",

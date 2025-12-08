@@ -50,7 +50,7 @@ export default function ConfirmationDialog({
           width: "min(520px, 100%)",
           padding: "28px",
           borderRadius: "24px",
-          boxShadow: "0 24px 48px rgba(var(--shadow-rgb), 0.25)",
+          boxShadow: "none",
           display: "flex",
           flexDirection: "column",
           gap: "20px",
@@ -150,7 +150,7 @@ export default function ConfirmationDialog({
               color: "var(--surface)",
               cursor: "pointer",
               fontWeight: 600,
-              boxShadow: "0 12px 20px rgba(var(--primary-rgb), 0.3)",
+              boxShadow: "none",
             }}
           >
             {confirmLabel}

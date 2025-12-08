@@ -66,7 +66,7 @@ export default function EmployeeManagement() {
                 background: "var(--surface)",
                 fontWeight: 600,
                 color: "var(--accent-purple)",
-                boxShadow: "0 8px 16px rgba(var(--accent-purple-rgb), 0.12)",
+                boxShadow: "none",
               }}
             >
               + Add Employee
@@ -80,7 +80,7 @@ export default function EmployeeManagement() {
                 background: "var(--accent-purple)",
                 fontWeight: 600,
                 color: "white",
-                boxShadow: "0 10px 24px rgba(var(--accent-purple-rgb), 0.25)",
+                boxShadow: "none",
               }}
             >
               Manage Keycloak Access

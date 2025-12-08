@@ -20,7 +20,7 @@ const sectionCardStyle = {
   background: "var(--surface)",
   border: "1px solid var(--surface-light)",
   padding: "20px",
-  boxShadow: "0 18px 36px rgba(var(--shadow-rgb),0.06)",
+  boxShadow: "none",
   height: "100%",
 };
 

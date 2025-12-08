@@ -336,7 +336,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
               {teamStatus.map((tech) => (
                 <Link key={tech.userId} href={`/clocking/${tech.userId}`} className="group block h-full">
-                  <article className="flex h-full flex-col rounded-3xl border border-slate-100 bg-white/90 p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-200 hover:shadow-lg">
+                  <article className="flex h-full flex-col rounded-3xl border border-slate-100 bg-white/90 p-6  transition hover:-translate-y-0.5 hover:border-slate-200 hover:shadow-lg">
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="text-lg font-semibold text-slate-900">{tech.name}</p>
@@ -383,7 +383,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
             </div>
           )}
 
-          <section className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+          <section className="rounded-3xl border border-slate-200 bg-white/90 p-6 ">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -491,7 +491,7 @@ function TechnicianClockingTab() {
   };
 
   return (
-    <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 ">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -506,7 +506,7 @@ function TechnicianClockingTab() {
         <button
           onClick={handleToggle}
           disabled={!userId || busy}
-          className="rounded-full border border-rose-100 bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-full border border-rose-100 bg-rose-600 px-4 py-2 text-sm font-semibold text-white  transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? "Saving…" : activeEntry ? "Clock Out" : "Clock In"}
         </button>
@@ -650,7 +650,7 @@ function ControllerClockingTab() {
   }, [latestByUser]);
 
   return (
-    <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 ">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-slate-400">
@@ -733,7 +733,7 @@ export default function ClockingPage() {
     <Layout>
       <div className="bg-slate-50 py-10">
         <div className="mx-auto w-full max-w-none space-y-6 px-4 sm:px-6 lg:px-10">
-          <section className="rounded-3xl border border-slate-200 bg-white/95 p-8 shadow-sm">
+          <section className="rounded-3xl border border-slate-200 bg-white/95 p-8 ">
             <div className="flex flex-wrap items-center justify-between gap-6">
               <div className="max-w-4xl space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -771,7 +771,7 @@ export default function ClockingPage() {
           </section>
 
           <section className="space-y-6">
-            <div className="rounded-3xl border border-transparent bg-white p-4 shadow-sm">
+            <div className="rounded-3xl border border-transparent bg-white p-4 ">
               <div className="flex flex-wrap gap-2">
                 {CLOCKING_TABS.map((tab) => (
                   <button
@@ -780,7 +780,7 @@ export default function ClockingPage() {
                     onClick={() => setActiveTab(tab.key)}
                     className={`flex-1 min-w-[160px] rounded-2xl px-4 py-2 text-sm font-semibold transition md:flex-none ${
                       activeTab === tab.key
-                        ? "border border-rose-600 bg-rose-600 text-white shadow-lg"
+                        ? "border border-rose-600 bg-rose-600 text-white "
                         : "border border-slate-100 bg-white text-slate-600 hover:border-slate-200 hover:bg-slate-50"
                     }`}
                   >

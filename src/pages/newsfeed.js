@@ -277,7 +277,7 @@ export default function NewsFeed() {
                 resetModal();
                 setModalOpen(true);
               }}
-              className="px-5 py-2 font-semibold text-white rounded-xl shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg"
+              className="px-5 py-2 font-semibold text-white rounded-xl  transition-all hover:-translate-y-0.5 hover:shadow-lg"
               style={{
                 backgroundColor: "var(--primary)",
                 border: "1px solid var(--primary-dark)",
@@ -317,7 +317,7 @@ export default function NewsFeed() {
                 {section.posts.map((post) => (
                   <article
                     key={post.id ?? post.title}
-                    className="rounded-2xl bg-[var(--surface-light)] shadow-md p-6 border border-[var(--surface-light)] transition-all duration-300 hover:-translate-y-1 hover:border-[var(--primary-light)]"
+                    className="rounded-2xl bg-[var(--surface-light)]  p-6 border border-[var(--surface-light)] transition-all duration-300 hover:-translate-y-1 hover:border-[var(--primary-light)]"
                   >
                     <div className="flex justify-between items-start mb-3">
                       <h3 className="text-lg font-semibold text-gray-900">
@@ -626,7 +626,7 @@ export default function NewsFeed() {
                         backgroundColor: "var(--surface)",
                         borderRadius: "12px",
                         border: "2px solid var(--primary)",
-                        boxShadow: "0 10px 40px rgba(0, 0, 0, 0.3)",
+                        boxShadow: "none",
                         zIndex: 1000,
                         maxHeight: "280px",
                         overflowY: "auto",
@@ -741,7 +741,7 @@ export default function NewsFeed() {
                   cursor: saving ? "not-allowed" : "pointer",
                   opacity: saving ? 0.6 : 1,
                   transition: "all 0.2s",
-                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                  boxShadow: "none",
                 }}
                 onMouseEnter={(e) => {
                   if (!saving) {

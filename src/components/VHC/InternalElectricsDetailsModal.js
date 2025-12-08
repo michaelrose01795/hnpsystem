@@ -37,7 +37,7 @@ const inputStyle = {
   fontSize: "14px",
   color: palette.textPrimary,
   outline: "none",
-  boxShadow: "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)",
+  boxShadow: "none",
 };
 
 const statusSelectStyle = {
@@ -69,7 +69,7 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
       ? vhcModalContentStyles.baseCardHover
       : {
           transform: vhcModalContentStyles.baseCard.transform,
-          boxShadow: vhcModalContentStyles.baseCard.boxShadow,
+          boxShadow: "none",
           borderColor: vhcModalContentStyles.baseCard.borderColor,
         };
     Object.entries(source).forEach(([key, value]) => {
@@ -313,7 +313,7 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
                       borderRadius: "16px",
                       border: `1px solid ${palette.border}`,
                       background: palette.surface,
-                      boxShadow: "0 4px 14px rgba(var(--shadow-rgb),0.08)",
+                      boxShadow: "none",
                     }}
                   >
                     <label style={fieldLabelStyle}>Issue</label>

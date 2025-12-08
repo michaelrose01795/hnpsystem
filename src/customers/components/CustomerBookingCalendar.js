@@ -83,7 +83,7 @@ export default function CustomerBookingCalendar() {
   const nextAvailable = slots.find((slot) => slot.status !== "red");
 
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5 shadow-[0_12px_34px_rgba(var(--primary-rgb),0.08)]">
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5">
       <header>
         <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">
           Booking calendar

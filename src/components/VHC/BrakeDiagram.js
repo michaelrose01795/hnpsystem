@@ -60,7 +60,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
     justifyContent: "center",
     color: palette.textPrimary,
     border: `1px solid ${palette.border}`,
-    boxShadow: shadows.lg,
+    boxShadow: "none",
   };
 
   return (

@@ -38,7 +38,7 @@ const pageStyles = {
     borderRadius: "20px",
     padding: "24px",
     border: "1px solid var(--danger-surface)",
-    boxShadow: "0 12px 30px rgba(var(--shadow-rgb), 0.08)",
+    boxShadow: "none",
     width: "100%",
   },
   cardRow: {
@@ -357,7 +357,7 @@ export default function PartsDeliveriesPage() {
                         padding: "10px 18px",
                         borderRadius: "12px",
                         fontWeight: 600,
-                        boxShadow: "0 6px 20px rgba(var(--primary-rgb), 0.25)",
+                        boxShadow: "none",
                       }}
                     >
                       View route

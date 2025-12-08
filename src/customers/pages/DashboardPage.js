@@ -34,7 +34,7 @@ export default function CustomerDashboardPage() {
       )}
       <CustomerHero nextVisit="24 June · 08:30" lastUpdated="2 minutes ago" />
       {isLoading ? (
-        <div className="rounded-2xl border border-[var(--surface-light)] bg-white p-5 text-sm text-slate-500 shadow">
+        <div className="rounded-2xl border border-[var(--surface-light)] bg-white p-5 text-sm text-slate-500" >
           Loading your live workshop data…
         </div>
       ) : null}

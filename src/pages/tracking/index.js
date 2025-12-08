@@ -182,7 +182,7 @@ const SECTION_STYLE = {
   borderRadius: "24px",
   background: "var(--surface)",
   border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
-  boxShadow: "0 20px 40px rgba(var(--shadow-rgb),0.04)",
+  boxShadow: "none",
   display: "flex",
   flexDirection: "column",
   gap: "18px",
@@ -220,7 +220,7 @@ const CombinedTrackerCard = ({ entry }) => {
         borderRadius: "16px",
         border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
         background: "var(--surface)",
-        boxShadow: "0 8px 16px rgba(var(--grey-accent-rgb), 0.15)",
+        boxShadow: "none",
         display: "flex",
         flexDirection: "column",
         gap: "8px",
@@ -858,7 +858,7 @@ export default function TrackingDashboard() {
               color: "white",
               fontWeight: 600,
               cursor: "pointer",
-              boxShadow: "0 12px 24px rgba(var(--accent-purple-rgb), 0.15)",
+              boxShadow: "none",
             }}
           >
             Refresh
@@ -1235,7 +1235,7 @@ export default function TrackingDashboard() {
                     color: isActive ? "var(--primary)" : "var(--info-dark)",
                     fontWeight: 600,
                     cursor: "pointer",
-                    boxShadow: isActive ? "0 8px 20px rgba(var(--primary-rgb), 0.08)" : "none",
+                    boxShadow: "none", 0.08)" : "none",
                   }}
                 >
                   {tab.label}

@@ -101,7 +101,7 @@ export default function ServiceManagerDashboard() {
           padding: "14px 20px",
           borderRadius: "16px",
           border: "1px solid var(--info-surface)",
-          boxShadow: "0 18px 40px rgba(var(--info-rgb), 0.08)",
+          boxShadow: "none",
         }}
       >
         {quickActions.map((action) => (
@@ -120,7 +120,7 @@ export default function ServiceManagerDashboard() {
               fontWeight: 600,
               fontSize: "0.9rem",
               textDecoration: "none",
-              boxShadow: "0 12px 26px rgba(var(--info-rgb), 0.12)",
+              boxShadow: "none",
             }}
           >
             {action.label}
@@ -148,7 +148,7 @@ export default function ServiceManagerDashboard() {
               padding: "18px",
               background: "var(--surface)",
               border: `1px solid ${metric.accent}22`,
-              boxShadow: "0 18px 35px rgba(var(--info-rgb), 0.08)",
+              boxShadow: "none",
               display: "flex",
               flexDirection: "column",
               gap: "6px",
@@ -176,7 +176,7 @@ export default function ServiceManagerDashboard() {
             borderRadius: "18px",
             padding: "20px",
             border: "1px solid var(--info-surface)",
-            boxShadow: "0 20px 45px rgba(var(--info-rgb), 0.08)",
+            boxShadow: "none",
             display: "flex",
             flexDirection: "column",
             gap: "16px",
@@ -234,7 +234,7 @@ export default function ServiceManagerDashboard() {
             borderRadius: "18px",
             padding: "20px",
             border: "1px solid var(--info-surface)",
-            boxShadow: "0 20px 45px rgba(var(--info-rgb), 0.08)",
+            boxShadow: "none",
             display: "flex",
             flexDirection: "column",
             gap: "18px",
@@ -282,7 +282,7 @@ export default function ServiceManagerDashboard() {
             borderRadius: "18px",
             padding: "20px",
             border: "1px solid var(--info-surface)",
-            boxShadow: "0 20px 45px rgba(var(--info-rgb), 0.08)",
+            boxShadow: "none",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -331,7 +331,7 @@ export default function ServiceManagerDashboard() {
             borderRadius: "18px",
             padding: "20px",
             border: "1px solid var(--info-surface)",
-            boxShadow: "0 20px 45px rgba(var(--info-rgb), 0.08)",
+            boxShadow: "none",
             display: "flex",
             flexDirection: "column",
             gap: "12px",

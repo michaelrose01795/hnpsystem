@@ -29,7 +29,7 @@ export default function CustomerPartsPage() {
         </div>
       )}
       {isLoading ? (
-        <div className="rounded-2xl border border-[var(--surface-light)] bg-white p-5 text-sm text-slate-500 shadow mb-4">
+        <div className="rounded-2xl border border-[var(--surface-light)] bg-white p-5 text-sm text-slate-500 mb-4">
           Loading compatible parts…
         </div>
       ) : null}

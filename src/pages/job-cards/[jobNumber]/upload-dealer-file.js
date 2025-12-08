@@ -94,7 +94,7 @@ export default function UploadDealerFilePage() {
       </Head>
 
       <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
-        <div className="bg-white rounded-2xl shadow-xl border border-red-100 p-8">
+        <div className="bg-white rounded-2xl  border border-red-100 p-8">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
@@ -187,7 +187,7 @@ export default function UploadDealerFilePage() {
               <button
                 type="submit"
                 disabled={isUploading}
-                className="px-6 py-2 rounded-lg bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-6 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isUploading ? "Uploading..." : "Upload File"}
               </button>
@@ -195,7 +195,7 @@ export default function UploadDealerFilePage() {
           </form>
         </div>
 
-        <section className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-3">
+        <section className="bg-white rounded-2xl border border-gray-100 p-6 space-y-3">
           <h2 className="text-lg font-semibold text-gray-900">Why upload dealer files?</h2>
           <ul className="list-disc list-inside text-gray-600 space-y-2">
             <li>Attach signed paperwork for Mitsubishi, Suzuki, and SsangYong jobs.</li>

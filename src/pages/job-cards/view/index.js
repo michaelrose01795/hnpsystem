@@ -444,7 +444,7 @@ export default function ViewJobCards() {
                 borderRadius: "999px",
                 backgroundColor: "var(--surface)",
                 border: "1px solid rgba(var(--primary-rgb),0.2)",
-                boxShadow: "0 18px 40px rgba(var(--primary-rgb),0.08)",
+                boxShadow: "none",
               }}
             >
               <button
@@ -488,7 +488,7 @@ export default function ViewJobCards() {
               background: "var(--surface)",
               borderRadius: "28px",
               border: "1px solid var(--info-surface)",
-              boxShadow: "0 24px 65px rgba(var(--shadow-rgb),0.08)",
+              boxShadow: "none",
               padding: "24px",
               minHeight: "0",
             }}
@@ -513,7 +513,7 @@ export default function ViewJobCards() {
                   borderRadius: "18px",
                   border: "1px solid var(--search-surface-muted)",
                   background: "var(--search-surface)",
-                  boxShadow: "inset 0 1px 1px rgba(var(--shadow-rgb),0.05)",
+                  boxShadow: "none",
                   color: "var(--search-text)",
                 }}
               >
@@ -565,7 +565,7 @@ export default function ViewJobCards() {
                 background: "var(--surface)",
                 borderRadius: "18px",
                 border: "1px solid var(--surface-light)",
-                boxShadow: "inset 0 1px 1px rgba(var(--surface-rgb), 0.8)",
+                boxShadow: "none",
               }}
             >
               {statusTabs.map((status) => {
@@ -590,7 +590,7 @@ export default function ViewJobCards() {
                       display: "inline-flex",
                       alignItems: "center",
                       gap: "10px",
-                      boxShadow: isActive
+                      boxShadow: "none"
                         ? "0 10px 25px rgba(var(--primary-rgb), 0.25)"
                         : "0 6px 16px rgba(var(--primary-rgb), 0.08)",
                       transition: "all 0.2s ease",
@@ -682,7 +682,7 @@ export default function ViewJobCards() {
                   width: "90%",
                   maxHeight: "85vh",
                   overflowY: "auto",
-                  boxShadow: "0 20px 60px rgba(var(--shadow-rgb),0.3)",
+                  boxShadow: "none",
                 }}
               >
               {/* Popup Header */}
@@ -1027,7 +1027,7 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
         padding: "18px",
         borderRadius: "16px",
         backgroundColor: "var(--surface)",
-        boxShadow: "0 2px 6px rgba(var(--primary-rgb),0.04)",
+        boxShadow: "none",
         display: "flex",
         flexDirection: "column",
         gap: "16px",

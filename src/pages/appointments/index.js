@@ -1168,7 +1168,7 @@ export default function Appointments() {
             padding: "12px",
             backgroundColor: "var(--surface)",
             borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
+            boxShadow: "none",
           }}
         >
           <div style={{ flex: "1 1 50%" }}>
@@ -1261,7 +1261,7 @@ export default function Appointments() {
           overflowY: "auto", 
           marginBottom: "12px", 
           borderRadius: "10px", 
-          boxShadow: "0 2px 6px rgba(var(--shadow-rgb),0.1)", 
+          boxShadow: "none", 
           backgroundColor: "var(--surface)" 
         }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -1351,7 +1351,7 @@ export default function Appointments() {
                       backgroundColor: rowBackground,
                       transition: "background-color 0.2s",
                       borderLeft: severityBorderLeft,
-                      boxShadow: baseBoxShadow,
+                      boxShadow: "none",
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.boxShadow = hoverComposite;
@@ -1471,7 +1471,7 @@ export default function Appointments() {
           borderRadius: "10px", 
           padding: "16px", 
           backgroundColor: "var(--surface)", 
-          boxShadow: "0 2px 6px rgba(var(--shadow-rgb),0.05)", 
+          boxShadow: "none", 
           overflowY: "auto" 
         }}>
           <div style={{ 
@@ -1650,7 +1650,7 @@ export default function Appointments() {
                           background: "var(--surface)",
                           borderRadius: "8px",
                           border: "1px solid var(--surface-light)",
-                          boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.04)"
+                          boxShadow: "none"
                         }}
                       >
                         <div>
@@ -1971,7 +1971,7 @@ export default function Appointments() {
                     borderRadius: "10px",
                     backgroundColor: "var(--surface)",
                     border: "1px solid var(--surface-light)",
-                    boxShadow: "0 1px 3px rgba(var(--shadow-rgb),0.06)"
+                    boxShadow: "none"
                   }}
                 >
                   <div style={{ fontWeight: "600", color: "var(--text-secondary)" }}>{entry.name}</div>

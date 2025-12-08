@@ -1144,7 +1144,7 @@ export default function JobCardDetailPage() {
           padding: "20px",
           backgroundColor: "var(--surface)",
           borderRadius: "12px",
-          boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+          boxShadow: "none",
           border: "1px solid var(--surface-light)",
           flexShrink: 0
         }}>
@@ -1257,7 +1257,7 @@ export default function JobCardDetailPage() {
             padding: "16px 20px",
             backgroundColor: "var(--surface)",
             borderRadius: "12px",
-            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            boxShadow: "none",
             border: "1px solid var(--surface-light)"
           }}>
             <div style={{ fontSize: "12px", color: "var(--grey-accent)", marginBottom: "4px" }}>VEHICLE</div>
@@ -1273,7 +1273,7 @@ export default function JobCardDetailPage() {
             padding: "16px 20px",
             backgroundColor: "var(--surface)",
             borderRadius: "12px",
-            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            boxShadow: "none",
             border: "1px solid var(--surface-light)"
           }}>
             <div style={{ fontSize: "12px", color: "var(--grey-accent)", marginBottom: "4px" }}>CUSTOMER</div>
@@ -1295,7 +1295,7 @@ export default function JobCardDetailPage() {
           padding: "8px",
           backgroundColor: "var(--surface)",
           borderRadius: "12px",
-          boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+          boxShadow: "none",
           border: "1px solid var(--surface-light)",
           flexShrink: 0
         }}>
@@ -1354,7 +1354,7 @@ export default function JobCardDetailPage() {
           overflowY: "auto",
           backgroundColor: "var(--surface)",
           borderRadius: "12px",
-          boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+          boxShadow: "none",
           border: "1px solid var(--surface-light)",
           padding: "24px"
         }}>
@@ -1761,7 +1761,7 @@ function CustomerRequestsTab({
             backgroundColor: "var(--info-surface)",
             borderRadius: "12px",
             border: "1px solid var(--accent-purple-surface)",
-            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.04)"
+            boxShadow: "none"
           }}>
             <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--info-dark)", marginBottom: "6px" }}>
               Vehicle Health Check
@@ -1887,7 +1887,7 @@ function CustomerRequestsTab({
                 cursor: "pointer",
                 backgroundColor: jobData.vhcRequired ? "var(--danger)" : "var(--info)",
                 color: "white",
-                boxShadow: "0 4px 12px rgba(var(--shadow-rgb),0.12)",
+                boxShadow: "none",
                 alignSelf: "center"
               }}
               onMouseEnter={(e) => {
@@ -2625,7 +2625,7 @@ function SchedulingTab({
           borderRadius: "12px",
           border: "1px solid var(--accent-purple-surface)",
           marginBottom: "24px",
-          boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
+          boxShadow: "none"
         }}
       >
         <div style={{ marginBottom: "16px" }}>
@@ -2871,7 +2871,7 @@ function SchedulingTab({
           borderRadius: "12px",
           border: "1px solid var(--accent-purple-surface)",
           marginBottom: "24px",
-          boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
+          boxShadow: "none"
         }}
       >
         <div style={{ marginBottom: "16px" }}>
@@ -3283,7 +3283,7 @@ function SchedulingTab({
           borderRadius: "12px",
           border: "1px solid var(--accent-purple-surface)",
           marginBottom: "24px",
-          boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
+          boxShadow: "none"
         }}
       >
         <div
@@ -3731,7 +3731,7 @@ function PartsTab({ jobData }) {
           border: "1px solid var(--surface-light)",
           borderRadius: "14px",
           padding: "16px",
-          boxShadow: "0 8px 20px rgba(var(--primary-rgb),0.08)",
+          boxShadow: "none",
         }}
       >
         <div
@@ -3805,7 +3805,7 @@ function PartsTab({ jobData }) {
                     borderRadius: "12px",
                     border: "1px solid var(--accent-purple-surface)",
                     backgroundColor: "var(--surface)",
-                    boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
+                    boxShadow: "none"
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
@@ -3918,7 +3918,7 @@ function PartsTab({ jobData }) {
                     borderRadius: "12px",
                     border: "1px solid var(--accent-purple-surface)",
                     backgroundColor: "var(--surface)",
-                    boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
+                    boxShadow: "none"
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
@@ -4011,7 +4011,7 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
         backgroundColor: "var(--surface)",
         borderRadius: "12px",
         border: "1px solid var(--accent-purple-surface)",
-        boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
+        boxShadow: "none"
       }}>
         <textarea
           value={value}
@@ -4208,7 +4208,7 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
             border: "1px solid var(--accent-purple-surface)",
             backgroundColor: "var(--surface)",
             marginBottom: "16px",
-            boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
+            boxShadow: "none"
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
@@ -4272,7 +4272,7 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
             border: "1px solid var(--accent-purple-surface)",
             backgroundColor: "var(--surface)",
             marginBottom: "16px",
-            boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
+            boxShadow: "none"
           }}>
             <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "var(--accent-purple)" }}>
               Customer delivery status
@@ -4296,7 +4296,7 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
             backgroundColor: "var(--surface)",
             maxHeight: "360px",
             overflowY: "auto",
-            boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
+            boxShadow: "none"
           }}>
             {messages.length === 0 ? (
               <div style={{ padding: "24px", textAlign: "center", color: "var(--info)", fontSize: "14px" }}>
@@ -4867,7 +4867,7 @@ function DocumentsTab({
           borderRadius: "12px",
           border: "1px solid var(--accent-purple-surface)",
           backgroundColor: "var(--surface)",
-          boxShadow: "0 1px 2px rgba(var(--shadow-rgb),0.05)"
+          boxShadow: "none"
         }}
       >
         <div
@@ -4996,7 +4996,7 @@ function DocumentsTab({
                 backgroundColor: isActive ? "rgba(var(--primary-rgb),0.05)" : "white",
                 cursor: "pointer",
                 textAlign: "left",
-                boxShadow: isActive ? "0 4px 12px rgba(var(--primary-rgb),0.12)" : "none"
+                boxShadow: "none",0.12)" : "none"
               }}
             >
               <span style={{ fontSize: "18px" }}>{category.icon}</span>

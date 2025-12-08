@@ -105,7 +105,7 @@ export default function WorkshopTabsBar() {
                   fontWeight: 600,
                   fontSize: "0.9rem",
                   textDecoration: "none",
-                  boxShadow: active
+                  boxShadow: "none"
                     ? "0 16px 32px rgba(var(--primary-rgb), 0.22)"
                     : "0 10px 20px rgba(var(--primary-rgb), 0.12)",
                   transition: "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",

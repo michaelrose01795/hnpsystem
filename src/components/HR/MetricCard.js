@@ -18,7 +18,7 @@ export function MetricCard({
         display: "flex",
         flexDirection: "column",
         gap: "14px",
-        boxShadow: "0 8px 20px rgba(var(--accent-purple-rgb), 0.08)",
+        boxShadow: "none",
         minWidth: "200px",
         flex: 1,
       }}
@@ -63,7 +63,7 @@ export function SectionCard({ title, subtitle, action, children }) {
         background: "var(--surface)",
         borderRadius: "16px",
         padding: "20px",
-        boxShadow: "0 6px 18px rgba(var(--accent-purple-rgb), 0.05)",
+        boxShadow: "none",
         display: "flex",
         flexDirection: "column",
         gap: "18px",

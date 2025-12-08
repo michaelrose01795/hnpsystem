@@ -143,7 +143,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
           return (
             <div
               key={vehicle.id}
-              className="rounded-2xl border border-slate-200 bg-white/70 p-4 shadow-sm"
+              className="rounded-2xl border border-slate-200 bg-white/70 p-4 "
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -368,7 +368,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
           <button
             type="submit"
             disabled={savingVehicle}
-            className="rounded-full border border-[var(--surface-light)] bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white shadow hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
+            className="rounded-full border border-[var(--surface-light)] bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
           >
             {savingVehicle ? "Saving…" : "Add vehicle"}
           </button>

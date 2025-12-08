@@ -32,7 +32,7 @@ export default function Section({
         color: textColor,
         fontFamily: "inherit",
         transition: "all 0.2s ease-in-out",    // smooth hover effect
-        boxShadow: hoverShadow
+        boxShadow: "none"
           ? "0 1px 4px rgba(var(--shadow-rgb),0.08), 0 2px 6px rgba(var(--shadow-rgb),0.04)"
           : "none",
       }}

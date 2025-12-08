@@ -190,7 +190,7 @@ export default function StatusSidebar({
         color: 'var(--text-inverse)',
         border: 'none',
         borderRadius: '50%',
-        boxShadow: '0 12px 24px rgba(var(--shadow-rgb),0.2)',
+        boxShadow: 'none',
         cursor: 'pointer',
         zIndex: 51,
         display: 'flex',
@@ -212,7 +212,7 @@ export default function StatusSidebar({
         border: 'none',
         borderTopLeftRadius: '8px',
         borderBottomLeftRadius: '8px',
-        boxShadow: '-4px 4px 12px rgba(var(--shadow-rgb),0.2)',
+        boxShadow: 'none',
         cursor: 'pointer',
         zIndex: 51,
         display: 'flex',
@@ -360,7 +360,7 @@ export default function StatusSidebar({
                     color: 'var(--search-text)',
                     outline: 'none',
                     backgroundColor: 'var(--search-surface)',
-                    boxShadow: '0 2px 4px rgba(var(--shadow-rgb),0.02)'
+                    boxShadow: 'none'
                   }}
                 />
                 <button
@@ -375,7 +375,7 @@ export default function StatusSidebar({
                     cursor: 'pointer',
                     fontSize: '14px',
                     transition: 'all 0.2s',
-                    boxShadow: '0 2px 6px rgba(var(--shadow-rgb),0.1)'
+                    boxShadow: 'none'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = 'var(--background)';
@@ -495,7 +495,7 @@ export default function StatusSidebar({
                 background: 'var(--surface)',
                 borderRadius: '16px',
                 border: '2px solid var(--surface-light)', // Lighter border
-                boxShadow: '0 8px 16px rgba(var(--shadow-rgb),0.08), 0 0 20px rgba(var(--danger-rgb), 0.05)',
+                boxShadow: 'none',
                 transition: 'all 0.3s ease'
               }}>
                 <h3 style={{ fontWeight: 'bold', color: 'var(--accent-purple)', marginBottom: '10px', fontSize: '16px' }}>
@@ -509,7 +509,7 @@ export default function StatusSidebar({
                       borderRadius: '50%',
                     backgroundColor: SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()]?.color || 'var(--grey-accent-light)',
                     animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    boxShadow: `0 0 12px ${SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()]?.color || 'var(--grey-accent-light)'}`
+                    boxShadow: 'none'
                   }}
                 />
                 <span style={{ fontWeight: '600', fontSize: '18px', color: 'var(--text-primary)' }}>

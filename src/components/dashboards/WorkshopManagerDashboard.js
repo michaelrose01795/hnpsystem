@@ -91,7 +91,7 @@ export default function WorkshopManagerDashboard() {
           padding: "24px",
           border: "1px solid var(--surface-light)",
           background: "var(--surface)",
-          boxShadow: "0 24px 45px rgba(var(--primary-rgb),0.08)",
+          boxShadow: "none",
           display: "flex",
           flexDirection: "column",
           gap: "6px",
@@ -115,7 +115,7 @@ export default function WorkshopManagerDashboard() {
           padding: "14px 20px",
           borderRadius: "16px",
           border: "1px solid var(--surface-light)",
-          boxShadow: "0 18px 40px rgba(var(--primary-rgb),0.08)",
+          boxShadow: "none",
         }}
       >
         {quickActions.map((action) => (
@@ -134,7 +134,7 @@ export default function WorkshopManagerDashboard() {
               fontWeight: 600,
               fontSize: "0.9rem",
               textDecoration: "none",
-              boxShadow: "0 10px 24px rgba(var(--primary-rgb),0.12)",
+              boxShadow: "none",
             }}
           >
             {action.label}
@@ -157,7 +157,7 @@ export default function WorkshopManagerDashboard() {
               padding: "18px",
               background: "var(--surface)",
               border: `1px solid ${metric.accent}22`,
-              boxShadow: "0 18px 35px rgba(var(--primary-rgb),0.08)",
+              boxShadow: "none",
               display: "flex",
               flexDirection: "column",
               gap: "6px",
@@ -185,7 +185,7 @@ export default function WorkshopManagerDashboard() {
             borderRadius: "18px",
             padding: "20px",
             border: "1px solid var(--surface-light)",
-            boxShadow: "0 22px 45px rgba(var(--primary-rgb),0.08)",
+            boxShadow: "none",
             display: "flex",
             flexDirection: "column",
             gap: "14px",
@@ -223,7 +223,7 @@ export default function WorkshopManagerDashboard() {
             borderRadius: "18px",
             padding: "20px",
             border: "1px solid var(--surface-light)",
-            boxShadow: "0 22px 45px rgba(var(--primary-rgb),0.08)",
+            boxShadow: "none",
             display: "flex",
             flexDirection: "column",
             gap: "12px",
@@ -285,7 +285,7 @@ export default function WorkshopManagerDashboard() {
               color: "var(--surface)",
               fontWeight: 600,
               cursor: "pointer",
-              boxShadow: "0 12px 24px rgba(var(--primary-rgb),0.2)",
+              boxShadow: "none",
             }}
           >
             View Consumable Orders

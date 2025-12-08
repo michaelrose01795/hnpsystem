@@ -21,7 +21,7 @@ const cardStyle = {
   backgroundColor: "var(--surface)", // White card background for clarity
   borderRadius: "16px", // Rounded corners for modern design
   padding: "20px", // Interior spacing for content
-  boxShadow: "0 18px 36px rgba(var(--primary-rgb),0.14)", // Soft red shadow to match brand
+  boxShadow: "none", // Soft red to match brand
   border: "1px solid var(--surface-light)", // Subtle red border accent
 };
 
@@ -261,7 +261,7 @@ const TechConsumableRequestPage = () => {
                   color: "var(--surface)",
                   fontWeight: 700,
                   cursor: "pointer",
-                  boxShadow: "0 16px 28px rgba(var(--primary-rgb),0.24)",
+                  boxShadow: "none",
                   width: "100%",
                 }}
               >

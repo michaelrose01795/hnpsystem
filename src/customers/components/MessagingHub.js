@@ -3,7 +3,7 @@ import React from "react";
 
 export default function MessagingHub({ contacts = [] }) {
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5 shadow-[0_12px_34px_rgba(var(--primary-rgb),0.08)]">
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5">
       <header className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Message centre</p>
@@ -16,13 +16,13 @@ export default function MessagingHub({ contacts = [] }) {
         {contacts.map((contact) => (
           <div
             key={contact.id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-4 text-sm shadow-[0_6px_20px_rgba(var(--primary-rgb),0.06)]"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-4 text-sm"
           >
             <div>
               <p className="text-sm font-semibold text-slate-900">{contact.label}</p>
               <p className="text-xs text-slate-500">{contact.name}</p>
             </div>
-            <button className="rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-semibold text-white shadow hover:bg-[var(--primary-dark)]">
+            <button className="rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--primary-dark)]">
               Message
             </button>
           </div>

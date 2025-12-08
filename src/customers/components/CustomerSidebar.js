@@ -32,7 +32,7 @@ export default function CustomerSidebar() {
         flexDirection: "column",
         backgroundColor: "var(--surface)",
         borderRadius: "16px",
-        boxShadow: "0 20px 40px rgba(var(--primary-rgb), 0.12)",
+        boxShadow: "none",
         border: "1px solid var(--surface-light)",
         overflow: "hidden",
         flexShrink: 0,
@@ -72,7 +72,7 @@ export default function CustomerSidebar() {
                   background: isActive ? "var(--primary)" : "var(--surface-light)",
                   color: isActive ? "var(--surface)" : "var(--primary-dark)",
                   fontWeight: 600,
-                  boxShadow: isActive
+                  boxShadow: "none"
                     ? "0 12px 20px rgba(var(--danger-rgb), 0.25)"
                     : "0 4px 12px rgba(var(--shadow-rgb), 0.05)",
                 }}

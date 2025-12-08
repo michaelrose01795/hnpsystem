@@ -43,7 +43,7 @@ const cardStyle = {
   backgroundColor: "var(--surface)",
   borderRadius: "12px",
   padding: "20px",
-  boxShadow: "0 10px 30px rgba(var(--danger-rgb), 0.1)",
+  boxShadow: "none",
   border: "1px solid var(--surface-light)",
 };
 

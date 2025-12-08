@@ -14,7 +14,7 @@ const Section = ({ title, subtitle, children }) => (
       borderRadius: "18px",
       padding: "24px",
       border: "1px solid var(--surface-light)",
-      boxShadow: "0 18px 30px rgba(var(--shadow-rgb),0.05)",
+      boxShadow: "none",
       display: "flex",
       flexDirection: "column",
       gap: "12px",
@@ -36,7 +36,7 @@ const MetricCard = ({ label, value, helper }) => (
       padding: "16px",
       minWidth: 160,
       background: "var(--surface)",
-      boxShadow: "0 10px 20px rgba(var(--shadow-rgb),0.05)",
+      boxShadow: "none",
     }}
   >
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-dark)" }}>{label}</p>
@@ -146,7 +146,7 @@ export default function AdminDashboard() {
             borderRadius: "18px",
             padding: "24px",
             border: "1px solid var(--accent-purple-surface)",
-            boxShadow: "0 18px 30px rgba(var(--shadow-rgb),0.05)",
+            boxShadow: "none",
           }}
         >
           <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--primary-dark)" }}>

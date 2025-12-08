@@ -392,7 +392,7 @@ export default function UserClockingHistory() {
     <Layout>
       <div className="bg-slate-50 py-10">
         <div className="mx-auto w-full max-w-5xl space-y-8 px-4 sm:px-6 lg:px-10">
-          <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-sm">
+          <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 ">
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -449,7 +449,7 @@ export default function UserClockingHistory() {
             </div>
           )}
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 ">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-slate-700">
@@ -517,7 +517,7 @@ export default function UserClockingHistory() {
           </section>
 
           {isManager && (
-            <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 ">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Manager tools
@@ -610,7 +610,7 @@ export default function UserClockingHistory() {
                   <button
                     type="submit"
                     disabled={formSubmitting}
-                    className="w-full rounded-2xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="w-full rounded-2xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white  transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {formSubmitting ? "Saving entry…" : "Save clocking entry"}
                   </button>

@@ -9,7 +9,7 @@ export default function ClockingCard() {
   if (loading) return <p>Loading clocking info...</p>;
 
   return (
-    <div className="p-6 bg-white shadow rounded w-full max-w-md">
+    <div className="p-6 bg-white rounded w-full max-w-md">
       <h2 className="text-xl font-bold mb-4">Your Clocking Status</h2>
       <p className="mb-2">Status: {clockedIn ? "Clocked In" : "Clocked Out"}</p>
       <p className="mb-4">Hours Worked Today: {hoursWorked.toFixed(2)}</p>

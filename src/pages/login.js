@@ -109,7 +109,7 @@ export default function LoginPage() {
             title="Login"
             bgColor="var(--surface)"
             textColor="var(--accent-purple)"
-            className="border border-slate-200/70 shadow-xl ring-1 ring-black/5 rounded-3xl"
+            className="border border-slate-200/70  ring-1 ring-black/5 rounded-3xl"
           >
             <div className="space-y-6">
               <form onSubmit={handleDbLogin} className="space-y-5">
@@ -123,7 +123,7 @@ export default function LoginPage() {
                     placeholder="you@hpautomotive.co.uk"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900  focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
                     required
                   />
                 </div>
@@ -138,7 +138,7 @@ export default function LoginPage() {
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900  focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
                     required
                   />
                 </div>
@@ -151,7 +151,7 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  className="w-full rounded-lg py-3 text-base font-semibold text-white shadow-lg shadow-red-500/30 transition focus:outline-none focus:ring-2 focus:ring-red-200"
+                  className="w-full rounded-lg py-3 text-base font-semibold text-white  shadow-red-500/30 transition focus:outline-none focus:ring-2 focus:ring-red-200"
                   style={{ background: "var(--primary)" }}
                 >
                   Login
@@ -166,7 +166,7 @@ export default function LoginPage() {
             title="Developer Login"
             bgColor="var(--surface)"
             textColor="var(--accent-purple)"
-            className="border border-slate-200/70 shadow-lg ring-1 ring-black/5"
+            className="border border-slate-200/70  ring-1 ring-black/5"
           >
             <div className="space-y-6">
               <LoginDropdown
@@ -197,7 +197,7 @@ export default function LoginPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   onClick={handleDevLogin}
-                  className="w-full rounded-lg bg-slate-900 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-slate-800 sm:w-auto sm:px-6"
+                  className="w-full rounded-lg bg-slate-900 py-3 text-sm font-semibold text-white  transition hover:bg-slate-800 sm:w-auto sm:px-6"
                 >
                   Dev Login
                 </button>

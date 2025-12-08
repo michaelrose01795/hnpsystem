@@ -82,7 +82,7 @@ export default function PaymentMethodsCard({
   };
 
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5 shadow-[0_12px_34px_rgba(var(--primary-rgb),0.08)]">
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Payment methods</p>
@@ -94,7 +94,7 @@ export default function PaymentMethodsCard({
         {paymentMethods.map((method) => (
           <div
             key={method.id}
-            className="rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-sm text-slate-700 shadow-sm"
+            className="rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-sm text-slate-700 "
           >
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -205,7 +205,7 @@ export default function PaymentMethodsCard({
           <button
             type="submit"
             disabled={saving}
-            className="rounded-full border border-[var(--surface-light)] bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white shadow hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-full border border-[var(--surface-light)] bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? "Saving..." : "Save card"}
           </button>

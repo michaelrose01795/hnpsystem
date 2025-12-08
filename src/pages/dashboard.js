@@ -154,7 +154,7 @@ export default function Dashboard() {
             backgroundColor: "var(--surface)",
             padding: "12px 20px",
             borderRadius: "8px",
-            boxShadow: "0 2px 6px rgba(var(--shadow-rgb),0.1)",
+            boxShadow: "none",
           }}
         >
           <button

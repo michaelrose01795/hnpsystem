@@ -18,7 +18,7 @@ const SectionCard = ({ title, subtitle, children }) => (
       borderRadius: "18px",
       padding: "20px",
       border: "1px solid var(--surface-light)",
-      boxShadow: "0 18px 35px rgba(var(--primary-rgb),0.08)",
+      boxShadow: "none",
       display: "flex",
       flexDirection: "column",
       gap: "14px",
@@ -61,7 +61,7 @@ const LinearTrend = ({ data, accent = "var(--primary)" }) => (
             height: `${Math.max(8, point.jobs * 3)}px`,
             background: accent,
             borderRadius: "8px 8px 4px 4px",
-            boxShadow: "0 4px 10px rgba(var(--shadow-rgb),0.08)",
+            boxShadow: "none",
           }}
         />
         <small style={{ color: "var(--info)" }}>{point.label}</small>

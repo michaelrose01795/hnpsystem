@@ -14,7 +14,7 @@ export default function ClockingList() {
   if (loading) return <p>Loading users clocking info...</p>;
 
   return (
-    <div className="p-6 bg-white shadow rounded w-full max-w-3xl">
+    <div className="p-6 bg-white rounded w-full max-w-3xl">
       <h2 className="text-xl font-bold mb-4">All Users Clocking</h2>
       <table className="w-full table-auto border-collapse border border-gray-300">
         <thead>

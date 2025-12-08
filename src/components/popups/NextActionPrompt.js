@@ -120,7 +120,7 @@ export default function NextActionPrompt() {
           alignItems: "center",
           gap: "8px",
           cursor: "pointer",
-          boxShadow: "0 12px 24px rgba(var(--danger-rgb), 0.35)",
+          boxShadow: "none",
         }}
       >
         <span role="img" aria-label="Next action">🔔</span>
@@ -138,7 +138,7 @@ export default function NextActionPrompt() {
               display: "flex",
               flexDirection: "column",
               gap: "18px",
-              boxShadow: "0 24px 48px rgba(var(--shadow-rgb),0.18)",
+              boxShadow: "none",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
@@ -298,7 +298,7 @@ export default function NextActionPrompt() {
                     color: "white",
                     fontWeight: 700,
                     cursor: isSubmitting ? "wait" : "pointer",
-                    boxShadow: "0 18px 28px rgba(var(--danger-rgb), 0.35)",
+                    boxShadow: "none",
                     minWidth: "140px",
                   }}
                 >

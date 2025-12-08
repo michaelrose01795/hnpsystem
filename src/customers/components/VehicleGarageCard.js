@@ -7,7 +7,7 @@ const isImage = (type = "") => type.toLowerCase().startsWith("image/");
 
 export default function VehicleGarageCard({ vehicles = [] }) {
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5 shadow-[0_12px_34px_rgba(var(--primary-rgb),0.08)]">
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5">
       <header className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">My garage</p>
@@ -27,7 +27,7 @@ export default function VehicleGarageCard({ vehicles = [] }) {
           return (
             <div
               key={vehicle.id || vehicle.reg}
-              className="rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-5 text-sm text-slate-700 shadow-[0_6px_20px_rgba(var(--primary-rgb),0.06)]"
+              className="rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-5 text-sm text-slate-700"
             >
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-semibold text-slate-900">
                 <span>{vehicle.makeModel}</span>
@@ -52,7 +52,7 @@ export default function VehicleGarageCard({ vehicles = [] }) {
                     {vehicle.jobs.map((job) => (
                       <li
                         key={job.id}
-                        className="rounded-xl border border-white/60 bg-white/70 px-3 py-2 shadow-sm"
+                        className="rounded-xl border border-white/60 bg-white/70 px-3 py-2 "
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2 text-slate-900">
                           <span className="font-semibold">{job.jobNumber}</span>

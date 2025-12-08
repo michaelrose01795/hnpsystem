@@ -227,7 +227,7 @@ export default function TechsDashboard() {
               cursor: "pointer",
               fontSize: "16px",
               fontWeight: "600",
-              boxShadow: "0 4px 6px rgba(var(--shadow-rgb),0.1)",
+              boxShadow: "none",
               transition: "all 0.2s"
             }}
             onMouseEnter={(e) => {
@@ -254,7 +254,7 @@ export default function TechsDashboard() {
             backgroundColor: "var(--surface)",
             padding: "24px",
             borderRadius: "16px",
-            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            boxShadow: "none",
             border: "1px solid var(--surface-light)"
           }}>
             <div style={{ fontSize: "36px", fontWeight: "700", color: "var(--info-dark)", marginBottom: "8px" }}>
@@ -270,7 +270,7 @@ export default function TechsDashboard() {
             backgroundColor: clockingStatus ? "var(--success-surface)" : "var(--danger-surface)",
             padding: "24px",
             borderRadius: "16px",
-            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            boxShadow: "none",
             border: `1px solid ${clockingStatus ? "var(--success)" : "var(--danger-surface)"}`
           }}>
             <div style={{ 
@@ -294,7 +294,7 @@ export default function TechsDashboard() {
             backgroundColor: "var(--surface)",
             padding: "24px",
             borderRadius: "16px",
-            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            boxShadow: "none",
             border: "1px solid var(--surface-light)"
           }}>
             <div style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "8px" }}>
@@ -310,7 +310,7 @@ export default function TechsDashboard() {
             backgroundColor: "var(--surface)",
             padding: "24px",
             borderRadius: "16px",
-            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            boxShadow: "none",
             border: "1px solid var(--surface-light)"
           }}>
             <div style={{ fontSize: "36px", fontWeight: "700", color: "var(--accent-purple)", marginBottom: "8px" }}>
@@ -328,7 +328,7 @@ export default function TechsDashboard() {
             backgroundColor: "var(--surface)",
             padding: "24px",
             borderRadius: "16px",
-            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            boxShadow: "none",
             border: "2px solid var(--primary)"
           }}>
             <h2 style={{ 
@@ -371,7 +371,7 @@ export default function TechsDashboard() {
                     cursor: "pointer",
                     fontSize: "15px",
                     fontWeight: "600",
-                    boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.1)",
+                    boxShadow: "none",
                     transition: "all 0.2s"
                   }}
                   onMouseEnter={(e) => e.target.style.backgroundColor = "var(--info-dark)"}
@@ -390,7 +390,7 @@ export default function TechsDashboard() {
             backgroundColor: "var(--surface)",
             padding: "24px",
             borderRadius: "16px",
-            boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+            boxShadow: "none",
             border: "1px solid var(--surface-light)"
           }}>
             <h2 style={{ 
@@ -433,7 +433,7 @@ export default function TechsDashboard() {
                     cursor: "pointer",
                     fontSize: "15px",
                     fontWeight: "600",
-                    boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.1)",
+                    boxShadow: "none",
                     transition: "all 0.2s"
                   }}
                   onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger)"}
@@ -451,7 +451,7 @@ export default function TechsDashboard() {
           backgroundColor: "var(--surface)",
           padding: "24px",
           borderRadius: "16px",
-          boxShadow: "0 2px 8px rgba(var(--shadow-rgb),0.08)",
+          boxShadow: "none",
           border: "1px solid var(--surface-light)"
         }}>
           <div style={{ 
@@ -576,7 +576,7 @@ export default function TechsDashboard() {
               borderRadius: "12px",
               cursor: "pointer",
               textAlign: "center",
-              boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)",
+              boxShadow: "none",
               transition: "all 0.2s"
             }}
             onMouseEnter={(e) => {
@@ -603,7 +603,7 @@ export default function TechsDashboard() {
               borderRadius: "12px",
               cursor: "pointer",
               textAlign: "center",
-              boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)",
+              boxShadow: "none",
               transition: "all 0.2s"
             }}
             onMouseEnter={(e) => {
@@ -630,7 +630,7 @@ export default function TechsDashboard() {
               borderRadius: "12px",
               cursor: "pointer",
               textAlign: "center",
-              boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)",
+              boxShadow: "none",
               transition: "all 0.2s"
             }}
             onMouseEnter={(e) => {

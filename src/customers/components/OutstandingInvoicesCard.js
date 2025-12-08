@@ -8,7 +8,7 @@ export default function OutstandingInvoicesCard({ invoices = [] }) {
   };
 
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5 shadow-[0_12px_34px_rgba(var(--primary-rgb),0.08)]">
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5">
       <header className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Outstanding invoices</p>
@@ -20,7 +20,7 @@ export default function OutstandingInvoicesCard({ invoices = [] }) {
         {invoices.map((invoice) => (
           <div
             key={invoice.id}
-            className="rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-4 text-slate-700 shadow-sm"
+            className="rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-4 text-slate-700 "
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -38,7 +38,7 @@ export default function OutstandingInvoicesCard({ invoices = [] }) {
               <button
                 onClick={() => handlePayInvoice(invoice)}
                 disabled={!invoice.paymentLink}
-                className="rounded-full border border-[var(--surface-light)] bg-[var(--primary)] px-4 py-2 text-xs font-semibold text-white shadow hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:bg-[var(--danger)] disabled:text-white/70"
+                className="rounded-full border border-[var(--surface-light)] bg-[var(--primary)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:bg-[var(--danger)] disabled:text-white/70"
               >
                 {invoice.paymentLink ? "Pay now" : "Payment link unavailable"}
               </button>

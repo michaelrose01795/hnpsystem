@@ -511,12 +511,12 @@ export default function CustomerMessagesPage() {
         </div>
       )}
       {isLoading ? (
-        <div className="rounded-2xl border border-[var(--surface-light)] bg-white p-5 text-sm text-slate-500 shadow mb-4">
+        <div className="rounded-2xl border border-[var(--surface-light)] bg-white p-5 text-sm text-slate-500 mb-4">
           Loading messages…
         </div>
       ) : null}
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5 shadow-[0_12px_34px_rgba(var(--primary-rgb),0.08)]">
+        <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5">
           <header className="flex items-center justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Message centre</p>
@@ -530,7 +530,7 @@ export default function CustomerMessagesPage() {
           </header>
 
           <div className="mt-4 space-y-6">
-            <div className="space-y-3 rounded-2xl border border-[var(--surface-light)] bg-[var(--danger-surface)] p-4 shadow-[0_6px_16px_rgba(var(--primary-rgb),0.08)]">
+            <div className="space-y-3 rounded-2xl border border-[var(--surface-light)] bg-[var(--danger-surface)] p-4">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">
@@ -543,7 +543,7 @@ export default function CustomerMessagesPage() {
                     type="button"
                     onClick={() => setComposerOpen(true)}
                     disabled={composerCreating}
-                    className="rounded-full border border-dashed border-[var(--primary)] bg-white px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--primary)] shadow disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full border border-dashed border-[var(--primary)] bg-white px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     + New conversation
                   </button>
@@ -551,7 +551,7 @@ export default function CustomerMessagesPage() {
                     type="button"
                     onClick={fetchThreads}
                     disabled={threadsLoading}
-                    className="rounded-full border border-[var(--surface-light)] bg-white px-3 py-1 text-xs font-semibold text-[var(--primary)] shadow hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full border border-[var(--surface-light)] bg-white px-3 py-1 text-xs font-semibold text-[var(--primary)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {threadsLoading ? "Refreshing…" : "Refresh"}
                   </button>
@@ -574,7 +574,7 @@ export default function CustomerMessagesPage() {
                 <button
                   type="button"
                   onClick={openSystemNotificationsThread}
-                  className={`w-full text-left rounded-2xl border px-4 py-3 text-sm shadow-[0_6px_20px_rgba(var(--primary-rgb),0.06)] transition ${
+                  className={`w-full text-left rounded-2xl border px-4 py-3 text-sm transition ${
                     isSystemThreadActive
                       ? "border-[var(--primary)] bg-[var(--surface-light)]"
                       : "border-[var(--surface-light)] bg-[var(--background)]"
@@ -608,7 +608,7 @@ export default function CustomerMessagesPage() {
                           key={thread.id}
                           type="button"
                           onClick={() => openThread(thread)}
-                          className={`w-full text-left rounded-2xl border px-4 py-3 shadow-[0_6px_20px_rgba(var(--primary-rgb),0.06)] transition ${
+                          className={`w-full text-left rounded-2xl border px-4 py-3 transition ${
                             isActiveThread
                               ? "border-[var(--primary)] bg-[var(--surface-light)]"
                               : "border-[var(--surface-light)] bg-[var(--background)]"
@@ -640,7 +640,7 @@ export default function CustomerMessagesPage() {
             </div>
 
             {isSystemThreadActive ? (
-              <div className="space-y-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] p-4 shadow-[0_6px_16px_rgba(var(--primary-rgb),0.08)]">
+              <div className="space-y-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">System thread</p>
@@ -681,7 +681,7 @@ export default function CustomerMessagesPage() {
                 </p>
               </div>
             ) : activeThread ? (
-              <div className="space-y-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-4 shadow-[0_6px_16px_rgba(var(--primary-rgb),0.08)]">
+              <div className="space-y-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Active thread</p>
@@ -774,7 +774,7 @@ export default function CustomerMessagesPage() {
                     <button
                       type="submit"
                       disabled={!dbUserId || sendingMessage || !messageDraft.trim()}
-                      className="rounded-full bg-[var(--primary)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
+                      className="rounded-full bg-[var(--primary)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
                     >
                       {sendingMessage ? "Sending…" : "Send"}
                     </button>
@@ -789,7 +789,7 @@ export default function CustomerMessagesPage() {
           </div>
           {composerOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-              <div className="w-full max-w-2xl rounded-3xl border border-[var(--surface-light)] bg-white p-6 shadow-[0_20px_60px_rgba(var(--shadow-rgb),0.4)]">
+              <div className="w-full max-w-2xl rounded-3xl border border-[var(--surface-light)] bg-white p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Compose</p>
@@ -868,7 +868,7 @@ export default function CustomerMessagesPage() {
                     type="button"
                     onClick={handleCreateGroup}
                     disabled={composerCreating || composerSelection.length === 0}
-                    className="rounded-full bg-[var(--primary)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full bg-[var(--primary)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {composerCreating ? "Creating…" : "Create chat"}
                   </button>

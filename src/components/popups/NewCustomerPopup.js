@@ -690,7 +690,7 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
               cursor: loading ? "not-allowed" : "pointer",
               opacity: loading ? 0.6 : 1,
               transition: "all 0.2s",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+              boxShadow: "none",
             }}
             onMouseEnter={(e) => {
               if (!loading) {

@@ -872,7 +872,7 @@ export default function MyJobsPage() {
           display: "flex",
           alignItems: "center",
           gap: "12px",
-          boxShadow: "0 2px 6px rgba(var(--primary-rgb),0.08)"
+          boxShadow: "none"
         }}>
           <div style={{ fontSize: "24px" }}>💡</div>
           <div>

@@ -46,7 +46,7 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
         borderRadius: "16px",
         border: "1px solid var(--surface-light)",
         padding: "16px",
-        boxShadow: "0 6px 18px rgba(var(--shadow-rgb),0.06)",
+        boxShadow: "none",
         height: "100%",
         display: "flex",
         flexDirection: "column",
@@ -121,7 +121,7 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                   borderRadius: "50%",
                   backgroundColor: nodeColor,
                   border: "2px solid var(--surface)",
-                  boxShadow: isCurrent
+                  boxShadow: "none"
                     ? "0 0 14px rgba(var(--danger-rgb), 0.35)"
                     : "0 0 8px rgba(var(--danger-rgb), 0.15)",
                   zIndex: 2,

@@ -132,7 +132,7 @@ export default function Sidebar({
         display: "flex",
         flexDirection: "column",
         borderRadius: "16px",
-        boxShadow: isCondensed
+        boxShadow: "none"
           ? "0 12px 30px rgba(var(--primary-rgb), 0.12)"
           : "0 20px 40px rgba(var(--primary-rgb), 0.12)",
         border: "1px solid var(--surface-light)",
@@ -195,7 +195,7 @@ export default function Sidebar({
               color: "var(--surface)",
               fontWeight: 700,
               cursor: "pointer",
-              boxShadow: "0 6px 16px rgba(var(--shadow-rgb),0.15)",
+              boxShadow: "none",
             }}
           >
             Close
@@ -220,7 +220,7 @@ export default function Sidebar({
                 color: "var(--primary-dark)",
                 fontWeight: 600,
                 textDecoration: "none",
-                boxShadow: "0 6px 16px rgba(var(--primary-rgb),0.12)",
+                boxShadow: "none",
               }}
             >
               <span role="img" aria-label="deliveries">
@@ -264,7 +264,7 @@ export default function Sidebar({
                     fontWeight: 600,
                     cursor: "pointer",
                     border: isActive ? "none" : "1px solid var(--surface-light)",
-                    boxShadow: isActive
+                    boxShadow: "none"
                       ? "0 12px 20px rgba(var(--primary-rgb), 0.28)"
                       : "0 4px 12px rgba(var(--primary-rgb), 0.15)",
                     textDecoration: "none",
@@ -319,7 +319,7 @@ export default function Sidebar({
                     fontWeight: 600,
                     cursor: "pointer",
                     border: isActive ? "none" : "1px solid var(--surface-light)",
-                    boxShadow: isActive
+                    boxShadow: "none"
                       ? "0 12px 20px rgba(var(--primary-rgb), 0.28)"
                       : "0 4px 12px rgba(var(--primary-rgb), 0.15)",
                     textDecoration: "none",
@@ -368,7 +368,7 @@ export default function Sidebar({
                     fontWeight: 600,
                     cursor: "pointer",
                     border: isActive ? "none" : "1px solid var(--surface-light)",
-                    boxShadow: isActive
+                    boxShadow: "none"
                       ? "0 12px 20px rgba(var(--danger-rgb), 0.25)"
                       : "0 4px 12px rgba(var(--shadow-rgb), 0.05)",
                     textDecoration: "none",
@@ -412,7 +412,7 @@ export default function Sidebar({
                       fontWeight: 700,
                       border: "none",
                       cursor: "pointer",
-                      boxShadow: "0 12px 20px rgba(var(--primary-rgb), 0.35)",
+                      boxShadow: "none",
                       width: "100%",
                       textDecoration: "none",
                     }}
@@ -440,7 +440,7 @@ export default function Sidebar({
                       fontWeight: 600,
                       cursor: "pointer",
                       border: isActive ? "none" : "1px solid var(--surface-light)",
-                      boxShadow: isActive
+                      boxShadow: "none"
                         ? "0 12px 20px rgba(var(--danger-rgb), 0.35)"
                         : "0 6px 14px rgba(var(--danger-rgb), 0.2)",
                       textDecoration: "none",

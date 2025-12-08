@@ -42,7 +42,7 @@ export default function CustomerViewPreview({
   selectedDepartment = "",
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-[var(--surface)] p-5 shadow-sm space-y-4">
+    <div className="rounded-xl border border-gray-200 bg-[var(--surface)] p-5  space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <p className="text-sm uppercase tracking-wide text-red-600 font-semibold">
@@ -61,7 +61,7 @@ export default function CustomerViewPreview({
           href={portalUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center justify-center rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-red-700"
+          className="inline-flex items-center justify-center rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
         >
           Open main website
         </a>

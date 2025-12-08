@@ -12,7 +12,7 @@ const MetricCard = ({ label, value, helper }) => (
       padding: "18px",
       background: "var(--surface)",
       minWidth: 160,
-      boxShadow: "0 8px 20px rgba(var(--shadow-rgb),0.05)",
+      boxShadow: "none",
     }}
   >
     <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--primary-dark)" }}>{label}</p>
@@ -28,7 +28,7 @@ const Section = ({ title, subtitle, children }) => (
       borderRadius: "18px",
       padding: "24px",
       border: "1px solid var(--surface-light)",
-      boxShadow: "0 16px 30px rgba(var(--shadow-rgb),0.05)",
+      boxShadow: "none",
       display: "flex",
       flexDirection: "column",
       gap: "12px",
@@ -200,7 +200,7 @@ export default function ServiceDashboard() {
             borderRadius: "18px",
             padding: "24px",
             border: "1px solid var(--surface-light)",
-            boxShadow: "0 16px 30px rgba(var(--shadow-rgb),0.08)",
+            boxShadow: "none",
           }}
         >
           <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--primary-dark)" }}>

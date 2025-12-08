@@ -62,7 +62,7 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
     gap: "20px",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: shadows.lg,
+    boxShadow: "none",
     color: svgPrimary,
   };
 

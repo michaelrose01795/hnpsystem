@@ -8,7 +8,7 @@ export default function VHCSummaryList({ summaries = [], vehicles = [] }) {
     [vehicles]
   );
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5 shadow-[0_12px_34px_rgba(var(--primary-rgb),0.08)]">
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5">
       <header className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">VHC status</p>
@@ -25,7 +25,7 @@ export default function VHCSummaryList({ summaries = [], vehicles = [] }) {
           return (
             <div
               key={summary.id}
-              className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-4 py-4 text-sm text-slate-700 shadow-[0_6px_20px_rgba(var(--primary-rgb),0.06)]"
+              className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-4 py-4 text-sm text-slate-700"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>

@@ -10,7 +10,7 @@ const sectionStyle = {
   borderRadius: "18px",
   border: "1px solid var(--surface-light)",
   padding: "24px",
-  boxShadow: "0 12px 28px rgba(var(--shadow-rgb),0.08)",
+  boxShadow: "none",
   display: "flex",
   flexDirection: "column",
   gap: "18px",
@@ -172,7 +172,7 @@ export default function PartsDeliveryPlannerPage() {
   return (
     <Layout>
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "22px" }}>
-        <header style={{ ...sectionStyle, boxShadow: "0 14px 32px rgba(var(--shadow-rgb),0.12)" }}>
+        <header style={{ ...sectionStyle, boxShadow: "none" }}>
           <p style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--primary-dark)" }}>
             Delivery planning
           </p>

@@ -26,7 +26,7 @@ export default function HrTabsBar() {
         borderRadius: "18px",
         padding: "14px",
         border: "1px solid var(--accent-purple-surface)",
-        boxShadow: "0 16px 30px rgba(var(--accent-purple-rgb), 0.04)",
+        boxShadow: "none",
         marginBottom: "20px",
       }}
     >
@@ -60,7 +60,7 @@ export default function HrTabsBar() {
                 fontSize: "0.85rem",
                 textDecoration: "none",
                 border: isActive ? "1px solid var(--accent-purple)" : "1px solid var(--accent-purple-surface)",
-                boxShadow: isActive ? "0 6px 16px rgba(var(--accent-purple-rgb), 0.25)" : "inset 0 -1px 0 rgba(var(--accent-purple-rgb), 0.05)",
+                boxShadow: "none", 0.25)" : "inset 0 -1px 0 rgba(var(--accent-purple-rgb), 0.05)",
                 transition: "background-color 0.2s ease, color 0.2s ease",
                 textAlign: "center",
               }}

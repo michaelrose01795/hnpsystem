@@ -8,7 +8,7 @@ const cardStyle = {
   ...popupCardStyles,
   padding: "28px",
   width: "min(560px, 100%)",
-  boxShadow: "0 28px 60px rgba(var(--shadow-rgb),0.28)",
+  boxShadow: "none",
 };
 
 const buttonStyle = {

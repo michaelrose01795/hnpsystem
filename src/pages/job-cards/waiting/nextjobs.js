@@ -989,7 +989,7 @@ export default function NextJobsPage() {
               height: PANEL_HEIGHT_PX,
               minHeight: PANEL_HEIGHT_PX,
               maxHeight: PANEL_HEIGHT_PX,
-              boxShadow: dragOverTarget === assignee.name ? "0 4px 12px rgba(var(--primary-rgb),0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.14)",
+              boxShadow: "none",0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.14)",
               transition: "all 0.2s ease",
               backgroundColor: dragOverTarget === assignee.name ? "var(--surface-light)" : "var(--surface)"
             }}
@@ -1103,7 +1103,7 @@ export default function NextJobsPage() {
                   backgroundColor: "var(--primary)",
                   marginBottom: "8px",
                   borderRadius: "2px",
-                  boxShadow: "0 0 8px rgba(var(--primary-rgb),0.4)"
+                  boxShadow: "none"
                 }} />
               )}
 
@@ -1170,7 +1170,7 @@ export default function NextJobsPage() {
                     marginTop: "-8px",
                     marginBottom: "8px",
                     borderRadius: "2px",
-                    boxShadow: "0 0 8px rgba(var(--primary-rgb),0.4)"
+                    boxShadow: "none"
                   }} />
                 )}
             </React.Fragment>
@@ -1184,7 +1184,7 @@ export default function NextJobsPage() {
               height: "3px",
               backgroundColor: "var(--primary)",
               borderRadius: "2px",
-              boxShadow: "0 0 8px rgba(var(--primary-rgb),0.4)"
+              boxShadow: "none"
             }} />
           )}
       </div>
@@ -1264,7 +1264,7 @@ export default function NextJobsPage() {
                 background: "var(--search-surface)",
                 borderRadius: "8px",
             border: dragOverTarget === "outstanding" ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
-            boxShadow: dragOverTarget === "outstanding" ? "0 4px 12px rgba(var(--primary-rgb),0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
+            boxShadow: "none",0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
             padding: "16px",
             display: "flex",
             flexDirection: "column",
@@ -1358,7 +1358,7 @@ export default function NextJobsPage() {
                           backgroundColor:
                             draggingJob?.jobNumber === job.jobNumber ? "var(--surface-light)" : "var(--background)",
                           cursor: hasAccess ? "grab" : "pointer",
-                          boxShadow: "0 8px 20px rgba(var(--shadow-rgb),0.08)",
+                          boxShadow: "none",
                           transition: "border 0.2s, background-color 0.2s, transform 0.2s",
                         }}
                         title={`${job.jobNumber} – ${job.customer || "Unknown customer"}`}
@@ -1457,7 +1457,7 @@ export default function NextJobsPage() {
             <div style={{ 
               flex: "1 0 auto",
               borderRadius: "8px",
-              boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
+              boxShadow: "none",
               border: "1px solid var(--surface-light)",
               background: "var(--surface)",
               padding: "24px",
@@ -1532,7 +1532,7 @@ export default function NextJobsPage() {
                   fontSize: "13px",
                   fontWeight: "600",
                   transition: "background-color 0.2s",
-                  boxShadow: "0 2px 4px rgba(var(--danger-rgb), 0.2)"
+                  boxShadow: "none"
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--danger)"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "var(--danger)"}

@@ -22,14 +22,14 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="rounded-2xl bg-white p-8 shadow-lg text-center space-y-4">
+        <div className="rounded-2xl bg-white p-8  text-center space-y-4">
           <h1 className="text-2xl font-semibold text-gray-900">Customer Portal</h1>
           <p className="text-gray-600">
             Please log in with the email you used when booking your vehicle in.
           </p>
           <Link
             href="/login"
-            className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2 text-white font-semibold shadow hover:bg-red-700"
+            className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2 text-white font-semibold hover:bg-red-700"
           >
             Go to login
           </Link>
@@ -41,7 +41,7 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
   if (!isCustomer) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <div className="max-w-lg rounded-2xl bg-white p-8 shadow-lg space-y-4 text-center">
+        <div className="max-w-lg rounded-2xl bg-white p-8  space-y-4 text-center">
           <h1 className="text-2xl font-semibold text-gray-900">Restricted area</h1>
           <p className="text-gray-600">
             This part of the platform is dedicated to customers only. Switch to a customer user
@@ -49,7 +49,7 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
           </p>
           <Link
             href="/login"
-            className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2 text-white font-semibold shadow hover:bg-red-700"
+            className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2 text-white font-semibold hover:bg-red-700"
           >
             Switch user
           </Link>
@@ -91,7 +91,7 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
               border: "1px solid var(--surface-light)",
               background: "var(--surface)",
               padding: "24px",
-              boxShadow: "0 12px 34px rgba(var(--primary-rgb),0.08)",
+              boxShadow: "none",
             }}
           >
             <p
@@ -229,7 +229,7 @@ export default function CustomerLayout({ pageTitle = "Customer Portal", children
                     borderRadius: "999px",
                     padding: "10px 18px",
                     cursor: "pointer",
-                    boxShadow: "0 10px 24px rgba(var(--primary-rgb),0.25)",
+                    boxShadow: "none",
                   }}
                 >
                   Logout

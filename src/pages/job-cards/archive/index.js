@@ -70,7 +70,7 @@ export default function ArchivedJobsPage() {
             background: "var(--search-surface)",
             borderRadius: "12px",
             padding: "16px",
-            boxShadow: "0 10px 25px rgba(var(--shadow-rgb),0.06)",
+            boxShadow: "none",
             border: "1px solid var(--search-surface-muted)",
             color: "var(--search-text)",
           }}
@@ -120,7 +120,7 @@ export default function ArchivedJobsPage() {
             background: "var(--surface)",
             borderRadius: "12px",
             border: "1px solid var(--info-surface)",
-            boxShadow: "0 10px 25px rgba(var(--shadow-rgb),0.04)",
+            boxShadow: "none",
           }}
         >
           <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--info-surface)" }}>

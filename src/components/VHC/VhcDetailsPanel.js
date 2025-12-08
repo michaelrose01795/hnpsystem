@@ -218,7 +218,7 @@ const PANEL_SECTION_STYLE = {
   background: "var(--surface)",
   borderRadius: "18px",
   border: "1px solid var(--surface-light)",
-  boxShadow: "0 16px 30px rgba(var(--shadow-rgb),0.08)",
+  boxShadow: "none",
   padding: "24px",
   display: "flex",
   flexDirection: "column",
@@ -1581,7 +1581,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                       borderRadius: "18px",
                       padding: "18px",
                       background: "var(--surface)",
-                      boxShadow: "0 12px 30px rgba(var(--shadow-rgb),0.08)",
+                      boxShadow: "none",
                     }}
                   >
                     <div

@@ -12,7 +12,7 @@ const Section = ({ title, subtitle, children }) => (
       borderRadius: "18px",
       padding: "24px",
       border: "1px solid var(--surface-light)",
-      boxShadow: "0 18px 30px rgba(var(--shadow-rgb),0.05)",
+      boxShadow: "none",
       display: "flex",
       flexDirection: "column",
       gap: "12px",
@@ -34,7 +34,7 @@ const MetricCard = ({ label, value, helper }) => (
       padding: "16px",
       background: "var(--surface)",
       border: "1px solid var(--surface-light)",
-      boxShadow: "0 10px 20px rgba(var(--shadow-rgb),0.05)",
+      boxShadow: "none",
     }}
   >
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-dark)" }}>{label}</p>
@@ -144,7 +144,7 @@ export default function PartsDashboard() {
             borderRadius: "18px",
             border: "1px solid var(--info)",
             padding: "24px",
-            boxShadow: "0 16px 30px rgba(var(--shadow-rgb),0.05)",
+            boxShadow: "none",
           }}
         >
           <p style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--primary-dark)" }}>Parts desk</p>

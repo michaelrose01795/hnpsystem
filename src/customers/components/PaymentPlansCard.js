@@ -3,7 +3,7 @@ import React from "react";
 
 export default function PaymentPlansCard({ paymentPlans = [] }) {
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5 shadow-[0_12px_34px_rgba(var(--primary-rgb),0.08)]">
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5">
       <header className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Payment plans</p>
@@ -15,7 +15,7 @@ export default function PaymentPlansCard({ paymentPlans = [] }) {
         {paymentPlans.map((plan) => (
           <div
             key={plan.id}
-            className="rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-4 text-slate-700 shadow-sm"
+            className="rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-4 text-slate-700 "
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>

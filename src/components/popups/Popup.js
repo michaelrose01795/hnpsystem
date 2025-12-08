@@ -13,7 +13,7 @@ export default function Popup({ isOpen, onClose, children }) {
           borderRadius: "12px",
           minWidth: "300px",
           maxWidth: "90%",
-          boxShadow: "0 16px 32px rgba(var(--shadow-rgb),0.25)",
+          boxShadow: "none",
         }}
       >
         {children}

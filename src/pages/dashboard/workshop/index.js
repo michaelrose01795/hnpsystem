@@ -13,7 +13,7 @@ const MetricCard = ({ label, value, helper }) => (
       borderRadius: "16px",
       padding: "16px",
       border: "1px solid var(--surface-light)",
-      boxShadow: "0 10px 24px rgba(var(--shadow-rgb),0.04)",
+      boxShadow: "none",
       minWidth: 160,
     }}
   >
@@ -30,7 +30,7 @@ const Section = ({ title, subtitle, children }) => (
       borderRadius: "18px",
       padding: "24px",
       border: "1px solid var(--surface-light)",
-      boxShadow: "0 16px 30px rgba(var(--primary-rgb),0.08)",
+      boxShadow: "none",
       display: "flex",
       flexDirection: "column",
       gap: "12px",
@@ -188,7 +188,7 @@ export default function WorkshopDashboard() {
             borderRadius: "18px",
             padding: "24px",
             border: "1px solid var(--surface-light)",
-            boxShadow: "0 18px 35px rgba(var(--primary-rgb),0.1)",
+            boxShadow: "none",
           }}
         >
           <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--primary-dark)" }}>

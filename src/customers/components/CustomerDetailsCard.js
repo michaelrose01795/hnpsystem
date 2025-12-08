@@ -83,7 +83,7 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
   };
 
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5 shadow-[0_12px_34px_rgba(var(--primary-rgb),0.08)]">
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5">
       <header className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">My details</p>
@@ -196,7 +196,7 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-full border border-[var(--surface-light)] bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white shadow hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
+            className="rounded-full border border-[var(--surface-light)] bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
           >
             {saving ? "Saving..." : "Save changes"}
           </button>
