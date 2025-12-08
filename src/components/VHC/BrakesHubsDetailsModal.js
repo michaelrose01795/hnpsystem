@@ -390,10 +390,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
   const updatePadMeasurement = (category, value) => {
     const sanitized = sanitizeNumericListInput(value);
-    setData((prev) => ({
-      ...prev,
-      [category]: { ...prev[category], measurement: sanitized },
-    }));
 
     const numbers = sanitized
       .replace(/[,\s]+$/g, "")
@@ -401,12 +397,19 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       .map((v) => parseFloat(v.trim()))
       .filter((v) => !Number.isNaN(v));
 
-    if (numbers.length === 0) return;
+    let newStatus = "Green";
+    if (numbers.length > 0) {
+      const min = Math.min(...numbers);
+      if (min < 3) newStatus = "Red";
+      else if (min < 5) newStatus = "Amber";
+      else newStatus = "Green";
+    }
 
-    const min = Math.min(...numbers);
-    if (min >= 5) updatePadStatus(category, "Green");
-    else if (min >= 3) updatePadStatus(category, "Amber");
-    else updatePadStatus(category, "Red");
+    // Batch the state update to prevent focus loss
+    setData((prev) => ({
+      ...prev,
+      [category]: { ...prev[category], measurement: sanitized, status: newStatus },
+    }));
   };
 
   const updatePadStatus = (category, value) => {
@@ -547,7 +550,19 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
         },
       };
     });
-    return next;
+
+    // Smart data persistence: Only save relevant data based on brake type
+    if (showDrum) {
+      // When drum brakes are selected, exclude rear pads and rear discs from save
+      // But keep them in component state for potential switching back
+      const { rearPads, rearDiscs, ...rest } = next;
+      return rest;
+    } else {
+      // When disc brakes are selected, exclude drum data from save
+      // But keep it in component state for potential switching back
+      const { rearDrums, ...rest } = next;
+      return rest;
+    }
   };
 
   const parsePadValue = (measurement) => {
@@ -561,16 +576,32 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
   const brakeDiagramValues = useMemo(() => {
     const frontSeverityRank = computeAxleSeverityRank(data.frontPads, data.frontDiscs);
-    const rearSeverityRank = computeAxleSeverityRank(data.rearPads, data.rearDiscs);
     const frontValue = parsePadValue(data.frontPads.measurement);
-    const rearValue = parsePadValue(data.rearPads.measurement);
+
+    let rearValue, rearSeverityRank;
+
+    if (showDrum) {
+      // Map drum status to diagram severity
+      const drumStatus = data.rearDrums.status;
+      let drumSeverity = "unknown";
+      if (drumStatus === "Good") drumSeverity = "good";
+      else if (drumStatus === "Monitor") drumSeverity = "advisory";
+      else if (drumStatus === "Replace") drumSeverity = "critical";
+
+      rearValue = "drum";
+      rearSeverityRank = resolveDiagramRank(drumSeverity);
+    } else {
+      rearSeverityRank = computeAxleSeverityRank(data.rearPads, data.rearDiscs);
+      rearValue = parsePadValue(data.rearPads.measurement);
+    }
+
     return {
       nsf: { value: frontValue, severity: mapRankToDiagramStatus(frontSeverityRank) },
       osf: { value: frontValue, severity: mapRankToDiagramStatus(frontSeverityRank) },
-      nsr: { value: rearValue, severity: mapRankToDiagramStatus(rearSeverityRank) },
-      osr: { value: rearValue, severity: mapRankToDiagramStatus(rearSeverityRank) },
+      nsr: { value: rearValue, severity: mapRankToDiagramStatus(rearSeverityRank), isDrum: showDrum },
+      osr: { value: rearValue, severity: mapRankToDiagramStatus(rearSeverityRank), isDrum: showDrum },
     };
-  }, [data]);
+  }, [data, showDrum]);
 
   // ✅ New completion logic
   const isCompleteEnabled = () => {
@@ -583,7 +614,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     };
 
     const frontPadMeasurement = (data.frontPads.measurement || "").trim();
-    const rearPadMeasurement = (data.rearPads.measurement || "").trim();
 
     const frontPadsDone =
       frontPadMeasurement !== "" && data.frontPads.status !== "";
@@ -591,18 +621,20 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
     if (!frontPadsDone || !frontDiscsDone) return false;
 
-    const rearPadsDone = rearPadMeasurement !== "" && data.rearPads.status !== "";
-
+    // For drum brake mode: only require front pads + front discs + drum status
     if (showDrum) {
-      return rearPadsDone && data.rearDrums.status !== "";
+      return data.rearDrums.status !== "";
     }
 
+    // For disc brake mode: require front pads + front discs + rear pads + rear discs
+    const rearPadMeasurement = (data.rearPads.measurement || "").trim();
+    const rearPadsDone = rearPadMeasurement !== "" && data.rearPads.status !== "";
     return rearPadsDone && discComplete(data.rearDiscs);
   };
 
   if (!isOpen) return null;
 
-  const PadsSection = ({ category, showDrumButton }) => {
+  const PadsSection = ({ category }) => {
     const padData = data[category];
     const title = padLabels[category] || "Pads";
 
@@ -648,28 +680,12 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           <option>Amber</option>
           <option>Green</option>
         </select>
-
-        {showDrumButton && (
-          <button
-            type="button"
-            onClick={() => setShowDrum(true)}
-            style={{
-              ...buildModalButton("ghost"),
-              border: `1px dashed ${palette.accent}`,
-              color: palette.accent,
-              background: "transparent",
-              padding: "10px 16px",
-            }}
-          >
-            Drum Brakes
-          </button>
-        )}
       </div>
     );
   };
 
   // ✅ Discs Section
-  const DiscsSection = ({ category }) => {
+  const DiscsSection = ({ category, showDrumButton }) => {
     const discData = data[category];
     const title = discLabels[category] || "Discs";
 
@@ -769,6 +785,22 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           </>
         )}
 
+        {showDrumButton && (
+          <button
+            type="button"
+            onClick={() => setShowDrum(true)}
+            style={{
+              ...buildModalButton("ghost"),
+              border: `1px dashed ${palette.accent}`,
+              color: palette.accent,
+              background: "transparent",
+              padding: "10px 16px",
+              marginTop: "8px",
+            }}
+          >
+            Switch to Drum Brakes
+          </button>
+        )}
       </div>
     );
   };
@@ -788,7 +820,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           marginTop: "8px",
         }}
       >
-        {["Good", "Visual check", "Replace", "Not checked"].map((label) => {
+        {["Good", "Monitor", "Replace"].map((label) => {
           const active = data.rearDrums.status === label;
           return (
             <button
@@ -825,9 +857,12 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           alignSelf: "flex-start",
           padding: "10px 18px",
           color: palette.accent,
+          border: `1px dashed ${palette.accent}`,
+          background: "transparent",
+          marginTop: "8px",
         }}
       >
-        Disc Brakes
+        Switch to Disc Brakes
       </button>
     </div>
   );
@@ -924,8 +959,8 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
               {activeSide === "rear" && !showDrum && (
                 <>
-                  <PadsSection category="rearPads" showDrumButton />
-                  <DiscsSection category="rearDiscs" />
+                  <PadsSection category="rearPads" />
+                  <DiscsSection category="rearDiscs" showDrumButton />
                 </>
               )}
 

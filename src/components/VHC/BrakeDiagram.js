@@ -37,9 +37,10 @@ const resolveBrakeEntry = (entry) => {
     return {
       measurement: entry.value,
       overrideStatus: entry.severity,
+      isDrum: entry.isDrum || false,
     };
   }
-  return { measurement: entry, overrideStatus: null };
+  return { measurement: entry, overrideStatus: null, isDrum: false };
 };
 
 export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
@@ -94,9 +95,21 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
 
         {BRAKE_KEYS.map(({ key, position }) => {
           const entry = brakes?.[key];
-          const { measurement, overrideStatus } = resolveBrakeEntry(entry);
-          const { text, status: baseStatus } = getPadStatus(measurement);
-          const status = overrideStatus || baseStatus;
+          const { measurement, overrideStatus, isDrum } = resolveBrakeEntry(entry);
+
+          let text, status;
+
+          if (isDrum && measurement === "drum") {
+            // Display drum brake status
+            text = "drum";
+            status = overrideStatus || "unknown";
+          } else {
+            // Display regular pad measurement
+            const padInfo = getPadStatus(measurement);
+            text = padInfo.text;
+            status = overrideStatus || padInfo.status;
+          }
+
           const colors = statusPalette[status] || statusPalette.unknown;
           const isFrontWheel = key === "nsf" || key === "osf";
           const isRearWheel = key === "nsr" || key === "osr";
@@ -125,7 +138,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
                 textAnchor="middle"
                 dominantBaseline="middle"
                 fill={colors.text}
-                fontSize="12"
+                fontSize={isDrum ? "10" : "12"}
                 fontWeight="700"
               >
                 {text}
