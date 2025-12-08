@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
@@ -15,6 +15,71 @@ import { getClockingStatus } from "@/lib/database/clocking";
 import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
 import { supabase } from "@/lib/supabaseClient";
 import WriteUpForm from "@/components/JobCards/WriteUpForm";
+import { getJobByNumberOrReg, saveChecksheet } from "@/lib/database/jobs";
+import themeConfig, {
+  vhcLayoutStyles,
+  createVhcButtonStyle,
+  vhcCardStates,
+} from "@/styles/appTheme";
+
+// VHC Section Modals
+import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
+import BrakesHubsDetailsModal from "@/components/VHC/BrakesHubsDetailsModal";
+import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetailsModal";
+import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
+import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal";
+import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
+
+// VHC Section titles and constants
+const SECTION_TITLES = {
+  wheelsTyres: "Wheels & Tyres",
+  brakesHubs: "Brakes & Hubs",
+  serviceIndicator: "Service Indicator & Under Bonnet",
+  externalInspection: "External",
+  internalElectrics: "Internal",
+  underside: "Underside",
+};
+
+const MANDATORY_SECTION_KEYS = ["wheelsTyres", "brakesHubs", "serviceIndicator"];
+const trackedSectionKeys = new Set(MANDATORY_SECTION_KEYS);
+
+const createDefaultSectionStatus = () =>
+  MANDATORY_SECTION_KEYS.reduce((acc, key) => {
+    acc[key] = "pending";
+    return acc;
+  }, {});
+
+const hasServiceIndicatorEntries = (indicator = {}) =>
+  Boolean(indicator?.serviceChoice) ||
+  Boolean(indicator?.oilStatus) ||
+  (Array.isArray(indicator?.concerns) && indicator.concerns.length > 0);
+
+const deriveSectionStatusFromSavedData = (savedData = {}) => {
+  const derived = createDefaultSectionStatus();
+  if (savedData.wheelsTyres && typeof savedData.wheelsTyres === "object") {
+    derived.wheelsTyres = "complete";
+  }
+  const brakesData = savedData.brakesHubs;
+  const hasBrakesContent =
+    brakesData &&
+    typeof brakesData === "object" &&
+    Object.keys(brakesData).length > 0;
+  if (hasBrakesContent) {
+    derived.brakesHubs = "complete";
+  }
+  if (hasServiceIndicatorEntries(savedData.serviceIndicator || {})) {
+    derived.serviceIndicator = "complete";
+  }
+  return derived;
+};
+
+const isConcernLocked = (concern) => {
+  if (!concern || typeof concern !== "object") return false;
+  const status = (concern.status || "").toLowerCase();
+  return status.includes("approved") || status.includes("declined") || status.includes("authorized");
+};
+
+const styles = vhcLayoutStyles;
 
 // Status color mapping for consistency
 const STATUS_COLORS = {
@@ -117,6 +182,39 @@ export default function TechJobDetailPage() {
   const [partRequestQuantity, setPartRequestQuantity] = useState(1);
   const [partsSubmitting, setPartsSubmitting] = useState(false);
   const [partsFeedback, setPartsFeedback] = useState("");
+
+  // VHC state management
+  const [vhcData, setVhcData] = useState({
+    wheelsTyres: null,
+    brakesHubs: [],
+    serviceIndicator: { serviceChoice: "", oilStatus: "", concerns: [] },
+    externalInspection: [],
+    internalElectrics: {
+      "Lights Front": { concerns: [] },
+      "Lights Rear": { concerns: [] },
+      "Lights Interior": { concerns: [] },
+      "Horn/Washers/Wipers": { concerns: [] },
+      "Air Con/Heating/Ventilation": { concerns: [] },
+      "Warning Lamps": { concerns: [] },
+      Seatbelt: { concerns: [] },
+      Miscellaneous: { concerns: [] },
+    },
+    underside: {
+      "Exhaust System/Catalyst": { concerns: [] },
+      Steering: { concerns: [] },
+      "Front Suspension": { concerns: [] },
+      "Rear Suspension": { concerns: [] },
+      "Driveshafts/Oil Leaks": { concerns: [] },
+      Miscellaneous: { concerns: [] },
+    },
+  });
+  const [sectionStatus, setSectionStatus] = useState(createDefaultSectionStatus);
+  const [activeSection, setActiveSection] = useState(null);
+  const [isReopenMode, setIsReopenMode] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("idle");
+  const [saveError, setSaveError] = useState("");
+  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const saveTimeoutRef = useRef(null);
 
   const jobCardId = jobData?.jobCard?.id ?? null;
   const jobCardNumber = jobData?.jobCard?.jobNumber ?? jobNumber;
@@ -457,7 +555,143 @@ export default function TechJobDetailPage() {
     fetchJobData,
   ]);
 
+  // VHC Callbacks
+  const markSectionState = useCallback((sectionKey, nextState) => {
+    if (!trackedSectionKeys.has(sectionKey)) return;
+    setSectionStatus((prev) => {
+      const current = prev[sectionKey] || "pending";
+      if (current === nextState) return prev;
+      if (nextState === "inProgress" && current === "complete") {
+        return prev;
+      }
+      return { ...prev, [sectionKey]: nextState };
+    });
+  }, []);
+
+  const openSection = useCallback(
+    (sectionKey) => {
+      markSectionState(sectionKey, "inProgress");
+      setActiveSection(sectionKey);
+    },
+    [markSectionState]
+  );
+
+  const persistVhcData = useCallback(
+    async (payload, { quiet = false } = {}) => {
+      if (!jobNumber) return false;
+      try {
+        setSaveStatus("saving");
+        setSaveError("");
+        const result = await saveChecksheet(jobNumber, payload);
+        if (result.success) {
+          setLastSavedAt(new Date());
+          if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+          }
+          if (quiet) {
+            setSaveStatus("idle");
+          } else {
+            setSaveStatus("saved");
+            saveTimeoutRef.current = setTimeout(() => setSaveStatus("idle"), 2500);
+          }
+          return true;
+        }
+        setSaveStatus("error");
+        setSaveError(result.error?.message || "Failed to save VHC data.");
+        return false;
+      } catch (err) {
+        console.error("❌ Error saving VHC:", err);
+        setSaveStatus("error");
+        setSaveError(err.message || "Unexpected error saving VHC data.");
+        return false;
+      }
+    },
+    [jobNumber]
+  );
+
+  const handleSectionComplete = useCallback(async (sectionKey, sectionData, options = {}) => {
+    const next = { ...vhcData, [sectionKey]: sectionData };
+    setVhcData(next);
+    setActiveSection(null);
+    const success = await persistVhcData(next, { quiet: true, ...options });
+    if (success) {
+      markSectionState(sectionKey, "complete");
+    }
+    return success;
+  }, [vhcData, persistVhcData, markSectionState]);
+
+  const handleSectionDismiss = useCallback((sectionKey, draftData) => {
+    setActiveSection(null);
+    if (!draftData) return;
+    setVhcData((prev) => ({ ...prev, [sectionKey]: draftData }));
+  }, []);
+
+  const getOptionalCount = useCallback((section) => {
+    const value = vhcData[section];
+    if (!value) return 0;
+    if (Array.isArray(value)) return value.length;
+    return Object.values(value).reduce(
+      (sum, entry) => sum + (entry?.concerns?.length || 0),
+      0
+    );
+  }, [vhcData]);
+
+  const getBadgeState = useCallback((stateKey) =>
+    vhcCardStates[stateKey] || vhcCardStates.pending, []);
+
   // ✅ NOW all useEffects come AFTER all callbacks are defined
+
+  // Effect: Load VHC data when job data changes
+  useEffect(() => {
+    if (!jobData || !jobData.vhcChecks || jobData.vhcChecks.length === 0) {
+      setVhcData({
+        wheelsTyres: null,
+        brakesHubs: [],
+        serviceIndicator: { serviceChoice: "", oilStatus: "", concerns: [] },
+        externalInspection: [],
+        internalElectrics: {
+          "Lights Front": { concerns: [] },
+          "Lights Rear": { concerns: [] },
+          "Lights Interior": { concerns: [] },
+          "Horn/Washers/Wipers": { concerns: [] },
+          "Air Con/Heating/Ventilation": { concerns: [] },
+          "Warning Lamps": { concerns: [] },
+          Seatbelt: { concerns: [] },
+          Miscellaneous: { concerns: [] },
+        },
+        underside: {
+          "Exhaust System/Catalyst": { concerns: [] },
+          Steering: { concerns: [] },
+          "Front Suspension": { concerns: [] },
+          "Rear Suspension": { concerns: [] },
+          "Driveshafts/Oil Leaks": { concerns: [] },
+          Miscellaneous: { concerns: [] },
+        },
+      });
+      setSectionStatus(createDefaultSectionStatus());
+      return;
+    }
+
+    const vhcChecksheet = jobData.vhcChecks.find(
+      check => check.section === "VHC_CHECKSHEET" || check.section === "VHC Checksheet"
+    );
+
+    if (vhcChecksheet && vhcChecksheet.data) {
+      setVhcData((prev) => ({
+        ...prev,
+        ...vhcChecksheet.data,
+        serviceIndicator:
+          vhcChecksheet.data.serviceIndicator || prev.serviceIndicator,
+      }));
+      setSectionStatus(deriveSectionStatusFromSavedData(vhcChecksheet.data));
+
+      // Detect reopen mode
+      const jobStatus = jobData?.jobCard?.status || "";
+      setIsReopenMode(["VHC Complete", "VHC Sent"].includes(jobStatus));
+    } else {
+      setSectionStatus(createDefaultSectionStatus());
+    }
+  }, [jobData]);
 
   // Effect: Refresh job clocking when jobCardId changes
   useEffect(() => {
@@ -1325,17 +1559,209 @@ export default function TechJobDetailPage() {
 
           {/* VHC TAB */}
           {activeTab === "vhc" && (
-            <iframe
-              src={`/job-cards/${jobNumber}/vhc?embed=1`}
-              style={{
-                width: "100%",
-                height: "100%",
-                border: "none",
-                borderRadius: "12px",
-                backgroundColor: "var(--info-surface)"
-              }}
-              title="VHC Workspace"
-            />
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              {/* Reopen Mode Warning Banner */}
+              {isReopenMode && (
+                <div style={{
+                  padding: "16px 20px",
+                  backgroundColor: "var(--warning-surface)",
+                  border: "1px solid var(--warning)",
+                  borderRadius: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  boxShadow: "0 4px 12px rgba(var(--warning-rgb),0.16)"
+                }}>
+                  <div style={{ fontSize: "24px", flexShrink: 0 }}>⚠️</div>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{
+                      margin: "0 0 4px 0",
+                      fontSize: "16px",
+                      fontWeight: "700",
+                      color: "var(--warning)"
+                    }}>
+                      Reopen Mode - VHC Already Completed
+                    </h4>
+                    <p style={{
+                      margin: 0,
+                      fontSize: "14px",
+                      color: "var(--info-dark)"
+                    }}>
+                      This VHC has been marked as complete. You can view and edit items, but customer-approved/declined items are locked.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Mandatory Sections */}
+              <div>
+                <div style={styles.sectionHeader}>
+                  <h2 style={styles.sectionTitle}>Mandatory Sections</h2>
+                </div>
+                <div style={styles.sectionsGrid}>
+                  {MANDATORY_SECTION_KEYS.map((key) => {
+                    const badgeState = getBadgeState(sectionStatus[key] || "pending");
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => openSection(key)}
+                        style={styles.sectionCard}
+                        onMouseEnter={(e) => {
+                          Object.assign(e.currentTarget.style, styles.sectionCardHover);
+                        }}
+                        onMouseLeave={(e) => {
+                          Object.keys(styles.sectionCardHover).forEach(
+                            (styleKey) => (e.currentTarget.style[styleKey] = "")
+                          );
+                        }}
+                      >
+                        <span style={{
+                          ...styles.badge,
+                          backgroundColor: badgeState.background,
+                          color: badgeState.color,
+                          borderColor: badgeState.border,
+                        }}>
+                          {badgeState.label}
+                        </span>
+                        <div>
+                          <p style={styles.cardTitle}>{SECTION_TITLES[key]}</p>
+                        </div>
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            position: "absolute",
+                            right: "16px",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            fontSize: "18px",
+                            color: "var(--info)",
+                          }}
+                        >
+                          →
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Additional Checks */}
+              <div>
+                <div style={styles.sectionHeader}>
+                  <h2 style={styles.sectionTitle}>Additional Checks</h2>
+                </div>
+                <div style={styles.sectionsGrid}>
+                  {["externalInspection", "internalElectrics", "underside"].map((key) => {
+                    const count = getOptionalCount(key);
+                    const badgeState = getBadgeState(count > 0 ? "inProgress" : "pending");
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => openSection(key)}
+                        style={styles.sectionCard}
+                        onMouseEnter={(e) => {
+                          Object.assign(e.currentTarget.style, styles.sectionCardHover);
+                        }}
+                        onMouseLeave={(e) => {
+                          Object.keys(styles.sectionCardHover).forEach(
+                            (styleKey) => (e.currentTarget.style[styleKey] = "")
+                          );
+                        }}
+                      >
+                        <span style={{
+                          ...styles.badge,
+                          backgroundColor: badgeState.background,
+                          color: badgeState.color,
+                          borderColor: badgeState.border,
+                        }}>
+                          {badgeState.label}
+                        </span>
+                        <div>
+                          <p style={styles.cardTitle}>{SECTION_TITLES[key]}</p>
+                        </div>
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            position: "absolute",
+                            right: "16px",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            fontSize: "18px",
+                            color: "var(--info)",
+                          }}
+                        >
+                          →
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Section Modals */}
+              {activeSection === "wheelsTyres" && (
+                <WheelsTyresDetailsModal
+                  isOpen
+                  initialData={vhcData.wheelsTyres}
+                  onClose={(draft) => handleSectionDismiss("wheelsTyres", draft)}
+                  onComplete={(data) => handleSectionComplete("wheelsTyres", data)}
+                  isReopenMode={isReopenMode}
+                  isConcernLocked={isConcernLocked}
+                />
+              )}
+              {activeSection === "brakesHubs" && (
+                <BrakesHubsDetailsModal
+                  isOpen
+                  initialData={vhcData.brakesHubs}
+                  onClose={(draft) => handleSectionDismiss("brakesHubs", draft)}
+                  onComplete={(data) => handleSectionComplete("brakesHubs", data)}
+                  isReopenMode={isReopenMode}
+                  isConcernLocked={isConcernLocked}
+                />
+              )}
+              {activeSection === "serviceIndicator" && (
+                <ServiceIndicatorDetailsModal
+                  isOpen
+                  initialData={vhcData.serviceIndicator}
+                  onClose={(draft) => handleSectionDismiss("serviceIndicator", draft)}
+                  onComplete={(data) => handleSectionComplete("serviceIndicator", data)}
+                  isReopenMode={isReopenMode}
+                  isConcernLocked={isConcernLocked}
+                />
+              )}
+              {activeSection === "externalInspection" && (
+                <ExternalDetailsModal
+                  isOpen
+                  initialData={vhcData.externalInspection}
+                  onClose={(draft) => handleSectionDismiss("externalInspection", draft)}
+                  onComplete={(data) => handleSectionComplete("externalInspection", data)}
+                  isReopenMode={isReopenMode}
+                  isConcernLocked={isConcernLocked}
+                />
+              )}
+              {activeSection === "internalElectrics" && (
+                <InternalElectricsDetailsModal
+                  isOpen
+                  initialData={vhcData.internalElectrics}
+                  onClose={(draft) => handleSectionDismiss("internalElectrics", draft)}
+                  onComplete={(data) => handleSectionComplete("internalElectrics", data)}
+                  isReopenMode={isReopenMode}
+                  isConcernLocked={isConcernLocked}
+                />
+              )}
+              {activeSection === "underside" && (
+                <UndersideDetailsModal
+                  isOpen
+                  initialData={vhcData.underside}
+                  onClose={(draft) => handleSectionDismiss("underside", draft)}
+                  onComplete={(data) => handleSectionComplete("underside", data)}
+                  isReopenMode={isReopenMode}
+                  isConcernLocked={isConcernLocked}
+                />
+              )}
+            </div>
           )}
 
           {/* PARTS TAB */}
