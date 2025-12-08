@@ -391,6 +391,8 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   const updatePadMeasurement = (category, value) => {
     const sanitized = sanitizeNumericListInput(value);
 
+    // Only calculate status if there's actual numeric content
+    // This prevents premature status changes while typing
     const numbers = sanitized
       .replace(/[,\s]+$/g, "")
       .split(/[, ]+/)
@@ -405,10 +407,14 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       else newStatus = "Green";
     }
 
-    // Batch the state update to prevent focus loss
+    // Use functional setState to ensure we don't lose focus
     setData((prev) => ({
       ...prev,
-      [category]: { ...prev[category], measurement: sanitized, status: newStatus },
+      [category]: {
+        ...prev[category],
+        measurement: sanitized,
+        status: newStatus
+      },
     }));
   };
 
@@ -518,11 +524,15 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
   const handleDiscMeasurementValue = (category, value) => {
     const sanitized = sanitizeNumericListInput(value);
+
+    // Use functional setState to ensure consistent state updates
     setData((prev) => {
       const section = prev[category];
       if (!section) return prev;
+
       const nextValues = [sanitized];
       const thickness = sanitized.replace(/[,\s]+$/g, "");
+
       return {
         ...prev,
         [category]: {
@@ -653,6 +663,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           value={padData.measurement}
           onChange={(e) => updatePadMeasurement(category, e.target.value)}
           placeholder="Enter readings (e.g. 6.0, 5.5, 5.0)"
+          autoComplete="off"
           style={{
             width: "100%",
             padding: "10px 12px",
@@ -739,10 +750,12 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             <label style={fieldLabelStyle}>Disc Thickness (mm)</label>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <input
+                type="text"
                 value={discData.measurements.values?.[0] || ""}
                 onChange={(e) => handleDiscMeasurementValue(category, e.target.value)}
                 placeholder="Enter readings separated by commas or spaces"
                 inputMode="decimal"
+                autoComplete="off"
                 style={inputStyle}
                 onFocus={enhanceFocus}
                 onBlur={resetFocus}
