@@ -265,10 +265,7 @@ export default function NewsFeed() {
     }
   };
 
-  const departmentsSummary =
-    formState.departments.length === 0
-      ? "Choose departments"
-      : `${formState.departments.length} selected`;
+  const departmentsSummary = formState.departments.length === 0 ? "Choose departments" : null;
 
   return (
     <Layout>
@@ -510,7 +507,7 @@ export default function NewsFeed() {
               </div>
 
               {/* Departments Field */}
-              <div style={{ marginBottom: "24px", position: "relative" }} ref={departmentMenuRef}>
+              <div style={{ marginBottom: "24px" }}>
                 <label
                   style={{
                     display: "block",
@@ -524,87 +521,153 @@ export default function NewsFeed() {
                 >
                   Visible to Departments
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setDepartmentMenuOpen((previous) => !previous)}
+
+                {/* Selected Departments Display */}
+                <div
                   style={{
-                    width: "100%",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "12px 16px",
+                    minHeight: "48px",
+                    padding: "8px 12px",
                     borderRadius: "12px",
                     border: "2px solid var(--surface-light)",
                     backgroundColor: "var(--surface-light)",
-                    fontSize: "15px",
-                    cursor: "pointer",
-                    transition: "border-color 0.2s",
+                    marginBottom: "8px",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "8px",
+                    alignItems: "center",
                   }}
-                  onMouseEnter={(e) => (e.target.style.borderColor = "var(--primary)")}
-                  onMouseLeave={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                 >
-                  <span style={{ fontWeight: "500" }}>{departmentsSummary}</span>
-                  <span
+                  {formState.departments.length === 0 ? (
+                    <span style={{ color: "#999", fontSize: "15px" }}>No departments selected</span>
+                  ) : (
+                    formState.departments.map((dept) => (
+                      <span
+                        key={dept}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          padding: "6px 12px",
+                          borderRadius: "8px",
+                          backgroundColor: "var(--primary)",
+                          color: "white",
+                          fontSize: "13px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {dept}
+                        <button
+                          type="button"
+                          onClick={() => handleDepartmentToggle(dept)}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "white",
+                            cursor: "pointer",
+                            fontSize: "16px",
+                            lineHeight: "1",
+                            padding: "0",
+                            marginLeft: "2px",
+                          }}
+                          aria-label={`Remove ${dept}`}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))
+                  )}
+                </div>
+
+                {/* Department Selection Dropdown */}
+                <div style={{ position: "relative" }} ref={departmentMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setDepartmentMenuOpen((previous) => !previous)}
                     style={{
-                      fontSize: "14px",
-                      fontWeight: "bold",
-                      padding: "4px 12px",
-                      borderRadius: "8px",
-                      backgroundColor: "var(--primary)",
-                      color: "white",
-                    }}
-                  >
-                    {departmentMenuOpen ? "Close" : "Select"}
-                  </span>
-                </button>
-                {departmentMenuOpen && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "100%",
-                      marginTop: "8px",
-                      left: 0,
-                      right: 0,
-                      backgroundColor: "var(--surface)",
+                      width: "100%",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "12px 16px",
                       borderRadius: "12px",
                       border: "2px solid var(--surface-light)",
-                      boxShadow: "0 10px 40px rgba(0, 0, 0, 0.2)",
-                      zIndex: 10,
-                      maxHeight: "256px",
-                      overflowY: "auto",
+                      backgroundColor: "var(--surface-light)",
+                      fontSize: "15px",
+                      cursor: "pointer",
+                      transition: "border-color 0.2s",
                     }}
+                    onMouseEnter={(e) => (e.target.style.borderColor = "var(--primary)")}
+                    onMouseLeave={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                   >
-                    {AVAILABLE_DEPARTMENTS.map((department, index) => (
-                      <label
-                        key={department}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "14px 16px",
-                          fontSize: "15px",
-                          cursor: "pointer",
-                          borderBottom: index < AVAILABLE_DEPARTMENTS.length - 1 ? "1px solid var(--surface-light)" : "none",
-                          transition: "background-color 0.2s",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--surface-light)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                      >
-                        <span style={{ fontWeight: "500" }}>{department}</span>
-                        <input
-                          type="checkbox"
-                          checked={formState.departments.includes(department)}
-                          onChange={() => handleDepartmentToggle(department)}
+                    <span style={{ fontWeight: "500" }}>
+                      {departmentMenuOpen ? "Select departments to add" : "Add departments"}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        padding: "4px 12px",
+                        borderRadius: "8px",
+                        backgroundColor: "var(--primary)",
+                        color: "white",
+                      }}
+                    >
+                      {departmentMenuOpen ? "Close" : "Select"}
+                    </span>
+                  </button>
+                  {departmentMenuOpen && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        marginTop: "8px",
+                        left: 0,
+                        right: 0,
+                        backgroundColor: "var(--surface)",
+                        borderRadius: "12px",
+                        border: "2px solid var(--primary)",
+                        boxShadow: "0 10px 40px rgba(0, 0, 0, 0.3)",
+                        zIndex: 1000,
+                        maxHeight: "280px",
+                        overflowY: "auto",
+                      }}
+                    >
+                      {AVAILABLE_DEPARTMENTS.map((department, index) => (
+                        <label
+                          key={department}
                           style={{
-                            width: "20px",
-                            height: "20px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "14px 16px",
+                            fontSize: "15px",
                             cursor: "pointer",
+                            borderBottom: index < AVAILABLE_DEPARTMENTS.length - 1 ? "1px solid var(--surface-light)" : "none",
+                            transition: "background-color 0.2s",
+                            backgroundColor: formState.departments.includes(department) ? "var(--surface-light)" : "transparent",
                           }}
-                        />
-                      </label>
-                    ))}
-                  </div>
-                )}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--surface-light)")}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = formState.departments.includes(department) ? "var(--surface-light)" : "transparent";
+                          }}
+                        >
+                          <span style={{ fontWeight: "500" }}>{department}</span>
+                          <input
+                            type="checkbox"
+                            checked={formState.departments.includes(department)}
+                            onChange={() => handleDepartmentToggle(department)}
+                            style={{
+                              width: "20px",
+                              height: "20px",
+                              cursor: "pointer",
+                              accentColor: "var(--primary)",
+                            }}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Error Message */}
