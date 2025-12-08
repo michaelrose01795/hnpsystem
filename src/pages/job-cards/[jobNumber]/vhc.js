@@ -51,7 +51,14 @@ const hasServiceIndicatorEntries = (indicator = {}) =>
 const deriveSectionStatusFromSavedData = (savedData = {}) => {
   // If we have explicit section status saved, use it
   if (savedData._sectionStatus && typeof savedData._sectionStatus === "object") {
-    return { ...createDefaultSectionStatus(), ...savedData._sectionStatus };
+    // Only use saved status for mandatory sections that are actually tracked
+    const result = createDefaultSectionStatus();
+    MANDATORY_SECTION_KEYS.forEach((key) => {
+      if (savedData._sectionStatus[key]) {
+        result[key] = savedData._sectionStatus[key];
+      }
+    });
+    return result;
   }
 
   // Otherwise, derive status from data content (legacy support)
