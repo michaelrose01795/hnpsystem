@@ -49,6 +49,12 @@ const hasServiceIndicatorEntries = (indicator = {}) =>
   (Array.isArray(indicator?.concerns) && indicator.concerns.length > 0);
 
 const deriveSectionStatusFromSavedData = (savedData = {}) => {
+  // If we have explicit section status saved, use it
+  if (savedData._sectionStatus && typeof savedData._sectionStatus === "object") {
+    return { ...createDefaultSectionStatus(), ...savedData._sectionStatus };
+  }
+
+  // Otherwise, derive status from data content (legacy support)
   const derived = createDefaultSectionStatus();
   if (savedData.wheelsTyres && typeof savedData.wheelsTyres === "object") {
     derived.wheelsTyres = "complete";
@@ -189,7 +195,14 @@ export default function VHCPAGE() {
       try {
         setSaveStatus("saving");
         setSaveError("");
-        const result = await saveChecksheet(jobNumber, payload);
+
+        // Include section status in the payload
+        const payloadWithStatus = {
+          ...payload,
+          _sectionStatus: sectionStatus,
+        };
+
+        const result = await saveChecksheet(jobNumber, payloadWithStatus);
         if (result.success) {
           setLastSavedAt(new Date());
           if (saveTimeoutRef.current) {
@@ -213,7 +226,7 @@ export default function VHCPAGE() {
         return false;
       }
     },
-    [jobNumber]
+    [jobNumber, sectionStatus]
   );
 
   useEffect(() => {
