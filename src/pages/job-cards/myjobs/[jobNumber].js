@@ -689,36 +689,121 @@ export default function TechJobDetailPage() {
   const extractVhcSummary = useCallback(() => {
     const items = [];
 
-    // Helper to collect concerns from a section
-    const collectConcerns = (sectionKey, value, pathLabel = "") => {
-      if (!value || typeof value !== "object") return;
-      const label = pathLabel || SECTION_TITLES[sectionKey] || sectionKey;
+    // 1. WHEELS & TYRES - Extract from wheelsTyres structure
+    if (vhcData.wheelsTyres && typeof vhcData.wheelsTyres === "object") {
+      const wheels = ["NSF", "OSF", "NSR", "OSR"];
+      wheels.forEach(wheel => {
+        const wheelData = vhcData.wheelsTyres[wheel];
+        if (wheelData && Array.isArray(wheelData.concerns)) {
+          wheelData.concerns.forEach(concern => {
+            items.push({
+              section: `Wheels & Tyres - ${wheel}`,
+              status: (concern.status || "green").toLowerCase(),
+              text: concern.text || concern.description || concern.issue || "No description",
+            });
+          });
+        }
+      });
+    }
 
-      if (Array.isArray(value.concerns)) {
-        value.concerns.forEach((concern) => {
+    // 2. BRAKES & HUBS - Extract from brakesHubs array structure
+    if (Array.isArray(vhcData.brakesHubs)) {
+      vhcData.brakesHubs.forEach((axleData, axleIdx) => {
+        if (!axleData) return;
+        const axleName = axleIdx === 0 ? "Front" : "Rear";
+        const sides = ["NSF", "OSF", "NSR", "OSR"];
+
+        // Extract pad concerns
+        if (axleData.pad) {
+          sides.forEach(side => {
+            const padData = axleData.pad[side];
+            if (padData && Array.isArray(padData.concerns)) {
+              padData.concerns.forEach(concern => {
+                items.push({
+                  section: `Brakes & Hubs - ${side} Pad`,
+                  status: (concern.status || "green").toLowerCase(),
+                  text: concern.text || concern.description || concern.issue || "No description",
+                });
+              });
+            }
+          });
+        }
+
+        // Extract disc concerns
+        if (axleData.disc) {
+          sides.forEach(side => {
+            const discData = axleData.disc[side];
+            if (discData && Array.isArray(discData.concerns)) {
+              discData.concerns.forEach(concern => {
+                items.push({
+                  section: `Brakes & Hubs - ${side} Disc`,
+                  status: (concern.status || "green").toLowerCase(),
+                  text: concern.text || concern.description || concern.issue || "No description",
+                });
+              });
+            }
+          });
+        }
+      });
+    }
+
+    // 3. SERVICE INDICATOR - Extract from serviceIndicator structure
+    if (vhcData.serviceIndicator && typeof vhcData.serviceIndicator === "object") {
+      if (Array.isArray(vhcData.serviceIndicator.concerns)) {
+        vhcData.serviceIndicator.concerns.forEach(concern => {
           items.push({
-            section: label,
+            section: `Service Indicator - ${concern.source || "Under Bonnet"}`,
             status: (concern.status || "green").toLowerCase(),
-            text: concern.text || concern.issue || concern.description || "No description",
+            text: concern.text || concern.description || concern.issue || "No description",
           });
         });
       }
+    }
 
-      // Recursively check nested objects
-      Object.entries(value).forEach(([key, nested]) => {
-        if (!nested || typeof nested !== "object" || Array.isArray(nested.concerns)) return;
-        if (key !== "concerns") {
-          collectConcerns(sectionKey, nested, `${label} - ${key}`);
+    // 4. EXTERNAL INSPECTION - Extract from externalInspection array
+    if (Array.isArray(vhcData.externalInspection)) {
+      vhcData.externalInspection.forEach(category => {
+        if (category && Array.isArray(category.concerns)) {
+          category.concerns.forEach(concern => {
+            items.push({
+              section: `External - ${category.name || "General"}`,
+              status: (concern.status || "green").toLowerCase(),
+              text: concern.text || concern.description || concern.issue || "No description",
+            });
+          });
         }
       });
-    };
+    }
 
-    // Collect from all sections
-    Object.entries(vhcData || {}).forEach(([sectionKey, value]) => {
-      if (value && typeof value === "object") {
-        collectConcerns(sectionKey, value);
-      }
-    });
+    // 5. INTERNAL & ELECTRICS - Extract from internalElectrics object structure
+    if (vhcData.internalElectrics && typeof vhcData.internalElectrics === "object") {
+      Object.entries(vhcData.internalElectrics).forEach(([subsystem, subsystemData]) => {
+        if (subsystemData && Array.isArray(subsystemData.concerns)) {
+          subsystemData.concerns.forEach(concern => {
+            items.push({
+              section: `Internal & Electrics - ${subsystem}`,
+              status: (concern.status || "green").toLowerCase(),
+              text: concern.text || concern.description || concern.issue || "No description",
+            });
+          });
+        }
+      });
+    }
+
+    // 6. UNDERSIDE - Extract from underside object structure
+    if (vhcData.underside && typeof vhcData.underside === "object") {
+      Object.entries(vhcData.underside).forEach(([subsystem, subsystemData]) => {
+        if (subsystemData && Array.isArray(subsystemData.concerns)) {
+          subsystemData.concerns.forEach(concern => {
+            items.push({
+              section: `Underside - ${subsystem}`,
+              status: (concern.status || "green").toLowerCase(),
+              text: concern.text || concern.description || concern.issue || "No description",
+            });
+          });
+        }
+      });
+    }
 
     // Categorize by status
     const buckets = { red: [], amber: [], green: [] };
