@@ -279,136 +279,660 @@ function ClockingOverviewTab({ onSummaryChange }) {
       })
     : "—";
 
-  const summaryCards = [
-    { label: "Technicians", value: summaryStats.total },
-    { label: "In Progress", value: summaryStats.inProgress },
-    { label: "On MOT", value: summaryStats.onMot },
-    { label: "Tea Break", value: summaryStats.teaBreak },
-    { label: "Waiting", value: summaryStats.waiting },
-    { label: "Offline", value: summaryStats.notClocked },
-  ];
-
-  const statusHeader = loading ? "Updating…" : "Live";
-
   return (
-    <div className="space-y-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+      {/* Page Header */}
+      <header
+        style={{
+          borderRadius: "18px",
+          padding: "24px",
+          border: "1px solid var(--surface-light)",
+          background: "var(--surface)",
+          boxShadow: "none",
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+        }}
+      >
+        <span
+          style={{
+            textTransform: "uppercase",
+            letterSpacing: "0.15em",
+            fontSize: "0.78rem",
+            color: "var(--primary-dark)",
+          }}
+        >
+          Workshop Operations
+        </span>
+        <h1 style={{ margin: 0, fontSize: "1.8rem", color: "var(--danger-dark)" }}>
+          Live Workshop Overview
+        </h1>
+        <p style={{ margin: 0, color: "var(--info)" }}>
+          Real-time technician status and activity feed
+        </p>
+      </header>
+
+      {/* Summary Stats Section */}
+      <section
+        style={{
+          background: "var(--surface)",
+          borderRadius: "18px",
+          padding: "24px",
+          border: "1px solid var(--surface-light)",
+          boxShadow: "none",
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px",
+        }}
+      >
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Technician grid
-          </p>
-          <h2 className="text-2xl font-semibold text-slate-900">
-            Live workshop board
+          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>
+            Summary Statistics
           </h2>
-          <p className="mt-2 text-sm text-slate-500">
-            Scan every technician&apos;s current job, timer, and availability at a glance.
+          <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
+            Last updated {formattedLastUpdated}
           </p>
         </div>
-        <span
-          className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide ${
-            loading ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-700"
-          }`}
-        >
-          <span
-            className={`h-2 w-2 rounded-full ${
-              loading ? "bg-rose-500" : "bg-emerald-500"
-            }`}
-          />
-          {statusHeader}
-        </span>
-      </div>
 
+        {loading && teamStatus.length === 0 ? (
+          <p style={{ color: "var(--info)" }}>Loading statistics...</p>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+              gap: "14px",
+            }}
+          >
+            <div
+              style={{
+                borderRadius: "18px",
+                padding: "16px",
+                background: "var(--danger-surface)",
+                border: "1px solid var(--surface-light)",
+                boxShadow: "none",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}
+            >
+              <span
+                style={{
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  fontSize: "0.78rem",
+                  color: "var(--info)",
+                }}
+              >
+                Technicians Total
+              </span>
+              <strong style={{ fontSize: "1.8rem", color: "var(--primary-dark)" }}>
+                {summaryStats.total}
+              </strong>
+              <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
+                All technicians
+              </span>
+            </div>
+
+            <div
+              style={{
+                borderRadius: "18px",
+                padding: "16px",
+                background: "var(--danger-surface)",
+                border: "1px solid var(--success)22",
+                boxShadow: "none",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}
+            >
+              <span
+                style={{
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  fontSize: "0.78rem",
+                  color: "var(--info)",
+                }}
+              >
+                In Progress
+              </span>
+              <strong style={{ fontSize: "1.8rem", color: "var(--success)" }}>
+                {summaryStats.inProgress}
+              </strong>
+              <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
+                Active on jobs
+              </span>
+            </div>
+
+            <div
+              style={{
+                borderRadius: "18px",
+                padding: "16px",
+                background: "var(--danger-surface)",
+                border: "1px solid var(--info)22",
+                boxShadow: "none",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}
+            >
+              <span
+                style={{
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  fontSize: "0.78rem",
+                  color: "var(--info)",
+                }}
+              >
+                MOT Count
+              </span>
+              <strong style={{ fontSize: "1.8rem", color: "var(--info)" }}>
+                {summaryStats.onMot}
+              </strong>
+              <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
+                On MOT tests
+              </span>
+            </div>
+
+            <div
+              style={{
+                borderRadius: "18px",
+                padding: "16px",
+                background: "var(--danger-surface)",
+                border: "1px solid var(--accent-purple)22",
+                boxShadow: "none",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}
+            >
+              <span
+                style={{
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  fontSize: "0.78rem",
+                  color: "var(--info)",
+                }}
+              >
+                Tea Break
+              </span>
+              <strong style={{ fontSize: "1.8rem", color: "var(--accent-purple)" }}>
+                {summaryStats.teaBreak}
+              </strong>
+              <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
+                On break
+              </span>
+            </div>
+
+            <div
+              style={{
+                borderRadius: "18px",
+                padding: "16px",
+                background: "var(--danger-surface)",
+                border: "1px solid var(--primary)22",
+                boxShadow: "none",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}
+            >
+              <span
+                style={{
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  fontSize: "0.78rem",
+                  color: "var(--info)",
+                }}
+              >
+                Waiting
+              </span>
+              <strong style={{ fontSize: "1.8rem", color: "var(--primary)" }}>
+                {summaryStats.waiting}
+              </strong>
+              <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
+                Awaiting jobs
+              </span>
+            </div>
+
+            <div
+              style={{
+                borderRadius: "18px",
+                padding: "16px",
+                background: "var(--danger-surface)",
+                border: "1px solid var(--grey-accent)22",
+                boxShadow: "none",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}
+            >
+              <span
+                style={{
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  fontSize: "0.78rem",
+                  color: "var(--info)",
+                }}
+              >
+                Offline
+              </span>
+              <strong style={{ fontSize: "1.8rem", color: "var(--grey-accent)" }}>
+                {summaryStats.notClocked}
+              </strong>
+              <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
+                Not clocked in
+              </span>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Error Display */}
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+        <div
+          style={{
+            borderRadius: "14px",
+            padding: "14px 18px",
+            background: "var(--danger-surface)",
+            border: "1px solid var(--danger)",
+            color: "var(--danger)",
+            fontSize: "0.9rem",
+          }}
+        >
           {error}
         </div>
       )}
 
-      {loading && teamStatus.length === 0 ? (
-        <p className="text-sm text-slate-500">Loading live clocking…</p>
-      ) : (
-        <div className="space-y-8">
-          {teamStatus.length === 0 ? (
-            <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 text-center text-sm text-slate-500">
-              No technicians or MOT testers are currently clocked in.
-            </div>
-          ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-              {teamStatus.map((tech) => (
-                <Link key={tech.userId} href={`/clocking/${tech.userId}`} className="group block h-full">
-                  <article className="flex h-full flex-col rounded-3xl border border-slate-100 bg-white/90 p-6  transition hover:-translate-y-0.5 hover:border-slate-200 hover:shadow-lg">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-lg font-semibold text-slate-900">{tech.name}</p>
-                        <span className="mt-2 inline-flex items-center rounded-full border border-slate-200 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-600">
-                          {tech.role}
-                        </span>
-                      </div>
+      {/* Technician Grid Section */}
+      <section
+        style={{
+          background: "var(--surface)",
+          borderRadius: "18px",
+          padding: "24px",
+          border: "1px solid var(--surface-light)",
+          boxShadow: "none",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+        }}
+      >
+        <div>
+          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>
+            Technician Status
+          </h2>
+          <p style={{ margin: "4px 0 0", color: "var(--info)" }}>
+            Live technician activity and job assignments
+          </p>
+        </div>
+
+        {loading && teamStatus.length === 0 ? (
+          <p style={{ color: "var(--info)" }}>Loading technician data...</p>
+        ) : teamStatus.length === 0 ? (
+          <div
+            style={{
+              borderRadius: "14px",
+              padding: "32px",
+              background: "var(--danger-surface)",
+              border: "1px solid var(--surface-light)",
+              textAlign: "center",
+              color: "var(--info)",
+            }}
+          >
+            No technicians or MOT testers are currently clocked in.
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+              gap: "16px",
+            }}
+          >
+            {teamStatus.map((tech) => (
+              <Link
+                key={tech.userId}
+                href={`/clocking/${tech.userId}`}
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <article
+                  style={{
+                    borderRadius: "18px",
+                    padding: "20px",
+                    background: "var(--background)",
+                    border: "1px solid var(--surface-light)",
+                    boxShadow: "none",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "14px",
+                    height: "100%",
+                    transition: "all 0.2s ease",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 600, color: "var(--primary-dark)" }}>
+                        {tech.name}
+                      </h3>
                       <span
-                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-wide ${STATUS_STYLES[tech.status]}`}
+                        style={{
+                          display: "inline-block",
+                          marginTop: "8px",
+                          padding: "6px 12px",
+                          borderRadius: "999px",
+                          border: "1px solid var(--surface-light)",
+                          fontSize: "0.7rem",
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          color: "var(--info)",
+                          background: "var(--surface)",
+                        }}
                       >
-                        {tech.status}
+                        {tech.role}
                       </span>
                     </div>
+                    <span
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: "10px",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        ...(tech.status === "In Progress" && {
+                          background: "#d1fae5",
+                          border: "1px solid #6ee7b7",
+                          color: "#065f46",
+                        }),
+                        ...(tech.status === "On MOT" && {
+                          background: "#dbeafe",
+                          border: "1px solid #7dd3fc",
+                          color: "#075985",
+                        }),
+                        ...(tech.status === "Tea Break" && {
+                          background: "#fef3c7",
+                          border: "1px solid #fcd34d",
+                          color: "#92400e",
+                        }),
+                        ...(tech.status === "Waiting for Job" && {
+                          background: "#f1f5f9",
+                          border: "1px solid #cbd5e1",
+                          color: "#334155",
+                        }),
+                        ...(tech.status === "Not Clocked In" && {
+                          background: "#f1f5f9",
+                          border: "1px solid #cbd5e1",
+                          color: "#64748b",
+                        }),
+                      }}
+                    >
+                      {tech.status}
+                    </span>
+                  </div>
 
-                    <div className="mt-6 grid gap-4 text-sm text-slate-500 sm:grid-cols-2">
-                      <div className="rounded-2xl bg-slate-50/80 p-4">
-                        <p className="text-xs uppercase tracking-wide text-slate-400">Current job</p>
-                        <p className="mt-2 text-lg font-semibold text-slate-900">
-                          {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber
-                            ? tech.jobNumber
-                            : "—"}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl bg-slate-50/80 p-4">
-                        <p className="text-xs uppercase tracking-wide text-slate-400">Time on activity</p>
-                        <p className="mt-2 text-lg font-semibold text-slate-900">{tech.timeOnActivity}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-6">
-                      <div className="text-xs uppercase tracking-wide text-slate-400">
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "12px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        borderRadius: "12px",
+                        padding: "12px",
+                        background: "var(--surface)",
+                        border: "1px solid var(--surface-light)",
+                      }}
+                    >
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: "0.7rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          color: "var(--info)",
+                        }}
+                      >
+                        Current Job
+                      </p>
+                      <p
+                        style={{
+                          margin: "6px 0 0",
+                          fontSize: "1rem",
+                          fontWeight: 600,
+                          color: "var(--primary-dark)",
+                        }}
+                      >
                         {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber
-                          ? "Active assignment"
-                          : "Awaiting assignment"}
-                      </div>
-                      <div className="inline-flex items-center gap-2 rounded-full bg-slate-900/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 transition group-hover:bg-slate-900/10">
-                        View details
-                        <span aria-hidden="true">&gt;</span>
-                      </div>
+                          ? tech.jobNumber
+                          : "—"}
+                      </p>
                     </div>
-                  </article>
-                </Link>
-              ))}
-            </div>
-          )}
 
-          <section className="rounded-3xl border border-slate-200 bg-white/90 p-6 ">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Status snapshot summary
-                </p>
-                <h3 className="text-lg font-semibold text-slate-900">
-                  {summaryStats.total} technicians monitored
-                </h3>
-              </div>
-              <p className="text-xs text-slate-500">Updated {formattedLastUpdated}</p>
-            </div>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {summaryCards.map((card) => (
-                <div key={card.label} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">{card.label}</p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-900">{card.value}</p>
-                </div>
-              ))}
-            </div>
-            <p className="mt-6 text-xs text-slate-500">
-              Last refreshed {formattedLastUpdated}. Figures update automatically from the live clocking feed.
-            </p>
-          </section>
+                    <div
+                      style={{
+                        borderRadius: "12px",
+                        padding: "12px",
+                        background: "var(--surface)",
+                        border: "1px solid var(--surface-light)",
+                      }}
+                    >
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: "0.7rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          color: "var(--info)",
+                        }}
+                      >
+                        Time
+                      </p>
+                      <p
+                        style={{
+                          margin: "6px 0 0",
+                          fontSize: "1rem",
+                          fontWeight: 600,
+                          color: "var(--primary-dark)",
+                        }}
+                      >
+                        {tech.timeOnActivity}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginTop: "auto",
+                      paddingTop: "8px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "0.7rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        color: "var(--info)",
+                      }}
+                    >
+                      {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber
+                        ? "Active assignment"
+                        : "Awaiting assignment"}
+                    </span>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "8px 14px",
+                        borderRadius: "999px",
+                        background: "var(--primary)",
+                        color: "var(--surface)",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                      }}
+                    >
+                      View details
+                      <span style={{ fontSize: "0.9rem" }}>&gt;</span>
+                    </span>
+                  </div>
+                </article>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Status Snapshot Summary Section */}
+      <section
+        style={{
+          background: "var(--surface)",
+          borderRadius: "18px",
+          padding: "24px",
+          border: "1px solid var(--surface-light)",
+          boxShadow: "none",
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px",
+        }}
+      >
+        <div>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "0.7rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              color: "var(--info)",
+              fontWeight: 600,
+            }}
+          >
+            Status Snapshot Summary
+          </p>
+          <h3 style={{ margin: "6px 0 0", fontSize: "1.1rem", fontWeight: 600, color: "var(--primary-dark)" }}>
+            {summaryStats.total} technicians monitored
+          </h3>
         </div>
-      )}
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "12px",
+          }}
+        >
+          <div
+            style={{
+              borderRadius: "14px",
+              padding: "14px",
+              background: "var(--danger-surface)",
+              border: "1px solid var(--surface-light)",
+            }}
+          >
+            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--info)" }}>
+              Technicians
+            </p>
+            <p style={{ margin: "6px 0 0", fontSize: "1.6rem", fontWeight: 600, color: "var(--primary-dark)" }}>
+              {summaryStats.total}
+            </p>
+          </div>
+
+          <div
+            style={{
+              borderRadius: "14px",
+              padding: "14px",
+              background: "var(--danger-surface)",
+              border: "1px solid var(--surface-light)",
+            }}
+          >
+            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--info)" }}>
+              In Progress
+            </p>
+            <p style={{ margin: "6px 0 0", fontSize: "1.6rem", fontWeight: 600, color: "var(--success)" }}>
+              {summaryStats.inProgress}
+            </p>
+          </div>
+
+          <div
+            style={{
+              borderRadius: "14px",
+              padding: "14px",
+              background: "var(--danger-surface)",
+              border: "1px solid var(--surface-light)",
+            }}
+          >
+            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--info)" }}>
+              On MOT
+            </p>
+            <p style={{ margin: "6px 0 0", fontSize: "1.6rem", fontWeight: 600, color: "var(--info)" }}>
+              {summaryStats.onMot}
+            </p>
+          </div>
+
+          <div
+            style={{
+              borderRadius: "14px",
+              padding: "14px",
+              background: "var(--danger-surface)",
+              border: "1px solid var(--surface-light)",
+            }}
+          >
+            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--info)" }}>
+              Tea Break
+            </p>
+            <p style={{ margin: "6px 0 0", fontSize: "1.6rem", fontWeight: 600, color: "var(--accent-purple)" }}>
+              {summaryStats.teaBreak}
+            </p>
+          </div>
+
+          <div
+            style={{
+              borderRadius: "14px",
+              padding: "14px",
+              background: "var(--danger-surface)",
+              border: "1px solid var(--surface-light)",
+            }}
+          >
+            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--info)" }}>
+              Waiting
+            </p>
+            <p style={{ margin: "6px 0 0", fontSize: "1.6rem", fontWeight: 600, color: "var(--primary)" }}>
+              {summaryStats.waiting}
+            </p>
+          </div>
+
+          <div
+            style={{
+              borderRadius: "14px",
+              padding: "14px",
+              background: "var(--danger-surface)",
+              border: "1px solid var(--surface-light)",
+            }}
+          >
+            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--info)" }}>
+              Offline
+            </p>
+            <p style={{ margin: "6px 0 0", fontSize: "1.6rem", fontWeight: 600, color: "var(--grey-accent)" }}>
+              {summaryStats.notClocked}
+            </p>
+          </div>
+        </div>
+
+        <p style={{ margin: "8px 0 0", fontSize: "0.75rem", color: "var(--info)" }}>
+          Last refreshed {formattedLastUpdated}. Figures update automatically from the live clocking feed.
+        </p>
+      </section>
     </div>
   );
 }
