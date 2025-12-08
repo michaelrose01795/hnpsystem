@@ -580,12 +580,17 @@ export default function TechJobDetailPage() {
 
   const persistVhcData = useCallback(
     async (payload, { quiet = false } = {}) => {
-      if (!jobNumber) return false;
+      if (!jobNumber) {
+        console.warn("⚠️ Cannot save VHC: No job number");
+        return false;
+      }
       try {
+        console.log("💾 Saving VHC data for job:", jobNumber);
         setSaveStatus("saving");
         setSaveError("");
         const result = await saveChecksheet(jobNumber, payload);
         if (result.success) {
+          console.log("✅ VHC data saved successfully");
           setLastSavedAt(new Date());
           if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
@@ -598,6 +603,7 @@ export default function TechJobDetailPage() {
           }
           return true;
         }
+        console.error("❌ VHC save failed:", result.error);
         setSaveStatus("error");
         setSaveError(result.error?.message || "Failed to save VHC data.");
         return false;
@@ -618,9 +624,15 @@ export default function TechJobDetailPage() {
     const success = await persistVhcData(next, { quiet: true, ...options });
     if (success) {
       markSectionState(sectionKey, "complete");
+
+      // Reload VHC checks to ensure data is fresh
+      if (jobCardId) {
+        const checks = await getVHCChecksByJob(jobCardId);
+        setVhcChecks(checks);
+      }
     }
     return success;
-  }, [vhcData, persistVhcData, markSectionState]);
+  }, [vhcData, persistVhcData, markSectionState, jobCardId]);
 
   const handleSectionDismiss = useCallback((sectionKey, draftData) => {
     setActiveSection(null);
@@ -704,9 +716,12 @@ export default function TechJobDetailPage() {
 
   // ✅ NOW all useEffects come AFTER all callbacks are defined
 
-  // Effect: Load VHC data when job data changes
+  // Effect: Load VHC data when vhcChecks changes
   useEffect(() => {
-    if (!jobData || !jobData.vhcChecks || jobData.vhcChecks.length === 0) {
+    console.log("📥 Loading VHC data, checks count:", vhcChecks?.length || 0);
+
+    if (!vhcChecks || vhcChecks.length === 0) {
+      console.log("⚠️ No VHC checks found, initializing empty data");
       setVhcData({
         wheelsTyres: null,
         brakesHubs: [],
@@ -735,11 +750,12 @@ export default function TechJobDetailPage() {
       return;
     }
 
-    const vhcChecksheet = jobData.vhcChecks.find(
+    const vhcChecksheet = vhcChecks.find(
       check => check.section === "VHC_CHECKSHEET" || check.section === "VHC Checksheet"
     );
 
     if (vhcChecksheet && vhcChecksheet.data) {
+      console.log("✅ Found VHC checksheet data, loading...");
       setVhcData((prev) => ({
         ...prev,
         ...vhcChecksheet.data,
@@ -752,9 +768,10 @@ export default function TechJobDetailPage() {
       const jobStatus = jobData?.jobCard?.status || "";
       setIsReopenMode(["VHC Complete", "VHC Sent"].includes(jobStatus));
     } else {
+      console.log("⚠️ No VHC checksheet section found");
       setSectionStatus(createDefaultSectionStatus());
     }
-  }, [jobData]);
+  }, [vhcChecks, jobData]);
 
   // Effect: Refresh job clocking when jobCardId changes
   useEffect(() => {
