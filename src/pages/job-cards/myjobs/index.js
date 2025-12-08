@@ -677,297 +677,151 @@ export default function MyJobsPage() {
                     key={job.id || job.jobNumber}
                     onClick={() => handleJobClick(job)}
                     style={{
-                      border: "1px solid var(--surface-light)",
-                      padding: "16px 20px",
-                      borderRadius: "12px",
+                      border: "1px solid var(--border)",
+                      padding: "12px 16px",
+                      borderRadius: "10px",
                       backgroundColor: "var(--surface)",
-                      boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.05)",
                       cursor: "pointer",
-                      transition: "all 0.3s ease",
+                      transition: "all 0.2s ease",
                       display: "flex",
-                      justifyContent: "space-between",
                       alignItems: "center",
-                      gap: "16px"
+                      gap: "12px"
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow = "0 6px 18px rgba(var(--primary-rgb),0.16)";
-                      e.currentTarget.style.borderColor = "var(--danger)";
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                      e.currentTarget.style.borderColor = "var(--primary)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 2px 4px rgba(var(--shadow-rgb),0.05)";
-                      e.currentTarget.style.borderColor = "var(--surface-light)";
+                      e.currentTarget.style.borderColor = "var(--border)";
                     }}
                   >
+                    {/* Status Badge */}
                     <div
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "14px",
-                        width: "560px",
-                        flexShrink: 0
+                        backgroundColor: statusStyle.background,
+                        color: statusStyle.color,
+                        padding: "6px 12px",
+                        borderRadius: "6px",
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        whiteSpace: "nowrap",
+                        minWidth: "110px",
+                        textAlign: "center"
                       }}
                     >
-                      <div
-                        style={{
-                          backgroundColor: statusStyle.background,
-                          color: statusStyle.color,
-                          padding: "8px 14px",
-                          borderRadius: "8px",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          whiteSpace: "nowrap",
-                          minWidth: "140px",
-                          textAlign: "center"
-                        }}
-                      >
-                        {statusLabel}
-                      </div>
-
-                      {/* ✅ NEW: VHC Status Indicator */}
-                      <div
-                        role={vhcRequired ? "button" : undefined}
-                        tabIndex={vhcRequired ? 0 : -1}
-                        onClick={handleVhcBadgeClick}
-                        onKeyDown={handleVhcBadgeKeyDown}
-                        title={
-                          vhcRequired
-                            ? "Open the VHC checklist for this job"
-                            : "This job does not require a VHC"
-                        }
-                        style={{
-                          backgroundColor: vhcBgColor,
-                          color: vhcColor,
-                          padding: "6px 12px",
-                          borderRadius: "999px",
-                          fontSize: "11px",
-                          fontWeight: "700",
-                          whiteSpace: "nowrap",
-                          border: `2px solid ${vhcColor}`,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          cursor: vhcRequired ? "pointer" : "default",
-                          opacity: vhcRequired ? 1 : 0.85,
-                          transition: "transform 0.2s ease"
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!vhcRequired) return;
-                          e.currentTarget.style.transform = "translateY(-1px)";
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!vhcRequired) return;
-                          e.currentTarget.style.transform = "translateY(0)";
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "8px",
-                            height: "8px",
-                            borderRadius: "50%",
-                            backgroundColor: vhcColor
-                          }}
-                        />
-                        {vhcText}
-                      </div>
-
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            flexWrap: "wrap"
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: "18px",
-                              fontWeight: "700",
-                              color: "var(--text-primary)"
-                            }}
-                          >
-                            {job.jobNumber || "No Job #"}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: "14px",
-                              color: "var(--grey-accent-dark)",
-                              fontWeight: "600"
-                            }}
-                          >
-                            {job.reg || "No Reg"}
-                          </span>
-                        </div>
-
-                        {stageBadges.length > 0 && (
-                          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                            {stageBadges.slice(0, 3).map((stage) => (
-                              <span
-                                key={stage.id}
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "4px",
-                                  padding: "4px 10px",
-                                  borderRadius: "999px",
-                                  fontSize: "11px",
-                                  fontWeight: 600,
-                                  color: "var(--primary-dark)",
-                                  border: "1px solid rgba(var(--primary-rgb),0.3)",
-                                  background: "rgba(var(--primary-rgb), 0.08)",
-                                }}
-                              >
-                                {stage.label.split(" ").slice(0, 2).join(" ")} · {stage.count}
-                              </span>
-                            ))}
-                            {stageBadges.length > 3 && (
-                              <span
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  padding: "4px 10px",
-                                  borderRadius: "999px",
-                                  fontSize: "11px",
-                                  color: "var(--info)",
-                                  border: "1px solid var(--accent-purple-surface)",
-                                  background: "var(--info-surface)",
-                                }}
-                              >
-                                +{stageBadges.length - 3} more
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "10px",
-                            flexWrap: "wrap"
-                          }}
-                        >
-                          <span style={{ fontSize: "12px", color: "var(--grey-accent-dark)" }}>
-                            Customer: {job.customer || "Unknown"}
-                          </span>
-                          <span style={{ fontSize: "12px", color: "var(--grey-accent-dark)" }}>
-                            Type: {jobType}
-                          </span>
-                          <span style={{ fontSize: "12px", color: vhcColor }}>
-                            {vhcRequired ? "VHC Required" : "VHC Not Required"}
-                          </span>
-                          <span
-                            style={{ fontSize: "12px", color: isClockedOn ? "var(--success)" : "var(--info)" }}
-                          >
-                            {clockStateLabel}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: "12px",
-                              color: "var(--surface)",
-                              backgroundColor: partsIndicatorColor,
-                              padding: "2px 10px",
-                              borderRadius: "999px"
-                            }}
-                          >
-                            {partsPending ? "Parts Pending" : "No Parts Waiting"}
-                          </span>
-                        </div>
-
-                        <span
-                          style={{
-                            fontSize: "12px",
-                            color: "var(--grey-accent-light)"
-                          }}
-                        >
-                          {makeModel}
-                        </span>
-                      </div>
+                      {statusLabel}
                     </div>
 
+                    {/* Job Number */}
+                    <span
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "700",
+                        color: "var(--text-primary)",
+                        minWidth: "90px"
+                      }}
+                    >
+                      {job.jobNumber || "No Job #"}
+                    </span>
+
+                    {/* Registration */}
+                    <span
+                      style={{
+                        fontSize: "14px",
+                        color: "var(--text-secondary)",
+                        fontWeight: "600",
+                        minWidth: "80px"
+                      }}
+                    >
+                      {job.reg || "No Reg"}
+                    </span>
+
+                    {/* Customer */}
+                    <span
+                      style={{
+                        fontSize: "13px",
+                        color: "var(--text-primary)",
+                        minWidth: "140px",
+                        flex: "0 0 auto"
+                      }}
+                    >
+                      {job.customer || "Unknown"}
+                    </span>
+
+                    {/* Make/Model */}
+                    <span
+                      style={{
+                        fontSize: "13px",
+                        color: "var(--text-secondary)",
+                        minWidth: "160px",
+                        flex: "1 1 auto"
+                      }}
+                    >
+                      {makeModel}
+                    </span>
+
+                    {/* Job Type */}
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        color: "var(--text-secondary)",
+                        minWidth: "80px"
+                      }}
+                    >
+                      {jobType}
+                    </span>
+
+                    {/* Clocked Status */}
                     <div
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "20px",
-                        flex: 1,
-                        justifyContent: "flex-end"
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        color: isClockedOn ? "var(--success)" : "var(--text-secondary)",
+                        padding: "4px 10px",
+                        borderRadius: "6px",
+                        backgroundColor: isClockedOn ? "var(--success-surface)" : "var(--surface-light)",
+                        minWidth: "90px",
+                        textAlign: "center"
                       }}
                     >
-                      <div
-                        style={{
-                          maxWidth: "260px",
-                          minWidth: "220px",
-                          fontSize: "12px",
-                          color: "var(--grey-accent-dark)",
-                          lineHeight: "1.4"
-                        }}
-                      >
-                        {description ? (
-                          <span
-                            style={{
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
-                              overflow: "hidden"
-                            }}
-                          >
-                            {description}
-                          </span>
-                        ) : (
-                          <span style={{ color: "var(--background)" }}>No notes added</span>
-                        )}
-                      </div>
-
-                      <div
-                        style={{
-                          minWidth: "140px",
-                          textAlign: "center",
-                          fontSize: "12px",
-                          color: "var(--grey-accent-dark)"
-                        }}
-                      >
-                        {createdAt || "N/A"}
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "8px",
-                          minWidth: "190px",
-                          justifyContent: "flex-end"
-                        }}
-                      >
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!job.jobNumber) return;
-                            router.push(`/job-cards/${job.jobNumber}/write-up`);
-                          }}
-                          style={{
-                            padding: "8px 14px",
-                            backgroundColor: "var(--accent-purple-surface)",
-                            color: "var(--accent-purple)",
-                            border: "1px solid var(--accent-purple-surface)",
-                            borderRadius: "8px",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                            fontWeight: "600",
-                            transition: "all 0.2s"
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
-                          }}
-                        >
-                          ✍️ Write-Up
-                        </button>
-                      </div>
+                      {isClockedOn ? "Clocked" : "Off"}
                     </div>
+
+                    {/* Created Date */}
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        color: "var(--text-secondary)",
+                        minWidth: "100px",
+                        textAlign: "center"
+                      }}
+                    >
+                      {createdAt || "N/A"}
+                    </span>
+
+                    {/* Write-Up Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!job.jobNumber) return;
+                        router.push(`/job-cards/${job.jobNumber}/write-up`);
+                      }}
+                      style={{
+                        padding: "6px 12px",
+                        backgroundColor: "var(--accent-purple-surface)",
+                        color: "var(--accent-purple)",
+                        border: "1px solid var(--accent-purple-surface)",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        transition: "all 0.2s",
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      Write-Up
+                    </button>
                   </div>
                 );
               })}

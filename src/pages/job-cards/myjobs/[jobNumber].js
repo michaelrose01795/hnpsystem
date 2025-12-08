@@ -1175,9 +1175,9 @@ export default function TechJobDetailPage() {
               onClick={() => setActiveTab(tab)}
               style={{
                 padding: "10px 18px",
-                backgroundColor: activeTab === tab ? "var(--primary)" : "white",
-                color: activeTab === tab ? "white" : "var(--primary)",
-                border: activeTab === tab ? "2px solid var(--primary)" : "1px solid var(--surface-light)",
+                backgroundColor: activeTab === tab ? "var(--primary)" : "var(--surface-light)",
+                color: activeTab === tab ? "var(--text-inverse)" : "var(--text-primary)",
+                border: activeTab === tab ? "2px solid var(--primary)" : "1px solid var(--border)",
                 borderRadius: "8px",
                 cursor: "pointer",
                 fontSize: "14px",
@@ -2079,16 +2079,15 @@ export default function TechJobDetailPage() {
               disabled={clockOutLoading || clockInLoading}
               style={{
                 padding: "14px",
-                backgroundColor: "var(--danger)",
-                color: "white",
-                border: "none",
+                backgroundColor: "var(--accent-purple-surface)",
+                color: "var(--accent-purple)",
+                border: "1px solid var(--accent-purple-surface)",
                 borderRadius: "8px",
                 cursor: clockOutLoading || clockInLoading ? "not-allowed" : "pointer",
                 fontSize: "14px",
                 fontWeight: "600",
-                boxShadow: "0 2px 8px rgba(var(--danger-rgb), 0.18)",
                 opacity: clockOutLoading ? 0.8 : 1,
-                transition: "background-color 0.2s ease"
+                transition: "all 0.2s ease"
               }}
             >
               {clockOutLoading ? "Clocking Out..." : "⏸️ Clock Out"}
@@ -2099,16 +2098,15 @@ export default function TechJobDetailPage() {
               disabled={clockInLoading || clockOutLoading}
               style={{
                 padding: "14px",
-                backgroundColor: "var(--info)",
-                color: "white",
-                border: "none",
+                backgroundColor: "var(--accent-purple-surface)",
+                color: "var(--accent-purple)",
+                border: "1px solid var(--accent-purple-surface)",
                 borderRadius: "8px",
                 cursor: clockInLoading || clockOutLoading ? "not-allowed" : "pointer",
                 fontSize: "14px",
                 fontWeight: "600",
-                boxShadow: "0 2px 8px rgba(var(--info-rgb), 0.18)",
                 opacity: clockInLoading ? 0.8 : 1,
-                transition: "background-color 0.2s ease"
+                transition: "all 0.2s ease"
               }}
             >
               {clockInLoading ? "Clocking In..." : "▶️ Clock In"}
