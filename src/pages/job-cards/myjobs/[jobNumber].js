@@ -1054,7 +1054,6 @@ export default function TechJobDetailPage() {
           padding: "12px",
           backgroundColor: "var(--surface)",
           borderRadius: "8px",
-          boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
           flexShrink: 0
         }}>
           <button
@@ -1068,7 +1067,6 @@ export default function TechJobDetailPage() {
               cursor: "pointer",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: "0 4px 10px rgba(var(--primary-rgb),0.16)",
               transition: "background-color 0.2s"
             }}
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--danger-dark)")}
@@ -1096,8 +1094,7 @@ export default function TechJobDetailPage() {
             backgroundColor: "var(--surface)",
             border: "1px solid var(--surface-light)",
             borderRadius: "12px",
-            padding: "10px 18px",
-            boxShadow: "0 4px 12px rgba(var(--primary-rgb),0.08)"
+            padding: "10px 18px"
           }}>
             <span style={{
               backgroundColor: jobStatusColor,
@@ -1131,7 +1128,6 @@ export default function TechJobDetailPage() {
                 backgroundColor: "var(--surface)",
                 border: "1px solid var(--surface-light)",
                 borderRadius: "8px",
-                boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
                 padding: "16px",
                 display: "flex",
                 flexDirection: "column",
@@ -1197,7 +1193,6 @@ export default function TechJobDetailPage() {
           style={{
             flex: 1,
             borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
             border: "1px solid var(--surface-light)",
             background: "var(--surface)",
             padding: "24px",
@@ -1218,7 +1213,6 @@ export default function TechJobDetailPage() {
                 backgroundColor: "var(--surface)",
                 padding: "24px",
                 borderRadius: "12px",
-                boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
                 border: "1px solid var(--surface-light)"
               }}>
                 <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
@@ -1235,7 +1229,6 @@ export default function TechJobDetailPage() {
                           borderLeft: "4px solid var(--primary)",
                           borderRadius: "10px",
                           color: "var(--info-dark)",
-                          boxShadow: "0 2px 6px rgba(var(--primary-rgb),0.08)"
                         }}>
                           {req.text || req}
                         </div>
@@ -1256,7 +1249,6 @@ export default function TechJobDetailPage() {
                 backgroundColor: "var(--surface)",
                 padding: "24px",
                 borderRadius: "12px",
-                boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
                 border: "1px solid var(--surface-light)"
               }}>
                 <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
@@ -1299,7 +1291,6 @@ export default function TechJobDetailPage() {
                 backgroundColor: "var(--surface)",
                 padding: "24px",
                 borderRadius: "12px",
-                boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
                 border: "1px solid var(--surface-light)"
               }}>
                 <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
@@ -1337,7 +1328,6 @@ export default function TechJobDetailPage() {
               backgroundColor: "var(--surface)",
               padding: "24px",
               borderRadius: "12px",
-              boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
               border: "1px solid var(--surface-light)",
               display: "flex",
               flexDirection: "column",
@@ -1497,7 +1487,6 @@ export default function TechJobDetailPage() {
                           borderLeft: "4px solid var(--danger)",
                           borderRadius: "12px",
                           backgroundColor: "var(--danger-surface)",
-                          boxShadow: "0 2px 6px rgba(var(--shadow-rgb),0.06)"
                         }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                             <div style={{ flex: 1 }}>
@@ -1555,7 +1544,6 @@ export default function TechJobDetailPage() {
                           borderLeft: "4px solid var(--warning)",
                           borderRadius: "12px",
                           backgroundColor: "var(--warning-surface)",
-                          boxShadow: "0 2px 6px rgba(var(--shadow-rgb),0.06)"
                         }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                             <div style={{ flex: 1 }}>
@@ -1613,7 +1601,6 @@ export default function TechJobDetailPage() {
                           borderLeft: "4px solid var(--success)",
                           borderRadius: "12px",
                           backgroundColor: "var(--success-surface)",
-                          boxShadow: "0 2px 6px rgba(var(--shadow-rgb),0.06)"
                         }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                             <div style={{ flex: 1 }}>
@@ -1675,7 +1662,6 @@ export default function TechJobDetailPage() {
               backgroundColor: "var(--surface)",
               padding: "24px",
               borderRadius: "12px",
-              boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.1)",
               border: "1px solid var(--surface-light)",
               display: "flex",
               flexDirection: "column",
@@ -1765,7 +1751,6 @@ export default function TechJobDetailPage() {
                       cursor: partsSubmitting ? "not-allowed" : "pointer",
                       fontSize: "14px",
                       fontWeight: "600",
-                      boxShadow: partsSubmitting ? "none" : "0 4px 10px rgba(var(--warning-rgb), 0.25)"
                     }}
                   >
                     {partsSubmitting ? "Submitting…" : "Request Part"}
@@ -1899,7 +1884,6 @@ export default function TechJobDetailPage() {
               backgroundColor: "var(--surface)",
               padding: "24px",
               borderRadius: "12px",
-              boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
               border: "1px solid var(--surface-light)",
               display: "flex",
               flexDirection: "column",
@@ -1976,7 +1960,6 @@ export default function TechJobDetailPage() {
                         cursor: "pointer",
                         fontSize: "14px",
                         fontWeight: "600",
-                        boxShadow: "0 4px 10px rgba(var(--info-rgb), 0.2)"
                       }}
                     >
                       Save Note
