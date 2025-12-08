@@ -579,7 +579,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
         style={buildModalButton("primary", { disabled: !allWheelsComplete() })}
         disabled={!allWheelsComplete()}
       >
-        Save Tyre Details
+        Save & Complete
       </button>
     </>
   );

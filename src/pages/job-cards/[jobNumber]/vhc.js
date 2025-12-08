@@ -190,16 +190,17 @@ export default function VHCPAGE() {
      SAVE VHC DATA TO DATABASE
   ============================================= */
   const persistVhcData = useCallback(
-    async (payload, { quiet = false } = {}) => {
+    async (payload, { quiet = false, updatedStatus = null } = {}) => {
       if (!jobNumber) return false;
       try {
         setSaveStatus("saving");
         setSaveError("");
 
         // Include section status in the payload
+        // Use updatedStatus if provided, otherwise use current sectionStatus
         const payloadWithStatus = {
           ...payload,
-          _sectionStatus: sectionStatus,
+          _sectionStatus: updatedStatus || sectionStatus,
         };
 
         const result = await saveChecksheet(jobNumber, payloadWithStatus);
@@ -361,12 +362,14 @@ export default function VHCPAGE() {
     setVhcData(next);
     setActiveSection(null);
 
-    // Mark section as complete immediately for mandatory sections
+    // Create updated status object for mandatory sections
+    let updatedStatus = { ...sectionStatus };
     if (trackedSectionKeys.has(sectionKey)) {
+      updatedStatus[sectionKey] = "complete";
       markSectionState(sectionKey, "complete");
     }
 
-    const success = await persistVhcData(next, { quiet: true, ...options });
+    const success = await persistVhcData(next, { quiet: true, updatedStatus, ...options });
     if (!success) {
       // If save failed, revert to inProgress
       if (trackedSectionKeys.has(sectionKey)) {
@@ -388,13 +391,13 @@ export default function VHCPAGE() {
     }
   };
 
-  const SectionCard = ({ title, badgeState, onClick }) => {
-    const badgeStyles = {
+  const SectionCard = ({ title, badgeState, onClick, showBadge = true }) => {
+    const badgeStyles = badgeState ? {
       ...styles.badge,
       backgroundColor: badgeState.background,
       color: badgeState.color,
       borderColor: badgeState.border,
-    };
+    } : null;
 
     return (
       <button
@@ -410,7 +413,7 @@ export default function VHCPAGE() {
           );
         }}
       >
-        <span style={badgeStyles}>{badgeState.label}</span>
+        {showBadge && badgeState && <span style={badgeStyles}>{badgeState.label}</span>}
         <div>
           <p style={styles.cardTitle}>{title}</p>
         </div>
@@ -639,12 +642,13 @@ export default function VHCPAGE() {
           <div style={styles.sectionsGrid}>
             {optionalKeys.map((key) => {
               const count = getOptionalCount(key);
-              // For additional sections, just show pending (no "In Progress" status)
+              // For additional sections, don't show any status badge
               return (
                 <SectionCard
                   key={key}
                   title={SECTION_TITLES[key]}
-                  badgeState={getBadgeState("pending")}
+                  badgeState={null}
+                  showBadge={false}
                   onClick={() => openSection(key)}
                 />
               );

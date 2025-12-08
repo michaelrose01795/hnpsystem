@@ -918,7 +918,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             disabled={!isCompleteEnabled()}
             style={buildModalButton("primary", { disabled: !isCompleteEnabled() })}
           >
-            Complete Section
+            Save & Complete
           </button>
         </>
       }
