@@ -354,11 +354,12 @@ export default function NewsFeed() {
 
       {modalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 flex items-center justify-center p-4"
           style={{
             backgroundColor: "rgba(0, 0, 0, 0.6)",
             backdropFilter: "blur(4px)",
-            overflow: "auto"
+            overflow: "auto",
+            zIndex: 1300
           }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {

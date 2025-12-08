@@ -19,6 +19,7 @@ import HrTabsBar from "@/components/HR/HrTabsBar";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { roleCategories } from "@/config/users";
+import { getUserActiveJobs, clockOutFromJob } from "@/lib/database/jobClocking";
 
 const WORKSHOP_SHORTCUT_ROLES = ["workshop manager", "aftersales manager"];
 
@@ -255,6 +256,70 @@ export default function Layout({ children, jobNumber }) {
       console.error("Error fetching job status:", error);
     }
   };
+
+  // Handle Tea Break - unclock from all active jobs
+  const handleTeaBreak = async () => {
+    if (!dbUserId) return;
+
+    try {
+      const { success, data: activeJobs } = await getUserActiveJobs(dbUserId);
+
+      if (success && activeJobs && activeJobs.length > 0) {
+        // Clock out from all active jobs
+        for (const job of activeJobs) {
+          await clockOutFromJob({
+            userId: dbUserId,
+            jobId: job.jobId,
+            clockingId: job.clockingId
+          });
+        }
+      }
+
+      setStatus("Tea Break");
+    } catch (error) {
+      console.error("Error handling tea break:", error);
+      setStatus("Tea Break");
+    }
+  };
+
+  // Handle status change
+  const handleStatusChange = async (newStatus) => {
+    if (newStatus === "Tea Break") {
+      await handleTeaBreak();
+    } else {
+      setStatus(newStatus);
+    }
+  };
+
+  // Sync status with job clocking state
+  useEffect(() => {
+    if (!isTech || !dbUserId) return;
+
+    const syncStatus = async () => {
+      try {
+        const { success, data: activeJobs } = await getUserActiveJobs(dbUserId);
+
+        if (success) {
+          if (activeJobs && activeJobs.length > 0) {
+            // User is clocked into a job
+            if (status !== "In Progress" && status !== "Tea Break") {
+              setStatus("In Progress");
+            }
+          } else {
+            // User is not clocked into any job
+            if (status === "In Progress") {
+              setStatus("Waiting for Job");
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error syncing status:", error);
+      }
+    };
+
+    syncStatus();
+    // Re-sync when currentJob changes
+  }, [isTech, dbUserId, currentJob]);
 
   const role = userRoles[0] || "guest";
   const roleDisplay = role
@@ -787,6 +852,38 @@ export default function Layout({ children, jobNumber }) {
                 </div>
               </div>
 
+              {isTech && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flex: "0 0 auto",
+                  }}
+                >
+                  <select
+                    value={status}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: "12px",
+                      border: `1px solid ${colors.accent}`,
+                      backgroundColor: "var(--surface)",
+                      color: colors.accent,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      boxShadow: "0 4px 10px rgba(var(--primary-rgb),0.12)",
+                      fontSize: "0.85rem",
+                      minWidth: "auto",
+                    }}
+                  >
+                    <option>Waiting for Job</option>
+                    <option>In Progress</option>
+                    <option>Tea Break</option>
+                  </select>
+                </div>
+              )}
+
               {canUseServiceActions && (
                 <div
                   style={{
@@ -913,27 +1010,6 @@ export default function Layout({ children, jobNumber }) {
                   justifyContent: "flex-start",
                 }}
               >
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  style={{
-                    padding: "4px 10px",
-                    borderRadius: "10px",
-                    border: `1px solid ${colors.accent}`,
-                    backgroundColor: "var(--surface)",
-                    color: colors.accent,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    minWidth: isMobile ? "100%" : "120px",
-                    boxShadow: "0 4px 10px rgba(var(--primary-rgb),0.12)",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  <option>Waiting for Job</option>
-                  <option>In Progress</option>
-                  <option>Break</option>
-                  <option>Completed</option>
-                </select>
                 <button
                   type="button"
                   disabled={!currentJob?.jobNumber}
