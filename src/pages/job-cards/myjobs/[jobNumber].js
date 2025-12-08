@@ -215,6 +215,8 @@ export default function TechJobDetailPage() {
   const [saveError, setSaveError] = useState("");
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const saveTimeoutRef = useRef(null);
+  const [showVhcSummary, setShowVhcSummary] = useState(false);
+  const [showGreenItems, setShowGreenItems] = useState(false);
 
   const jobCardId = jobData?.jobCard?.id ?? null;
   const jobCardNumber = jobData?.jobCard?.jobNumber ?? jobNumber;
@@ -638,6 +640,67 @@ export default function TechJobDetailPage() {
 
   const getBadgeState = useCallback((stateKey) =>
     vhcCardStates[stateKey] || vhcCardStates.pending, []);
+
+  // Extract and categorize all VHC items
+  const extractVhcSummary = useCallback(() => {
+    const items = [];
+
+    // Helper to collect concerns from a section
+    const collectConcerns = (sectionKey, value, pathLabel = "") => {
+      if (!value || typeof value !== "object") return;
+      const label = pathLabel || SECTION_TITLES[sectionKey] || sectionKey;
+
+      if (Array.isArray(value.concerns)) {
+        value.concerns.forEach((concern) => {
+          items.push({
+            section: label,
+            status: (concern.status || "green").toLowerCase(),
+            text: concern.text || concern.issue || concern.description || "No description",
+          });
+        });
+      }
+
+      // Recursively check nested objects
+      Object.entries(value).forEach(([key, nested]) => {
+        if (!nested || typeof nested !== "object" || Array.isArray(nested.concerns)) return;
+        if (key !== "concerns") {
+          collectConcerns(sectionKey, nested, `${label} - ${key}`);
+        }
+      });
+    };
+
+    // Collect from all sections
+    Object.entries(vhcData || {}).forEach(([sectionKey, value]) => {
+      if (value && typeof value === "object") {
+        collectConcerns(sectionKey, value);
+      }
+    });
+
+    // Categorize by status
+    const buckets = { red: [], amber: [], green: [] };
+    items.forEach(item => {
+      const status = (item.status || "green").toLowerCase();
+      if (status.includes("red") || status === "danger" || status === "critical") {
+        buckets.red.push(item);
+      } else if (status.includes("amber") || status === "advisory" || status === "warning") {
+        buckets.amber.push(item);
+      } else {
+        buckets.green.push(item);
+      }
+    });
+
+    return buckets;
+  }, [vhcData]);
+
+  const vhcSummaryItems = useMemo(() => extractVhcSummary(), [extractVhcSummary]);
+
+  // Check if VHC can be completed (all mandatory sections done)
+  const canCompleteVhc = useMemo(() => {
+    const mandatoryComplete = MANDATORY_SECTION_KEYS.every(
+      key => sectionStatus[key] === "complete"
+    );
+    return mandatoryComplete;
+  }, [sectionStatus]);
 
   // ✅ NOW all useEffects come AFTER all callbacks are defined
 
@@ -1593,6 +1656,10 @@ export default function TechJobDetailPage() {
                 </div>
               )}
 
+              {/* Show sections or summary based on state */}
+              {!showVhcSummary ? (
+                <>
+
               {/* Mandatory Sections */}
               <div>
                 <div style={styles.sectionHeader}>
@@ -1700,6 +1767,46 @@ export default function TechJobDetailPage() {
                 </div>
               </div>
 
+              {/* Complete VHC Button */}
+              <div style={{
+                display: "flex",
+                justifyContent: "center",
+                padding: "20px 0"
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setShowVhcSummary(true)}
+                  disabled={!canCompleteVhc}
+                  style={{
+                    padding: "14px 32px",
+                    backgroundColor: canCompleteVhc ? "var(--info)" : "var(--surface-light)",
+                    color: canCompleteVhc ? "white" : "var(--info)",
+                    border: "none",
+                    borderRadius: "12px",
+                    cursor: canCompleteVhc ? "pointer" : "not-allowed",
+                    fontSize: "16px",
+                    fontWeight: "600",
+                    transition: "all 0.2s",
+                    boxShadow: canCompleteVhc ? "0 4px 12px rgba(var(--info-rgb),0.3)" : "none"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (canCompleteVhc) {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 6px 16px rgba(var(--info-rgb),0.4)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (canCompleteVhc) {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(var(--info-rgb),0.3)";
+                    }
+                  }}
+                  title={!canCompleteVhc ? "Complete all mandatory sections first" : "View VHC summary and complete"}
+                >
+                  ✓ Complete VHC
+                </button>
+              </div>
+
               {/* Section Modals */}
               {activeSection === "wheelsTyres" && (
                 <WheelsTyresDetailsModal
@@ -1760,6 +1867,293 @@ export default function TechJobDetailPage() {
                   isReopenMode={isReopenMode}
                   isConcernLocked={isConcernLocked}
                 />
+              )}
+                </>
+              ) : (
+                /* VHC Summary View */
+                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                  {/* Summary Header with Back Button */}
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "16px 20px",
+                    backgroundColor: "var(--accent-purple-surface)",
+                    borderRadius: "12px",
+                    border: "1px solid var(--accent-purple)"
+                  }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--accent-purple)" }}>
+                        VHC Summary
+                      </h3>
+                      <p style={{ margin: "4px 0 0 0", fontSize: "14px", color: "var(--info)" }}>
+                        Review all items reported across sections
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowVhcSummary(false)}
+                      style={{
+                        padding: "10px 20px",
+                        backgroundColor: "var(--surface)",
+                        color: "var(--accent-purple)",
+                        border: "1px solid var(--accent-purple)",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "600",
+                        transition: "all 0.2s"
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "var(--accent-purple)";
+                        e.currentTarget.style.color = "white";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "var(--surface)";
+                        e.currentTarget.style.color = "var(--accent-purple)";
+                      }}
+                    >
+                      ← Back to Sections
+                    </button>
+                  </div>
+
+                  {/* Show Green Items Toggle */}
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "12px 16px",
+                    backgroundColor: "var(--surface)",
+                    borderRadius: "10px",
+                    border: "1px solid var(--border)"
+                  }}>
+                    <label style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      color: "var(--info-dark)",
+                      fontWeight: "500"
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={showGreenItems}
+                        onChange={(e) => setShowGreenItems(e.target.checked)}
+                        style={{
+                          width: "18px",
+                          height: "18px",
+                          cursor: "pointer"
+                        }}
+                      />
+                      Show green items
+                    </label>
+                  </div>
+
+                  {/* Count Cards */}
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: "16px"
+                  }}>
+                    <div style={{
+                      padding: "20px",
+                      backgroundColor: "var(--danger-surface)",
+                      borderRadius: "12px",
+                      border: "1px solid var(--danger)",
+                      textAlign: "center"
+                    }}>
+                      <div style={{ fontSize: "32px", fontWeight: "700", color: "var(--danger)" }}>
+                        {vhcSummaryItems.red.length}
+                      </div>
+                      <div style={{ fontSize: "13px", color: "var(--danger)", fontWeight: "600", marginTop: "4px" }}>
+                        RED ITEMS
+                      </div>
+                    </div>
+                    <div style={{
+                      padding: "20px",
+                      backgroundColor: "var(--warning-surface)",
+                      borderRadius: "12px",
+                      border: "1px solid var(--warning)",
+                      textAlign: "center"
+                    }}>
+                      <div style={{ fontSize: "32px", fontWeight: "700", color: "var(--warning)" }}>
+                        {vhcSummaryItems.amber.length}
+                      </div>
+                      <div style={{ fontSize: "13px", color: "var(--danger-dark)", fontWeight: "600", marginTop: "4px" }}>
+                        AMBER ITEMS
+                      </div>
+                    </div>
+                    <div style={{
+                      padding: "20px",
+                      backgroundColor: "var(--success-surface)",
+                      borderRadius: "12px",
+                      border: "1px solid var(--success)",
+                      textAlign: "center"
+                    }}>
+                      <div style={{ fontSize: "32px", fontWeight: "700", color: "var(--success)" }}>
+                        {vhcSummaryItems.green.length}
+                      </div>
+                      <div style={{ fontSize: "13px", color: "var(--success-dark)", fontWeight: "600", marginTop: "4px" }}>
+                        GREEN ITEMS
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Items List */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    {/* Red Items */}
+                    {vhcSummaryItems.red.length > 0 && (
+                      <div>
+                        <h4 style={{
+                          fontSize: "16px",
+                          fontWeight: "600",
+                          color: "var(--danger)",
+                          marginBottom: "12px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px"
+                        }}>
+                          <span style={{
+                            padding: "4px 12px",
+                            backgroundColor: "var(--danger)",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            color: "white"
+                          }}>
+                            RED
+                          </span>
+                          {vhcSummaryItems.red.length} item{vhcSummaryItems.red.length !== 1 ? 's' : ''}
+                        </h4>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          {vhcSummaryItems.red.map((item, idx) => (
+                            <div key={`red-${idx}`} style={{
+                              padding: "14px 16px",
+                              backgroundColor: "var(--danger-surface)",
+                              border: "1px solid var(--danger)",
+                              borderLeft: "4px solid var(--danger)",
+                              borderRadius: "10px"
+                            }}>
+                              <div style={{ fontSize: "12px", color: "var(--danger)", fontWeight: "600", marginBottom: "4px" }}>
+                                {item.section}
+                              </div>
+                              <div style={{ fontSize: "14px", color: "var(--info-dark)" }}>
+                                {item.text}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Amber Items */}
+                    {vhcSummaryItems.amber.length > 0 && (
+                      <div>
+                        <h4 style={{
+                          fontSize: "16px",
+                          fontWeight: "600",
+                          color: "var(--warning)",
+                          marginBottom: "12px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px"
+                        }}>
+                          <span style={{
+                            padding: "4px 12px",
+                            backgroundColor: "var(--warning)",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            color: "white"
+                          }}>
+                            AMBER
+                          </span>
+                          {vhcSummaryItems.amber.length} item{vhcSummaryItems.amber.length !== 1 ? 's' : ''}
+                        </h4>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          {vhcSummaryItems.amber.map((item, idx) => (
+                            <div key={`amber-${idx}`} style={{
+                              padding: "14px 16px",
+                              backgroundColor: "var(--warning-surface)",
+                              border: "1px solid var(--warning)",
+                              borderLeft: "4px solid var(--warning)",
+                              borderRadius: "10px"
+                            }}>
+                              <div style={{ fontSize: "12px", color: "var(--warning)", fontWeight: "600", marginBottom: "4px" }}>
+                                {item.section}
+                              </div>
+                              <div style={{ fontSize: "14px", color: "var(--info-dark)" }}>
+                                {item.text}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Green Items */}
+                    {showGreenItems && vhcSummaryItems.green.length > 0 && (
+                      <div>
+                        <h4 style={{
+                          fontSize: "16px",
+                          fontWeight: "600",
+                          color: "var(--success)",
+                          marginBottom: "12px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px"
+                        }}>
+                          <span style={{
+                            padding: "4px 12px",
+                            backgroundColor: "var(--success)",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            color: "white"
+                          }}>
+                            GREEN
+                          </span>
+                          {vhcSummaryItems.green.length} item{vhcSummaryItems.green.length !== 1 ? 's' : ''}
+                        </h4>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          {vhcSummaryItems.green.map((item, idx) => (
+                            <div key={`green-${idx}`} style={{
+                              padding: "14px 16px",
+                              backgroundColor: "var(--success-surface)",
+                              border: "1px solid var(--success)",
+                              borderLeft: "4px solid var(--success)",
+                              borderRadius: "10px"
+                            }}>
+                              <div style={{ fontSize: "12px", color: "var(--success)", fontWeight: "600", marginBottom: "4px" }}>
+                                {item.section}
+                              </div>
+                              <div style={{ fontSize: "14px", color: "var(--info-dark)" }}>
+                                {item.text}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* No Items Message */}
+                    {vhcSummaryItems.red.length === 0 && vhcSummaryItems.amber.length === 0 && vhcSummaryItems.green.length === 0 && (
+                      <div style={{
+                        textAlign: "center",
+                        padding: "40px",
+                        backgroundColor: "var(--surface-light)",
+                        borderRadius: "12px",
+                        border: "1px solid var(--border)"
+                      }}>
+                        <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
+                        <p style={{ fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
+                          No items recorded yet
+                        </p>
+                        <p style={{ fontSize: "14px", color: "var(--info)", marginTop: "8px" }}>
+                          Complete the sections to add items to the VHC
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           )}
