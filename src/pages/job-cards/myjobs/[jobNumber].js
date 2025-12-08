@@ -14,6 +14,7 @@ import { getVHCChecksByJob } from "@/lib/database/vhc";
 import { getClockingStatus } from "@/lib/database/clocking";
 import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
 import { supabase } from "@/lib/supabaseClient";
+import WriteUpForm from "@/components/JobCards/WriteUpForm";
 
 // Status color mapping for consistency
 const STATUS_COLORS = {
@@ -1351,19 +1352,16 @@ export default function TechJobDetailPage() {
                     cursor: jobRequiresVhc ? "pointer" : "not-allowed",
                     fontSize: "14px",
                     fontWeight: "600",
-                    boxShadow: jobRequiresVhc ? "0 4px 12px rgba(var(--primary-rgb),0.2)" : "none",
                     transition: "all 0.2s"
                   }}
                   onMouseEnter={(e) => {
                     if (jobRequiresVhc) {
                       e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow = "0 6px 16px rgba(var(--primary-rgb),0.3)";
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (jobRequiresVhc) {
                       e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(var(--primary-rgb),0.2)";
                     }
                   }}
                 >
@@ -1988,39 +1986,12 @@ export default function TechJobDetailPage() {
           {/* WRITE-UP TAB */}
           {activeTab === "write-up" && (
             <div style={{
-              backgroundColor: "var(--surface)",
-              padding: "24px",
-              borderRadius: "12px",
-              boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.08)",
-              border: "1px solid var(--surface-light)",
-              textAlign: "center",
+              height: "100%",
+              overflow: "hidden",
               display: "flex",
-              flexDirection: "column",
-              gap: "16px",
-              alignItems: "center"
+              flexDirection: "column"
             }}>
-              <div style={{ fontSize: "48px", marginBottom: "8px" }}>📄</div>
-              <h3 style={{ fontSize: "20px", fontWeight: "700", margin: 0 }}>
-                Job Write-Up
-              </h3>
-              <p style={{ color: "var(--info)", margin: 0, maxWidth: "520px" }}>
-                Complete the job write-up form to document all work performed and capture handover notes for the service advisor.
-              </p>
-              <button
-                onClick={() => router.push(`/job-cards/${jobNumber}/write-up`)}
-                style={{
-                  padding: "14px 28px",
-                  backgroundColor: "var(--primary)",
-                  color: "white",
-                  border: "1px solid var(--danger)",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "15px",
-                  fontWeight: "600",
-                }}
-              >
-                Open Write-Up Form →
-              </button>
+              <WriteUpForm jobNumber={jobNumber} showHeader={false} />
             </div>
           )}
         </div>

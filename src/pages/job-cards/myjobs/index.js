@@ -468,7 +468,6 @@ export default function MyJobsPage() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            boxShadow: "0 2px 6px rgba(var(--info-rgb), 0.12)"
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <div style={{
@@ -508,7 +507,6 @@ export default function MyJobsPage() {
           padding: "12px",
           backgroundColor: "var(--search-surface)",
           borderRadius: "12px",
-          boxShadow: "0 2px 4px rgba(var(--shadow-rgb),0.08)",
           color: "var(--search-text)"
         }}>
           {/* Search Input */}
@@ -525,17 +523,15 @@ export default function MyJobsPage() {
               border: "1px solid var(--search-surface-muted)",
               fontSize: "14px",
               outline: "none",
-              transition: "border-color 0.2s, box-shadow 0.2s",
+              transition: "border-color 0.2s",
               backgroundColor: "var(--search-surface)",
               color: "var(--search-text)"
             }}
             onFocus={(e) => {
               e.target.style.borderColor = "var(--primary)";
-              e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
             }}
             onBlur={(e) => {
               e.target.style.borderColor = "var(--search-surface-muted)";
-              e.target.style.boxShadow = "none";
             }}
           />
 
@@ -586,7 +582,6 @@ export default function MyJobsPage() {
             display: "flex",
             flexDirection: "column",
             borderRadius: "24px",
-            boxShadow: "0 4px 12px rgba(var(--shadow-rgb),0.08)",
             border: "1px solid var(--surface-light)",
             background: "var(--surface)",
             padding: "24px",
@@ -599,7 +594,6 @@ export default function MyJobsPage() {
               backgroundColor: "transparent",
               padding: "60px",
               borderRadius: "16px",
-              boxShadow: "none",
               border: "1px dashed var(--danger)",
               textAlign: "center",
               margin: "auto",
@@ -834,7 +828,6 @@ export default function MyJobsPage() {
           backgroundColor: "var(--surface)",
           padding: "20px",
           borderRadius: "16px",
-          boxShadow: "0 2px 6px rgba(var(--primary-rgb),0.08)",
           border: "1px solid var(--surface-light)"
         }}>
           <div style={{
