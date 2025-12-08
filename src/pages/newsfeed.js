@@ -354,19 +354,7 @@ export default function NewsFeed() {
 
       {modalOpen && (
         <div
-          className="fixed inset-0 flex items-center justify-center p-4"
-          style={{
-            backgroundColor: "rgba(0, 0, 0, 0.75)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-            overflow: "auto",
-            zIndex: 9999,
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0
-          }}
+          className="popup-backdrop"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setModalOpen(false);
@@ -375,18 +363,37 @@ export default function NewsFeed() {
           }}
         >
           <div
-            className="bg-[var(--surface)] border border-[var(--surface-light)] rounded-[32px] shadow-2xl w-full max-w-2xl my-8"
+            className="popup-card"
             role="dialog"
             aria-modal="true"
             style={{
-              position: "relative",
-              zIndex: 10000
+              borderRadius: "32px",
+              width: "100%",
+              maxWidth: "650px",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              border: "1px solid var(--surface-light)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="px-8 py-6 flex justify-between items-center border-b border-[var(--surface-light)]">
-              <h3 className="text-2xl font-bold" style={{ color: "var(--primary)" }}>
+            <div
+              style={{
+                padding: "24px 32px",
+                borderBottom: "1px solid var(--surface-light)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: "28px",
+                  fontWeight: "bold",
+                  color: "var(--primary)",
+                }}
+              >
                 Share an Update
               </h3>
               <button
@@ -396,17 +403,49 @@ export default function NewsFeed() {
                 }}
                 type="button"
                 aria-label="Close update modal"
-                className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-200 hover:bg-[var(--surface-light)] transition-all text-2xl"
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "12px",
+                  border: "none",
+                  backgroundColor: "transparent",
+                  color: "#888",
+                  fontSize: "24px",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--surface-light)";
+                  e.currentTarget.style.color = "#666";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.color = "#888";
+                }}
               >
                 ✕
               </button>
             </div>
 
             {/* Content */}
-            <div className="px-8 py-6 space-y-6">
+            <div style={{ padding: "32px" }}>
               {/* Title Field */}
-              <div className="flex flex-col gap-3">
-                <label className="font-bold text-sm uppercase tracking-wide" style={{ color: "var(--primary)" }} htmlFor="news-title">
+              <div style={{ marginBottom: "24px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: "bold",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    color: "var(--primary)",
+                  }}
+                  htmlFor="news-title"
+                >
                   Title
                 </label>
                 <input
@@ -417,13 +456,34 @@ export default function NewsFeed() {
                   onChange={(event) =>
                     setFormState((previous) => ({ ...previous, title: event.target.value }))
                   }
-                  className="w-full px-4 py-3 rounded-xl border-2 border-[var(--surface-light)] bg-[var(--surface-light)] text-base text-[var(--text-primary)] transition focus:border-[var(--primary)] focus:outline-none"
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    border: "2px solid var(--surface-light)",
+                    backgroundColor: "var(--surface-light)",
+                    fontSize: "15px",
+                    transition: "border-color 0.2s",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                 />
               </div>
 
               {/* Description Field */}
-              <div className="flex flex-col gap-3">
-                <label className="font-bold text-sm uppercase tracking-wide" style={{ color: "var(--primary)" }} htmlFor="news-content">
+              <div style={{ marginBottom: "24px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: "bold",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    color: "var(--primary)",
+                  }}
+                  htmlFor="news-content"
+                >
                   Description
                 </label>
                 <textarea
@@ -434,38 +494,112 @@ export default function NewsFeed() {
                   onChange={(event) =>
                     setFormState((previous) => ({ ...previous, content: event.target.value }))
                   }
-                  className="w-full px-4 py-3 rounded-xl border-2 border-[var(--surface-light)] bg-[var(--surface-light)] text-base text-[var(--text-primary)] transition focus:border-[var(--primary)] focus:outline-none resize-none"
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    border: "2px solid var(--surface-light)",
+                    backgroundColor: "var(--surface-light)",
+                    fontSize: "15px",
+                    transition: "border-color 0.2s",
+                    resize: "none",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                 />
               </div>
 
               {/* Departments Field */}
-              <div className="flex flex-col gap-3 relative" ref={departmentMenuRef}>
-                <label className="font-bold text-sm uppercase tracking-wide" style={{ color: "var(--primary)" }}>
+              <div style={{ marginBottom: "24px", position: "relative" }} ref={departmentMenuRef}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: "bold",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    color: "var(--primary)",
+                  }}
+                >
                   Visible to Departments
                 </label>
                 <button
                   type="button"
                   onClick={() => setDepartmentMenuOpen((previous) => !previous)}
-                  className="w-full flex justify-between items-center px-4 py-3 rounded-xl border-2 border-[var(--surface-light)] bg-[var(--surface-light)] text-base text-[var(--text-primary)] hover:border-[var(--primary)] transition-all"
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    border: "2px solid var(--surface-light)",
+                    backgroundColor: "var(--surface-light)",
+                    fontSize: "15px",
+                    cursor: "pointer",
+                    transition: "border-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => (e.target.style.borderColor = "var(--primary)")}
+                  onMouseLeave={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                 >
-                  <span className="font-medium">{departmentsSummary}</span>
-                  <span className="text-sm font-semibold px-3 py-1 rounded-lg" style={{ backgroundColor: "var(--primary)", color: "white" }}>
+                  <span style={{ fontWeight: "500" }}>{departmentsSummary}</span>
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      padding: "4px 12px",
+                      borderRadius: "8px",
+                      backgroundColor: "var(--primary)",
+                      color: "white",
+                    }}
+                  >
                     {departmentMenuOpen ? "Close" : "Select"}
                   </span>
                 </button>
                 {departmentMenuOpen && (
-                  <div className="absolute top-full mt-2 left-0 right-0 bg-[var(--surface)] rounded-2xl border-2 border-[var(--surface-light)] shadow-2xl z-10 max-h-64 overflow-auto">
-                    {AVAILABLE_DEPARTMENTS.map((department) => (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      marginTop: "8px",
+                      left: 0,
+                      right: 0,
+                      backgroundColor: "var(--surface)",
+                      borderRadius: "12px",
+                      border: "2px solid var(--surface-light)",
+                      boxShadow: "0 10px 40px rgba(0, 0, 0, 0.2)",
+                      zIndex: 10,
+                      maxHeight: "256px",
+                      overflowY: "auto",
+                    }}
+                  >
+                    {AVAILABLE_DEPARTMENTS.map((department, index) => (
                       <label
                         key={department}
-                        className="flex items-center justify-between px-5 py-3 text-base cursor-pointer hover:bg-[var(--surface-light)] transition-colors border-b border-[var(--surface-light)] last:border-b-0"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "14px 16px",
+                          fontSize: "15px",
+                          cursor: "pointer",
+                          borderBottom: index < AVAILABLE_DEPARTMENTS.length - 1 ? "1px solid var(--surface-light)" : "none",
+                          transition: "background-color 0.2s",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--surface-light)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                       >
-                        <span className="font-medium">{department}</span>
+                        <span style={{ fontWeight: "500" }}>{department}</span>
                         <input
                           type="checkbox"
                           checked={formState.departments.includes(department)}
                           onChange={() => handleDepartmentToggle(department)}
-                          className="w-5 h-5 text-[var(--primary)] border-2 rounded focus:ring-0"
+                          style={{
+                            width: "20px",
+                            height: "20px",
+                            cursor: "pointer",
+                          }}
                         />
                       </label>
                     ))}
@@ -475,21 +609,57 @@ export default function NewsFeed() {
 
               {/* Error Message */}
               {notificationError && (
-                <div className="px-4 py-3 rounded-xl bg-red-50 border-2 border-red-200">
-                  <p className="text-sm font-semibold text-red-600">{notificationError}</p>
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    border: "2px solid #fecaca",
+                    backgroundColor: "#fef2f2",
+                    color: "#dc2626",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                  }}
+                >
+                  {notificationError}
                 </div>
               )}
             </div>
 
             {/* Footer Actions */}
-            <div className="px-8 py-6 flex justify-end gap-3 border-t border-[var(--surface-light)]">
+            <div
+              style={{
+                padding: "24px 32px",
+                borderTop: "1px solid var(--surface-light)",
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "12px",
+              }}
+            >
               <button
                 type="button"
                 onClick={() => {
                   setModalOpen(false);
                   resetModal();
                 }}
-                className="px-6 py-3 rounded-xl border-2 border-[var(--surface-light)] text-base font-bold text-[var(--text-primary)] transition hover:border-[var(--primary)] hover:bg-[var(--surface-light)]"
+                style={{
+                  padding: "12px 24px",
+                  borderRadius: "12px",
+                  border: "2px solid var(--surface-light)",
+                  backgroundColor: "transparent",
+                  fontSize: "15px",
+                  fontWeight: "bold",
+                  color: "var(--text-primary)",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "var(--primary)";
+                  e.currentTarget.style.backgroundColor = "var(--surface-light)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "var(--surface-light)";
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }}
               >
                 Cancel
               </button>
@@ -497,11 +667,30 @@ export default function NewsFeed() {
                 type="button"
                 onClick={handleCreateUpdate}
                 disabled={saving}
-                className="px-6 py-3 rounded-xl text-base font-bold text-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                 style={{
-                  backgroundColor: "var(--primary)",
-                  opacity: saving ? 0.6 : 1,
+                  padding: "12px 24px",
+                  borderRadius: "12px",
                   border: "2px solid var(--primary-dark)",
+                  backgroundColor: "var(--primary)",
+                  color: "white",
+                  fontSize: "15px",
+                  fontWeight: "bold",
+                  cursor: saving ? "not-allowed" : "pointer",
+                  opacity: saving ? 0.6 : 1,
+                  transition: "all 0.2s",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                }}
+                onMouseEnter={(e) => {
+                  if (!saving) {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 0, 0, 0.2)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!saving) {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+                  }
                 }}
               >
                 {saving ? "Publishing…" : "Publish Update"}
