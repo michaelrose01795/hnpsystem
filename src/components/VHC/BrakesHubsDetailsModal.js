@@ -396,12 +396,10 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
   const enhanceFocus = (event) => {
     event.target.style.borderColor = palette.accent;
-    event.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
   };
 
   const resetFocus = (event) => {
     event.target.style.borderColor = palette.border;
-    event.target.style.boxShadow = "none";
   };
 
   const updatePadMeasurement = (category, value) => {
@@ -692,7 +690,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             fontSize: "14px",
             color: palette.textPrimary,
             outline: "none",
-            boxShadow: "inset 0 1px 3px rgba(var(--shadow-rgb),0.04)",
           }}
           onFocus={enhanceFocus}
           onBlur={resetFocus}
@@ -735,7 +732,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       padding: "8px 16px",
       fontSize: "12px",
       border: active ? "none" : "1px solid transparent",
-      boxShadow: active ? "0 6px 18px rgba(var(--primary-rgb),0.18)" : "none",
     });
 
     return (
@@ -1082,7 +1078,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                   style={{
                     ...selectBaseStyle,
                     width: "100%",
-                    boxShadow: "inset 0 1px 3px rgba(var(--shadow-rgb),0.04)",
                   }}
                   onFocus={enhanceFocus}
                   onBlur={resetFocus}

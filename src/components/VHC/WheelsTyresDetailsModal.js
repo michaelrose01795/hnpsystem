@@ -120,7 +120,6 @@ const baseInputStyle = {
   fontSize: "14px",
   color: palette.textPrimary,
   outline: "none",
-  boxShadow: "inset 0 1px 3px rgba(var(--shadow-rgb),0.06)",
 };
 
 const pillButton = ({ active = false } = {}) => ({
@@ -131,8 +130,6 @@ const pillButton = ({ active = false } = {}) => ({
   color: active ? "var(--surface)" : palette.textPrimary,
   fontWeight: 600,
   cursor: "pointer",
-  transition: "transform 0.2s ease, box-shadow 0.2s ease",
-  boxShadow: active ? "0 10px 24px rgba(var(--primary-rgb),0.18)" : "0 4px 12px rgba(var(--shadow-rgb),0.08)",
 });
 
 const sectionCardStyle = {
@@ -181,11 +178,9 @@ function AutoCompleteInput({ value, onChange, options, placeholder }) {
         style={baseInputStyle}
         onFocus={(e) => {
           e.target.style.borderColor = palette.accent;
-          e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
         }}
         onBlur={(e) => {
           e.target.style.borderColor = palette.border;
-          e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.06)";
         }}
       />
       {filtered.length > 0 ? (
@@ -198,7 +193,6 @@ function AutoCompleteInput({ value, onChange, options, placeholder }) {
             borderRadius: "14px",
             border: `1px solid ${palette.border}`,
             background: palette.surface,
-            boxShadow: "0 14px 32px rgba(var(--shadow-rgb),0.18)",
             maxHeight: "160px",
             overflowY: "auto",
             zIndex: 14,
@@ -990,7 +984,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                           border: `1px solid ${palette.border}`,
                           padding: "12px 16px",
                           background: palette.surface,
-                          boxShadow: "0 6px 18px rgba(var(--shadow-rgb),0.08)",
                           cursor: "pointer",
                         }}
                         onClick={() => {
@@ -1045,11 +1038,9 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
               style={baseInputStyle}
               onFocus={(e) => {
                 e.target.style.borderColor = palette.accent;
-                e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
               }}
               onBlur={(e) => {
                 e.target.style.borderColor = palette.border;
-                e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.06)";
               }}
             />
 

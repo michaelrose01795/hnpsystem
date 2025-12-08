@@ -55,6 +55,19 @@ const hasServiceIndicatorEntries = (indicator = {}) =>
   (Array.isArray(indicator?.concerns) && indicator.concerns.length > 0);
 
 const deriveSectionStatusFromSavedData = (savedData = {}) => {
+  // If we have explicit section status saved, use it
+  if (savedData._sectionStatus && typeof savedData._sectionStatus === "object") {
+    // Only use saved status for mandatory sections that are actually tracked
+    const result = createDefaultSectionStatus();
+    MANDATORY_SECTION_KEYS.forEach((key) => {
+      if (savedData._sectionStatus[key]) {
+        result[key] = savedData._sectionStatus[key];
+      }
+    });
+    return result;
+  }
+
+  // Otherwise, derive status from data content (legacy support)
   const derived = createDefaultSectionStatus();
   if (savedData.wheelsTyres && typeof savedData.wheelsTyres === "object") {
     derived.wheelsTyres = "complete";
@@ -579,7 +592,7 @@ export default function TechJobDetailPage() {
   );
 
   const persistVhcData = useCallback(
-    async (payload, { quiet = false } = {}) => {
+    async (payload, { quiet = false, updatedStatus = null } = {}) => {
       if (!jobNumber) {
         console.warn("⚠️ Cannot save VHC: No job number");
         return false;
@@ -588,7 +601,15 @@ export default function TechJobDetailPage() {
         console.log("💾 Saving VHC data for job:", jobNumber);
         setSaveStatus("saving");
         setSaveError("");
-        const result = await saveChecksheet(jobNumber, payload);
+
+        // Include section status in the payload
+        // Use updatedStatus if provided, otherwise use current sectionStatus
+        const payloadWithStatus = {
+          ...payload,
+          _sectionStatus: updatedStatus || sectionStatus,
+        };
+
+        const result = await saveChecksheet(jobNumber, payloadWithStatus);
         if (result.success) {
           console.log("✅ VHC data saved successfully");
           setLastSavedAt(new Date());
@@ -614,17 +635,28 @@ export default function TechJobDetailPage() {
         return false;
       }
     },
-    [jobNumber]
+    [jobNumber, sectionStatus]
   );
 
   const handleSectionComplete = useCallback(async (sectionKey, sectionData, options = {}) => {
     const next = { ...vhcData, [sectionKey]: sectionData };
     setVhcData(next);
     setActiveSection(null);
-    const success = await persistVhcData(next, { quiet: true, ...options });
-    if (success) {
-      markSectionState(sectionKey, "complete");
 
+    // Create updated status object for mandatory sections
+    let updatedStatus = { ...sectionStatus };
+    if (trackedSectionKeys.has(sectionKey)) {
+      updatedStatus[sectionKey] = "complete";
+      markSectionState(sectionKey, "complete");
+    }
+
+    const success = await persistVhcData(next, { quiet: true, updatedStatus, ...options });
+    if (!success) {
+      // If save failed, revert to inProgress
+      if (trackedSectionKeys.has(sectionKey)) {
+        markSectionState(sectionKey, "inProgress");
+      }
+    } else {
       // Reload VHC checks to ensure data is fresh
       if (jobCardId) {
         const checks = await getVHCChecksByJob(jobCardId);
@@ -632,7 +664,7 @@ export default function TechJobDetailPage() {
       }
     }
     return success;
-  }, [vhcData, persistVhcData, markSectionState, jobCardId]);
+  }, [vhcData, persistVhcData, markSectionState, jobCardId, sectionStatus]);
 
   const handleSectionDismiss = useCallback((sectionKey, draftData) => {
     setActiveSection(null);

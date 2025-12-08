@@ -288,19 +288,15 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                       fontWeight: 600,
                       fontSize: "14px",
                       textAlign: "left",
-                      boxShadow: isActive ? "0 10px 24px rgba(var(--primary-rgb),0.20)" : "0 4px 12px rgba(var(--shadow-rgb),0.08)",
                       cursor: "pointer",
-                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
                     }}
                     onMouseEnter={(e) => {
                       if (isActive) return;
                       e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow = "0 10px 24px rgba(var(--primary-rgb),0.15)";
                     }}
                     onMouseLeave={(e) => {
                       if (isActive) return;
                       e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(var(--shadow-rgb),0.08)";
                     }}
                   >
                     {option.label}
@@ -335,18 +331,14 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                       color: isActive ? "var(--surface)" : palette.textPrimary,
                       fontWeight: 600,
                       cursor: "pointer",
-                      boxShadow: isActive ? "0 8px 20px rgba(var(--primary-rgb),0.18)" : "0 4px 12px rgba(var(--shadow-rgb),0.08)",
-                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
                     }}
                     onMouseEnter={(e) => {
                       if (isActive) return;
                       e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow = "0 8px 20px rgba(var(--primary-rgb),0.16)";
                     }}
                     onMouseLeave={(e) => {
                       if (isActive) return;
                       e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(var(--shadow-rgb),0.08)";
                     }}
                   >
                     {option}
@@ -395,17 +387,13 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                       fontSize: "13px",
                       textAlign: "left",
                       position: "relative",
-                      boxShadow: "0 4px 12px rgba(var(--shadow-rgb),0.08)",
                       cursor: "pointer",
-                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = "translateY(-3px)";
-                      e.currentTarget.style.boxShadow = "0 12px 24px rgba(var(--primary-rgb),0.14)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(var(--shadow-rgb),0.08)";
                     }}
                   >
                     {item}
@@ -497,15 +485,12 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                   fontSize: "14px",
                   color: palette.textPrimary,
                   outline: "none",
-                  boxShadow: "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)",
                 }}
                 onFocus={(e) => {
                   e.target.style.borderColor = palette.accent;
-                  e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
                 }}
                 onBlur={(e) => {
                   e.target.style.borderColor = palette.border;
-                  e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)";
                 }}
               />
 
@@ -577,7 +562,6 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                       borderRadius: "18px",
                       border: `1px solid ${palette.border}`,
                       background: palette.surface,
-                      boxShadow: "0 4px 14px rgba(var(--shadow-rgb),0.08)",
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -613,7 +597,6 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                         fontSize: "14px",
                         color: palette.textPrimary,
                         outline: "none",
-                        boxShadow: "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)",
                       }}
                     />
                     <button
