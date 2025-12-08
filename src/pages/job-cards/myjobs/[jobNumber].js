@@ -15,8 +15,15 @@ import { getClockingStatus } from "@/lib/database/clocking";
 import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
 import { supabase } from "@/lib/supabaseClient";
 import WriteUpForm from "@/components/JobCards/WriteUpForm";
-import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
 import { getJobByNumberOrReg, saveChecksheet } from "@/lib/database/jobs";
+
+// VHC Section Modals
+import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
+import BrakesHubsDetailsModal from "@/components/VHC/BrakesHubsDetailsModal";
+import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetailsModal";
+import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
+import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal";
+import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 import themeConfig, {
   vhcLayoutStyles,
   createVhcButtonStyle,
@@ -1663,7 +1670,525 @@ export default function TechJobDetailPage() {
 
           {/* VHC TAB */}
           {activeTab === "vhc" && (
-            <VhcDetailsPanel jobNumber={jobNumber} showNavigation={true} />
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px", height: "100%" }}>
+
+              {/* VHC Header with Save Status */}
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "16px 20px",
+                backgroundColor: "var(--accent-purple-surface)",
+                borderRadius: "12px",
+                border: "1px solid var(--accent-purple)"
+              }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--accent-purple)" }}>
+                    Vehicle Health Check
+                  </h2>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "var(--info)" }}>
+                    Complete mandatory sections to finish VHC
+                  </p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  {saveStatus === "saving" && (
+                    <span style={{ fontSize: "13px", color: "var(--info)" }}>💾 Saving...</span>
+                  )}
+                  {saveStatus === "saved" && (
+                    <span style={{ fontSize: "13px", color: "var(--success)" }}>✅ Saved</span>
+                  )}
+                  {saveStatus === "error" && (
+                    <span style={{ fontSize: "13px", color: "var(--danger)" }}>❌ {saveError || "Save failed"}</span>
+                  )}
+                  {lastSavedAt && (
+                    <span style={{ fontSize: "12px", color: "var(--info)" }}>
+                      Last saved: {formatDateTime(lastSavedAt)}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Mandatory Sections */}
+              <div>
+                <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px", color: "var(--accent-purple)" }}>
+                  Mandatory Sections
+                </h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
+
+                  {/* Wheels & Tyres */}
+                  <div style={{
+                    backgroundColor: "var(--surface)",
+                    border: `2px solid ${getBadgeState(sectionStatus.wheelsTyres).border}`,
+                    borderRadius: "12px",
+                    padding: "20px",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                  onClick={() => openSection("wheelsTyres")}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                      <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--accent-purple)" }}>
+                        🛞 Wheels & Tyres
+                      </h4>
+                      <span style={{
+                        ...getBadgeState(sectionStatus.wheelsTyres),
+                        padding: "4px 12px",
+                        borderRadius: "999px",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px"
+                      }}>
+                        {sectionStatus.wheelsTyres}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
+                      Check tread depth, pressure, and condition
+                    </p>
+                  </div>
+
+                  {/* Brakes & Hubs */}
+                  <div style={{
+                    backgroundColor: "var(--surface)",
+                    border: `2px solid ${getBadgeState(sectionStatus.brakesHubs).border}`,
+                    borderRadius: "12px",
+                    padding: "20px",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                  onClick={() => openSection("brakesHubs")}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                      <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--accent-purple)" }}>
+                        🔧 Brakes & Hubs
+                      </h4>
+                      <span style={{
+                        ...getBadgeState(sectionStatus.brakesHubs),
+                        padding: "4px 12px",
+                        borderRadius: "999px",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px"
+                      }}>
+                        {sectionStatus.brakesHubs}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
+                      Check pads, discs, and brake system
+                    </p>
+                  </div>
+
+                  {/* Service Indicator & Under Bonnet */}
+                  <div style={{
+                    backgroundColor: "var(--surface)",
+                    border: `2px solid ${getBadgeState(sectionStatus.serviceIndicator).border}`,
+                    borderRadius: "12px",
+                    padding: "20px",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                  onClick={() => openSection("serviceIndicator")}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                      <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--accent-purple)" }}>
+                        🔍 Service Indicator & Under Bonnet
+                      </h4>
+                      <span style={{
+                        ...getBadgeState(sectionStatus.serviceIndicator),
+                        padding: "4px 12px",
+                        borderRadius: "999px",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px"
+                      }}>
+                        {sectionStatus.serviceIndicator}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
+                      Service reminder, oil level, under bonnet items
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Checks (Optional) */}
+              <div>
+                <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px", color: "var(--info)" }}>
+                  Additional Checks
+                  <span style={{ fontSize: "12px", fontWeight: "normal", marginLeft: "8px", color: "var(--grey-accent)" }}>
+                    (Optional)
+                  </span>
+                </h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
+
+                  {/* External */}
+                  <div style={{
+                    backgroundColor: "var(--surface)",
+                    border: "1px solid var(--accent-purple-surface)",
+                    borderRadius: "12px",
+                    padding: "20px",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                  onClick={() => openSection("externalInspection")}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                      <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
+                        🚗 External
+                      </h4>
+                      {getOptionalCount("externalInspection") > 0 && (
+                        <span style={{
+                          backgroundColor: "var(--info-surface)",
+                          color: "var(--info)",
+                          padding: "4px 12px",
+                          borderRadius: "999px",
+                          fontSize: "11px",
+                          fontWeight: "600"
+                        }}>
+                          {getOptionalCount("externalInspection")} items
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
+                      Body, lights, glass, mirrors
+                    </p>
+                  </div>
+
+                  {/* Internal & Electrics */}
+                  <div style={{
+                    backgroundColor: "var(--surface)",
+                    border: "1px solid var(--accent-purple-surface)",
+                    borderRadius: "12px",
+                    padding: "20px",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                  onClick={() => openSection("internalElectrics")}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                      <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
+                        💡 Internal & Electrics
+                      </h4>
+                      {getOptionalCount("internalElectrics") > 0 && (
+                        <span style={{
+                          backgroundColor: "var(--info-surface)",
+                          color: "var(--info)",
+                          padding: "4px 12px",
+                          borderRadius: "999px",
+                          fontSize: "11px",
+                          fontWeight: "600"
+                        }}>
+                          {getOptionalCount("internalElectrics")} items
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
+                      Interior, lights, electrics, controls
+                    </p>
+                  </div>
+
+                  {/* Underside */}
+                  <div style={{
+                    backgroundColor: "var(--surface)",
+                    border: "1px solid var(--accent-purple-surface)",
+                    borderRadius: "12px",
+                    padding: "20px",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                  onClick={() => openSection("underside")}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                      <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
+                        ⚙️ Underside
+                      </h4>
+                      {getOptionalCount("underside") > 0 && (
+                        <span style={{
+                          backgroundColor: "var(--info-surface)",
+                          color: "var(--info)",
+                          padding: "4px 12px",
+                          borderRadius: "999px",
+                          fontSize: "11px",
+                          fontWeight: "600"
+                        }}>
+                          {getOptionalCount("underside")} items
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
+                      Exhaust, suspension, steering, driveshafts
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* VHC Summary */}
+              <div style={{
+                backgroundColor: "var(--info-surface)",
+                border: "1px solid var(--info)",
+                borderRadius: "12px",
+                padding: "20px"
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                  <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
+                    📋 VHC Summary
+                    <span style={{ fontSize: "12px", fontWeight: "normal", marginLeft: "8px" }}>
+                      Review all items reported across sections
+                    </span>
+                  </h3>
+                  <button
+                    onClick={() => setShowVhcSummary(!showVhcSummary)}
+                    style={{
+                      padding: "8px 16px",
+                      backgroundColor: "var(--info)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      fontWeight: "600"
+                    }}
+                  >
+                    {showVhcSummary ? "Hide" : "Show"} Summary
+                  </button>
+                </div>
+
+                {showVhcSummary && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    {/* Red Items */}
+                    {vhcSummaryItems.red.length > 0 && (
+                      <div>
+                        <div style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          marginBottom: "8px",
+                          padding: "8px 12px",
+                          backgroundColor: "var(--danger-surface)",
+                          borderRadius: "8px"
+                        }}>
+                          <span style={{ fontSize: "16px" }}>🔴</span>
+                          <strong style={{ fontSize: "14px", color: "var(--danger)" }}>
+                            Critical Issues ({vhcSummaryItems.red.length})
+                          </strong>
+                        </div>
+                        {vhcSummaryItems.red.map((item, idx) => (
+                          <div key={idx} style={{
+                            padding: "12px 16px",
+                            backgroundColor: "var(--surface)",
+                            borderLeft: "4px solid var(--danger)",
+                            borderRadius: "8px",
+                            marginBottom: "8px"
+                          }}>
+                            <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--danger)", marginBottom: "4px" }}>
+                              {item.section}
+                            </div>
+                            <div style={{ fontSize: "13px", color: "var(--info-dark)" }}>
+                              {item.text}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Amber Items */}
+                    {vhcSummaryItems.amber.length > 0 && (
+                      <div>
+                        <div style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          marginBottom: "8px",
+                          padding: "8px 12px",
+                          backgroundColor: "var(--warning-surface)",
+                          borderRadius: "8px"
+                        }}>
+                          <span style={{ fontSize: "16px" }}>🟡</span>
+                          <strong style={{ fontSize: "14px", color: "var(--warning)" }}>
+                            Advisory Items ({vhcSummaryItems.amber.length})
+                          </strong>
+                        </div>
+                        {vhcSummaryItems.amber.map((item, idx) => (
+                          <div key={idx} style={{
+                            padding: "12px 16px",
+                            backgroundColor: "var(--surface)",
+                            borderLeft: "4px solid var(--warning)",
+                            borderRadius: "8px",
+                            marginBottom: "8px"
+                          }}>
+                            <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--warning)", marginBottom: "4px" }}>
+                              {item.section}
+                            </div>
+                            <div style={{ fontSize: "13px", color: "var(--info-dark)" }}>
+                              {item.text}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Green Items (Toggle) */}
+                    {vhcSummaryItems.green.length > 0 && (
+                      <div>
+                        <div style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          marginBottom: "8px",
+                          padding: "8px 12px",
+                          backgroundColor: "var(--success-surface)",
+                          borderRadius: "8px",
+                          cursor: "pointer"
+                        }}
+                        onClick={() => setShowGreenItems(!showGreenItems)}
+                        >
+                          <span style={{ fontSize: "16px" }}>🟢</span>
+                          <strong style={{ fontSize: "14px", color: "var(--success)" }}>
+                            OK Items ({vhcSummaryItems.green.length})
+                          </strong>
+                          <span style={{ marginLeft: "auto", fontSize: "12px", color: "var(--info)" }}>
+                            {showGreenItems ? "Hide" : "Show"}
+                          </span>
+                        </div>
+                        {showGreenItems && vhcSummaryItems.green.map((item, idx) => (
+                          <div key={idx} style={{
+                            padding: "12px 16px",
+                            backgroundColor: "var(--surface)",
+                            borderLeft: "4px solid var(--success)",
+                            borderRadius: "8px",
+                            marginBottom: "8px"
+                          }}>
+                            <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--success)", marginBottom: "4px" }}>
+                              {item.section}
+                            </div>
+                            <div style={{ fontSize: "13px", color: "var(--info-dark)" }}>
+                              {item.text}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {vhcSummaryItems.red.length === 0 && vhcSummaryItems.amber.length === 0 && vhcSummaryItems.green.length === 0 && (
+                      <p style={{ margin: 0, fontSize: "14px", color: "var(--info)", textAlign: "center", padding: "20px" }}>
+                        No items reported yet. Complete the VHC sections to add items.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* VHC Modals */}
+              {activeSection === "wheelsTyres" && (
+                <WheelsTyresDetailsModal
+                  isOpen={true}
+                  onClose={(data) => handleSectionDismiss("wheelsTyres", data)}
+                  onComplete={(data) => handleSectionComplete("wheelsTyres", data)}
+                  initialData={vhcData.wheelsTyres}
+                  isReopenMode={isReopenMode}
+                />
+              )}
+
+              {activeSection === "brakesHubs" && (
+                <BrakesHubsDetailsModal
+                  isOpen={true}
+                  onClose={(data) => handleSectionDismiss("brakesHubs", data)}
+                  onComplete={(data) => handleSectionComplete("brakesHubs", data)}
+                  initialData={vhcData.brakesHubs}
+                  isReopenMode={isReopenMode}
+                />
+              )}
+
+              {activeSection === "serviceIndicator" && (
+                <ServiceIndicatorDetailsModal
+                  isOpen={true}
+                  onClose={(data) => handleSectionDismiss("serviceIndicator", data)}
+                  onComplete={(data) => handleSectionComplete("serviceIndicator", data)}
+                  initialData={vhcData.serviceIndicator}
+                  isReopenMode={isReopenMode}
+                />
+              )}
+
+              {activeSection === "externalInspection" && (
+                <ExternalDetailsModal
+                  isOpen={true}
+                  onClose={(data) => handleSectionDismiss("externalInspection", data)}
+                  onComplete={(data) => handleSectionComplete("externalInspection", data)}
+                  initialData={vhcData.externalInspection}
+                  isReopenMode={isReopenMode}
+                />
+              )}
+
+              {activeSection === "internalElectrics" && (
+                <InternalElectricsDetailsModal
+                  isOpen={true}
+                  onClose={(data) => handleSectionDismiss("internalElectrics", data)}
+                  onComplete={(data) => handleSectionComplete("internalElectrics", data)}
+                  initialData={vhcData.internalElectrics}
+                  isReopenMode={isReopenMode}
+                />
+              )}
+
+              {activeSection === "underside" && (
+                <UndersideDetailsModal
+                  isOpen={true}
+                  onClose={(data) => handleSectionDismiss("underside", data)}
+                  onComplete={(data) => handleSectionComplete("underside", data)}
+                  initialData={vhcData.underside}
+                  isReopenMode={isReopenMode}
+                />
+              )}
+            </div>
           )}
 
           {/* PARTS TAB */}
