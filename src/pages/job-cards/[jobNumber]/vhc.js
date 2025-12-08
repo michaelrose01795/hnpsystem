@@ -135,7 +135,10 @@ export default function VHCPAGE() {
 
   const openSection = useCallback(
     (sectionKey) => {
-      markSectionState(sectionKey, "inProgress");
+      // Only mark mandatory sections as in progress when opened
+      if (trackedSectionKeys.has(sectionKey)) {
+        markSectionState(sectionKey, "inProgress");
+      }
       setActiveSection(sectionKey);
     },
     [markSectionState]
@@ -608,11 +611,12 @@ export default function VHCPAGE() {
           <div style={styles.sectionsGrid}>
             {optionalKeys.map((key) => {
               const count = getOptionalCount(key);
+              // For additional sections, just show pending (no "In Progress" status)
               return (
                 <SectionCard
                   key={key}
                   title={SECTION_TITLES[key]}
-                  badgeState={getBadgeState(count > 0 ? "inProgress" : "pending")}
+                  badgeState={getBadgeState("pending")}
                   onClick={() => openSection(key)}
                 />
               );
