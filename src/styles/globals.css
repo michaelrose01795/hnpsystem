@@ -87,12 +87,10 @@ button {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.2);
 }
 button:hover {
   background: var(--primary-light);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
 }
 button:active {
   transform: translateY(0);
@@ -101,7 +99,6 @@ button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
-  box-shadow: none;
 }
 
 /* Inputs, Textareas & Selects */
@@ -122,7 +119,6 @@ select {
   outline: none;
   background-color: var(--surface-light);
   color: var(--text-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 input[type="search"] {
@@ -144,7 +140,6 @@ textarea:focus,
 select:focus {
   border-color: var(--primary);
   background-color: var(--surface);
-  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
 }
 
 /* Placeholder style */
@@ -174,13 +169,12 @@ div.news-card {
   background: var(--surface);
   border: 1px solid var(--border);
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 section:hover,
 div.card:hover,
 div.news-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   transform: translateY(-2px);
+  border-color: var(--primary);
 }
 
 div.news-card h3,
@@ -257,11 +251,9 @@ hr {
 }
 
 .shadow-soft {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
 }
 .shadow-soft:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   transform: translateY(-2px);
 }
 
@@ -298,7 +290,6 @@ div#main-content {
   background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   position: relative;
   max-width: 90vw;
   max-height: 90vh;

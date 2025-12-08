@@ -527,6 +527,18 @@ CREATE TABLE public.job_status_history (
   CONSTRAINT job_status_history_pkey PRIMARY KEY (id),
   CONSTRAINT job_status_history_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
+CREATE TABLE public.job_writeup_tasks (
+  task_id bigint NOT NULL DEFAULT nextval('job_writeup_tasks_task_id_seq'::regclass),
+  job_id integer NOT NULL,
+  source text NOT NULL,
+  source_key text NOT NULL,
+  label text NOT NULL,
+  status text NOT NULL DEFAULT 'additional_work'::text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT job_writeup_tasks_pkey PRIMARY KEY (task_id),
+  CONSTRAINT job_writeup_tasks_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
+);
 CREATE TABLE public.job_writeups (
   writeup_id integer NOT NULL DEFAULT nextval('job_writeups_writeup_id_seq'::regclass),
   job_id integer NOT NULL,
@@ -974,6 +986,7 @@ CREATE TABLE public.users (
   phone character varying,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  dark_mode boolean DEFAULT false,
   CONSTRAINT users_pkey PRIMARY KEY (user_id)
 );
 CREATE TABLE public.vehicle_tracking_events (

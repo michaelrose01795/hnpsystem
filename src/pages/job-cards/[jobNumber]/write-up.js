@@ -682,9 +682,22 @@ export default function WriteUpPage() {
         return { ...task, status: nextStatus };
       });
 
-      const completionStatus = updatedTasks.every((task) => task.status === "complete")
-        ? "complete"
-        : "additional_work";
+      // Check if there are any rectification tasks (additional work authorized)
+      const hasAdditionalWork = updatedTasks.some((task) => task && task.source !== "request");
+
+      // Check if all checkboxes are complete
+      const allCheckboxesComplete = updatedTasks.every((task) => task.status === "complete");
+
+      // Smart completion logic:
+      // - If NO additional work authorized AND all checkboxes complete → "complete"
+      // - If additional work authorized AND all checkboxes complete → "waiting_additional_work"
+      // - Otherwise → "additional_work" (waiting for write up)
+      let completionStatus;
+      if (allCheckboxesComplete) {
+        completionStatus = hasAdditionalWork ? "waiting_additional_work" : "complete";
+      } else {
+        completionStatus = "additional_work";
+      }
 
       return { ...prev, tasks: updatedTasks, completionStatus };
     });
@@ -897,9 +910,20 @@ export default function WriteUpPage() {
   const totalTasks = writeUpData.tasks.length;
   const completedTasks = writeUpData.tasks.filter((task) => task.status === "complete").length;
   const rectificationTasks = writeUpData.tasks.filter((task) => task && task.source !== "request");
-  const completionStatusLabel =
-    writeUpData.completionStatus === "complete" ? "Complete" : "Waiting Additional Work";
-  const completionStatusColor = writeUpData.completionStatus === "complete" ? "var(--info)" : "var(--warning)";
+  const getCompletionStatusLabel = () => {
+    if (writeUpData.completionStatus === "complete") return "Complete";
+    if (writeUpData.completionStatus === "waiting_additional_work") return "Waiting for Additional Work";
+    return "Wait for Write Up";
+  };
+
+  const getCompletionStatusColor = () => {
+    if (writeUpData.completionStatus === "complete") return "var(--info)";
+    if (writeUpData.completionStatus === "waiting_additional_work") return "var(--warning)";
+    return "var(--warning)";
+  };
+
+  const completionStatusLabel = getCompletionStatusLabel();
+  const completionStatusColor = getCompletionStatusColor();
   const showRectificationStatus = rectificationTasks.length > 0;
   const visibleRequestCount = Math.max(2, requestTasks.length);
   const requestSlots = Array.from({ length: visibleRequestCount }, (_, index) => requestTasks[index] || null);
