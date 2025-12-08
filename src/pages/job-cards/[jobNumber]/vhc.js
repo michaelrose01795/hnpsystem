@@ -347,9 +347,18 @@ export default function VHCPAGE() {
     const next = { ...vhcData, [sectionKey]: sectionData };
     setVhcData(next);
     setActiveSection(null);
-    const success = await persistVhcData(next, { quiet: true, ...options });
-    if (success) {
+
+    // Mark section as complete immediately for mandatory sections
+    if (trackedSectionKeys.has(sectionKey)) {
       markSectionState(sectionKey, "complete");
+    }
+
+    const success = await persistVhcData(next, { quiet: true, ...options });
+    if (!success) {
+      // If save failed, revert to inProgress
+      if (trackedSectionKeys.has(sectionKey)) {
+        markSectionState(sectionKey, "inProgress");
+      }
     }
     return success;
   };
