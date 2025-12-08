@@ -108,9 +108,20 @@ const normaliseBrakesState = (initialData = {}) => {
         ? source.rearDrums.concerns
         : [],
     },
+    // Preserve the brake type preference
+    _brakeType: source._brakeType || null,
   };
 
-  const showDrum = !!source.rearDrums?.status && !source.rearDiscs?.measurements;
+  // Determine if we should show drum based on explicit preference or data presence
+  let showDrum = false;
+  if (source._brakeType === "drum") {
+    showDrum = true;
+  } else if (source._brakeType === "disc") {
+    showDrum = false;
+  } else {
+    // Fallback to old logic if no explicit preference
+    showDrum = !!source.rearDrums?.status && !source.rearDiscs?.measurements;
+  }
 
   return { data, showDrum };
 };
@@ -272,7 +283,12 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   const handleClose = () => {
     resetConcernPopup();
     if (!onClose) return;
-    onClose(data);
+    // Save the brake type preference when closing
+    const dataWithBrakeType = {
+      ...data,
+      _brakeType: showDrum ? "drum" : "disc",
+    };
+    onClose(dataWithBrakeType);
   };
 
   const severityPriority = { Green: 1, Amber: 2, Red: 3 };
@@ -560,6 +576,9 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
         },
       };
     });
+
+    // Save the brake type preference so it's remembered when reopening
+    next._brakeType = showDrum ? "drum" : "disc";
 
     // Smart data persistence: Only save relevant data based on brake type
     if (showDrum) {
@@ -929,9 +948,9 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
               onSelect={(side) => {
                 if (side === "front") {
                   setActiveSide("front");
-                  setShowDrum(false);
                 } else {
                   setActiveSide("rear");
+                  // Don't change showDrum here - let it maintain its state
                 }
               }}
             />

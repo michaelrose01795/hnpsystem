@@ -358,6 +358,12 @@ export default function VHCPAGE() {
     setActiveSection(null);
     if (!draftData) return;
     setVhcData((prev) => ({ ...prev, [sectionKey]: draftData }));
+
+    // If modal was closed with data entered (not completed), keep status as "inProgress"
+    // Don't change the status back to pending if user has started entering data
+    if (trackedSectionKeys.has(sectionKey) && sectionStatus[sectionKey] !== "complete") {
+      // Status should already be "inProgress" from openSection, so we don't need to change it
+    }
   };
 
   const SectionCard = ({ title, badgeState, onClick }) => {
