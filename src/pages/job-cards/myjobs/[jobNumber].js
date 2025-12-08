@@ -2017,7 +2017,6 @@ export default function TechJobDetailPage() {
                   cursor: "pointer",
                   fontSize: "15px",
                   fontWeight: "600",
-                  boxShadow: "0 6px 16px rgba(var(--primary-rgb),0.18)"
                 }}
               >
                 Open Write-Up Form →
@@ -2049,7 +2048,6 @@ export default function TechJobDetailPage() {
               cursor: "pointer",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: "0 2px 8px rgba(var(--primary-rgb),0.18)"
             }}
           >
             ← Back to My Jobs
@@ -2108,7 +2106,6 @@ export default function TechJobDetailPage() {
               cursor: "pointer",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: "0 2px 8px rgba(var(--accent-purple-rgb), 0.16)"
             }}
           >
             ✍️ Write-Up
@@ -2127,7 +2124,6 @@ export default function TechJobDetailPage() {
               cursor: canCompleteJob ? "pointer" : "not-allowed",
               fontSize: "14px",
               fontWeight: "600",
-              boxShadow: canCompleteJob ? "0 2px 8px rgba(var(--info-rgb), 0.18)" : "none",
               opacity: clockInLoading || clockOutLoading ? 0.8 : 1
             }}
             title={
