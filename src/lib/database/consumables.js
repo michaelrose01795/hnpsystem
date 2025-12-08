@@ -112,7 +112,7 @@ export async function listConsumablesForTracker() {
         order_date,
         quantity,
         unit_cost,
-        total_cost,
+        total_value,
         supplier
       )
     `
@@ -200,9 +200,8 @@ export async function listConsumablesForTracker() {
       const quantity = toNumber(order.quantity);
       const unitCost = toNumber(order.unit_cost ?? order.unitCost);
       const totalValue =
-        order.total_cost ??
-        order.totalValue ??
         order.total_value ??
+        order.totalValue ??
         toNumber(order.quantity) * unitCost;
       trackOrder({
         date: orderDate,

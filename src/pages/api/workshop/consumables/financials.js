@@ -33,7 +33,7 @@ const calculateFinancialSummary = async (year, month) => {
 
   const { data: orders, error: orderError } = await supabase
     .from("workshop_consumable_orders")
-    .select("quantity, unit_cost, total_cost")
+    .select("quantity, unit_cost, total_value")
     .gte("order_date", start)
     .lt("order_date", end);
 
@@ -43,7 +43,7 @@ const calculateFinancialSummary = async (year, month) => {
 
   const monthSpend = (orders || []).reduce((acc, order) => {
     const totalValue =
-      toNumber(order.total_cost) ||
+      toNumber(order.total_value) ||
       toNumber(order.quantity) * toNumber(order.unit_cost);
     return acc + totalValue;
   }, 0);

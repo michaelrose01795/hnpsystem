@@ -1,45 +1,82 @@
 -- file location: src/lib/database/schema/addtable.sql
 -- description: defines supplemental tables added beyond reference schema
 
--- ✅ Ensure job_writeups has status and note tracking columns
-ALTER TABLE public.job_writeups
-  ADD COLUMN IF NOT EXISTS completion_status TEXT DEFAULT 'additional_work';
-ALTER TABLE public.job_writeups
-  ADD COLUMN IF NOT EXISTS rectification_notes TEXT;
-ALTER TABLE public.job_writeups
-  ADD COLUMN IF NOT EXISTS job_description_snapshot TEXT;
-ALTER TABLE public.job_writeups
-  ADD COLUMN IF NOT EXISTS vhc_authorization_reference INTEGER;
-ALTER TABLE public.job_writeups
-  ADD COLUMN IF NOT EXISTS task_checklist JSONB DEFAULT '[]'::jsonb;
+-- ============================================
+-- WORKSHOP_CONSUMABLE_BUDGETS TABLE
+-- ============================================
+-- This table stores monthly budgets for workshop consumables
+-- It allows workshop managers to set and track spending limits per month
 
--- ✅ Create job_writeup_tasks table to track checklist items with unique IDs
-CREATE TABLE IF NOT EXISTS public.job_writeup_tasks (
-  task_id BIGSERIAL PRIMARY KEY,
-  job_id INTEGER NOT NULL REFERENCES public.jobs(id) ON DELETE CASCADE,
-  source TEXT NOT NULL,
-  source_key TEXT NOT NULL,
-  label TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'additional_work',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS public.workshop_consumable_budgets (
+  -- Primary key: combination of year and month ensures one budget per month
+  budget_id bigint NOT NULL DEFAULT nextval('workshop_consumable_budgets_budget_id_seq'::regclass),
+
+  -- Year for which this budget applies (e.g., 2025)
+  year integer NOT NULL,
+
+  -- Month for which this budget applies (1-12)
+  month integer NOT NULL,
+
+  -- Monthly budget amount in the system currency (e.g., GBP)
+  monthly_budget numeric NOT NULL DEFAULT 0,
+
+  -- User ID of the person who last updated this budget
+  updated_by integer,
+
+  -- Timestamp of when this budget was last updated
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+
+  -- Primary key constraint
+  CONSTRAINT workshop_consumable_budgets_pkey PRIMARY KEY (budget_id),
+
+  -- Unique constraint: only one budget per year-month combination
+  CONSTRAINT workshop_consumable_budgets_year_month_key UNIQUE (year, month),
+
+  -- Foreign key: link to the user who updated the budget
+  CONSTRAINT workshop_consumable_budgets_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id),
+
+  -- Check constraint: month must be between 1 and 12
+  CONSTRAINT workshop_consumable_budgets_month_check CHECK (month >= 1 AND month <= 12),
+
+  -- Check constraint: monthly budget cannot be negative
+  CONSTRAINT workshop_consumable_budgets_monthly_budget_check CHECK (monthly_budget >= 0)
 );
 
--- ✅ Helpful indexes and constraints for performant lookups
-CREATE INDEX IF NOT EXISTS idx_job_writeup_tasks_job_id ON public.job_writeup_tasks(job_id);
-CREATE UNIQUE INDEX IF NOT EXISTS uniq_job_writeup_tasks_job_source_key ON public.job_writeup_tasks(job_id, source, source_key);
+-- Create sequence for budget_id if it doesn't exist
+CREATE SEQUENCE IF NOT EXISTS public.workshop_consumable_budgets_budget_id_seq
+  AS bigint
+  START WITH 1
+  INCREMENT BY 1
+  NO MINVALUE
+  NO MAXVALUE
+  CACHE 1;
 
--- ✅ Trigger keeps updated_at fresh on edits
-CREATE OR REPLACE FUNCTION public.set_job_writeup_tasks_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+-- Link the sequence to the budget_id column
+ALTER SEQUENCE public.workshop_consumable_budgets_budget_id_seq
+  OWNED BY public.workshop_consumable_budgets.budget_id;
 
-DROP TRIGGER IF EXISTS trg_job_writeup_tasks_updated_at ON public.job_writeup_tasks;
-CREATE TRIGGER trg_job_writeup_tasks_updated_at
-BEFORE UPDATE ON public.job_writeup_tasks
-FOR EACH ROW
-EXECUTE FUNCTION public.set_job_writeup_tasks_updated_at();
+-- Create index on year and month for faster lookups
+CREATE INDEX IF NOT EXISTS idx_workshop_consumable_budgets_year_month
+  ON public.workshop_consumable_budgets(year, month);
+
+-- Create index on updated_at for tracking changes
+CREATE INDEX IF NOT EXISTS idx_workshop_consumable_budgets_updated_at
+  ON public.workshop_consumable_budgets(updated_at);
+
+-- Add comment to the table
+COMMENT ON TABLE public.workshop_consumable_budgets IS
+  'Stores monthly budgets for workshop consumables tracking. One record per year-month combination.';
+
+-- Add comments to columns
+COMMENT ON COLUMN public.workshop_consumable_budgets.budget_id IS
+  'Primary key for the budget record';
+COMMENT ON COLUMN public.workshop_consumable_budgets.year IS
+  'Calendar year for this budget (e.g., 2025)';
+COMMENT ON COLUMN public.workshop_consumable_budgets.month IS
+  'Calendar month for this budget (1=January, 12=December)';
+COMMENT ON COLUMN public.workshop_consumable_budgets.monthly_budget IS
+  'Budget amount allocated for consumables in this month';
+COMMENT ON COLUMN public.workshop_consumable_budgets.updated_by IS
+  'User ID of the person who last modified this budget';
+COMMENT ON COLUMN public.workshop_consumable_budgets.updated_at IS
+  'Timestamp of the last budget modification';
