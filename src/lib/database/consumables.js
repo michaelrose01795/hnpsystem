@@ -128,14 +128,14 @@ export async function listConsumablesForTracker() {
   (data || []).forEach((row) => {
     const rawName = (row.item_name || "").trim();
     const normalized = normalizeName(rawName || row.name);
-    const groupKey = normalized || row.id;
+    const groupKey = row.id; // Always use the actual UUID as the group key
 
     const candidateSet = duplicateTracker.get(normalized) ?? new Set();
     candidateSet.add(rawName || `Consumable ${row.id}`);
     duplicateTracker.set(normalized, candidateSet);
 
     const existing = grouped.get(groupKey) || {
-      id: groupKey,
+      id: row.id, // Always use the actual UUID as the ID
       name: rawName || `Consumable ${row.id}`,
       supplier: row.supplier || null,
       unitCost: toNumber(row.unit_cost ?? row.unitCost),
