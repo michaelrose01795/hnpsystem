@@ -42,6 +42,7 @@ export default function HRManagerDashboard() {
   const { user } = useUser();
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const safeModeEnabled = process.env.NEXT_PUBLIC_HR_MANAGER_SAFE_MODE === "true";
 
   // Check if user has Owner access
   const userRoles = session?.user?.roles || user?.roles || [];
@@ -80,6 +81,50 @@ export default function HRManagerDashboard() {
           <p style={{ color: "var(--text-secondary)", maxWidth: "500px" }}>
             You don't have permission to access the HR Manager dashboard. This area is restricted to Owners only.
           </p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (safeModeEnabled) {
+    return (
+      <Layout>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+            padding: "32px",
+            minHeight: "60vh",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+          }}
+        >
+          <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--primary)" }}>
+            HR Manager Safe Mode
+          </h1>
+          <p style={{ maxWidth: "640px", color: "var(--text-secondary)" }}>
+            The dashboard UI is temporarily replaced with this lightweight view so we can confirm
+            routing and permissions without rendering the heavier HR widgets. Set{" "}
+            <code>NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false</code> (or remove it) and restart the dev
+            server when you are ready to restore the full interface.
+          </p>
+          <pre
+            style={{
+              padding: "16px 20px",
+              borderRadius: "12px",
+              background: "var(--surface-light)",
+              border: "1px dashed var(--primary-light)",
+              fontSize: "0.95rem",
+              maxWidth: "520px",
+              width: "100%",
+              textAlign: "left",
+            }}
+          >
+            {`# .env.local
+NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
+          </pre>
         </div>
       </Layout>
     );
