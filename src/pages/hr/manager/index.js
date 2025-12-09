@@ -1,13 +1,12 @@
 // ✅ HR Manager Dashboard - Comprehensive interface for HR management
 // file location: src/pages/hr/manager/index.js
-// This page is only accessible to users with "hr manager", "owner", or "admin manager" roles
+// This page is only accessible to users with "owner" or "admin manager" roles
 // It provides tabbed access to all HR functions from a single interface
 
 import React, { useState } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { useSession } from "next-auth/react";
-import { isHrCoreRole, isManagerScopedRole } from "@/lib/auth/roles";
 
 // Import individual HR sections as separate components
 import HRDashboardTab from "@/components/HR/tabs/HRDashboardTab";
@@ -42,7 +41,7 @@ export default function HRManagerDashboard() {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  // Check if user has HR manager access
+  // Check if user has Owner or Admin Manager access
   const userRoles = session?.user?.roles || user?.roles || [];
 
   // Debug logging
@@ -50,12 +49,10 @@ export default function HRManagerDashboard() {
   console.log("🔍 HR Manager Dashboard - User:", user);
   console.log("🔍 HR Manager Dashboard - Session:", session);
 
-  const hasHRAccess =
-    isHrCoreRole(userRoles) ||
-    isManagerScopedRole(userRoles) ||
-    userRoles.some(role =>
-      ['hr manager', 'owner', 'admin manager'].includes(role.toLowerCase())
-    );
+  // Only Owner and Admin Manager have access to HR Manager dashboard
+  const hasHRAccess = userRoles.some(role =>
+    ['owner', 'admin manager'].includes(role.toLowerCase())
+  );
 
   console.log("🔍 HR Manager Dashboard - Has Access:", hasHRAccess);
 
@@ -79,7 +76,7 @@ export default function HRManagerDashboard() {
             Access Denied
           </h1>
           <p style={{ color: "var(--text-secondary)", maxWidth: "500px" }}>
-            You don't have permission to access the HR Manager dashboard. This area is restricted to HR Managers, Owners, and Admin Managers only.
+            You don't have permission to access the HR Manager dashboard. This area is restricted to Owners and Admin Managers only.
           </p>
         </div>
       </Layout>

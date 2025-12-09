@@ -79,17 +79,6 @@ export const sidebarSections = [
     ],
   },
   {
-    label: "HR Manager",
-    category: "departments",
-    items: [
-      {
-        label: "HR Manager",
-        href: "/hr/manager",
-        roles: ["hr manager"],
-      },
-    ],
-  },
-  {
     label: "Service",
     category: "departments",
     items: [
