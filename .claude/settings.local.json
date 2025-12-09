@@ -4,7 +4,9 @@
       "Bash(find:*)",
       "Bash(grep:*)",
       "Bash(node -c:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []
