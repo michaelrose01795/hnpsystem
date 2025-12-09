@@ -36,7 +36,9 @@ export default function Sidebar({
   const { unreadCount } = useMessagesBadge(dbUserId);
   const derivedRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
   const userRoles =
-    Array.isArray(visibleRoles) && visibleRoles.length > 0 ? visibleRoles : derivedRoles;
+    Array.isArray(visibleRoles) && visibleRoles.length > 0
+      ? visibleRoles.map((role) => role.toLowerCase())
+      : derivedRoles;
   const partsRoles = new Set(["parts", "parts manager"]);
   const hasPartsSidebarAccess = userRoles.some((role) => partsRoles.has(role));
   const dashboardShortcuts = departmentDashboardShortcuts.filter((shortcut) => {
@@ -65,10 +67,17 @@ export default function Sidebar({
 
     // Debug logging for HR Manager link
     if (item.label === "HR Manager" || item.href === "/hr/manager") {
-      console.log("🔍 Sidebar - Checking access for HR Manager:");
-      console.log("  - Item roles:", item.roles);
-      console.log("  - User roles:", userRoles);
-      console.log("  - Has access:", access);
+      console.log("🔍 Sidebar - Checking access for:", item.label, "at", item.href);
+      console.log("  - Item roles required:", item.roles);
+      console.log("  - User has roles:", userRoles);
+      console.log("  - Access granted:", access);
+      console.log("  - Role comparison details:");
+      item.roles.forEach(requiredRole => {
+        const matches = userRoles.filter(userRole =>
+          userRole.toLowerCase() === requiredRole.toLowerCase()
+        );
+        console.log(`    - Required: "${requiredRole}" → User has: [${matches.join(', ')}] → Match: ${matches.length > 0}`);
+      });
     }
 
     return access;
