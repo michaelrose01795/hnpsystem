@@ -1,14 +1,16 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/profile/index.js
-import React, { useMemo } from "react"; // React for UI and memoization
+import React, { useMemo, useState, useEffect } from "react"; // React for UI and memoization
 import { useRouter } from "next/router"; // Next.js router for query params
+import { useSession } from "next-auth/react"; // NextAuth session for authentication
 import Layout from "@/components/Layout"; // shared layout wrapper
 import { useUser } from "@/context/UserContext"; // Keycloak user context
-import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook
+import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook (admin only)
 import { SectionCard, StatusTag, MetricCard } from "@/components/HR/MetricCard"; // HR UI components
 import OvertimeEntriesEditor from "@/components/HR/OvertimeEntriesEditor"; // overtime editor widget
 import StaffVehiclesCard from "@/components/HR/StaffVehiclesCard";
 import { useTheme } from "@/styles/themeProvider";
+import { isHrCoreRole, isManagerScopedRole } from "@/lib/auth/roles"; // Role checking utilities
 
 function formatDate(value) {
   if (!value) return "—"; // guard empty values
@@ -28,8 +30,21 @@ export function ProfilePage({
 } = {}) {
   const router = useRouter(); // access query params
   const { user } = useUser(); // Keycloak session details
-  const { data, isLoading, error } = useHrOperationsData(); // hydrate profile widgets with HR data
+  const { data: session } = useSession(); // NextAuth session for role checking
   const { isDark, toggleTheme } = useTheme();
+
+  // State for user's own profile data (non-admin users)
+  const [userProfileData, setUserProfileData] = useState(null);
+  const [userProfileLoading, setUserProfileLoading] = useState(true);
+  const [userProfileError, setUserProfileError] = useState(null);
+
+  // Determine if user has HR/Manager roles for admin preview
+  const userRoles = session?.user?.roles || user?.roles || [];
+  const isAdminOrManager = isHrCoreRole(userRoles) || isManagerScopedRole(userRoles);
+
+  // Only fetch HR operations data if user is admin/manager AND viewing another user's profile
+  const shouldUseHrData = isAdminOrManager && (forcedUserName || adminPreviewOverride);
+  const { data: hrData, isLoading: hrLoading, error: hrError } = useHrOperationsData();
 
   const previewUserParam =
     forcedUserName || (typeof router.query.user === "string" ? router.query.user : null); // preview override
@@ -38,14 +53,78 @@ export function ProfilePage({
   const isAdminPreviewQuery = router.query.adminPreview === "1"; // admin preview flag
   const isAdminPreview = adminPreviewOverride ?? isAdminPreviewQuery; // final admin preview state
 
-  const employeeDirectory = data?.employeeDirectory ?? []; // employees with job data
-  const attendanceLogs = data?.attendanceLogs ?? []; // clocking records
-  const overtimeSummaries = data?.overtimeSummaries ?? []; // overtime totals
-  const leaveBalances = data?.leaveBalances ?? []; // leave usage
-  const staffVehicles = data?.staffVehicles ?? [];
-  const activeUserName = previewUserParam || user?.username || null; // active username resolution
+  // Fetch user's own profile data for non-admin users or when viewing own profile
+  useEffect(() => {
+    // Skip if viewing another user's profile as admin
+    if (shouldUseHrData) {
+      setUserProfileLoading(false);
+      return;
+    }
+
+    // Skip if no user session
+    if (!user && !session?.user) {
+      setUserProfileLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    const controller = new AbortController();
+
+    const fetchUserProfile = async () => {
+      try {
+        setUserProfileLoading(true);
+        setUserProfileError(null);
+
+        const response = await fetch("/api/profile/me", {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error("Profile not found. Please contact HR to create your employee profile.");
+          }
+          throw new Error(`Failed to load profile data (status ${response.status})`);
+        }
+
+        const payload = await response.json();
+
+        if (!payload?.success || !payload?.data) {
+          throw new Error(payload?.message || "Profile data payload malformed");
+        }
+
+        if (!isMounted) return;
+
+        setUserProfileData(payload.data);
+        setUserProfileLoading(false);
+      } catch (error) {
+        if (error.name === "AbortError") return;
+        if (!isMounted) return;
+
+        console.error("❌ Failed to fetch user profile:", error);
+        setUserProfileError(error);
+        setUserProfileLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [shouldUseHrData, user, session?.user]);
+
+  // Choose data source based on whether viewing as admin or own profile
+  const data = shouldUseHrData ? hrData : null;
+  const employeeDirectory = data?.employeeDirectory ?? []; // employees with job data (admin only)
+  const attendanceLogs = shouldUseHrData ? (data?.attendanceLogs ?? []) : (userProfileData?.attendanceLogs ?? []); // clocking records
+  const overtimeSummaries = shouldUseHrData ? (data?.overtimeSummaries ?? []) : (userProfileData?.overtimeSummary ? [userProfileData.overtimeSummary] : []); // overtime totals
+  const leaveBalances = data?.leaveBalances ?? []; // leave usage (admin only)
+  const staffVehicles = shouldUseHrData ? (data?.staffVehicles ?? []) : (userProfileData?.staffVehicles ?? []);
+  const activeUserName = previewUserParam || user?.username || session?.user?.name || null; // active username resolution
 
   const hrProfile = useMemo(() => {
+    // For admin viewing another user's profile
     if (!activeUserName || employeeDirectory.length === 0) return null; // ensure data loaded
     const username = activeUserName.toLowerCase(); // normalise for comparisons
 
@@ -59,16 +138,28 @@ export function ProfilePage({
     ); // locate HR profile by keycloak/email/name
   }, [activeUserName, employeeDirectory]);
 
-  // ⚠️ Mock data found — replacing with Supabase query
-  // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
-  const profile = hrProfile;
+  // ✅ Use appropriate data source based on user role and context
+  // If admin viewing another user's profile, use HR data
+  // Otherwise, use user's own profile data from /api/profile/me
+  const profile = shouldUseHrData ? hrProfile : userProfileData?.profile;
 
   const aggregatedStats = useMemo(() => {
     if (!profile) return null; // bail if profile missing
 
-    const attendanceSource = attendanceLogs.filter((entry) => entry.employeeId === profile.id);
-    const overtimeSource = overtimeSummaries.find((entry) => entry.employee === profile.name) ?? null;
-    const leaveSource = leaveBalances.find((entry) => entry.employee === profile.name) ?? null;
+    // Handle both admin HR data and user's own profile data
+    let attendanceSource, overtimeSource, leaveSource;
+
+    if (shouldUseHrData) {
+      // Admin viewing another user's profile - use HR data
+      attendanceSource = attendanceLogs.filter((entry) => entry.employeeId === profile.id || entry.employeeId === profile.name);
+      overtimeSource = overtimeSummaries.find((entry) => entry.employee === profile.name || entry.id === profile.userId) ?? null;
+      leaveSource = leaveBalances.find((entry) => entry.employee === profile.name) ?? null;
+    } else {
+      // User viewing own profile - use direct profile data
+      attendanceSource = attendanceLogs;
+      overtimeSource = userProfileData?.overtimeSummary ?? null;
+      leaveSource = userProfileData?.leaveBalance ?? null;
+    }
 
     const totalHours = attendanceSource.reduce(
       (sum, entry) => sum + Number(entry.totalHours ?? 0),
@@ -88,7 +179,7 @@ export function ProfilePage({
       attendanceRecords: attendanceSource,
       overtimeSummary: overtimeSource,
     }; // data feeding metric tiles and tables
-  }, [attendanceLogs, leaveBalances, overtimeSummaries, profile]);
+  }, [attendanceLogs, leaveBalances, overtimeSummaries, profile, shouldUseHrData, userProfileData]);
 
   const initialOvertimeEntries = useMemo(() => {
     if (!aggregatedStats?.overtimeSummary) return []; // default empty array
@@ -109,7 +200,12 @@ export function ProfilePage({
     return staffVehicles.filter((vehicle) => vehicle.userId === profile.userId);
   }, [profile?.userId, staffVehicles]);
 
-  if (!user && !previewUserParam) {
+  // Determine loading and error states based on data source
+  const isLoading = shouldUseHrData ? hrLoading : userProfileLoading;
+  const error = shouldUseHrData ? hrError : userProfileError;
+
+  // Authentication check
+  if (!user && !session?.user && !previewUserParam) {
     const fallback = (
       <div style={{ padding: "24px", color: "var(--text-secondary)" }}>
         You need to be signed in to view your profile.
@@ -179,7 +275,7 @@ export function ProfilePage({
       </header>
 
       {isLoading && (
-        <SectionCard title="Loading profile" subtitle="Fetching HR records for this account.">
+        <SectionCard title="Loading profile" subtitle="Fetching your profile data.">
           <span style={{ color: "var(--info)" }}>
             Retrieving the latest profile data from Supabase…
           </span>
@@ -187,8 +283,13 @@ export function ProfilePage({
       )}
 
       {error && (
-        <SectionCard title="Failed to load profile data" subtitle="Mock API returned an error.">
+        <SectionCard title="Failed to load profile data" subtitle="An error occurred while loading your profile.">
           <span style={{ color: "var(--danger)" }}>{error.message}</span>
+          {!shouldUseHrData && (
+            <div style={{ marginTop: "12px", color: "var(--text-secondary)" }}>
+              If you continue to see this error, please contact HR to ensure your employee profile has been created.
+            </div>
+          )}
         </SectionCard>
       )}
 
@@ -207,12 +308,15 @@ export function ProfilePage({
               primary={`${aggregatedStats?.totalHours?.toFixed(1) ?? "0.0"}`}
               accentColor="var(--accent-purple)"
             />
-            <MetricCard
-              icon="💷"
-              label="Hourly Rate"
-              primary={formatCurrency(profile.hourlyRate ?? 0)}
-              accentColor="var(--success)"
-            />
+            {/* Only show hourly rate to admin/manager users */}
+            {isAdminOrManager && (
+              <MetricCard
+                icon="💷"
+                label="Hourly Rate"
+                primary={formatCurrency(profile.hourlyRate ?? 0)}
+                accentColor="var(--success)"
+              />
+            )}
             <MetricCard
               icon="⏱️"
               label="Overtime Hours"
