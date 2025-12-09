@@ -381,6 +381,11 @@ export default function Sidebar({
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => {
+                    if (item.href === "/hr/manager") {
+                      console.log("🔗 Clicking HR Manager link - navigating to:", item.href);
+                    }
+                  }}
                   style={{
                     display: "block",
                     padding: "10px 14px",
