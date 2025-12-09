@@ -12,6 +12,7 @@ import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetai
 import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
 import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal";
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
+import PartSearchModal from "@/components/VHC/PartSearchModal";
 
 const STATUS_BADGES = {
   red: "var(--danger)",
@@ -623,6 +624,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const [lastSectionSavedAt, setLastSectionSavedAt] = useState(null);
   const [partsNotRequired, setPartsNotRequired] = useState(new Set());
   const [warrantyItems, setWarrantyItems] = useState(new Set());
+  const [selectedVhcItem, setSelectedVhcItem] = useState(null);
+  const [isPartSearchModalOpen, setIsPartSearchModalOpen] = useState(false);
 
   const containerPadding = showNavigation ? "24px" : "0";
   const renderStatusMessage = (message, color = "var(--info)") => (
@@ -1678,6 +1681,83 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     });
   }, []);
 
+  // Handler for opening part search modal
+  const handleVhcItemClick = useCallback((vhcItemData) => {
+    setSelectedVhcItem(vhcItemData);
+    setIsPartSearchModalOpen(true);
+  }, []);
+
+  // Handler for closing part search modal
+  const handleClosePartSearchModal = useCallback(() => {
+    setIsPartSearchModalOpen(false);
+    setSelectedVhcItem(null);
+  }, []);
+
+  // Handler for when a part is added
+  const handlePartAdded = useCallback(async (partData) => {
+    // Refresh job data to show the new part
+    if (resolvedJobNumber) {
+      const { data: updatedJob, error: fetchError } = await supabase
+        .from("jobs")
+        .select(`
+          *,
+          customer:customer_id(*),
+          vehicle:vehicle_id(*),
+          technician:assigned_to(user_id, first_name, last_name, email, role, phone),
+          vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at),
+          parts_job_items(
+            id,
+            part_id,
+            quantity_requested,
+            quantity_allocated,
+            quantity_fitted,
+            status,
+            origin,
+            vhc_item_id,
+            unit_cost,
+            unit_price,
+            request_notes,
+            created_at,
+            updated_at,
+            authorised,
+            stock_status,
+            pre_pick_location,
+            storage_location,
+            eta_date,
+            eta_time,
+            supplier_reference,
+            labour_hours,
+            part:part_id(
+              id,
+              part_number,
+              name,
+              unit_price
+            )
+          ),
+          job_files(
+            file_id,
+            file_name,
+            file_url,
+            file_type,
+            folder,
+            uploaded_at,
+            uploaded_by
+          )
+        `)
+        .eq("job_number", resolvedJobNumber)
+        .maybeSingle();
+
+      if (!fetchError && updatedJob) {
+        const { vhc_checks = [], parts_job_items = [], job_files = [], ...jobFields } = updatedJob;
+        setJob({
+          ...jobFields,
+          parts_job_items: parts_job_items || [],
+          job_files: job_files || [],
+        });
+      }
+    }
+  }, [resolvedJobNumber]);
+
   // Render VHC items panel for Parts Identified (shows all red/amber VHC items)
   const renderVhcItemsPanel = useCallback(() => {
     if (!vhcItemsWithParts || vhcItemsWithParts.length === 0) {
@@ -1747,9 +1827,18 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                 return (
                   <tr
                     key={vhcId}
+                    onClick={() => handleVhcItemClick(item)}
                     style={{
                       borderBottom: "1px solid var(--info-surface)",
                       background: vhcSeverity ? SEVERITY_THEME[vhcSeverity]?.background : "var(--surface)",
+                      cursor: "pointer",
+                      transition: "background 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "var(--accent-purple-surface)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = vhcSeverity ? SEVERITY_THEME[vhcSeverity]?.background : "var(--surface)";
                     }}
                   >
                     <td style={{ padding: "12px 16px" }}>
@@ -1888,7 +1977,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
         </div>
       </div>
     );
-  }, [vhcItemsWithParts, partsNotRequired, warrantyItems, partsCostByVhcItem, handlePartsNotRequiredToggle, handleWarrantyToggle]);
+  }, [vhcItemsWithParts, partsNotRequired, warrantyItems, partsCostByVhcItem, handlePartsNotRequiredToggle, handleWarrantyToggle, handleVhcItemClick]);
 
   // Render parts panel with table
   const renderPartsPanel = useCallback((title, parts, emptyMessage) => {
@@ -2243,25 +2332,51 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
             >
               ← Back
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                const target = job?.job_number ? `/job-cards/${encodeURIComponent(job.job_number)}` : "/job-cards";
-                router.push(target);
-              }}
-              style={{
-                border: "1px solid var(--primary)",
-                borderRadius: "10px",
-                padding: "8px 18px",
-                background: "var(--primary)",
-                color: "white",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-              disabled={!job?.job_number}
-            >
-              View job card →
-            </button>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              {/* Button to redirect to car and key tracking page with job details pre-filled */}
+              <button
+                type="button"
+                onClick={() => {
+                  const params = new URLSearchParams({
+                    jobNumber: job?.job_number || "",
+                    reg: job?.vehicle?.reg || "",
+                    customer: job?.customer?.name || `${job?.customer?.firstname || ""} ${job?.customer?.lastname || ""}`.trim() || ""
+                  });
+                  router.push(`/tracking?${params.toString()}`);
+                }}
+                style={{
+                  border: "1px solid var(--danger)",
+                  borderRadius: "10px",
+                  padding: "8px 18px",
+                  background: "var(--danger)",
+                  color: "white",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+                disabled={!job?.job_number}
+              >
+                Car and Key Tracker
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = job?.job_number ? `/job-cards/${encodeURIComponent(job.job_number)}` : "/job-cards";
+                  router.push(target);
+                }}
+                style={{
+                  border: "1px solid var(--primary)",
+                  borderRadius: "10px",
+                  padding: "8px 18px",
+                  background: "var(--primary)",
+                  color: "white",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+                disabled={!job?.job_number}
+              >
+                View job card →
+              </button>
+            </div>
           </div>
         ) : null}
         {jobHeader}
@@ -2451,6 +2566,15 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
           onComplete={(data) => handleSectionComplete("underside", data)}
         />
       )}
+
+      {/* Part Search Modal */}
+      <PartSearchModal
+        isOpen={isPartSearchModalOpen}
+        onClose={handleClosePartSearchModal}
+        vhcItemData={selectedVhcItem}
+        jobNumber={resolvedJobNumber}
+        onPartSelected={handlePartAdded}
+      />
     </div>
   );
 }

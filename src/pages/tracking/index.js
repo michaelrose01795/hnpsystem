@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { buildApiUrl } from "@/utils/apiClient";
@@ -212,15 +213,15 @@ const formatRelativeTime = (timestamp) => {
   return `${days}d ago`;
 };
 
-const CombinedTrackerCard = ({ entry }) => {
+const CombinedTrackerCard = ({ entry, isHighlighted }) => {
   return (
     <div
       style={{
         padding: "16px 18px",
         borderRadius: "16px",
-        border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
-        background: "var(--surface)",
-        boxShadow: "none",
+        border: isHighlighted ? "2px solid var(--danger)" : "1px solid rgba(var(--grey-accent-rgb), 0.3)",
+        background: isHighlighted ? "rgba(var(--danger-rgb), 0.05)" : "var(--surface)",
+        boxShadow: isHighlighted ? "0 4px 12px rgba(var(--danger-rgb), 0.2)" : "none",
         display: "flex",
         flexDirection: "column",
         gap: "8px",
@@ -399,6 +400,17 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+
+    // Validate that at least one of the key fields is filled
+    const hasJobNumber = form.jobNumber && form.jobNumber.trim();
+    const hasReg = form.reg && form.reg.trim();
+    const hasCustomer = form.customer && form.customer.trim();
+
+    if (!hasJobNumber && !hasReg && !hasCustomer) {
+      alert("Please fill in at least one of: Job Number, Registration, or Customer name");
+      return;
+    }
+
     const actionType = context === "car" ? "job_checked_in" : "job_complete";
     onSave({ ...form, actionType, context });
   };
@@ -453,15 +465,19 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
           }}
         >
           {[
-            { label: "Job Number", field: "jobNumber", placeholder: "HNP-4821" },
-            { label: "Registration", field: "reg", placeholder: "GY21 HNP" },
-            { label: "Customer", field: "customer", placeholder: "Customer name" },
-            { label: "Service Type", field: "serviceType", placeholder: "MOT, Service..." },
+            { label: "Job Number", field: "jobNumber", placeholder: "HNP-4821", required: false },
+            { label: "Registration", field: "reg", placeholder: "GY21 HNP", required: false },
+            { label: "Customer", field: "customer", placeholder: "Customer name", required: false },
+            { label: "Service Type", field: "serviceType", placeholder: "MOT, Service...", required: false },
           ].map((input) => (
             <label key={input.field} style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600 }}>
-              <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>{input.label}</span>
+              <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>
+                {input.label}
+                {["jobNumber", "reg", "customer"].includes(input.field) && (
+                  <span style={{ fontSize: "0.75rem", color: "var(--info)", fontWeight: 400 }}> (at least one required)</span>
+                )}
+              </span>
               <input
-                required
                 value={form[input.field]}
                 onChange={(event) => handleChange(input.field, event.target.value)}
                 placeholder={input.placeholder}
@@ -591,12 +607,14 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
 };
 
 export default function TrackingDashboard() {
+  const router = useRouter();
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [searchModal, setSearchModal] = useState({ open: false, type: null });
   const [entryModal, setEntryModal] = useState({ open: false, type: null, entry: null });
+  const [highlightedJobNumber, setHighlightedJobNumber] = useState(null);
   const { dbUserId, user } = useUser();
   const userRoles = useMemo(() => (user?.roles || []).map((role) => role.toLowerCase()), [user]);
   const isWorkshopManager = userRoles.includes("workshop manager");
@@ -634,6 +652,35 @@ export default function TrackingDashboard() {
   useEffect(() => {
     loadEntries();
   }, [loadEntries]);
+
+  // Handle URL parameters from job card redirect
+  useEffect(() => {
+    if (!router.isReady) return;
+
+    const { jobNumber, reg, customer } = router.query;
+
+    // If we have URL params, check if an entry exists for this job
+    if (jobNumber || reg || customer) {
+      setHighlightedJobNumber(jobNumber);
+
+      // Check if an existing entry matches the job
+      const existingEntry = entries.find(
+        (entry) =>
+          (jobNumber && entry.jobNumber?.toLowerCase() === jobNumber.toLowerCase()) ||
+          (reg && entry.reg?.toLowerCase() === reg.toLowerCase())
+      );
+
+      // If no existing entry found, auto-open the Log New popup with pre-filled data
+      if (!existingEntry && entries.length > 0) {
+        openEntryModal("car", {
+          ...emptyForm,
+          jobNumber: jobNumber || "",
+          reg: reg || "",
+          customer: customer || "",
+        });
+      }
+    }
+  }, [router.isReady, router.query, entries]);
 
   useEffect(() => {
     if (!tabs.some((tab) => tab.id === activeTab)) {
@@ -918,12 +965,16 @@ export default function TrackingDashboard() {
             Waiting for job-mapped tracking entries.
           </div>
         )}
-        {activeEntries.map((entry) => (
-          <CombinedTrackerCard
-            key={entry.jobId || entry.id || `${entry.jobNumber}-${entry.updatedAt}`}
-            entry={entry}
-          />
-        ))}
+        {activeEntries.map((entry) => {
+          const isHighlighted = highlightedJobNumber && entry.jobNumber?.toLowerCase() === highlightedJobNumber.toLowerCase();
+          return (
+            <CombinedTrackerCard
+              key={entry.jobId || entry.id || `${entry.jobNumber}-${entry.updatedAt}`}
+              entry={entry}
+              isHighlighted={isHighlighted}
+            />
+          );
+        })}
       </div>
     </section>
   );

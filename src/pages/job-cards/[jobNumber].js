@@ -1193,7 +1193,33 @@ export default function JobCardDetailPage() {
             </p>
           </div>
           
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+            {/* Button to redirect to car and key tracking page with job details pre-filled */}
+            <button
+              onClick={() => {
+                const params = new URLSearchParams({
+                  jobNumber: jobData.jobNumber || "",
+                  reg: jobData.reg || "",
+                  customer: jobData.customer || ""
+                });
+                router.push(`/tracking?${params.toString()}`);
+              }}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: "var(--danger)",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontWeight: "600",
+                fontSize: "14px",
+                transition: "background-color 0.2s"
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger-dark)"}
+              onMouseLeave={(e) => e.target.style.backgroundColor = "var(--danger)"}
+            >
+              Car and Key Tracker
+            </button>
             {showCreateInvoiceButton && (
               <button
                 onClick={() => setInvoicePopupOpen(true)}
