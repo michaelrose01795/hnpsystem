@@ -1,4 +1,5 @@
 // file location: src/components/Sidebar.js
+// Edit: Responsive improvements - mobile close button smaller and edge-aligned
 "use client";
 
 import Link from "next/link";
@@ -185,17 +186,19 @@ export default function Sidebar({
             aria-label="Close sidebar"
             style={{
               position: "absolute",
-              top: "16px",
-              right: "16px",
-              padding: "0 16px",
-              height: "36px",
-              borderRadius: "10px",
+              top: "14px",
+              right: "14px",
+              padding: "0 12px",
+              height: "32px",
+              borderRadius: "8px",
               border: "1px solid rgba(var(--surface-rgb), 0.4)",
               backgroundColor: "rgba(var(--surface-rgb), 0.12)",
               color: "var(--surface)",
               fontWeight: 700,
+              fontSize: "0.8rem",
               cursor: "pointer",
               boxShadow: "none",
+              transition: "all 0.2s ease",
             }}
           >
             Close

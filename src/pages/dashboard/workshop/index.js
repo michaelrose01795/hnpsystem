@@ -1,4 +1,5 @@
 "use client";
+// Edit: Responsive improvements - mobile/tablet optimized layout with better stacking and spacing
 
 import React, { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
@@ -14,7 +15,8 @@ const MetricCard = ({ label, value, helper }) => (
       padding: "16px",
       border: "1px solid var(--surface-light)",
       boxShadow: "none",
-      minWidth: 160,
+      minWidth: "140px",
+      flex: "1 1 140px",
     }}
   >
     <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--primary-dark)" }}>{label}</p>
@@ -181,23 +183,23 @@ export default function WorkshopDashboard() {
 
   return (
     <Layout>
-      <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "20px" }}>
         <header
           style={{
             background: "var(--surface-light)",
             borderRadius: "18px",
-            padding: "24px",
+            padding: "20px",
             border: "1px solid var(--surface-light)",
             boxShadow: "none",
           }}
         >
-          <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--primary-dark)" }}>
+          <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--primary-dark)", fontSize: "0.7rem" }}>
             Workshop workspace · {todayLabel}
           </p>
-          <h1 style={{ margin: "6px 0 0", color: "var(--primary-dark)" }}>
+          <h1 style={{ margin: "6px 0 0", color: "var(--primary-dark)", fontSize: "1.4rem" }}>
             {user?.username ? `Hi ${user.username}, workshop view` : "Workshop workspace"}
           </h1>
-          <p style={{ margin: "6px 0 0", color: "var(--info)" }}>
+          <p style={{ margin: "6px 0 0", color: "var(--info)", fontSize: "0.9rem" }}>
             Live view of technician assignments, queue, and VHC throughput.
           </p>
         </header>
@@ -208,7 +210,7 @@ export default function WorkshopDashboard() {
           ) : error ? (
             <p style={{ color: "var(--primary)" }}>{error}</p>
           ) : (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
               <MetricCard
                 label="Jobs in progress"
                 value={dashboardData.dailySummary.inProgress}
@@ -252,22 +254,22 @@ export default function WorkshopDashboard() {
                   <div
                     key={job.job_number}
                     style={{
-                      padding: "14px",
+                      padding: "12px",
                       borderRadius: "10px",
                       background: "var(--danger-surface)",
                       border: "1px solid var(--surface-light)",
                       display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
+                      flexDirection: "column",
+                      gap: "8px",
                     }}
                   >
                     <div>
-                      <strong style={{ color: "var(--primary-dark)" }}>
+                      <strong style={{ color: "var(--primary-dark)", fontSize: "0.95rem" }}>
                         {job.job_number || "—"} · {job.vehicle_reg || "TBC"}
                       </strong>
-                      <div style={{ fontSize: "0.85rem", color: "var(--info)" }}>{job.status || "Status unknown"}</div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--info)", marginTop: "4px" }}>{job.status || "Status unknown"}</div>
                     </div>
-                    <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>
+                    <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
                       Checked in {formatTime(job.checked_in_at)}
                     </span>
                   </div>
@@ -289,20 +291,21 @@ export default function WorkshopDashboard() {
                   key={job.job_number}
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
+                    flexDirection: "column",
+                    gap: "8px",
                     background: "var(--surface)",
                     borderRadius: "10px",
                     border: "1px solid var(--surface-light)",
-                    padding: "12px 14px",
+                    padding: "12px",
                   }}
                 >
                   <div>
-                    <strong>{job.job_number || "—"}</strong>
+                    <strong style={{ fontSize: "0.95rem" }}>{job.job_number || "—"}</strong>
                     <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
                       {job.vehicle_reg || "Registration missing"}
                     </p>
                   </div>
-                  <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>
+                  <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
                     Checked in {formatTime(job.checked_in_at)}
                   </span>
                 </div>

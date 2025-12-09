@@ -1,5 +1,9 @@
 // file location: src/components/Layout.js
 // Edit: Add status button next to navigation on phone view, make all top controls scroll with page
+// Edit: Responsive improvements - status button and sidebar toggle optimized for mobile/tablet
+//       - Status button sticks to far right edge with reduced size on mobile/tablet
+//       - Sidebar toggle button shrunk and edge-aligned on mobile/tablet
+//       - All page sections optimized for vertical phone mode
 // ✅ Imports converted to use absolute alias "@/"
 import React, { useEffect, useState } from "react"; // import React hooks
 import Link from "next/link"; // import Next.js link component
@@ -857,24 +861,26 @@ export default function Layout({ children, jobNumber }) {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    flex: "0 0 auto",
+                    justifyContent: isTablet ? "flex-end" : "center",
+                    flex: isTablet ? "1 1 auto" : "0 0 auto",
+                    marginLeft: isTablet ? "auto" : "0",
                   }}
                 >
                   <select
                     value={status}
                     onChange={(e) => handleStatusChange(e.target.value)}
                     style={{
-                      padding: "6px 14px",
-                      borderRadius: "12px",
+                      padding: isMobile ? "4px 10px" : isTablet ? "5px 12px" : "6px 14px",
+                      borderRadius: isMobile ? "10px" : "12px",
                       border: `1px solid ${colors.accent}`,
                       backgroundColor: "var(--surface)",
                       color: colors.accent,
                       fontWeight: 600,
                       cursor: "pointer",
                       boxShadow: "none",
-                      fontSize: "0.85rem",
+                      fontSize: isMobile ? "0.75rem" : "0.85rem",
                       minWidth: "auto",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     <option>Waiting for Job</option>
@@ -1089,19 +1095,20 @@ export default function Layout({ children, jobNumber }) {
             top: "50%",
             left: navToggleButtonLeft,
             transform: "translateY(-50%)",
-            width: "52px",
-            height: "52px",
+            width: isMobile ? "40px" : isTablet ? "44px" : "52px",
+            height: isMobile ? "40px" : isTablet ? "44px" : "52px",
             borderRadius: "0 999px 999px 0",
             border: "none",
             background: isSidebarOpen
               ? "var(--primary)"
               : "var(--primary)",
             color: "var(--surface)",
-            fontSize: "20px",
+            fontSize: isMobile ? "16px" : isTablet ? "18px" : "20px",
             fontWeight: 700,
             boxShadow: "none",
             cursor: "pointer",
             zIndex: 160,
+            transition: "left 0.25s ease, width 0.2s ease, height 0.2s ease",
           }}
           aria-label={isSidebarOpen ? "Close navigation sidebar" : "Open navigation sidebar"}
         >
@@ -1120,19 +1127,20 @@ export default function Layout({ children, jobNumber }) {
               top: "50%",
               right: isStatusSidebarOpen ? `${STATUS_DRAWER_WIDTH}px` : "0",
               transform: "translateY(-50%)",
-              width: "52px",
-              height: "52px",
+              width: isMobile ? "40px" : isTablet ? "44px" : "52px",
+              height: isMobile ? "40px" : isTablet ? "44px" : "52px",
               borderRadius: "999px 0 0 999px",
               border: "none",
               background: isStatusSidebarOpen
                 ? "var(--primary)"
                 : "var(--primary)",
               color: "var(--surface)",
-              fontSize: "20px",
+              fontSize: isMobile ? "16px" : isTablet ? "18px" : "20px",
               fontWeight: 700,
               boxShadow: "none",
               cursor: "pointer",
               zIndex: 140,
+              transition: "right 0.35s ease, width 0.2s ease, height 0.2s ease",
             }}
             aria-label={isStatusSidebarOpen ? "Close status sidebar" : "Open status sidebar"}
           >

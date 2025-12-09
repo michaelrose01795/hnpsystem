@@ -1,5 +1,6 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/job-cards/view/index.js
+// Edit: Responsive improvements - optimized mobile/tablet layout with better stacking, reduced padding, and improved grid templates
 "use client"; // enables client-side rendering for Next.js
 
 import React, { useState, useEffect, useMemo } from "react"; // import React and hooks
@@ -411,7 +412,7 @@ export default function ViewJobCards() {
         style={{
           minHeight: "100vh",
           width: "100%",
-          padding: "32px 24px 40px",
+          padding: "16px 12px 24px",
           background: "var(--surface)",
           display: "flex",
           justifyContent: "center",
@@ -423,7 +424,7 @@ export default function ViewJobCards() {
             maxWidth: "1400px",
             display: "flex",
             flexDirection: "column",
-            gap: "20px",
+            gap: "16px",
           }}
         >
           <div
@@ -450,12 +451,13 @@ export default function ViewJobCards() {
               <button
                 onClick={() => setActiveTab("today")}
                 style={{
-                  padding: "12px 32px",
+                  padding: "10px 20px",
                   border: "none",
                   borderRadius: "999px",
                   background: activeTab === "today" ? "var(--primary)" : "transparent",
                   color: activeTab === "today" ? "white" : "var(--accent-purple)",
                   fontWeight: 600,
+                  fontSize: "0.9rem",
                   cursor: "pointer",
                   transition: "all 0.2s ease",
                 }}
@@ -465,12 +467,13 @@ export default function ViewJobCards() {
               <button
                 onClick={() => setActiveTab("carryOver")}
                 style={{
-                  padding: "12px 32px",
+                  padding: "10px 20px",
                   border: "none",
                   borderRadius: "999px",
                   background: activeTab === "carryOver" ? "var(--primary)" : "transparent",
                   color: activeTab === "carryOver" ? "white" : "var(--accent-purple)",
                   fontWeight: 600,
+                  fontSize: "0.9rem",
                   cursor: "pointer",
                   transition: "all 0.2s ease",
                 }}
@@ -486,10 +489,10 @@ export default function ViewJobCards() {
               display: "flex",
               flexDirection: "column",
               background: "var(--surface)",
-              borderRadius: "28px",
+              borderRadius: "20px",
               border: "1px solid var(--info-surface)",
               boxShadow: "none",
-              padding: "24px",
+              padding: "16px",
               minHeight: "0",
             }}
           >
@@ -504,13 +507,13 @@ export default function ViewJobCards() {
             >
               <div
                 style={{
-                  flex: "1 1 320px",
-                  minWidth: "240px",
+                  flex: "1 1 280px",
+                  minWidth: "200px",
                   display: "flex",
                   alignItems: "center",
-                  gap: "12px",
-                  padding: "12px 18px",
-                  borderRadius: "18px",
+                  gap: "10px",
+                  padding: "10px 14px",
+                  borderRadius: "14px",
                   border: "1px solid var(--search-surface-muted)",
                   background: "var(--search-surface)",
                   boxShadow: "none",
@@ -519,7 +522,7 @@ export default function ViewJobCards() {
               >
                 <input
                   type="search"
-                  placeholder="Search job number, registration, or customer"
+                  placeholder="Search jobs..."
                   value={searchValues[activeTab]}
                   onChange={(event) =>
                     handleSearchValueChange(activeTab, event.target.value)
@@ -529,26 +532,27 @@ export default function ViewJobCards() {
                     border: "none",
                     outline: "none",
                     background: "transparent",
-                    fontSize: "15px",
+                    fontSize: "14px",
                     color: "var(--search-text)",
                   }}
                 />
               </div>
               <div
                 style={{
-                  flex: "0 1 220px",
-                  minWidth: "200px",
-                  padding: "12px 18px",
-                  borderRadius: "18px",
+                  flex: "0 1 auto",
+                  minWidth: "auto",
+                  padding: "10px 14px",
+                  borderRadius: "14px",
                   border: "1px solid var(--surface-light)",
                   background: "var(--accent-purple-surface)",
                   color: "var(--accent-purple)",
-                  fontSize: "13px",
+                  fontSize: "0.8rem",
                   fontWeight: 600,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   textAlign: "center",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {activeFilterLabel}
@@ -1116,8 +1120,8 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
-          gap: "12px",
+          gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))",
+          gap: "10px",
         }}
       >
         {infoBlocks.map((block) => (
