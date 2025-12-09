@@ -833,88 +833,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       }),
     [jobParts]
   );
-  // Combined VHC items with their parts for Parts Identified section
-  const vhcItemsWithParts = useMemo(() => {
-    // We need to wait for summaryItems to be available
-    if (!summaryItems || summaryItems.length === 0) return [];
-
-    const items = [];
-    const processedVhcIds = new Set();
-
-    // Group parts by vhc_item_id
-    const partsByVhcId = new Map();
-    partsIdentified.forEach((part) => {
-      if (part?.vhc_item_id) {
-        const key = String(part.vhc_item_id);
-        if (!partsByVhcId.has(key)) {
-          partsByVhcId.set(key, []);
-        }
-        partsByVhcId.get(key).push(part);
-      }
-    });
-
-    // Add summary items (these are the VHC red/amber findings)
-    summaryItems.forEach((summaryItem) => {
-      const vhcId = String(summaryItem.id);
-      const linkedParts = partsByVhcId.get(vhcId) || [];
-
-      items.push({
-        vhcItem: summaryItem,
-        linkedParts,
-        vhcId,
-      });
-
-      processedVhcIds.add(vhcId);
-    });
-
-    // Add any parts that don't have a matching summary item (shouldn't happen, but handle it)
-    partsIdentified.forEach((part) => {
-      if (part?.vhc_item_id) {
-        const vhcId = String(part.vhc_item_id);
-        if (!processedVhcIds.has(vhcId)) {
-          items.push({
-            vhcItem: null,
-            linkedParts: [part],
-            vhcId,
-          });
-          processedVhcIds.add(vhcId);
-        }
-      }
-    });
-
-    return items;
-  }, [summaryItems, partsIdentified]);
-
-  const partsCostByVhcItem = useMemo(() => {
-    const map = new Map();
-    partsIdentified.forEach((part) => {
-      if (!part?.vhc_item_id) return;
-      const key = String(part.vhc_item_id);
-
-      // If parts not required is toggled for this VHC item, set cost to 0
-      if (partsNotRequired.has(key)) {
-        map.set(key, 0);
-        return;
-      }
-
-      const qtyValue = Number(part.quantity_requested);
-      const resolvedQty = Number.isFinite(qtyValue) && qtyValue > 0 ? qtyValue : 1;
-      const unitPriceValue = Number(part.unit_price ?? part.part?.unit_price ?? 0);
-      if (!Number.isFinite(unitPriceValue)) return;
-      const subtotal = resolvedQty * unitPriceValue;
-      map.set(key, (map.get(key) || 0) + subtotal);
-    });
-
-    // Also add entries for VHC items marked as "parts not required" even if they have no parts
-    summaryItems.forEach((item) => {
-      const key = String(item.id);
-      if (partsNotRequired.has(key) && !map.has(key)) {
-        map.set(key, 0);
-      }
-    });
-
-    return map;
-  }, [partsIdentified, partsNotRequired, summaryItems]);
   const jobFiles = useMemo(
     () =>
       Array.isArray(job?.job_files) ? job.job_files.filter(Boolean) : [],
@@ -1121,6 +1039,90 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     });
     return lists;
   }, [severitySections]);
+
+  // Combined VHC items with their parts for Parts Identified section
+  const vhcItemsWithParts = useMemo(() => {
+    // We need to wait for summaryItems to be available
+    if (!summaryItems || summaryItems.length === 0) return [];
+
+    const items = [];
+    const processedVhcIds = new Set();
+
+    // Group parts by vhc_item_id
+    const partsByVhcId = new Map();
+    partsIdentified.forEach((part) => {
+      if (part?.vhc_item_id) {
+        const key = String(part.vhc_item_id);
+        if (!partsByVhcId.has(key)) {
+          partsByVhcId.set(key, []);
+        }
+        partsByVhcId.get(key).push(part);
+      }
+    });
+
+    // Add summary items (these are the VHC red/amber findings)
+    summaryItems.forEach((summaryItem) => {
+      const vhcId = String(summaryItem.id);
+      const linkedParts = partsByVhcId.get(vhcId) || [];
+
+      items.push({
+        vhcItem: summaryItem,
+        linkedParts,
+        vhcId,
+      });
+
+      processedVhcIds.add(vhcId);
+    });
+
+    // Add any parts that don't have a matching summary item (shouldn't happen, but handle it)
+    partsIdentified.forEach((part) => {
+      if (part?.vhc_item_id) {
+        const vhcId = String(part.vhc_item_id);
+        if (!processedVhcIds.has(vhcId)) {
+          items.push({
+            vhcItem: null,
+            linkedParts: [part],
+            vhcId,
+          });
+          processedVhcIds.add(vhcId);
+        }
+      }
+    });
+
+    return items;
+  }, [summaryItems, partsIdentified]);
+
+  const partsCostByVhcItem = useMemo(() => {
+    const map = new Map();
+    partsIdentified.forEach((part) => {
+      if (!part?.vhc_item_id) return;
+      const key = String(part.vhc_item_id);
+
+      // If parts not required is toggled for this VHC item, set cost to 0
+      if (partsNotRequired.has(key)) {
+        map.set(key, 0);
+        return;
+      }
+
+      const qtyValue = Number(part.quantity_requested);
+      const resolvedQty = Number.isFinite(qtyValue) && qtyValue > 0 ? qtyValue : 1;
+      const unitPriceValue = Number(part.unit_price ?? part.part?.unit_price ?? 0);
+      if (!Number.isFinite(unitPriceValue)) return;
+      const subtotal = resolvedQty * unitPriceValue;
+      map.set(key, (map.get(key) || 0) + subtotal);
+    });
+
+    // Also add entries for VHC items marked as "parts not required" even if they have no parts
+    summaryItems.forEach((item) => {
+      const key = String(item.id);
+      if (partsNotRequired.has(key) && !map.has(key)) {
+        map.set(key, 0);
+      }
+    });
+
+    return map;
+  }, [partsIdentified, partsNotRequired, summaryItems]);
+
   const ensureEntryValue = (state, itemId) =>
     state[itemId] || { partsCost: "", laborHours: "", totalOverride: "", status: null };
 
