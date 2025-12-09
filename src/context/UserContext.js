@@ -5,6 +5,28 @@ import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
 import { getUserActiveJobs } from "@/lib/database/jobClocking";
 import { getUserById } from "@/lib/database/users";
 
+const DEV_ROLE_COOKIE = "hnp-dev-roles";
+const DEV_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+const isBrowser = () => typeof document !== "undefined";
+const clearDevRoleCookie = () => {
+  if (!isBrowser()) return;
+  document.cookie = `${DEV_ROLE_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+};
+const serializeRolesForCookie = (roles = []) =>
+  roles
+    .filter(Boolean)
+    .map((role) => role.toLowerCase())
+    .join("|");
+const setDevRoleCookie = (roles = []) => {
+  if (!isBrowser()) return;
+  const payload = serializeRolesForCookie(roles);
+  if (!payload) {
+    clearDevRoleCookie();
+    return;
+  }
+  document.cookie = `${DEV_ROLE_COOKIE}=${encodeURIComponent(payload)}; path=/; max-age=${DEV_COOKIE_MAX_AGE}`;
+};
+
 const UserContext = createContext();
 
 export function UserProvider({ children }) {
@@ -21,7 +43,9 @@ export function UserProvider({ children }) {
     if (stored && !session?.user) {
       try {
         const parsed = JSON.parse(stored);
-        setUser({ ...parsed, id: parsed.id || Date.now() });
+        const finalDevUser = { ...parsed, id: parsed.id || Date.now() };
+        setUser(finalDevUser);
+        setDevRoleCookie(finalDevUser.roles || []);
       } catch (err) {
         console.error("Failed to parse dev user from localStorage", err);
       }
@@ -39,6 +63,7 @@ export function UserProvider({ children }) {
       };
       setUser(keycloakUser);
       localStorage.removeItem("devUser");
+      clearDevRoleCookie();
     }
   }, [session]);
 
@@ -139,6 +164,7 @@ export function UserProvider({ children }) {
 
       setUser(finalUser);
       localStorage.setItem("devUser", JSON.stringify(finalUser));
+      setDevRoleCookie(finalUser.roles || []);
       return { success: true };
     } catch (err) {
       console.error("Dev login failed", err);
@@ -153,6 +179,7 @@ export function UserProvider({ children }) {
     setDbUserId(null);
     setCurrentJob(null);
     localStorage.removeItem("devUser");
+    clearDevRoleCookie();
   };
 
   const contextValue = {

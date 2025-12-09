@@ -13,6 +13,9 @@ export async function middleware(req) {
   const { pathname } = req.nextUrl;
   const isHrRoute = pathname.startsWith("/hr");
   const isAdminRoute = pathname.startsWith("/admin");
+  const canUseDevCookie = process.env.NODE_ENV !== "production";
+  const devRolesCookie = canUseDevCookie ? req.cookies.get("hnp-dev-roles")?.value : null;
+  const hasDevCookieAuth = Boolean(devRolesCookie);
 
   if (process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true") {
     return NextResponse.next();
@@ -24,13 +27,17 @@ export async function middleware(req) {
 
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-  if (!token) {
+  if (!token && !hasDevCookieAuth) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("redirectedFrom", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  const roles = normalizeRoles(token.roles || []);
+  const roles = token?.roles?.length
+    ? normalizeRoles(token.roles)
+    : hasDevCookieAuth
+    ? normalizeRoles(devRolesCookie.split("|"))
+    : [];
   const hasHrCoreAccess = HR_CORE_ROLES.some((role) => roles.includes(role));
   const hasManagerAccess = MANAGER_SCOPED_ROLES.some((role) => roles.includes(role));
   const hasAdminManagerAccess = HR_MANAGER_ROLES.some((role) => roles.includes(role));
