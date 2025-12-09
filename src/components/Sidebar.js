@@ -59,9 +59,19 @@ export default function Sidebar({
   const hasAccess = (item) => {
     if (!item.roles || item.roles.length === 0) return true;
     // Check if any of the item's required roles match the user's roles (case-insensitive)
-    return item.roles.some((requiredRole) =>
+    const access = item.roles.some((requiredRole) =>
       userRoles.some((userRole) => userRole.toLowerCase() === requiredRole.toLowerCase())
     );
+
+    // Debug logging for HR Manager link
+    if (item.label === "HR Manager" || item.href === "/hr/manager") {
+      console.log("🔍 Sidebar - Checking access for HR Manager:");
+      console.log("  - Item roles:", item.roles);
+      console.log("  - User roles:", userRoles);
+      console.log("  - Has access:", access);
+    }
+
+    return access;
   };
 
   const filterAccessibleSections = (sections = []) =>

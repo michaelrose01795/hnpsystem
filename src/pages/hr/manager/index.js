@@ -44,6 +44,12 @@ export default function HRManagerDashboard() {
 
   // Check if user has HR manager access
   const userRoles = session?.user?.roles || user?.roles || [];
+
+  // Debug logging
+  console.log("🔍 HR Manager Dashboard - User Roles:", userRoles);
+  console.log("🔍 HR Manager Dashboard - User:", user);
+  console.log("🔍 HR Manager Dashboard - Session:", session);
+
   const hasHRAccess =
     isHrCoreRole(userRoles) ||
     isManagerScopedRole(userRoles) ||
@@ -51,8 +57,11 @@ export default function HRManagerDashboard() {
       ['hr manager', 'owner', 'admin manager'].includes(role.toLowerCase())
     );
 
+  console.log("🔍 HR Manager Dashboard - Has Access:", hasHRAccess);
+
   // Access denied for unauthorized users
   if (!hasHRAccess) {
+    console.log("❌ HR Manager Dashboard - Access DENIED");
     return (
       <Layout>
         <div
