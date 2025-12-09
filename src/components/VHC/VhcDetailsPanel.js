@@ -681,6 +681,14 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
               request_notes,
               created_at,
               updated_at,
+              authorised,
+              stock_status,
+              pre_pick_location,
+              storage_location,
+              eta_date,
+              eta_time,
+              supplier_reference,
+              labour_hours,
               part:part_id(
                 id,
                 part_number,
@@ -803,16 +811,23 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const partsAuthorized = useMemo(
     () =>
       jobParts.filter((part) => {
-        const status = normalisePartStatus(part.status);
-        return status.includes("authorized") || status.includes("approved");
+        // Part must be from VHC and marked as authorised
+        const isVhc = normalisePartStatus(part.origin).includes("vhc");
+        const isAuthorised = part.authorised === true;
+        // Exclude parts that are on_order
+        const notOnOrder = normalisePartStatus(part.status) !== "on_order";
+        return isVhc && isAuthorised && notOnOrder;
       }),
     [jobParts]
   );
   const partsOnOrder = useMemo(
     () =>
       jobParts.filter((part) => {
-        const status = normalisePartStatus(part.status);
-        return status.includes("order");
+        // Part must be from VHC, authorised, and have status on_order
+        const isVhc = normalisePartStatus(part.origin).includes("vhc");
+        const isAuthorised = part.authorised === true;
+        const isOnOrder = normalisePartStatus(part.status) === "on_order";
+        return isVhc && isAuthorised && isOnOrder;
       }),
     [jobParts]
   );
@@ -1428,6 +1443,387 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     const combined = [first, last].filter(Boolean).join(" ").trim();
     return combined || job.customer.email || "—";
   }, [job]);
+
+  // Handler for updating part status and location
+  const handlePartStatusUpdate = useCallback(async (partItemId, updates) => {
+    try {
+      const response = await fetch("/api/parts/update-status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ partItemId, ...updates }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update part status");
+      }
+
+      const result = await response.json();
+
+      // Refresh job data to reflect changes
+      if (result.success && job?.id) {
+        const { data: updatedJob, error: fetchError } = await supabase
+          .from("jobs")
+          .select(`
+            *,
+            customer:customer_id(*),
+            vehicle:vehicle_id(*),
+            technician:assigned_to(user_id, first_name, last_name, email, role, phone),
+            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at),
+            parts_job_items(
+              id,
+              part_id,
+              quantity_requested,
+              quantity_allocated,
+              quantity_fitted,
+              status,
+              origin,
+              vhc_item_id,
+              unit_cost,
+              unit_price,
+              request_notes,
+              created_at,
+              updated_at,
+              authorised,
+              stock_status,
+              pre_pick_location,
+              eta_date,
+              eta_time,
+              supplier_reference,
+              labour_hours,
+              part:part_id(
+                id,
+                part_number,
+                name,
+                unit_price
+              )
+            ),
+            job_files(
+              file_id,
+              file_name,
+              file_url,
+              file_type,
+              folder,
+              uploaded_at,
+              uploaded_by
+            )
+          `)
+          .eq("job_number", resolvedJobNumber)
+          .maybeSingle();
+
+        if (!fetchError && updatedJob) {
+          const { vhc_checks = [], parts_job_items = [], job_files = [], ...jobFields } = updatedJob;
+          setJob({
+            ...jobFields,
+            parts_job_items: parts_job_items || [],
+            job_files: job_files || [],
+          });
+        }
+      }
+
+      return result;
+    } catch (err) {
+      console.error("Error updating part status:", err);
+      throw err;
+    }
+  }, [job, resolvedJobNumber]);
+
+  // Handler for Pre-Pick Location dropdown change
+  const handlePrePickLocationChange = useCallback(async (partItemId, location) => {
+    if (location === "on_order") {
+      // Move to Parts On Order section
+      await handlePartStatusUpdate(partItemId, {
+        prePickLocation: null,
+        status: "on_order",
+        stockStatus: null,
+      });
+    } else {
+      // Update pre-pick location
+      await handlePartStatusUpdate(partItemId, {
+        prePickLocation: location,
+        stockStatus: "in_stock",
+        status: "pre_picked",
+      });
+    }
+  }, [handlePartStatusUpdate]);
+
+  // Handler for "Here" button click (moves part back from On Order to Authorised)
+  const handlePartArrived = useCallback(async (partItemId) => {
+    await handlePartStatusUpdate(partItemId, {
+      status: "stock",
+      stockStatus: "in_stock",
+      etaDate: null,
+      etaTime: null,
+    });
+  }, [handlePartStatusUpdate]);
+
+  // Render parts panel with table
+  const renderPartsPanel = useCallback((title, parts, emptyMessage) => {
+    if (!parts || parts.length === 0) {
+      return (
+        <div
+          style={{
+            padding: "18px",
+            border: "1px solid var(--info-surface)",
+            borderRadius: "12px",
+            background: "var(--info-surface)",
+            color: "var(--info)",
+            fontSize: "13px",
+          }}
+        >
+          {emptyMessage}
+        </div>
+      );
+    }
+
+    const isAuthorisedSection = title === "Parts Authorized";
+    const isOnOrderSection = title === "Parts On Order";
+
+    return (
+      <div
+        style={{
+          border: "1px solid var(--accent-purple-surface)",
+          borderRadius: "16px",
+          background: "var(--surface)",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+            <thead>
+              <tr
+                style={{
+                  background: "var(--info-surface)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  color: "var(--info)",
+                  fontSize: "11px",
+                }}
+              >
+                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "200px" }}>Part Name</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "140px" }}>Part Number</th>
+                <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "80px" }}>Quantity</th>
+                <th style={{ textAlign: "right", padding: "12px 16px", minWidth: "100px" }}>Price</th>
+                {isAuthorisedSection && (
+                  <>
+                    <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "140px" }}>Stock Status</th>
+                    <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "120px" }}>Location</th>
+                    <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "100px" }}>Labour (hrs)</th>
+                    <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "180px" }}>Pre-Pick Location</th>
+                  </>
+                )}
+                {isOnOrderSection && (
+                  <>
+                    <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "120px" }}>ETA Date</th>
+                    <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "100px" }}>ETA Time</th>
+                    <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "140px" }}>Supplier Ref</th>
+                    <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "100px" }}>Action</th>
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {parts.map((partItem) => {
+                const part = partItem.part || {};
+                const price = partItem.unit_price ?? part.unit_price ?? 0;
+                const stockStatusBadge = partItem.stock_status || "—";
+                const prePickLocation = partItem.pre_pick_location || "";
+
+                return (
+                  <tr
+                    key={partItem.id}
+                    style={{
+                      borderBottom: "1px solid var(--info-surface)",
+                      background: "var(--surface)",
+                    }}
+                  >
+                    <td style={{ padding: "12px 16px", color: "var(--accent-purple)", fontWeight: 600 }}>
+                      {part.name || "—"}
+                    </td>
+                    <td style={{ padding: "12px 16px", color: "var(--info-dark)" }}>
+                      {part.part_number || "—"}
+                    </td>
+                    <td style={{ padding: "12px 16px", textAlign: "center", color: "var(--info-dark)" }}>
+                      {partItem.quantity_requested || 1}
+                    </td>
+                    <td style={{ padding: "12px 16px", textAlign: "right", color: "var(--info-dark)", fontWeight: 600 }}>
+                      £{Number(price).toFixed(2)}
+                    </td>
+                    {isAuthorisedSection && (
+                      <>
+                        <td style={{ padding: "12px 16px" }}>
+                          <span
+                            style={{
+                              padding: "4px 10px",
+                              borderRadius: "999px",
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              background:
+                                stockStatusBadge === "in_stock"
+                                  ? "var(--success-surface)"
+                                  : stockStatusBadge === "no_stock"
+                                  ? "var(--danger-surface)"
+                                  : "var(--warning-surface)",
+                              color:
+                                stockStatusBadge === "in_stock"
+                                  ? "var(--success)"
+                                  : stockStatusBadge === "no_stock"
+                                  ? "var(--danger)"
+                                  : "var(--warning)",
+                            }}
+                          >
+                            {stockStatusBadge === "in_stock"
+                              ? "In Stock"
+                              : stockStatusBadge === "no_stock"
+                              ? "No Stock"
+                              : stockStatusBadge === "back_order"
+                              ? "Back Order"
+                              : "—"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "var(--info-dark)" }}>
+                          {partItem.storage_location || "—"}
+                        </td>
+                        <td style={{ padding: "12px 16px", textAlign: "center", color: "var(--info-dark)" }}>
+                          {partItem.labour_hours ?? "—"}
+                        </td>
+                        <td style={{ padding: "12px 16px" }}>
+                          <select
+                            value={prePickLocation}
+                            onChange={(e) => handlePrePickLocationChange(partItem.id, e.target.value)}
+                            style={{
+                              padding: "8px 12px",
+                              borderRadius: "8px",
+                              border: "1px solid var(--accent-purple-surface)",
+                              background: "var(--surface)",
+                              color: "var(--accent-purple)",
+                              fontWeight: 500,
+                              cursor: "pointer",
+                              width: "100%",
+                            }}
+                          >
+                            <option value="">Select Location</option>
+                            <option value="service_rack_1">Service Rack 1</option>
+                            <option value="service_rack_2">Service Rack 2</option>
+                            <option value="service_rack_3">Service Rack 3</option>
+                            <option value="service_rack_4">Service Rack 4</option>
+                            <option value="">No Picked</option>
+                            <option value="on_order">On Order</option>
+                          </select>
+                        </td>
+                      </>
+                    )}
+                    {isOnOrderSection && (
+                      <>
+                        <td style={{ padding: "12px 16px", color: "var(--info-dark)" }}>
+                          {partItem.eta_date || "—"}
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "var(--info-dark)" }}>
+                          {partItem.eta_time || "—"}
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "var(--info-dark)" }}>
+                          {partItem.supplier_reference || "—"}
+                        </td>
+                        <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                          <button
+                            type="button"
+                            onClick={() => handlePartArrived(partItem.id)}
+                            style={{
+                              padding: "8px 16px",
+                              borderRadius: "8px",
+                              border: "1px solid var(--success)",
+                              background: "var(--success)",
+                              color: "var(--surface)",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              fontSize: "12px",
+                            }}
+                          >
+                            Here
+                          </button>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }, [handlePrePickLocationChange, handlePartArrived]);
+
+  // Render file gallery (photos/videos)
+  const renderFileGallery = useCallback((title, files, emptyMessage, fileType) => {
+    if (!files || files.length === 0) {
+      return (
+        <div
+          style={{
+            padding: "18px",
+            border: "1px solid var(--info-surface)",
+            borderRadius: "12px",
+            background: "var(--info-surface)",
+            color: "var(--info)",
+            fontSize: "13px",
+          }}
+        >
+          {emptyMessage}
+        </div>
+      );
+    }
+
+    return (
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+          gap: "16px",
+        }}
+      >
+        {files.map((file) => (
+          <div
+            key={file.file_id}
+            style={{
+              border: "1px solid var(--accent-purple-surface)",
+              borderRadius: "12px",
+              overflow: "hidden",
+              background: "var(--surface)",
+            }}
+          >
+            {fileType === "photo" ? (
+              <img
+                src={file.file_url}
+                alt={file.file_name}
+                style={{
+                  width: "100%",
+                  height: "150px",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <video
+                src={file.file_url}
+                controls
+                style={{
+                  width: "100%",
+                  height: "150px",
+                }}
+              />
+            )}
+            <div style={{ padding: "12px" }}>
+              <div style={{ fontSize: "12px", color: "var(--accent-purple)", fontWeight: 600 }}>
+                {file.file_name}
+              </div>
+              <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "4px" }}>
+                {formatDateTime(file.uploaded_at)}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }, []);
 
   if (!resolvedJobNumber) {
     return renderStatusMessage("Provide a job number to view VHC details.");

@@ -559,6 +559,11 @@ CREATE TABLE public.job_writeups (
   qty jsonb DEFAULT '[]'::jsonb,
   booked jsonb DEFAULT '[]'::jsonb,
   cause_entries jsonb DEFAULT '[]'::jsonb,
+  completion_status text DEFAULT 'additional_work'::text,
+  rectification_notes text,
+  job_description_snapshot text,
+  vhc_authorization_reference integer,
+  task_checklist jsonb DEFAULT '[]'::jsonb,
   CONSTRAINT job_writeups_pkey PRIMARY KEY (writeup_id),
   CONSTRAINT job_writeups_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT job_writeups_technician_id_fkey FOREIGN KEY (technician_id) REFERENCES public.users(user_id)
@@ -820,6 +825,12 @@ CREATE TABLE public.parts_job_items (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   vhc_item_id integer,
+  authorised boolean DEFAULT false,
+  stock_status text CHECK (stock_status IS NULL OR (stock_status = ANY (ARRAY['in_stock'::text, 'no_stock'::text, 'back_order'::text]))),
+  eta_date date,
+  eta_time time without time zone,
+  supplier_reference text,
+  labour_hours numeric DEFAULT 0,
   CONSTRAINT parts_job_items_pkey PRIMARY KEY (id),
   CONSTRAINT parts_job_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT parts_job_items_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts_catalog(id),
@@ -1089,6 +1100,16 @@ CREATE TABLE public.vhc_send_history (
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT vhc_send_history_pkey PRIMARY KEY (id),
   CONSTRAINT vhc_send_history_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
+);
+CREATE TABLE public.workshop_consumable_budgets (
+  budget_id bigint NOT NULL DEFAULT nextval('workshop_consumable_budgets_budget_id_seq'::regclass),
+  year integer NOT NULL,
+  month integer NOT NULL CHECK (month >= 1 AND month <= 12),
+  monthly_budget numeric NOT NULL DEFAULT 0 CHECK (monthly_budget >= 0::numeric),
+  updated_by integer,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT workshop_consumable_budgets_pkey PRIMARY KEY (budget_id),
+  CONSTRAINT workshop_consumable_budgets_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.workshop_consumable_orders (
   order_id bigint NOT NULL DEFAULT nextval('workshop_consumable_orders_order_id_seq'::regclass),
