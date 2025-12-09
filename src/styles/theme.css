@@ -58,8 +58,8 @@
   --search-surface-muted: var(--surface-light);
   --search-text: #000000;
   --overlay: rgba(var(--primary-rgb), 0.35);
-  --shadow-rgb: 209, 0, 0;
-  --layer-gradient: linear-gradient(180deg, #ffffff 0%, #fbfbfb 30%, #f5f5f5 60%, #efefef 100%);
+
+
   --layer-section-level-1: #ffffff;
   --layer-section-level-2: #fbfbfb;
   --layer-section-level-3: #f7f7f7;
@@ -126,8 +126,8 @@
   --search-surface-muted: #3a3a42;
   --search-text: #c1a3ff;
   --overlay: rgba(var(--accent-purple-rgb), 0.5);
-  --shadow-rgb: 180, 170, 220;
-  --layer-gradient: linear-gradient(180deg, #1f2027 0%, #181a21 35%, #12121a 70%, #0d0d12 100%);
+
+  
   --layer-section-level-1: #1f2027;
   --layer-section-level-2: #181a20;
   --layer-section-level-3: #12121a;

@@ -621,6 +621,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const [sectionSaveStatus, setSectionSaveStatus] = useState("idle");
   const [sectionSaveError, setSectionSaveError] = useState("");
   const [lastSectionSavedAt, setLastSectionSavedAt] = useState(null);
+  const [partsNotRequired, setPartsNotRequired] = useState(new Set());
+  const [warrantyItems, setWarrantyItems] = useState(new Set());
 
   const containerPadding = showNavigation ? "24px" : "0";
   const renderStatusMessage = (message, color = "var(--info)") => (
@@ -831,20 +833,88 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       }),
     [jobParts]
   );
+  // Combined VHC items with their parts for Parts Identified section
+  const vhcItemsWithParts = useMemo(() => {
+    // We need to wait for summaryItems to be available
+    if (!summaryItems || summaryItems.length === 0) return [];
+
+    const items = [];
+    const processedVhcIds = new Set();
+
+    // Group parts by vhc_item_id
+    const partsByVhcId = new Map();
+    partsIdentified.forEach((part) => {
+      if (part?.vhc_item_id) {
+        const key = String(part.vhc_item_id);
+        if (!partsByVhcId.has(key)) {
+          partsByVhcId.set(key, []);
+        }
+        partsByVhcId.get(key).push(part);
+      }
+    });
+
+    // Add summary items (these are the VHC red/amber findings)
+    summaryItems.forEach((summaryItem) => {
+      const vhcId = String(summaryItem.id);
+      const linkedParts = partsByVhcId.get(vhcId) || [];
+
+      items.push({
+        vhcItem: summaryItem,
+        linkedParts,
+        vhcId,
+      });
+
+      processedVhcIds.add(vhcId);
+    });
+
+    // Add any parts that don't have a matching summary item (shouldn't happen, but handle it)
+    partsIdentified.forEach((part) => {
+      if (part?.vhc_item_id) {
+        const vhcId = String(part.vhc_item_id);
+        if (!processedVhcIds.has(vhcId)) {
+          items.push({
+            vhcItem: null,
+            linkedParts: [part],
+            vhcId,
+          });
+          processedVhcIds.add(vhcId);
+        }
+      }
+    });
+
+    return items;
+  }, [summaryItems, partsIdentified]);
+
   const partsCostByVhcItem = useMemo(() => {
     const map = new Map();
     partsIdentified.forEach((part) => {
       if (!part?.vhc_item_id) return;
+      const key = String(part.vhc_item_id);
+
+      // If parts not required is toggled for this VHC item, set cost to 0
+      if (partsNotRequired.has(key)) {
+        map.set(key, 0);
+        return;
+      }
+
       const qtyValue = Number(part.quantity_requested);
       const resolvedQty = Number.isFinite(qtyValue) && qtyValue > 0 ? qtyValue : 1;
       const unitPriceValue = Number(part.unit_price ?? part.part?.unit_price ?? 0);
       if (!Number.isFinite(unitPriceValue)) return;
-      const key = String(part.vhc_item_id);
       const subtotal = resolvedQty * unitPriceValue;
       map.set(key, (map.get(key) || 0) + subtotal);
     });
+
+    // Also add entries for VHC items marked as "parts not required" even if they have no parts
+    summaryItems.forEach((item) => {
+      const key = String(item.id);
+      if (partsNotRequired.has(key) && !map.has(key)) {
+        map.set(key, 0);
+      }
+    });
+
     return map;
-  }, [partsIdentified]);
+  }, [partsIdentified, partsNotRequired, summaryItems]);
   const jobFiles = useMemo(
     () =>
       Array.isArray(job?.job_files) ? job.job_files.filter(Boolean) : [],
@@ -1218,6 +1288,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                   ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
                   : null;
                 const isChecked = selectedSet.has(item.id);
+                const isWarranty = warrantyItems.has(String(item.id));
                 const rowSeverity = item.displaySeverity || severity;
                 const rowTheme = SEVERITY_THEME[rowSeverity] || {};
                 const detailLabel = item.label || item.sectionName || "Recorded item";
@@ -1317,22 +1388,44 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                       </div>
                     </td>
                     <td style={{ padding: "12px 16px" }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={totalDisplayValue}
-                          onChange={(event) => updateEntryValue(item.id, "totalOverride", event.target.value)}
-                          placeholder="Override total"
-                          style={{
-                            width: "160px",
-                            padding: "8px",
-                            borderRadius: "8px",
-                            border: "1px solid var(--accent-purple-surface)",
-                          }}
-                          disabled={readOnly}
-                        />
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={totalDisplayValue}
+                            onChange={(event) => updateEntryValue(item.id, "totalOverride", event.target.value)}
+                            placeholder="Override total"
+                            style={{
+                              width: "160px",
+                              padding: "8px",
+                              borderRadius: "8px",
+                              border: "1px solid var(--accent-purple-surface)",
+                            }}
+                            disabled={readOnly}
+                          />
+                        </div>
+                        {isWarranty && (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              width: "24px",
+                              height: "24px",
+                              borderRadius: "4px",
+                              background: "var(--primary)",
+                              color: "var(--surface)",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              letterSpacing: "0.05em",
+                            }}
+                            title="Warranty"
+                          >
+                            W
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td style={{ padding: "12px 16px" }}>
@@ -1556,6 +1649,244 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       etaTime: null,
     });
   }, [handlePartStatusUpdate]);
+
+  // Handler for "Parts Not Required" toggle
+  const handlePartsNotRequiredToggle = useCallback((vhcItemId) => {
+    setPartsNotRequired((prev) => {
+      const next = new Set(prev);
+      if (next.has(vhcItemId)) {
+        next.delete(vhcItemId);
+      } else {
+        next.add(vhcItemId);
+      }
+      return next;
+    });
+  }, []);
+
+  // Handler for "Warranty" toggle
+  const handleWarrantyToggle = useCallback((vhcItemId) => {
+    setWarrantyItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(vhcItemId)) {
+        next.delete(vhcItemId);
+      } else {
+        next.add(vhcItemId);
+      }
+      return next;
+    });
+  }, []);
+
+  // Render VHC items panel for Parts Identified (shows all red/amber VHC items)
+  const renderVhcItemsPanel = useCallback(() => {
+    if (!vhcItemsWithParts || vhcItemsWithParts.length === 0) {
+      return (
+        <div
+          style={{
+            padding: "18px",
+            border: "1px solid var(--info-surface)",
+            borderRadius: "12px",
+            background: "var(--info-surface)",
+            color: "var(--info)",
+            fontSize: "13px",
+          }}
+        >
+          No VHC red or amber repairs have been recorded yet.
+        </div>
+      );
+    }
+
+    return (
+      <div
+        style={{
+          border: "1px solid var(--accent-purple-surface)",
+          borderRadius: "16px",
+          background: "var(--surface)",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+            <thead>
+              <tr
+                style={{
+                  background: "var(--info-surface)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  color: "var(--info)",
+                  fontSize: "11px",
+                }}
+              >
+                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "280px" }}>VHC Item</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "200px" }}>Linked Parts</th>
+                <th style={{ textAlign: "right", padding: "12px 16px", minWidth: "120px" }}>Parts Cost</th>
+                <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "100px" }}>Warranty</th>
+                <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "180px" }}>Parts Not Required</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vhcItemsWithParts.map((item) => {
+                const { vhcItem, linkedParts, vhcId } = item;
+                const isPartsNotRequired = partsNotRequired.has(vhcId);
+                const isWarranty = warrantyItems.has(vhcId);
+                const partsCost = partsCostByVhcItem.get(vhcId) || 0;
+                const hasParts = linkedParts.length > 0;
+
+                // VHC item details
+                const vhcLabel = vhcItem?.label || "VHC Item";
+                const vhcNotes = vhcItem?.notes || vhcItem?.concernText || "";
+                const vhcSeverity = vhcItem?.rawSeverity || vhcItem?.displaySeverity;
+                const vhcCategory = vhcItem?.categoryLabel || vhcItem?.category?.label || "";
+                const locationLabel = vhcItem?.location
+                  ? LOCATION_LABELS[vhcItem.location] || vhcItem.location.replace(/_/g, " ")
+                  : null;
+
+                const severityBadgeStyles = vhcSeverity ? buildSeverityBadgeStyles(vhcSeverity) : null;
+
+                return (
+                  <tr
+                    key={vhcId}
+                    style={{
+                      borderBottom: "1px solid var(--info-surface)",
+                      background: vhcSeverity ? SEVERITY_THEME[vhcSeverity]?.background : "var(--surface)",
+                    }}
+                  >
+                    <td style={{ padding: "12px 16px" }}>
+                      <div>
+                        <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                          {vhcCategory}
+                        </div>
+                        <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)", marginTop: "2px" }}>
+                          {vhcLabel}
+                        </div>
+                        {vhcNotes && (
+                          <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
+                            {vhcNotes}
+                          </div>
+                        )}
+                        {severityBadgeStyles && (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              marginTop: "6px",
+                              borderRadius: "999px",
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              padding: "2px 10px",
+                              background: severityBadgeStyles.background,
+                              color: severityBadgeStyles.color,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.08em",
+                            }}
+                          >
+                            {vhcSeverity}
+                          </span>
+                        )}
+                        {locationLabel && (
+                          <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "4px" }}>
+                            Location: {locationLabel}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      {hasParts ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                          {linkedParts.map((part) => (
+                            <div key={part.id} style={{ fontSize: "12px", color: "var(--info-dark)" }}>
+                              <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
+                                {part.part?.name || "Part"}
+                              </div>
+                              <div style={{ fontSize: "11px", color: "var(--info)" }}>
+                                {part.part?.part_number || "—"} × {part.quantity_requested || 1}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: "12px", color: "var(--info)", fontStyle: "italic" }}>
+                          No parts added yet
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                      <div
+                        style={{
+                          fontSize: "16px",
+                          fontWeight: 700,
+                          color: isPartsNotRequired ? "var(--info)" : "var(--accent-purple)",
+                          textDecoration: isPartsNotRequired ? "line-through" : "none",
+                        }}
+                      >
+                        £{partsCost.toFixed(2)}
+                      </div>
+                      {!hasParts && !isPartsNotRequired && (
+                        <div style={{ fontSize: "11px", color: "var(--warning)", marginTop: "2px" }}>
+                          Add parts via Parts tab
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "8px",
+                          cursor: "pointer",
+                          userSelect: "none",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isWarranty}
+                          onChange={() => handleWarrantyToggle(vhcId)}
+                          style={{
+                            width: "18px",
+                            height: "18px",
+                            cursor: "pointer",
+                            accentColor: "var(--primary)",
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            color: isWarranty ? "var(--primary)" : "var(--info-dark)",
+                          }}
+                        >
+                          {isWarranty ? "Warranty" : ""}
+                        </span>
+                      </label>
+                    </td>
+                    <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                      <button
+                        type="button"
+                        onClick={() => handlePartsNotRequiredToggle(vhcId)}
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: "8px",
+                          border: isPartsNotRequired ? "1px solid var(--success)" : "1px solid var(--accent-purple-surface)",
+                          background: isPartsNotRequired ? "var(--success)" : "var(--surface)",
+                          color: isPartsNotRequired ? "var(--surface)" : "var(--info-dark)",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        {isPartsNotRequired ? "✓ Not Required" : "Mark Not Required"}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }, [vhcItemsWithParts, partsNotRequired, warrantyItems, partsCostByVhcItem, handlePartsNotRequiredToggle, handleWarrantyToggle]);
 
   // Render parts panel with table
   const renderPartsPanel = useCallback((title, parts, emptyMessage) => {
@@ -2052,7 +2383,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
           {activeTab === "parts-identified" && (
             <div id="parts-identified">
-              {renderPartsPanel("Parts Identified", partsIdentified, "No VHC-linked parts have been identified yet.")}
+              {renderVhcItemsPanel()}
             </div>
           )}
 
