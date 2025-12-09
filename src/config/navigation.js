@@ -51,34 +51,25 @@ export const sidebarSections = [
         roles: ["admin manager"],
       },
       {
-        label: "HR Dashboard",
-        href: "/hr",
-        roles: ["admin manager"],
-      },
-      {
-        label: "Recruitment",
-        href: "/hr/recruitment",
-        roles: ["admin manager"],
-      },
-      {
-        label: "HR Reports",
-        href: "/hr/reports",
-        roles: ["admin manager"],
-      },
-      {
-        label: "HR Settings",
-        href: "/hr/settings",
-        roles: ["admin manager"],
-      },
-      {
-        label: "Team HR",
-        href: "/hr/employees",
+        label: "HR Manager",
+        href: "/hr/manager",
         roles: ["admin manager"],
       },
       {
         label: "User Admin",
         href: "/admin/users",
         roles: ["admin manager"],
+      },
+    ],
+  },
+  {
+    label: "HR Manager",
+    category: "departments",
+    items: [
+      {
+        label: "HR Manager",
+        href: "/hr/manager",
+        roles: ["hr manager", "owner"],
       },
     ],
   },
