@@ -51,11 +51,6 @@ export const sidebarSections = [
         roles: ["admin manager"],
       },
       {
-        label: "HR Manager",
-        href: "/hr/manager",
-        roles: ["admin manager"],
-      },
-      {
         label: "User Admin",
         href: "/admin/users",
         roles: ["admin manager"],

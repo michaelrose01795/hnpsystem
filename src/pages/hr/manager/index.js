@@ -37,11 +37,13 @@ const HR_TABS = [
 ];
 
 export default function HRManagerDashboard() {
+  console.log("🎯 HR Manager Dashboard component is RENDERING");
+
   const { user } = useUser();
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  // Check if user has Owner or Admin Manager access
+  // Check if user has Owner access
   const userRoles = session?.user?.roles || user?.roles || [];
 
   // Debug logging
@@ -49,9 +51,9 @@ export default function HRManagerDashboard() {
   console.log("🔍 HR Manager Dashboard - User:", user);
   console.log("🔍 HR Manager Dashboard - Session:", session);
 
-  // Only Owner and Admin Manager have access to HR Manager dashboard
+  // Only Owner has access to HR Manager dashboard
   const hasHRAccess = userRoles.some(role =>
-    ['owner', 'admin manager'].includes(role.toLowerCase())
+    role.toLowerCase() === 'owner'
   );
 
   console.log("🔍 HR Manager Dashboard - Has Access:", hasHRAccess);
@@ -76,7 +78,7 @@ export default function HRManagerDashboard() {
             Access Denied
           </h1>
           <p style={{ color: "var(--text-secondary)", maxWidth: "500px" }}>
-            You don't have permission to access the HR Manager dashboard. This area is restricted to Owners and Admin Managers only.
+            You don't have permission to access the HR Manager dashboard. This area is restricted to Owners only.
           </p>
         </div>
       </Layout>
