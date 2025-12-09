@@ -314,48 +314,82 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Check authentication - but don't require specific roles
-    // ANY authenticated user can access their own profile
-    const session = await getServerSession(req, res, authOptions);
+    // Support both NextAuth (Keycloak) and dev authentication bypass
+    // Check if dev bypass is enabled
+    const devBypass = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
 
-    if (!session?.user) {
-      return res.status(401).json({ success: false, message: "Authentication required" });
+    let userId = null;
+    let sessionEmail = null;
+    let sessionName = null;
+
+    if (devBypass) {
+      // In dev mode, accept userId from query params (for testing)
+      // Or use a default test user
+      const queryUserId = req.query.userId;
+
+      if (queryUserId) {
+        userId = parseInt(queryUserId, 10);
+      } else {
+        // Try to get user from header or default to first user
+        const { data: firstUser, error: firstUserError } = await supabase
+          .from("users")
+          .select("user_id, first_name, last_name, email, role")
+          .limit(1)
+          .single();
+
+        if (firstUserError) {
+          console.error("❌ Error finding default user in dev mode:", firstUserError);
+          return res.status(500).json({
+            success: false,
+            message: "Dev mode enabled but no users found. Please create a user first."
+          });
+        }
+
+        userId = firstUser.user_id;
+        console.log("🔧 Dev mode: Using default user", userId, firstUser.email);
+      }
+    } else {
+      // Production mode - require NextAuth session
+      const session = await getServerSession(req, res, authOptions);
+
+      if (!session?.user) {
+        return res.status(401).json({ success: false, message: "Authentication required" });
+      }
+
+      // Get the user's ID from session
+      sessionEmail = session.user.email;
+      sessionName = session.user.name;
+
+      if (!sessionEmail && !sessionName) {
+        return res.status(400).json({ success: false, message: "Unable to identify user from session" });
+      }
+
+      // Find user in database
+      let userQuery = supabase.from("users").select("user_id, first_name, last_name, email, role");
+
+      if (sessionEmail) {
+        userQuery = userQuery.eq("email", sessionEmail);
+      } else if (sessionName) {
+        // Try to match by name if email not available
+        userQuery = userQuery.or(`first_name.ilike.${sessionName},last_name.ilike.${sessionName}`);
+      }
+
+      const { data: userData, error: userError } = await userQuery.maybeSingle();
+
+      if (userError) {
+        console.error("❌ Error finding user:", userError);
+        return res.status(500).json({ success: false, message: "Error finding user in database" });
+      }
+
+      if (!userData) {
+        return res.status(404).json({
+          success: false,
+          message: "User profile not found. Please contact HR to create your employee profile."
+        });
+      }
+
+      userId = userData.user_id;
     }
-
-    // Get the user's ID from session
-    // First, find the user by email or username from the session
-    const sessionEmail = session.user.email;
-    const sessionName = session.user.name;
-
-    if (!sessionEmail && !sessionName) {
-      return res.status(400).json({ success: false, message: "Unable to identify user from session" });
-    }
-
-    // Find user in database
-    let userQuery = supabase.from("users").select("user_id, first_name, last_name, email, role");
-
-    if (sessionEmail) {
-      userQuery = userQuery.eq("email", sessionEmail);
-    } else if (sessionName) {
-      // Try to match by name if email not available
-      userQuery = userQuery.or(`first_name.ilike.${sessionName},last_name.ilike.${sessionName}`);
-    }
-
-    const { data: userData, error: userError } = await userQuery.maybeSingle();
-
-    if (userError) {
-      console.error("❌ Error finding user:", userError);
-      return res.status(500).json({ success: false, message: "Error finding user in database" });
-    }
-
-    if (!userData) {
-      return res.status(404).json({
-        success: false,
-        message: "User profile not found. Please contact HR to create your employee profile."
-      });
-    }
-
-    const userId = userData.user_id;
 
     // Fetch all user-specific data in parallel
     const [profile, attendanceLogs, overtimeSummary, leaveBalance, staffVehicles] = await Promise.all([
