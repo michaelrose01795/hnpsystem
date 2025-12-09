@@ -23,6 +23,7 @@ import {
 } from "@/lib/jobcards/utils";
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
 import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
+import InvoiceSection from "@/components/Invoices/InvoiceSection";
 
 const deriveVhcSeverity = (check = {}) => {
   const fields = [
@@ -200,6 +201,45 @@ export default function JobCardDetailPage() {
   ].some((role) => userRoles.includes(role));
   const canEdit = !isArchiveMode && canEditBase;
   const canManageDocuments = !isArchiveMode && canManageDocumentsBase;
+
+  // Invoice visibility permission check
+  const canViewInvoice = [
+    "service",
+    "service manager",
+    "workshop manager",
+    "admin",
+    "admin manager"
+  ].some((role) => userRoles.includes(role));
+
+  // Check for tab query parameter to switch to invoice tab
+  useEffect(() => {
+    if (router.query.tab === "invoice") {
+      setActiveTab("invoice");
+    }
+  }, [router.query.tab]);
+
+  // Watch for job completion and redirect to invoice tab
+  const previousStatusRef = useRef(null);
+  useEffect(() => {
+    if (!jobData) return;
+
+    const currentStatus = jobData.status;
+    const previousStatus = previousStatusRef.current;
+
+    // Check if job was just marked as Complete
+    if (
+      currentStatus === "Complete" &&
+      previousStatus !== null &&
+      previousStatus !== "Complete" &&
+      canViewInvoice
+    ) {
+      // Redirect to invoice tab when job is completed
+      router.push(`/job-cards/${jobData.jobNumber}?tab=invoice`);
+    }
+
+    // Update the ref for next comparison
+    previousStatusRef.current = currentStatus;
+  }, [jobData?.status, jobData?.jobNumber, canViewInvoice, router]);
 
   const fetchSharedNote = useCallback(async (jobId) => {
     if (!jobId) return null;
@@ -745,6 +785,9 @@ export default function JobCardDetailPage() {
       );
       setInvoiceResponse(payload);
       await fetchJobData({ silent: true });
+
+      // Redirect to invoice tab after successful invoice creation
+      router.push(`/job-cards/${jobData.jobNumber}?tab=invoice`);
     } catch (createError) {
       console.error("❌ Failed to trigger invoice creation:", createError);
       alert(createError?.message || "Failed to trigger invoice creation");
@@ -1105,7 +1148,8 @@ export default function JobCardDetailPage() {
     { id: "vhc", label: "VHC", badge: vhcTabBadge},
     { id: "warranty", label: "Warranty"},
     { id: "messages", label: "Messages"},
-    { id: "documents", label: "Documents"}
+    { id: "documents", label: "Documents"},
+    ...(canViewInvoice ? [{ id: "invoice", label: "Invoice" }] : [])
   ];
 
   // ✅ Main Render
@@ -1479,6 +1523,11 @@ export default function JobCardDetailPage() {
               canDelete={canManageDocuments}
               onDelete={handleDeleteDocument}
             />
+          )}
+
+          {/* Invoice Tab */}
+          {activeTab === "invoice" && canViewInvoice && (
+            <InvoiceSection jobData={jobData} />
           )}
         </div>
         <InvoiceBuilderPopup
