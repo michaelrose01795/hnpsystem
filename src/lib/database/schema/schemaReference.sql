@@ -65,6 +65,18 @@ CREATE TABLE public.clocking (
   CONSTRAINT clocking_pkey PRIMARY KEY (id),
   CONSTRAINT clocking_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
 );
+CREATE TABLE public.company_settings (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  setting_key text NOT NULL UNIQUE,
+  setting_value text NOT NULL,
+  setting_type text NOT NULL DEFAULT 'string'::text CHECK (setting_type = ANY (ARRAY['string'::text, 'number'::text, 'boolean'::text, 'json'::text])),
+  description text,
+  updated_by integer,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT company_settings_pkey PRIMARY KEY (id),
+  CONSTRAINT company_settings_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
+);
 CREATE TABLE public.customer_payment_methods (
   method_id uuid NOT NULL DEFAULT gen_random_uuid(),
   customer_id uuid NOT NULL,
@@ -1134,6 +1146,22 @@ CREATE TABLE public.workshop_consumable_requests (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT workshop_consumable_requests_pkey PRIMARY KEY (id),
   CONSTRAINT workshop_consumable_requests_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.workshop_consumable_usage (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  job_id integer NOT NULL,
+  consumable_id uuid NOT NULL,
+  quantity integer NOT NULL DEFAULT 1 CHECK (quantity > 0),
+  unit_cost numeric NOT NULL DEFAULT 0 CHECK (unit_cost >= 0::numeric),
+  total_cost numeric DEFAULT ((quantity)::numeric * unit_cost),
+  used_by integer,
+  used_at timestamp with time zone NOT NULL DEFAULT now(),
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT workshop_consumable_usage_pkey PRIMARY KEY (id),
+  CONSTRAINT workshop_consumable_usage_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT workshop_consumable_usage_consumable_id_fkey FOREIGN KEY (consumable_id) REFERENCES public.workshop_consumables(id),
+  CONSTRAINT workshop_consumable_usage_used_by_fkey FOREIGN KEY (used_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.workshop_consumables (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
