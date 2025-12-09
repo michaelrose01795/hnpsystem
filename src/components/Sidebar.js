@@ -58,7 +58,10 @@ export default function Sidebar({
 
   const hasAccess = (item) => {
     if (!item.roles || item.roles.length === 0) return true;
-    return item.roles.some((role) => userRoles.includes(role.toLowerCase()));
+    // Check if any of the item's required roles match the user's roles (case-insensitive)
+    return item.roles.some((requiredRole) =>
+      userRoles.some((userRole) => userRole.toLowerCase() === requiredRole.toLowerCase())
+    );
   };
 
   const filterAccessibleSections = (sections = []) =>
