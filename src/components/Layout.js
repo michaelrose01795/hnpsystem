@@ -72,7 +72,7 @@ const NAV_DRAWER_WIDTH = 260;
 const STATUS_DRAWER_WIDTH = 280;
 
 export default function Layout({ children, jobNumber }) {
-  const { user, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
+  const { user, loading: userLoading, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
   const { usersByRole } = useRoster();
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
@@ -218,10 +218,11 @@ export default function Layout({ children, jobNumber }) {
   }, [isSidebarOpen, isTablet]);
 
   useEffect(() => {
+    if (userLoading) return;
     if (user === null && !hideSidebar) {
       router.replace("/login");
     }
-  }, [user, hideSidebar, router]);
+  }, [user, userLoading, hideSidebar, router]);
 
   useEffect(() => {
     if (activeJobId) fetchCurrentJobStatus(activeJobId);
