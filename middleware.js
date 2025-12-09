@@ -8,16 +8,26 @@ import {
 } from "./src/lib/auth/roles";
 
 const HR_ALLOWED_PATHS_FOR_MANAGERS = ["/hr/employees", "/hr/leave"];
-
+const RELAX_HR_ACCESS = process.env.NEXT_PUBLIC_RELAX_HR_ACCESS === "true";
+const isDevEnv = process.env.NODE_ENV !== "production";
+const logMiddlewareCheck = (message, details = {}) => {
+  if (!isDevEnv) return;
+  console.info(`[middleware] ${message}`, details);
+};
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
   const isHrRoute = pathname.startsWith("/hr");
   const isAdminRoute = pathname.startsWith("/admin");
-  const canUseDevCookie = process.env.NODE_ENV !== "production";
+  const canUseDevCookie = isDevEnv;
   const devRolesCookie = canUseDevCookie ? req.cookies.get("hnp-dev-roles")?.value : null;
   const hasDevCookieAuth = Boolean(devRolesCookie);
 
   if (process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true") {
+    return NextResponse.next();
+  }
+
+  if (RELAX_HR_ACCESS && (isHrRoute || isAdminRoute)) {
+    logMiddlewareCheck("Relaxed HR/Admin access", { pathname });
     return NextResponse.next();
   }
 
@@ -38,6 +48,12 @@ export async function middleware(req) {
     : hasDevCookieAuth
     ? normalizeRoles(devRolesCookie.split("|"))
     : [];
+  logMiddlewareCheck("HR/Admin role evaluation", {
+    pathname,
+    hasToken: Boolean(token),
+    hasDevCookieAuth,
+    roles,
+  });
   const hasHrCoreAccess = HR_CORE_ROLES.some((role) => roles.includes(role));
   const hasManagerAccess = MANAGER_SCOPED_ROLES.some((role) => roles.includes(role));
   const hasAdminManagerAccess = HR_MANAGER_ROLES.some((role) => roles.includes(role));
