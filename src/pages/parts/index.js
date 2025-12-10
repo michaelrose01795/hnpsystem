@@ -620,7 +620,18 @@ useEffect(() => {
         const others = prev.filter((item) => item.id !== createdPart.id);
         return [createdPart, ...others];
       });
+      setDeliveryForm((prev) => ({
+        ...prev,
+        partId: createdPart.id,
+        supplier: newPartForm.supplier || prev.supplier,
+        unitCost: newPartForm.unitCost || prev.unitCost,
+      }));
       handleDeliveryPartSelection(createdPart);
+      if (resolvedLocation || createdPart.storage_location) {
+        const locationToUse = createdPart.storage_location || resolvedLocation || "";
+        setDeliveryStorageLocation(locationToUse);
+        setDeliveryLocationSearch(locationToUse);
+      }
       setShowNewPartForm(false);
       setNewPartForm(DEFAULT_NEW_PART_FORM);
       setNewPartLocationSearch("");
