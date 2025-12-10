@@ -51,12 +51,12 @@ export default function Sidebar({
   const logoSrc = resolvedMode === "dark" ? "/images/logo/DarkLogo.png" : "/images/logo/LightLogo.png"; // choose the appropriate asset for the resolved theme
   const headerLogoStyle = {
     width: "100%",
-    height: "100%",
-    maxHeight: isCondensed ? 64 : 82,
+    height: "auto",
+    maxHeight: isCondensed ? 180 : 210,
     objectFit: "contain",
-    objectPosition: "right center",
+    objectPosition: "center",
     display: "block",
-  }; // let the logo stretch across the header area while anchoring to the right edge
+  }; // oversized logo spans nearly the full header width while keeping proportions intact
 
   const groupedSections = useMemo(() => {
     const groups = { general: [], departments: [], account: [] };
@@ -181,33 +181,34 @@ export default function Sidebar({
       <div
         style={{
           background: "var(--surface)", // match sidebar surface so the header blends with the current theme (light or dark)
-          padding: "24px",
-          paddingRight: onToggle ? "72px" : "24px", // leave room for the close button so it doesn't overlap the logo
+          padding: "16px 18px",
+          paddingRight: onToggle ? "72px" : "18px", // leave room for the close button so it doesn't overlap the expanded logo
           color: "var(--text-primary)",
           position: "relative",
           display: "flex",
-          alignItems: "stretch",
-          justifyContent: "flex-end",
-          minHeight: isCondensed ? "72px" : "96px",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: isCondensed ? "120px" : "150px",
           borderBottom: "1px solid var(--surface-light)",
         }}
       >
         <div
           style={{
             flex: "1 1 auto",
+            width: "100%",
             height: "100%",
             display: "flex",
-            justifyContent: "flex-end",
+            justifyContent: "center",
             alignItems: "center",
           }}
         >
           <Image
             src={logoSrc}
             alt="H&P logo"
-            width={260}
-            height={80}
+            width={800}
+            height={240}
             priority
-            sizes="(max-width: 768px) 80vw, 240px"
+            sizes="(max-width: 768px) 95vw, 480px"
             style={headerLogoStyle}
           />
         </div>
