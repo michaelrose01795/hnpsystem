@@ -51,6 +51,8 @@ const deriveCategoryFilter = (vhcItem = null) => {
   return null;
 };
 
+const withFilterMode = (filter, mode = "auto") => (filter ? { ...filter, mode } : null);
+
 export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumber, onPartSelected }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -67,7 +69,7 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
 
   useEffect(() => {
     if (!isOpen) return;
-    setCategoryFilter(defaultFilter);
+    setCategoryFilter(withFilterMode(defaultFilter));
   }, [defaultFilter, isOpen]);
 
   // Search parts function
@@ -75,6 +77,8 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
     const trimmedQuery = String(query || "").trim();
     const hasSearchTerm = trimmedQuery.length >= 2;
     const hasCategoryFilter = Boolean(category?.value);
+    const isManualFilter = category?.mode === "manual";
+    const shouldFilterByCategory = hasCategoryFilter && (isManualFilter || !hasSearchTerm);
 
     if (!hasSearchTerm && !hasCategoryFilter) {
       setSearchResults([]);
@@ -85,7 +89,7 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
     try {
       let queryBuilder = supabase
         .from("parts_catalog")
-        .select("id, part_number, name, unit_price, unit_cost, qty_in_stock, supplier, category, storage_location")
+        .select("id, part_number, name, unit_price, unit_cost, qty_in_stock, qty_reserved, qty_on_order, supplier, category, storage_location")
         .order("name", { ascending: true })
         .limit(30);
 
@@ -112,7 +116,7 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
         queryBuilder = queryBuilder.or(orClauses.join(","));
       }
 
-      if (hasCategoryFilter) {
+      if (shouldFilterByCategory) {
         queryBuilder = queryBuilder.ilike("category", `%${category.value}%`);
       }
 
@@ -197,7 +201,7 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
       setQuantity(1);
       setLabourHours(0);
       setSearchQuery("");
-      setCategoryFilter(defaultFilter);
+      setCategoryFilter(withFilterMode(defaultFilter));
       onClose();
     } catch (err) {
       console.error("Unexpected error adding part:", err);
@@ -375,7 +379,15 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
                 }}
               >
                 <div>
-                  Auto filter applied: <strong style={{ color: "var(--accent-purple)" }}>{categoryFilter.label}</strong>
+                  {categoryFilter.mode === "manual" || searchQuery.trim().length === 0
+                    ? "Filter applied:"
+                    : "Suggested filter:"}{" "}
+                  <strong style={{ color: "var(--accent-purple)" }}>{categoryFilter.label}</strong>
+                  {categoryFilter.mode !== "manual" && searchQuery.trim().length > 0 && (
+                    <span style={{ marginLeft: "6px", color: "var(--info)" }}>
+                      (auto filter paused while searching)
+                    </span>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -396,7 +408,7 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
               <div style={{ marginTop: "10px", fontSize: "12px", color: "var(--info)" }}>
                 <button
                   type="button"
-                  onClick={() => setCategoryFilter(defaultFilter)}
+                  onClick={() => setCategoryFilter(withFilterMode(defaultFilter, "manual"))}
                   style={{
                     border: "1px solid var(--accent-purple-surface)",
                     background: "var(--surface)",
@@ -451,6 +463,9 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
                         Supplier: {part.supplier}
                       </div>
                     )}
+                    <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "2px" }}>
+                      Reserved: {part.qty_reserved ?? 0} · On order: {part.qty_on_order ?? 0}
+                    </div>
                     {part.category && (
                       <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "2px" }}>
                         Category: {part.category}
@@ -488,6 +503,9 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
               </div>
               <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
                 Stock on hand: {selectedPart.qty_in_stock ?? 0}
+              </div>
+              <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "2px" }}>
+                Reserved: {selectedPart.qty_reserved ?? 0} · On order: {selectedPart.qty_on_order ?? 0}
               </div>
               {selectedPart.storage_location && (
                 <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "2px" }}>
