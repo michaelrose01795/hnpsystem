@@ -10,6 +10,18 @@ const parseNumber = (value, fallback = 0) => {
   return Number.isNaN(parsed) ? fallback : parsed;
 };
 
+const sanitizeTextField = (value) => {
+  if (value === null || value === undefined) return null;
+  const trimmed = String(value).trim();
+  return trimmed.length ? trimmed : null;
+};
+
+const parseNumberOrNull = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number.parseFloat(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
 const deriveStockStatus = (part) => {
   if (!part?.is_active) return "inactive";
   const inStock = Number(part?.qty_in_stock ?? 0);
@@ -190,10 +202,10 @@ export default async function handler(req, res) {
     const { userId, ...partData } = req.body || {};
 
     try {
-      const partNumber = String(partData.partNumber || partData.part_number || "")
-        .trim()
-        .toUpperCase();
-      const partName = (partData.partName || partData.part_name || partNumber).trim();
+      const partNumber =
+        sanitizeTextField(partData.partNumber || partData.part_number)?.toUpperCase() || null;
+      const partName =
+        sanitizeTextField(partData.partName || partData.part_name) || partNumber;
 
       if (!partNumber) {
         return res.status(400).json({
@@ -212,19 +224,19 @@ export default async function handler(req, res) {
       const payload = {
         part_number: partNumber,
         name: partName,
-        description: partData.description || null,
-        category: partData.category || null,
-        supplier: partData.supplier || null,
-        storage_location: partData.storageLocation || partData.storage_location || null,
+        description: sanitizeTextField(partData.description),
+        category: sanitizeTextField(partData.category),
+        supplier: sanitizeTextField(partData.supplier),
+        storage_location: sanitizeTextField(partData.storageLocation || partData.storage_location),
         qty_in_stock: parseNumber(partData.qtyInStock ?? partData.qty_in_stock, 0),
         qty_reserved: parseNumber(partData.qtyReserved ?? partData.qty_reserved, 0),
         qty_on_order: parseNumber(partData.qtyOnOrder ?? partData.qty_on_order, 0),
         reorder_level: parseNumber(partData.reorderLevel ?? partData.reorder_level, 0),
-        unit_cost: parseNumber(partData.unitCost ?? partData.unit_cost, 0),
-        unit_price: parseNumber(partData.unitPrice ?? partData.unit_price, 0),
+        unit_cost: parseNumberOrNull(partData.unitCost ?? partData.unit_cost),
+        unit_price: parseNumberOrNull(partData.unitPrice ?? partData.unit_price),
         is_active: partData.isActive ?? partData.is_active ?? true,
         created_by: userId || null,
-        notes: partData.notes || null,
+        notes: sanitizeTextField(partData.notes),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };

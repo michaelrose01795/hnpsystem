@@ -622,12 +622,19 @@ useEffect(() => {
         const others = prev.filter((item) => item.id !== createdPart.id);
         return [createdPart, ...others];
       });
+      const trimmedSupplier = (newPartForm.supplier || "").trim();
+      const updatedDeliveryForm = { ...prev, partId: createdPart.id };
+      if (trimmedSupplier) {
+        updatedDeliveryForm.supplier = trimmedSupplier;
+      }
+      if (newPartForm.unitCost) {
+        updatedDeliveryForm.unitCost = newPartForm.unitCost;
+      }
+      if (newPartForm.unitPrice) {
+        updatedDeliveryForm.unitPrice = newPartForm.unitPrice;
+      }
       setDeliveryForm((prev) => ({
-        ...prev,
-        partId: createdPart.id,
-        supplier: newPartForm.supplier || prev.supplier,
-        unitCost: newPartForm.unitCost || prev.unitCost,
-        notes: prev.notes || newPartForm.notes || "",
+        ...updatedDeliveryForm,
       }));
       handleDeliveryPartSelection(createdPart);
       if (resolvedLocation || createdPart.storage_location) {
