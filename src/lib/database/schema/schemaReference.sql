@@ -279,6 +279,15 @@ CREATE TABLE public.hr_employee_profiles (
   documents jsonb,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  employment_status text,
+  contracted_hours numeric,
+  hourly_rate numeric,
+  overtime_rate numeric,
+  annual_salary numeric,
+  payroll_reference text,
+  national_insurance_number text,
+  keycloak_user_id text,
+  home_address text,
   CONSTRAINT hr_employee_profiles_pkey PRIMARY KEY (profile_id),
   CONSTRAINT hr_employee_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
   CONSTRAINT hr_employee_profiles_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES public.users(user_id)
@@ -1079,6 +1088,7 @@ CREATE TABLE public.users (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   dark_mode boolean DEFAULT false,
+  job_title text,
   CONSTRAINT users_pkey PRIMARY KEY (user_id)
 );
 CREATE TABLE public.vehicle_tracking_events (

@@ -9,6 +9,29 @@ import EmployeeProfilePanel from "@/components/HR/EmployeeProfilePanel";
 
 const defaultFilters = { department: "all", status: "all", employmentType: "all" };
 
+const SAMPLE_PAYLOAD_FIELD_MAP = {
+  "first name": "firstName",
+  "last name": "lastName",
+  email: "email",
+  phone: "phone",
+  department: "department",
+  "job title": "jobTitle",
+  "role / band": "role",
+  "employment type": "employmentType",
+  "employment status": "status",
+  "start date": "startDate",
+  "probation ends": "probationEnd",
+  "contracted hours per week": "contractedHours",
+  "hourly rate (£)": "hourlyRate",
+  "overtime rate (£)": "overtimeRate",
+  "annual salary (£)": "annualSalary",
+  "payroll reference": "payrollNumber",
+  "national insurance no.": "nationalInsurance",
+  "keycloak user id": "keycloakId",
+  "home address": "address",
+  "emergency contact": "emergencyContact",
+};
+
 function DirectoryFilters({ filters, setFilters, departments, employmentTypes }) {
   return (
     <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
@@ -72,11 +95,12 @@ function DirectoryFilters({ filters, setFilters, departments, employmentTypes })
 
 export default function EmployeesTab() {
   const { data, isLoading, error } = useHrEmployeesData();
-  const employees = data ?? [];
+  const baseEmployees = data ?? [];
 
   const [filters, setFilters] = useState(defaultFilters);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
   const [isAddingEmployee, setIsAddingEmployee] = useState(false);
+  const [localEmployees, setLocalEmployees] = useState([]);
   const [newEmployee, setNewEmployee] = useState({
     firstName: "",
     lastName: "",
@@ -91,13 +115,34 @@ export default function EmployeesTab() {
     probationEnd: "",
     contractedHours: 40,
     hourlyRate: "",
+    overtimeRate: "",
     annualSalary: "",
+    overtimeRate: "",
     keycloakId: "",
     payrollNumber: "",
     nationalInsurance: "",
     emergencyContact: "",
     address: "",
   });
+  const [samplePayload, setSamplePayload] = useState("");
+  const [isSavingEmployee, setIsSavingEmployee] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+
+  const employees = useMemo(() => {
+    if (!localEmployees.length) {
+      return baseEmployees;
+    }
+    const map = new Map();
+    baseEmployees.forEach((emp) => {
+      const key = emp.userId || emp.id || emp.email;
+      map.set(key, emp);
+    });
+    localEmployees.forEach((emp) => {
+      const key = emp.userId || emp.id || emp.email;
+      map.set(key, emp);
+    });
+    return Array.from(map.values());
+  }, [baseEmployees, localEmployees]);
 
   useEffect(() => {
     if (!isLoading && !error && employees.length > 0 && !selectedEmployeeId) {
@@ -144,6 +189,7 @@ export default function EmployeesTab() {
       probationEnd: "",
       contractedHours: 40,
       hourlyRate: "",
+      overtimeRate: "",
       annualSalary: "",
       keycloakId: "",
       payrollNumber: "",
@@ -158,10 +204,98 @@ export default function EmployeesTab() {
     setIsAddingEmployee(false);
   };
 
-  const handleSaveNewEmployee = () => {
-    console.info("🆕 New employee payload (mock save):", newEmployee);
-    resetNewEmployeeForm();
-    setIsAddingEmployee(false);
+  const handleSaveNewEmployee = async () => {
+    setIsSavingEmployee(true);
+    setSaveError(null);
+    try {
+      const response = await fetch("/api/hr/employees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newEmployee),
+      });
+
+      if (!response.ok) {
+        const message = await extractError(response);
+        throw new Error(message);
+      }
+
+      const payload = await response.json();
+
+      if (!payload?.success) {
+        throw new Error(payload?.message || "Failed to save employee");
+      }
+
+      if (payload.employee) {
+        setLocalEmployees((prev) => {
+          const key = payload.employee.userId || payload.employee.id || payload.employee.email;
+          const filtered = prev.filter(
+            (emp) => (emp.userId || emp.id || emp.email) !== key
+          );
+          return [...filtered, payload.employee];
+        });
+      }
+
+      resetNewEmployeeForm();
+      setSamplePayload("");
+      setIsAddingEmployee(false);
+    } catch (err) {
+      setSaveError(err.message || "Failed to save employee");
+    } finally {
+      setIsSavingEmployee(false);
+    }
+  };
+
+  const extractError = async (response) => {
+    try {
+      const data = await response.json();
+      return data?.message || `Request failed (${response.status})`;
+    } catch {
+      return `Request failed (${response.status})`;
+    }
+  };
+
+  const normalizeDateValue = (value) => {
+    const trimmed = value.trim();
+    const dateParts = trimmed.split(/[\/\-]/);
+    if (dateParts.length === 3) {
+      if (dateParts[0].length === 4) {
+        return trimmed; // already YYYY-MM-DD
+      }
+      const [day, month, rawYear] = dateParts.map((part) => part.padStart(2, "0"));
+      const year = rawYear.length === 2 ? `20${rawYear}` : rawYear;
+      return `${year}-${month}-${day}`;
+    }
+    return trimmed;
+  };
+
+  const normalizeNumericValue = (value) => {
+    const cleaned = value.replace(/[^0-9.\-]/g, "");
+    return cleaned;
+  };
+
+  const applySamplePayload = () => {
+    if (!samplePayload.trim()) return;
+    const updates = {};
+    samplePayload.split(/\n+/).forEach((line) => {
+      if (!line.includes(":")) return;
+      const [rawLabel, ...rest] = line.split(":");
+      if (!rest.length) return;
+      const label = rawLabel.trim().toLowerCase();
+      const mappedKey = SAMPLE_PAYLOAD_FIELD_MAP[label];
+      if (!mappedKey) return;
+      const rawValue = rest.join(":").trim();
+      if (!rawValue) return;
+      if (["contractedHours", "hourlyRate", "overtimeRate", "annualSalary"].includes(mappedKey)) {
+        updates[mappedKey] = normalizeNumericValue(rawValue);
+      } else if (["startDate", "probationEnd"].includes(mappedKey)) {
+        updates[mappedKey] = normalizeDateValue(rawValue);
+      } else {
+        updates[mappedKey] = rawValue;
+      }
+    });
+    if (Object.keys(updates).length > 0) {
+      setNewEmployee((prev) => ({ ...prev, ...updates }));
+    }
   };
 
   if (isLoading) {
@@ -314,6 +448,7 @@ export default function EmployeesTab() {
                 <button
                   type="button"
                   onClick={handleSaveNewEmployee}
+                  disabled={isSavingEmployee}
                   style={{
                     padding: "8px 20px",
                     borderRadius: "8px",
@@ -321,15 +456,19 @@ export default function EmployeesTab() {
                     background: "var(--accent-purple)",
                     fontWeight: 600,
                     color: "white",
-                    cursor: "pointer",
+                    cursor: isSavingEmployee ? "not-allowed" : "pointer",
+                    opacity: isSavingEmployee ? 0.7 : 1,
                   }}
                 >
-                  Save
+                  {isSavingEmployee ? "Saving…" : "Save"}
                 </button>
               </div>
             }
           >
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              {saveError && (
+                <div style={{ color: "var(--danger)", fontWeight: 600 }}>{saveError}</div>
+              )}
               <div
                 style={{
                   display: "grid",
@@ -369,7 +508,12 @@ export default function EmployeesTab() {
                     type="tel"
                     value={newEmployee.phone}
                     onChange={(e) => setNewEmployee((prev) => ({ ...prev, phone: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+                    style={{
+                      padding: "10px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--surface-light)",
+                      background: "var(--surface-light)",
+                    }}
                     placeholder="+44 7000 000000"
                   />
                 </FormField>
@@ -477,6 +621,17 @@ export default function EmployeesTab() {
                     placeholder="15.50"
                   />
                 </FormField>
+                <FormField label="Overtime Rate (£)">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newEmployee.overtimeRate}
+                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, overtimeRate: e.target.value }))}
+                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+                    placeholder="23.25"
+                  />
+                </FormField>
                 <FormField label="Annual Salary (£)">
                   <input
                     type="number"
@@ -549,6 +704,50 @@ export default function EmployeesTab() {
                   placeholder="123 Main Street, Birmingham, B1 1AA"
                 />
               </FormField>
+
+              <div
+                style={{
+                  marginTop: "12px",
+                  border: "1px dashed var(--accent-purple-surface)",
+                  borderRadius: "12px",
+                  padding: "16px",
+                  background: "var(--surface-light)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <strong style={{ color: "var(--accent-purple)" }}>Temporary Sample Autofill</strong>
+                  <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>
+                    Paste a block of <code>Field: Value</code> lines here to quickly populate the form. Clearing this box does not clear any field values.
+                  </span>
+                </div>
+                <textarea
+                  value={samplePayload}
+                  onChange={(e) => setSamplePayload(e.target.value)}
+                  rows={6}
+                  style={{
+                    padding: "12px",
+                    borderRadius: "10px",
+                    border: "1px solid var(--surface-light)",
+                    resize: "vertical",
+                  }}
+                  placeholder="First Name: Soren&#10;Last Name: Sorensen&#10;Email: soren@example.com&#10;..."
+                />
+                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                  <button type="button" style={buttonStylePrimary} onClick={applySamplePayload}>
+                    Apply Sample
+                  </button>
+                  <button
+                    type="button"
+                    style={buttonStyleGhost}
+                    onClick={() => setSamplePayload("")}
+                  >
+                    Clear Text
+                  </button>
+                </div>
+              </div>
             </div>
           </SectionCard>
         </section>
@@ -565,3 +764,23 @@ function FormField({ label, children }) {
     </label>
   );
 }
+
+const buttonStylePrimary = {
+  padding: "10px 18px",
+  borderRadius: "10px",
+  border: "none",
+  background: "var(--accent-purple)",
+  color: "white",
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
+const buttonStyleGhost = {
+  padding: "10px 18px",
+  borderRadius: "10px",
+  border: "1px dashed var(--accent-purple)",
+  background: "transparent",
+  color: "var(--accent-purple)",
+  fontWeight: 600,
+  cursor: "pointer",
+};

@@ -12,6 +12,7 @@ const USER_COLUMNS = [ // Enumerate every column required by the schema for cons
   "email", // Unique user email for logins and notifications.
   "password_hash", // Securely stored password hash for authentication.
   "role", // Application role such as Admin, Tech, etc.
+  "job_title", // Display job title used for dev login categories.
   "phone", // Optional contact number for staff.
   "created_at", // Timestamp for auditing when the user was created.
   "updated_at", // Timestamp for auditing when the user was last modified.
@@ -24,6 +25,7 @@ const mapUserRow = (row = {}) => ({ // Normalize returned rows into a predictabl
   name: `${row.first_name || ""} ${row.last_name || ""}`.trim(), // Combine first and last name into full name for display.
   email: row.email, // Pass through the stored email.
   role: row.role, // Pass through the stored application role.
+  jobTitle: row.job_title, // Surface the job title for UI grouping.
   phone: row.phone, // Pass through optional phone value.
   passwordHash: row.password_hash, // Provide access to the hashed password when needed server-side.
   createdAt: row.created_at, // Include creation timestamp for audit displays.
@@ -45,10 +47,14 @@ const fetchUsersByRoles = async (roles) => { // Shared helper to fetch users res
   if (!roles || roles.length === 0) { // Guard against empty role lists.
     return []; // No roles means no users to return.
   } // Close guard.
+  const escapedList = roles
+    .map((roleName) => `"${roleName.replace(/"/g, '\\"')}"`)
+    .join(",");
+  const orFilter = [`job_title.in.(${escapedList})`, `role.in.(${escapedList})`].join(",");
   const { data, error } = await db // Execute the select query.
     .from(USERS_TABLE) // Target the users table.
     .select(USER_COLUMNS) // Fetch canonical columns.
-    .in("role", roles) // Filter by the provided role names.
+    .or(orFilter)
     .order("first_name", { ascending: true }); // Order alphabetically by first name.
   if (error) { // Handle query failures.
     throw new Error(`Failed to fetch users by role: ${error.message}`); // Provide descriptive diagnostics.
@@ -82,7 +88,7 @@ export const getUsersGroupedByRole = async () => { // Fetch all users and bucket
   } // Close guard.
   return (data || []).reduce((acc, row) => { // Build a dictionary keyed by role.
     const shaped = mapUserRow(row); // Normalize row once.
-    const key = shaped.role || "Unassigned"; // Default bucket when role is absent.
+  const key = shaped.jobTitle || shaped.role || "Unassigned"; // Default bucket when job title is absent.
     if (!acc[key]) { // Initialize bucket if needed.
       acc[key] = []; // Create new array for this role.
     } // Close guard.
