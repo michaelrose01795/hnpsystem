@@ -3,12 +3,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 import { useUser } from "@/context/UserContext";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { sidebarSections } from "@/config/navigation";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
+import { useTheme } from "@/styles/themeProvider";
 
 const hiddenHrRoutes = new Set([
   "/hr/employees",
@@ -29,10 +31,11 @@ export default function Sidebar({
   isCondensed = false,
   extraSections = [],
   visibleRoles = null,
-  modeLabel = null,
+  modeLabel: _modeLabel = null, // keep legacy prop available without rendering the old text block
 }) {
   const pathname = usePathname();
   const { user, logout, dbUserId } = useUser();
+  const { resolvedMode } = useTheme(); // tap into the existing theme provider so logo swaps instantly on toggle
   const { unreadCount } = useMessagesBadge(dbUserId);
   const derivedRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
   const userRoles =
@@ -45,6 +48,14 @@ export default function Sidebar({
     if (!shortcut.roles || shortcut.roles.length === 0) return true;
     return shortcut.roles.some((role) => userRoles.includes(role));
   });
+  const logoSrc = resolvedMode === "dark" ? "/images/logo/DarkLogo.png" : "/images/logo/LightLogo.png"; // choose the appropriate asset for the resolved theme
+  const headerLogoStyle = {
+    width: "auto",
+    height: isCondensed ? 36 : 44,
+    maxHeight: 48,
+    maxWidth: "100%",
+    objectFit: "contain",
+  }; // responsive sizing keeps the logo neat on desktop/tablet/mobile
 
   const groupedSections = useMemo(() => {
     const groups = { general: [], departments: [], account: [] };
@@ -165,40 +176,36 @@ export default function Sidebar({
       }}
     >
       {/* Header */}
+      {/* Brand logo replaces the old Navigation/Workspace labels while keeping header spacing consistent */}
       <div
         style={{
           background: "var(--primary)",
           padding: "24px",
+          paddingRight: onToggle ? "72px" : "24px", // leave room for the close button so it doesn't overlap the logo
           color: "white",
           position: "relative",
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "flex-end",
         }}
       >
-        <p
+        <div
           style={{
-            margin: 0,
-            fontSize: "0.85rem",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
+            width: "100%",
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "flex-start",
           }}
         >
-          Navigation
-        </p>
-        <h2 style={{ margin: "6px 0 0", fontSize: "1.4rem", fontWeight: 700 }}>
-          Workspace
-        </h2>
-        {modeLabel && (
-          <div
-            style={{
-              marginTop: "12px",
-              fontSize: "0.75rem",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              opacity: 0.85,
-            }}
-          >
-            {modeLabel} Mode
-          </div>
-        )}
+          <Image
+            src={logoSrc}
+            alt="H&P logo"
+            width={200}
+            height={60}
+            priority
+            style={headerLogoStyle}
+          />
+        </div>
         {onToggle && (
           <button
             type="button"
