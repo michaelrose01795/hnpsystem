@@ -1483,7 +1483,17 @@ useEffect(() => {
               </label>
 
               {newPartFormError && (
-                <div style={{ color: "var(--danger)", marginTop: "10px", fontWeight: 600 }}>
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "12px",
+                    borderRadius: "10px",
+                    border: "1px solid var(--danger)",
+                    background: "rgba(var(--danger-rgb), 0.08)",
+                    color: "var(--danger)",
+                    fontWeight: 600,
+                  }}
+                >
                   {newPartFormError}
                 </div>
               )}

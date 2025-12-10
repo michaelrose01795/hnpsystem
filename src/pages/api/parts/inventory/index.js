@@ -248,14 +248,15 @@ export default async function handler(req, res) {
         .single();
 
       if (error) {
-        if (error.code === "23505") {
-          return res.status(409).json({
-            success: false,
-            message: "A part with this part number already exists",
-            error: error.message,
-          });
-        }
-        throw error;
+        const description =
+          error.code === "23505"
+            ? "A part with this part number already exists"
+            : error.message || "Unable to create part record";
+        return res.status(error.code === "23505" ? 409 : 500).json({
+          success: false,
+          message: description,
+          details: error.details || null,
+        });
       }
 
       return res.status(201).json({
