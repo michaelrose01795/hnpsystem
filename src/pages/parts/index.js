@@ -209,14 +209,6 @@ function PartsPortalPage() {
   const [scheduleModalJob, setScheduleModalJob] = useState(null);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
-  const [showAddPartModal, setShowAddPartModal] = useState(false);
-  const [selectedPartId, setSelectedPartId] = useState("");
-  const [selectedPart, setSelectedPart] = useState(null);
-  const [partQuantity, setPartQuantity] = useState(1);
-  const [allocateFromStock, setAllocateFromStock] = useState(true);
-  const [prePickSelection, setPrePickSelection] = useState("");
-  const [partNotes, setPartNotes] = useState("");
-  const [partFormError, setPartFormError] = useState("");
 
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
   const [deliveryForm, setDeliveryForm] = useState(DEFAULT_DELIVERY_FORM);
@@ -672,99 +664,6 @@ useEffect(() => {
     newPartLocationSearch,
   ]);
 
-  const openAddPartModal = (part) => {
-    if (part) {
-      setSelectedPartId(part.id);
-      setSelectedPart(part);
-      setAllocateFromStock(part.qty_in_stock > 0);
-    }
-    setPartQuantity(1);
-    setPartNotes("");
-    setPrePickSelection("");
-    setPartFormError("");
-    setShowAddPartModal(true);
-  };
-
-  const closeAddPartModal = () => {
-    setShowAddPartModal(false);
-    setSelectedPartId("");
-    setSelectedPart(null);
-  };
-
-  const handleSelectPart = async (partId) => {
-    setSelectedPartId(partId);
-    const part = inventory.find((item) => item.id === partId);
-    if (part) {
-      setSelectedPart(part);
-      setAllocateFromStock(part.qty_in_stock > 0);
-    } else if (partId) {
-      try {
-        const response = await fetch(`/api/parts/inventory/${partId}`);
-        const data = await response.json();
-        if (response.ok && data.success) {
-          setSelectedPart(data.part);
-          setInventory((prev) => {
-            const exists = prev.find((p) => p.id === data.part.id);
-            if (exists) return prev;
-            return [data.part, ...prev];
-          });
-        }
-      } catch (err) {
-        console.error("Failed to fetch part by ID", err);
-      }
-    } else {
-      setSelectedPart(null);
-    }
-  };
-
-  const handleAddPartToJob = async () => {
-    if (!jobData?.id) {
-      setPartFormError("Select a job card before adding parts.");
-      return;
-    }
-    if (!selectedPartId) {
-      setPartFormError("Select a part from inventory.");
-      return;
-    }
-    if (partQuantity <= 0) {
-      setPartFormError("Quantity must be at least 1.");
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/parts/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jobId: jobData.id,
-          partId: selectedPartId,
-          quantityRequested: partQuantity,
-          allocateFromStock,
-          prePickLocation: prePickSelection || null,
-          storageLocation:
-            selectedPart?.storage_location || selectedPart?.service_default_zone || null,
-          requestNotes: partNotes || null,
-          userId: actingUserId,
-          userNumericId: actingUserNumericId,
-          origin: "parts_workspace",
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to add part to job");
-      }
-
-      closeAddPartModal();
-      await Promise.all([
-        refreshJob(),
-        fetchInventory(inventorySearch),
-      ]);
-    } catch (err) {
-      setPartFormError(err.message || "Unable to add part to job");
-    }
-  };
 
   const handleJobPartUpdate = async (jobPartId, updates) => {
     try {
@@ -843,280 +742,6 @@ useEffect(() => {
     } catch (err) {
       setDeliveryFormError(err.message || "Unable to log delivery");
     }
-  };
-
-  const renderAddPartModal = () => {
-    if (!showAddPartModal) return null;
-
-    return (
-      <div
-        style={{
-          ...popupOverlayStyles,
-          zIndex: 1400,
-        }}
-      >
-        <div
-          style={{
-            ...popupCardStyles,
-            width: "min(520px, 90vw)",
-            maxHeight: "90vh",
-            overflowY: "auto",
-            padding: "28px",
-          }}
-        >
-          <h2 style={{ ...sectionTitleStyle, marginBottom: "16px" }}>
-            Add Part to Job {jobData?.jobNumber || ""}
-          </h2>
-
-          <label style={{ display: "block", marginBottom: "12px" }}>
-            <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
-              Part from Inventory
-            </span>
-            <select
-              value={selectedPartId}
-              onChange={(event) => handleSelectPart(event.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "8px",
-                border: "1px solid var(--surface-light)",
-              }}
-            >
-              <option value="">Select part...</option>
-              {inventory.map((part) => (
-                <option key={part.id} value={part.id}>
-                  {part.part_number} · {part.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {selectedPart && (
-            <div
-              style={{
-                background: "var(--surface-light)",
-                border: "1px solid var(--surface-light)",
-                borderRadius: "8px",
-                padding: "12px",
-                marginBottom: "12px",
-                fontSize: "0.9rem",
-                color: "var(--danger)",
-              }}
-            >
-              <div><strong>In Stock:</strong> {selectedPart.qty_in_stock}</div>
-              <div><strong>Reserved:</strong> {selectedPart.qty_reserved}</div>
-              <div><strong>Location:</strong> {selectedPart.storage_location || "Not set"}</div>
-              <div><strong>Service Zone:</strong> {selectedPart.service_default_zone || "—"}</div>
-            </div>
-          )}
-
-          <div style={{ marginBottom: "12px" }}>
-            <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
-              Storage Location
-            </span>
-            <input
-              type="text"
-              value={deliveryLocationSearch}
-              onChange={(event) => {
-                const value = event.target.value;
-                setDeliveryLocationSearch(value);
-                const normalised = normaliseLocationInput(value);
-                if (isValidLocationCode(normalised)) {
-                  setDeliveryStorageLocation(normalised);
-                } else if (!value.trim()) {
-                  setDeliveryStorageLocation("");
-                }
-              }}
-              placeholder="Search locations (e.g. A1, C4)"
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "8px",
-                border: "1px solid var(--surface-light)",
-              }}
-            />
-            <div
-              style={{
-                border: "1px solid var(--surface-light)",
-                borderRadius: "10px",
-                marginTop: "8px",
-                maxHeight: "180px",
-                overflowY: "auto",
-              }}
-            >
-              {filteredDeliveryLocations.length === 0 ? (
-                <div style={{ padding: "10px", color: "var(--info)" }}>
-                  No matching locations
-                </div>
-              ) : (
-                filteredDeliveryLocations.map((code) => (
-                  <button
-                    type="button"
-                    key={code}
-                    onClick={() => handleDeliveryLocationSelect(code)}
-                    style={{
-                      width: "100%",
-                      textAlign: "left",
-                      padding: "8px 12px",
-                      border: "none",
-                      borderBottom: "1px solid var(--surface-light)",
-                      background:
-                        code === deliveryStorageLocation
-                          ? "var(--surface-light)"
-                          : "transparent",
-                      cursor: "pointer",
-                      fontWeight: code === deliveryStorageLocation ? 700 : 500,
-                    }}
-                  >
-                    {code}
-                  </button>
-                ))
-              )}
-            </div>
-            {deliveryStorageLocation ? (
-              <div
-                style={{
-                  marginTop: "8px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  fontSize: "0.9rem",
-                  fontWeight: 600,
-                  color: "var(--accent-purple)",
-                }}
-              >
-                <span>Selected location: {deliveryStorageLocation}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDeliveryStorageLocation("");
-                    setDeliveryLocationSearch("");
-                  }}
-                  style={{
-                    border: "none",
-                    background: "transparent",
-                    color: "var(--danger)",
-                    cursor: "pointer",
-                  }}
-                >
-                  Clear
-                </button>
-              </div>
-            ) : (
-              <p style={{ marginTop: "8px", fontSize: "0.85rem", color: "var(--info)" }}>
-                Select a rack position (A1-Z10). This is where stock will be kept.
-              </p>
-            )}
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-              gap: "12px",
-              marginBottom: "12px",
-            }}
-          >
-            <label style={{ display: "block" }}>
-              <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
-                Quantity
-              </span>
-              <input
-                type="number"
-                min="1"
-                value={partQuantity}
-                onChange={(event) =>
-                  setPartQuantity(Math.max(1, Number(event.target.value) || 1))
-                }
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  borderRadius: "8px",
-                  border: "1px solid var(--surface-light)",
-                }}
-              />
-            </label>
-
-            <label style={{ display: "block" }}>
-              <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
-                Allocate Stock Now
-              </span>
-              <select
-                value={allocateFromStock ? "yes" : "no"}
-                onChange={(event) =>
-                  setAllocateFromStock(event.target.value === "yes")
-                }
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  borderRadius: "8px",
-                  border: "1px solid var(--surface-light)",
-                }}
-              >
-                <option value="yes">Yes - reserve from stock</option>
-                <option value="no">No - leave awaiting stock</option>
-              </select>
-            </label>
-          </div>
-
-          <label style={{ display: "block", marginBottom: "12px" }}>
-            <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
-              Pre-pick Location
-            </span>
-            <select
-              value={prePickSelection}
-              onChange={(event) => setPrePickSelection(event.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "8px",
-                border: "1px solid var(--surface-light)",
-              }}
-            >
-              {PRE_PICK_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label style={{ display: "block", marginBottom: "12px" }}>
-            <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
-              Notes / Special Instructions
-            </span>
-            <textarea
-              value={partNotes}
-              onChange={(event) => setPartNotes(event.target.value)}
-              rows={3}
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "8px",
-                border: "1px solid var(--surface-light)",
-                resize: "vertical",
-              }}
-              placeholder="E.g. requires confirmation or order number"
-            />
-          </label>
-
-          {partFormError && (
-            <div style={{ color: "var(--danger)", marginBottom: "12px", fontWeight: 600 }}>
-              {partFormError}
-            </div>
-          )}
-
-          <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
-            <button onClick={closeAddPartModal} style={secondaryButtonStyle}>
-              Cancel
-            </button>
-            <button onClick={handleAddPartToJob} style={buttonStyle}>
-              Save to Job
-            </button>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   const renderDeliveryModal = () => {
@@ -1772,9 +1397,6 @@ useEffect(() => {
                   <h3 style={{ ...sectionTitleStyle, marginBottom: 0 }}>
                     Parts on this Job
                   </h3>
-                  <button onClick={() => openAddPartModal()} style={buttonStyle}>
-                    Add Part to Job
-                  </button>
                 </div>
 
                 {jobParts.length > 0 && (
@@ -2149,7 +1771,7 @@ useEffect(() => {
                     <tr style={{ background: "var(--surface-light)", color: "var(--danger)" }}>
                       <th style={{ textAlign: "left", padding: "10px" }}>Part</th>
                       <th style={{ textAlign: "left", padding: "10px" }}>Stock</th>
-                      <th style={{ textAlign: "left", padding: "10px" }}>Actions</th>
+                      <th style={{ textAlign: "left", padding: "10px" }}>Pricing</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2206,20 +1828,11 @@ useEffect(() => {
                           <div>Linked jobs: {part.open_job_count || 0}</div>
                           <div>Status: {(part.stock_status || "in_stock").replace(/_/g, " ")}</div>
                         </td>
-                        <td style={{ padding: "10px", verticalAlign: "top" }}>
-                          <button
-                            onClick={() => openAddPartModal(part)}
-                            style={{
-                              ...buttonStyle,
-                              padding: "6px 12px",
-                              fontSize: "0.85rem",
-                            }}
-                          >
-                            Add to Job
-                          </button>
-                          <div style={{ marginTop: "6px", fontSize: "0.8rem", color: "var(--grey-accent)" }}>
-                            Cost: {formatCurrency(part.unit_cost)} · Sell:{" "}
-                            {formatCurrency(part.unit_price)}
+                        <td style={{ padding: "10px", verticalAlign: "top", fontSize: "0.85rem", color: "var(--grey-accent)" }}>
+                          <div><strong>Cost:</strong> {formatCurrency(part.unit_cost)}</div>
+                          <div><strong>Sell:</strong> {formatCurrency(part.unit_price)}</div>
+                          <div style={{ marginTop: "6px" }}>
+                            Allocate stock directly from the job card page.
                           </div>
                         </td>
                       </tr>
@@ -2320,7 +1933,6 @@ useEffect(() => {
           )}
         </div>
 
-        {renderAddPartModal()}
         {renderDeliveryModal()}
         <DeliverySchedulerModal
           open={isScheduleModalOpen}

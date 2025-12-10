@@ -31,7 +31,7 @@ export function ProfilePage({
   const router = useRouter(); // access query params
   const { user } = useUser(); // Keycloak session details
   const { data: session } = useSession(); // NextAuth session for role checking
-  const { isDark, toggleTheme } = useTheme();
+  const { mode: themeMode, resolvedMode, isDark, toggleTheme } = useTheme();
 
   // State for user's own profile data (non-admin users)
   const [userProfileData, setUserProfileData] = useState(null);
@@ -143,6 +143,13 @@ export function ProfilePage({
   // Otherwise, use user's own profile data from /api/profile/me
   const profile = shouldUseHrData ? hrProfile : userProfileData?.profile;
 
+  const themeLabel = useMemo(() => {
+    if (themeMode === "system") {
+      return `System (${resolvedMode === "dark" ? "dark" : "light"})`;
+    }
+    return themeMode === "dark" ? "Dark mode" : "Light mode";
+  }, [resolvedMode, themeMode]);
+
   const aggregatedStats = useMemo(() => {
     if (!profile) return null; // bail if profile missing
 
@@ -252,8 +259,9 @@ export function ProfilePage({
               fontSize: "0.9rem",
               transition: "background 0.2s ease, color 0.2s ease",
             }}
+            aria-label="Cycle theme"
           >
-            {isDark ? "Light mode" : "Dark mode"}
+            {themeLabel}
           </button>
         </div>
         <p style={{ color: "var(--text-secondary)" }}>

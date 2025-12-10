@@ -39,7 +39,7 @@ export default function MyApp({ Component, pageProps }) {
       <AlertProvider>
         <ConfirmationProvider>
           <UserProvider>
-            <ThemeProvider defaultMode="light">
+            <ThemeProvider defaultMode="system">
               <NextActionProvider>
                 <JobsProvider>
                   <ClockingProvider>

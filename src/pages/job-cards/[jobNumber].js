@@ -24,6 +24,7 @@ import {
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
 import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
 import InvoiceSection from "@/components/Invoices/InvoiceSection";
+import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 
 const deriveVhcSeverity = (check = {}) => {
   const fields = [
@@ -157,6 +158,18 @@ export default function JobCardDetailPage() {
   const { jobNumber } = router.query;
   const { user, dbUserId } = useUser();
   const { confirm } = useConfirmation();
+
+  const actingUserId = useMemo(() => {
+    if (typeof user?.authUuid === "string" && isValidUuid(user.authUuid)) {
+      return user.authUuid;
+    }
+    if (typeof user?.id === "string" && isValidUuid(user.id)) {
+      return user.id;
+    }
+    return null;
+  }, [user?.authUuid, user?.id]);
+
+  const actingUserNumericId = useMemo(() => sanitizeNumericId(dbUserId), [dbUserId]);
 
   // ✅ State Management
   const [jobData, setJobData] = useState(null);
@@ -1476,7 +1489,13 @@ export default function JobCardDetailPage() {
 
           {/* Parts Tab */}
           {activeTab === "parts" && (
-            <PartsTab jobData={jobData} canEdit={canEdit} />
+            <PartsTab
+              jobData={jobData}
+              canEdit={canEdit}
+              onRefreshJob={() => fetchJobData({ silent: true })}
+              actingUserId={actingUserId}
+              actingUserNumericId={actingUserNumericId}
+            />
           )}
 
           {/* Notes Tab */}
@@ -3734,7 +3753,194 @@ const formatDateTime = (value) => {
   }
 };
 
-function PartsTab({ jobData }) {
+function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNumericId }) {
+  const jobId = jobData?.id;
+  const jobNumber = jobData?.jobNumber;
+
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const [catalogResults, setCatalogResults] = useState([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState("");
+  const [selectedCatalogPart, setSelectedCatalogPart] = useState(null);
+  const [catalogQuantity, setCatalogQuantity] = useState(1);
+  const [catalogSubmitError, setCatalogSubmitError] = useState("");
+  const [catalogSuccessMessage, setCatalogSuccessMessage] = useState("");
+  const [allocatingPart, setAllocatingPart] = useState(false);
+
+  const canAllocateParts = Boolean(canEdit && jobId);
+  const allocationDisabledReason = !canEdit
+    ? "You don't have permission to add parts."
+    : !jobId
+    ? "Job must be loaded before allocating parts."
+    : "";
+
+  const searchStockCatalog = useCallback(async (term) => {
+    const rawTerm = (term || "").trim();
+    if (!rawTerm) {
+      setCatalogResults([]);
+      setCatalogError("");
+      return;
+    }
+
+    setCatalogLoading(true);
+    try {
+      let query = supabase
+        .from("parts_catalog")
+        .select(
+          "id, part_number, name, description, supplier, category, storage_location, qty_in_stock, qty_reserved, qty_on_order, unit_cost, unit_price"
+        )
+        .order("name", { ascending: true })
+        .limit(25);
+
+      const sanitised = rawTerm.replace(/[%]/g, "").replace(/,/g, "");
+      const pattern = `%${sanitised}%`;
+      const clauses = [
+        `name.ilike.${pattern}`,
+        `part_number.ilike.${pattern}`,
+        `supplier.ilike.${pattern}`,
+        `category.ilike.${pattern}`,
+        `description.ilike.${pattern}`,
+        `oem_reference.ilike.${pattern}`,
+        `storage_location.ilike.${pattern}`,
+      ];
+      if (/^\d+(?:\.\d+)?$/.test(sanitised)) {
+        const numericValue = Number.parseFloat(sanitised);
+        if (!Number.isNaN(numericValue)) {
+          clauses.push(`unit_price.eq.${numericValue}`);
+          clauses.push(`unit_cost.eq.${numericValue}`);
+        }
+      }
+      query = query.or(clauses.join(","));
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setCatalogResults(data || []);
+      if (!data || data.length === 0) {
+        setCatalogError("No parts found in stock catalogue.");
+      } else {
+        setCatalogError("");
+      }
+    } catch (error) {
+      console.error("Stock search failed", error);
+      setCatalogResults([]);
+      setCatalogError(error.message || "Unable to search stock catalogue");
+    } finally {
+      setCatalogLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!canAllocateParts) {
+      setCatalogResults([]);
+      setCatalogError("");
+      return;
+    }
+    const trimmed = (catalogSearch || "").trim();
+    if (!trimmed) {
+      setCatalogResults([]);
+      setCatalogError("");
+      return;
+    }
+    if (trimmed.length < 2) {
+      setCatalogResults([]);
+      setCatalogError("Enter at least 2 characters to search stock.");
+      return;
+    }
+    const timer = setTimeout(() => searchStockCatalog(trimmed), 300);
+    return () => clearTimeout(timer);
+  }, [catalogSearch, canAllocateParts, searchStockCatalog]);
+
+  useEffect(() => {
+    if (!canAllocateParts) {
+      setCatalogSearch("");
+      clearSelectedCatalogPart();
+      setCatalogSuccessMessage("");
+      setCatalogSubmitError("");
+    }
+  }, [canAllocateParts, clearSelectedCatalogPart]);
+
+  const handleCatalogSelect = useCallback((part) => {
+    if (!part) return;
+    setSelectedCatalogPart(part);
+    setCatalogQuantity(1);
+    setCatalogSubmitError("");
+    setCatalogSuccessMessage("");
+  }, []);
+
+  const clearSelectedCatalogPart = useCallback(() => {
+    setSelectedCatalogPart(null);
+    setCatalogQuantity(1);
+    setCatalogSubmitError("");
+    setCatalogSuccessMessage("");
+  }, []);
+
+  const handleAddPartFromStock = useCallback(async () => {
+    if (!canAllocateParts || !selectedCatalogPart || !jobId) {
+      setCatalogSubmitError("Select a part to allocate from stock.");
+      return;
+    }
+    if (catalogQuantity <= 0) {
+      setCatalogSubmitError("Quantity must be at least 1.");
+      return;
+    }
+    const availableStock = Number(selectedCatalogPart.qty_in_stock || 0);
+    if (catalogQuantity > availableStock) {
+      setCatalogSubmitError(`Only ${availableStock} in stock for this part.`);
+      return;
+    }
+
+    setAllocatingPart(true);
+    setCatalogSubmitError("");
+    setCatalogSuccessMessage("");
+    try {
+      const response = await fetch("/api/parts/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId,
+          partId: selectedCatalogPart.id,
+          quantityRequested: catalogQuantity,
+          allocateFromStock: true,
+          storageLocation: selectedCatalogPart.storage_location || null,
+          requestNotes: jobNumber ? `Added via job card ${jobNumber}` : "Added via job card",
+          origin: "job_card",
+          userId: actingUserId,
+          userNumericId: actingUserNumericId,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to allocate part from stock");
+      }
+
+      setCatalogSuccessMessage(`${selectedCatalogPart.part_number || selectedCatalogPart.name} added to job.`);
+      clearSelectedCatalogPart();
+      if (typeof onRefreshJob === "function") {
+        onRefreshJob();
+      }
+      if ((catalogSearch || "").trim().length >= 2) {
+        searchStockCatalog(catalogSearch.trim());
+      }
+    } catch (error) {
+      console.error("Unable to add part from stock", error);
+      setCatalogSubmitError(error.message || "Unable to add part to job");
+    } finally {
+      setAllocatingPart(false);
+    }
+  }, [
+    actingUserId,
+    actingUserNumericId,
+    canAllocateParts,
+    catalogQuantity,
+    catalogSearch,
+    clearSelectedCatalogPart,
+    jobId,
+    jobNumber,
+    onRefreshJob,
+    searchStockCatalog,
+    selectedCatalogPart,
+  ]);
   const vhcParts = (Array.isArray(jobData.partsAllocations) ? jobData.partsAllocations : []).map((item) => ({
     id: item.id,
     partNumber: item.part?.partNumber || "N/A",
@@ -3773,31 +3979,6 @@ function PartsTab({ jobData }) {
 
   const hasParts = vhcParts.length > 0 || manualRequests.length > 0;
 
-  if (!hasParts) {
-    return (
-      <div>
-        <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "var(--text-primary)" }}>
-          Parts Overview
-        </h2>
-        <div style={{
-          padding: "40px",
-          textAlign: "center",
-          backgroundColor: "var(--info-surface)",
-          borderRadius: "12px",
-          border: "1px solid var(--accent-purple-surface)"
-        }}>
-          <div style={{ fontSize: "48px", marginBottom: "12px" }}>🧰</div>
-          <h3 style={{ fontSize: "18px", fontWeight: "600", color: "var(--accent-purple)", marginBottom: "8px" }}>
-            No Parts Linked
-          </h3>
-          <p style={{ color: "var(--info)", fontSize: "14px", margin: 0 }}>
-            VHC authorizations and manual write-up requests will appear here automatically.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div
@@ -3806,255 +3987,486 @@ function PartsTab({ jobData }) {
           border: "1px solid var(--surface-light)",
           borderRadius: "14px",
           padding: "16px",
-          boxShadow: "none",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
         }}
       >
-        <div
-          style={{
-            fontSize: "0.9rem",
-            fontWeight: 600,
-            color: "var(--primary)",
-            letterSpacing: "0.05em",
-            textTransform: "uppercase",
-          }}
-        >
-          Parts Pipeline
-        </div>
-        <div
-          style={{
-            marginTop: "12px",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-            gap: "10px",
-          }}
-        >
-          {pipelineStages.map((stage) => (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+          <div>
             <div
-              key={stage.id}
               style={{
-                padding: "10px",
-                borderRadius: "10px",
-                border: "1px solid rgba(var(--primary-rgb),0.3)",
-                background: stage.count > 0 ? "var(--surface-light)" : "var(--info-surface)",
+                fontSize: "0.9rem",
+                fontWeight: 600,
+                color: "var(--primary)",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
               }}
             >
-              <div style={{ fontSize: "1.25rem", fontWeight: 600, color: "var(--primary)" }}>
-                {stage.count}
-              </div>
-              <div style={{ fontWeight: 600 }}>{stage.label}</div>
-              <p style={{ margin: "4px 0 0", fontSize: "0.75rem", color: "var(--info-dark)" }}>
-                {stage.description}
-              </p>
+              Add Part From Stock
             </div>
-          ))}
+            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info-dark)" }}>
+              Search the catalogue and allocate parts directly to this job. Allocation immediately reduces stock.
+            </p>
+          </div>
+          {!canAllocateParts && allocationDisabledReason && (
+            <span style={{ fontSize: "0.75rem", color: "var(--info)" }}>{allocationDisabledReason}</span>
+          )}
         </div>
-        <p style={{ marginTop: "12px", fontSize: "0.85rem", color: "var(--info-dark)" }}>
-          {pipelineSummary.totalCount} part line
-          {pipelineSummary.totalCount === 1 ? "" : "s"} currently tracked across these stages.
-        </p>
-      </div>
-      <div>
-        <h2 style={{ margin: "0 0 12px 0", fontSize: "18px", fontWeight: "600", color: "var(--info-dark)" }}>
-          VHC Linked Parts
-        </h2>
-        {vhcParts.length === 0 ? (
-          <div style={{
-            padding: "20px",
+        <input
+          type="search"
+          value={catalogSearch}
+          disabled={!canAllocateParts}
+          onChange={(event) => {
+            setCatalogSearch(event.target.value);
+            setCatalogSuccessMessage("");
+            setCatalogSubmitError("");
+          }}
+          placeholder={canAllocateParts ? "Search by part number, name, supplier, or price" : "Stock allocation disabled"}
+          style={{
+            width: "100%",
+            padding: "12px",
             borderRadius: "10px",
-            border: "1px solid var(--accent-purple-surface)",
-            backgroundColor: "var(--accent-purple-surface)",
-            fontSize: "14px",
-            color: "var(--info)"
-          }}>
-            No VHC items have been converted into parts for this job yet.
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {vhcParts.map((part) => {
-              const statusMeta = getPartStatusMeta(part.status);
+            border: "1px solid var(--surface-light)",
+            fontSize: "0.95rem",
+            backgroundColor: canAllocateParts ? "var(--surface)" : "var(--info-surface)",
+            color: "var(--info-dark)",
+          }}
+        />
+        {catalogLoading && (
+          <div style={{ fontSize: "0.85rem", color: "var(--info)" }}>Searching stock…</div>
+        )}
+        {!catalogLoading && catalogError && (
+          <div style={{ fontSize: "0.8rem", color: "var(--danger)" }}>{catalogError}</div>
+        )}
+        {canAllocateParts && !catalogLoading && catalogResults.length > 0 && (
+          <div
+            style={{
+              maxHeight: "220px",
+              overflowY: "auto",
+              border: "1px solid var(--surface-light)",
+              borderRadius: "12px",
+            }}
+          >
+            {catalogResults.map((part) => {
+              const isSelected = selectedCatalogPart?.id === part.id;
               return (
-                <div
+                <button
                   key={part.id}
+                  type="button"
+                  onClick={() => handleCatalogSelect(part)}
                   style={{
-                    padding: "16px",
-                    borderRadius: "12px",
-                    border: "1px solid var(--accent-purple-surface)",
-                    backgroundColor: "var(--surface)",
-                    boxShadow: "none"
+                    width: "100%",
+                    padding: "12px",
+                    border: "none",
+                    borderBottom: "1px solid var(--surface-light)",
+                    textAlign: "left",
+                    background: isSelected ? "var(--accent-purple-surface)" : "transparent",
+                    cursor: "pointer",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                    <div>
-                      <div style={{ fontSize: "12px", color: "var(--info)" }}>{part.partNumber}</div>
-                      <h3 style={{ margin: "2px 0", fontSize: "16px", fontWeight: "600", color: "var(--accent-purple)" }}>
-                        {part.name}
-                      </h3>
-                      {part.description && (
-                        <p style={{ margin: 0, fontSize: "13px", color: "var(--info-dark)" }}>{part.description}</p>
-                      )}
-                    </div>
-                    <span
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: "999px",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        color: statusMeta.color,
-                        backgroundColor: statusMeta.background
-                      }}
-                    >
-                      {statusMeta.label}
-                    </span>
+                  <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{part.name}</div>
+                  <div style={{ fontSize: "0.8rem", color: "var(--info-dark)" }}>
+                    Part #: {part.part_number} · Supplier: {part.supplier || "Unknown"}
                   </div>
-
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))",
-                    gap: "12px",
-                    marginTop: "12px",
-                    fontSize: "13px",
-                    color: "var(--info-dark)"
-                  }}>
-                    <div>
-                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Qty Requested</strong>
-                      <div style={{ fontWeight: "700", fontSize: "16px" }}>{part.quantityRequested}</div>
-                    </div>
-                    <div>
-                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Qty Allocated</strong>
-                      <div style={{ fontWeight: "700", fontSize: "16px" }}>{part.quantityAllocated}</div>
-                    </div>
-                    <div>
-                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Qty Fitted</strong>
-                      <div style={{ fontWeight: "700", fontSize: "16px" }}>{part.quantityFitted}</div>
-                    </div>
-                    <div>
-                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Source</strong>
-                      <div>{part.source}</div>
-                    </div>
-                    <div>
-                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Pre Pick Location</strong>
-                      <div>{part.prePickLocation}</div>
-                    </div>
-                    <div>
-                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Storage</strong>
-                      <div>{part.storageLocation}</div>
-                    </div>
+                  <div style={{ fontSize: "0.75rem", color: "var(--info)" }}>
+                    Stock: {part.qty_in_stock ?? 0} · £{Number(part.unit_price || 0).toFixed(2)} · {part.category || "Uncategorised"}
                   </div>
-
-                  <div style={{ marginTop: "12px", display: "flex", flexWrap: "wrap", gap: "20px", fontSize: "12px", color: "var(--info)" }}>
-                    <span>Created: {formatDateTime(part.createdAt)}</span>
-                    <span>Updated: {formatDateTime(part.updatedAt)}</span>
-                  </div>
-
-                  {part.notes && (
-                    <div style={{
-                      marginTop: "12px",
-                      padding: "10px 12px",
-                      borderRadius: "8px",
-                      backgroundColor: "var(--warning-surface)",
-                      color: "var(--danger-dark)",
-                      fontSize: "13px"
-                    }}>
-                      <strong style={{ fontSize: "12px", textTransform: "uppercase" }}>Technician Note:</strong>
-                      <div>{part.notes}</div>
-                    </div>
-                  )}
-                </div>
+                </button>
               );
             })}
           </div>
         )}
-      </div>
-
-      <div>
-        <h2 style={{ margin: "12px 0", fontSize: "18px", fontWeight: "600", color: "var(--info-dark)" }}>
-          Manual Requests (Write-up)
-        </h2>
-        {manualRequests.length === 0 ? (
-          <div style={{
-            padding: "20px",
-            borderRadius: "10px",
-            border: "1px solid var(--accent-purple-surface)",
-            backgroundColor: "var(--accent-purple-surface)",
-            fontSize: "14px",
-            color: "var(--info)"
-          }}>
-            No manual part requests have been logged.
+        {selectedCatalogPart && (
+          <div
+            style={{
+              border: "1px solid var(--accent-purple-surface)",
+              borderRadius: "12px",
+              padding: "12px",
+              background: "var(--accent-purple-surface)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
+              <div>
+                <div style={{ fontWeight: 700, color: "var(--accent-purple)", fontSize: "1rem" }}>{selectedCatalogPart.name}</div>
+                <div style={{ fontSize: "0.8rem", color: "var(--info-dark)" }}>
+                  Part #: {selectedCatalogPart.part_number} · Location: {selectedCatalogPart.storage_location || "Unassigned"}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={clearSelectedCatalogPart}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: "var(--info)",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Clear
+              </button>
+            </div>
+            <div
+              style={{
+                marginTop: "12px",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))",
+                gap: "12px",
+              }}
+            >
+              <label style={{ fontSize: "0.8rem", color: "var(--info-dark)" }}>
+                Quantity
+                <input
+                  type="number"
+                  min="1"
+                  max={selectedCatalogPart.qty_in_stock || undefined}
+                  value={catalogQuantity}
+                  onChange={(event) =>
+                    setCatalogQuantity(Math.max(1, Number.parseInt(event.target.value, 10) || 1))
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--surface-light)",
+                    marginTop: "4px",
+                  }}
+                />
+              </label>
+              <div>
+                <div style={{ fontSize: "0.75rem", color: "var(--info-dark)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Available
+                </div>
+                <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--accent-purple)" }}>
+                  {selectedCatalogPart.qty_in_stock ?? 0}
+                </div>
+                <div style={{ fontSize: "0.75rem", color: "var(--info)" }}>
+                  Reserved: {selectedCatalogPart.qty_reserved ?? 0}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: "0.75rem", color: "var(--info-dark)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Sell Price
+                </div>
+                <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--accent-purple)" }}>
+                  £{Number(selectedCatalogPart.unit_price || 0).toFixed(2)}
+                </div>
+                <div style={{ fontSize: "0.75rem", color: "var(--info)" }}>
+                  Cost £{Number(selectedCatalogPart.unit_cost || 0).toFixed(2)}
+                </div>
+              </div>
+            </div>
+            {catalogSubmitError && (
+              <div style={{ marginTop: "10px", padding: "10px", borderRadius: "8px", background: "var(--warning-surface)", color: "var(--danger)" }}>
+                {catalogSubmitError}
+              </div>
+            )}
+            {catalogSuccessMessage && (
+              <div style={{ marginTop: "10px", padding: "10px", borderRadius: "8px", background: "var(--success-surface)", color: "var(--success-dark)" }}>
+                {catalogSuccessMessage}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleAddPartFromStock}
+              disabled={!canAllocateParts || allocatingPart}
+              style={{
+                marginTop: "12px",
+                padding: "12px",
+                borderRadius: "10px",
+                border: "none",
+                background: !canAllocateParts ? "var(--surface-light)" : "var(--primary)",
+                color: !canAllocateParts ? "var(--info)" : "var(--surface)",
+                fontWeight: 600,
+                cursor: !canAllocateParts ? "not-allowed" : "pointer",
+              }}
+            >
+              {allocatingPart ? "Adding…" : `Add to Job ${jobNumber || ""}`}
+            </button>
           </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {manualRequests.map((request) => {
-              const statusMeta = getPartStatusMeta(request.status);
-              return (
+        )}
+      </div>
+      {hasParts ? (
+        <>
+          <div
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--surface-light)",
+              borderRadius: "14px",
+              padding: "16px",
+              boxShadow: "none",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "0.9rem",
+                fontWeight: 600,
+                color: "var(--primary)",
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+              }}
+            >
+              Parts Pipeline
+            </div>
+            <div
+              style={{
+                marginTop: "12px",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                gap: "10px",
+              }}
+            >
+              {pipelineStages.map((stage) => (
                 <div
-                  key={request.requestId}
+                  key={stage.id}
                   style={{
-                    padding: "16px",
-                    borderRadius: "12px",
-                    border: "1px solid var(--accent-purple-surface)",
-                    backgroundColor: "var(--surface)",
-                    boxShadow: "none"
+                    padding: "10px",
+                    borderRadius: "10px",
+                    border: "1px solid rgba(var(--primary-rgb),0.3)",
+                    background: stage.count > 0 ? "var(--surface-light)" : "var(--info-surface)",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                    <div>
-                      <div style={{ fontSize: "12px", color: "var(--info)" }}>{request.partNumber}</div>
-                      <h3 style={{ margin: "2px 0", fontSize: "16px", fontWeight: "600", color: "var(--accent-purple)" }}>
-                        {request.name}
-                      </h3>
-                      {request.description && (
-                        <p style={{ margin: 0, fontSize: "13px", color: "var(--info-dark)" }}>{request.description}</p>
-                      )}
-                    </div>
-                    <span
+                  <div style={{ fontSize: "1.25rem", fontWeight: 600, color: "var(--primary)" }}>
+                    {stage.count}
+                  </div>
+                  <div style={{ fontWeight: 600 }}>{stage.label}</div>
+                  <p style={{ margin: "4px 0 0", fontSize: "0.75rem", color: "var(--info-dark)" }}>
+                    {stage.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p style={{ marginTop: "12px", fontSize: "0.85rem", color: "var(--info-dark)" }}>
+              {pipelineSummary.totalCount} part line
+              {pipelineSummary.totalCount === 1 ? "" : "s"} currently tracked across these stages.
+            </p>
+          </div>
+          <div>
+            <h2 style={{ margin: "0 0 12px 0", fontSize: "18px", fontWeight: "600", color: "var(--info-dark)" }}>
+              VHC Linked Parts
+            </h2>
+            {vhcParts.length === 0 ? (
+              <div style={{
+                padding: "20px",
+                borderRadius: "10px",
+                border: "1px solid var(--accent-purple-surface)",
+                backgroundColor: "var(--accent-purple-surface)",
+                fontSize: "14px",
+                color: "var(--info)"
+              }}>
+                No VHC items have been converted into parts for this job yet.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {vhcParts.map((part) => {
+                  const statusMeta = getPartStatusMeta(part.status);
+                  return (
+                    <div
+                      key={part.id}
                       style={{
-                        padding: "6px 12px",
-                        borderRadius: "999px",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        color: statusMeta.color,
-                        backgroundColor: statusMeta.background
+                        padding: "16px",
+                        borderRadius: "12px",
+                        border: "1px solid var(--accent-purple-surface)",
+                        backgroundColor: "var(--surface)",
+                        boxShadow: "none"
                       }}
                     >
-                      {statusMeta.label}
-                    </span>
-                  </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                        <div>
+                          <div style={{ fontSize: "12px", color: "var(--info)" }}>{part.partNumber}</div>
+                          <h3 style={{ margin: "2px 0", fontSize: "16px", fontWeight: "600", color: "var(--accent-purple)" }}>
+                            {part.name}
+                          </h3>
+                          {part.description && (
+                            <p style={{ margin: 0, fontSize: "13px", color: "var(--info-dark)" }}>{part.description}</p>
+                          )}
+                        </div>
+                        <span
+                          style={{
+                            padding: "6px 12px",
+                            borderRadius: "999px",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            color: statusMeta.color,
+                            backgroundColor: statusMeta.background
+                          }}
+                        >
+                          {statusMeta.label}
+                        </span>
+                      </div>
 
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))",
-                    gap: "12px",
-                    marginTop: "12px",
-                    fontSize: "13px",
-                    color: "var(--info-dark)"
-                  }}>
-                    <div>
-                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Quantity</strong>
-                      <div style={{ fontWeight: "700", fontSize: "16px" }}>{request.quantity}</div>
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))",
+                        gap: "12px",
+                        marginTop: "12px",
+                        fontSize: "13px",
+                        color: "var(--info-dark)"
+                      }}>
+                        <div>
+                          <strong style={{ color: "var(--info)", fontSize: "12px" }}>Qty Requested</strong>
+                          <div style={{ fontWeight: "700", fontSize: "16px" }}>{part.quantityRequested}</div>
+                        </div>
+                        <div>
+                          <strong style={{ color: "var(--info)", fontSize: "12px" }}>Qty Allocated</strong>
+                          <div style={{ fontWeight: "700", fontSize: "16px" }}>{part.quantityAllocated}</div>
+                        </div>
+                        <div>
+                          <strong style={{ color: "var(--info)", fontSize: "12px" }}>Qty Fitted</strong>
+                          <div style={{ fontWeight: "700", fontSize: "16px" }}>{part.quantityFitted}</div>
+                        </div>
+                        <div>
+                          <strong style={{ color: "var(--info)", fontSize: "12px" }}>Source</strong>
+                          <div>{part.source}</div>
+                        </div>
+                        <div>
+                          <strong style={{ color: "var(--info)", fontSize: "12px" }}>Pre Pick Location</strong>
+                          <div>{part.prePickLocation}</div>
+                        </div>
+                        <div>
+                          <strong style={{ color: "var(--info)", fontSize: "12px" }}>Storage</strong>
+                          <div>{part.storageLocation}</div>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: "12px", display: "flex", flexWrap: "wrap", gap: "20px", fontSize: "12px", color: "var(--info)" }}>
+                        <span>Created: {formatDateTime(part.createdAt)}</span>
+                        <span>Updated: {formatDateTime(part.updatedAt)}</span>
+                      </div>
+
+                      {part.notes && (
+                        <div style={{
+                          marginTop: "12px",
+                          padding: "10px 12px",
+                          borderRadius: "8px",
+                          backgroundColor: "var(--warning-surface)",
+                          color: "var(--danger-dark)",
+                          fontSize: "13px"
+                        }}>
+                          <strong style={{ fontSize: "12px", textTransform: "uppercase" }}>Technician Note:</strong>
+                          <div>{part.notes}</div>
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Requested By</strong>
-                      <div>{request.requestedBy}</div>
-                    </div>
-                    <div>
-                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Approved By</strong>
-                      <div>{request.approvedBy || "Awaiting approval"}</div>
-                    </div>
-                    <div>
-                      <strong style={{ color: "var(--info)", fontSize: "12px" }}>Created</strong>
-                      <div>{formatDateTime(request.createdAt)}</div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <p style={{ marginTop: "4px", color: "var(--info)", fontSize: "12px" }}>
-        All data shown is read-only. Updates must be made from the VHC parts workflow or technician write-up form.
-      </p>
+          <div>
+            <h2 style={{ margin: "12px 0", fontSize: "18px", fontWeight: "600", color: "var(--info-dark)" }}>
+              Manual Requests (Write-up)
+            </h2>
+            {manualRequests.length === 0 ? (
+              <div style={{
+                padding: "20px",
+                borderRadius: "10px",
+                border: "1px solid var(--accent-purple-surface)",
+                backgroundColor: "var(--accent-purple-surface)",
+                fontSize: "14px",
+                color: "var(--info)"
+              }}>
+                No manual part requests have been logged.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {manualRequests.map((request) => {
+                  const statusMeta = getPartStatusMeta(request.status);
+                  return (
+                    <div
+                      key={request.requestId}
+                      style={{
+                        padding: "16px",
+                        borderRadius: "12px",
+                        border: "1px solid var(--accent-purple-surface)",
+                        backgroundColor: "var(--surface)",
+                        boxShadow: "none"
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                        <div>
+                          <div style={{ fontSize: "12px", color: "var(--info)" }}>{request.partNumber}</div>
+                          <h3 style={{ margin: "2px 0", fontSize: "16px", fontWeight: "600", color: "var(--accent-purple)" }}>
+                            {request.name}
+                          </h3>
+                          {request.description && (
+                            <p style={{ margin: 0, fontSize: "13px", color: "var(--info-dark)" }}>{request.description}</p>
+                          )}
+                        </div>
+                        <span
+                          style={{
+                            padding: "6px 12px",
+                            borderRadius: "999px",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            color: statusMeta.color,
+                            backgroundColor: statusMeta.background
+                          }}
+                        >
+                          {statusMeta.label}
+                        </span>
+                      </div>
+
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))",
+                        gap: "12px",
+                        marginTop: "12px",
+                        fontSize: "13px",
+                        color: "var(--info-dark)"
+                      }}>
+                        <div>
+                          <strong style={{ color: "var(--info)", fontSize: "12px" }}>Quantity</strong>
+                          <div style={{ fontWeight: "700", fontSize: "16px" }}>{request.quantity}</div>
+                        </div>
+                        <div>
+                          <strong style={{ color: "var(--info)", fontSize: "12px" }}>Requested By</strong>
+                          <div>{request.requestedBy}</div>
+                        </div>
+                        <div>
+                          <strong style={{ color: "var(--info)", fontSize: "12px" }}>Approved By</strong>
+                          <div>{request.approvedBy || "Awaiting approval"}</div>
+                        </div>
+                        <div>
+                          <strong style={{ color: "var(--info)", fontSize: "12px" }}>Created</strong>
+                          <div>{formatDateTime(request.createdAt)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <p style={{ marginTop: "4px", color: "var(--info)", fontSize: "12px" }}>
+            All data shown is read-only. Updates must be made from the VHC parts workflow or technician write-up form.
+          </p>
+        </>
+      ) : (
+        <div>
+          <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "var(--text-primary)" }}>
+            Parts Overview
+          </h2>
+          <div style={{
+            padding: "40px",
+            textAlign: "center",
+            backgroundColor: "var(--info-surface)",
+            borderRadius: "12px",
+            border: "1px solid var(--accent-purple-surface)"
+          }}>
+            <div style={{ fontSize: "48px", marginBottom: "12px" }}>🧰</div>
+            <h3 style={{ fontSize: "18px", fontWeight: "600", color: "var(--accent-purple)", marginBottom: "8px" }}>
+              No Parts Linked
+            </h3>
+            <p style={{ color: "var(--info)", fontSize: "14px", margin: 0 }}>
+              VHC authorizations and manual write-up requests will appear here automatically.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,8 +1,55 @@
 // file location: src/components/VHC/PartSearchModal.js
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
+
+const CATEGORY_FILTERS = {
+  wheels_tyres: {
+    id: "wheels_tyres",
+    label: "Tyres & Wheels",
+    value: "tyre",
+    matchers: ["wheel", "tyre", "tire"],
+  },
+  brakes_hubs: {
+    id: "brakes_hubs",
+    label: "Brakes & Hubs",
+    value: "brake",
+    matchers: ["brake", "pad", "disc", "hub"],
+  },
+};
+
+const deriveCategoryFilter = (vhcItem = null) => {
+  if (!vhcItem) return null;
+  const categoryId = vhcItem?.category?.id || vhcItem?.categoryId || vhcItem?.category_id;
+  if (categoryId && CATEGORY_FILTERS[categoryId]) {
+    return CATEGORY_FILTERS[categoryId];
+  }
+
+  const categoryLabel = (vhcItem?.categoryLabel || vhcItem?.category?.label || "")
+    .toString()
+    .toLowerCase();
+  if (categoryLabel) {
+    const matched = Object.values(CATEGORY_FILTERS).find((entry) =>
+      entry.matchers.some((token) => categoryLabel.includes(token))
+    );
+    if (matched) {
+      return matched;
+    }
+  }
+
+  const label = (vhcItem?.label || "").toString().toLowerCase();
+  if (label) {
+    const matched = Object.values(CATEGORY_FILTERS).find((entry) =>
+      entry.matchers.some((token) => label.includes(token))
+    );
+    if (matched) {
+      return matched;
+    }
+  }
+
+  return null;
+};
 
 export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumber, onPartSelected }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -11,21 +58,65 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
   const [selectedPart, setSelectedPart] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [labourHours, setLabourHours] = useState(0);
+  const [categoryFilter, setCategoryFilter] = useState(null);
+
+  const vhcItem = vhcItemData?.vhcItem;
+  const linkedParts = vhcItemData?.linkedParts || [];
+
+  const defaultFilter = useMemo(() => deriveCategoryFilter(vhcItem), [vhcItem]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setCategoryFilter(defaultFilter);
+  }, [defaultFilter, isOpen]);
 
   // Search parts function
-  const searchParts = useCallback(async (query) => {
-    if (!query || query.trim().length < 2) {
+  const searchParts = useCallback(async (query, category) => {
+    const trimmedQuery = String(query || "").trim();
+    const hasSearchTerm = trimmedQuery.length >= 2;
+    const hasCategoryFilter = Boolean(category?.value);
+
+    if (!hasSearchTerm && !hasCategoryFilter) {
       setSearchResults([]);
       return;
     }
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("parts")
-        .select("id, part_number, name, unit_price, stock_quantity, supplier")
-        .or(`name.ilike.%${query}%,part_number.ilike.%${query}%`)
-        .limit(20);
+      let queryBuilder = supabase
+        .from("parts_catalog")
+        .select("id, part_number, name, unit_price, unit_cost, qty_in_stock, supplier, category, storage_location")
+        .order("name", { ascending: true })
+        .limit(30);
+
+      if (hasSearchTerm) {
+        const sanitisedQuery = trimmedQuery.replace(/[%]/g, "").replace(/,/g, "");
+        const pattern = `%${sanitisedQuery}%`;
+        const orClauses = [
+          `name.ilike.${pattern}`,
+          `part_number.ilike.${pattern}`,
+          `supplier.ilike.${pattern}`,
+          `category.ilike.${pattern}`,
+          `description.ilike.${pattern}`,
+          `oem_reference.ilike.${pattern}`,
+          `storage_location.ilike.${pattern}`,
+        ];
+        const numericOnly = /^\d+(?:\.\d+)?$/.test(sanitisedQuery);
+        if (numericOnly) {
+          const numericValue = Number.parseFloat(sanitisedQuery);
+          if (!Number.isNaN(numericValue)) {
+            orClauses.push(`unit_price.eq.${numericValue}`);
+            orClauses.push(`unit_cost.eq.${numericValue}`);
+          }
+        }
+        queryBuilder = queryBuilder.or(orClauses.join(","));
+      }
+
+      if (hasCategoryFilter) {
+        queryBuilder = queryBuilder.ilike("category", `%${category.value}%`);
+      }
+
+      const { data, error } = await queryBuilder;
 
       if (error) {
         console.error("Error searching parts:", error);
@@ -44,11 +135,11 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
   // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
-      searchParts(searchQuery);
+      searchParts(searchQuery, categoryFilter);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, searchParts]);
+  }, [searchQuery, categoryFilter, searchParts]);
 
   // Handle part selection
   const handleSelectPart = useCallback((part) => {
@@ -106,17 +197,15 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
       setQuantity(1);
       setLabourHours(0);
       setSearchQuery("");
+      setCategoryFilter(defaultFilter);
       onClose();
     } catch (err) {
       console.error("Unexpected error adding part:", err);
       alert("Unexpected error. Please try again.");
     }
-  }, [selectedPart, vhcItemData, jobNumber, quantity, labourHours, onPartSelected, onClose]);
+  }, [selectedPart, vhcItemData, jobNumber, quantity, labourHours, onPartSelected, onClose, defaultFilter]);
 
   if (!isOpen) return null;
-
-  const vhcItem = vhcItemData?.vhcItem;
-  const linkedParts = vhcItemData?.linkedParts || [];
 
   return (
     <div
@@ -261,7 +350,7 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by part name or part number..."
+              placeholder="Search by part number, name, supplier, or price..."
               style={{
                 width: "100%",
                 padding: "12px",
@@ -270,6 +359,59 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
                 fontSize: "14px",
               }}
             />
+            {categoryFilter && (
+              <div
+                style={{
+                  marginTop: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  background: "var(--accent-purple-surface)",
+                  border: "1px solid var(--accent-purple-surface)",
+                  borderRadius: "10px",
+                  padding: "8px 12px",
+                  fontSize: "12px",
+                  color: "var(--info-dark)",
+                }}
+              >
+                <div>
+                  Auto filter applied: <strong style={{ color: "var(--accent-purple)" }}>{categoryFilter.label}</strong>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilter(null)}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    color: "var(--accent-purple)",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+            {!categoryFilter && defaultFilter && (
+              <div style={{ marginTop: "10px", fontSize: "12px", color: "var(--info)" }}>
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilter(defaultFilter)}
+                  style={{
+                    border: "1px solid var(--accent-purple-surface)",
+                    background: "var(--surface)",
+                    color: "var(--accent-purple)",
+                    borderRadius: "999px",
+                    padding: "4px 12px",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                  }}
+                >
+                  Filter for {defaultFilter.label}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Search Results */}
@@ -302,11 +444,21 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
                       {part.name}
                     </div>
                     <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
-                      Part #: {part.part_number} | Price: £{Number(part.unit_price || 0).toFixed(2)} | Stock: {part.stock_quantity || 0}
+                      Part #: {part.part_number} | Price: £{Number(part.unit_price || 0).toFixed(2)} | Stock: {part.qty_in_stock || 0}
                     </div>
                     {part.supplier && (
                       <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "2px" }}>
                         Supplier: {part.supplier}
+                      </div>
+                    )}
+                    {part.category && (
+                      <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "2px" }}>
+                        Category: {part.category}
+                      </div>
+                    )}
+                    {part.storage_location && (
+                      <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "2px" }}>
+                        Location: {part.storage_location}
                       </div>
                     )}
                   </div>
@@ -334,6 +486,14 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
               <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "4px" }}>
                 Part #: {selectedPart.part_number} | £{Number(selectedPart.unit_price || 0).toFixed(2)}
               </div>
+              <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
+                Stock on hand: {selectedPart.qty_in_stock ?? 0}
+              </div>
+              {selectedPart.storage_location && (
+                <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "2px" }}>
+                  Location: {selectedPart.storage_location}
+                </div>
+              )}
 
               <div style={{ marginTop: "16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>

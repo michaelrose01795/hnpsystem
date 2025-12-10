@@ -4,37 +4,76 @@ import { useUser } from "@/context/UserContext";
 import { themes } from "@/styles/theme";
 
 const STORAGE_KEY = "hp-dms-theme";
+const THEME_SEQUENCE = ["system", "light", "dark"];
+
+const normalizeMode = (value) => {
+  if (value === "system" || value === "dark") return value;
+  return "light";
+};
+
+const getSystemPreferredMode = () => {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return "light";
+  }
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+};
 
 const ThemeContext = createContext({
-  mode: "light",
+  mode: "system",
+  resolvedMode: "light",
   isDark: false,
   currentTheme: themes.light,
   toggleTheme: () => {},
   loading: true,
 });
 
-export function ThemeProvider({ children, defaultMode = "light" }) {
+export function ThemeProvider({ children, defaultMode = "system" }) {
   const { dbUserId } = useUser() || {};
-  const [mode, setMode] = useState(defaultMode);
+  const normalizedDefault = normalizeMode(defaultMode);
+  const [mode, setMode] = useState(normalizedDefault);
+  const [resolvedMode, setResolvedMode] = useState(() =>
+    normalizedDefault === "system" ? getSystemPreferredMode() : normalizedDefault
+  );
   const [loading, setLoading] = useState(true);
 
   const applyMode = useCallback((nextMode) => {
-    const resolved = nextMode === "dark" ? "dark" : "light";
+    const requested = normalizeMode(nextMode);
+    const resolved = requested === "system" ? getSystemPreferredMode() : requested;
     if (typeof document !== "undefined") {
       document.documentElement.setAttribute("data-theme", resolved);
     }
-    setMode(resolved);
-    return resolved;
+    setMode(requested);
+    setResolvedMode(resolved);
+    return { requested, resolved };
   }, []);
 
   useEffect(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
-    if (stored === "light" || stored === "dark") {
-      applyMode(stored);
-    } else {
-      applyMode(defaultMode);
-    }
-  }, [applyMode, defaultMode]);
+    const initial =
+      stored === "light" || stored === "dark" || stored === "system" ? stored : normalizedDefault;
+    applyMode(initial);
+  }, [applyMode, normalizedDefault]);
+
+  useEffect(() => {
+    if (mode !== "system") return;
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = (event) => {
+      const nextResolved = event.matches ? "dark" : "light";
+      if (typeof document !== "undefined") {
+        document.documentElement.setAttribute("data-theme", nextResolved);
+      }
+      setResolvedMode(nextResolved);
+    };
+
+    media.addEventListener ? media.addEventListener("change", handleChange) : media.addListener(handleChange);
+    return () => {
+      media.removeEventListener
+        ? media.removeEventListener("change", handleChange)
+        : media.removeListener(handleChange);
+    };
+  }, [mode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,7 +91,12 @@ export function ThemeProvider({ children, defaultMode = "light" }) {
           .maybeSingle();
         if (error) throw error;
         if (!cancelled && data) {
-          const preference = data.dark_mode ? "dark" : "light";
+          const preference =
+            data.dark_mode === null || typeof data.dark_mode === "undefined"
+              ? "system"
+              : data.dark_mode
+              ? "dark"
+              : "light";
           applyMode(preference);
           if (typeof window !== "undefined") {
             window.localStorage.setItem(STORAGE_KEY, preference);
@@ -77,9 +121,13 @@ export function ThemeProvider({ children, defaultMode = "light" }) {
     async (nextMode) => {
       if (!dbUserId) return;
       try {
+        const normalized = normalizeMode(nextMode);
         await supabaseClient
           .from("profiles")
-          .upsert({ user_id: dbUserId, dark_mode: nextMode === "dark" }, { onConflict: "user_id" });
+          .upsert(
+            { user_id: dbUserId, dark_mode: normalized === "system" ? null : normalized === "dark" },
+            { onConflict: "user_id" }
+          );
       } catch (err) {
         console.error("Failed to persist theme preference", err.message || err);
       }
@@ -88,23 +136,25 @@ export function ThemeProvider({ children, defaultMode = "light" }) {
   );
 
   const toggleTheme = useCallback(() => {
-    const nextMode = mode === "dark" ? "light" : "dark";
-    const resolved = applyMode(nextMode);
+    const currentIndex = THEME_SEQUENCE.indexOf(mode);
+    const nextMode = THEME_SEQUENCE[(currentIndex + 1) % THEME_SEQUENCE.length];
+    const { requested } = applyMode(nextMode);
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(STORAGE_KEY, resolved);
+      window.localStorage.setItem(STORAGE_KEY, requested);
     }
-    persistPreference(resolved);
+    persistPreference(requested);
   }, [applyMode, mode, persistPreference]);
 
   const contextValue = useMemo(
     () => ({
       mode,
-      isDark: mode === "dark",
-      currentTheme: themes[mode] || themes.light,
+      resolvedMode,
+      isDark: resolvedMode === "dark",
+      currentTheme: themes[resolvedMode] || themes.light,
       toggleTheme,
       loading,
     }),
-    [mode, toggleTheme, loading]
+    [mode, resolvedMode, toggleTheme, loading]
   );
 
   return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;

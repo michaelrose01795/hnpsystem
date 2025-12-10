@@ -86,9 +86,9 @@ const createDefaultUnderside = () => ({
 
 const baseVhcPayload = () => ({
   wheelsTyres: null,
-  brakesHubs: [],
+  brakesHubs: null,
   serviceIndicator: { serviceChoice: "", oilStatus: "", concerns: [] },
-  externalInspection: [],
+  externalInspection: null,
   internalElectrics: createDefaultInternalElectrics(),
   underside: createDefaultUnderside(),
 });
@@ -114,17 +114,95 @@ const mergeEntries = (baseEntries, source) => {
   return next;
 };
 
+const normaliseBrakesPayload = (source) => {
+  if (!source || typeof source !== "object" || Array.isArray(source)) {
+    return null;
+  }
+
+  const normalisePad = (pad) => {
+    if (!pad || typeof pad !== "object") return null;
+    return {
+      ...pad,
+      measurement: pad.measurement ?? "",
+      concerns: ensureArray(pad.concerns),
+    };
+  };
+
+  const normaliseDisc = (disc) => {
+    if (!disc || typeof disc !== "object") return null;
+    return {
+      ...disc,
+      measurements: {
+        ...(disc.measurements || {}),
+        values: ensureArray(disc.measurements?.values),
+      },
+      visual: {
+        ...(disc.visual || {}),
+      },
+      concerns: ensureArray(disc.concerns),
+    };
+  };
+
+  const next = {};
+  const frontPads = normalisePad(source.frontPads);
+  if (frontPads) next.frontPads = frontPads;
+  const rearPads = normalisePad(source.rearPads);
+  if (rearPads) next.rearPads = rearPads;
+  const frontDiscs = normaliseDisc(source.frontDiscs);
+  if (frontDiscs) next.frontDiscs = frontDiscs;
+  const rearDiscs = normaliseDisc(source.rearDiscs);
+  if (rearDiscs) next.rearDiscs = rearDiscs;
+  if (source.rearDrums && typeof source.rearDrums === "object") {
+    next.rearDrums = {
+      ...source.rearDrums,
+      concerns: ensureArray(source.rearDrums.concerns),
+    };
+  }
+  if (source._brakeType) {
+    next._brakeType = source._brakeType;
+  }
+  return Object.keys(next).length > 0 ? next : null;
+};
+
+const normaliseExternalInspectionPayload = (source) => {
+  if (!source) return null;
+  if (Array.isArray(source)) {
+    const mapped = {};
+    source.forEach((entry, index) => {
+      if (!entry || typeof entry !== "object") return;
+      const heading = entry.heading || entry.title || entry.name || `Item ${index + 1}`;
+      mapped[heading] = {
+        ...entry,
+        concerns: ensureArray(entry.concerns),
+      };
+    });
+    return Object.keys(mapped).length > 0 ? mapped : null;
+  }
+  if (typeof source === "object") {
+    const mapped = {};
+    Object.entries(source).forEach(([key, entry]) => {
+      mapped[key] = {
+        ...(entry || {}),
+        concerns: ensureArray(entry?.concerns),
+      };
+    });
+    return mapped;
+  }
+  return null;
+};
+
 const buildVhcPayload = (source = {}) => {
   const base = baseVhcPayload();
+  const brakesHubs = normaliseBrakesPayload(source.brakesHubs);
   return {
     wheelsTyres: source.wheelsTyres || null,
-    brakesHubs: normaliseConcernEntries(source.brakesHubs),
+    brakesHubs: brakesHubs ?? normaliseConcernEntries(source.brakesHubs),
     serviceIndicator: {
       serviceChoice: source.serviceIndicator?.serviceChoice || "",
       oilStatus: source.serviceIndicator?.oilStatus || "",
       concerns: ensureArray(source.serviceIndicator?.concerns),
     },
-    externalInspection: normaliseConcernEntries(source.externalInspection),
+    externalInspection: normaliseExternalInspectionPayload(source.externalInspection),
     internalElectrics: mergeEntries(base.internalElectrics, source.internalElectrics),
     underside: mergeEntries(base.underside, source.underside),
   };
