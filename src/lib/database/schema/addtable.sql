@@ -1,3 +1,2 @@
 -- file location: src/lib/database/schema/addtable.sql
 -- description: defines supplemental tables added beyond reference schema
-

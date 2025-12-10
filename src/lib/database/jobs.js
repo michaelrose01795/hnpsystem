@@ -405,7 +405,7 @@ export const getAllJobs = async () => {
       technician:assigned_to(user_id, first_name, last_name, email, role),
       appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
       vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at),
-      parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, created_at, updated_at),
+      parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
       parts_job_items(
         id,
         part_id,
@@ -676,7 +676,7 @@ export const getJobByNumber = async (jobNumber) => {
       technician:assigned_to(user_id, first_name, last_name, email, role, phone),
       appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
       vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at),
-      parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, created_at, updated_at),
+      parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
       parts_job_items(
         id,
         part_id,
@@ -746,7 +746,7 @@ export const getJobByNumber = async (jobNumber) => {
         vehicle_reg,
         vehicle_make_model,
         vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at),
-        parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, created_at, updated_at),
+        parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
         parts_job_items(
           id,
           part_id,
@@ -905,7 +905,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
       technician:assigned_to(user_id, first_name, last_name, email),
       appointments(appointment_id, scheduled_time, status, notes),
       vhc_checks(vhc_id, section, issue_title, issue_description),
-      parts_requests(request_id, part_id, quantity, status),
+      parts_requests(request_id, part_id, quantity, status, pre_pick_location),
       parts_job_items(
         id,
         part_id,
@@ -1001,7 +1001,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
         technician:assigned_to(user_id, first_name, last_name, email),
         appointments(appointment_id, scheduled_time, status, notes),
         vhc_checks(vhc_id, section, issue_title, issue_description),
-        parts_requests(request_id, part_id, quantity, status),
+        parts_requests(request_id, part_id, quantity, status, pre_pick_location),
         parts_job_items(
           id,
           part_id,
@@ -1483,6 +1483,7 @@ const formatJobData = (data) => {
     part_id: partRequest.part_id,
     quantity: partRequest.quantity ?? null,
     status: partRequest.status || null,
+    prePickLocation: partRequest.pre_pick_location || null,
     requestedBy: partRequest.requested_by || null,
     approvedBy: partRequest.approved_by || null,
     createdAt: partRequest.created_at || null,

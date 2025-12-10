@@ -12,6 +12,8 @@ const PRE_PICK_LOCATIONS = new Set([
   "sales_rack_3",
   "sales_rack_4",
   "stairs_pre_pick",
+  "no_pick",
+  "on_order",
 ]);
 
 const PART_COLUMNS = [

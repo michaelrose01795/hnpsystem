@@ -22,6 +22,8 @@ const PRE_PICK_OPTIONS = [
   { value: "sales_rack_3", label: "Sales Rack 3 (TODO)" },
   { value: "sales_rack_4", label: "Sales Rack 4 (TODO)" },
   { value: "stairs_pre_pick", label: "Stairs (Sales Pre-pick)" },
+  { value: "no_pick", label: "No Pick" },
+  { value: "on_order", label: "On Order" },
 ];
 
 const JOB_PART_STATUSES = [

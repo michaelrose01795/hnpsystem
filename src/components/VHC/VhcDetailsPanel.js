@@ -1631,18 +1631,21 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     if (location === "on_order") {
       // Move to Parts On Order section
       await handlePartStatusUpdate(partItemId, {
-        prePickLocation: null,
+        prePickLocation: "on_order",
         status: "on_order",
         stockStatus: null,
       });
-    } else {
-      // Update pre-pick location
-      await handlePartStatusUpdate(partItemId, {
-        prePickLocation: location,
-        stockStatus: "in_stock",
-        status: "pre_picked",
-      });
+      return;
     }
+
+    const sanitizedLocation = location || null;
+
+    // Update pre-pick location
+    await handlePartStatusUpdate(partItemId, {
+      prePickLocation: sanitizedLocation,
+      stockStatus: sanitizedLocation ? "in_stock" : null,
+      status: sanitizedLocation ? "pre_picked" : "pending",
+    });
   }, [handlePartStatusUpdate]);
 
   // Handler for "Here" button click (moves part back from On Order to Authorised)
@@ -2129,7 +2132,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                             <option value="service_rack_2">Service Rack 2</option>
                             <option value="service_rack_3">Service Rack 3</option>
                             <option value="service_rack_4">Service Rack 4</option>
-                            <option value="">No Picked</option>
+                            <option value="no_pick">No Pick</option>
                             <option value="on_order">On Order</option>
                           </select>
                         </td>
