@@ -26,6 +26,49 @@ const PRE_PICK_OPTIONS = [
   { value: "on_order", label: "On Order" },
 ];
 
+const DEFAULT_DELIVERY_FORM = {
+  supplier: "",
+  orderReference: "",
+  partId: "",
+  quantityOrdered: 1,
+  quantityReceived: 1,
+  unitCost: "",
+  notes: "",
+};
+
+const DEFAULT_NEW_PART_FORM = {
+  partNumber: "",
+  name: "",
+  supplier: "",
+  storageLocation: "",
+  unitCost: "",
+  unitPrice: "",
+  notes: "",
+};
+
+const STORAGE_LOCATION_CODES = Array.from({ length: 26 })
+  .map((_, letterIndex) => {
+    const letter = String.fromCharCode(65 + letterIndex);
+    return Array.from({ length: 10 }).map((__, numberIndex) => `${letter}${numberIndex + 1}`);
+  })
+  .flat();
+
+const normaliseLocationInput = (value = "") =>
+  String(value || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+
+const isValidLocationCode = (value = "") =>
+  STORAGE_LOCATION_CODES.includes(normaliseLocationInput(value || ""));
+
+const filterStorageLocations = (search = "") => {
+  const term = normaliseLocationInput(search || "");
+  if (!term) {
+    return STORAGE_LOCATION_CODES;
+  }
+  return STORAGE_LOCATION_CODES.filter((code) => code.includes(term));
+};
+
 const JOB_PART_STATUSES = [
   "pending",
   "waiting_authorisation",
@@ -166,16 +209,46 @@ function PartsPortalPage() {
   const [partFormError, setPartFormError] = useState("");
 
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
-  const [deliveryForm, setDeliveryForm] = useState({
-    supplier: "",
-    orderReference: "",
-    partId: "",
-    quantityOrdered: 1,
-    quantityReceived: 1,
-    unitCost: "",
-    notes: "",
-  });
+  const [deliveryForm, setDeliveryForm] = useState(DEFAULT_DELIVERY_FORM);
   const [deliveryFormError, setDeliveryFormError] = useState("");
+  const [deliveryPartSearch, setDeliveryPartSearch] = useState("");
+  const [deliveryLocationSearch, setDeliveryLocationSearch] = useState("");
+  const [deliveryStorageLocation, setDeliveryStorageLocation] = useState("");
+  const [showNewPartForm, setShowNewPartForm] = useState(false);
+  const [newPartForm, setNewPartForm] = useState(DEFAULT_NEW_PART_FORM);
+  const [newPartLocationSearch, setNewPartLocationSearch] = useState("");
+  const [newPartFormError, setNewPartFormError] = useState("");
+  const [newPartSaving, setNewPartSaving] = useState(false);
+
+  const selectedDeliveryPart = useMemo(
+    () => inventory.find((part) => part.id === deliveryForm.partId),
+    [inventory, deliveryForm.partId]
+  );
+
+  const filteredDeliveryParts = useMemo(() => {
+    const term = deliveryPartSearch.trim().toLowerCase();
+    const source = inventory || [];
+    if (!term) {
+      return source.slice(0, 25);
+    }
+    return source
+      .filter((part) => {
+        const number = (part.part_number || "").toLowerCase();
+        const name = (part.name || "").toLowerCase();
+        return number.includes(term) || name.includes(term);
+      })
+      .slice(0, 25);
+  }, [deliveryPartSearch, inventory]);
+
+  const filteredDeliveryLocations = useMemo(
+    () => filterStorageLocations(deliveryLocationSearch).slice(0, 30),
+    [deliveryLocationSearch]
+  );
+
+  const filteredNewPartLocations = useMemo(
+    () => filterStorageLocations(newPartLocationSearch).slice(0, 30),
+    [newPartLocationSearch]
+  );
 
   const pendingJobParts = useMemo(
     () =>
@@ -443,9 +516,128 @@ function PartsPortalPage() {
     return () => clearTimeout(handler);
   }, [inventorySearch, fetchInventory]);
 
-  useEffect(() => {
-    loadJobDeliveryInfo();
-  }, [loadJobDeliveryInfo]);
+useEffect(() => {
+  loadJobDeliveryInfo();
+}, [loadJobDeliveryInfo]);
+
+useEffect(() => {
+  if (!showDeliveryModal) return;
+  const handler = setTimeout(() => {
+    fetchInventory(deliveryPartSearch.trim());
+  }, 400);
+  return () => clearTimeout(handler);
+}, [deliveryPartSearch, fetchInventory, showDeliveryModal]);
+
+useEffect(() => {
+  if (showNewPartForm) {
+    setNewPartLocationSearch(newPartForm.storageLocation || "");
+  }
+}, [showNewPartForm, newPartForm.storageLocation]);
+
+  const resetDeliveryModal = useCallback(() => {
+    setDeliveryForm(DEFAULT_DELIVERY_FORM);
+    setDeliveryFormError("");
+    setDeliveryPartSearch("");
+    setDeliveryLocationSearch("");
+    setDeliveryStorageLocation("");
+    setShowNewPartForm(false);
+    setNewPartForm(DEFAULT_NEW_PART_FORM);
+    setNewPartLocationSearch("");
+    setNewPartFormError("");
+    setNewPartSaving(false);
+  }, []);
+
+  const handleDeliveryPartSelection = useCallback((part) => {
+    if (!part) {
+      setDeliveryForm((prev) => ({ ...prev, partId: "" }));
+      setDeliveryPartSearch("");
+      setDeliveryLocationSearch("");
+      setDeliveryStorageLocation("");
+      return;
+    }
+    setDeliveryForm((prev) => ({ ...prev, partId: part.id || "" }));
+    const descriptor = [part.part_number, part.name].filter(Boolean).join(" · ");
+    setDeliveryPartSearch(descriptor);
+    const normalisedLocation = normaliseLocationInput(part.storage_location || "");
+    if (normalisedLocation) {
+      setDeliveryStorageLocation(normalisedLocation);
+      setDeliveryLocationSearch(normalisedLocation);
+    } else {
+      setDeliveryStorageLocation("");
+      setDeliveryLocationSearch("");
+    }
+    setDeliveryFormError("");
+  }, []);
+
+  const handleDeliveryLocationSelect = useCallback((location) => {
+    const normalised = normaliseLocationInput(location || "");
+    setDeliveryStorageLocation(normalised);
+    setDeliveryLocationSearch(normalised);
+  }, []);
+
+  const handleNewPartLocationSelect = useCallback((location) => {
+    const normalised = normaliseLocationInput(location || "");
+    setNewPartForm((prev) => ({ ...prev, storageLocation: normalised }));
+    setNewPartLocationSearch(normalised);
+  }, []);
+
+  const handleCreateNewPart = useCallback(async () => {
+    if (!newPartForm.partNumber.trim() || !newPartForm.name.trim()) {
+      setNewPartFormError("Part number and name are required.");
+      return;
+    }
+
+    const desiredLocation = normaliseLocationInput(
+      newPartForm.storageLocation || newPartLocationSearch
+    );
+    const resolvedLocation = isValidLocationCode(desiredLocation) ? desiredLocation : null;
+
+    setNewPartSaving(true);
+    setNewPartFormError("");
+    try {
+      const response = await fetch("/api/parts/inventory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: actingUserId,
+          partNumber: newPartForm.partNumber.trim(),
+          partName: newPartForm.name.trim(),
+          supplier: newPartForm.supplier || null,
+          storageLocation: resolvedLocation,
+          unitCost: newPartForm.unitCost ? Number(newPartForm.unitCost) : null,
+          unitPrice: newPartForm.unitPrice ? Number(newPartForm.unitPrice) : null,
+          notes: newPartForm.notes || null,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to create part");
+      }
+
+      const createdPart = data.part;
+      setInventory((prev) => {
+        const others = prev.filter((item) => item.id !== createdPart.id);
+        return [createdPart, ...others];
+      });
+      handleDeliveryPartSelection(createdPart);
+      setShowNewPartForm(false);
+      setNewPartForm(DEFAULT_NEW_PART_FORM);
+      setNewPartLocationSearch("");
+      await fetchInventory(inventorySearch);
+    } catch (err) {
+      setNewPartFormError(err.message || "Unable to create part");
+    } finally {
+      setNewPartSaving(false);
+    }
+  }, [
+    actingUserId,
+    fetchInventory,
+    handleDeliveryPartSelection,
+    inventorySearch,
+    newPartForm,
+    newPartLocationSearch,
+  ]);
 
   const openAddPartModal = (part) => {
     if (part) {
@@ -568,6 +760,10 @@ function PartsPortalPage() {
       setDeliveryFormError("Select a part to log a delivery.");
       return;
     }
+    if (!deliveryStorageLocation) {
+      setDeliveryFormError("Select a storage location for this delivery.");
+      return;
+    }
 
     try {
       const response = await fetch("/api/parts/deliveries", {
@@ -585,6 +781,7 @@ function PartsPortalPage() {
               quantityOrdered: deliveryForm.quantityOrdered,
               quantityReceived: deliveryForm.quantityReceived,
               unitCost: deliveryForm.unitCost || null,
+              storageLocation: deliveryStorageLocation,
               notes: deliveryForm.notes || null,
             },
           ],
@@ -597,16 +794,7 @@ function PartsPortalPage() {
       }
 
       setShowDeliveryModal(false);
-      setDeliveryFormError("");
-      setDeliveryForm({
-        supplier: "",
-        orderReference: "",
-        partId: "",
-        quantityOrdered: 1,
-        quantityReceived: 1,
-        unitCost: "",
-        notes: "",
-      });
+      resetDeliveryModal();
 
       await Promise.all([
         fetchDeliveries(),
@@ -682,6 +870,105 @@ function PartsPortalPage() {
               <div><strong>Service Zone:</strong> {selectedPart.service_default_zone || "—"}</div>
             </div>
           )}
+
+          <div style={{ marginBottom: "12px" }}>
+            <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
+              Storage Location
+            </span>
+            <input
+              type="text"
+              value={deliveryLocationSearch}
+              onChange={(event) => {
+                const value = event.target.value;
+                setDeliveryLocationSearch(value);
+                const normalised = normaliseLocationInput(value);
+                if (isValidLocationCode(normalised)) {
+                  setDeliveryStorageLocation(normalised);
+                } else if (!value.trim()) {
+                  setDeliveryStorageLocation("");
+                }
+              }}
+              placeholder="Search locations (e.g. A1, C4)"
+              style={{
+                width: "100%",
+                padding: "10px",
+                borderRadius: "8px",
+                border: "1px solid var(--surface-light)",
+              }}
+            />
+            <div
+              style={{
+                border: "1px solid var(--surface-light)",
+                borderRadius: "10px",
+                marginTop: "8px",
+                maxHeight: "180px",
+                overflowY: "auto",
+              }}
+            >
+              {filteredDeliveryLocations.length === 0 ? (
+                <div style={{ padding: "10px", color: "var(--info)" }}>
+                  No matching locations
+                </div>
+              ) : (
+                filteredDeliveryLocations.map((code) => (
+                  <button
+                    type="button"
+                    key={code}
+                    onClick={() => handleDeliveryLocationSelect(code)}
+                    style={{
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "8px 12px",
+                      border: "none",
+                      borderBottom: "1px solid var(--surface-light)",
+                      background:
+                        code === deliveryStorageLocation
+                          ? "var(--surface-light)"
+                          : "transparent",
+                      cursor: "pointer",
+                      fontWeight: code === deliveryStorageLocation ? 700 : 500,
+                    }}
+                  >
+                    {code}
+                  </button>
+                ))
+              )}
+            </div>
+            {deliveryStorageLocation ? (
+              <div
+                style={{
+                  marginTop: "8px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  color: "var(--accent-purple)",
+                }}
+              >
+                <span>Selected location: {deliveryStorageLocation}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeliveryStorageLocation("");
+                    setDeliveryLocationSearch("");
+                  }}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    color: "var(--danger)",
+                    cursor: "pointer",
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
+            ) : (
+              <p style={{ marginTop: "8px", fontSize: "0.85rem", color: "var(--info)" }}>
+                Select a rack position (A1-Z10). This is where stock will be kept.
+              </p>
+            )}
+          </div>
 
           <div
             style={{
@@ -857,30 +1144,353 @@ function PartsPortalPage() {
             />
           </label>
 
-          <label style={{ display: "block", marginBottom: "12px" }}>
+          <div style={{ marginBottom: "12px" }}>
             <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
               Part
             </span>
-            <select
-              value={deliveryForm.partId}
-              onChange={(event) =>
-                setDeliveryForm((prev) => ({ ...prev, partId: event.target.value }))
-              }
+            <input
+              type="text"
+              value={deliveryPartSearch}
+              onChange={(event) => setDeliveryPartSearch(event.target.value)}
+              placeholder="Search by part number or name"
               style={{
                 width: "100%",
                 padding: "10px",
                 borderRadius: "8px",
                 border: "1px solid var(--surface-light)",
               }}
+            />
+            <div
+              style={{
+                border: "1px solid var(--surface-light)",
+                borderRadius: "10px",
+                marginTop: "8px",
+                maxHeight: "200px",
+                overflowY: "auto",
+              }}
             >
-              <option value="">Select part...</option>
-              {inventory.map((part) => (
-                <option key={part.id} value={part.id}>
-                  {part.part_number} · {part.name}
-                </option>
-              ))}
-            </select>
-          </label>
+              {filteredDeliveryParts.length === 0 ? (
+                <div style={{ padding: "12px", color: "var(--info)" }}>
+                  {inventoryLoading ? "Loading inventory…" : "No matching parts"}
+                </div>
+              ) : (
+                filteredDeliveryParts.map((part) => {
+                  const isSelected = part.id === deliveryForm.partId;
+                  return (
+                    <button
+                      key={part.id}
+                      type="button"
+                      onClick={() => handleDeliveryPartSelection(part)}
+                      style={{
+                        width: "100%",
+                        textAlign: "left",
+                        padding: "10px 12px",
+                        border: "none",
+                        borderBottom: "1px solid var(--surface-light)",
+                        background: isSelected ? "var(--surface-light)" : "transparent",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
+                        {part.part_number || "—"}
+                      </div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
+                        {part.name || "Unnamed part"}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            {deliveryForm.partId && selectedDeliveryPart && (
+              <div style={{ marginTop: "8px", fontSize: "0.85rem", color: "var(--accent-purple)" }}>
+                Selected: {selectedDeliveryPart.part_number} · {selectedDeliveryPart.name}{" "}
+                <button
+                  type="button"
+                  onClick={() => handleDeliveryPartSelection(null)}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    color: "var(--danger)",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowNewPartForm((prev) => !prev);
+              setNewPartFormError("");
+            }}
+            style={{
+              ...secondaryButtonStyle,
+              width: "100%",
+              marginBottom: "12px",
+            }}
+          >
+            {showNewPartForm ? "Close new part form" : "Can't find the part? Add it now"}
+          </button>
+
+          {showNewPartForm && (
+            <div
+              style={{
+                border: "1px solid var(--surface-light)",
+                borderRadius: "12px",
+                padding: "16px",
+                marginBottom: "12px",
+                background: "var(--surface)",
+              }}
+            >
+              <label style={{ display: "block", marginBottom: "10px" }}>
+                <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
+                  Part Number
+                </span>
+                <input
+                  type="text"
+                  value={newPartForm.partNumber}
+                  onChange={(event) =>
+                    setNewPartForm((prev) => ({ ...prev, partNumber: event.target.value }))
+                  }
+                  placeholder="e.g. 03C109244"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--surface-light)",
+                  }}
+                />
+              </label>
+
+              <label style={{ display: "block", marginBottom: "10px" }}>
+                <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
+                  Part Name
+                </span>
+                <input
+                  type="text"
+                  value={newPartForm.name}
+                  onChange={(event) =>
+                    setNewPartForm((prev) => ({ ...prev, name: event.target.value }))
+                  }
+                  placeholder="e.g. Timing belt kit"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--surface-light)",
+                  }}
+                />
+              </label>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                  gap: "10px",
+                  marginBottom: "10px",
+                }}
+              >
+                <label style={{ display: "block" }}>
+                  <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
+                    Supplier
+                  </span>
+                  <input
+                    type="text"
+                    value={newPartForm.supplier}
+                    onChange={(event) =>
+                      setNewPartForm((prev) => ({ ...prev, supplier: event.target.value }))
+                    }
+                    placeholder="Optional"
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--surface-light)",
+                    }}
+                  />
+                </label>
+                <label style={{ display: "block" }}>
+                  <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
+                    Storage Location
+                  </span>
+                  <input
+                    type="text"
+                    value={newPartLocationSearch}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setNewPartLocationSearch(value);
+                      const normalised = normaliseLocationInput(value);
+                      if (isValidLocationCode(normalised)) {
+                        setNewPartForm((prev) => ({
+                          ...prev,
+                          storageLocation: normalised,
+                        }));
+                      } else if (!value.trim()) {
+                        setNewPartForm((prev) => ({ ...prev, storageLocation: "" }));
+                      }
+                    }}
+                    placeholder="Search (e.g. B2)"
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--surface-light)",
+                    }}
+                  />
+                  <div
+                    style={{
+                      border: "1px solid var(--surface-light)",
+                      borderRadius: "10px",
+                      marginTop: "6px",
+                      maxHeight: "140px",
+                      overflowY: "auto",
+                    }}
+                  >
+                    {filteredNewPartLocations.length === 0 ? (
+                      <div style={{ padding: "8px", color: "var(--info)" }}>No matches</div>
+                    ) : (
+                      filteredNewPartLocations.map((code) => (
+                        <button
+                          type="button"
+                          key={code}
+                          onClick={() => handleNewPartLocationSelect(code)}
+                          style={{
+                            width: "100%",
+                            textAlign: "left",
+                            padding: "6px 10px",
+                            border: "none",
+                            borderBottom: "1px solid var(--surface-light)",
+                            background:
+                              code === newPartForm.storageLocation
+                                ? "var(--surface-light)"
+                                : "transparent",
+                            cursor: "pointer",
+                            fontWeight: code === newPartForm.storageLocation ? 700 : 500,
+                          }}
+                        >
+                          {code}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                  {newPartForm.storageLocation ? (
+                    <p style={{ marginTop: "4px", fontSize: "0.85rem", color: "var(--accent-purple)" }}>
+                      Selected: {newPartForm.storageLocation}
+                    </p>
+                  ) : (
+                    <p style={{ marginTop: "4px", fontSize: "0.8rem", color: "var(--info)" }}>
+                      Choose the bin for stock storage (A1-Z10).
+                    </p>
+                  )}
+                </label>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                  gap: "10px",
+                }}
+              >
+                <label style={{ display: "block" }}>
+                  <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
+                    Unit Cost
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newPartForm.unitCost}
+                    onChange={(event) =>
+                      setNewPartForm((prev) => ({ ...prev, unitCost: event.target.value }))
+                    }
+                    placeholder="Optional"
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--surface-light)",
+                    }}
+                  />
+                </label>
+                <label style={{ display: "block" }}>
+                  <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
+                    Unit Price
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newPartForm.unitPrice}
+                    onChange={(event) =>
+                      setNewPartForm((prev) => ({ ...prev, unitPrice: event.target.value }))
+                    }
+                    placeholder="Optional"
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--surface-light)",
+                    }}
+                  />
+                </label>
+              </div>
+
+              <label style={{ display: "block", marginTop: "10px" }}>
+                <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
+                  Notes
+                </span>
+                <textarea
+                  value={newPartForm.notes}
+                  onChange={(event) =>
+                    setNewPartForm((prev) => ({ ...prev, notes: event.target.value }))
+                  }
+                  rows={2}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--surface-light)",
+                    resize: "vertical",
+                  }}
+                />
+              </label>
+
+              {newPartFormError && (
+                <div style={{ color: "var(--danger)", marginTop: "10px", fontWeight: 600 }}>
+                  {newPartFormError}
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "12px" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNewPartForm(false);
+                    setNewPartForm(DEFAULT_NEW_PART_FORM);
+                    setNewPartLocationSearch("");
+                    setNewPartFormError("");
+                  }}
+                  style={secondaryButtonStyle}
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateNewPart}
+                  style={buttonStyle}
+                  disabled={newPartSaving}
+                >
+                  {newPartSaving ? "Saving…" : "Save Part"}
+                </button>
+              </div>
+            </div>
+          )}
 
           <div
             style={{
@@ -992,7 +1602,7 @@ function PartsPortalPage() {
             <button
               onClick={() => {
                 setShowDeliveryModal(false);
-                setDeliveryFormError("");
+                resetDeliveryModal();
               }}
               style={secondaryButtonStyle}
             >
@@ -1582,7 +2192,13 @@ function PartsPortalPage() {
             }}
           >
             <h2 style={sectionTitleStyle}>Deliveries & Ordered Stock</h2>
-            <button onClick={() => setShowDeliveryModal(true)} style={buttonStyle}>
+            <button
+              onClick={() => {
+                resetDeliveryModal();
+                setShowDeliveryModal(true);
+              }}
+              style={buttonStyle}
+            >
               Log Delivery
             </button>
           </div>

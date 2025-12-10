@@ -26,6 +26,20 @@ const PART_COLUMNS = [
   "unit_price",
 ].join(",");
 
+const STORAGE_LOCATION_CODES = Array.from({ length: 26 })
+  .map((_, letterIndex) => {
+    const letter = String.fromCharCode(65 + letterIndex);
+    return Array.from({ length: 10 }).map((__, numberIndex) => `${letter}${numberIndex + 1}`);
+  })
+  .flat();
+
+const VALID_STORAGE_LOCATIONS = new Set(STORAGE_LOCATION_CODES);
+
+const normaliseLocation = (value = "") =>
+  String(value || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+
 export default async function handler(req, res) {
   if (req.method === "GET") {
     const { status = "all", limit = "50", offset = "0" } = req.query;
@@ -96,6 +110,10 @@ export default async function handler(req, res) {
         const quantityReceived = Math.max(0, parseInteger(item.quantityReceived, 0));
         const unitCost = parseNumber(item.unitCost);
         const unitPrice = parseNumber(item.unitPrice);
+        const requestedLocation = normaliseLocation(item.storageLocation || "");
+        const storageLocation = VALID_STORAGE_LOCATIONS.has(requestedLocation)
+          ? requestedLocation
+          : null;
 
         const itemPayload = {
           delivery_id: delivery.id,
@@ -140,14 +158,20 @@ export default async function handler(req, res) {
         let newInStock = currentPart.qty_in_stock + receivedDelta;
         let newOnOrder = currentPart.qty_on_order + orderedDelta - onOrderReduction;
 
+        const partUpdatePayload = {
+          qty_in_stock: newInStock,
+          qty_on_order: newOnOrder,
+          updated_at: new Date().toISOString(),
+          updated_by: userId || null,
+        };
+
+        if (storageLocation) {
+          partUpdatePayload.storage_location = storageLocation;
+        }
+
         const { error: updateError } = await supabase
           .from("parts_catalog")
-          .update({
-            qty_in_stock: newInStock,
-            qty_on_order: newOnOrder,
-            updated_at: new Date().toISOString(),
-            updated_by: userId || null,
-          })
+          .update(partUpdatePayload)
           .eq("id", item.partId);
 
         if (updateError) throw updateError;
