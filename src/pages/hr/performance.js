@@ -180,7 +180,6 @@ function PerformanceContent() {
     </div>
   );
 }
-}
 
 export default function HrPerformanceAppraisals({ embedded = false } = {}) {
   const content = <PerformanceContent />;
