@@ -76,7 +76,9 @@ export default function Layout({ children, jobNumber }) {
   const { usersByRole } = useRoster();
   const router = useRouter();
   const hideSidebar = router.pathname === "/login";
-  const showHrTabs = router.pathname.startsWith("/hr") || router.pathname.startsWith("/admin/users");
+  const showHrTabs =
+    (router.pathname.startsWith("/hr") && router.pathname !== "/hr/manager") ||
+    router.pathname.startsWith("/admin/users");
 
   const getViewportWidth = () =>
     typeof window !== "undefined" && window.innerWidth ? window.innerWidth : 1440;

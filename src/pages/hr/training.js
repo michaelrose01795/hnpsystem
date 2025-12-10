@@ -13,15 +13,14 @@ const placeholderCourses = [
   { id: "COURSE-3", name: "MOT Standards Update 2024", mandatory: true, duration: "3 hrs" },
 ];
 
-export default function HrTrainingQualifications() {
+function TrainingContent() {
   const { data, isLoading, error } = useHrOperationsData(); // load renewals, directory, and balances
 
   const trainingRenewals = data?.trainingRenewals ?? []; // Supabase-backed renewals list
   const employeeDirectory = data?.employeeDirectory ?? []; // employees for assignment form
 
   return (
-    <Layout>
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header>
           <p style={{ color: "var(--info)", marginTop: "6px" }}>
             Monitor mandatory training, certificate uploads, and renewal reminders.
@@ -178,8 +177,13 @@ export default function HrTrainingQualifications() {
           </>
         )}
       </div>
-    </Layout>
+    </div>
   );
+}
+
+export default function HrTrainingQualifications({ embedded = false } = {}) {
+  const content = <TrainingContent />;
+  return embedded ? content : <Layout>{content}</Layout>;
 }
 
 function ComplianceCard({ title, percent, status }) {

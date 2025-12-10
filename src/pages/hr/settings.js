@@ -7,10 +7,9 @@ import { SectionCard } from "@/components/HR/MetricCard";
 // TODO: Persist policy uploads, shift rules, and access controls to the HR settings tables.
 
 // TODO: Replace placeholder policy uploads and access matrix with real configuration storage.
-export default function HrSettingsPolicies() {
+function SettingsContent() {
   return (
-    <Layout>
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header>
           <p style={{ color: "var(--info)", marginTop: "6px" }}>
             Upload policy documents, configure shift patterns, and manage role-based access for HR tools.
@@ -130,8 +129,13 @@ export default function HrSettingsPolicies() {
           </button>
         </SectionCard>
       </div>
-    </Layout>
+    </div>
   );
+}
+
+export default function HrSettingsPolicies({ embedded = false } = {}) {
+  const content = <SettingsContent />;
+  return embedded ? content : <Layout>{content}</Layout>;
 }
 
 const accessMatrix = [

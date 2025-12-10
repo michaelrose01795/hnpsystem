@@ -29,7 +29,7 @@ export function ProfilePage({
   adminPreviewOverride = null,
 } = {}) {
   const router = useRouter(); // access query params
-  const { user } = useUser(); // Keycloak session details
+  const { user, dbUserId } = useUser(); // Keycloak session details + Supabase id for dev mode
   const { data: session } = useSession(); // NextAuth session for role checking
   const { mode: themeMode, resolvedMode, isDark, toggleTheme } = useTheme();
 
@@ -75,7 +75,10 @@ export function ProfilePage({
         setUserProfileLoading(true);
         setUserProfileError(null);
 
-        const response = await fetch("/api/profile/me", {
+        const shouldUseDevQuery = !session?.user && dbUserId;
+        const profileUrl = shouldUseDevQuery ? `/api/profile/me?userId=${dbUserId}` : "/api/profile/me";
+
+        const response = await fetch(profileUrl, {
           signal: controller.signal,
           credentials: "include", // ensure NextAuth cookies are sent even in embedded contexts
         });
@@ -113,7 +116,7 @@ export function ProfilePage({
       isMounted = false;
       controller.abort();
     };
-  }, [shouldUseHrData, user, session?.user]);
+  }, [shouldUseHrData, user, session?.user, dbUserId]);
 
   // Choose data source based on whether viewing as admin or own profile
   const data = shouldUseHrData ? hrData : null;

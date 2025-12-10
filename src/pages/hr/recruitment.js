@@ -47,10 +47,9 @@ const placeholderApplicants = [
   },
 ];
 
-export default function HrRecruitment() {
+function RecruitmentContent() {
   return (
-    <Layout>
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header>
           <p style={{ color: "var(--info)", marginTop: "6px" }}>
             Manage job listings, applicant pipelines, interview scheduling, and onboarding checklists.
@@ -180,8 +179,13 @@ export default function HrRecruitment() {
           </p>
         </SectionCard>
       </div>
-    </Layout>
+    </div>
   );
+}
+
+export default function HrRecruitment({ embedded = false } = {}) {
+  const content = <RecruitmentContent />;
+  return embedded ? content : <Layout>{content}</Layout>;
 }
 
 const buttonStylePrimary = {

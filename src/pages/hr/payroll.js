@@ -28,7 +28,7 @@ const payriseRequests = [
   },
 ];
 
-export default function HrPayroll() {
+function PayrollContent() {
   const { data, isLoading, error } = useHrOperationsData(); // hydrate payroll workspace with consolidated data
 
   const employeeDirectory = data?.employeeDirectory ?? []; // directory for compensation overview
@@ -36,8 +36,7 @@ export default function HrPayroll() {
   const payRateHistory = data?.payRateHistory ?? []; // payroll adjustment log
 
   return (
-    <Layout>
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           <p style={{ color: "var(--info)" }}>
             Track compensation, pay rise approvals, overtime payments, and exports.
@@ -219,8 +218,13 @@ export default function HrPayroll() {
           </>
         )}
       </div>
-    </Layout>
+    </div>
   );
+}
+
+export default function HrPayroll({ embedded = false } = {}) {
+  const content = <PayrollContent />;
+  return embedded ? content : <Layout>{content}</Layout>;
 }
 
 const buttonStylePrimary = {

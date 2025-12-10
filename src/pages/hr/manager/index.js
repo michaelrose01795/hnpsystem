@@ -23,17 +23,17 @@ import SettingsTab from "@/components/HR/tabs/SettingsTab";
 
 // Tab configuration - each tab represents a major HR function
 const HR_TABS = [
-  { id: "dashboard", label: "Dashboard", icon: "📊", component: HRDashboardTab },
-  { id: "employees", label: "Employees", icon: "👥", component: EmployeesTab },
-  { id: "attendance", label: "Attendance", icon: "🕒", component: AttendanceTab },
-  { id: "payroll", label: "Payroll", icon: "💷", component: PayrollTab },
-  { id: "leave", label: "Leave", icon: "🏖️", component: LeaveTab },
-  { id: "performance", label: "Performance", icon: "📈", component: PerformanceTab },
-  { id: "training", label: "Training", icon: "🎓", component: TrainingTab },
-  { id: "disciplinary", label: "Disciplinary", icon: "⚠️", component: DisciplinaryTab },
-  { id: "recruitment", label: "Recruitment", icon: "🔍", component: RecruitmentTab },
-  { id: "reports", label: "Reports", icon: "📄", component: ReportsTab },
-  { id: "settings", label: "Settings", icon: "⚙️", component: SettingsTab },
+  { id: "dashboard", label: "Dashboard", component: HRDashboardTab },
+  { id: "employees", label: "Employees", component: EmployeesTab },
+  { id: "attendance", label: "Attendance", component: AttendanceTab },
+  { id: "payroll", label: "Payroll", component: PayrollTab },
+  { id: "leave", label: "Leave", component: LeaveTab },
+  { id: "performance", label: "Performance", component: PerformanceTab },
+  { id: "training", label: "Training", component: TrainingTab },
+  { id: "disciplinary", label: "Disciplinary", component: DisciplinaryTab },
+  { id: "recruitment", label: "Recruitment", component: RecruitmentTab },
+  { id: "reports", label: "Reports", component: ReportsTab },
+  { id: "settings", label: "Settings", component: SettingsTab },
 ];
 
 export default function HRManagerDashboard() {
@@ -183,7 +183,7 @@ NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "8px",
+                    gap: "0",
                     padding: "12px 20px",
                     background: isActive ? "var(--surface)" : "rgba(255, 255, 255, 0.1)",
                     color: isActive ? "var(--primary)" : "white",
@@ -197,7 +197,6 @@ NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
                     boxShadow: isActive ? "0 -4px 12px rgba(0, 0, 0, 0.1)" : "none",
                   }}
                 >
-                  <span style={{ fontSize: "1.2rem" }}>{tab.icon}</span>
                   <span>{tab.label}</span>
                 </button>
               );

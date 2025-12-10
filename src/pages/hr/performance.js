@@ -7,14 +7,13 @@ import { SectionCard, StatusTag } from "@/components/HR/MetricCard"; // shared H
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 
-export default function HrPerformanceAppraisals() {
+function PerformanceContent() {
   const { data, isLoading, error } = useHrOperationsData(); // hydrate the workspace with real HR data
   const employeeDirectory = data?.employeeDirectory ?? []; // fallback to empty array when no staff records
   const performanceReviews = data?.performanceReviews ?? [];
 
   return (
-    <Layout>
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header>
           <p style={{ color: "var(--info)", marginTop: "6px" }}>
             Track reviews, ratings, development plans, and upcoming appraisals.
@@ -177,8 +176,13 @@ export default function HrPerformanceAppraisals() {
           </>
         )}
       </div>
-    </Layout>
+    </div>
   );
+}
+
+export default function HrPerformanceAppraisals({ embedded = false } = {}) {
+  const content = <PerformanceContent />;
+  return embedded ? content : <Layout>{content}</Layout>;
 }
 
 const buttonStylePrimary = {

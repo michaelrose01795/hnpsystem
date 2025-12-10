@@ -34,10 +34,9 @@ const placeholderReports = [
   },
 ];
 
-export default function HrReportsExports() {
+function ReportsContent() {
   return (
-    <Layout>
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
         <header>
           <p style={{ color: "var(--info)", marginTop: "6px" }}>
             Generate HR analytics, download data sets, and schedule automated exports.
@@ -133,8 +132,13 @@ export default function HrReportsExports() {
           </p>
         </SectionCard>
       </div>
-    </Layout>
+    </div>
   );
+}
+
+export default function HrReportsExports({ embedded = false } = {}) {
+  const content = <ReportsContent />;
+  return embedded ? content : <Layout>{content}</Layout>;
 }
 
 const buttonStylePrimary = {

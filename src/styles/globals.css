@@ -148,6 +148,11 @@ textarea::placeholder {
   color: var(--text-secondary);
 }
 
+.employee-form input::placeholder,
+.employee-form textarea::placeholder {
+  opacity: 0.45;
+}
+
 /* Labels */
 label {
   font-size: 0.8rem;

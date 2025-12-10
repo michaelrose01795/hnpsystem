@@ -47,17 +47,16 @@ const placeholderIncidentsLog = [
   },
 ];
 
-export default function HrDisciplinaryIncidents() {
+function DisciplinaryContent() {
   return (
-    <Layout>
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
-        <header>
-          <p style={{ color: "var(--info)", marginTop: "6px" }}>
-            Log warnings, track follow-ups, and maintain audit trails for workplace incidents.
-          </p>
-        </header>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
+      <header>
+        <p style={{ color: "var(--info)", marginTop: "6px" }}>
+          Log warnings, track follow-ups, and maintain audit trails for workplace incidents.
+        </p>
+      </header>
 
-        <section style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "20px" }}>
+      <section style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "20px" }}>
           <SectionCard
             title="Active Warnings"
             subtitle="Warnings that still require follow-up or monitoring."
@@ -119,12 +118,12 @@ export default function HrDisciplinaryIncidents() {
               ))}
             </ul>
           </SectionCard>
-        </section>
+      </section>
 
-        <SectionCard
-          title="New Incident / Warning"
-          subtitle="Record the details, attach documentation, and assign a case owner."
-        >
+      <SectionCard
+        title="New Incident / Warning"
+        subtitle="Record the details, attach documentation, and assign a case owner."
+      >
           <form style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
             <label style={labelStyle}>
               <span>Employee Name</span>
@@ -169,10 +168,14 @@ export default function HrDisciplinaryIncidents() {
           <p style={{ color: "var(--info)", marginTop: "18px" }}>
             These controls are placeholders for UX validation. Wire up Supabase tables for incidents and warnings before launch.
           </p>
-        </SectionCard>
-      </div>
-    </Layout>
+      </SectionCard>
+    </div>
   );
+}
+
+export default function HrDisciplinaryIncidents({ embedded = false } = {}) {
+  const content = <DisciplinaryContent />;
+  return embedded ? content : <Layout>{content}</Layout>;
 }
 
 const buttonStylePrimary = {

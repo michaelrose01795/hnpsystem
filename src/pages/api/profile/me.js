@@ -315,14 +315,17 @@ export default async function handler(req, res) {
 
   try {
     // Support both NextAuth (Keycloak) and dev authentication bypass
-    // Check if dev bypass is enabled
-    const devBypass = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
+    // Enable bypass when env flag is set or when a dev role cookie exists in non-production
+    const devBypassEnv = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
+    const devRolesCookie = req.cookies?.["hnp-dev-roles"] || null;
+    const allowDevBypass =
+      devBypassEnv || (process.env.NODE_ENV !== "production" && Boolean(devRolesCookie));
 
     let userId = null;
     let sessionEmail = null;
     let sessionName = null;
 
-    if (devBypass) {
+    if (allowDevBypass) {
       // In dev mode, accept userId from query params (for testing)
       // Or use a default test user
       const queryUserId = req.query.userId;

@@ -594,9 +594,7 @@ export default function ViewJobCards() {
                       display: "inline-flex",
                       alignItems: "center",
                       gap: "10px",
-                      boxShadow: "none"
-                        ? "0 10px 25px rgba(var(--primary-rgb), 0.25)"
-                        : "0 6px 16px rgba(var(--primary-rgb), 0.08)",
+                      boxShadow: "none",
                       transition: "all 0.2s ease",
                     }}
                   >
@@ -1040,12 +1038,12 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
       }}
       onMouseEnter={(event) => {
         event.currentTarget.style.transform = "translateY(-2px)";
-        event.currentTarget.style.boxShadow = "0 6px 16px rgba(var(--primary-rgb),0.12)";
+        event.currentTarget.style.boxShadow = "none";
         event.currentTarget.style.borderColor = "var(--primary)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "0 2px 6px rgba(var(--primary-rgb),0.04)";
+        event.currentTarget.style.boxShadow = "none";
         event.currentTarget.style.borderColor = "var(--surface-light)";
       }}
     >
