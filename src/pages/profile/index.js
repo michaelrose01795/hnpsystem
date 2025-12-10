@@ -77,6 +77,7 @@ export function ProfilePage({
 
         const response = await fetch("/api/profile/me", {
           signal: controller.signal,
+          credentials: "include", // ensure NextAuth cookies are sent even in embedded contexts
         });
 
         if (!response.ok) {
