@@ -64,7 +64,7 @@ export default function InvoicesPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
             <div>
-              <h1 style={{ margin: 0, fontSize: "2rem", color: "var(--primary)" }}>Invoices</h1>
+              <h1 style={{ margin: 0, fontSize: "2rem", color: "var(--primary)" }}></h1>
               <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.95rem" }}>Search invoices, filter by status, and review overdue balances.</p>
             </div>
             <div style={{ display: "flex", gap: "10px" }}>

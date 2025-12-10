@@ -164,7 +164,7 @@ export default function AccountsListPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
             <div>
-              <h1 style={{ margin: 0, fontSize: "2rem", color: "var(--primary)" }}>Accounts</h1>
+              <h1 style={{ margin: 0, fontSize: "2rem", color: "var(--primary)" }}></h1>
               <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.95rem" }}>Full ledger of customer accounts, balances, and billing contacts.</p>
             </div>
             <div style={{ display: "flex", gap: "10px" }}>

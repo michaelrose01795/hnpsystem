@@ -48,7 +48,7 @@ export default function AccountsReportsPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
             <div>
-              <h1 style={{ margin: 0, fontSize: "2rem", color: "var(--primary)" }}>Account Reports</h1>
+              <h1 style={{ margin: 0, fontSize: "2rem", color: "var(--primary)" }}></h1>
               <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.95rem" }}>Monitor account creation velocity, exposure, and overdue invoices.</p>
             </div>
             <button type="button" onClick={handleExport} style={{ padding: "10px 18px", borderRadius: "10px", border: "1px solid var(--primary)", background: "transparent", color: "var(--primary)", fontWeight: 600 }}>Export Summary</button>
