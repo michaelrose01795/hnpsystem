@@ -188,8 +188,9 @@ export default function Sidebar({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          minHeight: isCondensed ? "120px" : "150px",
+          minHeight: isCondensed ? "60px" : "75px", // keep the header half as tall while allowing the logo to remain oversized
           borderBottom: "1px solid var(--surface-light)",
+          overflow: "hidden",
         }}
       >
         <div
