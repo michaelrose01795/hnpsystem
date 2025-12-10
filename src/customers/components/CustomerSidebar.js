@@ -72,9 +72,7 @@ export default function CustomerSidebar() {
                   background: isActive ? "var(--primary)" : "var(--surface-light)",
                   color: isActive ? "var(--surface)" : "var(--primary-dark)",
                   fontWeight: 600,
-                  boxShadow: "none"
-                    ? "0 12px 20px rgba(var(--danger-rgb), 0.25)"
-                    : "0 4px 12px rgba(var(--shadow-rgb), 0.05)",
+                  boxShadow: "none",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>

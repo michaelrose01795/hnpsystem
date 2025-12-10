@@ -155,9 +155,7 @@ export default function Sidebar({
         display: "flex",
         flexDirection: "column",
         borderRadius: "16px",
-        boxShadow: "none"
-          ? "0 12px 30px rgba(var(--primary-rgb), 0.12)"
-          : "0 20px 40px rgba(var(--primary-rgb), 0.12)",
+        boxShadow: "none",
         border: "1px solid var(--surface-light)",
         position: isCondensed ? "relative" : "sticky",
         top: isCondensed ? "auto" : "10px",
@@ -289,9 +287,7 @@ export default function Sidebar({
                     fontWeight: 600,
                     cursor: "pointer",
                     border: isActive ? "none" : "1px solid var(--surface-light)",
-                    boxShadow: "none"
-                      ? "0 12px 20px rgba(var(--primary-rgb), 0.28)"
-                      : "0 4px 12px rgba(var(--primary-rgb), 0.15)",
+                    boxShadow: "none",
                     textDecoration: "none",
                   }}
                 >
@@ -344,9 +340,7 @@ export default function Sidebar({
                     fontWeight: 600,
                     cursor: "pointer",
                     border: isActive ? "none" : "1px solid var(--surface-light)",
-                    boxShadow: "none"
-                      ? "0 12px 20px rgba(var(--primary-rgb), 0.28)"
-                      : "0 4px 12px rgba(var(--primary-rgb), 0.15)",
+                    boxShadow: "none",
                     textDecoration: "none",
                   }}
                 >
@@ -398,9 +392,7 @@ export default function Sidebar({
                     fontWeight: 600,
                     cursor: "pointer",
                     border: isActive ? "none" : "1px solid var(--surface-light)",
-                    boxShadow: "none"
-                      ? "0 12px 20px rgba(var(--danger-rgb), 0.25)"
-                      : "0 4px 12px rgba(var(--shadow-rgb), 0.05)",
+                    boxShadow: "none",
                     textDecoration: "none",
                   }}
                 >
@@ -470,9 +462,7 @@ export default function Sidebar({
                       fontWeight: 600,
                       cursor: "pointer",
                       border: isActive ? "none" : "1px solid var(--surface-light)",
-                      boxShadow: "none"
-                        ? "0 12px 20px rgba(var(--danger-rgb), 0.35)"
-                        : "0 6px 14px rgba(var(--danger-rgb), 0.2)",
+                      boxShadow: "none",
                       textDecoration: "none",
                     }}
                 >
