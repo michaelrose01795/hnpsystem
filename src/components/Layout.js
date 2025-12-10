@@ -400,7 +400,26 @@ export default function Layout({ children, jobNumber }) {
     };
   }, [router]);
 
-  const serviceSidebarSections = WORKSHOP_SHORTCUT_SECTIONS;
+  const accountsRoleCandidates = (roleCategories?.Sales || []).filter((roleName) =>
+    roleName.toLowerCase().includes("accounts")
+  );
+  const normalizedAccountsRoles = accountsRoleCandidates.map((roleName) => roleName.toLowerCase());
+  const hasAccountsSidebarAccess = userRoles.some((role) => normalizedAccountsRoles.includes(role));
+  const accountsSidebarSections = hasAccountsSidebarAccess
+    ? [
+        {
+          label: "Accounts",
+          category: "departments",
+          items: [
+            { label: "Accounts", href: "/accounts", roles: accountsRoleCandidates },
+            { label: "Invoices", href: "/accounts/invoices", roles: accountsRoleCandidates },
+            { label: "Reports", href: "/accounts/reports", roles: accountsRoleCandidates },
+            { label: "Settings", href: "/accounts/settings", roles: accountsRoleCandidates },
+          ],
+        },
+      ]
+    : [];
+  const serviceSidebarSections = [...WORKSHOP_SHORTCUT_SECTIONS, ...accountsSidebarSections];
   const combinedSidebarSections = [...sidebarSections, ...serviceSidebarSections];
   const navigationItems = [];
   const seenNavItems = new Set();
