@@ -5,6 +5,48 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
+CREATE TABLE public.account_settings (
+  id integer NOT NULL DEFAULT 1,
+  settings jsonb NOT NULL DEFAULT '{}'::jsonb,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT account_settings_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.account_transactions (
+  transaction_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  account_id text NOT NULL,
+  transaction_date timestamp with time zone NOT NULL DEFAULT now(),
+  amount numeric NOT NULL DEFAULT 0,
+  type text NOT NULL DEFAULT 'Debit'::text,
+  description text,
+  job_number text,
+  payment_method text,
+  created_by text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT account_transactions_pkey PRIMARY KEY (transaction_id),
+  CONSTRAINT account_transactions_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.accounts(account_id)
+);
+CREATE TABLE public.accounts (
+  account_id text NOT NULL,
+  customer_id uuid,
+  account_type text NOT NULL DEFAULT 'Retail'::text,
+  balance numeric NOT NULL DEFAULT 0,
+  credit_limit numeric NOT NULL DEFAULT 0,
+  status text NOT NULL DEFAULT 'Active'::text,
+  billing_name text,
+  billing_email text,
+  billing_phone text,
+  billing_address_line1 text,
+  billing_address_line2 text,
+  billing_city text,
+  billing_postcode text,
+  billing_country text,
+  credit_terms integer NOT NULL DEFAULT 30,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT accounts_pkey PRIMARY KEY (account_id),
+  CONSTRAINT accounts_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
+);
 CREATE TABLE public.activity_logs (
   log_id integer NOT NULL DEFAULT nextval('activity_logs_log_id_seq'::regclass),
   user_id integer,
@@ -374,6 +416,17 @@ CREATE TABLE public.invoice_items (
   CONSTRAINT invoice_items_pkey PRIMARY KEY (id),
   CONSTRAINT invoice_items_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id)
 );
+CREATE TABLE public.invoice_payments (
+  payment_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  invoice_id uuid NOT NULL,
+  amount numeric NOT NULL DEFAULT 0,
+  payment_method text,
+  reference text,
+  payment_date date NOT NULL DEFAULT CURRENT_DATE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT invoice_payments_pkey PRIMARY KEY (payment_id),
+  CONSTRAINT invoice_payments_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id)
+);
 CREATE TABLE public.invoices (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   job_id integer,
@@ -388,9 +441,20 @@ CREATE TABLE public.invoices (
   updated_at timestamp with time zone DEFAULT now(),
   sent_email_at timestamp with time zone,
   sent_portal_at timestamp with time zone,
+  invoice_id uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+  account_id text,
+  job_number text,
+  labour_total numeric DEFAULT 0,
+  parts_total numeric DEFAULT 0,
+  consumables_total numeric DEFAULT 0,
+  vat numeric DEFAULT 0,
+  grand_total numeric DEFAULT 0,
+  payment_status text DEFAULT 'Draft'::text,
+  due_date date,
   CONSTRAINT invoices_pkey PRIMARY KEY (id),
   CONSTRAINT invoices_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
-  CONSTRAINT invoices_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
+  CONSTRAINT invoices_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT invoices_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.accounts(account_id)
 );
 CREATE TABLE public.job_booking_requests (
   request_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
