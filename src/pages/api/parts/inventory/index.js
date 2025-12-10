@@ -190,9 +190,28 @@ export default async function handler(req, res) {
     const { userId, ...partData } = req.body || {};
 
     try {
+      const partNumber = String(partData.partNumber || partData.part_number || "")
+        .trim()
+        .toUpperCase();
+      const partName = (partData.partName || partData.part_name || partNumber).trim();
+
+      if (!partNumber) {
+        return res.status(400).json({
+          success: false,
+          message: "Part number is required",
+        });
+      }
+
+      if (!partName) {
+        return res.status(400).json({
+          success: false,
+          message: "Part name is required",
+        });
+      }
+
       const payload = {
-        part_number: partData.partNumber || partData.part_number,
-        name: partData.partName || partData.name,
+        part_number: partNumber,
+        name: partName,
         description: partData.description || null,
         category: partData.category || null,
         supplier: partData.supplier || null,
@@ -209,13 +228,6 @@ export default async function handler(req, res) {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-
-      if (!payload.part_number || !payload.name) {
-        return res.status(400).json({
-          success: false,
-          message: "Part number and name are required",
-        });
-      }
 
       const { data, error } = await supabase
         .from("parts_catalog")

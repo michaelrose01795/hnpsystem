@@ -582,8 +582,8 @@ useEffect(() => {
   }, []);
 
   const handleCreateNewPart = useCallback(async () => {
-    if (!newPartForm.partNumber.trim() || !newPartForm.name.trim()) {
-      setNewPartFormError("Part number and name are required.");
+    if (!newPartForm.partNumber.trim()) {
+      setNewPartFormError("Part number is required.");
       return;
     }
 
@@ -591,6 +591,8 @@ useEffect(() => {
       newPartForm.storageLocation || newPartLocationSearch
     );
     const resolvedLocation = isValidLocationCode(desiredLocation) ? desiredLocation : null;
+    const trimmedNumber = newPartForm.partNumber.trim();
+    const trimmedName = (newPartForm.name || trimmedNumber).trim();
 
     setNewPartSaving(true);
     setNewPartFormError("");
@@ -600,8 +602,8 @@ useEffect(() => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: actingUserId,
-          partNumber: newPartForm.partNumber.trim(),
-          partName: newPartForm.name.trim(),
+          partNumber: trimmedNumber,
+          partName: trimmedName,
           supplier: newPartForm.supplier || null,
           storageLocation: resolvedLocation,
           unitCost: newPartForm.unitCost ? Number(newPartForm.unitCost) : null,
