@@ -1,6 +1,7 @@
 // file location: src/pages/api/parts/inventory/[partId].js
 
 import { supabase } from "@/lib/supabaseClient";
+import { resolveAuditIds } from "@/lib/utils/ids";
 
 const parseNumeric = (value, fallback = 0) => {
   if (value === null || value === undefined || value === "") {
@@ -73,6 +74,7 @@ export default async function handler(req, res) {
 
     if (req.method === "PATCH") {
       const { userId, ...updates } = req.body || {};
+      const { uuid: auditUserId } = resolveAuditIds(userId);
 
       const payload = {
         ...updates,
@@ -97,7 +99,7 @@ export default async function handler(req, res) {
         updated_at: new Date().toISOString(),
       };
 
-      if (userId) payload.updated_by = userId;
+      if (auditUserId) payload.updated_by = auditUserId;
 
       Object.keys(payload).forEach((key) => {
         if (payload[key] === undefined) {

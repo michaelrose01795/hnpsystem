@@ -56,10 +56,13 @@ export function UserProvider({ children }) {
   // Set Keycloak session user
   useEffect(() => {
     if (session?.user) {
+      const resolvedSessionId =
+        session.user.id || session.user.sub || session.user.user_id || null;
       const keycloakUser = {
-        id: session.user.id || Date.now(),
+        id: resolvedSessionId || Date.now(),
         username: session.user.name || "KeycloakUser",
         roles: (session.user.roles || []).map((r) => r.toUpperCase()),
+        authUuid: resolvedSessionId || null,
       };
       setUser(keycloakUser);
       localStorage.removeItem("devUser");
@@ -154,12 +157,14 @@ export function UserProvider({ children }) {
             username: resolved.name,
             email: resolved.email,
             roles: [resolved.role?.toUpperCase() || role.toUpperCase()],
+            authUuid: null,
           }
         : {
             id: Date.now(),
             username: fallbackName,
             email: userChoice?.email || "",
             roles: [role.toUpperCase()],
+            authUuid: null,
           };
 
       setUser(finalUser);
@@ -192,7 +197,8 @@ export function UserProvider({ children }) {
     dbUserId,
     currentJob,
     setCurrentJob,
-    refreshCurrentJob
+    refreshCurrentJob,
+    authUserId: user?.authUuid || (typeof user?.id === "string" ? user.id : null),
   };
 
   return <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>;

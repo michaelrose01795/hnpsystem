@@ -1,6 +1,7 @@
 // file location: src/pages/api/parts/deliveries/items/[itemId].js
 
 import { supabase } from "@/lib/supabaseClient";
+import { resolveAuditIds } from "@/lib/utils/ids";
 
 const parseInteger = (value, fallback) => {
   if (value === null || value === undefined) return fallback
@@ -43,6 +44,7 @@ export default async function handler(req, res) {
     if (req.method === "PATCH") {
       const {
         userId,
+        userNumericId,
         quantityOrdered,
         quantityReceived,
         status,
@@ -50,6 +52,7 @@ export default async function handler(req, res) {
         unitCost,
         unitPrice,
       } = req.body || {}
+      const { uuid: auditUserId } = resolveAuditIds(userId, userNumericId);
 
       const newOrdered = quantityOrdered !== undefined
         ? Math.max(0, parseInteger(quantityOrdered, 0))
@@ -116,7 +119,7 @@ export default async function handler(req, res) {
               quantity: receivedDelta,
               unit_cost: updated.unit_cost || existing.unit_cost || 0,
               unit_price: updated.unit_price || existing.unit_price || 0,
-              performed_by: userId || null,
+              performed_by: auditUserId || null,
               reference: `delivery:${existing.delivery_id}`,
               notes: notes || existing.notes || null,
               created_at: new Date().toISOString(),
@@ -165,7 +168,7 @@ export default async function handler(req, res) {
               quantity: -stockReduction,
               unit_cost: existing.unit_cost || 0,
               unit_price: existing.unit_price || 0,
-              performed_by: req.body?.userId || null,
+              performed_by: resolveAuditIds(req.body?.userId, req.body?.userNumericId).uuid || null,
               reference: `delivery-delete:${existing.delivery_id}`,
               notes: 'Delivery item removed',
               created_at: new Date().toISOString(),

@@ -1,6 +1,7 @@
 // file location: src/pages/api/parts/jobs/[jobPartId].js
 
 import { supabase } from "@/lib/supabaseClient";
+import { resolveAuditIds } from "@/lib/utils/ids";
 
 const PRE_PICK_LOCATIONS = new Set([
   "service_rack_1",
@@ -72,6 +73,7 @@ export default async function handler(req, res) {
     if (req.method === "PATCH") {
       const {
         userId,
+        userNumericId,
         status,
         quantityAllocated,
         quantityFitted,
@@ -82,6 +84,7 @@ export default async function handler(req, res) {
         requestNotes,
       } = req.body || {};
 
+      const { uuid: auditUserId } = resolveAuditIds(userId, userNumericId);
       const updates = {};
       const now = new Date().toISOString();
       let stockNeedsUpdate = false;
@@ -176,8 +179,8 @@ export default async function handler(req, res) {
       }
 
       updates.updated_at = now;
-      if (userId) {
-        updates.updated_by = userId;
+      if (auditUserId) {
+        updates.updated_by = auditUserId;
       }
 
       if (stockNeedsUpdate) {
@@ -187,7 +190,7 @@ export default async function handler(req, res) {
             qty_in_stock: newStock,
             qty_reserved: newReserved,
             updated_at: now,
-            updated_by: userId || null,
+            updated_by: auditUserId || null,
           })
           .eq("id", existing.part_id);
 

@@ -817,11 +817,13 @@ CREATE TABLE public.parts_deliveries (
   expected_date date,
   received_date date,
   notes text,
-  created_by uuid,
-  updated_by uuid,
+  created_by integer,
+  updated_by integer,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT parts_deliveries_pkey PRIMARY KEY (id)
+  CONSTRAINT parts_deliveries_pkey PRIMARY KEY (id),
+  CONSTRAINT parts_deliveries_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
+  CONSTRAINT parts_deliveries_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.parts_delivery_items (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -834,14 +836,16 @@ CREATE TABLE public.parts_delivery_items (
   unit_price numeric,
   status text NOT NULL DEFAULT 'ordered'::text CHECK (status = ANY (ARRAY['ordered'::text, 'backorder'::text, 'received'::text, 'cancelled'::text])),
   notes text,
-  created_by uuid,
-  updated_by uuid,
+  created_by integer,
+  updated_by integer,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT parts_delivery_items_pkey PRIMARY KEY (id),
   CONSTRAINT parts_delivery_items_delivery_id_fkey FOREIGN KEY (delivery_id) REFERENCES public.parts_deliveries(id),
   CONSTRAINT parts_delivery_items_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts_catalog(id),
-  CONSTRAINT parts_delivery_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
+  CONSTRAINT parts_delivery_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT parts_delivery_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
+  CONSTRAINT parts_delivery_items_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.parts_delivery_runs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

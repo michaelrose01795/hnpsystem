@@ -1,6 +1,7 @@
 // file location: src/pages/api/parts/deliveries/[deliveryId].js
 
 import { supabase } from '@/lib/supabaseClient' // Import Supabase client
+import { resolveAuditIds } from "@/lib/utils/ids";
 
 const parseDate = (value) => {
   if (!value) return null
@@ -19,7 +20,8 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "PATCH") {
-    const { userId, ...updates } = req.body || {}
+    const { userId, userNumericId, ...updates } = req.body || {}
+    const { numeric: auditUserNumeric } = resolveAuditIds(userId, userNumericId);
 
     try {
       const payload = {
@@ -30,7 +32,7 @@ export default async function handler(req, res) {
         received_date: parseDate(updates.receivedDate),
         notes: updates.notes,
         updated_at: new Date().toISOString(),
-        updated_by: userId || null,
+        updated_by: auditUserNumeric || null,
       }
 
       // Remove undefined values

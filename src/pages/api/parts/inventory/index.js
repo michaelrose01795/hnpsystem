@@ -1,6 +1,7 @@
 // file location: src/pages/api/parts/inventory/index.js
 
 import { supabase } from "@/lib/supabaseClient";
+import { resolveAuditIds } from "@/lib/utils/ids";
 
 const parseNumber = (value, fallback = 0) => {
   if (value === null || value === undefined || value === "") {
@@ -200,6 +201,7 @@ export default async function handler(req, res) {
 
   if (req.method === "POST") {
     const { userId, ...partData } = req.body || {};
+    const { uuid: auditUserId } = resolveAuditIds(userId);
 
     try {
       const partNumber =
@@ -235,7 +237,7 @@ export default async function handler(req, res) {
         unit_cost: parseNumberOrNull(partData.unitCost ?? partData.unit_cost),
         unit_price: parseNumberOrNull(partData.unitPrice ?? partData.unit_price),
         is_active: partData.isActive ?? partData.is_active ?? true,
-        created_by: userId || null,
+        created_by: auditUserId || null,
         notes: sanitizeTextField(partData.notes),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

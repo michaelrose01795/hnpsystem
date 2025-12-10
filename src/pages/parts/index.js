@@ -10,6 +10,7 @@ import {
 import { supabase } from "@/lib/supabaseClient";
 import DeliverySchedulerModal from "@/components/Parts/DeliverySchedulerModal";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
+import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 
 const PRE_PICK_OPTIONS = [
   { value: "", label: "Not assigned" },
@@ -175,8 +176,17 @@ const RequirementBadge = ({ label, background, color }) => (
 );
 
 function PartsPortalPage() {
-  const { user, dbUserId } = useUser();
-  const actingUserId = dbUserId || user?.id || null;
+  const { user, dbUserId, authUserId } = useUser();
+  const actingUserId = useMemo(() => {
+    if (typeof authUserId === "string" && isValidUuid(authUserId)) return authUserId;
+    if (typeof user?.authUuid === "string" && isValidUuid(user.authUuid)) return user.authUuid;
+    if (typeof user?.id === "string" && isValidUuid(user.id)) return user.id;
+    return null;
+  }, [authUserId, user?.authUuid, user?.id]);
+  const actingUserNumericId = useMemo(
+    () => sanitizeNumericId(dbUserId),
+    [dbUserId]
+  );
 
   const [jobSearch, setJobSearch] = useState("");
   const [jobLoading, setJobLoading] = useState(false);
@@ -602,6 +612,7 @@ useEffect(() => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: actingUserId,
+          userNumericId: actingUserNumericId,
           partNumber: trimmedNumber,
           partName: trimmedName,
           supplier: newPartForm.supplier || null,
@@ -623,19 +634,19 @@ useEffect(() => {
         return [createdPart, ...others];
       });
       const trimmedSupplier = (newPartForm.supplier || "").trim();
-      const updatedDeliveryForm = { ...prev, partId: createdPart.id };
-      if (trimmedSupplier) {
-        updatedDeliveryForm.supplier = trimmedSupplier;
-      }
-      if (newPartForm.unitCost) {
-        updatedDeliveryForm.unitCost = newPartForm.unitCost;
-      }
-      if (newPartForm.unitPrice) {
-        updatedDeliveryForm.unitPrice = newPartForm.unitPrice;
-      }
-      setDeliveryForm((prev) => ({
-        ...updatedDeliveryForm,
-      }));
+      setDeliveryForm((prev) => {
+        const updatedDeliveryForm = { ...prev, partId: createdPart.id };
+        if (trimmedSupplier) {
+          updatedDeliveryForm.supplier = trimmedSupplier;
+        }
+        if (newPartForm.unitCost) {
+          updatedDeliveryForm.unitCost = newPartForm.unitCost;
+        }
+        if (newPartForm.unitPrice) {
+          updatedDeliveryForm.unitPrice = newPartForm.unitPrice;
+        }
+        return updatedDeliveryForm;
+      });
       handleDeliveryPartSelection(createdPart);
       if (resolvedLocation || createdPart.storage_location) {
         const locationToUse = createdPart.storage_location || resolvedLocation || "";
@@ -653,6 +664,7 @@ useEffect(() => {
     }
   }, [
     actingUserId,
+    actingUserNumericId,
     fetchInventory,
     handleDeliveryPartSelection,
     inventorySearch,
@@ -733,6 +745,7 @@ useEffect(() => {
             selectedPart?.storage_location || selectedPart?.service_default_zone || null,
           requestNotes: partNotes || null,
           userId: actingUserId,
+          userNumericId: actingUserNumericId,
           origin: "parts_workspace",
         }),
       });
@@ -758,7 +771,11 @@ useEffect(() => {
       const response = await fetch(`/api/parts/jobs/${jobPartId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...updates, userId: actingUserId }),
+        body: JSON.stringify({
+          ...updates,
+          userId: actingUserId,
+          userNumericId: actingUserNumericId,
+        }),
       });
 
       const data = await response.json();
@@ -796,6 +813,7 @@ useEffect(() => {
           notes: deliveryForm.notes || null,
           status: deliveryForm.quantityReceived > 0 ? "received" : "ordering",
           userId: actingUserId,
+          userNumericId: actingUserNumericId,
           items: [
             {
               partId: deliveryForm.partId,

@@ -40,14 +40,24 @@ export const authOptions = {
               decoded?.realm_access?.roles ||
               decoded?.resource_access?.[process.env.KEYCLOAK_CLIENT_ID]?.roles ||
               []; // default empty array
+            token.userId =
+              decoded?.sub ||
+              decoded?.user_id ||
+              account.providerAccountId ||
+              token.userId ||
+              null;
           } else {
             token.roles = []; // no token → no roles
+            token.userId = null;
           }
         } catch (err) {
           // decoding failed — set empty roles to avoid crashes
           console.error("NextAuth: failed to decode token for roles", err);
           token.roles = [];
+          token.userId = token.userId || null;
         }
+      } else if (!token.userId && token.sub) {
+        token.userId = token.sub;
       }
       // return modified token; NextAuth will persist it
       return token;
@@ -57,6 +67,7 @@ export const authOptions = {
     async session({ session, token }) {
       // ensure session.user exists
       session.user = session.user || {}; // default user object
+      session.user.id = token.userId || session.user.id || null;
       // attach our extracted roles and tokens to the session user
       session.user.roles = token.roles || []; // attach roles
       session.accessToken = token.accessToken || null; // attach access token for API calls

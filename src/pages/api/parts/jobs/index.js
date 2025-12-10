@@ -1,6 +1,7 @@
 // file location: src/pages/api/parts/jobs/index.js
 
 import { supabase } from "@/lib/supabaseClient";
+import { resolveAuditIds } from "@/lib/utils/ids";
 
 const PRE_PICK_LOCATIONS = new Set([
   "service_rack_1",
@@ -173,6 +174,7 @@ export default async function handler(req, res) {
       unitPrice,
       requestNotes,
       userId,
+      userNumericId,
       vhcItemId,
     } = req.body || {};
 
@@ -184,6 +186,8 @@ export default async function handler(req, res) {
     }
 
     try {
+      const { uuid: auditUserId } = resolveAuditIds(userId, userNumericId);
+
       const resolvedQuantity = Math.max(
         1,
         Number.parseInt(quantityRequested ?? quantity ?? 1, 10) || 1
@@ -236,9 +240,9 @@ export default async function handler(req, res) {
         unit_cost: resolvedUnitCost,
         unit_price: resolvedUnitPrice,
         request_notes: requestNotes || null,
-        allocated_by: shouldAllocate ? userId || null : null,
-        created_by: userId || null,
-        updated_by: userId || null,
+        allocated_by: shouldAllocate ? auditUserId || null : null,
+        created_by: auditUserId || null,
+        updated_by: auditUserId || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -258,7 +262,7 @@ export default async function handler(req, res) {
             qty_in_stock: part.qty_in_stock - resolvedQuantity,
             qty_reserved: (part.qty_reserved || 0) + resolvedQuantity,
             updated_at: new Date().toISOString(),
-            updated_by: userId || null,
+            updated_by: auditUserId || null,
           })
           .eq("id", partId);
 
@@ -275,7 +279,7 @@ export default async function handler(req, res) {
             quantity: resolvedQuantity,
             unit_cost: resolvedUnitCost,
             unit_price: resolvedUnitPrice,
-            performed_by: userId || null,
+            performed_by: auditUserId || null,
             reference: `job:${jobId}`,
             notes: requestNotes || null,
             created_at: new Date().toISOString(),

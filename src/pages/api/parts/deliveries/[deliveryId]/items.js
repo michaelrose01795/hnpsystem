@@ -1,6 +1,7 @@
 // file location: src/pages/api/parts/deliveries/[deliveryId]/items.js
 
 import { supabase } from "@/lib/supabaseClient";
+import { resolveAuditIds } from "@/lib/utils/ids";
 
 const parseInteger = (value, fallback = 0) => {
   if (value === null || value === undefined) return fallback
@@ -35,6 +36,7 @@ export default async function handler(req, res) {
       status,
       notes,
       userId,
+      userNumericId,
     } = req.body || {}
 
     if (!partId) {
@@ -101,7 +103,7 @@ export default async function handler(req, res) {
             quantity: receivedQty,
             unit_cost: createdItem.unit_cost ?? parseNumber(unitCost) ?? 0,
             unit_price: createdItem.unit_price ?? parseNumber(unitPrice) ?? 0,
-            performed_by: userId || null,
+            performed_by: auditUserId || null,
             reference: `delivery:${deliveryId}`,
             notes: notes || null,
             created_at: new Date().toISOString(),
@@ -141,3 +143,4 @@ export default async function handler(req, res) {
     message: `Method ${req.method} not allowed`,
   })
 }
+    const { uuid: auditUserId } = resolveAuditIds(userId, userNumericId);

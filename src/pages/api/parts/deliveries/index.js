@@ -1,6 +1,7 @@
 // file location: src/pages/api/parts/deliveries/index.js
 
 import { supabase } from "@/lib/supabaseClient";
+import { resolveAuditIds } from "@/lib/utils/ids";
 
 const parseInteger = (value, fallback = 0) => {
   if (value === null || value === undefined) return fallback;
@@ -80,7 +81,11 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    const { items = [], userId, ...deliveryData } = req.body || {};
+    const { items = [], userId, userNumericId, ...deliveryData } = req.body || {};
+    const { uuid: auditUserUuid, numeric: auditUserNumeric } = resolveAuditIds(
+      userId,
+      userNumericId
+    );
 
     try {
       const deliveryPayload = {
@@ -90,7 +95,7 @@ export default async function handler(req, res) {
         expected_date: deliveryData.expectedDate || null,
         received_date: deliveryData.receivedDate || null,
         notes: deliveryData.notes || null,
-        created_by: userId || null,
+        created_by: auditUserNumeric || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -162,7 +167,7 @@ export default async function handler(req, res) {
           qty_in_stock: newInStock,
           qty_on_order: newOnOrder,
           updated_at: new Date().toISOString(),
-          updated_by: userId || null,
+          updated_by: auditUserUuid || null,
         };
 
         if (storageLocation) {
@@ -185,7 +190,7 @@ export default async function handler(req, res) {
               quantity: receivedDelta,
               unit_cost: deliveryItem.unit_cost ?? unitCost ?? 0,
               unit_price: deliveryItem.unit_price ?? unitPrice ?? 0,
-              performed_by: userId || null,
+              performed_by: auditUserUuid || null,
               reference: `delivery:${delivery.id}`,
               notes: item.notes || null,
               created_at: new Date().toISOString(),
