@@ -29,37 +29,43 @@ const payriseRequests = [
 ];
 
 function PayrollContent() {
-  const { data, isLoading, error } = useHrOperationsData(); // hydrate payroll workspace with consolidated data
+  const { data, isLoading, error } = useHrOperationsData();
 
-  const employeeDirectory = data?.employeeDirectory ?? []; // directory for compensation overview
-  const overtimeSummaries = data?.overtimeSummaries ?? []; // overtime totals per employee
-  const payRateHistory = data?.payRateHistory ?? []; // payroll adjustment log
+  const employeeDirectory = data?.employeeDirectory ?? [];
+  const overtimeSummaries = data?.overtimeSummaries ?? [];
+  const payRateHistory = data?.payRateHistory ?? [];
+
+  if (isLoading) {
+    return (
+      <div style={{ padding: "8px 8px 32px" }}>
+        <SectionCard title="Loading payroll data" subtitle="Fetching pay records and overtime.">
+          <span style={{ color: "var(--info)" }}>
+            Please wait while we retrieve placeholder payroll information for testing purposes.
+          </span>
+        </SectionCard>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: "8px 8px 32px" }}>
+        <SectionCard title="Unable to load payroll data" subtitle="Mock API returned an error.">
+          <span style={{ color: "var(--danger)" }}>{error.message}</span>
+        </SectionCard>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
-        <header style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <p style={{ color: "var(--info)" }}>
-            Track compensation, pay rise approvals, overtime payments, and exports.
-          </p>
-        </header>
+      <header style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <p style={{ color: "var(--info)" }}>
+          Track compensation, pay rise approvals, overtime payments, and exports.
+        </p>
+      </header>
 
-        {isLoading && (
-          <SectionCard title="Loading payroll data" subtitle="Fetching pay records and overtime.">
-            <span style={{ color: "var(--info)" }}>
-              Please wait while we retrieve placeholder payroll information for testing purposes.
-            </span>
-          </SectionCard>
-        )}
-
-        {error && (
-          <SectionCard title="Unable to load payroll data" subtitle="Mock API returned an error.">
-            <span style={{ color: "var(--danger)" }}>{error.message}</span>
-          </SectionCard>
-        )}
-
-        {!isLoading && !error && (
-          <>
-            <section style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "20px" }}>
+      <section style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "20px" }}>
               <SectionCard
                 title="Compensation Overview"
                 subtitle="Current salary/hourly rate by employee"
