@@ -627,6 +627,7 @@ useEffect(() => {
         partId: createdPart.id,
         supplier: newPartForm.supplier || prev.supplier,
         unitCost: newPartForm.unitCost || prev.unitCost,
+        notes: prev.notes || newPartForm.notes || "",
       }));
       handleDeliveryPartSelection(createdPart);
       if (resolvedLocation || createdPart.storage_location) {
