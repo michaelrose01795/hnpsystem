@@ -52,6 +52,12 @@ const deriveCategoryFilter = (vhcItem = null) => {
 };
 
 const withFilterMode = (filter, mode = "auto") => (filter ? { ...filter, mode } : null);
+const FEEDBACK_THEME = {
+  info: { color: "var(--info-dark)", background: "var(--info-surface)" },
+  success: { color: "var(--success-dark)", background: "var(--success-surface)" },
+  warning: { color: "var(--danger)", background: "var(--warning-surface)" },
+  error: { color: "var(--danger)", background: "var(--danger-surface)" },
+};
 
 export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumber, onPartSelected }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,6 +67,10 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
   const [quantity, setQuantity] = useState(1);
   const [labourHours, setLabourHours] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState(null);
+  const [searchFeedback, setSearchFeedback] = useState({
+    type: "info",
+    text: "Enter a part number or name and click Search to query the stock catalogue",
+  });
 
   const vhcItem = vhcItemData?.vhcItem;
   const linkedParts = vhcItemData?.linkedParts || [];
@@ -82,10 +92,20 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
 
     if (!hasSearchTerm && !hasCategoryFilter) {
       setSearchResults([]);
+      setSearchFeedback({
+        type: "warning",
+        text: "Enter at least 2 characters or apply a filter before searching.",
+      });
       return;
     }
 
     setLoading(true);
+    setSearchFeedback({
+      type: "info",
+      text: trimmedQuery
+        ? `Searching for "${trimmedQuery}"...`
+        : `Searching catalogue${category?.label ? ` for ${category.label}` : ""}...`,
+    });
     try {
       let queryBuilder = supabase
         .from("parts_catalog")
@@ -125,25 +145,71 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
       if (error) {
         console.error("Error searching parts:", error);
         setSearchResults([]);
+        setSearchFeedback({
+          type: "error",
+          text: "Unable to search parts catalogue. Please try again.",
+        });
       } else {
         setSearchResults(data || []);
+        if (Array.isArray(data) && data.length > 0) {
+          if (trimmedQuery) {
+            setSearchFeedback({
+              type: "success",
+              text: `${data.length} part${data.length === 1 ? "" : "s"} found for "${trimmedQuery}"`,
+            });
+          } else if (hasCategoryFilter) {
+            setSearchFeedback({
+              type: "success",
+              text: `${data.length} part${data.length === 1 ? "" : "s"} match ${category?.label || "the selected filter"}`,
+            });
+          } else {
+            setSearchFeedback({ type: "success", text: `${data.length} parts found.` });
+          }
+        } else {
+          if (trimmedQuery) {
+            setSearchFeedback({
+              type: "warning",
+              text: `No parts found for "${trimmedQuery}"`,
+            });
+          } else if (hasCategoryFilter) {
+            setSearchFeedback({
+              type: "warning",
+              text: `No parts found for ${category?.label || "the current filter"}`,
+            });
+          } else {
+            setSearchFeedback({ type: "warning", text: "No parts match the current search." });
+          }
+        }
       }
     } catch (err) {
       console.error("Unexpected error searching parts:", err);
       setSearchResults([]);
+      setSearchFeedback({
+        type: "error",
+        text: "Unexpected error searching parts. Please try again.",
+      });
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Debounced search
+  // Automatically fetch suggested parts when a default filter is available
   useEffect(() => {
-    const timer = setTimeout(() => {
-      searchParts(searchQuery, categoryFilter);
-    }, 300);
+    if (!isOpen) return;
+    if (!categoryFilter || categoryFilter.mode !== "auto") return;
+    searchParts("", categoryFilter);
+  }, [categoryFilter, isOpen, searchParts]);
 
-    return () => clearTimeout(timer);
+  const handleManualSearch = useCallback(() => {
+    searchParts(searchQuery, categoryFilter);
   }, [searchQuery, categoryFilter, searchParts]);
+
+  const handleApplyDefaultFilter = useCallback(() => {
+    if (!defaultFilter) return;
+    const manualFilter = withFilterMode(defaultFilter, "manual");
+    setCategoryFilter(manualFilter);
+    searchParts(searchQuery, manualFilter);
+  }, [defaultFilter, searchQuery, searchParts]);
 
   // Handle part selection
   const handleSelectPart = useCallback((part) => {
@@ -195,6 +261,11 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
       if (onPartSelected) {
         onPartSelected(data);
       }
+
+      setSearchFeedback({
+        type: "success",
+        text: `${selectedPart.part_number || selectedPart.name} linked to the VHC item`,
+      });
 
       // Reset and close
       setSelectedPart(null);
@@ -350,19 +421,44 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
             <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "var(--accent-purple)", marginBottom: "8px" }}>
               Search for Parts
             </label>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by part number, name, supplier, or price..."
-              style={{
-                width: "100%",
-                padding: "12px",
-                borderRadius: "8px",
-                border: "1px solid var(--accent-purple-surface)",
-                fontSize: "14px",
-              }}
-            />
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleManualSearch();
+                  }
+                }}
+                placeholder="Search by part number, name, supplier, or price..."
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--accent-purple-surface)",
+                  fontSize: "14px",
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleManualSearch}
+                disabled={loading}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--primary)",
+                  background: loading ? "var(--surface-light)" : "var(--primary)",
+                  color: loading ? "var(--info)" : "var(--surface)",
+                  fontWeight: 600,
+                  cursor: loading ? "not-allowed" : "pointer",
+                  minWidth: "90px",
+                }}
+              >
+                {loading ? "Searching…" : "Search"}
+              </button>
+            </div>
             {categoryFilter && (
               <div
                 style={{
@@ -408,7 +504,7 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
               <div style={{ marginTop: "10px", fontSize: "12px", color: "var(--info)" }}>
                 <button
                   type="button"
-                  onClick={() => setCategoryFilter(withFilterMode(defaultFilter, "manual"))}
+                  onClick={handleApplyDefaultFilter}
                   style={{
                     border: "1px solid var(--accent-purple-surface)",
                     background: "var(--surface)",
@@ -422,6 +518,20 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
                 >
                   Filter for {defaultFilter.label}
                 </button>
+              </div>
+            )}
+            {searchFeedback?.text && (
+              <div
+                style={{
+                  marginTop: "10px",
+                  padding: "10px 12px",
+                  borderRadius: "10px",
+                  fontSize: "12px",
+                  color: FEEDBACK_THEME[searchFeedback.type]?.color || "var(--info-dark)",
+                  background: FEEDBACK_THEME[searchFeedback.type]?.background || "var(--info-surface)",
+                }}
+              >
+                {searchFeedback.text}
               </div>
             )}
           </div>
