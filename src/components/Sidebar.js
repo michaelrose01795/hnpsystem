@@ -50,12 +50,13 @@ export default function Sidebar({
   });
   const logoSrc = resolvedMode === "dark" ? "/images/logo/DarkLogo.png" : "/images/logo/LightLogo.png"; // choose the appropriate asset for the resolved theme
   const headerLogoStyle = {
-    width: "auto",
-    height: isCondensed ? 36 : 44,
-    maxHeight: 48,
-    maxWidth: "100%",
+    width: "100%",
+    height: "100%",
+    maxHeight: isCondensed ? 64 : 82,
     objectFit: "contain",
-  }; // responsive sizing keeps the logo neat on desktop/tablet/mobile
+    objectPosition: "right center",
+    display: "block",
+  }; // let the logo stretch across the header area while anchoring to the right edge
 
   const groupedSections = useMemo(() => {
     const groups = { general: [], departments: [], account: [] };
@@ -176,33 +177,37 @@ export default function Sidebar({
       }}
     >
       {/* Header */}
-      {/* Brand logo replaces the old Navigation/Workspace labels while keeping header spacing consistent */}
+      {/* Brand logo replaces the old Navigation/Workspace labels while keeping header spacing consistent. Background now follows the sidebar theme for both light/dark modes. */}
       <div
         style={{
-          background: "var(--primary)",
+          background: "var(--surface)", // match sidebar surface so the header blends with the current theme (light or dark)
           padding: "24px",
           paddingRight: onToggle ? "72px" : "24px", // leave room for the close button so it doesn't overlap the logo
-          color: "white",
+          color: "var(--text-primary)",
           position: "relative",
           display: "flex",
-          alignItems: "flex-start",
+          alignItems: "stretch",
           justifyContent: "flex-end",
+          minHeight: isCondensed ? "72px" : "96px",
+          borderBottom: "1px solid var(--surface-light)",
         }}
       >
         <div
           style={{
-            width: "100%",
+            flex: "1 1 auto",
+            height: "100%",
             display: "flex",
             justifyContent: "flex-end",
-            alignItems: "flex-start",
+            alignItems: "center",
           }}
         >
           <Image
             src={logoSrc}
             alt="H&P logo"
-            width={200}
-            height={60}
+            width={260}
+            height={80}
             priority
+            sizes="(max-width: 768px) 80vw, 240px"
             style={headerLogoStyle}
           />
         </div>
@@ -218,9 +223,9 @@ export default function Sidebar({
               padding: "0 12px",
               height: "32px",
               borderRadius: "8px",
-              border: "1px solid rgba(var(--surface-rgb), 0.4)",
-              backgroundColor: "rgba(var(--surface-rgb), 0.12)",
-              color: "var(--surface)",
+              border: "1px solid rgba(var(--primary-rgb), 0.35)",
+              backgroundColor: "rgba(var(--primary-rgb), 0.12)", // ensure the button remains visible on both light/dark backgrounds
+              color: "var(--primary)",
               fontWeight: 700,
               fontSize: "0.8rem",
               cursor: "pointer",
