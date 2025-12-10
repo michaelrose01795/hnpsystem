@@ -29,6 +29,8 @@ const buildSearchQuery = (baseQuery, term) => {
     `oem_reference.ilike.${pattern}`,
     `storage_location.ilike.${pattern}`,
   ];
+  clauses.push(`part_number.eq.${sanitised}`);
+  clauses.push(`name.eq.${sanitised}`);
   if (/^\d+(?:\.\d+)?$/.test(sanitised)) {
     const numericValue = Number.parseFloat(sanitised);
     if (!Number.isNaN(numericValue)) {
@@ -79,10 +81,15 @@ export default async function handler(req, res) {
       return res.status(500).json({ success: false, message: "Failed to search parts catalogue." });
     }
 
+    console.info("[parts-search]", {
+      search,
+      category,
+      resultCount: Array.isArray(data) ? data.length : 0,
+    });
+
     return res.status(200).json({ success: true, parts: data || [] });
   } catch (error) {
     console.error("parts-search exception", error);
     return res.status(500).json({ success: false, message: "Unexpected server error." });
   }
 }
-
