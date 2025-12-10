@@ -178,7 +178,6 @@ function RecruitmentContent() {
             Placeholder checklist for design review. Replace with dynamic onboarding templates before launch.
           </p>
         </SectionCard>
-      </div>
     </div>
   );
 }

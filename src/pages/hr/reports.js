@@ -131,7 +131,6 @@ function ReportsContent() {
             Placeholder metrics for UI verification. Connect to Supabase views and export endpoints before go-live.
           </p>
         </SectionCard>
-      </div>
     </div>
   );
 }

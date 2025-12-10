@@ -128,7 +128,6 @@ function SettingsContent() {
             Save notification preferences
           </button>
         </SectionCard>
-      </div>
     </div>
   );
 }
