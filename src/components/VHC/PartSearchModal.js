@@ -107,63 +107,41 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
         : `Searching catalogue${category?.label ? ` for ${category.label}` : ""}...`,
     });
     try {
-      let queryBuilder = supabase
-        .from("parts_catalog")
-        .select("id, part_number, name, unit_price, unit_cost, qty_in_stock, qty_reserved, qty_on_order, supplier, category, storage_location")
-        .order("name", { ascending: true })
-        .limit(30);
-
+      const params = new URLSearchParams();
+      params.set("limit", "30");
       if (hasSearchTerm) {
-        const sanitisedQuery = trimmedQuery.replace(/[%]/g, "").replace(/,/g, "");
-        const pattern = `%${sanitisedQuery}%`;
-        const orClauses = [
-          `name.ilike.${pattern}`,
-          `part_number.ilike.${pattern}`,
-          `supplier.ilike.${pattern}`,
-          `category.ilike.${pattern}`,
-          `description.ilike.${pattern}`,
-          `oem_reference.ilike.${pattern}`,
-          `storage_location.ilike.${pattern}`,
-        ];
-        const numericOnly = /^\d+(?:\.\d+)?$/.test(sanitisedQuery);
-        if (numericOnly) {
-          const numericValue = Number.parseFloat(sanitisedQuery);
-          if (!Number.isNaN(numericValue)) {
-            orClauses.push(`unit_price.eq.${numericValue}`);
-            orClauses.push(`unit_cost.eq.${numericValue}`);
-          }
-        }
-        queryBuilder = queryBuilder.or(orClauses.join(","));
+        params.set("search", trimmedQuery);
       }
-
       if (shouldFilterByCategory) {
-        queryBuilder = queryBuilder.ilike("category", `%${category.value}%`);
+        params.set("category", category.value);
       }
 
-      const { data, error } = await queryBuilder;
+      const response = await fetch(`/api/vhc/parts-search?${params.toString()}`);
+      const payload = await response.json();
 
-      if (error) {
-        console.error("Error searching parts:", error);
+      if (!response.ok || !payload?.success) {
+        console.error("Error searching parts:", payload?.message);
         setSearchResults([]);
         setSearchFeedback({
           type: "error",
-          text: "Unable to search parts catalogue. Please try again.",
+          text: payload?.message || "Unable to search parts catalogue. Please try again.",
         });
       } else {
-        setSearchResults(data || []);
-        if (Array.isArray(data) && data.length > 0) {
+        const results = Array.isArray(payload.parts) ? payload.parts : [];
+        setSearchResults(results);
+        if (results.length > 0) {
           if (trimmedQuery) {
             setSearchFeedback({
               type: "success",
-              text: `${data.length} part${data.length === 1 ? "" : "s"} found for "${trimmedQuery}"`,
+              text: `${results.length} part${results.length === 1 ? "" : "s"} found for "${trimmedQuery}"`,
             });
           } else if (hasCategoryFilter) {
             setSearchFeedback({
               type: "success",
-              text: `${data.length} part${data.length === 1 ? "" : "s"} match ${category?.label || "the selected filter"}`,
+              text: `${results.length} part${results.length === 1 ? "" : "s"} match ${category?.label || "the selected filter"}`,
             });
           } else {
-            setSearchFeedback({ type: "success", text: `${data.length} parts found.` });
+            setSearchFeedback({ type: "success", text: `${results.length} parts found.` });
           }
         } else {
           if (trimmedQuery) {
