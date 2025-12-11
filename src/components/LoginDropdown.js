@@ -77,69 +77,77 @@ export default function LoginDropdown({
     }
   }, [selectedDepartment, userOptions, selectedUser, setSelectedUser]);
 
-  const dropdownFieldClasses =
-    "w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-inner shadow-slate-200/40 transition focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100";
+  const wrapperClassName = ["login-dropdown", className].filter(Boolean).join(" ").trim();
 
   return (
-    <div className={`flex flex-col space-y-3 ${className}`}>
+    <div className={wrapperClassName}>
       {/* Retail vs Sales selector */}
-      <select
-        value={selectedCategory}
-        onChange={(e) => {
-          setSelectedCategory(e.target.value);
-          setSelectedDepartment("");
-          setSelectedUser(null);
-        }}
-        className={dropdownFieldClasses}
-      >
-        <option value="">Select Area</option>
-        {Object.keys(roleCategories).map((category) => (
-          <option key={category} value={category}>
-            {category}
-          </option>
-        ))}
-      </select>
+      <div className={`login-select-wrapper ${selectedCategory ? "has-value" : ""}`}>
+        <select
+          value={selectedCategory}
+          onChange={(e) => {
+            setSelectedCategory(e.target.value);
+            setSelectedDepartment("");
+            setSelectedUser(null);
+          }}
+          className="login-select"
+        >
+          <option value=""></option>
+          {Object.keys(roleCategories).map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
+        <label className="login-select-label">Select Area</label>
+      </div>
 
       {/* Department selector - filtered by category */}
       {selectedCategory && (
-        <select
-          value={selectedDepartment}
-          onChange={(e) => {
-            setSelectedDepartment(e.target.value);
-            setSelectedUser(null);
-          }}
-          className={dropdownFieldClasses}
-        >
-          <option value="">Select Department</option>
-          {(roleCategories[selectedCategory] || [])
-            .filter((department) => usersByRole[department])
-            .map((department) => (
-              <option key={department} value={department}>
-                {department}
-              </option>
-            ))}
-        </select>
+        <div className={`login-select-wrapper ${selectedDepartment ? "has-value" : ""}`}>
+          <select
+            value={selectedDepartment}
+            onChange={(e) => {
+              setSelectedDepartment(e.target.value);
+              setSelectedUser(null);
+            }}
+            className="login-select"
+          >
+            <option value=""></option>
+            {(roleCategories[selectedCategory] || [])
+              .filter((department) => usersByRole[department])
+              .map((department) => (
+                <option key={department} value={department}>
+                  {department}
+                </option>
+              ))}
+          </select>
+          <label className="login-select-label">Select Department</label>
+        </div>
       )}
 
       {/* User selector */}
       {selectedDepartment && (
-        <select
-          value={selectedUser?.id || ""}
-          onChange={(e) => {
-            const nextUser = userOptions.find(
-              (user) => String(user.id) === e.target.value
-            );
-            setSelectedUser(nextUser || null);
-          }}
-          className={dropdownFieldClasses}
-        >
-          <option value="">Select User</option>
-          {userOptions.map((user) => (
-            <option key={user.id} value={user.id}>
-              {formatUserName(selectedDepartment, user.name)}
-            </option>
-          ))}
-        </select>
+        <div className={`login-select-wrapper ${selectedUser ? "has-value" : ""}`}>
+          <select
+            value={selectedUser?.id || ""}
+            onChange={(e) => {
+              const nextUser = userOptions.find(
+                (user) => String(user.id) === e.target.value
+              );
+              setSelectedUser(nextUser || null);
+            }}
+            className="login-select"
+          >
+            <option value=""></option>
+            {userOptions.map((user) => (
+              <option key={user.id} value={user.id}>
+                {formatUserName(selectedDepartment, user.name)}
+              </option>
+            ))}
+          </select>
+          <label className="login-select-label">Select User</label>
+        </div>
       )}
     </div>
   );

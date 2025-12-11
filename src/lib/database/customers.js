@@ -74,11 +74,11 @@ export const getAllCustomers = async (limit = 100, offset = 0) => {
 /* ============================================
    SEARCH CUSTOMERS
    ✅ Used by: Customer lookup popups
-   ✅ Enhanced with better search logic
+   ✅ Enhanced with better search logic including full name search
 ============================================ */
 export const searchCustomers = async (searchTerm) => {
   console.log("🔍 searchCustomers:", searchTerm); // debug log
-  
+
   if (!searchTerm || searchTerm.trim().length === 0) {
     console.warn("⚠️ Empty search term"); // debug log
     return [];
@@ -86,7 +86,10 @@ export const searchCustomers = async (searchTerm) => {
 
   const term = searchTerm.trim();
 
-  const { data, error } = await supabase
+  // Check if search term contains a space (potential full name search)
+  const nameParts = term.split(/\s+/);
+
+  let query = supabase
     .from("customers")
     .select(`
       id,
@@ -99,10 +102,24 @@ export const searchCustomers = async (searchTerm) => {
       postcode,
       contact_preference,
       created_at
-    `)
-    .or(
+    `);
+
+  // If multiple words, try to match as firstname + lastname combination
+  if (nameParts.length >= 2) {
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' '); // Handle cases like "John van Smith"
+
+    query = query.or(
+      `and(firstname.ilike.%${firstName}%,lastname.ilike.%${lastName}%),and(firstname.ilike.%${lastName}%,lastname.ilike.%${firstName}%),firstname.ilike.%${term}%,lastname.ilike.%${term}%,email.ilike.%${term}%,mobile.ilike.%${term}%,telephone.ilike.%${term}%,postcode.ilike.%${term}%`
+    );
+  } else {
+    // Single word search - search across all fields
+    query = query.or(
       `firstname.ilike.%${term}%,lastname.ilike.%${term}%,email.ilike.%${term}%,mobile.ilike.%${term}%,telephone.ilike.%${term}%,postcode.ilike.%${term}%`
-    )
+    );
+  }
+
+  const { data, error } = await query
     .order('created_at', { ascending: false })
     .limit(20); // limit to 20 results for performance
 

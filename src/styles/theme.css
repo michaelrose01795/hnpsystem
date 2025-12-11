@@ -64,6 +64,8 @@
   --layer-section-level-2: #fbfbfb;
   --layer-section-level-3: #f7f7f7;
   --layer-section-level-4: #f1f1f1;
+  --row-background: #ffffff;
+  --text-color: var(--text-primary);
 }
 
 :root[data-theme="dark"] {
@@ -127,9 +129,11 @@
   --search-text: #c1a3ff;
   --overlay: rgba(var(--accent-purple-rgb), 0.5);
 
-  
+
   --layer-section-level-1: #1f2027;
   --layer-section-level-2: #181a20;
   --layer-section-level-3: #12121a;
   --layer-section-level-4: #0e0e13;
+  --row-background: #2a2a2e;
+  --text-color: #ffffff;
 }

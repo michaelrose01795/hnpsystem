@@ -90,7 +90,8 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
                   padding: "8px",
                   cursor: "pointer",
                   backgroundColor:
-                    selectedCustomer?.id === c.id ? "var(--surface)" : "white",
+                    selectedCustomer?.id === c.id ? "var(--surface)" : "var(--row-background)",
+                  color: "var(--text-color)",
                   borderBottom: "1px solid var(--surface-light)",
                 }}
               >
@@ -102,7 +103,13 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
 
         {/* Show selected customer details */}
         {selectedCustomer && (
-          <div style={{ marginBottom: "12px" }}>
+          <div style={{
+            marginBottom: "12px",
+            backgroundColor: "var(--row-background)",
+            color: "var(--text-color)",
+            padding: "12px",
+            borderRadius: "6px"
+          }}>
             <p>
               <strong>Name:</strong> {selectedCustomer.firstname}{" "}
               {selectedCustomer.lastname}
