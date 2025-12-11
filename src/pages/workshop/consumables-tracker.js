@@ -8,6 +8,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { addConsumableOrder, listConsumablesForTracker } from "@/lib/database/consumables";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
+import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
 
 const containerStyle = {
   flex: 1,
@@ -177,6 +178,17 @@ const orderButtonStyle = {
   border: "none",
   background: "var(--primary)",
   color: "var(--surface)",
+  fontWeight: 600,
+  cursor: "pointer",
+  boxShadow: "none",
+};
+
+const stockCheckButtonStyle = {
+  padding: "10px 18px",
+  borderRadius: "999px",
+  border: "1px solid var(--primary)",
+  background: "var(--surface)",
+  color: "var(--primary-dark)",
   fontWeight: 600,
   cursor: "pointer",
   boxShadow: "none",
@@ -368,6 +380,7 @@ function ConsumablesTrackerPage() {
     suppliers: 0,
   });
   const [monthlyLogs, setMonthlyLogs] = useState([]);
+  const [showStockCheck, setShowStockCheck] = useState(false);
   const isMountedRef = useRef(true);
   const [orderModalConsumable, setOrderModalConsumable] = useState(null);
   const [orderModalError, setOrderModalError] = useState("");
@@ -1135,6 +1148,14 @@ function ConsumablesTrackerPage() {
               </div>
             </div>
           )}
+          {showStockCheck && (
+            <StockCheckPopup
+              open={showStockCheck}
+              onClose={() => setShowStockCheck(false)}
+              isManager={isWorkshopManager}
+              technicianId={dbUserId}
+            />
+          )}
           {orderModalConsumable && (
             <div style={orderModalOverlayStyle}>
               <div style={orderModalStyle} role="dialog" aria-modal="true">
@@ -1316,15 +1337,24 @@ function ConsumablesTrackerPage() {
                     Monitor consumable spend, reorder schedules, and supplier summaries.
                   </p>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--grey-accent-light)" }}>
-                    Budget for {monthLabel}
-                  </p>
-                  <strong style={{ fontSize: "1.4rem", color: "var(--primary-dark)" }}>
-                    {financialLoading
-                      ? "Loading…"
-                      : formatCurrency(totals.monthlyBudget)}
-                  </strong>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowStockCheck(true)}
+                    style={stockCheckButtonStyle}
+                  >
+                    Stock Check
+                  </button>
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--grey-accent-light)" }}>
+                      Budget for {monthLabel}
+                    </p>
+                    <strong style={{ fontSize: "1.4rem", color: "var(--primary-dark)" }}>
+                      {financialLoading
+                        ? "Loading…"
+                        : formatCurrency(totals.monthlyBudget)}
+                    </strong>
+                  </div>
                 </div>
               </div>
 

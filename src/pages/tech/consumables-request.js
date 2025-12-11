@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react"; // Imp
 import Layout from "@/components/Layout"; // Import global layout wrapper
 import { useUser } from "@/context/UserContext"; // Import user context for role-based permissions
 import Link from "next/link"; // Import Next.js Link for navigation buttons
+import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
 
 const pageWrapperStyle = {
   padding: "24px", // Provide comfortable outer spacing
@@ -69,6 +70,7 @@ const TechConsumableRequestPage = () => {
   const { user, dbUserId } = useUser(); // Access current user information
   const userRoles = user?.roles?.map((role) => role.toLowerCase()) || []; // Normalise roles to lower case for checks
   const isTechRole = userRoles.includes("techs") || userRoles.includes("mot tester"); // Determine if page access should be granted
+  const isWorkshopManager = userRoles.includes("workshop manager") || userRoles.includes("workshop_manager");
 
   const [requestForm, setRequestForm] = useState({
     partName: "", // Requested item name
@@ -81,6 +83,7 @@ const TechConsumableRequestPage = () => {
   const [successMessage, setSuccessMessage] = useState("");
 
   const [searchTerm, setSearchTerm] = useState(""); // Track request search input
+  const [showStockCheck, setShowStockCheck] = useState(false);
 
   const fetchRequests = useCallback(async () => {
     setLoadingRequests(true);
@@ -168,7 +171,7 @@ const TechConsumableRequestPage = () => {
       });
   };
 
-  if (!isTechRole) {
+  if (!isTechRole && !isWorkshopManager) {
     return (
       <Layout>
         <div style={{ padding: "40px", maxWidth: "720px", margin: "0 auto" }}>
@@ -215,6 +218,21 @@ const TechConsumableRequestPage = () => {
                 purchasing and replenishment.
               </p>
             </div>
+            <button
+              type="button"
+              onClick={() => setShowStockCheck(true)}
+              style={{
+                padding: "10px 18px",
+                borderRadius: "999px",
+                border: "1px solid var(--primary)",
+                background: "var(--surface)",
+                color: "var(--primary-dark)",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Stock Check
+            </button>
           </div>
 
           <form onSubmit={handleSubmit} style={{ marginTop: "20px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", alignItems: "end" }}>
@@ -345,6 +363,14 @@ const TechConsumableRequestPage = () => {
           </div>
         </div>
       </div>
+      {showStockCheck && (
+        <StockCheckPopup
+          open={showStockCheck}
+          onClose={() => setShowStockCheck(false)}
+          isManager={isWorkshopManager}
+          technicianId={dbUserId}
+        />
+      )}
     </Layout>
   );
 }

@@ -119,6 +119,33 @@ CREATE TABLE public.company_settings (
   CONSTRAINT company_settings_pkey PRIMARY KEY (id),
   CONSTRAINT company_settings_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
 );
+CREATE TABLE public.consumable_locations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  order_index integer NOT NULL DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT consumable_locations_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.consumable_stock_checks (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  consumable_id uuid NOT NULL,
+  technician_id integer,
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT consumable_stock_checks_pkey PRIMARY KEY (id),
+  CONSTRAINT consumable_stock_checks_consumable_id_fkey FOREIGN KEY (consumable_id) REFERENCES public.consumables(id),
+  CONSTRAINT consumable_stock_checks_technician_id_fkey FOREIGN KEY (technician_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.consumables (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  location text,
+  location_id uuid,
+  temporary boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT consumables_pkey PRIMARY KEY (id),
+  CONSTRAINT consumables_location_id_fkey FOREIGN KEY (location_id) REFERENCES public.consumable_locations(id)
+);
 CREATE TABLE public.customer_payment_methods (
   method_id uuid NOT NULL DEFAULT gen_random_uuid(),
   customer_id uuid NOT NULL,

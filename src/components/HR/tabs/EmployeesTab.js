@@ -127,6 +127,11 @@ export default function EmployeesTab() {
   const [samplePayload, setSamplePayload] = useState("");
   const [isSavingEmployee, setIsSavingEmployee] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [isEditingEmployee, setIsEditingEmployee] = useState(false);
+  const [editEmployee, setEditEmployee] = useState(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editError, setEditError] = useState(null);
+  const [editingEmployeeName, setEditingEmployeeName] = useState("");
 
   const employees = useMemo(() => {
     if (!localEmployees.length) {
@@ -199,9 +204,65 @@ export default function EmployeesTab() {
     });
   };
 
+  const updateNewEmployeeField = (field, value) => {
+    setNewEmployee((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updateEditEmployeeField = (field, value) => {
+    setEditEmployee((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const mapEmployeeToForm = (employee) => {
+    if (!employee) return null;
+    const nameParts = (employee.name || "").trim().split(/\s+/);
+    const firstName = nameParts.shift() || "";
+    const lastName = nameParts.join(" ");
+    return {
+      firstName,
+      lastName,
+      email: employee.email || "",
+      phone: employee.phone || "",
+      department: employee.department || "",
+      jobTitle: employee.jobTitle || "",
+      role: employee.role || "",
+      employmentType: employee.employmentType || "Full-time",
+      status: employee.status || "Active",
+      startDate: employee.startDate || "",
+      probationEnd: employee.probationEnd || "",
+      contractedHours:
+        employee.contractedHours !== undefined && employee.contractedHours !== null
+          ? employee.contractedHours
+          : 40,
+      hourlyRate: employee.hourlyRate ?? "",
+      overtimeRate: employee.overtimeRate ?? "",
+      annualSalary: employee.annualSalary ?? "",
+      payrollNumber: employee.payrollNumber || "",
+      nationalInsurance: employee.nationalInsurance || "",
+      keycloakId: employee.keycloakId || "",
+      emergencyContact: employee.emergencyContact || "",
+      address: employee.address || "",
+    };
+  };
+
+  const upsertLocalEmployee = (employeeRecord) => {
+    if (!employeeRecord) return;
+    setLocalEmployees((prev) => {
+      const key = employeeRecord.userId || employeeRecord.id || employeeRecord.email;
+      const filtered = prev.filter((emp) => (emp.userId || emp.id || emp.email) !== key);
+      return [...filtered, employeeRecord];
+    });
+  };
+
   const handleCancelNewEmployee = () => {
     resetNewEmployeeForm();
     setIsAddingEmployee(false);
+  };
+
+  const handleShowAddEmployee = () => {
+    setIsEditingEmployee(false);
+    setEditEmployee(null);
+    setEditError(null);
+    setIsAddingEmployee(true);
   };
 
   const handleSaveNewEmployee = async () => {
@@ -226,13 +287,7 @@ export default function EmployeesTab() {
       }
 
       if (payload.employee) {
-        setLocalEmployees((prev) => {
-          const key = payload.employee.userId || payload.employee.id || payload.employee.email;
-          const filtered = prev.filter(
-            (emp) => (emp.userId || emp.id || emp.email) !== key
-          );
-          return [...filtered, payload.employee];
-        });
+        upsertLocalEmployee(payload.employee);
       }
 
       resetNewEmployeeForm();
@@ -242,6 +297,60 @@ export default function EmployeesTab() {
       setSaveError(err.message || "Failed to save employee");
     } finally {
       setIsSavingEmployee(false);
+    }
+  };
+
+  const handleStartEditEmployee = () => {
+    if (!selectedEmployee) return;
+    const mapped = mapEmployeeToForm(selectedEmployee);
+    if (!mapped) return;
+    setEditEmployee(mapped);
+    setEditingEmployeeName(selectedEmployee.name || "Employee");
+    setEditError(null);
+    setIsAddingEmployee(false);
+    setIsEditingEmployee(true);
+  };
+
+  const handleCancelEditEmployee = () => {
+    setIsEditingEmployee(false);
+    setEditEmployee(null);
+    setEditError(null);
+    setEditingEmployeeName("");
+  };
+
+  const handleSaveEditEmployee = async () => {
+    if (!editEmployee) return;
+    setIsSavingEdit(true);
+    setEditError(null);
+    try {
+      const response = await fetch("/api/hr/employees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editEmployee),
+      });
+
+      if (!response.ok) {
+        const message = await extractError(response);
+        throw new Error(message);
+      }
+
+      const payload = await response.json();
+
+      if (!payload?.success) {
+        throw new Error(payload?.message || "Failed to save employee");
+      }
+
+      if (payload.employee) {
+        upsertLocalEmployee(payload.employee);
+      }
+
+      setIsEditingEmployee(false);
+      setEditEmployee(null);
+      setEditingEmployeeName("");
+    } catch (err) {
+      setEditError(err.message || "Failed to save employee");
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -298,6 +407,127 @@ export default function EmployeesTab() {
     }
   };
 
+  const sampleFooter = (
+    <SampleAutofillBlock
+      value={samplePayload}
+      onChange={setSamplePayload}
+      onApply={applySamplePayload}
+      onClear={() => setSamplePayload("")}
+    />
+  );
+
+  const directorySection = (
+    <section style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "20px" }}>
+      <SectionCard
+        title="Employee Directory"
+        subtitle={`${filteredEmployees.length} of ${employees.length} employees`}
+        action={
+          <DirectoryFilters
+            filters={filters}
+            setFilters={setFilters}
+            departments={uniqueDepartments}
+            employmentTypes={uniqueEmploymentTypes}
+          />
+        }
+      >
+        <div style={{ maxHeight: "600px", overflowY: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead style={{ position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>
+              <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
+                <th style={{ padding: "12px 0", textAlign: "left" }}>Employee</th>
+                <th>Department</th>
+                <th>Type</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEmployees.map((employee) => {
+                const isSelected = employee.id === selectedEmployeeId;
+                return (
+                  <tr
+                    key={employee.id}
+                    onClick={() => setSelectedEmployeeId(employee.id)}
+                    style={{
+                      cursor: "pointer",
+                      backgroundColor: isSelected ? "rgba(var(--accent-purple-rgb), 0.08)" : "transparent",
+                      borderTop: "1px solid var(--accent-purple-surface)",
+                    }}
+                  >
+                    <td style={{ padding: "14px 0" }}>
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{employee.name}</span>
+                        <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>{employee.jobTitle}</span>
+                      </div>
+                    </td>
+                    <td style={{ fontWeight: 500 }}>{employee.department}</td>
+                    <td style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>{employee.employmentType}</td>
+                    <td>
+                      <StatusTag
+                        label={employee.status}
+                        tone={employee.status === "Active" ? "success" : "danger"}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </SectionCard>
+
+      {selectedEmployee && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <EmployeeProfilePanel employee={selectedEmployee} />
+          <button
+            type="button"
+            onClick={handleStartEditEmployee}
+            style={{
+              padding: "10px 16px",
+              borderRadius: "10px",
+              border: "1px solid var(--accent-purple-surface)",
+              background: "var(--surface)",
+              fontWeight: 600,
+              color: "var(--accent-purple)",
+              cursor: "pointer",
+            }}
+          >
+            Edit employee details
+          </button>
+        </div>
+      )}
+    </section>
+  );
+
+  const addFormSection = (
+    <EmployeeForm
+      title="Add New Employee"
+      subtitle="Provide starter details to create the employee profile."
+      values={newEmployee}
+      onFieldChange={updateNewEmployeeField}
+      onCancel={handleCancelNewEmployee}
+      onSave={handleSaveNewEmployee}
+      isSaving={isSavingEmployee}
+      saveLabel={isSavingEmployee ? "Saving…" : "Save"}
+      errorMessage={saveError}
+      footerContent={sampleFooter}
+    />
+  );
+
+  const editFormSection =
+    isEditingEmployee && editEmployee ? (
+      <EmployeeForm
+        title={`Edit ${editingEmployeeName || "Employee"}`}
+        subtitle="Update employment and contact details."
+        values={editEmployee}
+        onFieldChange={updateEditEmployeeField}
+        onCancel={handleCancelEditEmployee}
+        onSave={handleSaveEditEmployee}
+        isSaving={isSavingEdit}
+        saveLabel={isSavingEdit ? "Saving…" : "Save changes"}
+        errorMessage={editError}
+      />
+    ) : null;
+
   if (isLoading) {
     return (
       <SectionCard title="Loading directory…" subtitle="Fetching employee listing.">
@@ -329,7 +559,7 @@ export default function EmployeesTab() {
         <div style={{ display: "flex", gap: "12px" }}>
           <button
             type="button"
-            onClick={() => setIsAddingEmployee(true)}
+            onClick={handleShowAddEmployee}
             style={{
               padding: "10px 16px",
               borderRadius: "10px",
@@ -361,407 +591,320 @@ export default function EmployeesTab() {
         </div>
       </div>
 
-      {/* Employee Directory & Profile */}
-      {!isAddingEmployee ? (
-        <section style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "20px" }}>
-          <SectionCard
-            title="Employee Directory"
-            subtitle={`${filteredEmployees.length} of ${employees.length} employees`}
-            action={
-              <DirectoryFilters
-                filters={filters}
-                setFilters={setFilters}
-                departments={uniqueDepartments}
-                employmentTypes={uniqueEmploymentTypes}
-              />
-            }
-          >
-            <div style={{ maxHeight: "600px", overflowY: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead style={{ position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>
-                  <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
-                    <th style={{ padding: "12px 0", textAlign: "left" }}>Employee</th>
-                    <th>Department</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredEmployees.map((employee) => {
-                    const isSelected = employee.id === selectedEmployeeId;
-                    return (
-                      <tr
-                        key={employee.id}
-                        onClick={() => setSelectedEmployeeId(employee.id)}
-                        style={{
-                          cursor: "pointer",
-                          backgroundColor: isSelected ? "rgba(var(--accent-purple-rgb), 0.08)" : "transparent",
-                          borderTop: "1px solid var(--accent-purple-surface)",
-                        }}
-                      >
-                        <td style={{ padding: "14px 0" }}>
-                          <div style={{ display: "flex", flexDirection: "column" }}>
-                            <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{employee.name}</span>
-                            <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>{employee.jobTitle}</span>
-                          </div>
-                        </td>
-                        <td style={{ fontWeight: 500 }}>{employee.department}</td>
-                        <td style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>{employee.employmentType}</td>
-                        <td>
-                          <StatusTag
-                            label={employee.status}
-                            tone={employee.status === "Active" ? "success" : "danger"}
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </SectionCard>
-
-          {selectedEmployee && <EmployeeProfilePanel employee={selectedEmployee} />}
-        </section>
-      ) : (
-        <section className="employee-form" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-          <SectionCard
-            title="Add New Employee"
-            subtitle="Provide starter details to create the employee profile."
-            action={
-              <div style={{ display: "flex", gap: "12px" }}>
-                <button
-                  type="button"
-                  onClick={handleCancelNewEmployee}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: "8px",
-                    border: "1px solid var(--surface-light)",
-                    background: "var(--surface)",
-                    fontWeight: 600,
-                    color: "var(--text-primary)",
-                    cursor: "pointer",
-                  }}
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveNewEmployee}
-                  disabled={isSavingEmployee}
-                  style={{
-                    padding: "8px 20px",
-                    borderRadius: "8px",
-                    border: "none",
-                    background: "var(--accent-purple)",
-                    fontWeight: 600,
-                    color: "white",
-                    cursor: isSavingEmployee ? "not-allowed" : "pointer",
-                    opacity: isSavingEmployee ? 0.7 : 1,
-                  }}
-                >
-                  {isSavingEmployee ? "Saving…" : "Save"}
-                </button>
-              </div>
-            }
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              {saveError && (
-                <div style={{ color: "var(--danger)", fontWeight: 600 }}>{saveError}</div>
-              )}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                  gap: "16px",
-                }}
-              >
-                <FormField label="First Name">
-                  <input
-                    type="text"
-                    value={newEmployee.firstName}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, firstName: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                    placeholder="Jordan"
-                  />
-                </FormField>
-                <FormField label="Last Name">
-                  <input
-                    type="text"
-                    value={newEmployee.lastName}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, lastName: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                    placeholder="Reyes"
-                  />
-                </FormField>
-                <FormField label="Email">
-                  <input
-                    type="email"
-                    value={newEmployee.email}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, email: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                    placeholder="jordan.reyes@example.com"
-                  />
-                </FormField>
-                <FormField label="Phone">
-                  <input
-                    type="tel"
-                    value={newEmployee.phone}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, phone: e.target.value }))}
-                    style={{
-                      padding: "10px",
-                      borderRadius: "8px",
-                      border: "1px solid var(--surface-light)",
-                      background: "var(--surface-light)",
-                    }}
-                    placeholder="+44 7000 000000"
-                  />
-                </FormField>
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                  gap: "16px",
-                }}
-              >
-                <FormField label="Department">
-                  <input
-                    type="text"
-                    value={newEmployee.department}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, department: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                    placeholder="Operations"
-                  />
-                </FormField>
-                <FormField label="Job Title">
-                  <input
-                    type="text"
-                    value={newEmployee.jobTitle}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, jobTitle: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                    placeholder="Supervisor"
-                  />
-                </FormField>
-                <FormField label="Role / Band">
-                  <input
-                    type="text"
-                    value={newEmployee.role}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, role: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                    placeholder="HR_CORE"
-                  />
-                </FormField>
-                <FormField label="Employment Type">
-                  <select
-                    value={newEmployee.employmentType}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, employmentType: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                  >
-                    <option value="Full-time">Full-time</option>
-                    <option value="Part-time">Part-time</option>
-                    <option value="Contract">Contract</option>
-                    <option value="Temporary">Temporary</option>
-                  </select>
-                </FormField>
-                <FormField label="Employment Status">
-                  <select
-                    value={newEmployee.status}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, status: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                    <option value="On Leave">On Leave</option>
-                  </select>
-                </FormField>
-                <FormField label="Start Date">
-                  <input
-                    type="date"
-                    value={newEmployee.startDate}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, startDate: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                  />
-                </FormField>
-                <FormField label="Probation Ends">
-                  <input
-                    type="date"
-                    value={newEmployee.probationEnd}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, probationEnd: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                  />
-                </FormField>
-                <FormField label="Contracted Hours per Week">
-                  <input
-                    type="number"
-                    min="0"
-                    value={newEmployee.contractedHours}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, contractedHours: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                  />
-                </FormField>
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                  gap: "16px",
-                }}
-              >
-                <FormField label="Hourly Rate (£)">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newEmployee.hourlyRate}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, hourlyRate: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                    placeholder="15.50"
-                  />
-                </FormField>
-                <FormField label="Overtime Rate (£)">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newEmployee.overtimeRate}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, overtimeRate: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                    placeholder="23.25"
-                  />
-                </FormField>
-                <FormField label="Annual Salary (£)">
-                  <input
-                    type="number"
-                    min="0"
-                    step="100"
-                    value={newEmployee.annualSalary}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, annualSalary: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                    placeholder="32000"
-                  />
-                </FormField>
-                <FormField label="Payroll Reference">
-                  <input
-                    type="text"
-                    value={newEmployee.payrollNumber}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, payrollNumber: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                    placeholder="PAY-001"
-                  />
-                </FormField>
-                <FormField label="National Insurance No.">
-                  <input
-                    type="text"
-                    value={newEmployee.nationalInsurance}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, nationalInsurance: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                    placeholder="QQ123456C"
-                  />
-                </FormField>
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                  gap: "16px",
-                }}
-              >
-                <FormField label="Keycloak User ID">
-                  <input
-                    type="text"
-                    value={newEmployee.keycloakId}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, keycloakId: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                    placeholder="kc-jreyes"
-                  />
-                </FormField>
-                <FormField label="Emergency Contact">
-                  <input
-                    type="text"
-                    value={newEmployee.emergencyContact}
-                    onChange={(e) => setNewEmployee((prev) => ({ ...prev, emergencyContact: e.target.value }))}
-                    style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-                    placeholder="Alex Reyes (+44 7000 000111)"
-                  />
-                </FormField>
-              </div>
-
-              <FormField label="Address">
-                <textarea
-                  value={newEmployee.address}
-                  onChange={(e) => setNewEmployee((prev) => ({ ...prev, address: e.target.value }))}
-                  rows={3}
-                  style={{
-                    padding: "12px",
-                    borderRadius: "10px",
-                    border: "1px solid var(--surface-light)",
-                    resize: "vertical",
-                  }}
-                  placeholder="123 Main Street, Birmingham, B1 1AA"
-                />
-              </FormField>
-
-              <div
-                style={{
-                  marginTop: "12px",
-                  border: "1px dashed var(--accent-purple-surface)",
-                  borderRadius: "12px",
-                  padding: "16px",
-                  background: "var(--surface-light)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "12px",
-                }}
-              >
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <strong style={{ color: "var(--accent-purple)" }}>Temporary Sample Autofill</strong>
-                  <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>
-                    Paste a block of <code>Field: Value</code> lines here to quickly populate the form. Clearing this box does not clear any field values.
-                  </span>
-                </div>
-                <textarea
-                  value={samplePayload}
-                  onChange={(e) => setSamplePayload(e.target.value)}
-                  rows={6}
-                  style={{
-                    padding: "12px",
-                    borderRadius: "10px",
-                    border: "1px solid var(--surface-light)",
-                    resize: "vertical",
-                  }}
-                  placeholder="First Name: Soren&#10;Last Name: Sorensen&#10;Email: soren@example.com&#10;..."
-                />
-                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                  <button type="button" style={buttonStylePrimary} onClick={applySamplePayload}>
-                    Apply Sample
-                  </button>
-                  <button
-                    type="button"
-                    style={buttonStyleGhost}
-                    onClick={() => setSamplePayload("")}
-                  >
-                    Clear Text
-                  </button>
-                </div>
-              </div>
-            </div>
-          </SectionCard>
-        </section>
-      )}
+      {editFormSection ? editFormSection : isAddingEmployee ? addFormSection : directorySection}
     </div>
   );
 }
 
-function FormField({ label, children }) {
+function EmployeeForm({
+  title,
+  subtitle,
+  values,
+  onFieldChange,
+  onCancel,
+  onSave,
+  isSaving,
+  saveLabel,
+  errorMessage,
+  footerContent = null,
+}) {
+  if (!values) return null;
+
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-      <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>{label}</span>
-      {children}
-    </label>
+    <section className="employee-form" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <SectionCard
+        title={title}
+        subtitle={subtitle}
+        action={
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button
+              type="button"
+              onClick={onCancel}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid var(--surface-light)",
+                background: "var(--surface)",
+                fontWeight: 600,
+                color: "var(--text-primary)",
+                cursor: "pointer",
+              }}
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={isSaving}
+              style={{
+                padding: "8px 20px",
+                borderRadius: "8px",
+                border: "none",
+                background: "var(--accent-purple)",
+                fontWeight: 600,
+                color: "white",
+                cursor: isSaving ? "not-allowed" : "pointer",
+                opacity: isSaving ? 0.7 : 1,
+              }}
+            >
+              {saveLabel}
+            </button>
+          </div>
+        }
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          {errorMessage && (
+            <div style={{ color: "var(--danger)", fontWeight: 600 }}>{errorMessage}</div>
+          )}
+          <EmployeeDetailsFields values={values} onFieldChange={onFieldChange} />
+          {footerContent}
+        </div>
+      </SectionCard>
+    </section>
+  );
+}
+
+function EmployeeDetailsFields({ values, onFieldChange }) {
+  const update = (field) => (event) => onFieldChange(field, event.target.value);
+
+  return (
+    <>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "16px",
+        }}
+      >
+        <FormField label="First Name">
+          <input
+            type="text"
+            value={values.firstName}
+            onChange={update("firstName")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+            placeholder="Jordan"
+          />
+        </FormField>
+        <FormField label="Last Name">
+          <input
+            type="text"
+            value={values.lastName}
+            onChange={update("lastName")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+            placeholder="Reyes"
+          />
+        </FormField>
+        <FormField label="Email">
+          <input
+            type="email"
+            value={values.email}
+            onChange={update("email")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+            placeholder="jordan.reyes@example.com"
+          />
+        </FormField>
+        <FormField label="Phone">
+          <input
+            type="tel"
+            value={values.phone}
+            onChange={update("phone")}
+            style={{
+              padding: "10px",
+              borderRadius: "8px",
+              border: "1px solid var(--surface-light)",
+              background: "var(--surface-light)",
+            }}
+            placeholder="+44 7000 000000"
+          />
+        </FormField>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "16px",
+        }}
+      >
+        <FormField label="Department">
+          <input
+            type="text"
+            value={values.department}
+            onChange={update("department")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+            placeholder="Operations"
+          />
+        </FormField>
+        <FormField label="Job Title">
+          <input
+            type="text"
+            value={values.jobTitle}
+            onChange={update("jobTitle")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+            placeholder="Supervisor"
+          />
+        </FormField>
+        <FormField label="Role / Band">
+          <input
+            type="text"
+            value={values.role}
+            onChange={update("role")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+            placeholder="HR_CORE"
+          />
+        </FormField>
+        <FormField label="Employment Type">
+          <select
+            value={values.employmentType}
+            onChange={update("employmentType")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+          >
+            <option value="Full-time">Full-time</option>
+            <option value="Part-time">Part-time</option>
+            <option value="Contract">Contract</option>
+            <option value="Temporary">Temporary</option>
+          </select>
+        </FormField>
+        <FormField label="Employment Status">
+          <select
+            value={values.status}
+            onChange={update("status")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+          >
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="On Leave">On Leave</option>
+          </select>
+        </FormField>
+        <FormField label="Start Date">
+          <input
+            type="date"
+            value={values.startDate}
+            onChange={update("startDate")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+          />
+        </FormField>
+        <FormField label="Probation Ends">
+          <input
+            type="date"
+            value={values.probationEnd}
+            onChange={update("probationEnd")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+          />
+        </FormField>
+        <FormField label="Contracted Hours per Week">
+          <input
+            type="number"
+            min="0"
+            value={values.contractedHours}
+            onChange={update("contractedHours")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+          />
+        </FormField>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "16px",
+        }}
+      >
+        <FormField label="Hourly Rate (£)">
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={values.hourlyRate}
+            onChange={update("hourlyRate")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+            placeholder="15.50"
+          />
+        </FormField>
+        <FormField label="Overtime Rate (£)">
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={values.overtimeRate}
+            onChange={update("overtimeRate")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+            placeholder="23.25"
+          />
+        </FormField>
+        <FormField label="Annual Salary (£)">
+          <input
+            type="number"
+            min="0"
+            step="100"
+            value={values.annualSalary}
+            onChange={update("annualSalary")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+            placeholder="32000"
+          />
+        </FormField>
+        <FormField label="Payroll Reference">
+          <input
+            type="text"
+            value={values.payrollNumber}
+            onChange={update("payrollNumber")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+            placeholder="PAY-001"
+          />
+        </FormField>
+        <FormField label="National Insurance No.">
+          <input
+            type="text"
+            value={values.nationalInsurance}
+            onChange={update("nationalInsurance")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+            placeholder="QQ123456C"
+          />
+        </FormField>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "16px",
+        }}
+      >
+        <FormField label="Keycloak User ID">
+          <input
+            type="text"
+            value={values.keycloakId}
+            onChange={update("keycloakId")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+            placeholder="kc-jreyes"
+          />
+        </FormField>
+        <FormField label="Emergency Contact">
+          <input
+            type="text"
+            value={values.emergencyContact}
+            onChange={update("emergencyContact")}
+            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
+            placeholder="Alex Reyes (+44 7000 000111)"
+          />
+        </FormField>
+      </div>
+
+      <FormField label="Address">
+        <textarea
+          value={values.address}
+          onChange={update("address")}
+          rows={3}
+          style={{
+            padding: "12px",
+            borderRadius: "10px",
+            border: "1px solid var(--surface-light)",
+            resize: "vertical",
+          }}
+          placeholder="123 Main Street, Birmingham, B1 1AA"
+        />
+      </FormField>
+    </>
   );
 }
 
@@ -784,3 +927,57 @@ const buttonStyleGhost = {
   fontWeight: 600,
   cursor: "pointer",
 };
+
+function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
+  return (
+    <div
+      style={{
+        marginTop: "12px",
+        border: "1px dashed var(--accent-purple-surface)",
+        borderRadius: "12px",
+        padding: "16px",
+        background: "var(--surface-light)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+      }}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+        <strong style={{ color: "var(--accent-purple)" }}>Temporary Sample Autofill</strong>
+        <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>
+          Paste a block of <code>Field: Value</code> lines here to quickly populate the form. Clearing this box does
+          not clear any field values.
+        </span>
+      </div>
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        rows={6}
+        style={{
+          padding: "12px",
+          borderRadius: "10px",
+          border: "1px solid var(--surface-light)",
+          resize: "vertical",
+        }}
+        placeholder="First Name: Soren&#10;Last Name: Sorensen&#10;Email: soren@example.com&#10;..."
+      />
+      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+        <button type="button" style={buttonStylePrimary} onClick={onApply}>
+          Apply Sample
+        </button>
+        <button type="button" style={buttonStyleGhost} onClick={onClear}>
+          Clear Text
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function FormField({ label, children }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+      <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>{label}</span>
+      {children}
+    </label>
+  );
+}
