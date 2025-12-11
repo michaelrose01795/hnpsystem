@@ -329,6 +329,11 @@ const statusBadgeStyles = {
     color: "var(--success-dark)",
     border: "1px solid rgba(var(--success-rgb), 0.35)",
   },
+  rejected: {
+    backgroundColor: "rgba(var(--danger-rgb), 0.12)",
+    color: "var(--danger)",
+    border: "1px solid rgba(var(--danger-rgb), 0.35)",
+  },
 };
 
 function ConsumablesTrackerPage() {
@@ -1154,6 +1159,7 @@ function ConsumablesTrackerPage() {
               onClose={() => setShowStockCheck(false)}
               isManager={isWorkshopManager}
               technicianId={dbUserId}
+              onRequestsSubmitted={fetchTechRequests}
             />
           )}
           {orderModalConsumable && (
@@ -2177,6 +2183,8 @@ function ConsumablesTrackerPage() {
                             ? "✅"
                             : request.status === "urgent"
                             ? "⏰"
+                            : request.status === "rejected"
+                            ? "✖️"
                             : "📦"}
                           {request.status.charAt(0).toUpperCase() +
                             request.status.slice(1)}
@@ -2199,6 +2207,14 @@ function ConsumablesTrackerPage() {
                               ? "Ordering…"
                               : "Order"}
                           </button>
+                        ) : request.status === "ordered" ? (
+                          <span style={{ color: "var(--success-dark)", fontWeight: 600 }}>
+                            Ordered
+                          </span>
+                        ) : request.status === "rejected" ? (
+                          <span style={{ color: "var(--danger)", fontWeight: 600 }}>
+                            Rejected
+                          </span>
                         ) : (
                           <span style={{ color: "var(--success-dark)", fontWeight: 600 }}>
                             Ordered
