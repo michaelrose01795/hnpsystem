@@ -1,8 +1,6 @@
-import { supabaseService } from "@/lib/supabaseClient";
 import { sendThreadMessage } from "@/lib/database/messages";
-
-const SYSTEM_THREAD_ID = Number(process.env.SYSTEM_MESSAGE_THREAD_ID);
-const SYSTEM_SENDER_ID = Number(process.env.SYSTEM_MESSAGE_SENDER_ID);
+import { ensureSystemMessagingConfig } from "@/lib/messages/systemConfig";
+import { supabaseService } from "@/lib/supabaseClient";
 
 const JOB_STATUS = "Delivered to customer";
 
@@ -78,11 +76,12 @@ export default async function handler(req, res) {
       throw historyError;
     }
 
-    if (SYSTEM_THREAD_ID && SYSTEM_SENDER_ID) {
+    const systemConfig = ensureSystemMessagingConfig("Parts delivery confirmation");
+    if (systemConfig) {
       try {
         await sendThreadMessage({
-          threadId: SYSTEM_THREAD_ID,
-          senderId: SYSTEM_SENDER_ID,
+          threadId: systemConfig.threadId,
+          senderId: systemConfig.senderId,
           content: formatSystemMessage({
             jobNumber: jobRow.job_number,
             stopNumber,

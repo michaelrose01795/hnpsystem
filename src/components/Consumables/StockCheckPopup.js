@@ -257,7 +257,7 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
   const handleTemporarySubmit = async () => {
     const items = parseTemporaryItems();
     if (!items.length) {
-      setError("Use '-' at the start of each line to add temporary items.");
+      setError("Use '-' at the start of each line to bulk add consumables.");
       return;
     }
     setTemporarySubmitting(true);
@@ -272,19 +272,21 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
       if (!response.ok) {
         const body = await response
           .json()
-          .catch(() => ({ message: "Unable to add temporary items." }));
-        throw new Error(body.message || "Unable to add temporary items.");
+          .catch(() => ({ message: "Unable to add consumables." }));
+        throw new Error(body.message || "Unable to add consumables.");
       }
       const payload = await response.json();
       if (!payload.success) {
-        throw new Error(payload.message || "Unable to add temporary items.");
+        throw new Error(payload.message || "Unable to add consumables.");
       }
       setData(payload.data || defaultData);
       setTemporaryInput("");
-      setStatusMessage(`${items.length} temporary item${items.length > 1 ? "s" : ""} added.`);
+      setStatusMessage(
+        `${items.length} consumable${items.length > 1 ? "s" : ""} added to stock.`
+      );
     } catch (tempError) {
-      console.error("❌ Failed to add temporary items", tempError);
-      setError(tempError.message || "Unable to add temporary items.");
+      console.error("❌ Failed to bulk add consumables", tempError);
+      setError(tempError.message || "Unable to add consumables.");
     } finally {
       setTemporarySubmitting(false);
     }
@@ -735,9 +737,9 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
         )}
 
         <div style={sectionCardStyle}>
-          <h3 style={{ margin: "0 0 8px", color: "var(--primary-dark)" }}>Temporary items</h3>
+          <h3 style={{ margin: "0 0 8px", color: "var(--primary-dark)" }}>Bulk add consumables</h3>
           <p style={{ margin: "0 0 12px", color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
-            Paste each ad-hoc consumable on its own line starting with <strong>-</strong>. Items are added as temporary entries with no location.
+            Paste each consumable on its own line starting with <strong>-</strong>. This temporary form lets you add many items at once and they remain in stock until edited or deleted.
           </p>
           <textarea
             value={temporaryInput}
@@ -759,7 +761,7 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
               style={{ ...buttonSecondaryStyle, padding: "10px 18px" }}
               disabled={temporarySubmitting}
             >
-              {temporarySubmitting ? "Adding…" : "Add Temporary Items"}
+              {temporarySubmitting ? "Adding…" : "Add Items"}
             </button>
           </div>
         </div>

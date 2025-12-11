@@ -38,7 +38,7 @@ export default async function handler(req, res) {
         case "addTemporary": {
           const { items } = req.body || {};
           if (!Array.isArray(items) || items.length === 0) {
-            return res.status(400).json({ success: false, message: "At least one temporary item is required." });
+            return res.status(400).json({ success: false, message: "At least one item is required." });
           }
           await addTemporaryConsumables(items);
           const data = await buildSnapshot();

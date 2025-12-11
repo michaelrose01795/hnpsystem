@@ -11,7 +11,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const notification = await sendSystemNotification({ content: message, metadata });
+    const notification = await sendSystemNotification({
+      content: message,
+      metadata,
+      context: "System notification API",
+    });
+    if (!notification) {
+      return res.status(202).json({
+        success: true,
+        skipped: true,
+        message:
+          "System notifications are disabled in this environment; configure SYSTEM_MESSAGE_THREAD_ID and SYSTEM_MESSAGE_SENDER_ID to enable them.",
+      });
+    }
     return res.status(201).json({ success: true, notification });
   } catch (error) {
     console.error("Failed to send system notification:", error);
