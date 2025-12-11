@@ -64,6 +64,11 @@ const statusBadgeStyles = {
     color: "var(--success-dark)",
     border: "1px solid rgba(var(--success-rgb), 0.32)",
   },
+  rejected: {
+    backgroundColor: "rgba(var(--danger-rgb), 0.15)",
+    color: "var(--danger)",
+    border: "1px solid rgba(var(--danger-rgb), 0.32)",
+  },
 };
 
 const TechConsumableRequestPage = () => {
@@ -84,6 +89,10 @@ const TechConsumableRequestPage = () => {
 
   const [searchTerm, setSearchTerm] = useState(""); // Track request search input
   const [showStockCheck, setShowStockCheck] = useState(false);
+  const [stockItems, setStockItems] = useState([]);
+  const [stockLoading, setStockLoading] = useState(false);
+  const [stockError, setStockError] = useState("");
+  const [addingTemporaryItem, setAddingTemporaryItem] = useState(false);
 
   const fetchRequests = useCallback(async () => {
     setLoadingRequests(true);
@@ -114,61 +123,166 @@ const TechConsumableRequestPage = () => {
     fetchRequests();
   }, [fetchRequests]);
 
+  const fetchStockItems = useCallback(async () => {
+    setStockLoading(true);
+    setStockError("");
+    try {
+      const response = await fetch("/api/workshop/consumables/stock-check");
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({ message: "Unable to load stock items." }));
+        throw new Error(body.message || "Unable to load stock items.");
+      }
+      const payload = await response.json();
+      if (!payload.success) {
+        throw new Error(payload.message || "Unable to load stock items.");
+      }
+      const locations = payload.data?.locations || [];
+      const unassigned = payload.data?.unassigned || [];
+      const flattened = [];
+      locations.forEach((location) => {
+        (location.consumables || []).forEach((item) => {
+          flattened.push({ id: item.id, name: item.name || "Unnamed item" });
+        });
+      });
+      (unassigned || []).forEach((item) => {
+        flattened.push({ id: item.id, name: item.name || "Unnamed item" });
+      });
+      setStockItems(flattened);
+    } catch (error) {
+      console.error("❌ Failed to load stock items", error);
+      setStockItems([]);
+      setStockError(error?.message || "Unable to load stock items.");
+    } finally {
+      setStockLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStockItems();
+  }, [fetchStockItems]);
+
+  const normalizeName = useCallback((value = "") => value.trim().toLowerCase(), []);
+
+  const findStockItemByName = useCallback(
+    (name) => {
+      const target = normalizeName(name);
+      if (!target) {
+        return null;
+      }
+      return stockItems.find((item) => normalizeName(item.name) === target) || null;
+    },
+    [stockItems, normalizeName]
+  );
+
   const filteredRequests = useMemo(() => {
     const needle = searchTerm.trim().toLowerCase(); // Normalise search term
-    if (!needle) return requests; // Return all requests when search is empty
-    return requests.filter((request) =>
+    const filtered = requests.filter((request) =>
+      request.requestedById === dbUserId
+    );
+    if (!needle) return filtered; // Return relevant requests when search is empty
+    return filtered.filter((request) =>
       [request.itemName, request.status, request.requestedByName]
         .filter(Boolean)
         .some((field) => field.toLowerCase().includes(needle))
     ); // Perform case-insensitive search across key fields
-  }, [requests, searchTerm]);
+  }, [requests, searchTerm, dbUserId]);
+
+  const stockMatches = useMemo(() => {
+    const query = normalizeName(requestForm.partName);
+    if (!query) {
+      return [];
+    }
+    return stockItems
+      .filter((item) => normalizeName(item.name).includes(query))
+      .slice(0, 5);
+  }, [requestForm.partName, stockItems, normalizeName]);
+
+  const createTemporaryStockItem = useCallback(
+    async (name) => {
+      const trimmed = (name || "").trim();
+      if (!trimmed || findStockItemByName(trimmed)) {
+        return;
+      }
+      setAddingTemporaryItem(true);
+      setRequestError("");
+      try {
+        const response = await fetch("/api/workshop/consumables/stock-check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "addTemporary", items: [trimmed] }),
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({ message: "Unable to add consumable." }));
+          throw new Error(body.message || "Unable to add consumable.");
+        }
+        const payload = await response.json();
+        if (!payload.success) {
+          throw new Error(payload.message || "Unable to add consumable.");
+        }
+        await fetchStockItems();
+        setSuccessMessage(`"${trimmed}" added to consumable stock for review.`);
+      } catch (error) {
+        console.error("❌ Failed to add temporary consumable", error);
+        setRequestError(error?.message || "Unable to add consumable to stock.");
+        throw error;
+      } finally {
+        setAddingTemporaryItem(false);
+      }
+    },
+    [findStockItemByName, fetchStockItems]
+  );
 
   const handleInputChange = (event) => {
     const { name, value } = event.target; // Extract the input field
     setRequestForm((previous) => ({ ...previous, [name]: value })); // Update the relevant form field
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!requestForm.partName.trim()) {
+    const trimmedName = requestForm.partName.trim();
+    if (!trimmedName) {
       alert("Please provide the name of the consumable you need.");
       return;
     }
 
+    try {
+      if (!findStockItemByName(trimmedName)) {
+        await createTemporaryStockItem(trimmedName);
+      }
+    } catch {
+      return;
+    }
+
     setSuccessMessage("");
-    fetch("/api/workshop/consumables/requests", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        itemName: requestForm.partName.trim(),
-        quantity: Number(requestForm.quantity) || 1,
-        requestedById: dbUserId,
-        requestedByName: user?.username || null,
-      }),
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          const body = await response
-            .json()
-            .catch(() => ({ message: "Unable to submit request." }));
-          throw new Error(body.message || "Unable to submit request.");
-        }
-        return response.json();
-      })
-      .then((payload) => {
-        if (!payload.success) {
-          throw new Error(payload.message || "Unable to submit request.");
-        }
-        setRequestForm({ partName: "", quantity: 1 });
-        setSuccessMessage("Request submitted.");
-        fetchRequests();
-      })
-      .catch((error) => {
-        console.error("❌ Failed to submit consumable request", error);
-        alert(error?.message || "Unable to submit request.");
+    try {
+      const response = await fetch("/api/workshop/consumables/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          itemName: trimmedName,
+          quantity: Number(requestForm.quantity) || 1,
+          requestedById: dbUserId,
+          requestedByName: user?.username || null,
+        }),
       });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({ message: "Unable to submit request." }));
+        throw new Error(body.message || "Unable to submit request.");
+      }
+
+      const payload = await response.json();
+      if (!payload.success) {
+        throw new Error(payload.message || "Unable to submit request.");
+      }
+      setRequestForm({ partName: "", quantity: 1 });
+      setSuccessMessage("Request submitted.");
+      fetchRequests();
+    } catch (error) {
+      console.error("❌ Failed to submit consumable request", error);
+      alert(error?.message || "Unable to submit request.");
+    }
   };
 
   if (!isTechRole && !isWorkshopManager) {
@@ -250,6 +364,64 @@ const TechConsumableRequestPage = () => {
                 style={inputStyle}
                 required
               />
+              {requestForm.partName.trim() && (
+                <div style={{ marginTop: "4px", border: "1px solid var(--surface-light)", borderRadius: "10px", padding: "8px", background: "var(--surface-lightest)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {stockLoading ? (
+                    <span style={{ color: "var(--grey-accent-dark)", fontSize: "0.85rem" }}>Searching stock…</span>
+                  ) : stockMatches.length > 0 ? (
+                    <>
+                      <span style={{ color: "var(--grey-accent-dark)", fontSize: "0.8rem" }}>Matching stock items:</span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        {stockMatches.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setRequestForm((previous) => ({ ...previous, partName: item.name }))}
+                            style={{
+                              textAlign: "left",
+                              border: "1px solid var(--surface-light)",
+                              borderRadius: "8px",
+                              padding: "6px 10px",
+                              background: "var(--surface)",
+                              cursor: "pointer",
+                              fontSize: "0.9rem",
+                              color: "var(--primary-dark)",
+                            }}
+                          >
+                            {item.name}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <span style={{ color: "var(--grey-accent-dark)", fontSize: "0.85rem" }}>
+                      No matching stock items. Create a temporary entry below.
+                    </span>
+                  )}
+                  {requestForm.partName.trim() && !stockLoading && !findStockItemByName(requestForm.partName) && (
+                    <button
+                      type="button"
+                      onClick={() => createTemporaryStockItem(requestForm.partName.trim())}
+                      disabled={addingTemporaryItem}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: "999px",
+                        border: "1px solid var(--primary)",
+                        background: addingTemporaryItem ? "rgba(var(--primary-rgb),0.35)" : "var(--surface)",
+                        color: "var(--primary-dark)",
+                        fontWeight: 600,
+                        cursor: addingTemporaryItem ? "not-allowed" : "pointer",
+                        alignSelf: "flex-start",
+                      }}
+                    >
+                      {addingTemporaryItem ? "Adding…" : `Add "${requestForm.partName.trim()}" to stock`}
+                    </button>
+                  )}
+                  {stockError && (
+                    <span style={{ color: "var(--primary-dark)", fontSize: "0.8rem" }}>{stockError}</span>
+                  )}
+                </div>
+              )}
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -291,7 +463,7 @@ const TechConsumableRequestPage = () => {
 
         <div style={{ ...cardStyle }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-            <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>My Requests</h2>
+            <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>Requests</h2>
             <input
               type="search"
               placeholder="Search requests"
@@ -313,8 +485,8 @@ const TechConsumableRequestPage = () => {
             <p style={{ margin: "0 0 12px", color: "var(--primary-dark)" }}>{requestError}</p>
           )}
 
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 12px" }}>
+          <div style={{ overflowX: "auto", maxHeight: "420px", overflowY: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 12px", minWidth: "640px" }}>
               <thead>
                 <tr>
                   <th style={tableHeaderStyle}>Status</th>
@@ -340,7 +512,15 @@ const TechConsumableRequestPage = () => {
                           ...(statusBadgeStyles[request.status] || statusBadgeStyles.pending),
                         }}
                       >
-                        {request.status === "fulfilled" ? "✅" : request.status === "urgent" ? "⏰" : "📦"}
+                        {request.status === "fulfilled"
+                          ? "✅"
+                          : request.status === "urgent"
+                          ? "⏰"
+                          : request.status === "rejected"
+                          ? "✖️"
+                          : request.status === "ordered"
+                          ? "📦"
+                          : "📦"}
                         {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                       </span>
                     </td>
@@ -369,6 +549,7 @@ const TechConsumableRequestPage = () => {
           onClose={() => setShowStockCheck(false)}
           isManager={isWorkshopManager}
           technicianId={dbUserId}
+          onRequestsSubmitted={fetchRequests}
         />
       )}
     </Layout>

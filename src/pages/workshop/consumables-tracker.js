@@ -530,7 +530,7 @@ function ConsumablesTrackerPage() {
       const consumable = findConsumableByName(request.itemName);
       if (!consumable) {
         setRequestsError(
-          `Consumable "${request.itemName}" not tracked. Add it before ordering.`
+          `Consumable "${request.itemName}" isn't in the tracker yet. Add it via Stock Check before ordering.`
         );
         return;
       }
@@ -2095,7 +2095,7 @@ function ConsumablesTrackerPage() {
               }}
             >
               <h2 style={{ margin: 0, fontSize: "1.3rem", color: "var(--primary-dark)" }}>
-                Technician Requests
+                Requests
               </h2>
               <span style={{ color: "var(--grey-accent)", fontSize: "0.9rem" }}>
                 {requestsLoading ? "Loading…" : `${techRequests.length} requests`}
@@ -2215,9 +2215,17 @@ function ConsumablesTrackerPage() {
                           <span style={{ color: "var(--danger)", fontWeight: 600 }}>
                             Rejected
                           </span>
-                        ) : (
+                        ) : request.status === "ordered" ? (
                           <span style={{ color: "var(--success-dark)", fontWeight: 600 }}>
                             Ordered
+                          </span>
+                        ) : request.status === "rejected" ? (
+                          <span style={{ color: "var(--danger)", fontWeight: 600 }}>
+                            Rejected
+                          </span>
+                        ) : (
+                          <span style={{ color: "var(--success-dark)", fontWeight: 600 }}>
+                            Completed
                           </span>
                         )}
                       </td>

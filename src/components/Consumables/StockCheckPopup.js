@@ -81,8 +81,6 @@ function StockCheckPopup({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
-  const [temporaryInput, setTemporaryInput] = useState("");
-  const [temporarySubmitting, setTemporarySubmitting] = useState(false);
   const [selectedItems, setSelectedItems] = useState(() => new Set());
   const [submitLoading, setSubmitLoading] = useState(false);
   const [renameItemState, setRenameItemState] = useState({ id: null, value: "" });
@@ -174,7 +172,6 @@ function StockCheckPopup({
 
   useEffect(() => {
     if (!open) {
-      setTemporaryInput("");
       setSelectedItems(new Set());
       setStatusMessage("");
       setError("");
@@ -210,53 +207,6 @@ function StockCheckPopup({
       }
       return next;
     });
-  };
-
-  const parseTemporaryItems = () => {
-    return (temporaryInput || "")
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.startsWith("-"))
-      .map((line) => line.replace(/^-\s*/, "").trim())
-      .filter(Boolean);
-  };
-
-  const handleTemporarySubmit = async () => {
-    const items = parseTemporaryItems();
-    if (!items.length) {
-      setError("Use '-' at the start of each line to bulk add consumables.");
-      return;
-    }
-    setTemporarySubmitting(true);
-    setStatusMessage("");
-    setError("");
-    try {
-      const response = await fetch("/api/workshop/consumables/stock-check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "addTemporary", items }),
-      });
-      if (!response.ok) {
-        const body = await response
-          .json()
-          .catch(() => ({ message: "Unable to add consumables." }));
-        throw new Error(body.message || "Unable to add consumables.");
-      }
-      const payload = await response.json();
-      if (!payload.success) {
-        throw new Error(payload.message || "Unable to add consumables.");
-      }
-      setData(payload.data || defaultData);
-      setTemporaryInput("");
-      setStatusMessage(
-        `${items.length} consumable${items.length > 1 ? "s" : ""} added to stock.`
-      );
-    } catch (tempError) {
-      console.error("❌ Failed to bulk add consumables", tempError);
-      setError(tempError.message || "Unable to add consumables.");
-    } finally {
-      setTemporarySubmitting(false);
-    }
   };
 
   const handleNewConsumableChange = (field) => (event) => {
@@ -576,36 +526,6 @@ function StockCheckPopup({
             <strong style={{ color: "var(--success-dark)" }}>{statusMessage}</strong>
           </div>
         )}
-
-        <div style={sectionCardStyle}>
-          <h3 style={{ margin: "0 0 8px", color: "var(--primary-dark)" }}>Bulk add consumables</h3>
-          <p style={{ margin: "0 0 12px", color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
-            Paste each consumable on its own line starting with <strong>-</strong>. This temporary form lets you add many items at once and they remain in stock until edited or deleted.
-          </p>
-          <textarea
-            value={temporaryInput}
-            onChange={(event) => setTemporaryInput(event.target.value)}
-            rows={3}
-            placeholder="- blue roll\n- cable ties"
-            style={{
-              width: "100%",
-              borderRadius: "12px",
-              border: "1px solid var(--surface-light)",
-              padding: "10px 12px",
-              resize: "vertical",
-            }}
-          />
-          <div style={{ marginTop: "12px", textAlign: "right" }}>
-            <button
-              type="button"
-              onClick={handleTemporarySubmit}
-              style={{ ...buttonSecondaryStyle, padding: "10px 18px" }}
-              disabled={temporarySubmitting}
-            >
-              {temporarySubmitting ? "Adding…" : "Add Items"}
-            </button>
-          </div>
-        </div>
 
         {isManager && (
           <div style={{ ...sectionCardStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
