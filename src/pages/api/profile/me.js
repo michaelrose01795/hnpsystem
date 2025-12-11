@@ -70,9 +70,8 @@ async function getUserAttendanceLogs(userId, limit = 50) {
   });
 }
 
-// Get user's overtime summary
-async function getUserOvertimeSummary(userId) {
-  // Get current overtime period
+// Get user's overtime summary + individual sessions for the active period
+async function getUserOvertimeSnapshot(userId) {
   const { data: period, error: periodError } = await supabase
     .from("overtime_periods")
     .select("*")
@@ -81,13 +80,14 @@ async function getUserOvertimeSummary(userId) {
     .maybeSingle();
 
   if (periodError && periodError.code !== "PGRST116") {
-    console.error("❌ getUserOvertimeSummary period error", periodError);
+    console.error("❌ getUserOvertimeSnapshot period error", periodError);
     throw periodError;
   }
 
-  if (!period) return null;
+  if (!period) {
+    return { summary: null, sessions: [] };
+  }
 
-  // Get user's overtime sessions for this period
   const { data, error } = await supabase
     .from("overtime_sessions")
     .select(
@@ -96,25 +96,41 @@ async function getUserOvertimeSummary(userId) {
         period_id,
         user_id,
         date,
-        total_hours
+        start_time,
+        end_time,
+        total_hours,
+        notes,
+        created_at,
+        updated_at
       `
     )
     .eq("period_id", period.period_id)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .order("date", { ascending: false });
 
   if (error) {
-    console.error("❌ getUserOvertimeSummary error", error);
+    console.error("❌ getUserOvertimeSnapshot sessions error", error);
     throw error;
   }
 
-  if (!data || data.length === 0) return null;
+  const sessions = (data || []).map((session) => ({
+    id: session.session_id,
+    periodId: session.period_id,
+    userId: session.user_id,
+    date: session.date,
+    start: session.start_time,
+    end: session.end_time,
+    totalHours: Number(session.total_hours || 0),
+    notes: session.notes || "",
+    createdAt: session.created_at,
+    updatedAt: session.updated_at,
+  }));
 
-  const totalOvertimeHours = data.reduce((sum, session) => {
-    return sum + Number(session.total_hours || 0);
-  }, 0);
+  const totalOvertimeHours = sessions.reduce((sum, session) => sum + Number(session.totalHours || 0), 0);
 
-  return {
+  const summary = {
     id: userId,
+    periodId: period.period_id,
     status: totalOvertimeHours >= 10 ? "Ready" : "In Progress",
     periodStart: period.period_start,
     periodEnd: period.period_end,
@@ -122,6 +138,8 @@ async function getUserOvertimeSummary(userId) {
     overtimeRate: 1.5,
     bonus: Number((totalOvertimeHours * 5).toFixed(2)),
   };
+
+  return { summary, sessions };
 }
 
 // Get user's leave balance
@@ -395,10 +413,10 @@ export default async function handler(req, res) {
     }
 
     // Fetch all user-specific data in parallel
-    const [profile, attendanceLogs, overtimeSummary, leaveBalance, staffVehicles] = await Promise.all([
+    const [profile, attendanceLogs, overtimeSnapshot, leaveBalance, staffVehicles] = await Promise.all([
       getUserProfile(userId),
       getUserAttendanceLogs(userId),
-      getUserOvertimeSummary(userId),
+      getUserOvertimeSnapshot(userId),
       getUserLeaveBalance(userId, null), // Will fetch employment type from profile
       getUserStaffVehicles(userId),
     ]);
@@ -415,7 +433,8 @@ export default async function handler(req, res) {
       data: {
         profile,
         attendanceLogs,
-        overtimeSummary,
+        overtimeSummary: overtimeSnapshot.summary,
+        overtimeSessions: overtimeSnapshot.sessions,
         leaveBalance: finalLeaveBalance,
         staffVehicles,
       },

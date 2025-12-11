@@ -1,6 +1,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/profile/index.js
-import React, { useMemo, useState, useEffect } from "react"; // React for UI and memoization
+import React, { useMemo, useState, useEffect, useCallback } from "react"; // React for UI and memoization
+import Link from "next/link";
 import { useRouter } from "next/router"; // Next.js router for query params
 import { useSession } from "next-auth/react"; // NextAuth session for authentication
 import Layout from "@/components/Layout"; // shared layout wrapper
@@ -37,6 +38,7 @@ export function ProfilePage({
   const [userProfileData, setUserProfileData] = useState(null);
   const [userProfileLoading, setUserProfileLoading] = useState(true);
   const [userProfileError, setUserProfileError] = useState(null);
+  const [profileReloadKey, setProfileReloadKey] = useState(0);
 
   // Determine if user has HR/Manager roles for admin preview
   const userRoles = session?.user?.roles || user?.roles || [];
@@ -53,8 +55,7 @@ export function ProfilePage({
   const isAdminPreviewQuery = router.query.adminPreview === "1"; // admin preview flag
   const isAdminPreview = adminPreviewOverride ?? isAdminPreviewQuery; // final admin preview state
 
-  // Fetch user's own profile data for non-admin users or when viewing own profile
-  useEffect(() => {
+  const reloadUserProfile = useCallback(() => {
     // Skip if viewing another user's profile as admin
     if (shouldUseHrData) {
       setUserProfileLoading(false);
@@ -70,7 +71,7 @@ export function ProfilePage({
     let isMounted = true;
     const controller = new AbortController();
 
-    const fetchUserProfile = async () => {
+    const fetchProfile = async () => {
       try {
         setUserProfileLoading(true);
         setUserProfileError(null);
@@ -80,7 +81,7 @@ export function ProfilePage({
 
         const response = await fetch(profileUrl, {
           signal: controller.signal,
-          credentials: "include", // ensure NextAuth cookies are sent even in embedded contexts
+          credentials: "include",
         });
 
         if (!response.ok) {
@@ -110,13 +111,20 @@ export function ProfilePage({
       }
     };
 
-    fetchUserProfile();
+    fetchProfile();
 
     return () => {
       isMounted = false;
       controller.abort();
     };
-  }, [shouldUseHrData, user, session?.user, dbUserId]);
+  }, [dbUserId, session?.user, shouldUseHrData, user]);
+
+  useEffect(() => {
+    const cleanup = reloadUserProfile();
+    return () => {
+      if (typeof cleanup === "function") cleanup();
+    };
+  }, [reloadUserProfile, profileReloadKey]);
 
   // Choose data source based on whether viewing as admin or own profile
   const data = shouldUseHrData ? hrData : null;
@@ -125,6 +133,7 @@ export function ProfilePage({
   const overtimeSummaries = shouldUseHrData ? (data?.overtimeSummaries ?? []) : (userProfileData?.overtimeSummary ? [userProfileData.overtimeSummary] : []); // overtime totals
   const leaveBalances = data?.leaveBalances ?? []; // leave usage (admin only)
   const staffVehicles = shouldUseHrData ? (data?.staffVehicles ?? []) : (userProfileData?.staffVehicles ?? []);
+  const overtimeSessions = shouldUseHrData ? [] : (userProfileData?.overtimeSessions ?? []);
   const activeUserName = previewUserParam || user?.username || session?.user?.name || null; // active username resolution
 
   const hrProfile = useMemo(() => {
@@ -192,19 +201,11 @@ export function ProfilePage({
     }; // data feeding metric tiles and tables
   }, [attendanceLogs, leaveBalances, overtimeSummaries, profile, shouldUseHrData, userProfileData]);
 
-  const initialOvertimeEntries = useMemo(() => {
-    if (!aggregatedStats?.overtimeSummary) return []; // default empty array
-    const summary = aggregatedStats.overtimeSummary; // shorthand
-    return [
-      {
-        id: summary.id,
-        date: summary.periodEnd,
-        start: "18:00",
-        end: "20:00",
-        totalHours: Number(summary.overtimeHours ?? 0),
-      },
-    ]; // placeholder entry for editor
-  }, [aggregatedStats]);
+  const handleOvertimeSessionSaved = useCallback(() => {
+    if (!shouldUseHrData) {
+      setProfileReloadKey((prev) => prev + 1);
+    }
+  }, [shouldUseHrData]);
 
   const profileStaffVehicles = useMemo(() => {
     if (!profile?.userId) return [];
@@ -413,10 +414,12 @@ export function ProfilePage({
               subtitle="Editable record for adjustments"
             >
               <OvertimeEntriesEditor
-                entries={initialOvertimeEntries}
+                entries={overtimeSessions}
                 employeeName={profile.name}
                 hourlyRate={profile.hourlyRate}
                 overtimeSummary={aggregatedStats?.overtimeSummary}
+                canEdit={!shouldUseHrData}
+                onSessionSaved={handleOvertimeSessionSaved}
               />
             </SectionCard>
           </section>
@@ -460,6 +463,13 @@ export function ProfilePage({
             <SectionCard
               title="Emergency Contact"
               subtitle="Pulled from HR employee profile"
+              action={
+                isAdminOrManager ? (
+                  <Link href="/hr/manager?tab=employees" style={linkStyleButton}>
+                    Manage in HR Manager
+                  </Link>
+                ) : null
+              }
             >
               <div style={{ display: "flex", flexDirection: "column", gap: "10px", color: "var(--info-dark)" }}>
                 <span style={{ fontWeight: 600 }}>{profile?.emergencyContact || "Not provided"}</span>
@@ -508,4 +518,14 @@ const buttonStyleGhost = {
   color: "var(--danger)",
   fontWeight: 600,
   cursor: "pointer",
+};
+
+const linkStyleButton = {
+  padding: "6px 12px",
+  borderRadius: "999px",
+  border: "1px solid var(--accent-purple)",
+  color: "var(--accent-purple)",
+  fontWeight: 600,
+  fontSize: "0.8rem",
+  textDecoration: "none",
 };
