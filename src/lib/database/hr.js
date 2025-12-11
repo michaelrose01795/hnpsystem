@@ -769,11 +769,20 @@ export async function getEmployeeDirectory() {
           department,
           job_title,
           employment_type,
+          employment_status,
           start_date,
           manager_id,
           photo_url,
           emergency_contact,
           documents,
+          contracted_hours,
+          hourly_rate,
+          overtime_rate,
+          annual_salary,
+          payroll_reference,
+          national_insurance_number,
+          keycloak_user_id,
+          home_address,
           created_at,
           user:user_id(
             user_id,
@@ -801,9 +810,18 @@ export async function getEmployeeDirectory() {
   return (data || []).map((profile) => {
     const user = profile.user || {};
     const userId = user.user_id || profile.user_id;
-    const status = activeAbsenceMap.get(userId) || "Active";
+    const storedEmploymentStatus = profile.employment_status || "Active";
+    const status = activeAbsenceMap.get(userId) || storedEmploymentStatus;
     const name = `${user.first_name || ""} ${user.last_name || ""}`.trim() || user.email || `User ${userId}`;
     const emergencyDetails = formatEmergencyContact(profile.emergency_contact);
+    const contractedHours = profile.contracted_hours ?? null;
+    const hourlyRate = profile.hourly_rate;
+    const overtimeRate = profile.overtime_rate;
+    const annualSalary = profile.annual_salary;
+    const payrollReference = profile.payroll_reference;
+    const nationalInsuranceNumber = profile.national_insurance_number;
+    const keycloakUserId = profile.keycloak_user_id;
+    const homeAddress = profile.home_address;
 
     return {
       id: `EMP-${userId}`,
@@ -816,13 +834,17 @@ export async function getEmployeeDirectory() {
       status,
       startDate: profile.start_date,
       probationEnd: deriveProbationEnd(profile.start_date),
-      contractedHours: 40,
-      hourlyRate: 0,
-      keycloakId: user.email ? `kc-${user.email.split("@")[0]}` : `kc-${userId}`,
+      contractedHours: contractedHours !== null ? Number(contractedHours) : 40,
+      hourlyRate: hourlyRate !== null && hourlyRate !== undefined ? Number(hourlyRate) : 0,
+      overtimeRate: overtimeRate !== null && overtimeRate !== undefined ? Number(overtimeRate) : null,
+      annualSalary: annualSalary !== null && annualSalary !== undefined ? Number(annualSalary) : null,
+      payrollNumber: payrollReference || "",
+      nationalInsurance: nationalInsuranceNumber || "",
+      keycloakId: keycloakUserId || (user.email ? `kc-${user.email.split("@")[0]}` : `kc-${userId}`),
       email: user.email,
       phone: user.phone || "N/A",
       emergencyContact: emergencyDetails.contact,
-      address: emergencyDetails.address,
+      address: homeAddress || emergencyDetails.address,
       documents: normalizeDocuments(profile.documents),
     };
   });

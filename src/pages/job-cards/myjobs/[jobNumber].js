@@ -16,6 +16,7 @@ import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database
 import { supabase } from "@/lib/supabaseClient";
 import WriteUpForm from "@/components/JobCards/WriteUpForm";
 import { getJobByNumberOrReg, saveChecksheet } from "@/lib/database/jobs";
+import { createJobNote, getNotesByJob } from "@/lib/database/notes";
 
 // VHC Section Modals
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
@@ -195,6 +196,9 @@ export default function TechJobDetailPage() {
   const [partRequestQuantity, setPartRequestQuantity] = useState(1);
   const [partsSubmitting, setPartsSubmitting] = useState(false);
   const [partsFeedback, setPartsFeedback] = useState("");
+  const [notes, setNotes] = useState([]);
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [notesSubmitting, setNotesSubmitting] = useState(false);
 
   // VHC state management
   const [vhcData, setVhcData] = useState({
@@ -279,6 +283,28 @@ export default function TechJobDetailPage() {
         setPartsRequests([]);
       } finally {
         setPartsRequestsLoading(false);
+      }
+    },
+    [jobCardId]
+  );
+
+  const loadNotes = useCallback(
+    async (overrideJobId = null) => {
+      const targetJobId = overrideJobId ?? jobCardId;
+      if (!targetJobId) {
+        setNotes([]);
+        return;
+      }
+
+      setNotesLoading(true);
+      try {
+        const fetchedNotes = await getNotesByJob(targetJobId);
+        setNotes(Array.isArray(fetchedNotes) ? fetchedNotes : []);
+      } catch (error) {
+        console.error("❌ Failed to load notes:", error);
+        setNotes([]);
+      } finally {
+        setNotesLoading(false);
       }
     },
     [jobCardId]
@@ -383,21 +409,48 @@ export default function TechJobDetailPage() {
         setVhcChecks(checks);
       } else {
         setVhcChecks([]);
+        setNotes([]);
       }
 
       await refreshClockingStatus();
       await loadPartsRequests(jobCardIdForFetch);
+      await loadNotes(jobCardIdForFetch);
     } catch (fetchError) {
       console.error("❌ Error fetching job:", fetchError);
       alert("Failed to load job");
     } finally {
       setLoading(false);
     }
-  }, [jobNumber, router, refreshClockingStatus, loadPartsRequests]);
+  }, [jobNumber, router, refreshClockingStatus, loadPartsRequests, loadNotes]);
 
   useEffect(() => {
     fetchJobData();
   }, [fetchJobData]);
+
+  useEffect(() => {
+    if (!jobCardId) {
+      return undefined;
+    }
+
+    const channel = supabase.channel(`job-notes-${jobCardId}`);
+    const handleChange = () => loadNotes(jobCardId);
+
+    channel.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "job_notes",
+        filter: `job_id=eq.${jobCardId}`,
+      },
+      handleChange
+    );
+
+    void channel.subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [jobCardId, loadNotes]);
 
   // Callback: Handle job clock out
   const handleJobClockOut = useCallback(async () => {
@@ -960,15 +1013,38 @@ export default function TechJobDetailPage() {
 
   // Handler: Add note
   const handleAddNote = async () => {
-    if (!newNote.trim()) {
+    const trimmedNote = newNote.trim();
+    if (!trimmedNote) {
       alert("Please enter a note");
       return;
     }
 
-    // TODO: Implement notes system with database integration
-    alert("Note saved: " + newNote);
-    setNewNote("");
-    setShowAddNote(false);
+    if (!jobCardId) {
+      alert("Unable to find this job reference. Please try again.");
+      return;
+    }
+
+    setNotesSubmitting(true);
+    try {
+      const result = await createJobNote({
+        job_id: jobCardId,
+        user_id: dbUserId || null,
+        note_text: trimmedNote,
+      });
+
+      if (!result?.success) {
+        throw new Error(result?.error?.message || "Unable to save note");
+      }
+
+      setNewNote("");
+      setShowAddNote(false);
+      await loadNotes(jobCardId);
+    } catch (error) {
+      console.error("❌ Failed to add note:", error);
+      alert(error?.message || "Failed to add note");
+    } finally {
+      setNotesSubmitting(false);
+    }
   };
 
   // Handler: VHC button click - only navigate if VHC is required
@@ -1407,7 +1483,7 @@ export default function TechJobDetailPage() {
   // Check if additional contents are available
   const hasAdditionalContents = () => {
     const filesCount = jobCard.files?.length || 0;
-    const notesCount = jobCard.notes?.length || 0;
+    const notesCount = notes.length;
     const partsCount = jobCard.partsRequests?.length || 0;
     const hasWriteUp = Boolean(jobCard.writeUp);
     return filesCount > 0 || notesCount > 0 || partsCount > 0 || hasWriteUp;
@@ -2513,6 +2589,9 @@ export default function TechJobDetailPage() {
                 <h3 style={{ fontSize: "18px", fontWeight: "600", margin: 0 }}>
                   Technician Notes
                 </h3>
+                <span style={{ fontSize: "13px", color: "var(--info)" }}>
+                  {notes.length} note{notes.length === 1 ? "" : "s"}
+                </span>
                 <button
                   onClick={() => setShowAddNote(true)}
                   style={{
@@ -2571,37 +2650,82 @@ export default function TechJobDetailPage() {
                     </button>
                     <button
                       onClick={handleAddNote}
+                      disabled={notesSubmitting}
                       style={{
                         padding: "10px 18px",
-                        backgroundColor: "var(--info)",
+                        backgroundColor: notesSubmitting ? "var(--border)" : "var(--info)",
                         color: "white",
                         border: "1px solid var(--info-dark)",
                         borderRadius: "8px",
-                        cursor: "pointer",
+                        cursor: notesSubmitting ? "not-allowed" : "pointer",
                         fontSize: "14px",
                         fontWeight: "600",
                       }}
                     >
-                      Save Note
+                      {notesSubmitting ? "Saving..." : "Save Note"}
                     </button>
                   </div>
                 </div>
               )}
 
-              <div style={{
-                textAlign: "center",
-                padding: "40px",
-                color: "var(--info)",
-                backgroundColor: "var(--surface-light)",
-                borderRadius: "12px",
-                border: "1px solid var(--surface-light)"
-              }}>
-                <div style={{ fontSize: "48px", marginBottom: "16px" }}>📝</div>
-                <p style={{ fontSize: "16px", fontWeight: "600", marginBottom: "4px" }}>No notes added yet</p>
-                <p style={{ fontSize: "14px", color: "var(--info)" }}>
-                  Keep technicians aligned by logging progress, issues and next steps.
-                </p>
-              </div>
+              {notesLoading ? (
+                <div style={{
+                  padding: "32px",
+                  textAlign: "center",
+                  color: "var(--info)"
+                }}>
+                  Loading notes…
+                </div>
+              ) : notes.length === 0 ? (
+                <div style={{
+                  textAlign: "center",
+                  padding: "40px",
+                  color: "var(--info)",
+                  backgroundColor: "var(--surface-light)",
+                  borderRadius: "12px",
+                  border: "1px solid var(--surface-light)"
+                }}>
+                  <div style={{ fontSize: "48px", marginBottom: "16px" }}>📝</div>
+                  <p style={{ fontSize: "16px", fontWeight: "600", marginBottom: "4px" }}>No notes added yet</p>
+                  <p style={{ fontSize: "14px", color: "var(--info)" }}>
+                    Keep technicians aligned by logging progress, issues and next steps.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {notes.map((note) => {
+                    const noteId = note.noteId || note.note_id || note.id;
+                    const creatorName = note.createdBy || "Unknown";
+                    const createdAt = formatDateTime(note.createdAt || note.created_at);
+                    const updatedLabel =
+                      note.updatedAt && note.updatedAt !== note.createdAt
+                        ? ` • Updated ${formatDateTime(note.updatedAt)}`
+                        : "";
+                    return (
+                      <div
+                        key={noteId}
+                        style={{
+                          border: "1px solid var(--surface-light)",
+                          borderRadius: "10px",
+                          padding: "16px",
+                          backgroundColor: "var(--surface-light)"
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "8px" }}>
+                          <div style={{ fontWeight: 600 }}>{creatorName}</div>
+                          <div style={{ fontSize: "12px", color: "var(--info)" }}>
+                            {createdAt}
+                            {updatedLabel}
+                          </div>
+                        </div>
+                        <p style={{ margin: 0, color: "var(--text-primary)", whiteSpace: "pre-wrap" }}>
+                          {note.noteText || note.note_text}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 

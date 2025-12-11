@@ -592,7 +592,7 @@ export default function Layout({ children, jobNumber }) {
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
-  const mainColumnMaxWidth = "100%";
+  const mainColumnMaxWidth = hideSidebar ? "960px" : "100%";
   const layoutStyles = {
     display: "flex",
     flexDirection: isTablet ? "column" : "row",
@@ -602,8 +602,8 @@ export default function Layout({ children, jobNumber }) {
     fontFamily: 'Inter, "Segoe UI", system-ui, -apple-system, sans-serif',
     background: colors.background || colors.mainBg,
     color: colors.text,
-    justifyContent: "flex-start",
-    alignItems: "stretch",
+    justifyContent: hideSidebar ? "center" : "flex-start",
+    alignItems: hideSidebar ? "center" : "stretch",
     gap: isTablet ? "12px" : "24px",
     padding: hideSidebar ? "0" : isTablet ? "12px" : "0 16px",
     boxSizing: "border-box",
@@ -653,7 +653,7 @@ export default function Layout({ children, jobNumber }) {
 
       <div
         style={{
-          flex: 1,
+          flex: hideSidebar ? "0 1 auto" : 1,
           maxWidth: mainColumnMaxWidth,
           width: "100%",
           display: "flex",
@@ -666,6 +666,7 @@ export default function Layout({ children, jobNumber }) {
           overflowY: "visible", // allow full page scroll across breakpoints
           overflowX: "hidden",
           position: "relative",
+          margin: hideSidebar ? "0 auto" : "0",
         }}
       >
         {showMobileSidebar && (

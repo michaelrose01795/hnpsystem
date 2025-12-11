@@ -22,6 +22,7 @@ export default function LoginDropdown({
   setSelectedUser,
   usersByRole,
   roleCategories,
+  className = "",
 }) {
   // Format user display names for managers
   const formatUserName = (role, user) => {
@@ -76,8 +77,11 @@ export default function LoginDropdown({
     }
   }, [selectedDepartment, userOptions, selectedUser, setSelectedUser]);
 
+  const dropdownFieldClasses =
+    "w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-inner shadow-slate-200/40 transition focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100";
+
   return (
-    <div className="flex flex-col space-y-2">
+    <div className={`flex flex-col space-y-3 ${className}`}>
       {/* Retail vs Sales selector */}
       <select
         value={selectedCategory}
@@ -86,7 +90,7 @@ export default function LoginDropdown({
           setSelectedDepartment("");
           setSelectedUser(null);
         }}
-        className="p-2 border border-gray-300 rounded"
+        className={dropdownFieldClasses}
       >
         <option value="">Select Area</option>
         {Object.keys(roleCategories).map((category) => (
@@ -104,7 +108,7 @@ export default function LoginDropdown({
             setSelectedDepartment(e.target.value);
             setSelectedUser(null);
           }}
-          className="p-2 border border-gray-300 rounded"
+          className={dropdownFieldClasses}
         >
           <option value="">Select Department</option>
           {(roleCategories[selectedCategory] || [])
@@ -127,7 +131,7 @@ export default function LoginDropdown({
             );
             setSelectedUser(nextUser || null);
           }}
-          className="p-2 border border-gray-300 rounded"
+          className={dropdownFieldClasses}
         >
           <option value="">Select User</option>
           {userOptions.map((user) => (

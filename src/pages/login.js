@@ -6,11 +6,49 @@ import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
-import Section from "@/components/Section";
 import LoginDropdown from "@/components/LoginDropdown";
 import CustomerViewPreview from "@/components/CustomerViewPreview";
 import { supabase } from "@/lib/supabaseClient"; // Database connection
 import { roleCategories } from "@/config/users"; // Dev users config
+
+const FIELD_MAX_WIDTH = 380;
+
+const LoginCard = ({ title, subtitle, children, contentMaxWidth = FIELD_MAX_WIDTH }) => (
+  <div className="w-full flex justify-center">
+    <div
+      style={{
+        borderRadius: "32px",
+        border: "1px solid rgba(15, 23, 42, 0.08)",
+        background: "var(--surface)",
+        boxShadow: "0 30px 70px rgba(15, 23, 42, 0.15)",
+        padding: "2.25rem",
+        backdropFilter: "blur(18px)",
+        width: "100%",
+        maxWidth: contentMaxWidth + 72,
+      }}
+    >
+      <div className="space-y-1 text-center">
+        <h2
+          className="text-2xl font-semibold tracking-tight"
+          style={{ color: "var(--text-primary)" }}
+        >
+          {title}
+        </h2>
+        {subtitle && (
+          <p
+            className="text-sm text-slate-500"
+            style={{ color: "var(--text-secondary, #64748b)" }}
+          >
+            {subtitle}
+          </p>
+        )}
+      </div>
+      <div className="mt-6 space-y-5" style={{ maxWidth: contentMaxWidth, margin: "0 auto" }}>
+        {children}
+      </div>
+    </div>
+  </div>
+);
 
 export default function LoginPage() {
   const CUSTOMER_PORTAL_URL =
@@ -100,18 +138,10 @@ export default function LoginPage() {
 
   return (
     <Layout>
-      <div
-        className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-12 space-y-10 max-w-5xl mx-auto"
-        style={{ background: "var(--surface)" }}
-      >
-        <div className="w-full max-w-sm mx-auto">
-          <Section
-            title="Login"
-            bgColor="var(--surface)"
-            textColor="var(--accent-purple)"
-            className="border border-slate-200/70  ring-1 ring-black/5 rounded-3xl"
-          >
-            <div className="space-y-6">
+      <div className="min-h-screen w-full flex items-center justify-center px-4 py-12 sm:py-16">
+        <div className="w-full max-w-2xl mx-auto flex flex-col items-center gap-6">
+          <div className="w-full max-w-lg mx-auto space-y-6">
+            <LoginCard title="Login" subtitle="Secure access with your email and password">
               <form onSubmit={handleDbLogin} className="space-y-5">
                 <div className="space-y-2">
                   <label htmlFor="email" className="text-sm font-medium text-slate-600">
@@ -123,7 +153,7 @@ export default function LoginPage() {
                     placeholder="you@hpautomotive.co.uk"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900  focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    className="w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-slate-900 shadow-inner shadow-slate-200/40 transition focus:-translate-y-0.5 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
                     required
                   />
                 </div>
@@ -138,72 +168,67 @@ export default function LoginPage() {
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900  focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    className="w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-slate-900 shadow-inner shadow-slate-200/40 transition focus:-translate-y-0.5 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
                     required
                   />
                 </div>
 
                 {errorMessage && (
-                  <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600" role="alert">
+                  <p className="rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-600" role="alert">
                     {errorMessage}
                   </p>
                 )}
 
                 <button
                   type="submit"
-                  className="w-full rounded-lg py-3 text-base font-semibold text-white  shadow-red-500/30 transition focus:outline-none focus:ring-2 focus:ring-red-200"
+                  className="w-full rounded-2xl py-3 text-base font-semibold text-white shadow-lg shadow-red-500/30 transition hover:translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-red-200"
                   style={{ background: "var(--primary)" }}
                 >
                   Login
                 </button>
               </form>
-            </div>
-          </Section>
-        </div>
+            </LoginCard>
 
-        <div className="w-full max-w-3xl mx-auto">
-          <Section
-            title="Developer Login"
-            bgColor="var(--surface)"
-            textColor="var(--accent-purple)"
-            className="border border-slate-200/70  ring-1 ring-black/5"
-          >
-            <div className="space-y-6">
-              <LoginDropdown
-                selectedCategory={selectedCategory}
-                setSelectedCategory={setSelectedCategory}
-                selectedDepartment={selectedDepartment}
-                setSelectedDepartment={setSelectedDepartment}
-                selectedUser={selectedUser}
-                setSelectedUser={setSelectedUser}
-                usersByRole={usersByRole}
-                roleCategories={roleCategories}
-              />
+            <LoginCard
+              title="Developer Login"
+              subtitle="Use predefined personas to explore the platform safely"
+            >
+              <div className="space-y-5">
+                <LoginDropdown
+                  selectedCategory={selectedCategory}
+                  setSelectedCategory={setSelectedCategory}
+                  selectedDepartment={selectedDepartment}
+                  setSelectedDepartment={setSelectedDepartment}
+                  selectedUser={selectedUser}
+                  setSelectedUser={setSelectedUser}
+                  usersByRole={usersByRole}
+                  roleCategories={roleCategories}
+                />
 
-              {(loadingDevUsers || rosterLoading) && (
-                <p className="text-xs text-slate-400">Loading database users for dev login...</p>
-              )}
+                {(loadingDevUsers || rosterLoading) && (
+                  <p className="text-xs text-slate-400">Loading database users for dev login...</p>
+                )}
 
-              {selectedCategory === "Customers" && (
-                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                  <CustomerViewPreview
-                    portalUrl={CUSTOMER_PORTAL_URL}
-                    selectedPersona={selectedUser?.name || ""}
-                    selectedDepartment={selectedDepartment}
-                  />
-                </div>
-              )}
+                {selectedCategory === "Customers" && (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+                    <CustomerViewPreview
+                      portalUrl={CUSTOMER_PORTAL_URL}
+                      selectedPersona={selectedUser?.name || ""}
+                      selectedDepartment={selectedDepartment}
+                    />
+                  </div>
+                )}
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   onClick={handleDevLogin}
-                  className="w-full rounded-lg bg-slate-900 py-3 text-sm font-semibold text-white  transition hover:bg-slate-800 sm:w-auto sm:px-6"
+                  className="w-full rounded-2xl py-3 text-base font-semibold text-white shadow-lg shadow-red-500/30 transition hover:translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-red-200"
+                  style={{ background: "var(--primary)" }}
                 >
                   Dev Login
                 </button>
               </div>
-            </div>
-          </Section>
+            </LoginCard>
+          </div>
         </div>
       </div>
     </Layout>
