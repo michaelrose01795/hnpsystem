@@ -1031,6 +1031,8 @@ export default function CreateJobCardPage() {
 
   // ✅ Save Job Function - persist job info, vehicle, customer status, requests, documents, and check-sheets together
   const handleSaveJob = async () => {
+    // ===== VALIDATION PHASE - NO DATABASE OPERATIONS =====
+    // Perform all validations first before touching the database
     try {
       if (!customer) {
         alert("Please select a customer before saving the job.");
@@ -1059,8 +1061,11 @@ export default function CreateJobCardPage() {
         return;
       }
 
-      console.log("Starting save job process...");
+      // All validations passed - proceed with database operations
+      console.log("✓ All validations passed. Starting save job process...");
 
+      // ===== DATABASE OPERATIONS PHASE =====
+      // Prepare vehicle data
       const regUpper = vehicle.reg.trim().toUpperCase();
       const makeModelParts = (vehicle.makeModel || "").trim().split(/\s+/);
       const primaryMake = makeModelParts[0] || "Unknown";
@@ -1081,6 +1086,7 @@ export default function CreateJobCardPage() {
         customer_id: customer.id,
       };
 
+      // Step 1: Save/update vehicle
       const vehicleResult = await createOrUpdateVehicle(vehiclePayload);
 
       if (!vehicleResult.success || !vehicleResult.data) {
@@ -1094,8 +1100,9 @@ export default function CreateJobCardPage() {
         throw new Error("Vehicle ID not returned after save");
       }
 
-      console.log("Vehicle saved/updated with ID:", vehicleId);
+      console.log("✓ Vehicle saved/updated with ID:", vehicleId);
 
+      // Step 2: Prepare and save job
       const jobDescription = sanitizedRequests.map((req) => req.text).join("\n");
 
       const jobPayload = {
@@ -1126,37 +1133,47 @@ export default function CreateJobCardPage() {
       }
 
       const insertedJob = jobResult.data;
-      const persistedJobId = insertedJob.id || insertedJob.jobId || insertedJob.job_id; // normalize job identifier for inserts
-      if (!persistedJobId) { // ensure job id exists
-        throw new Error("Job ID missing after creation"); // abort when job id not returned
-      } // finish guard
+      const persistedJobId = insertedJob.id || insertedJob.jobId || insertedJob.job_id;
 
+      if (!persistedJobId) {
+        throw new Error("Job ID missing after creation");
+      }
+
+      console.log("✓ Job created successfully with ID:", persistedJobId);
+
+      // Step 3: Save related data (cosmetic damage, customer status, job requests, documents)
       await Promise.all([
-        saveCosmeticDamageDetails(persistedJobId, cosmeticDamagePresent, cosmeticNotes), // persist cosmetic data
-        saveCustomerStatus(persistedJobId, waitingStatus), // record customer status row
-        saveJobRequestsToDatabase(persistedJobId, sanitizedRequests), // persist job requests
+        saveCosmeticDamageDetails(persistedJobId, cosmeticDamagePresent, cosmeticNotes),
+        saveCustomerStatus(persistedJobId, waitingStatus),
+        saveJobRequestsToDatabase(persistedJobId, sanitizedRequests),
         pendingDocuments.length > 0
           ? uploadDocumentsForJob(persistedJobId, pendingDocuments, dbUserId || null)
-          : Promise.resolve(), // conditionally upload documents
-        linkUploadedFilesToJob(persistedJobId), // link previously uploaded files to this job
+          : Promise.resolve(),
+        linkUploadedFilesToJob(persistedJobId),
       ]);
 
-      console.log("Job saved successfully with ID:", insertedJob.id);
+      console.log("✓ All related data saved successfully");
 
+      // Step 4: Refresh jobs cache
       if (typeof fetchJobs === "function") {
         fetchJobs().catch((err) => console.error("❌ Error refreshing jobs:", err));
       }
 
+      // Step 5: Update UI and redirect
       const finalJobNumber = insertedJob.jobNumber || insertedJob.id;
-      setJobNumberDisplay(finalJobNumber || null); // update header display with new job number
+      setJobNumberDisplay(finalJobNumber || null);
+
       alert(
         `Job created successfully! ${jobSource} — ${finalJobNumber}\n\nVehicle ${regUpper} has been saved and linked to ${customer.firstName} ${customer.lastName}`
       );
 
-      router.push(`/appointments?jobNumber=${encodeURIComponent(finalJobNumber || "")}`); // Redirect to the new appointments calendar with job number prefilled
+      router.push(`/appointments?jobNumber=${encodeURIComponent(finalJobNumber || "")}`);
+
     } catch (err) {
       console.error("❌ Error saving job:", err);
-      alert(`Error saving job: ${err.message}. Check console for details.`);
+      alert(`Error saving job: ${err.message}. Please check the details and try again.`);
+      // Do not proceed with any further operations
+      // The job and related data were not saved to the database
     }
   };
 

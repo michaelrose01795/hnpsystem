@@ -684,7 +684,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
   );
 };
 
-export default function VhcDetailsPanel({ jobNumber, showNavigation = true, readOnly = false }) {
+export default function VhcDetailsPanel({ jobNumber, showNavigation = true, readOnly = false, customActions = null }) {
   const router = useRouter();
   const resolvedJobNumber = jobNumber || router.query?.jobNumber;
 
@@ -2396,8 +2396,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
   return (
     <div style={pageWrapperStyle}>
-      <div style={PANEL_SECTION_STYLE}>
-        {showNavigation ? (
+      {showNavigation && (
+        <div style={PANEL_SECTION_STYLE}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <button
               type="button"
@@ -2420,16 +2420,19 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                 onClick={() => {
                   const params = new URLSearchParams({
                     jobNumber: job?.job_number || "",
-                    reg: job?.vehicle?.reg || "",
-                    customer: job?.customer?.name || `${job?.customer?.firstname || ""} ${job?.customer?.lastname || ""}`.trim() || ""
+                    reg: job?.vehicle?.reg || job?.vehicle?.registration || "",
+                    customer: job?.customer?.name || `${job?.customer?.firstname || ""} ${job?.customer?.lastname || ""}`.trim() || "",
+                    makeModel: job?.vehicle?.make_model || `${job?.vehicle?.make || ""} ${job?.vehicle?.model || ""}`.trim() || "",
+                    colour: job?.vehicle?.colour || "",
+                    openPopup: "true"
                   });
                   router.push(`/tracking?${params.toString()}`);
                 }}
                 style={{
-                  border: "1px solid var(--danger)",
+                  border: "1px solid var(--accent-purple)",
                   borderRadius: "10px",
                   padding: "8px 18px",
-                  background: "var(--danger)",
+                  background: "var(--accent-purple)",
                   color: "white",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -2459,33 +2462,40 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
               </button>
             </div>
           </div>
-        ) : null}
-        {jobHeader}
-      </div>
+          {jobHeader}
+        </div>
+      )}
 
       <div style={PANEL_SECTION_STYLE}>
-        <div style={TAB_ROW_STYLE}>
-          {TAB_OPTIONS.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  padding: "10px 14px",
-                  borderBottom: isActive ? "3px solid var(--primary)" : "3px solid transparent",
-                  color: isActive ? "var(--accent-purple)" : "var(--info)",
-                  fontWeight: isActive ? 700 : 500,
-                  cursor: "pointer",
-                }}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+        <div style={{ ...TAB_ROW_STYLE, justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            {TAB_OPTIONS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    padding: "10px 14px",
+                    borderBottom: isActive ? "3px solid var(--primary)" : "3px solid transparent",
+                    color: isActive ? "var(--accent-purple)" : "var(--info)",
+                    fontWeight: isActive ? 700 : 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+          {customActions && (
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              {customActions}
+            </div>
+          )}
         </div>
         <div style={TAB_CONTENT_STYLE}>
           {activeTab === "summary" && (

@@ -1,4 +1,33 @@
-🔍 Sidebar - Checking access for HR Manager:
-b9f4c56af6844e1b.js:6   - Item roles: ['hr manager']
-b9f4c56af6844e1b.js:6   - User roles: ['owner']
-b9f4c56af6844e1b.js:6   - Has access: false
+Add a button in the VHC section in the (ADD FILE LOCATION) to open the camera, here the user can take a photo (all within the web browser, open a camera view so this doesn’t connect to the devices camera roll/file system (all internal)) or video, when this photo/video is taken the user clicks complete, has an option to view the photo/video taken, option to highlight the photo, trim and or mute the video and then upload this to the VHC photo/video table in the database. The photos or videos can are then placed into the photo or video tab inside the VHC tab within the job-cards/[jobnumber] page. Where the video/picture can be toggled to send to customers (which gets attached to the customer view link) or not sent and saved for users reference. 
+
+Add a button which says update ”Add to job number” (or along those lines) at the end of each row inside the parts authorised tab inside the job-cards/[jobnumber] page, when this is clicked it auto added the parts into the left section inside the parts tab and opens a popup asking for a pre pick location (an input can be added then or later inside the left section of the parts tab where it will have a button which will open the popup again. 
+
+Document tab inside the job-cards/[jobnumber] page needs to link to the upload documents popup in the create page so it loads the attachments into that section. This section needs to be simplified to only show the documents which we uploaded to the database and shown in the list view. 
+
+The invoice tab can only be complete once the VHC is marked as complete, the write up is marked as complete, every part which is booked to the job number has been allocated to a request or additional request. 
+
+Find what has a status like in progress complete waiting to be started and make find what all of the status under that section has and what they don’t have 
+
+Fix "Could not find a relationship between 'job_notes' and 'last_updated_by' in the schema cache" search the "-- file location: src/lib/database/schema/schemaReference.sql" for the database tables and add to "-- file location: src/lib/database/schema/addtable.sql"
+
+LOOK INTO TRACKING PAGE + ADD WRITE UP PAGE IN JOBCARD FOR WORKSHOP MANAGER
+
+DONE:
+
+Inside the job-card/view page make sure the job type in the row are set to the “detected job type” from creating the job card in the “job-cards/create” page. Remove the quick action button from each row. Add the  actual customer request wording in the section. Lay the rows out so the information inside the rows are fitted better and in a clean modern layout (do not add a glow to anything in this page) and so the information fits more organised inside the row making the height of the rows smaller. Add any times which requires being added to the database into the "-- file location: src/lib/database/schema/addtable.sql" file and read the "-- file location: src/lib/database/schema/schemaReference.sql" to find all of the database tables and columns
+
+Make it so the waiting, loan, collection, neither buttons in the scheduling tab in the job-cards/[jobnumber] page are set to dark background white text purple border, and when selected it changes to purple background (same as the border colour) white text. Change the “save booking details” to a purple background and white text and the same with “schedule appointment”
+
+Only create and add the job number and details to the database if no errors have occurred after clicking the save button on the create page.
+
+Build the parts tab, under this tab in the job-cards/[jobnumber] page add two 50/50 sections, the left side is where parts are added to the job number, there is a search for part section which links to the parts stock and then the item and all of the details are added into the row on the left. The right side is the allocated request section. In this section it will show all of the requests which have been added when creating the job card and all of the authorised requests, to allocate a part once it’s been added to the left side the row can be click and dragged under the request box, this will add the part to that request with the price quantity etc (all info the customer would want/need to see) when moving a line is shown, this uses the same click and drag design as the next job page, also add an assign drop down at the end of the row inside the left side which lists the requests and authorised work requests (multiple parts can be added to one request).
+
+Multiple separate job notes can be added inside the notes tab in the job-cards/[jobnumber] page as well as the job-cards/myjob/[jobnumber] page as well. Each job note gets added to the database and linked to the job number. The notes can be hidden from the customer with a toggle (set this to hidden as default), however the notes are shared between every user which has access to the notes tab. 
+
+Remove the job details under the VHC tab job-cards/[jobnumber], move the customer view into the same row as the summery, health check etc tabs, only allow the customer view page be active when the parts price and labour time have been added to the summary page. For the customer view page, make this a generic link which opens with all the information the customer sees for their health check. Add a copy to clip board button to the right of the customer view button which copy’s that generic link to the clipboard (make this inactive until the customer view button is active). 
+
+In the popup log new change the close button text to white when in dark mode. 
+
+Make the car and key tracker button purple background and white text when in dark mode. Have it so this button opens the the popup for the job number showing the details of the (job number, car make, reg and colour, customers name) all in the top row of the popup, next in the popup it has a button for add location (this popup u enter either the reg, customer name or job number into the field box and auto fills the details of the off fields. And under that information it shows the vehicle location with a drop down selecting the location and where the keys are put nothing else (remove the rest of the details from the Log new popup as well). Underneath that section is a button which says update this shows a new section where is has the Vehicle location and key location in drop downs, update is pressed and this changes the location of the vehicle and keys in the database for everyone.) make sure the button which is pressed from a [jobnumber] page opens the popup with the details from that job number auto filled. 
+
+Inside the myjobs/[jobnumber] page the notes when added doesn’t show in the notes tab in that section, when are part has been authorised it doesn’t show in the write up page

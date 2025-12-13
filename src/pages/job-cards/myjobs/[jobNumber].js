@@ -1030,6 +1030,7 @@ export default function TechJobDetailPage() {
         job_id: jobCardId,
         user_id: dbUserId || null,
         note_text: trimmedNote,
+        hidden_from_customer: true, // Default: hidden from customer
       });
 
       if (!result?.success) {

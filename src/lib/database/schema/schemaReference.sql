@@ -599,6 +599,7 @@ CREATE TABLE public.job_notes (
   note_text text NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  hidden_from_customer boolean DEFAULT true,
   CONSTRAINT job_notes_pkey PRIMARY KEY (note_id),
   CONSTRAINT job_notes_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT job_notes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
@@ -947,10 +948,12 @@ CREATE TABLE public.parts_job_items (
   eta_time time without time zone,
   supplier_reference text,
   labour_hours numeric DEFAULT 0,
+  allocated_to_request_id bigint,
   CONSTRAINT parts_job_items_pkey PRIMARY KEY (id),
   CONSTRAINT parts_job_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT parts_job_items_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts_catalog(id),
-  CONSTRAINT parts_job_items_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id)
+  CONSTRAINT parts_job_items_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id),
+  CONSTRAINT parts_job_items_allocated_to_request_id_fkey FOREIGN KEY (allocated_to_request_id) REFERENCES public.job_requests(request_id)
 );
 CREATE TABLE public.parts_requests (
   request_id integer NOT NULL DEFAULT nextval('parts_requests_request_id_seq'::regclass),

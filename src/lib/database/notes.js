@@ -26,6 +26,7 @@ export const createJobNote = async (noteData) => {
         user_id: noteData.user_id || null, // ✅ Track who created the note
         last_updated_by: noteData.user_id || null,
         note_text: noteData.note_text.trim(),
+        hidden_from_customer: noteData.hidden_from_customer !== undefined ? noteData.hidden_from_customer : true, // Default: hidden
         created_at: new Date().toISOString()
       }])
       .select(`
@@ -34,6 +35,7 @@ export const createJobNote = async (noteData) => {
         user_id,
         last_updated_by,
         note_text,
+        hidden_from_customer,
         created_at,
         updated_at,
         user:user_id(
@@ -77,6 +79,7 @@ export const getNotesByJob = async (jobId) => {
         job_id,
         user_id,
         note_text,
+        hidden_from_customer,
         created_at,
         updated_at,
         last_updated_by,
@@ -114,6 +117,7 @@ export const getNotesByJob = async (jobId) => {
         jobId: note.job_id,
         userId: note.user_id,
         noteText: note.note_text,
+        hiddenFromCustomer: note.hidden_from_customer !== null ? note.hidden_from_customer : true,
         createdAt: note.created_at,
         updatedAt: note.updated_at,
         createdBy: creatorName || "Unknown",
@@ -177,19 +181,27 @@ export const getAllNotes = async (limit = 100, offset = 0) => {
    UPDATE NOTE
    ✅ Enhanced with updated_at tracking
 ============================================ */
-export const updateJobNote = async (noteId, noteText, userId = null) => {
+export const updateJobNote = async (noteId, updates, userId = null) => {
   console.log("🔄 updateJobNote:", noteId, "userId:", userId); // debug log
-  
+
   try {
+    // ✅ Handle both old API (string) and new API (object)
+    const updateData = typeof updates === 'string'
+      ? { note_text: updates.trim() }
+      : {
+          ...(updates.noteText !== undefined && { note_text: updates.noteText.trim() }),
+          ...(updates.hiddenFromCustomer !== undefined && { hidden_from_customer: updates.hiddenFromCustomer })
+        };
+
     // ✅ Validate
-    if (!noteText || noteText.trim() === "") {
+    if (updateData.note_text !== undefined && updateData.note_text === "") {
       throw new Error("Note text cannot be empty");
     }
 
     const { data, error } = await supabase
       .from("job_notes")
-      .update({ 
-        note_text: noteText.trim(),
+      .update({
+        ...updateData,
         updated_at: new Date().toISOString(),
         last_updated_by: userId || null
       })
@@ -200,6 +212,7 @@ export const updateJobNote = async (noteId, noteText, userId = null) => {
         user_id,
         last_updated_by,
         note_text,
+        hidden_from_customer,
         created_at,
         updated_at,
         user:user_id(

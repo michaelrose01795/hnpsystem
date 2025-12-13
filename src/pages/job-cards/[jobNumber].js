@@ -25,6 +25,8 @@ import { summarizePartsPipeline } from "@/lib/partsPipeline";
 import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
 import InvoiceSection from "@/components/Invoices/InvoiceSection";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
+import PartsTabNew from "@/components/PartsTab_New";
+import NotesTabNew from "@/components/NotesTab_New";
 
 const deriveVhcSeverity = (check = {}) => {
   const fields = [
@@ -1489,7 +1491,7 @@ export default function JobCardDetailPage() {
 
           {/* Parts Tab */}
           {activeTab === "parts" && (
-            <PartsTab
+            <PartsTabNew
               jobData={jobData}
               canEdit={canEdit}
               onRefreshJob={() => fetchJobData({ silent: true })}
@@ -1500,18 +1502,16 @@ export default function JobCardDetailPage() {
 
           {/* Notes Tab */}
           {activeTab === "notes" && (
-            <NotesTab 
-              value={sharedNote}
-              onChange={handleSharedNoteChange}
+            <NotesTabNew
+              jobData={jobData}
               canEdit={canEdit}
-              saving={sharedNoteSaving}
-              meta={sharedNoteMeta}
+              actingUserNumericId={actingUserNumericId}
             />
           )}
 
           {/* VHC Tab */}
           {activeTab === "vhc" && (
-            <VHCTab jobNumber={jobNumber} />
+            <VHCTab jobNumber={jobNumber} jobData={jobData} />
           )}
 
           {/* Warranty Tab */}
@@ -2877,9 +2877,9 @@ function SchedulingTab({
                     minWidth: "140px",
                     padding: "12px 16px",
                     borderRadius: "10px",
-                    border: `2px solid ${isActive ? "var(--primary)" : "var(--accent-purple-surface)"}`,
-                    backgroundColor: isActive ? "rgba(var(--primary-rgb),0.08)" : "white",
-                    color: isActive ? "var(--danger)" : "var(--info-dark)",
+                    border: "2px solid var(--accent-purple)",
+                    backgroundColor: isActive ? "var(--accent-purple)" : "var(--text-primary)",
+                    color: "white",
                     fontWeight: "600",
                     cursor: canEdit ? "pointer" : "default",
                     transition: "all 0.2s"
@@ -2941,7 +2941,7 @@ function SchedulingTab({
             disabled={bookingButtonDisabled || vehicleOptions.length === 0}
             style={{
               padding: "10px 20px",
-              backgroundColor: bookingButtonDisabled ? "var(--info)" : "var(--danger)",
+              backgroundColor: bookingButtonDisabled ? "var(--info)" : "var(--accent-purple)",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -3569,7 +3569,7 @@ function SchedulingTab({
               disabled={!appointmentDirty || appointmentSaving}
               style={{
                 padding: "10px 20px",
-                backgroundColor: appointmentDirty ? "var(--info)" : "var(--info)",
+                backgroundColor: appointmentDirty ? "var(--accent-purple)" : "var(--info)",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
@@ -3857,15 +3857,6 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
     return () => clearTimeout(timer);
   }, [catalogSearch, canAllocateParts, searchStockCatalog]);
 
-  useEffect(() => {
-    if (!canAllocateParts) {
-      setCatalogSearch("");
-      clearSelectedCatalogPart();
-      setCatalogSuccessMessage("");
-      setCatalogSubmitError("");
-    }
-  }, [canAllocateParts, clearSelectedCatalogPart]);
-
   const handleCatalogSelect = useCallback((part) => {
     if (!part) return;
     setSelectedCatalogPart(part);
@@ -3880,6 +3871,15 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
     setCatalogSubmitError("");
     setCatalogSuccessMessage("");
   }, []);
+
+  useEffect(() => {
+    if (!canAllocateParts) {
+      setCatalogSearch("");
+      clearSelectedCatalogPart();
+      setCatalogSuccessMessage("");
+      setCatalogSubmitError("");
+    }
+  }, [canAllocateParts, clearSelectedCatalogPart]);
 
   const handleAddPartFromStock = useCallback(async () => {
     if (!canAllocateParts || !selectedCatalogPart || !jobId) {
@@ -4552,67 +4552,96 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
 }
 
 // ✅ VHC Tab
-function VHCTab({ jobNumber }) {
-  const router = useRouter();
-  const [hasPreviewed, setHasPreviewed] = useState(false);
-  const [sending, setSending] = useState(false);
+function VHCTab({ jobNumber, jobData }) {
+  const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    setHasPreviewed(false);
+  // Check if customer view should be enabled
+  // Parts must have prices and labour times must be added
+  const hasPartsWithPrices = useMemo(() => {
+    if (!jobData?.partsAllocations || !Array.isArray(jobData.partsAllocations)) return false;
+
+    // If there are no parts, consider it as not ready
+    if (jobData.partsAllocations.length === 0) return false;
+
+    // Check if all parts have prices and labour hours
+    return jobData.partsAllocations.every(part => {
+      const hasPrice = part.part?.unit_price || part.unitPrice;
+      const hasLabourTime = part.labour_hours !== null && part.labour_hours !== undefined;
+      return hasPrice && hasLabourTime;
+    });
+  }, [jobData]);
+
+  const customerViewUrl = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    return `${window.location.origin}/vhc/customer-view/${jobNumber}`;
   }, [jobNumber]);
 
-  useEffect(() => {
-    if (!router.isReady) return;
-    if (router.query?.vhcPreview === "1" && !hasPreviewed) {
-      setHasPreviewed(true);
-      const nextQuery = { ...router.query };
-      delete nextQuery.vhcPreview;
-      router.replace({ pathname: router.pathname, query: nextQuery }, undefined, { shallow: true });
-    }
-  }, [router, router.isReady, router.query, hasPreviewed]);
+  const handleCustomerViewClick = () => {
+    window.open(customerViewUrl, '_blank');
+  };
 
-  const handleCustomerAction = async () => {
-    if (!hasPreviewed) {
-      const returnTo = `/job-cards/${jobNumber}?vhcPreview=1`;
-      router.push(`/vhc/customer-view/${jobNumber}?returnTo=${encodeURIComponent(returnTo)}`);
-      return;
-    }
+  const handleCopyToClipboard = async () => {
     try {
-      setSending(true);
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      alert("Customer link sent successfully.");
+      await navigator.clipboard.writeText(customerViewUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error("Failed to notify customer", error);
-      alert("Unable to send customer link right now.");
-    } finally {
-      setSending(false);
+      console.error("Failed to copy to clipboard", error);
+      alert("Failed to copy link to clipboard");
     }
   };
 
-  const buttonLabel = hasPreviewed ? (sending ? "Sending…" : "Send") : "Customer View";
+  const customActions = (
+    <>
+      <button
+        type="button"
+        onClick={handleCustomerViewClick}
+        disabled={!hasPartsWithPrices}
+        style={{
+          padding: "8px 16px",
+          borderRadius: "8px",
+          border: `1px solid ${hasPartsWithPrices ? "var(--primary)" : "var(--grey-accent)"}`,
+          backgroundColor: hasPartsWithPrices ? "var(--primary)" : "var(--surface-light)",
+          color: hasPartsWithPrices ? "var(--surface)" : "var(--grey-accent)",
+          fontWeight: 600,
+          cursor: hasPartsWithPrices ? "pointer" : "not-allowed",
+          opacity: hasPartsWithPrices ? 1 : 0.5,
+          fontSize: "13px",
+        }}
+        title={!hasPartsWithPrices ? "Add parts prices and labour time to enable customer view" : "Open customer view in new tab"}
+      >
+        Customer View
+      </button>
+      <button
+        type="button"
+        onClick={handleCopyToClipboard}
+        disabled={!hasPartsWithPrices}
+        style={{
+          padding: "8px 12px",
+          borderRadius: "8px",
+          border: `1px solid ${hasPartsWithPrices ? "var(--info)" : "var(--grey-accent)"}`,
+          backgroundColor: hasPartsWithPrices ? (copied ? "var(--success)" : "var(--info)") : "var(--surface-light)",
+          color: hasPartsWithPrices ? "var(--surface)" : "var(--grey-accent)",
+          fontWeight: 600,
+          cursor: hasPartsWithPrices ? "pointer" : "not-allowed",
+          opacity: hasPartsWithPrices ? 1 : 0.5,
+          fontSize: "13px",
+          minWidth: "80px",
+        }}
+        title={!hasPartsWithPrices ? "Add parts prices and labour time to enable" : copied ? "Copied!" : "Copy link to clipboard"}
+      >
+        {copied ? "✓ Copied" : "📋 Copy"}
+      </button>
+    </>
+  );
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
-        <button
-          type="button"
-          onClick={handleCustomerAction}
-          disabled={sending}
-          style={{
-            padding: "10px 16px",
-            borderRadius: "10px",
-            border: "1px solid var(--primary)",
-            backgroundColor: hasPreviewed ? "var(--info)" : "var(--primary)",
-            color: "var(--surface)",
-            fontWeight: 600,
-            cursor: sending ? "not-allowed" : "pointer",
-            minWidth: "160px",
-          }}
-        >
-          {buttonLabel}
-        </button>
-      </div>
-      <VhcDetailsPanel jobNumber={jobNumber} showNavigation={false} />
+      <VhcDetailsPanel
+        jobNumber={jobNumber}
+        showNavigation={false}
+        customActions={customActions}
+      />
     </div>
   );
 }

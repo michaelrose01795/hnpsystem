@@ -385,6 +385,357 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
   );
 };
 
+const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
+  const [form, setForm] = useState(() => ({
+    jobNumber: initialData?.jobNumber || "",
+    reg: initialData?.reg || "",
+    customer: initialData?.customer || "",
+    makeModel: initialData?.makeModel || "",
+    colour: initialData?.colour || "",
+    vehicleLocation: initialData?.vehicleLocation || CAR_LOCATIONS[0].label,
+    keyLocation: initialData?.keyLocation || KEY_LOCATIONS[0].label,
+  }));
+  const [showUpdate, setShowUpdate] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Auto-fill functionality when job number, reg, or customer is entered
+  const handleAutoFill = async (searchField, searchValue) => {
+    if (!searchValue || searchValue.trim().length < 2) return;
+
+    setIsSearching(true);
+    try {
+      // Try to fetch job details from the database
+      const { data, error } = await supabaseClient
+        .from("jobs")
+        .select(`
+          job_number,
+          vehicle:vehicle_id(registration, reg, make, model, make_model, colour),
+          customer:customer_id(name, firstname, lastname)
+        `)
+        .or(
+          searchField === "jobNumber" ? `job_number.ilike.%${searchValue}%` :
+          searchField === "reg" ? `vehicle_id.registration.ilike.%${searchValue}%,vehicle_id.reg.ilike.%${searchValue}%` :
+          `customer_id.name.ilike.%${searchValue}%,customer_id.firstname.ilike.%${searchValue}%,customer_id.lastname.ilike.%${searchValue}%`
+        )
+        .limit(1)
+        .single();
+
+      if (!error && data) {
+        setForm((prev) => ({
+          ...prev,
+          jobNumber: data.job_number || prev.jobNumber,
+          reg: data.vehicle?.registration || data.vehicle?.reg || prev.reg,
+          customer: data.customer?.name || `${data.customer?.firstname || ""} ${data.customer?.lastname || ""}`.trim() || prev.customer,
+          makeModel: data.vehicle?.make_model || `${data.vehicle?.make || ""} ${data.vehicle?.model || ""}`.trim() || prev.makeModel,
+          colour: data.vehicle?.colour || prev.colour,
+        }));
+      }
+    } catch (err) {
+      console.error("Auto-fill error:", err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAddLocation = (event) => {
+    event.preventDefault();
+
+    if (!form.jobNumber && !form.reg && !form.customer) {
+      alert("Please fill in at least one of: Job Number, Registration, or Customer name");
+      return;
+    }
+
+    const actionType = "job_checked_in";
+    onSave({ ...form, actionType, context: "car" });
+  };
+
+  const handleUpdateLocation = (event) => {
+    event.preventDefault();
+
+    if (!form.jobNumber && !form.reg && !form.customer) {
+      alert("Please fill in at least one of: Job Number, Registration, or Customer name");
+      return;
+    }
+
+    const actionType = "location_update";
+    onSave({ ...form, actionType, context: "update" });
+  };
+
+  return (
+    <div
+      style={{
+        ...popupOverlayStyles,
+        zIndex: 220,
+      }}
+    >
+      <div
+        style={{
+          ...popupCardStyles,
+          width: "min(800px, 100%)",
+          padding: "28px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "20px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <h2 style={{ margin: "0 0 4px 0" }}>Vehicle & Key Tracking</h2>
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--info)" }}>
+              Track vehicle and key locations
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              width: "38px",
+              height: "38px",
+              borderRadius: "50%",
+              border: "1px solid rgba(var(--shadow-rgb),0.15)",
+              backgroundColor: "var(--surface)",
+              cursor: "pointer",
+              fontWeight: 700,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Top Row: Job Details */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+            gap: "12px",
+            padding: "16px",
+            backgroundColor: "var(--surface-light)",
+            borderRadius: "12px",
+            border: "1px solid var(--accent-purple-surface)",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: "0.75rem", color: "var(--info)", marginBottom: "4px" }}>Job Number</div>
+            <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{form.jobNumber || "—"}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: "0.75rem", color: "var(--info)", marginBottom: "4px" }}>Registration</div>
+            <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{form.reg || "—"}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: "0.75rem", color: "var(--info)", marginBottom: "4px" }}>Make & Model</div>
+            <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{form.makeModel || "—"}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: "0.75rem", color: "var(--info)", marginBottom: "4px" }}>Colour</div>
+            <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{form.colour || "—"}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: "0.75rem", color: "var(--info)", marginBottom: "4px" }}>Customer</div>
+            <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{form.customer || "—"}</div>
+          </div>
+        </div>
+
+        {/* Add Location Section */}
+        <form onSubmit={handleAddLocation} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <h3 style={{ margin: "0", fontSize: "1rem", fontWeight: 600 }}>Add Location</h3>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>
+                Job Number / Reg / Customer
+              </span>
+              <input
+                value={form.jobNumber || form.reg || form.customer}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Try to determine which field it is
+                  if (value.match(/^\d+$/)) {
+                    handleChange("jobNumber", value);
+                    handleAutoFill("jobNumber", value);
+                  } else if (value.match(/^[A-Z0-9\s]+$/i) && value.length <= 10) {
+                    handleChange("reg", value);
+                    handleAutoFill("reg", value);
+                  } else {
+                    handleChange("customer", value);
+                    handleAutoFill("customer", value);
+                  }
+                }}
+                placeholder="Enter job number, reg, or customer name"
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "12px",
+                  border: "1px solid var(--accent-purple-surface)",
+                  fontSize: "0.95rem",
+                }}
+                disabled={isSearching}
+              />
+            </label>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>Vehicle Location</span>
+              <select
+                value={form.vehicleLocation}
+                onChange={(e) => handleChange("vehicleLocation", e.target.value)}
+                style={{
+                  padding: "10px",
+                  borderRadius: "12px",
+                  border: "1px solid var(--accent-purple-surface)",
+                }}
+              >
+                {CAR_LOCATIONS.map((loc) => (
+                  <option key={loc.id} value={loc.label}>
+                    {loc.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>Key Location</span>
+              <select
+                value={form.keyLocation}
+                onChange={(e) => handleChange("keyLocation", e.target.value)}
+                style={{
+                  padding: "10px",
+                  borderRadius: "12px",
+                  border: "1px solid var(--accent-purple-surface)",
+                }}
+              >
+                {KEY_LOCATION_GROUPS.map((group) => (
+                  <optgroup key={group.title} label={group.title}>
+                    {group.options.map((option) => {
+                      const label = `${group.title} – ${option.label}`;
+                      return (
+                        <option key={option.id} value={label}>
+                          {option.label}
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            style={{
+              padding: "12px 20px",
+              borderRadius: "12px",
+              border: "none",
+              background: "var(--primary)",
+              color: "white",
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: "0.95rem",
+            }}
+          >
+            Add Location
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div style={{ height: "1px", backgroundColor: "var(--accent-purple-surface)" }} />
+
+        {/* Update Section Toggle */}
+        <button
+          type="button"
+          onClick={() => setShowUpdate(!showUpdate)}
+          style={{
+            padding: "12px 20px",
+            borderRadius: "12px",
+            border: "1px solid var(--info)",
+            background: showUpdate ? "var(--info)" : "transparent",
+            color: showUpdate ? "white" : "var(--info)",
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: "0.95rem",
+          }}
+        >
+          {showUpdate ? "Hide Update Section" : "Update Existing Location"}
+        </button>
+
+        {/* Update Location Section */}
+        {showUpdate && (
+          <form onSubmit={handleUpdateLocation} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <h3 style={{ margin: "0", fontSize: "1rem", fontWeight: 600 }}>Update Location</h3>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>Vehicle Location</span>
+                <select
+                  value={form.vehicleLocation}
+                  onChange={(e) => handleChange("vehicleLocation", e.target.value)}
+                  style={{
+                    padding: "10px",
+                    borderRadius: "12px",
+                    border: "1px solid var(--accent-purple-surface)",
+                  }}
+                >
+                  {CAR_LOCATIONS.map((loc) => (
+                    <option key={loc.id} value={loc.label}>
+                      {loc.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>Key Location</span>
+                <select
+                  value={form.keyLocation}
+                  onChange={(e) => handleChange("keyLocation", e.target.value)}
+                  style={{
+                    padding: "10px",
+                    borderRadius: "12px",
+                    border: "1px solid var(--accent-purple-surface)",
+                  }}
+                >
+                  {KEY_LOCATION_GROUPS.map((group) => (
+                    <optgroup key={group.title} label={group.title}>
+                      {group.options.map((option) => {
+                        const label = `${group.title} – ${option.label}`;
+                        return (
+                          <option key={option.id} value={label}>
+                            {option.label}
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              style={{
+                padding: "12px 20px",
+                borderRadius: "12px",
+                border: "none",
+                background: "var(--success)",
+                color: "white",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontSize: "0.95rem",
+              }}
+            >
+              Update
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
   const [form, setForm] = useState(() => ({
     ...emptyForm,
@@ -614,6 +965,7 @@ export default function TrackingDashboard() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [searchModal, setSearchModal] = useState({ open: false, type: null });
   const [entryModal, setEntryModal] = useState({ open: false, type: null, entry: null });
+  const [simplifiedModal, setSimplifiedModal] = useState({ open: false, initialData: null });
   const [highlightedJobNumber, setHighlightedJobNumber] = useState(null);
   const { dbUserId, user } = useUser();
   const userRoles = useMemo(() => (user?.roles || []).map((role) => role.toLowerCase()), [user]);
@@ -657,11 +1009,26 @@ export default function TrackingDashboard() {
   useEffect(() => {
     if (!router.isReady) return;
 
-    const { jobNumber, reg, customer } = router.query;
+    const { jobNumber, reg, customer, makeModel, colour, openPopup } = router.query;
 
     // If we have URL params, check if an entry exists for this job
     if (jobNumber || reg || customer) {
       setHighlightedJobNumber(jobNumber);
+
+      // If openPopup=true, use the simplified modal with pre-filled data
+      if (openPopup === "true") {
+        setSimplifiedModal({
+          open: true,
+          initialData: {
+            jobNumber: jobNumber || "",
+            reg: reg || "",
+            customer: customer || "",
+            makeModel: makeModel || "",
+            colour: colour || "",
+          },
+        });
+        return;
+      }
 
       // Check if an existing entry matches the job
       const existingEntry = entries.find(
@@ -1326,6 +1693,14 @@ export default function TrackingDashboard() {
           context={entryModal.type}
           entry={entryModal.entry}
           onClose={closeEntryModal}
+          onSave={handleSave}
+        />
+      )}
+
+      {simplifiedModal.open && (
+        <SimplifiedTrackingModal
+          initialData={simplifiedModal.initialData}
+          onClose={() => setSimplifiedModal({ open: false, initialData: null })}
           onSave={handleSave}
         />
       )}

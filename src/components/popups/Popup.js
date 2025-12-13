@@ -24,7 +24,7 @@ export default function Popup({ isOpen, onClose, children }) {
             padding: "10px 14px",
             borderRadius: "10px",
             backgroundColor: "var(--primary)",
-            color: "var(--surface)",
+            color: "white",
             border: "1px solid var(--primary-light)",
             cursor: "pointer",
             fontWeight: 600,

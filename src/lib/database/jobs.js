@@ -563,25 +563,72 @@ export const getRectificationItemsByJob = async (jobId) => {
 
 /* ============================================
    GET AUTHORIZED ADDITIONAL WORK FOR JOB
-   Pulls authorized VHC items to seed rectification
+   Pulls authorized VHC items and authorized parts to seed rectification
 ============================================ */
 export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
   try {
-    const { data, error } = await supabase
+    // Fetch VHC authorizations
+    const { data: vhcData, error: vhcError } = await supabase
       .from("vhc_authorizations")
       .select("id, job_id, authorized_at, authorized_items")
       .eq("job_id", jobId)
       .order("authorized_at", { ascending: false });
 
-    if (error) {
-      if (error.code === "PGRST116") {
-        return [];
-      }
-
-      throw error;
+    if (vhcError && vhcError.code !== "PGRST116") {
+      throw vhcError;
     }
 
-    return extractAuthorizedItems(data || []);
+    // Fetch authorized parts
+    const { data: partsData, error: partsError } = await supabase
+      .from("parts_job_items")
+      .select(`
+        id,
+        job_id,
+        authorised,
+        allocated_to_request_id,
+        quantity_requested,
+        parts_catalog (
+          name,
+          description,
+          part_number
+        ),
+        job_requests (
+          description
+        )
+      `)
+      .eq("job_id", jobId)
+      .eq("authorised", true);
+
+    if (partsError && partsError.code !== "PGRST116") {
+      console.error("⚠️ Error fetching authorized parts:", partsError);
+    }
+
+    // Extract VHC authorized items
+    const vhcItems = extractAuthorizedItems(vhcData || []);
+
+    // Extract authorized parts and format them
+    const partsItems = (partsData || []).map((part, index) => {
+      const partName = part.parts_catalog?.name || part.parts_catalog?.description || "Part";
+      const partNumber = part.parts_catalog?.part_number || "";
+      const requestDesc = part.job_requests?.description || "";
+      const description = `${partName}${partNumber ? ` (${partNumber})` : ""}${requestDesc ? ` - ${requestDesc}` : ""}`;
+
+      return {
+        recordId: null,
+        description,
+        label: `Authorized Part: ${description}`,
+        status: "additional_work",
+        isAdditionalWork: true,
+        vhcItemId: null,
+        authorizationId: part.id,
+        authorizedAmount: null,
+        source: "parts",
+        sourceKey: `parts-${part.id}`,
+      };
+    });
+
+    // Combine both sources
+    return [...vhcItems, ...partsItems];
   } catch (error) {
     console.error("❌ getAuthorizedAdditionalWorkByJob error:", error);
     return [];
