@@ -75,20 +75,11 @@ const getJobDate = (job) => {
 };
 
 const deriveJobType = (job) => {
+  // Use detected job categories from create page if available
   if (Array.isArray(job?.jobCategories) && job.jobCategories.length > 0) {
-    if (job.jobCategories.some((type) => normalizeString(type).includes("mot")))
-      return "MOT";
-    if (
-      job.jobCategories.some((type) => normalizeString(type).includes("service"))
-    )
-      return "Service";
-    if (
-      job.jobCategories.some((type) =>
-        normalizeString(type).includes("diag")
-      )
-    )
-      return "Diagnose";
+    return job.jobCategories.join(", ");
   }
+  // Fallback to type field
   const baseType = normalizeString(job?.type);
   if (baseType.includes("mot")) return "MOT";
   if (baseType.includes("service")) return "Service";
@@ -658,7 +649,6 @@ export default function ViewJobCards() {
                       key={job.jobNumber}
                       job={job}
                       onNavigate={() => handleCardNavigation(job.jobNumber)}
-                      onQuickView={() => handleQuickView(job)}
                     />
                   ))
                 )}
@@ -1012,27 +1002,23 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
   const jobStatus = job.status || "Status pending";
   const jobSourceLabel = job.jobSource || "Retail";
 
-  const infoBlocks = [
-    { label: "Customer", value: job.customer || "Unknown customer" },
-    { label: "Technician", value: assignedTechName },
-    { label: "Job Type", value: jobType },
-    { label: "Appointment", value: appointmentLabel },
-    { label: "Customer Status", value: waitingLabel },
-    { label: "Requests", value: `${requestsCount} item${requestsCount === 1 ? "" : "s"}` },
-  ];
+  // Extract customer requests text
+  const customerRequests = job.requests && Array.isArray(job.requests)
+    ? job.requests.map(req => typeof req === "string" ? req : req?.text || req?.description || "").filter(Boolean)
+    : [];
 
   return (
     <div
       onClick={onNavigate}
       style={{
         border: "1px solid var(--surface-light)",
-        padding: "18px",
-        borderRadius: "16px",
+        padding: "14px 16px",
+        borderRadius: "12px",
         backgroundColor: "var(--surface)",
         boxShadow: "none",
         display: "flex",
         flexDirection: "column",
-        gap: "16px",
+        gap: "10px",
         cursor: "pointer",
         transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
       }}
@@ -1047,116 +1033,89 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
         event.currentTarget.style.borderColor = "var(--surface-light)";
       }}
     >
+      {/* Header Row - Job Number, Reg, Status */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "12px",
           alignItems: "center",
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--info-dark)" }}>{job.jobNumber}</span>
-            <span
-              style={{
-                fontSize: "12px",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                color: "var(--info)",
-              }}
-            >
-              {jobSourceLabel}
-            </span>
-          </div>
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "baseline" }}>
-            <span style={{ fontSize: "20px", fontWeight: 700, color: "var(--primary)" }}>{job.reg || "—"}</span>
-            <span style={{ fontSize: "14px", color: "var(--info)" }}>{job.makeModel || "Vehicle pending"}</span>
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-              <span
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: "999px",
-                  backgroundColor: "var(--accent-purple-surface)",
-                  color: "var(--accent-purple)",
-                  fontWeight: 600,
-                  fontSize: "13px",
-                  textTransform: "capitalize",
-                }}
-              >
-            {jobStatus}
-          </span>
-          {onQuickView ? (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onQuickView();
-              }}
-              style={{
-                padding: "8px 14px",
-                borderRadius: "10px",
-                border: "1px solid var(--accent-purple-surface)",
-                backgroundColor: "var(--surface)",
-                color: "var(--info-dark)",
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-            >
-              Quick actions
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))",
+          flexWrap: "wrap",
           gap: "10px",
         }}
       >
-        {infoBlocks.map((block) => (
-          <div
-            key={block.label}
-            style={{
-              border: "1px solid var(--info-surface)",
-              borderRadius: "12px",
-              padding: "12px",
-              backgroundColor: "var(--surface)",
-            }}
-          >
-            <div style={{ fontSize: "11px", color: "var(--warning)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              {block.label}
-            </div>
-            <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--info-dark)", marginTop: "4px" }}>{block.value}</div>
-          </div>
-        ))}
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--info-dark)" }}>{job.jobNumber}</span>
+          <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--primary)" }}>{job.reg || "—"}</span>
+          <span style={{ fontSize: "13px", color: "var(--info)" }}>{job.makeModel || "Vehicle pending"}</span>
+        </div>
+        <span
+          style={{
+            padding: "4px 10px",
+            borderRadius: "999px",
+            backgroundColor: "var(--accent-purple-surface)",
+            color: "var(--accent-purple)",
+            fontWeight: 600,
+            fontSize: "12px",
+            textTransform: "capitalize",
+          }}
+        >
+          {jobStatus}
+        </span>
       </div>
 
+      {/* Main Info Row - Compact horizontal layout */}
       <div
         style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "12px",
-          alignItems: "center",
-          justifyContent: "space-between",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+          gap: "8px",
+          fontSize: "13px",
         }}
       >
-        <div style={{ fontSize: "13px", color: "var(--info)" }}>
-          Scheduled: <strong>{jobDate || "Not scheduled"}</strong>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>Customer</span>
+          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{job.customer || "Unknown"}</span>
         </div>
-        <div style={{ fontSize: "13px", color: "var(--info)" }}>
-          Created: <strong>{createdStamp}</strong>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>Technician</span>
+          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{assignedTechName}</span>
         </div>
-        <div>{renderVhcBadge(job)}</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>Job Type</span>
+          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{jobType}</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>Appointment</span>
+          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{appointmentLabel}</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>Status</span>
+          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{waitingLabel}</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>VHC</span>
+          <span style={{ fontSize: "12px" }}>{renderVhcBadge(job)}</span>
+        </div>
       </div>
+
+      {/* Customer Requests Section */}
+      {customerRequests.length > 0 && (
+        <div
+          style={{
+            padding: "8px 10px",
+            borderRadius: "8px",
+            backgroundColor: "var(--info-surface)",
+            border: "1px solid var(--surface-light)",
+          }}
+        >
+          <div style={{ fontSize: "10px", color: "var(--warning)", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>
+            Customer Requests ({customerRequests.length})
+          </div>
+          <div style={{ fontSize: "12px", color: "var(--info-dark)", lineHeight: "1.4" }}>
+            {customerRequests.join(" • ")}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
