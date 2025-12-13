@@ -11,6 +11,7 @@ export const roleCategories = {
     "Techs",
     "Parts",
     "Parts Manager",
+    "Parts Driver",
     "MOT Tester",
     "Valet Service",
   ],

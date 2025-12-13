@@ -77,21 +77,6 @@ export default function Sidebar({
       userRoles.some((userRole) => userRole.toLowerCase() === requiredRole.toLowerCase())
     );
 
-    // Debug logging for HR Manager link
-    if (item.label === "HR Manager" || item.href === "/hr/manager") {
-      console.log("🔍 Sidebar - Checking access for:", item.label, "at", item.href);
-      console.log("  - Item roles required:", item.roles);
-      console.log("  - User has roles:", userRoles);
-      console.log("  - Access granted:", access);
-      console.log("  - Role comparison details:");
-      item.roles.forEach(requiredRole => {
-        const matches = userRoles.filter(userRole =>
-          userRole.toLowerCase() === requiredRole.toLowerCase()
-        );
-        console.log(`    - Required: "${requiredRole}" → User has: [${matches.join(', ')}] → Match: ${matches.length > 0}`);
-      });
-    }
-
     return access;
   };
 
@@ -389,11 +374,6 @@ export default function Sidebar({
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={() => {
-                    if (item.href === "/hr/manager") {
-                      console.log("🔗 Clicking HR Manager link - navigating to:", item.href);
-                    }
-                  }}
                   style={{
                     display: "block",
                     padding: "10px 14px",

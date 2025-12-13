@@ -11,7 +11,8 @@
       "Bash(ls:*)",
       "Bash(npx next build:*)",
       "Bash(cat:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(timeout 60 npm run build)"
     ],
     "deny": [],
     "ask": []

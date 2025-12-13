@@ -70,65 +70,45 @@ const requestStatusTone = {
 
 const defaultData = { locations: [], unassigned: [], stockChecks: [] };
 
-const badgeStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "6px",
-  padding: "2px 8px",
-  borderRadius: "999px",
-  fontSize: "0.75rem",
-  background: "rgba(var(--warning-rgb),0.16)",
-  color: "var(--warning-dark)",
-  border: "1px solid rgba(var(--warning-rgb),0.35)",
-};
-
-function StockCheckPopup({ open, onClose, isManager = false, technicianId = null }) {
+function StockCheckPopup({
+  open,
+  onClose,
+  isManager = false,
+  technicianId = null,
+  onRequestsSubmitted = null,
+}) {
   const [data, setData] = useState(defaultData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
-  const [temporaryInput, setTemporaryInput] = useState("");
-  const [temporarySubmitting, setTemporarySubmitting] = useState(false);
   const [selectedItems, setSelectedItems] = useState(() => new Set());
   const [submitLoading, setSubmitLoading] = useState(false);
-  const [locationRenameState, setLocationRenameState] = useState({ id: null, value: "" });
   const [renameItemState, setRenameItemState] = useState({ id: null, value: "" });
-  const [moveItemState, setMoveItemState] = useState({ id: null, locationId: "" });
   const [managerActionLoading, setManagerActionLoading] = useState(false);
-  const [newLocationName, setNewLocationName] = useState("");
-  const [addingLocation, setAddingLocation] = useState(false);
   const [requestUpdateId, setRequestUpdateId] = useState(null);
+  const [stockSearch, setStockSearch] = useState("");
+  const [newConsumableForm, setNewConsumableForm] = useState({
+    name: "",
+    supplier: "",
+    unitCost: "",
+  });
+  const [newConsumableLoading, setNewConsumableLoading] = useState(false);
 
-  const sections = useMemo(() => {
-    const next = (data.locations || []).map((location) => ({
-      ...location,
-      key: location.id,
-      title: location.name || "Unnamed Location",
-    }));
-    if (data.unassigned && data.unassigned.length) {
-      next.push({
-        id: null,
-        key: "unassigned",
-        title: "Unassigned",
-        consumables: data.unassigned,
-      });
-    }
-    return next;
+  const allConsumables = useMemo(() => {
+    const locatedItems = (data.locations || []).flatMap((location) => location.consumables || []);
+    return locatedItems.concat(data.unassigned || []);
   }, [data.locations, data.unassigned]);
 
-  const allConsumables = useMemo(
-    () => sections.flatMap((section) => section.consumables || []),
-    [sections]
-  );
+  const filteredConsumables = useMemo(() => {
+    const query = stockSearch.trim().toLowerCase();
+    if (!query) {
+      return allConsumables;
+    }
+    return allConsumables.filter((item) => (item.name || "").toLowerCase().includes(query));
+  }, [allConsumables, stockSearch]);
 
-  const locationOptions = useMemo(() => {
-    const opts = (data.locations || []).map((location) => ({
-      label: location.name,
-      value: location.id,
-    }));
-    opts.push({ label: "Unassigned", value: "" });
-    return opts;
-  }, [data.locations]);
+  const totalItems = allConsumables.length;
+  const visibleItems = filteredConsumables.length;
 
   const selectedCount = selectedItems.size;
 
@@ -192,13 +172,13 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
 
   useEffect(() => {
     if (!open) {
-      setTemporaryInput("");
       setSelectedItems(new Set());
       setStatusMessage("");
       setError("");
-      setLocationRenameState({ id: null, value: "" });
       setRenameItemState({ id: null, value: "" });
-      setMoveItemState({ id: null, locationId: "" });
+      setStockSearch("");
+      setNewConsumableForm({ name: "", supplier: "", unitCost: "" });
+      setNewConsumableLoading(false);
       return () => {};
     }
 
@@ -229,64 +209,47 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
     });
   };
 
-  const toggleSection = (section) => {
-    const sectionIds = (section.consumables || []).map((item) => item.id);
-    setSelectedItems((previous) => {
-      const next = new Set(previous);
-      const allSelected = sectionIds.every((id) => next.has(id));
-      sectionIds.forEach((id) => {
-        if (allSelected) {
-          next.delete(id);
-        } else {
-          next.add(id);
-        }
-      });
-      return next;
-    });
+  const handleNewConsumableChange = (field) => (event) => {
+    const value = event.target.value;
+    setNewConsumableForm((previous) => ({ ...previous, [field]: value }));
   };
 
-  const parseTemporaryItems = () => {
-    return (temporaryInput || "")
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.startsWith("-"))
-      .map((line) => line.replace(/^-\s*/, "").trim())
-      .filter(Boolean);
-  };
-
-  const handleTemporarySubmit = async () => {
-    const items = parseTemporaryItems();
-    if (!items.length) {
-      setError("Use '-' at the start of each line to add temporary items.");
+  const handleNewConsumableSubmit = async (event) => {
+    event.preventDefault();
+    const itemName = (newConsumableForm.name || "").trim();
+    if (!itemName) {
+      setError("Consumable name is required.");
       return;
     }
-    setTemporarySubmitting(true);
+    const supplier = (newConsumableForm.supplier || "").trim();
+    const unitCost = Number(newConsumableForm.unitCost) || 0;
+    setNewConsumableLoading(true);
     setStatusMessage("");
     setError("");
     try {
-      const response = await fetch("/api/workshop/consumables/stock-check", {
+      const response = await fetch("/api/workshop/consumables/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "addTemporary", items }),
+        body: JSON.stringify({
+          name: itemName,
+          supplier: supplier || null,
+          unitCost,
+        }),
       });
       if (!response.ok) {
         const body = await response
           .json()
-          .catch(() => ({ message: "Unable to add temporary items." }));
-        throw new Error(body.message || "Unable to add temporary items.");
+          .catch(() => ({ message: "Unable to add consumable." }));
+        throw new Error(body.message || "Unable to add consumable.");
       }
-      const payload = await response.json();
-      if (!payload.success) {
-        throw new Error(payload.message || "Unable to add temporary items.");
-      }
-      setData(payload.data || defaultData);
-      setTemporaryInput("");
-      setStatusMessage(`${items.length} temporary item${items.length > 1 ? "s" : ""} added.`);
-    } catch (tempError) {
-      console.error("❌ Failed to add temporary items", tempError);
-      setError(tempError.message || "Unable to add temporary items.");
+      setNewConsumableForm({ name: "", supplier: "", unitCost: "" });
+      setStatusMessage(`"${itemName}" added to consumable stock.`);
+      await fetchData();
+    } catch (newItemError) {
+      console.error("❌ Failed to add consumable", newItemError);
+      setError(newItemError.message || "Unable to add consumable.");
     } finally {
-      setTemporarySubmitting(false);
+      setNewConsumableLoading(false);
     }
   };
 
@@ -318,9 +281,13 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
       if (!payload.success) {
         throw new Error(payload.message || "Unable to submit stock check.");
       }
-      setData(payload.data || defaultData);
+      const nextState = payload.data || defaultData;
+      setData(nextState);
       setSelectedItems(new Set());
       setStatusMessage("Stock check request submitted to Workshop Management.");
+      if (typeof onRequestsSubmitted === "function") {
+        onRequestsSubmitted(nextState.stockChecks || []);
+      }
     } catch (submitError) {
       console.error("❌ Failed to submit stock check", submitError);
       setError(submitError.message || "Unable to submit stock check.");
@@ -351,8 +318,6 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
       }
       setData(result.data || defaultData);
       setRenameItemState({ id: null, value: "" });
-      setMoveItemState({ id: null, locationId: "" });
-      setLocationRenameState({ id: null, value: "" });
       return true;
     } catch (managerError) {
       console.error("❌ Manager action failed", managerError);
@@ -360,37 +325,6 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
       return false;
     } finally {
       setManagerActionLoading(false);
-    }
-  };
-
-  const handleAddLocation = async () => {
-    const trimmed = (newLocationName || "").trim();
-    if (!trimmed) {
-      setError("Location name is required.");
-      return;
-    }
-    setAddingLocation(true);
-    const success = await handleManagerAction({ action: "createLocation", name: trimmed });
-    if (success) {
-      setNewLocationName("");
-      setStatusMessage(`Location "${trimmed}" created.`);
-    }
-    setAddingLocation(false);
-  };
-
-  const handleRenameLocation = async () => {
-    const trimmed = (locationRenameState.value || "").trim();
-    if (!locationRenameState.id || !trimmed) {
-      setError("Provide a new name for the location.");
-      return;
-    }
-    const success = await handleManagerAction({
-      action: "renameLocation",
-      locationId: locationRenameState.id,
-      name: trimmed,
-    });
-    if (success) {
-      setStatusMessage("Location renamed.");
     }
   };
 
@@ -429,21 +363,6 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
     }
   };
 
-  const handleMoveItem = async () => {
-    if (!moveItemState.id) {
-      setError("Select an item to move.");
-      return;
-    }
-    const success = await handleManagerAction({
-      action: "moveConsumable",
-      consumableId: moveItemState.id,
-      locationId: moveItemState.locationId || null,
-    });
-    if (success) {
-      setStatusMessage("Consumable moved.");
-    }
-  };
-
   const handleRequestStatusUpdate = async (requestId, status) => {
     setRequestUpdateId(requestId);
     setStatusMessage("");
@@ -474,80 +393,9 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
     }
   };
 
-  const renderLocationHeader = (section) => {
-    const consumables = section.consumables || [];
-    const allSelected = consumables.every((item) => selectedItems.has(item.id));
-    return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "12px",
-        }}
-      >
-        <label style={checkboxLabelStyle}>
-          <input
-            type="checkbox"
-            checked={allSelected && consumables.length > 0}
-            onChange={() => toggleSection(section)}
-          />
-          {section.title}
-          {section.id && isManager && (
-            <button
-              type="button"
-              onClick={() =>
-                setLocationRenameState({ id: section.id, value: section.title })
-              }
-              style={{ ...buttonSecondaryStyle, padding: "4px 10px" }}
-            >
-              Rename
-            </button>
-          )}
-        </label>
-        {section.id && locationRenameState.id === section.id && isManager && (
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            <input
-              type="text"
-              value={locationRenameState.value}
-              onChange={(event) =>
-                setLocationRenameState((previous) => ({
-                  ...previous,
-                  value: event.target.value,
-                }))
-              }
-              style={{
-                padding: "8px 10px",
-                borderRadius: "8px",
-                border: "1px solid var(--surface-light)",
-              }}
-            />
-            <button
-              type="button"
-              onClick={handleRenameLocation}
-              style={{ ...buttonPrimaryStyle, padding: "8px 14px" }}
-              disabled={managerActionLoading}
-            >
-              Save
-            </button>
-            <button
-              type="button"
-              onClick={() => setLocationRenameState({ id: null, value: "" })}
-              style={{ ...buttonSecondaryStyle, padding: "8px 14px" }}
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   const renderConsumableRow = (item) => {
     const checked = selectedItems.has(item.id);
     const isRenaming = renameItemState.id === item.id;
-    const isMoving = moveItemState.id === item.id;
     return (
       <div
         key={item.id}
@@ -575,10 +423,7 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
               checked={checked}
               onChange={() => toggleItem(item.id)}
             />
-            <span>
-              {item.name}
-              {item.temporary && <span style={{ ...badgeStyle, marginLeft: "8px" }}>Temp</span>}
-            </span>
+            <span>{item.name}</span>
           </label>
           {isManager && (
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -590,18 +435,6 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
                 }
               >
                 Rename
-              </button>
-              <button
-                type="button"
-                style={{ ...buttonSecondaryStyle, padding: "4px 10px" }}
-                onClick={() =>
-                  setMoveItemState({
-                    id: item.id,
-                    locationId: item.locationId || "",
-                  })
-                }
-              >
-                Move
               </button>
               <button
                 type="button"
@@ -653,46 +486,6 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
             </button>
           </div>
         )}
-        {isMoving && (
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            <select
-              value={moveItemState.locationId}
-              onChange={(event) =>
-                setMoveItemState((previous) => ({
-                  ...previous,
-                  locationId: event.target.value,
-                }))
-              }
-              style={{
-                padding: "8px 10px",
-                borderRadius: "8px",
-                border: "1px solid var(--surface-light)",
-                minWidth: "180px",
-              }}
-            >
-              {locationOptions.map((option) => (
-                <option key={option.value || "unassigned"} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={handleMoveItem}
-              style={{ ...buttonPrimaryStyle, padding: "8px 14px" }}
-              disabled={managerActionLoading}
-            >
-              Move
-            </button>
-            <button
-              type="button"
-              onClick={() => setMoveItemState({ id: null, locationId: "" })}
-              style={{ ...buttonSecondaryStyle, padding: "8px 14px" }}
-            >
-              Cancel
-            </button>
-          </div>
-        )}
       </div>
     );
   };
@@ -734,86 +527,80 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
           </div>
         )}
 
-        <div style={sectionCardStyle}>
-          <h3 style={{ margin: "0 0 8px", color: "var(--primary-dark)" }}>Temporary items</h3>
-          <p style={{ margin: "0 0 12px", color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
-            Paste each ad-hoc consumable on its own line starting with <strong>-</strong>. Items are added as temporary entries with no location.
-          </p>
-          <textarea
-            value={temporaryInput}
-            onChange={(event) => setTemporaryInput(event.target.value)}
-            rows={3}
-            placeholder="- blue roll\n- cable ties"
-            style={{
-              width: "100%",
-              borderRadius: "12px",
-              border: "1px solid var(--surface-light)",
-              padding: "10px 12px",
-              resize: "vertical",
-            }}
-          />
-          <div style={{ marginTop: "12px", textAlign: "right" }}>
-            <button
-              type="button"
-              onClick={handleTemporarySubmit}
-              style={{ ...buttonSecondaryStyle, padding: "10px 18px" }}
-              disabled={temporarySubmitting}
-            >
-              {temporarySubmitting ? "Adding…" : "Add Temporary Items"}
-            </button>
-          </div>
-        </div>
-
-        <div style={{ ...sectionCardStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
-            <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Consumable stock</h3>
-            <span style={{ color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
-              {loading ? "Loading…" : `${allConsumables.length} items`}
-            </span>
-          </div>
-          {sections.length === 0 && !loading && (
-            <p style={{ margin: 0, color: "var(--info)" }}>No consumables recorded yet.</p>
-          )}
-          {loading && <p style={{ margin: 0, color: "var(--info)" }}>Loading stock…</p>}
-          {!loading &&
-            sections.map((section) => (
-              <div key={section.key} style={{ display: "flex", flexDirection: "column", gap: "8px", border: "1px solid var(--surface-light)", borderRadius: "16px", padding: "12px" }}>
-                {renderLocationHeader(section)}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "8px" }}>
-                  {(section.consumables || []).map((item) => renderConsumableRow(item))}
-                </div>
-                {(section.consumables || []).length === 0 && (
-                  <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>No consumables in this location.</p>
-                )}
-              </div>
-            ))}
-        </div>
-
         {isManager && (
           <div style={{ ...sectionCardStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
-            <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Manage locations</h3>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
-              <input
-                type="text"
-                value={newLocationName}
-                onChange={(event) => setNewLocationName(event.target.value)}
-                placeholder="Add new location"
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: "10px",
-                  border: "1px solid var(--surface-light)",
-                  flex: "1 1 240px",
-                }}
-              />
-              <button
-                type="button"
-                onClick={handleAddLocation}
-                style={{ ...buttonPrimaryStyle, padding: "10px 16px" }}
-                disabled={addingLocation}
-              >
-                {addingLocation ? "Adding…" : "Add Location"}
-              </button>
-            </div>
+            <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Add new consumable</h3>
+            <p style={{ margin: 0, color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
+              Create a consumable that everyone in the workshop can see and request.
+            </p>
+            <form
+              onSubmit={handleNewConsumableSubmit}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: "12px",
+                width: "100%",
+              }}
+            >
+              <label style={{ fontWeight: 600, color: "var(--primary-dark)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                Item name
+                <input
+                  type="text"
+                  value={newConsumableForm.name}
+                  onChange={handleNewConsumableChange("name")}
+                  placeholder="e.g. nitrile gloves"
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: "10px",
+                    border: "1px solid var(--surface-light)",
+                  }}
+                  required
+                />
+              </label>
+              <label style={{ fontWeight: 600, color: "var(--primary-dark)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                Default supplier
+                <input
+                  type="text"
+                  value={newConsumableForm.supplier}
+                  onChange={handleNewConsumableChange("supplier")}
+                  placeholder="Optional supplier"
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: "10px",
+                    border: "1px solid var(--surface-light)",
+                  }}
+                />
+              </label>
+              <label style={{ fontWeight: 600, color: "var(--primary-dark)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                Default unit cost (£)
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newConsumableForm.unitCost}
+                  onChange={handleNewConsumableChange("unitCost")}
+                  placeholder="0.00"
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: "10px",
+                    border: "1px solid var(--surface-light)",
+                  }}
+                />
+              </label>
+              <div style={{ gridColumn: "1 / -1", textAlign: "right" }}>
+                <button
+                  type="submit"
+                  disabled={newConsumableLoading}
+                  style={{
+                    ...buttonPrimaryStyle,
+                    padding: "10px 20px",
+                    background: newConsumableLoading ? "rgba(var(--primary-rgb),0.45)" : buttonPrimaryStyle.background,
+                  }}
+                >
+                  {newConsumableLoading ? "Adding…" : "Add Consumable"}
+                </button>
+              </div>
+            </form>
           </div>
         )}
 
@@ -827,7 +614,6 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
                     <tr style={{ textAlign: "left", color: "var(--grey-accent-dark)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                       <th style={{ padding: "8px" }}>Consumable</th>
                       <th style={{ padding: "8px" }}>Technician</th>
-                      <th style={{ padding: "8px" }}>Location</th>
                       <th style={{ padding: "8px" }}>Submitted</th>
                       <th style={{ padding: "8px" }}>Status</th>
                       <th style={{ padding: "8px" }}>Actions</th>
@@ -840,7 +626,6 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
                         <tr key={request.id} style={{ background: "var(--surface-light)", borderRadius: "12px" }}>
                           <td style={{ padding: "8px", fontWeight: 600 }}>{request.consumableName || "—"}</td>
                           <td style={{ padding: "8px", color: "var(--grey-accent-dark)" }}>{request.technicianName || "—"}</td>
-                          <td style={{ padding: "8px", color: "var(--grey-accent-dark)" }}>{request.consumableLocation || "—"}</td>
                           <td style={{ padding: "8px", color: "var(--grey-accent-dark)" }}>
                             {request.createdAt
                               ? new Date(request.createdAt).toLocaleString("en-GB", {
@@ -907,6 +692,45 @@ function StockCheckPopup({ open, onClose, isManager = false, technicianId = null
             )}
           </div>
         )}
+
+        <div style={{ ...sectionCardStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
+            <div>
+              <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Consumable stock</h3>
+              <p style={{ margin: "4px 0 0", color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
+                Select items below to include them in a stock check request.
+              </p>
+            </div>
+            <span style={{ color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
+              {loading ? "Loading…" : `${visibleItems} of ${totalItems} items`}
+            </span>
+          </div>
+          <input
+            type="search"
+            value={stockSearch}
+            onChange={(event) => setStockSearch(event.target.value)}
+            placeholder="Search consumables"
+            style={{
+              width: "100%",
+              padding: "10px 14px",
+              borderRadius: "12px",
+              border: "1px solid var(--surface-light)",
+              background: "var(--search-surface, var(--surface))",
+              color: "var(--primary-dark)",
+            }}
+          />
+          {loading ? (
+            <p style={{ margin: 0, color: "var(--info)" }}>Loading stock…</p>
+          ) : visibleItems === 0 ? (
+            <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
+              {totalItems === 0 ? "No consumables recorded yet." : "No consumables match your search."}
+            </p>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "10px", maxHeight: "420px", overflowY: "auto", paddingRight: "4px" }}>
+              {filteredConsumables.map((item) => renderConsumableRow(item))}
+            </div>
+          )}
+        </div>
 
         <div style={{ ...sectionCardStyle, display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
           <div>

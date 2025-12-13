@@ -22,6 +22,56 @@ const formatStockCheckRow = (row) => ({
   technicianName: row.technician?.name || row.technician_name || null,
 });
 
+const mapStockCheckStatusToRequest = (status) => {
+  if (status === "approved") {
+    return "ordered";
+  }
+  if (status === "rejected") {
+    return "rejected";
+  }
+  return "pending";
+};
+
+async function logTechnicianRequestsFromStockChecks(rows = []) {
+  if (!Array.isArray(rows) || !rows.length) {
+    return;
+  }
+
+  const payload = rows
+    .map((row) => {
+      if (!row?.id) {
+        return null;
+      }
+      const itemName = (row.consumableName || "").trim();
+      if (!itemName) {
+        return null;
+      }
+      return {
+        id: row.id,
+        item_name: itemName,
+        quantity: 1,
+        requested_by: row.technicianId || null,
+        requested_by_name: row.technicianName || null,
+        requested_at: row.createdAt || new Date().toISOString(),
+        updated_at: row.createdAt || new Date().toISOString(),
+        status: mapStockCheckStatusToRequest(row.status),
+      };
+    })
+    .filter(Boolean);
+
+  if (!payload.length) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from("workshop_consumable_requests")
+    .upsert(payload, { onConflict: "id" });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function getConsumablesGroupedByLocation() {
   const { data: locations, error: locationError } = await supabase
     .from("consumable_locations")
@@ -132,7 +182,9 @@ export async function submitStockCheckRequest({ consumableIds = [], technicianId
     throw error;
   }
 
-  return (data || []).map(formatStockCheckRow);
+  const formattedRows = (data || []).map(formatStockCheckRow);
+  await logTechnicianRequestsFromStockChecks(formattedRows);
+  return formattedRows;
 }
 
 export async function listConsumableStockChecks() {
@@ -155,7 +207,9 @@ export async function listConsumableStockChecks() {
     throw error;
   }
 
-  return (data || []).map(formatStockCheckRow);
+  const rows = (data || []).map(formatStockCheckRow);
+  await logTechnicianRequestsFromStockChecks(rows);
+  return rows;
 }
 
 export async function updateStockCheckStatus(id, status) {

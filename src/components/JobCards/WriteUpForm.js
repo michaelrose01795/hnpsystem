@@ -9,6 +9,7 @@ import {
   saveWriteUpToDatabase,
   getJobByNumber,
   updateJobStatus,
+  getAuthorizedAdditionalWorkByJob,
 } from "@/lib/database/jobs";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
@@ -74,9 +75,89 @@ const buildRequestList = (rawRequests) => {
 // ✅ Compose a unique key for checklist items
 const composeTaskKey = (task) => `${task.source}:${task.sourceKey}`;
 
+const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
+  const mergedTasks = Array.isArray(tasks) ? [...tasks] : [];
+  if (!Array.isArray(authorizedItems) || authorizedItems.length === 0) {
+    return mergedTasks;
+  }
+
+  const existingKeys = new Set(
+    mergedTasks
+      .map((task) => {
+        if (!task || !task.source || !task.sourceKey) {
+          return null;
+        }
+        return composeTaskKey(task);
+      })
+      .filter(Boolean)
+  );
+
+  authorizedItems.forEach((item, index) => {
+    if (!item) {
+      return;
+    }
+
+    const source = item.source || "vhc";
+    const sourceKey =
+      item.sourceKey || `${source}-${item.authorizationId || "auth"}-${index + 1}`;
+    const label = item.label || item.description || "";
+    if (!label) {
+      return;
+    }
+
+    const candidate = {
+      taskId: item.taskId || null,
+      source,
+      sourceKey,
+      label,
+      status: item.status === "complete" ? "complete" : "additional_work",
+    };
+
+    const candidateKey = composeTaskKey(candidate);
+    if (!existingKeys.has(candidateKey)) {
+      mergedTasks.push(candidate);
+      existingKeys.add(candidateKey);
+    }
+  });
+
+  return mergedTasks;
+};
+
 // ✅ Generate a reusable empty checkbox array
 const createCheckboxArray = () => Array(10).fill(false);
 const PARTS_ON_ORDER_STATUSES = new Set(["on-order", "on_order", "awaiting-stock", "awaiting_stock"]);
+
+const createAuthorizedSourceKey = (item, index, jobId) => {
+  const authSegment = item.authorizationId || jobId || "auth";
+  const vhcSegment =
+    item.vhcItemId !== null && item.vhcItemId !== undefined
+      ? String(item.vhcItemId)
+      : `idx-${index + 1}`;
+  return `vhc-${authSegment}-${vhcSegment}`;
+};
+
+const tasksAreEqual = (left = [], right = []) => {
+  if (left === right) {
+    return true;
+  }
+  if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+    return false;
+  }
+  for (let index = 0; index < left.length; index += 1) {
+    const prevTask = left[index] || {};
+    const nextTask = right[index] || {};
+    if (
+      prevTask.source !== nextTask.source ||
+      prevTask.sourceKey !== nextTask.sourceKey ||
+      prevTask.label !== nextTask.label ||
+      prevTask.status !== nextTask.status ||
+      (prevTask.taskId ?? null) !== (nextTask.taskId ?? null)
+    ) {
+      return false;
+    }
+  }
+  return true;
+};
 
 const extractNormalizedStatus = (value = "") =>
   `${value}`.toLowerCase().trim().replace(/\s+/g, "-");
@@ -317,7 +398,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   const { usersByRole, isLoading: rosterLoading } = useRoster();
 
   const [jobData, setJobData] = useState(null);
-  const [authorizedItems, setAuthorizedItems] = useState([]);
+  const [, setAuthorizedItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [writeUpData, setWriteUpData] = useState({
@@ -364,6 +445,44 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   const techsList = usersByRole?.["Techs"] || [];
   const isTech = techsList.includes(username);
 
+  const refreshAuthorizedWork = useCallback(async () => {
+    if (!writeUpMeta.jobId) {
+      return;
+    }
+
+    try {
+      const latestAuthorizedItems = await getAuthorizedAdditionalWorkByJob(writeUpMeta.jobId);
+      setAuthorizedItems(Array.isArray(latestAuthorizedItems) ? latestAuthorizedItems : []);
+
+      setWriteUpData((prev) => {
+        const normalizedEntries = (Array.isArray(latestAuthorizedItems) ? latestAuthorizedItems : []).map(
+          (item, index) => {
+            const description = (item?.description || item?.label || "").toString().trim();
+            return {
+              ...item,
+              source: "vhc",
+              sourceKey: createAuthorizedSourceKey(item || {}, index, writeUpMeta.jobId),
+              label: description
+                ? `Authorized Work: ${description}`
+                : `Authorized Work ${index + 1}`,
+              status: item?.status === "complete" ? "complete" : "additional_work",
+            };
+          }
+        );
+        const mergedTasks = ensureAuthorizedTasks(prev.tasks, normalizedEntries);
+        if (tasksAreEqual(prev.tasks, mergedTasks)) {
+          return prev;
+        }
+        return {
+          ...prev,
+          tasks: mergedTasks,
+        };
+      });
+    } catch (error) {
+      console.error("❌ Failed to refresh authorized work:", error);
+    }
+  }, [writeUpMeta.jobId]);
+
   // ✅ Fetch job + write-up data whenever the job number changes
   useEffect(() => {
     if (!jobNumber) {
@@ -385,7 +504,9 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
 
         if (writeUpResponse) {
           const incomingCauseEntries = hydrateCauseEntries(writeUpResponse.causeEntries || []);
-          setAuthorizedItems(writeUpResponse.authorisedItems || []);
+          const authorisedItems = writeUpResponse.authorisedItems || [];
+          const mergedTasks = ensureAuthorizedTasks(writeUpResponse.tasks || [], authorisedItems);
+          setAuthorizedItems(authorisedItems);
           setWriteUpData((prev) => ({
             ...prev,
             fault: writeUpResponse.fault || "",
@@ -400,7 +521,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
             additionalParts: writeUpResponse.additionalParts || "",
             qty: writeUpResponse.qty || createCheckboxArray(),
             booked: writeUpResponse.booked || createCheckboxArray(),
-            tasks: writeUpResponse.tasks || [],
+            tasks: mergedTasks,
             completionStatus: writeUpResponse.completionStatus || "additional_work",
             jobDescription: writeUpResponse.jobDescription || writeUpResponse.fault || "",
             vhcAuthorizationId: writeUpResponse.vhcAuthorizationId || null,
@@ -429,13 +550,16 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
             additionalParts: "",
             qty: createCheckboxArray(),
             booked: createCheckboxArray(),
-            tasks: fallbackRequests.map((item) => ({
-              taskId: null,
-              source: item.source,
-              sourceKey: item.sourceKey,
-              label: item.label,
-              status: "additional_work",
-            })),
+            tasks: ensureAuthorizedTasks(
+              fallbackRequests.map((item) => ({
+                taskId: null,
+                source: item.source,
+                sourceKey: item.sourceKey,
+                label: item.label,
+                status: "additional_work",
+              })),
+              []
+            ),
             completionStatus: "additional_work",
             jobDescription: fallbackDescription,
             vhcAuthorizationId: null,
@@ -469,6 +593,37 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       writeupId: jobData.jobCard.writeUp?.writeup_id ?? prev.writeupId,
     }));
   }, [jobData]);
+
+  useEffect(() => {
+    refreshAuthorizedWork();
+  }, [refreshAuthorizedWork]);
+
+  useEffect(() => {
+    if (!writeUpMeta.jobId) {
+      return undefined;
+    }
+
+    const channel = supabase.channel(`vhc-authorizations-${writeUpMeta.jobId}`);
+    const handleAuthorizationChange = () => {
+      refreshAuthorizedWork();
+    };
+
+    channel.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "vhc_authorizations",
+        filter: `job_id=eq.${writeUpMeta.jobId}`,
+      },
+      handleAuthorizationChange
+    );
+
+    void channel.subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [writeUpMeta.jobId, refreshAuthorizedWork]);
 
   // ✅ Shared handler for plain text fields
   const handleInputChange = (field) => (event) => {

@@ -10,6 +10,7 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
   const [number, setNumber] = useState("");
   const [street, setStreet] = useState("");
   const [town, setTown] = useState("");
+  const [county, setCounty] = useState("");
   const [country, setCountry] = useState("United Kingdom");
   const [postcode, setPostcode] = useState("");
   const [email, setEmail] = useState("");
@@ -37,6 +38,7 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
       `${number}`.trim(),
       street.trim(),
       town.trim(),
+      county.trim(),
       country.trim(),
       postcode.trim(),
     ]
@@ -82,7 +84,7 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
 
   const applyAddressSuggestion = (suggestion) => {
     if (!suggestion) return;
-    const { line1, town: suggestionTown, country: suggestionCountry, postcode: suggestionPostcode } = suggestion;
+    const { line1, town: suggestionTown, county: suggestionCounty, country: suggestionCountry, postcode: suggestionPostcode } = suggestion;
     if (line1) {
       const match = line1.match(/^(\d+[A-Za-z]?)[\s,]*(.*)$/);
       if (match) {
@@ -94,6 +96,9 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
     }
     if (suggestionTown) {
       setTown(suggestionTown);
+    }
+    if (suggestionCounty) {
+      setCounty(suggestionCounty);
     }
     if (suggestionCountry) {
       setCountry(suggestionCountry);
@@ -121,7 +126,14 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
       if (!response.ok) {
         throw new Error(payload?.error || "Unable to find that postcode");
       }
-      setLookupState({ loading: false, error: "", suggestions: payload.suggestions || [] });
+      const suggestions = payload.suggestions || [];
+
+      // Automatically fill in the address fields if suggestions are found
+      if (suggestions.length > 0) {
+        applyAddressSuggestion(suggestions[0]);
+      } else {
+        setLookupState({ loading: false, error: "", suggestions: [] });
+      }
     } catch (error) {
       setLookupState({
         loading: false,
@@ -402,13 +414,13 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
                       color: "#666",
                     }}
                   >
-                    Country
+                    County
                   </label>
                   <input
                     type="text"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    placeholder="Country"
+                    value={county}
+                    onChange={(e) => setCounty(e.target.value)}
+                    placeholder="County"
                     style={{
                       width: "100%",
                       padding: "12px 16px",
@@ -422,6 +434,36 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
                     onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                   />
                 </div>
+              </div>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "#666",
+                  }}
+                >
+                  Country
+                </label>
+                <input
+                  type="text"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  placeholder="Country"
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    border: "2px solid var(--surface-light)",
+                    backgroundColor: "var(--surface-light)",
+                    fontSize: "15px",
+                    transition: "border-color 0.2s",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                />
               </div>
               <div>
                 <label

@@ -1,7 +1,8 @@
 const ADDRESS_API_URL = "https://nominatim.openstreetmap.org/search";
 const DEFAULT_HEADERS = {
-  "User-Agent": "hnp-system/1.0 (+support@hnp.internal)",
+  "User-Agent": "HNPSystem/1.0 (Business Application; contact@hnpsystem.com)",
   Accept: "application/json",
+  "Accept-Language": "en",
 };
 
 const mapSuggestion = (entry, fallbackPostcode, rawQuery) => {
@@ -50,20 +51,47 @@ export default async function handler(req, res) {
   }
 
   try {
-    const sanitized = postcode.replace(/\s+/g, "");
-    const query = new URLSearchParams({
+    const sanitized = postcode.replace(/\s+/g, " ").trim();
+
+    // Try method 1: Search by postcode parameter
+    let query = new URLSearchParams({
       format: "json",
       addressdetails: "1",
-      limit: "5",
+      limit: "10",
       countrycodes: "gb",
       postalcode: sanitized,
     }).toString();
-    const response = await fetch(`${ADDRESS_API_URL}?${query}`, {
+
+    let response = await fetch(`${ADDRESS_API_URL}?${query}`, {
       headers: DEFAULT_HEADERS,
     });
+
+    // If first method fails or returns 403, try alternative search query
+    if (!response.ok || response.status === 403) {
+      console.log(`First method failed with status ${response.status}, trying alternative search...`);
+      query = new URLSearchParams({
+        format: "json",
+        addressdetails: "1",
+        limit: "10",
+        countrycodes: "gb",
+        q: sanitized,
+      }).toString();
+
+      response = await fetch(`${ADDRESS_API_URL}?${query}`, {
+        headers: DEFAULT_HEADERS,
+      });
+    }
+
     if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error("Access denied by address service. Please try again in a moment.");
+      }
+      if (response.status === 429) {
+        throw new Error("Too many requests. Please wait a moment and try again.");
+      }
       throw new Error(`Address lookup failed with status ${response.status}`);
     }
+
     const payload = await response.json();
     const suggestions = Array.isArray(payload)
       ? payload.map((entry) => mapSuggestion(entry, sanitized.toUpperCase(), postcode))

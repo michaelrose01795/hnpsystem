@@ -2416,13 +2416,20 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
               onClick={startEditing}
               style={{
                 padding: "10px 20px",
-                backgroundColor: "var(--danger)",
+                backgroundColor: "var(--accent-purple)",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
                 cursor: "pointer",
                 fontWeight: "600",
-                fontSize: "14px"
+                fontSize: "14px",
+                transition: "all 0.2s"
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = "var(--primary)";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = "var(--accent-purple)";
               }}
             >
               Edit Customer Details

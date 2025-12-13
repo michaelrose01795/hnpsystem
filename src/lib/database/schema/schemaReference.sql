@@ -1116,6 +1116,7 @@ CREATE TABLE public.users (
   updated_at timestamp with time zone DEFAULT now(),
   dark_mode boolean DEFAULT false,
   job_title text,
+  name text,
   CONSTRAINT users_pkey PRIMARY KEY (user_id)
 );
 CREATE TABLE public.vehicle_tracking_events (

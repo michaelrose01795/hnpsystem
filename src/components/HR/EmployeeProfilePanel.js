@@ -1,27 +1,39 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/HR/EmployeeProfilePanel.js
 import React from "react";
-import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
+import { StatusTag } from "@/components/HR/MetricCard";
 
 export default function EmployeeProfilePanel({ employee }) {
   if (!employee) {
     return (
-      <SectionCard title="Employee Profile" subtitle="Select an employee to view their profile.">
-        <div style={{ color: "var(--info)", fontSize: "0.9rem" }}>
+      <div className="text-center py-8">
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)] mb-2">Employee Profile</p>
+        <p className="text-sm text-slate-500">Select an employee to view their profile.</p>
+        <p className="text-xs text-slate-400 mt-2">
           Employee details, documents, and employment information will appear here.
-        </div>
-      </SectionCard>
+        </p>
+      </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-      <SectionCard
-        title={employee.name}
-        subtitle={`${employee.jobTitle} • ${employee.department}`}
-        action={<StatusTag label={employee.status} tone={employee.status === "Active" ? "success" : "default"} />}
-      >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "12px" }}>
+    <div className="space-y-4">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <StatusTag label={employee.status} tone={employee.status === "Active" ? "success" : "default"} />
+          </div>
+        </div>
+        <div className="pb-3 border-b border-[var(--surface-light)]">
+          <p className="text-sm text-slate-500">{employee.jobTitle} • {employee.department}</p>
+        </div>
+      </div>
+
+      <div className="pt-3 border-t border-[var(--surface-light)]">
+        <div className="mb-5">
+          <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)] font-semibold">Employment Details</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
           <ProfileItem label="Role" value={employee.role} />
           <ProfileItem label="Employment Type" value={employee.employmentType} />
           <ProfileItem label="Start Date" value={formatDate(employee.startDate)} />
@@ -30,85 +42,66 @@ export default function EmployeeProfilePanel({ employee }) {
           <ProfileItem label="Hourly Rate" value={`£${employee.hourlyRate.toFixed(2)}`} />
           <ProfileItem label="Keycloak ID" value={employee.keycloakId} />
         </div>
-      </SectionCard>
+      </div>
 
-      <SectionCard title="Contact Information">
+      <div className="pt-3 border-t border-[var(--surface-light)] space-y-3">
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Contact Information</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
           <ProfileItem label="Email" value={employee.email} />
           <ProfileItem label="Phone" value={employee.phone} />
           <ProfileItem label="Emergency Contact" value={employee.emergencyContact} />
         </div>
-        <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
-          <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>Address</span>
-          <span style={{ color: "var(--info-dark)" }}>{employee.address}</span>
+        <div className="pt-2">
+          <ProfileItem label="Address" value={employee.address} />
         </div>
-      </SectionCard>
+      </div>
 
-      <SectionCard
-        title="Documents"
-        subtitle="Contracts, licences, training certificates and other uploads"
-        action={
+      <div className="pt-3 border-t border-[var(--surface-light)] space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Documents</p>
           <button
             type="button"
-            style={{
-              padding: "8px 14px",
-              borderRadius: "999px",
-              border: "1px solid var(--accent-purple)",
-              background: "var(--surface)",
-              color: "var(--accent-purple)",
-              fontWeight: 600,
-              fontSize: "0.8rem",
-            }}
+            className="rounded-full border border-[var(--primary)] bg-white px-3 py-1 text-xs font-semibold text-[var(--primary)] hover:border-[var(--primary-dark)]"
           >
             Upload document
           </button>
-        }
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {employee.documents?.map((doc) => (
-            <div
-              key={doc.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "10px 12px",
-                borderRadius: "12px",
-                border: "1px solid var(--accent-purple-surface)",
-              }}
-            >
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{doc.name}</span>
-                <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
-                  {doc.type} • Uploaded {formatDate(doc.uploadedOn)}
-                </span>
-              </div>
-              <button
-                type="button"
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: "8px",
-                  border: "1px solid var(--info)",
-                  background: "var(--surface)",
-                  fontWeight: 600,
-                  fontSize: "0.8rem",
-                }}
-              >
-                View
-              </button>
-            </div>
-          ))}
         </div>
-      </SectionCard>
+        <p className="text-xs text-slate-500">Contracts, licences, training certificates and other uploads</p>
+        <div className="space-y-2">
+          {employee.documents?.length > 0 ? (
+            employee.documents.map((doc) => (
+              <div
+                key={doc.id}
+                className="rounded-2xl border border-[var(--surface-light)] bg-white p-3 flex items-center justify-between"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{doc.name}</p>
+                  <p className="text-xs text-slate-500">
+                    {doc.type} • Uploaded {formatDate(doc.uploadedOn)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="rounded-full border border-[var(--surface-light)] px-3 py-1 text-xs font-semibold text-[var(--primary)] hover:border-[var(--primary)]"
+                >
+                  View
+                </button>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-slate-500 py-2">No documents uploaded yet.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
 function ProfileItem({ label, value }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <span style={{ fontSize: "0.75rem", color: "var(--info)", fontWeight: 600 }}>{label}</span>
-      <span style={{ color: "var(--info-dark)", fontWeight: 600 }}>{value || "—"}</span>
+    <div className="flex flex-col gap-2">
+      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{label}</span>
+      <span className="text-sm font-semibold text-slate-900">{value || "—"}</span>
     </div>
   );
 }

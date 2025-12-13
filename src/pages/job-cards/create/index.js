@@ -117,6 +117,9 @@ export default function CreateJobCardPage() {
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false); // toggle documents popup
   const [pendingDocuments, setPendingDocuments] = useState([]); // hold selected files before job exists
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false); // track when uploads running
+  const [uploadProgress, setUploadProgress] = useState([]); // track individual file upload progress: [{ fileName, progress, speed, timeRemaining, status, avgSpeed }]
+  const [backgroundUploads, setBackgroundUploads] = useState(false); // track if uploads should continue in background
+  const [uploadedFiles, setUploadedFiles] = useState([]); // store metadata of uploaded files to link to job later: [{ fileName, publicUrl, contentType, storagePath }]
   const [checkSheetFile, setCheckSheetFile] = useState(null); // uploaded check-sheet file before save
   const [checkSheetPreviewUrl, setCheckSheetPreviewUrl] = useState(""); // preview URL for image check-sheets
   const [checkSheetCheckboxes, setCheckSheetCheckboxes] = useState([]); // list of checkbox metadata for current sheet
@@ -474,47 +477,217 @@ export default function CreateJobCardPage() {
     }
   };
 
-  const uploadDocumentsForJob = async (jobId, files, uploadedBy = null) => { // push pending files into Supabase storage + DB
+  const linkUploadedFilesToJob = async (jobId) => { // Link previously uploaded files to the newly created job
+    if (uploadedFiles.length === 0) return;
+
+    try {
+      // Call API to update temp uploaded files with actual job ID
+      const response = await fetch('/api/jobcards/link-uploaded-files', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jobId: jobId,
+          files: uploadedFiles
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to link uploaded files');
+      }
+
+      setUploadedFiles([]); // Clear after linking
+    } catch (error) {
+      console.error("Failed to link uploaded files to job:", error);
+      // Don't throw - files are already uploaded, linking can be done manually if needed
+    }
+  };
+
+  const retryFailedUploads = async () => { // Retry only failed uploads
+    // Get file names of failed uploads
+    const failedFileNames = uploadProgress
+      .filter(item => item.status === 'failed')
+      .map(item => item.fileName);
+
+    if (failedFileNames.length === 0) {
+      alert("No failed uploads to retry");
+      return;
+    }
+
+    // Find the actual file objects from pendingDocuments
+    const failedFiles = pendingDocuments.filter(file =>
+      failedFileNames.includes(file.name)
+    );
+
+    if (failedFiles.length === 0) {
+      alert("Failed files not found in pending documents");
+      return;
+    }
+
+    const tempJobId = `temp-${Date.now()}`;
+
+    try {
+      // Reset failed uploads to pending
+      setUploadProgress(prev => prev.map(item =>
+        item.status === 'failed' ? { ...item, status: 'pending', progress: 0 } : item
+      ));
+
+      // Upload only the failed files (with retry flag)
+      await uploadDocumentsForJob(tempJobId, failedFiles, dbUserId || null, true);
+    } catch (error) {
+      alert("Retry failed: " + error.message);
+    }
+  };
+
+  const uploadDocumentsForJob = async (jobId, files, uploadedBy = null, isRetry = false) => { // push pending files to server with progress tracking
     if (!jobId || !Array.isArray(files) || files.length === 0) { // guard against missing data
       return; // nothing to upload
     } // guard end
 
     setIsUploadingDocuments(true); // set uploading flag
 
-    try {
-      for (const file of files) { // iterate each file sequentially to maintain order
-        const safeName = file.name || `document-${Date.now()}`; // derive filename fallback
-        const ext = safeName.split(".").pop(); // capture extension
-        const objectPath = `jobs/${jobId}/documents/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext || "bin"}`; // build storage key
+    // Initialize or update progress tracking
+    if (!isRetry) {
+      // Initial upload - create new progress entries
+      const initialProgress = files.map(file => ({
+        fileName: file.name || `document-${Date.now()}`,
+        progress: 0,
+        speed: 0,
+        timeRemaining: 0,
+        status: 'pending',
+        avgSpeed: 0,
+        totalBytes: file.size,
+        uploadedBytes: 0
+      }));
+      setUploadProgress(initialProgress);
+    }
+    // If retry, progress entries already exist and were reset to pending by retryFailedUploads
 
-        const { error: storageError } = await supabase.storage // upload into Supabase Storage bucket
-          .from("job-documents")
-          .upload(objectPath, file, {
-            contentType: file.type || "application/octet-stream",
-            upsert: false,
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const safeName = file.name || `document-${Date.now()}`; // derive filename fallback
+
+        // Helper function to update progress - uses filename matching for retries, index for initial uploads
+        const updateProgressItem = (updateFn) => {
+          setUploadProgress(prev => prev.map(item =>
+            item.fileName === safeName ? updateFn(item) : item
+          ));
+        };
+
+        // Update status to uploading
+        updateProgressItem(item => ({ ...item, status: 'uploading' }));
+
+        // Track upload progress with speed monitoring
+        const startTime = Date.now();
+        let lastUpdate = startTime;
+        let lastLoaded = 0;
+        const speedSamples = [];
+
+        try {
+          // Upload file using XMLHttpRequest with progress tracking
+          await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('jobId', jobId);
+            formData.append('userId', uploadedBy || 'system');
+
+            xhr.upload.addEventListener('progress', (e) => {
+              if (e.lengthComputable) {
+                const now = Date.now();
+                const timeDiff = (now - lastUpdate) / 1000;
+                const bytesDiff = e.loaded - lastLoaded;
+
+                const currentSpeed = timeDiff > 0 ? bytesDiff / timeDiff : 0;
+                speedSamples.push(currentSpeed);
+
+                if (speedSamples.length > 5) speedSamples.shift();
+
+                const avgSpeed = speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length;
+                const progress = (e.loaded / e.total) * 100;
+                const remaining = e.total - e.loaded;
+                const timeRemaining = avgSpeed > 0 ? remaining / avgSpeed : 0;
+
+                updateProgressItem(item => ({
+                  ...item,
+                  progress: progress,
+                  speed: currentSpeed,
+                  avgSpeed: avgSpeed,
+                  timeRemaining: timeRemaining,
+                  uploadedBytes: e.loaded
+                }));
+
+                lastUpdate = now;
+                lastLoaded = e.loaded;
+              }
+            });
+
+            xhr.addEventListener('load', () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                  resolve(JSON.parse(xhr.responseText));
+                } catch (e) {
+                  resolve({ success: true });
+                }
+              } else {
+                reject(new Error(`Upload failed with status ${xhr.status}`));
+              }
+            });
+
+            xhr.addEventListener('error', () => reject(new Error('Network error during upload')));
+
+            xhr.open('POST', `/api/jobcards/upload-document`);
+            xhr.send(formData);
           });
 
-        if (storageError) {
-          throw new Error(storageError.message || "Failed to upload document");
+          // Calculate final average speed
+          const totalTime = (Date.now() - startTime) / 1000;
+          const finalAvgSpeed = totalTime > 0 ? file.size / totalTime : 0;
+
+          updateProgressItem(item => ({
+            ...item,
+            progress: 100,
+            status: 'completed',
+            avgSpeed: finalAvgSpeed,
+            timeRemaining: 0
+          }));
+
+          // Store uploaded file metadata
+          const fileMetadata = {
+            fileName: safeName,
+            contentType: file.type || "application/octet-stream",
+            jobId: jobId,
+            uploadedBy: uploadedBy
+          };
+
+          // If this is a temp job, save metadata for later
+          if (jobId.startsWith('temp-')) {
+            setUploadedFiles(prev => [...prev, fileMetadata]);
+          }
+
+        } catch (uploadErr) {
+          updateProgressItem(item => ({ ...item, status: 'failed', progress: 0 }));
+          throw uploadErr;
         }
-
-        const publicUrl = supabase.storage.from("job-documents").getPublicUrl(objectPath).data.publicUrl; // obtain accessible URL
-
-        await addJobFile( // persist metadata in job_files table
-          jobId,
-          safeName,
-          publicUrl,
-          file.type || "application/octet-stream",
-          "documents",
-          uploadedBy
-        );
       }
+
+      // Check if all uploads completed and auto-close if not manually closed
+      if (!backgroundUploads) {
+        setTimeout(() => {
+          setShowDocumentsPopup(false);
+        }, 1500); // Auto-close after 1.5 seconds to show completion
+      }
+
     } catch (err) {
       console.error("Document upload failed", err);
       throw err;
     } finally {
       setIsUploadingDocuments(false); // clear uploading state regardless of success
-      setPendingDocuments([]); // clear pending queue after attempt
+      if (!backgroundUploads) {
+        setPendingDocuments([]); // clear pending queue after attempt
+      }
     }
   };
 
@@ -965,7 +1138,7 @@ export default function CreateJobCardPage() {
         pendingDocuments.length > 0
           ? uploadDocumentsForJob(persistedJobId, pendingDocuments, dbUserId || null)
           : Promise.resolve(), // conditionally upload documents
-        saveCheckSheetData(persistedJobId), // persist check-sheet if provided
+        linkUploadedFilesToJob(persistedJobId), // link previously uploaded files to this job
       ]);
 
       console.log("Job saved successfully with ID:", insertedJob.id);
@@ -1623,7 +1796,7 @@ export default function CreateJobCardPage() {
                           width: "100%",
                           padding: "12px",
                           fontSize: "14px",
-                          backgroundColor: "var(--info)",
+                          backgroundColor: "var(--accent-purple)",
                           color: "white",
                           border: "none",
                           borderRadius: "8px",
@@ -1632,10 +1805,10 @@ export default function CreateJobCardPage() {
                           transition: "all 0.2s",
                         }}
                         onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = "var(--accent-purple)";
+                          e.target.style.backgroundColor = "var(--primary)";
                         }}
                         onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = "var(--info)";
+                          e.target.style.backgroundColor = "var(--accent-purple)";
                         }}
                       >
                         Edit Customer
@@ -1954,6 +2127,7 @@ export default function CreateJobCardPage() {
                 onChange={(e) => setCosmeticNotes(e.target.value)}
                 placeholder="Describe any scratches, dents, or cosmetic damage..."
                 disabled={!cosmeticDamagePresent}
+                className={cosmeticDamagePresent ? "cosmetic-notes-active" : ""}
                 style={{
                   width: "100%",
                   height: "80px",
@@ -1965,7 +2139,7 @@ export default function CreateJobCardPage() {
                   fontSize: "13px",
                   outline: "none",
                   transition: "border-color 0.2s",
-                  backgroundColor: cosmeticDamagePresent ? "white" : "var(--info-surface)",
+                  backgroundColor: cosmeticDamagePresent ? "var(--background)" : "var(--info-surface)",
                   color: cosmeticDamagePresent ? "var(--text-primary)" : "var(--info)",
                 }}
                 onFocus={(e) => {
@@ -2127,31 +2301,38 @@ export default function CreateJobCardPage() {
               ...popupOverlayStyles,
               zIndex: 1300,
             }}
-            onClick={() => setShowDocumentsPopup(false)}
+            onClick={() => {
+              setBackgroundUploads(true); // Enable background uploads when closing
+              setShowDocumentsPopup(false);
+            }}
           >
             <div
               onClick={(e) => e.stopPropagation()}
               style={{
                 ...popupCardStyles,
-                width: "520px",
-                maxWidth: "90%",
+                width: uploadProgress.length > 0 ? "920px" : "520px",
+                maxWidth: "95%",
                 maxHeight: "90vh",
                 overflowY: "auto",
                 padding: "28px",
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
+                transition: "width 0.3s ease",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "var(--accent-purple)" }}>Upload Documents</h3>
                   <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--info)" }}>
-                    Attach PDFs or images now. Files stay queued until the job is saved.
+                    {uploadProgress.length > 0 ? "Upload in progress..." : "Attach PDFs or images and upload immediately."}
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowDocumentsPopup(false)}
+                  onClick={() => {
+                    setBackgroundUploads(true);
+                    setShowDocumentsPopup(false);
+                  }}
                   style={{
                     border: "none",
                     background: "transparent",
@@ -2164,6 +2345,10 @@ export default function CreateJobCardPage() {
                 </button>
               </div>
 
+              {/* Two-column layout when uploads are in progress */}
+              <div style={{ display: "flex", gap: "20px", flexWrap: uploadProgress.length > 0 ? "nowrap" : "wrap" }}>
+                {/* Left column - Upload section */}
+                <div style={{ flex: uploadProgress.length > 0 ? "0 0 45%" : "1", display: "flex", flexDirection: "column", gap: "16px" }}>
               <label
                 htmlFor="documents-input"
                 style={{
@@ -2238,210 +2423,12 @@ export default function CreateJobCardPage() {
                 </div>
               )}
 
-              <div
-                style={{
-                  marginTop: "12px",
-                  padding: "16px",
-                  border: "1px solid var(--info-surface)",
-                  borderRadius: "14px",
-                  backgroundColor: "var(--info-surface)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "12px",
-                }}
-              >
-                <div>
-                  <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--accent-purple)" }}>Check-Sheet Builder</h4>
-                  <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
-                    Upload a check-sheet image/PDF then click the preview to place interactive checkboxes.
-                  </p>
-                </div>
-                <label
-                  htmlFor="checksheet-input"
-                  style={{
-                    border: "1px solid var(--accent-purple)",
-                    borderRadius: "10px",
-                    padding: "10px 14px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    color: "var(--accent-purple)",
-                    cursor: "pointer",
-                    backgroundColor: "var(--surface)",
-                    width: "fit-content",
-                  }}
-                >
-                  Choose Check-Sheet
-                  <input
-                    id="checksheet-input"
-                    type="file"
-                    accept="image/*,application/pdf"
-                    style={{ display: "none" }}
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      handleCheckSheetFileChange(file || null);
-                    }}
-                  />
-                </label>
-
-                <div
-                  ref={checkSheetCanvasRef}
-                  onClick={handleCheckSheetCanvasClick}
-                  style={{
-                    position: "relative",
-                    width: "100%",
-                    minHeight: "260px",
-                    border: "1px solid var(--info-surface)",
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    backgroundColor: "var(--surface)",
-                    cursor: checkSheetFile ? "crosshair" : "not-allowed",
-                  }}
-                >
-                  {checkSheetPreviewUrl ? (
-                    <>
-                      <img
-                        src={checkSheetPreviewUrl}
-                        alt="Check sheet preview"
-                        style={{ width: "100%", display: "block" }}
-                      />
-                      {checkSheetCheckboxes.map((box) => (
-                        <div
-                          key={box.id}
-                          style={{
-                            position: "absolute",
-                            top: `${box.y * 100}%`,
-                            left: `${box.x * 100}%`,
-                            transform: "translate(-50%, -50%)",
-                            width: "20px",
-                            height: "20px",
-                            borderRadius: "4px",
-                            border: "2px solid var(--primary)",
-                            backgroundColor: "rgba(var(--primary-rgb),0.2)",
-                          }}
-                        />
-                      ))}
-                      {userSignature?.file_url && (
-                        <div
-                          style={{
-                            position: "absolute",
-                            bottom: "12px",
-                            right: "12px",
-                            backgroundColor: "rgba(var(--shadow-rgb),0.85)",
-                            color: "white",
-                            padding: "6px 10px",
-                            borderRadius: "8px",
-                            fontSize: "11px",
-                          }}
-                        >
-                          Signature Ready
-                        </div>
-                      )}
-                    </>
-                  ) : checkSheetFile ? (
-                    <div style={{ padding: "24px", textAlign: "center", color: "var(--info)", fontSize: "13px" }}>
-                      PDF preview not available. Coordinates will still be recorded when you click this box.
-                    </div>
-                  ) : (
-                    <div style={{ padding: "24px", textAlign: "center", color: "var(--info)", fontSize: "13px" }}>
-                      Select a check-sheet file above to start placing checkboxes.
-                    </div>
-                  )}
-                </div>
-
-                {checkSheetCheckboxes.length > 0 && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {checkSheetCheckboxes.map((box) => (
-                      <div
-                        key={box.id}
-                        style={{
-                          display: "flex",
-                          gap: "8px",
-                          alignItems: "center",
-                        }}
-                      >
-                        <input
-                          type="text"
-                          value={box.label}
-                          onChange={(e) => handleCheckboxLabelChange(box.id, e.target.value)}
-                          style={{
-                            flex: 1,
-                            border: "1px solid var(--accent-purple)",
-                            borderRadius: "8px",
-                            padding: "8px 10px",
-                            fontSize: "13px",
-                          }}
-                        />
-                        <span style={{ fontSize: "11px", color: "var(--info)", width: "120px" }}>
-                          {Math.round(box.x * 100)}% / {Math.round(box.y * 100)}%
-                        </span>
-                        <button
-                          onClick={() => handleRemoveCheckbox(box.id)}
-                          style={{
-                            border: "none",
-                            background: "transparent",
-                            color: "var(--danger)",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                          }}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div
-                  style={{
-                    padding: "14px",
-                    border: "1px solid var(--info-surface)",
-                    borderRadius: "12px",
-                    backgroundColor: "var(--surface)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--accent-purple)" }}>Signature on File</div>
-                    <div style={{ fontSize: "12px", color: "var(--info)" }}>
-                      {userSignature?.file_url ? "Will auto-fill on the check-sheet" : "Upload a signature image to auto-fill"}
-                    </div>
-                  </div>
-                  <label
-                    htmlFor="signature-input"
-                    style={{
-                      border: "1px solid var(--accent-purple)",
-                      borderRadius: "8px",
-                      padding: "8px 12px",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "var(--accent-purple)",
-                      cursor: "pointer",
-                      opacity: isUploadingSignature ? 0.6 : 1,
-                    }}
-                  >
-                    {isUploadingSignature ? "Uploading..." : userSignature ? "Replace" : "Upload"}
-                    <input
-                      id="signature-input"
-                      type="file"
-                      accept="image/*"
-                      style={{ display: "none" }}
-                      disabled={isUploadingSignature}
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) {
-                          handleSignatureUpload(file);
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
-              </div>
-
               <div style={{ display: "flex", gap: "12px" }}>
                 <button
-                  onClick={() => setShowDocumentsPopup(false)}
+                  onClick={() => {
+                    setBackgroundUploads(true);
+                    setShowDocumentsPopup(false);
+                  }}
                   style={{
                     flex: 1,
                     padding: "12px",
@@ -2456,12 +2443,20 @@ export default function CreateJobCardPage() {
                   Close
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (pendingDocuments.length === 0) {
                       alert("Please select files first");
                       return;
                     }
-                    alert("Documents will upload once the job is saved.");
+
+                    // Upload files immediately to temporary location
+                    const tempJobId = `temp-${Date.now()}`;
+
+                    try {
+                      await uploadDocumentsForJob(tempJobId, pendingDocuments, dbUserId || null);
+                    } catch (error) {
+                      alert("Upload failed: " + error.message);
+                    }
                   }}
                   disabled={isUploadingDocuments}
                   style={{
@@ -2477,8 +2472,164 @@ export default function CreateJobCardPage() {
                     opacity: isUploadingDocuments ? 0.7 : 1,
                   }}
                 >
-                  {isUploadingDocuments ? "Uploading..." : "Queue Uploads"}
+                  {isUploadingDocuments ? "Uploading..." : "Upload"}
                 </button>
+              </div>
+              </div>
+
+              {/* Right column - Upload Progress Display */}
+              {uploadProgress.length > 0 && (
+                <div style={{
+                  flex: "0 0 50%",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                  backgroundColor: "var(--surface)",
+                  padding: "16px",
+                  borderRadius: "12px",
+                  border: "1px solid var(--info-surface)",
+                  maxHeight: "70vh",
+                  overflowY: "auto"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                    <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--accent-purple)" }}>
+                      Upload Progress
+                    </h4>
+                    {uploadProgress.some(item => item.status === 'failed') && (
+                      <button
+                        onClick={retryFailedUploads}
+                        disabled={isUploadingDocuments}
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: "8px",
+                          border: "none",
+                          background: "var(--danger)",
+                          color: "white",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          cursor: isUploadingDocuments ? "not-allowed" : "pointer",
+                          opacity: isUploadingDocuments ? 0.6 : 1,
+                        }}
+                      >
+                        Retry Failed
+                      </button>
+                    )}
+                  </div>
+
+                  {uploadProgress.map((item, idx) => {
+                    const formatSpeed = (bytesPerSecond) => {
+                      if (bytesPerSecond < 1024) return `${bytesPerSecond.toFixed(0)} B/s`;
+                      if (bytesPerSecond < 1024 * 1024) return `${(bytesPerSecond / 1024).toFixed(1)} KB/s`;
+                      return `${(bytesPerSecond / (1024 * 1024)).toFixed(2)} MB/s`;
+                    };
+
+                    const formatTime = (seconds) => {
+                      if (seconds < 60) return `${Math.ceil(seconds)}s`;
+                      const minutes = Math.floor(seconds / 60);
+                      const secs = Math.ceil(seconds % 60);
+                      return `${minutes}m ${secs}s`;
+                    };
+
+                    const statusColor = item.status === 'completed' ? 'var(--success)' :
+                                       item.status === 'failed' ? 'var(--danger)' :
+                                       item.status === 'uploading' ? 'var(--primary)' :
+                                       'var(--info)';
+
+                    return (
+                      <div
+                        key={`progress-${idx}`}
+                        style={{
+                          padding: "12px",
+                          backgroundColor: "var(--info-surface)",
+                          borderRadius: "10px",
+                          border: `1px solid ${statusColor}`,
+                        }}
+                      >
+                        <div style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: "8px"
+                        }}>
+                          <div style={{
+                            fontSize: "13px",
+                            fontWeight: "600",
+                            color: statusColor,
+                            flex: 1,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            marginRight: "8px"
+                          }}>
+                            {item.fileName}
+                          </div>
+                          <div style={{
+                            fontSize: "14px",
+                            fontWeight: "700",
+                            color: statusColor
+                          }}>
+                            {item.progress.toFixed(0)}%
+                          </div>
+                        </div>
+
+                        {/* Progress bar */}
+                        <div style={{
+                          width: "100%",
+                          height: "8px",
+                          backgroundColor: "var(--surface)",
+                          borderRadius: "4px",
+                          overflow: "hidden",
+                          marginBottom: "8px"
+                        }}>
+                          <div style={{
+                            width: `${item.progress}%`,
+                            height: "100%",
+                            backgroundColor: statusColor,
+                            transition: "width 0.3s ease"
+                          }} />
+                        </div>
+
+                        {/* Upload stats */}
+                        <div style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          fontSize: "11px",
+                          color: "var(--info)"
+                        }}>
+                          <div>
+                            {item.status === 'uploading' && (
+                              <>
+                                <span style={{ fontWeight: "600" }}>Speed: </span>
+                                {formatSpeed(item.speed)}
+                              </>
+                            )}
+                            {item.status === 'completed' && (
+                              <>
+                                <span style={{ fontWeight: "600" }}>Avg Speed: </span>
+                                {formatSpeed(item.avgSpeed)}
+                              </>
+                            )}
+                            {item.status === 'failed' && (
+                              <span style={{ color: "var(--danger)", fontWeight: "600" }}>Upload Failed</span>
+                            )}
+                            {item.status === 'pending' && (
+                              <span style={{ color: "var(--info-dark)" }}>Waiting...</span>
+                            )}
+                          </div>
+                          <div>
+                            {item.status === 'uploading' && item.timeRemaining > 0 && (
+                              <>
+                                <span style={{ fontWeight: "600" }}>Time: </span>
+                                {formatTime(item.timeRemaining)}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               </div>
             </div>
           </div>
