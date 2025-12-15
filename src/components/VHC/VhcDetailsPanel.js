@@ -2315,8 +2315,21 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
               />
             )}
             <div style={{ padding: "12px" }}>
-              <div style={{ fontSize: "12px", color: "var(--accent-purple)", fontWeight: 600 }}>
-                {file.file_name}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "8px" }}>
+                <div style={{ fontSize: "12px", color: "var(--accent-purple)", fontWeight: 600, flex: 1 }}>
+                  {file.file_name}
+                </div>
+                {file.visible_to_customer !== undefined && (
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      flexShrink: 0,
+                    }}
+                    title={file.visible_to_customer ? "Visible to customer" : "Internal only"}
+                  >
+                    {file.visible_to_customer ? "👁️" : "🔒"}
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "4px" }}>
                 {formatDateTime(file.uploaded_at)}
@@ -2493,7 +2506,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
           </div>
           {customActions && (
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              {customActions}
+              {typeof customActions === "function" ? customActions(activeTab) : customActions}
             </div>
           )}
         </div>

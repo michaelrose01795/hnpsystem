@@ -12,7 +12,8 @@
       "Bash(npx next build:*)",
       "Bash(cat:*)",
       "Bash(chmod:*)",
-      "Bash(timeout 60 npm run build)"
+      "Bash(timeout 60 npm run build)",
+      "Bash(psql:*)"
     ],
     "deny": [],
     "ask": []

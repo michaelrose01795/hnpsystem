@@ -1,6 +1,4 @@
-Add a button in the VHC section in the (ADD FILE LOCATION) to open the camera, here the user can take a photo (all within the web browser, open a camera view so this doesn’t connect to the devices camera roll/file system (all internal)) or video, when this photo/video is taken the user clicks complete, has an option to view the photo/video taken, option to highlight the photo, trim and or mute the video and then upload this to the VHC photo/video table in the database. The photos or videos can are then placed into the photo or video tab inside the VHC tab within the job-cards/[jobnumber] page. Where the video/picture can be toggled to send to customers (which gets attached to the customer view link) or not sent and saved for users reference. 
-
-Add a button which says update ”Add to job number” (or along those lines) at the end of each row inside the parts authorised tab inside the job-cards/[jobnumber] page, when this is clicked it auto added the parts into the left section inside the parts tab and opens a popup asking for a pre pick location (an input can be added then or later inside the left section of the parts tab where it will have a button which will open the popup again. 
+Add a button which says update ”Add to job” (or along those lines) at the end of each row inside the parts authorised tab inside the job-cards/[jobnumber] page, when this is clicked it auto added the parts into the left section inside the parts tab and opens a popup asking for a pre pick location (an input can be added then or later inside the left section of the parts tab where it will have a button which will open the popup again. 
 
 Document tab inside the job-cards/[jobnumber] page needs to link to the upload documents popup in the create page so it loads the attachments into that section. This section needs to be simplified to only show the documents which we uploaded to the database and shown in the list view. 
 
@@ -11,6 +9,8 @@ Find what has a status like in progress complete waiting to be started and make 
 Fix "Could not find a relationship between 'job_notes' and 'last_updated_by' in the schema cache" search the "-- file location: src/lib/database/schema/schemaReference.sql" for the database tables and add to "-- file location: src/lib/database/schema/addtable.sql"
 
 LOOK INTO TRACKING PAGE + ADD WRITE UP PAGE IN JOBCARD FOR WORKSHOP MANAGER
+
+And any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file firs
 
 DONE:
 
@@ -31,3 +31,6 @@ In the popup log new change the close button text to white when in dark mode.
 Make the car and key tracker button purple background and white text when in dark mode. Have it so this button opens the the popup for the job number showing the details of the (job number, car make, reg and colour, customers name) all in the top row of the popup, next in the popup it has a button for add location (this popup u enter either the reg, customer name or job number into the field box and auto fills the details of the off fields. And under that information it shows the vehicle location with a drop down selecting the location and where the keys are put nothing else (remove the rest of the details from the Log new popup as well). Underneath that section is a button which says update this shows a new section where is has the Vehicle location and key location in drop downs, update is pressed and this changes the location of the vehicle and keys in the database for everyone.) make sure the button which is pressed from a [jobnumber] page opens the popup with the details from that job number auto filled. 
 
 Inside the myjobs/[jobnumber] page the notes when added doesn’t show in the notes tab in that section, when are part has been authorised it doesn’t show in the write up page
+
+Add a button in the VHC section in the (ADD FILE LOCATION) to open the camera, here the user can take a photo (all within the web browser, open a camera view so this doesn’t connect to the devices camera roll/file system (all internal)) or video, when this photo/video is taken the user clicks complete, has an option to view the photo/video taken, option to highlight the photo, trim and or mute the video and then upload this to the VHC photo/video table in the database. The photos or videos can are then placed into the photo or video tab inside the VHC tab within the job-cards/[jobnumber] page. Where the video/picture can be toggled to send to customers (which gets attached to the customer view link) or not sent and saved for users reference. 
+
