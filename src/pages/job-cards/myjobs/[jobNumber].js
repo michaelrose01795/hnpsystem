@@ -25,6 +25,7 @@ import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetai
 import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
 import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal";
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
+import VhcCameraButton from "@/components/VHC/VhcCameraButton";
 import themeConfig, {
   vhcLayoutStyles,
   createVhcButtonStyle,
@@ -1866,6 +1867,18 @@ export default function TechJobDetailPage() {
                     <span style={{ fontSize: "12px", color: "var(--info)" }}>
                       Last saved: {formatDateTime(lastSavedAt)}
                     </span>
+                  )}
+
+                  {/* Camera Button - Always visible for technicians */}
+                  {jobNumber && (
+                    <VhcCameraButton
+                      jobNumber={jobNumber}
+                      userId={dbUserId || user?.id}
+                      onUploadComplete={() => {
+                        console.log("📷 VHC media uploaded, refreshing job data...");
+                        loadJobData();
+                      }}
+                    />
                   )}
                 </div>
               </div>

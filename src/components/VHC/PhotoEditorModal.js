@@ -19,37 +19,47 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel }
   // Load image when modal opens
   useEffect(() => {
     if (isOpen && photoFile) {
+      // Set loaded immediately to show canvas
+      setImageLoaded(true);
       loadImage();
+    } else {
+      setImageLoaded(false);
     }
   }, [isOpen, photoFile]);
 
-  // Load image to canvas
-  const loadImage = () => {
+  // Load image to canvas - optimized for instant loading
+  const loadImage = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
+    try {
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      const img = new Image();
 
-    img.onload = () => {
+      // Create object URL
+      const url = URL.createObjectURL(photoFile);
+      img.src = url;
+
+      // Use decode() for faster rendering
+      await img.decode();
+
       // Set canvas size to match image
       canvas.width = img.width;
       canvas.height = img.height;
 
-      // Draw image
+      // Draw image immediately
       ctx.drawImage(img, 0, 0);
 
       // Save initial state
       imageRef.current = img;
       saveHistory();
-      setImageLoaded(true);
-    };
 
-    img.onerror = (err) => {
+      // Cleanup URL
+      URL.revokeObjectURL(url);
+    } catch (err) {
       console.error("Error loading image:", err);
-    };
-
-    img.src = URL.createObjectURL(photoFile);
+      setImageLoaded(false);
+    }
   };
 
   // Save canvas state to history

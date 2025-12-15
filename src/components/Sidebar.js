@@ -268,7 +268,7 @@ export default function Sidebar({
             </div>
             {dashboardShortcuts.map((shortcut) => {
               const isActive =
-                pathname === shortcut.href || pathname.startsWith(`${shortcut.href}/`);
+                pathname === shortcut.href || (pathname && pathname.startsWith(`${shortcut.href}/`));
               return (
                 <Link
                   key={shortcut.href}
