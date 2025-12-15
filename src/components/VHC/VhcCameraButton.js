@@ -54,9 +54,16 @@ export default function VhcCameraButton({
     }
   };
 
-  // Handle photo editor save
+  // Handle photo editor save (with edits)
   const handlePhotoEditorSave = (editedFile) => {
     setEditedMedia(editedFile);
+    setShowPhotoEditor(false);
+    setShowUploadConfirm(true);
+  };
+
+  // Handle photo editor skip (no edits - use original)
+  const handlePhotoEditorSkip = (originalFile) => {
+    setEditedMedia(originalFile);
     setShowPhotoEditor(false);
     setShowUploadConfirm(true);
   };
@@ -68,9 +75,16 @@ export default function VhcCameraButton({
     setMediaType(null);
   };
 
-  // Handle video editor save
+  // Handle video editor save (with edits)
   const handleVideoEditorSave = (editedFile) => {
     setEditedMedia(editedFile);
+    setShowVideoEditor(false);
+    setShowUploadConfirm(true);
+  };
+
+  // Handle video editor skip (no edits - use original)
+  const handleVideoEditorSkip = (originalFile) => {
+    setEditedMedia(originalFile);
     setShowVideoEditor(false);
     setShowUploadConfirm(true);
   };
@@ -144,6 +158,7 @@ export default function VhcCameraButton({
         isOpen={showPhotoEditor}
         photoFile={capturedMedia}
         onSave={handlePhotoEditorSave}
+        onSkip={handlePhotoEditorSkip}
         onCancel={handlePhotoEditorCancel}
       />
 
@@ -152,6 +167,7 @@ export default function VhcCameraButton({
         isOpen={showVideoEditor}
         videoFile={capturedMedia}
         onSave={handleVideoEditorSave}
+        onSkip={handleVideoEditorSkip}
         onCancel={handleVideoEditorCancel}
       />
 

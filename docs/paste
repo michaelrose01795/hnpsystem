@@ -1,6 +1,6 @@
 Add a button which says update ”Add to job” (or along those lines) at the end of each row inside the parts authorised tab inside the job-cards/[jobnumber] page, when this is clicked it auto added the parts into the left section inside the parts tab and opens a popup asking for a pre pick location (an input can be added then or later inside the left section of the parts tab where it will have a button which will open the popup again. 
 
-Document tab inside the job-cards/[jobnumber] page needs to link to the upload documents popup in the create page so it loads the attachments into that section. This section needs to be simplified to only show the documents which we uploaded to the database and shown in the list view. 
+ uploaded to the database and shown in the list view. 
 
 The invoice tab can only be complete once the VHC is marked as complete, the write up is marked as complete, every part which is booked to the job number has been allocated to a request or additional request. 
 

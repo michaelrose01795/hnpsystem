@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import VHCModalShell, { buildModalButton } from "./VHCModalShell";
 
-export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel }) {
+export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, onSkip }) {
   const [tool, setTool] = useState("pen");
   const [color, setColor] = useState("#FF0000");
   const [lineWidth, setLineWidth] = useState(3);
@@ -245,6 +245,19 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel }
       </button>
 
       <div style={{ display: "flex", gap: "12px" }}>
+        {onSkip && (
+          <button
+            onClick={() => onSkip(photoFile)}
+            style={{
+              ...buildModalButton("secondary"),
+              padding: "10px 20px",
+            }}
+            disabled={!imageLoaded}
+          >
+            Skip Editing
+          </button>
+        )}
+
         <button
           onClick={resetToOriginal}
           style={{
@@ -264,7 +277,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel }
           }}
           disabled={!imageLoaded}
         >
-          Save & Continue
+          Save Edits
         </button>
       </div>
     </div>

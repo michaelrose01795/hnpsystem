@@ -26,7 +26,8 @@
     "react-dom": "^19.2.1",
     "react-pdf": "^10.2.0",
     "react-select": "^5.10.2",
-    "tailwindcss": "^4.1.17"
+    "tailwindcss": "^4.1.17",
+    "vercel": "^50.0.1"
   },
   "devDependencies": {
     "@types/node": "24.10.0",

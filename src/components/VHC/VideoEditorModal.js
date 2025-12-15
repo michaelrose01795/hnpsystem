@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import VHCModalShell, { buildModalButton } from "./VHCModalShell";
 
-export default function VideoEditorModal({ isOpen, videoFile, onSave, onCancel }) {
+export default function VideoEditorModal({ isOpen, videoFile, onSave, onCancel, onSkip }) {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [trimStart, setTrimStart] = useState(0);
@@ -220,6 +220,19 @@ export default function VideoEditorModal({ isOpen, videoFile, onSave, onCancel }
       </button>
 
       <div style={{ display: "flex", gap: "12px" }}>
+        {onSkip && (
+          <button
+            onClick={() => onSkip(videoFile)}
+            style={{
+              ...buildModalButton("secondary"),
+              padding: "10px 20px",
+            }}
+            disabled={processing || !videoLoaded}
+          >
+            Skip Editing
+          </button>
+        )}
+
         <button
           onClick={toggleMute}
           style={{
@@ -239,7 +252,7 @@ export default function VideoEditorModal({ isOpen, videoFile, onSave, onCancel }
           }}
           disabled={!videoLoaded || processing}
         >
-          {processing ? "Processing..." : "Save & Continue"}
+          {processing ? "Processing..." : "Save Edits"}
         </button>
       </div>
     </div>
