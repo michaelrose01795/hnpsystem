@@ -819,6 +819,14 @@ CREATE TABLE public.overtime_sessions (
   CONSTRAINT overtime_sessions_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT overtime_sessions_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(user_id)
 );
+CREATE TABLE public.part_categories (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE,
+  keywords ARRAY NOT NULL DEFAULT ARRAY[]::text[],
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT part_categories_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.parts_catalog (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   part_number text NOT NULL UNIQUE,
