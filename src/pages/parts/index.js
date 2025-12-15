@@ -41,6 +41,7 @@ const DEFAULT_NEW_PART_FORM = {
   partNumber: "",
   name: "",
   supplier: "",
+  category: "",
   storageLocation: "",
   unitCost: "",
   unitPrice: "",
@@ -221,6 +222,14 @@ function PartsPortalPage() {
   const [newPartLocationSearch, setNewPartLocationSearch] = useState("");
   const [newPartFormError, setNewPartFormError] = useState("");
   const [newPartSaving, setNewPartSaving] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [bulkImportData, setBulkImportData] = useState("");
+  const [bulkImportResults, setBulkImportResults] = useState([]);
+  const [bulkImportFeedback, setBulkImportFeedback] = useState(null);
+  const [bulkImportLoading, setBulkImportLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [categorySearch, setCategorySearch] = useState("");
+  const [detectedCategory, setDetectedCategory] = useState("");
 
   const selectedDeliveryPart = useMemo(
     () => inventory.find((part) => part.id === deliveryForm.partId),
@@ -231,26 +240,33 @@ function PartsPortalPage() {
     const term = deliveryPartSearch.trim().toLowerCase();
     const source = inventory || [];
     if (!term) {
-      return source.slice(0, 25);
+      return [];
     }
     return source
       .filter((part) => {
         const number = (part.part_number || "").toLowerCase();
-        const name = (part.name || "").toLowerCase();
-        return number.includes(term) || name.includes(term);
+        return number.includes(term);
       })
-      .slice(0, 25);
+      .slice(0, 3);
   }, [deliveryPartSearch, inventory]);
 
-  const filteredDeliveryLocations = useMemo(
-    () => filterStorageLocations(deliveryLocationSearch).slice(0, 30),
-    [deliveryLocationSearch]
-  );
+  const filteredDeliveryLocations = useMemo(() => {
+    if (!deliveryLocationSearch.trim()) return [];
+    return filterStorageLocations(deliveryLocationSearch).slice(0, 3);
+  }, [deliveryLocationSearch]);
 
-  const filteredNewPartLocations = useMemo(
-    () => filterStorageLocations(newPartLocationSearch).slice(0, 30),
-    [newPartLocationSearch]
-  );
+  const filteredNewPartLocations = useMemo(() => {
+    if (!newPartLocationSearch.trim()) return [];
+    return filterStorageLocations(newPartLocationSearch).slice(0, 3);
+  }, [newPartLocationSearch]);
+
+  const filteredCategories = useMemo(() => {
+    if (!categorySearch.trim()) return [];
+    const term = categorySearch.trim().toLowerCase();
+    return categories
+      .filter((cat) => cat.name.toLowerCase().includes(term))
+      .slice(0, 3);
+  }, [categorySearch, categories]);
 
   const pendingJobParts = useMemo(
     () =>
@@ -407,6 +423,34 @@ function PartsPortalPage() {
     }
   }, []);
 
+  const fetchCategories = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("part_categories")
+        .select("id, name, keywords")
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    }
+  }, []);
+
+  const detectCategory = useCallback((partName = "", partDescription = "") => {
+    const searchText = `${partName} ${partDescription}`.toLowerCase();
+
+    for (const category of categories) {
+      const keywords = category.keywords || [];
+      for (const keyword of keywords) {
+        if (searchText.includes(keyword.toLowerCase())) {
+          return category.name;
+        }
+      }
+    }
+    return "";
+  }, [categories]);
+
   const searchJob = useCallback(
     async (term) => {
       if (!term) return;
@@ -505,7 +549,8 @@ function PartsPortalPage() {
   useEffect(() => {
     fetchInventory("");
     fetchDeliveries();
-  }, [fetchInventory, fetchDeliveries]);
+    fetchCategories();
+  }, [fetchInventory, fetchDeliveries, fetchCategories]);
 
   useEffect(() => {
     loadDeliveryRoutesList();
@@ -531,6 +576,15 @@ useEffect(() => {
 }, [deliveryPartSearch, fetchInventory, showDeliveryModal]);
 
 useEffect(() => {
+  if (!showNewPartForm) return;
+  const detected = detectCategory(newPartForm.name, newPartForm.notes);
+  setDetectedCategory(detected);
+  if (detected && !newPartForm.category) {
+    setNewPartForm((prev) => ({ ...prev, category: detected }));
+  }
+}, [newPartForm.name, newPartForm.notes, detectCategory, showNewPartForm, newPartForm.category]);
+
+useEffect(() => {
   if (showNewPartForm) {
     setNewPartLocationSearch(newPartForm.storageLocation || "");
   }
@@ -547,6 +601,8 @@ useEffect(() => {
     setNewPartLocationSearch("");
     setNewPartFormError("");
     setNewPartSaving(false);
+    setCategorySearch("");
+    setDetectedCategory("");
   }, []);
 
   const handleDeliveryPartSelection = useCallback((part) => {
@@ -583,6 +639,33 @@ useEffect(() => {
     setNewPartLocationSearch(normalised);
   }, []);
 
+  const handleCategorySelect = useCallback((categoryName) => {
+    setNewPartForm((prev) => ({ ...prev, category: categoryName }));
+    setCategorySearch("");
+  }, []);
+
+  const handleCreateCategory = useCallback(async (categoryName) => {
+    const trimmed = categoryName.trim();
+    if (!trimmed) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("part_categories")
+        .insert([{ name: trimmed, keywords: [] }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setCategories((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+      setNewPartForm((prev) => ({ ...prev, category: data.name }));
+      setCategorySearch("");
+    } catch (err) {
+      console.error("Error creating category:", err);
+      alert("Failed to create category: " + err.message);
+    }
+  }, []);
+
   const handleCreateNewPart = useCallback(async () => {
     if (!newPartForm.partNumber.trim()) {
       setNewPartFormError("Part number is required.");
@@ -608,10 +691,10 @@ useEffect(() => {
           partNumber: trimmedNumber,
           partName: trimmedName,
           supplier: newPartForm.supplier || null,
+          category: newPartForm.category || null,
           storageLocation: resolvedLocation,
           unitCost: newPartForm.unitCost ? Number(newPartForm.unitCost) : null,
           unitPrice: newPartForm.unitPrice ? Number(newPartForm.unitPrice) : null,
-          notes: newPartForm.notes || null,
         }),
       });
 
@@ -648,6 +731,8 @@ useEffect(() => {
       setShowNewPartForm(false);
       setNewPartForm(DEFAULT_NEW_PART_FORM);
       setNewPartLocationSearch("");
+      setCategorySearch("");
+      setDetectedCategory("");
       await fetchInventory(inventorySearch);
     } catch (err) {
       setNewPartFormError(err.message || "Unable to create part");
@@ -663,6 +748,189 @@ useEffect(() => {
     newPartForm,
     newPartLocationSearch,
   ]);
+
+  const parseBulkImportData = useCallback((text) => {
+    const lines = text.trim().split("\n").filter(line => line.trim());
+    const rows = [];
+    let currentRow = [];
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+
+      // Check if this might be a new row (starts with order ref pattern like ORD001)
+      if (currentRow.length >= 8 && /^[A-Z]{3}\d{3}/.test(trimmedLine)) {
+        rows.push(currentRow);
+        currentRow = [trimmedLine];
+      } else {
+        currentRow.push(trimmedLine);
+      }
+    }
+
+    // Add the last row
+    if (currentRow.length >= 8) {
+      rows.push(currentRow);
+    }
+
+    // Parse each row into structured data
+    return rows.map((row, idx) => ({
+      index: idx,
+      orderRef: row[0] || "",
+      partNumber: row[1] || "",
+      name: row[2] || "",
+      supplier: row[3] || "",
+      location: row[4] || "",
+      costPrice: row[5]?.replace(/[£$]/g, "") || "0",
+      sellPrice: row[6]?.replace(/[£$]/g, "") || "0",
+      quantity: parseInt(row[7]) || 1,
+    }));
+  }, []);
+
+  const handleBulkImport = useCallback(async () => {
+    if (!bulkImportData.trim()) {
+      setBulkImportFeedback({
+        type: "warning",
+        text: "Please paste bulk data to import",
+      });
+      return;
+    }
+
+    setBulkImportLoading(true);
+    setBulkImportFeedback({ type: "info", text: "Processing bulk import..." });
+
+    try {
+      const parsedRows = parseBulkImportData(bulkImportData);
+
+      if (parsedRows.length === 0) {
+        setBulkImportFeedback({
+          type: "warning",
+          text: "No valid data found. Please ensure data is in the correct format.",
+        });
+        setBulkImportLoading(false);
+        return;
+      }
+
+      const results = [];
+
+      for (const row of parsedRows) {
+        try {
+          // Check if part exists in catalog
+          const { data: existingPart } = await supabase
+            .from("parts_catalog")
+            .select("*")
+            .eq("part_number", row.partNumber)
+            .maybeSingle();
+
+          let partId;
+          let partData;
+
+          if (existingPart) {
+            partId = existingPart.id;
+            partData = existingPart;
+            results.push({
+              ...row,
+              status: "found",
+              message: `Part ${row.partNumber} found in catalog`,
+              partId,
+            });
+          } else {
+            // Create new part in catalog
+            const { data: newPart, error: createError } = await supabase
+              .from("parts_catalog")
+              .insert({
+                part_number: row.partNumber,
+                name: row.name,
+                supplier: row.supplier,
+                storage_location: normaliseLocationInput(row.location),
+                unit_cost: parseFloat(row.costPrice) || 0,
+                unit_price: parseFloat(row.sellPrice) || 0,
+                qty_in_stock: 0,
+                is_active: true,
+              })
+              .select()
+              .single();
+
+            if (createError) {
+              results.push({
+                ...row,
+                status: "error",
+                message: `Failed to create part: ${createError.message}`,
+              });
+              continue;
+            }
+
+            partId = newPart.id;
+            partData = newPart;
+            results.push({
+              ...row,
+              status: "created",
+              message: `Part ${row.partNumber} created in catalog`,
+              partId,
+            });
+          }
+
+          // Log delivery for this part
+          const response = await fetch("/api/parts/deliveries", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              supplier: row.supplier || null,
+              orderReference: row.orderRef || null,
+              notes: `Bulk import - ${row.orderRef}`,
+              status: "received",
+              userId: actingUserId,
+              userNumericId: actingUserNumericId,
+              items: [
+                {
+                  partId: partId,
+                  quantityOrdered: row.quantity,
+                  quantityReceived: row.quantity,
+                  unitCost: parseFloat(row.costPrice) || null,
+                  storageLocation: normaliseLocationInput(row.location),
+                  notes: `Bulk import - ${row.orderRef}`,
+                },
+              ],
+            }),
+          });
+
+          const data = await response.json();
+          if (!response.ok || !data.success) {
+            results[results.length - 1].message += ` (Warning: Delivery log failed)`;
+          }
+        } catch (err) {
+          results.push({
+            ...row,
+            status: "error",
+            message: `Unexpected error: ${err.message}`,
+          });
+        }
+      }
+
+      setBulkImportResults(results);
+
+      const successCount = results.filter(r => r.status === "found" || r.status === "created").length;
+      const errorCount = results.filter(r => r.status === "error").length;
+
+      setBulkImportFeedback({
+        type: successCount > 0 ? "success" : "error",
+        text: `Import complete: ${successCount} parts processed, ${errorCount} errors`,
+      });
+
+      // Refresh inventory and deliveries
+      await Promise.all([
+        fetchInventory(inventorySearch),
+        fetchDeliveries(),
+      ]);
+    } catch (err) {
+      console.error("Unexpected error during bulk import:", err);
+      setBulkImportFeedback({
+        type: "error",
+        text: `Unexpected error: ${err.message}`,
+      });
+    } finally {
+      setBulkImportLoading(false);
+    }
+  }, [bulkImportData, parseBulkImportData, actingUserId, actingUserNumericId, fetchInventory, inventorySearch, fetchDeliveries]);
 
 
   const handleJobPartUpdate = async (jobPartId, updates) => {
@@ -816,7 +1084,7 @@ useEffect(() => {
               type="text"
               value={deliveryPartSearch}
               onChange={(event) => setDeliveryPartSearch(event.target.value)}
-              placeholder="Search by part number or name"
+              placeholder="Search by part number"
               style={{
                 width: "100%",
                 padding: "10px",
@@ -824,48 +1092,50 @@ useEffect(() => {
                 border: "1px solid var(--surface-light)",
               }}
             />
-            <div
-              style={{
-                border: "1px solid var(--surface-light)",
-                borderRadius: "10px",
-                marginTop: "8px",
-                maxHeight: "200px",
-                overflowY: "auto",
-              }}
-            >
-              {filteredDeliveryParts.length === 0 ? (
-                <div style={{ padding: "12px", color: "var(--info)" }}>
-                  {inventoryLoading ? "Loading inventory…" : "No matching parts"}
-                </div>
-              ) : (
-                filteredDeliveryParts.map((part) => {
-                  const isSelected = part.id === deliveryForm.partId;
-                  return (
-                    <button
-                      key={part.id}
-                      type="button"
-                      onClick={() => handleDeliveryPartSelection(part)}
-                      style={{
-                        width: "100%",
-                        textAlign: "left",
-                        padding: "10px 12px",
-                        border: "none",
-                        borderBottom: "1px solid var(--surface-light)",
-                        background: isSelected ? "var(--surface-light)" : "transparent",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <div style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
-                        {part.part_number || "—"}
-                      </div>
-                      <div style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
-                        {part.name || "Unnamed part"}
-                      </div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
+            {deliveryPartSearch.trim() && (
+              <div
+                style={{
+                  border: "1px solid var(--surface-light)",
+                  borderRadius: "10px",
+                  marginTop: "8px",
+                  maxHeight: "180px",
+                  overflowY: "auto",
+                }}
+              >
+                {filteredDeliveryParts.length === 0 ? (
+                  <div style={{ padding: "12px", color: "var(--info)" }}>
+                    {inventoryLoading ? "Loading inventory…" : "No matching parts"}
+                  </div>
+                ) : (
+                  filteredDeliveryParts.map((part) => {
+                    const isSelected = part.id === deliveryForm.partId;
+                    return (
+                      <button
+                        key={part.id}
+                        type="button"
+                        onClick={() => handleDeliveryPartSelection(part)}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "10px 12px",
+                          border: "none",
+                          borderBottom: "1px solid var(--surface-light)",
+                          background: isSelected ? "var(--surface-light)" : "transparent",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <div style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
+                          {part.part_number || "—"}
+                        </div>
+                        <div style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
+                          {part.name || "Unnamed part"}
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
             {deliveryForm.partId && selectedDeliveryPart && (
               <div style={{ marginTop: "8px", fontSize: "0.85rem", color: "var(--accent-purple)" }}>
                 Selected: {selectedDeliveryPart.part_number} · {selectedDeliveryPart.name}{" "}
@@ -898,7 +1168,7 @@ useEffect(() => {
               marginBottom: "12px",
             }}
           >
-            {showNewPartForm ? "Close new part form" : "Can't find the part? Add it now"}
+            {showNewPartForm ? "Close" : "Add New Part"}
           </button>
 
           {showNewPartForm && (
@@ -911,6 +1181,48 @@ useEffect(() => {
                 background: "var(--surface)",
               }}
             >
+              <label style={{ display: "block", marginBottom: "10px" }}>
+                <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
+                  Paste Bulk Data
+                </span>
+                <p style={{ fontSize: "0.85rem", color: "var(--info-dark)", marginBottom: "8px", margin: "4px 0 8px 0" }}>
+                  Paste one part per line with 8 fields: Order Ref, Part Number, Name, Supplier, Location, Cost Price, Sell Price, Quantity
+                </p>
+                <textarea
+                  value={newPartForm.notes}
+                  onChange={(event) => {
+                    const text = event.target.value;
+                    setNewPartForm((prev) => ({ ...prev, notes: text }));
+
+                    // Auto-parse and fill fields from pasted data
+                    const lines = text.trim().split("\n").filter(l => l.trim());
+                    if (lines.length >= 8) {
+                      setNewPartForm((prev) => ({
+                        ...prev,
+                        partNumber: lines[1]?.trim() || prev.partNumber,
+                        name: lines[2]?.trim() || prev.name,
+                        supplier: lines[3]?.trim() || prev.supplier,
+                        storageLocation: lines[4]?.trim() || prev.storageLocation,
+                        unitCost: lines[5]?.replace(/[£$]/g, "").trim() || prev.unitCost,
+                        unitPrice: lines[6]?.replace(/[£$]/g, "").trim() || prev.unitPrice,
+                      }));
+                      setNewPartLocationSearch(lines[4]?.trim() || "");
+                    }
+                  }}
+                  placeholder={`Example:\nORD001\nOILF1\nOil Filter\nEuro Car Parts\nA1\n£4.00\n£9.99\n10`}
+                  rows={8}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--surface-light)",
+                    resize: "vertical",
+                    fontFamily: "monospace",
+                    fontSize: "12px",
+                  }}
+                />
+              </label>
+
               <label style={{ display: "block", marginBottom: "10px" }}>
                 <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                   Part Number
@@ -950,6 +1262,117 @@ useEffect(() => {
                   }}
                 />
               </label>
+
+              <div style={{ marginBottom: "10px" }}>
+                <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
+                  Category {detectedCategory && <span style={{ color: "var(--accent-purple)", fontWeight: 500, fontSize: "0.85rem" }}>(Auto-detected: {detectedCategory})</span>}
+                </span>
+                <input
+                  type="text"
+                  value={categorySearch || newPartForm.category}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setCategorySearch(value);
+                    if (!value.trim()) {
+                      setNewPartForm((prev) => ({ ...prev, category: "" }));
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && categorySearch.trim()) {
+                      e.preventDefault();
+                      const exactMatch = categories.find(
+                        (cat) => cat.name.toLowerCase() === categorySearch.trim().toLowerCase()
+                      );
+                      if (exactMatch) {
+                        handleCategorySelect(exactMatch.name);
+                      } else {
+                        if (window.confirm(`Category "${categorySearch.trim()}" doesn't exist. Create it?`)) {
+                          handleCreateCategory(categorySearch.trim());
+                        }
+                      }
+                    }
+                  }}
+                  placeholder="Type to search or create new category"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--surface-light)",
+                  }}
+                />
+                {categorySearch.trim() && (
+                  <div
+                    style={{
+                      border: "1px solid var(--surface-light)",
+                      borderRadius: "10px",
+                      marginTop: "6px",
+                      maxHeight: "120px",
+                      overflowY: "auto",
+                    }}
+                  >
+                    {filteredCategories.length === 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => handleCreateCategory(categorySearch.trim())}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "8px 10px",
+                          border: "none",
+                          background: "var(--accent-purple)",
+                          color: "white",
+                          cursor: "pointer",
+                          fontWeight: 600,
+                        }}
+                      >
+                        + Create "{categorySearch.trim()}"
+                      </button>
+                    ) : (
+                      filteredCategories.map((cat) => (
+                        <button
+                          type="button"
+                          key={cat.id}
+                          onClick={() => handleCategorySelect(cat.name)}
+                          style={{
+                            width: "100%",
+                            textAlign: "left",
+                            padding: "6px 10px",
+                            border: "none",
+                            borderBottom: "1px solid var(--surface-light)",
+                            background: cat.name === newPartForm.category ? "var(--surface-light)" : "transparent",
+                            cursor: "pointer",
+                            fontWeight: cat.name === newPartForm.category ? 700 : 500,
+                          }}
+                        >
+                          {cat.name}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+                {newPartForm.category && (
+                  <p style={{ marginTop: "4px", fontSize: "0.85rem", color: "var(--accent-purple)" }}>
+                    Selected: {newPartForm.category}{" "}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewPartForm((prev) => ({ ...prev, category: "" }));
+                        setCategorySearch("");
+                      }}
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        color: "var(--danger)",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </p>
+                )}
+              </div>
 
               <div
                 style={{
@@ -1006,49 +1429,47 @@ useEffect(() => {
                       border: "1px solid var(--surface-light)",
                     }}
                   />
-                  <div
-                    style={{
-                      border: "1px solid var(--surface-light)",
-                      borderRadius: "10px",
-                      marginTop: "6px",
-                      maxHeight: "140px",
-                      overflowY: "auto",
-                    }}
-                  >
-                    {filteredNewPartLocations.length === 0 ? (
-                      <div style={{ padding: "8px", color: "var(--info)" }}>No matches</div>
-                    ) : (
-                      filteredNewPartLocations.map((code) => (
-                        <button
-                          type="button"
-                          key={code}
-                          onClick={() => handleNewPartLocationSelect(code)}
-                          style={{
-                            width: "100%",
-                            textAlign: "left",
-                            padding: "6px 10px",
-                            border: "none",
-                            borderBottom: "1px solid var(--surface-light)",
-                            background:
-                              code === newPartForm.storageLocation
-                                ? "var(--surface-light)"
-                                : "transparent",
-                            cursor: "pointer",
-                            fontWeight: code === newPartForm.storageLocation ? 700 : 500,
-                          }}
-                        >
-                          {code}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                  {newPartForm.storageLocation ? (
+                  {newPartLocationSearch.trim() && (
+                    <div
+                      style={{
+                        border: "1px solid var(--surface-light)",
+                        borderRadius: "10px",
+                        marginTop: "6px",
+                        maxHeight: "120px",
+                        overflowY: "auto",
+                      }}
+                    >
+                      {filteredNewPartLocations.length === 0 ? (
+                        <div style={{ padding: "8px", color: "var(--info)" }}>No matches</div>
+                      ) : (
+                        filteredNewPartLocations.map((code) => (
+                          <button
+                            type="button"
+                            key={code}
+                            onClick={() => handleNewPartLocationSelect(code)}
+                            style={{
+                              width: "100%",
+                              textAlign: "left",
+                              padding: "6px 10px",
+                              border: "none",
+                              borderBottom: "1px solid var(--surface-light)",
+                              background:
+                                code === newPartForm.storageLocation
+                                  ? "var(--surface-light)"
+                                  : "transparent",
+                              cursor: "pointer",
+                              fontWeight: code === newPartForm.storageLocation ? 700 : 500,
+                            }}
+                          >
+                            {code}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                  {newPartForm.storageLocation && (
                     <p style={{ marginTop: "4px", fontSize: "0.85rem", color: "var(--accent-purple)" }}>
                       Selected: {newPartForm.storageLocation}
-                    </p>
-                  ) : (
-                    <p style={{ marginTop: "4px", fontSize: "0.8rem", color: "var(--info)" }}>
-                      Choose the bin for stock storage (A1-Z10).
                     </p>
                   )}
                 </label>
@@ -1104,26 +1525,6 @@ useEffect(() => {
                   />
                 </label>
               </div>
-
-              <label style={{ display: "block", marginTop: "10px" }}>
-                <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
-                  Notes
-                </span>
-                <textarea
-                  value={newPartForm.notes}
-                  onChange={(event) =>
-                    setNewPartForm((prev) => ({ ...prev, notes: event.target.value }))
-                  }
-                  rows={2}
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    borderRadius: "8px",
-                    border: "1px solid var(--surface-light)",
-                    resize: "vertical",
-                  }}
-                />
-              </label>
 
               {newPartFormError && (
                 <div

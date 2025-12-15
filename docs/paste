@@ -1,16 +1,4 @@
-in the cant fint part? add it now tab, cahnge to "add new part", inside that sectin add a bulk add which is where id paste soemthing like this "ORD001
-OILF1
-Oil Filter
-Euro Car Parts
-A1
-£4.00
-£9.99
-10
-ORD002"
-
-This is where the data should be auto filled out in, order Ref, Part number, Parts name, supplier, loaction, unit cost, unit price, quantity ordered (and quantily recived), this is so i can paste this whole detail in one paste and it auto fills it into the correct sections within the "Add new part" section. 
-
-Add a button which says update ”Add to job” (or along those lines) at the end of each row inside the parts authorised tab inside the job-cards/[jobnumber] page, when this is clicked it auto added the parts into the left section inside the parts tab and opens a popup asking for a pre pick location (an input can be added then or later inside the left section of the parts tab where it will have a button which will open the popup again. WAITING TO BE DONE
+example the search for part number auto adds the part number and name into the search when the row is clicked, example i searched FPAD1 which came up with the row but when clicked it auto fills the part number search bar with "FPAD1 · Front brake pads" insead of auto fillin gthe Supplier, orderr reference, Qty Ordered, Qty Received (auto put as the "Qty Ordered" but can be changed to 0 or higher if needed), Unit Cost from the last time that part was logged, keep a record of all of the logs inside the database Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first.
 
 Document tab inside the job-cards/[jobnumber] page needs to link to the upload documents popup in the create page so it loads the attachments into that section. This section needs to be simplified to only show the documents which we uploaded to the database and shown in the list view. 
 
@@ -22,7 +10,7 @@ Fix "Could not find a relationship between 'job_notes' and 'last_updated_by' in 
 
 LOOK INTO TRACKING PAGE + ADD WRITE UP PAGE IN JOBCARD FOR WORKSHOP MANAGER
 
-And any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file firs
+Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first
 
 DONE:
 
@@ -45,4 +33,18 @@ Make the car and key tracker button purple background and white text when in dar
 Inside the myjobs/[jobnumber] page the notes when added doesn’t show in the notes tab in that section, when are part has been authorised it doesn’t show in the write up page
 
 Add a button in the VHC section in the (ADD FILE LOCATION) to open the camera, here the user can take a photo (all within the web browser, open a camera view so this doesn’t connect to the devices camera roll/file system (all internal)) or video, when this photo/video is taken the user clicks complete, has an option to view the photo/video taken, option to highlight the photo, trim and or mute the video and then upload this to the VHC photo/video table in the database. The photos or videos can are then placed into the photo or video tab inside the VHC tab within the job-cards/[jobnumber] page. Where the video/picture can be toggled to send to customers (which gets attached to the customer view link) or not sent and saved for users reference. 
+
+in the cant fint part? add it now tab, cahnge to "add new part", inside that sectin add a bulk add which is where id paste soemthing like this "ORD001
+OILF1
+Oil Filter
+Euro Car Parts
+A1
+£4.00
+£9.99
+10
+ORD002"
+
+This is where the data should be auto filled out in, order Ref, Part number, Parts name, supplier, loaction, unit cost, unit price, quantity ordered (and quantily recived), this is so i can paste this whole detail in one paste and it auto fills it into the correct sections within the "Add new part" section. 
+
+Add a button which says update ”Add to job” (or along those lines) at the end of each row inside the parts authorised tab inside the job-cards/[jobnumber] page, when this is clicked it auto added the parts into the left section inside the parts tab and opens a popup asking for a pre pick location (an input can be added then or later inside the left section of the parts tab where it will have a button which will open the popup again. WAITING TO BE DONE
 

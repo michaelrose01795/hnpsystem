@@ -2,6 +2,7 @@
 // file location: src/components/PartsTab_New.js
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import PrePickLocationModal from "@/components/VHC/PrePickLocationModal";
 
 // Helper functions (keep existing)
 const normalizePartStatus = (status = "") => {
@@ -55,6 +56,11 @@ export default function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUser
   const [draggingPart, setDraggingPart] = useState(null);
   const [dragOverRequest, setDragOverRequest] = useState(null);
   const [partAllocations, setPartAllocations] = useState({});
+
+  // State for pre-pick location modal
+  const [isPrePickModalOpen, setIsPrePickModalOpen] = useState(false);
+  const [selectedPartForPrePick, setSelectedPartForPrePick] = useState(null);
+  const [updatingPrePick, setUpdatingPrePick] = useState(false);
 
   const canAllocateParts = Boolean(canEdit && jobId);
   const allocationDisabledReason = !canEdit
@@ -375,6 +381,53 @@ export default function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUser
     }
   };
 
+  // Handler for opening pre-pick location modal
+  const handleOpenPrePickModal = useCallback((part) => {
+    setSelectedPartForPrePick(part);
+    setIsPrePickModalOpen(true);
+  }, []);
+
+  // Handler for closing pre-pick location modal
+  const handleClosePrePickModal = useCallback(() => {
+    setIsPrePickModalOpen(false);
+    setSelectedPartForPrePick(null);
+  }, []);
+
+  // Handler for updating pre-pick location
+  const handleUpdatePrePickLocation = useCallback(async (prePickLocation) => {
+    if (!selectedPartForPrePick || !canEdit) return;
+
+    setUpdatingPrePick(true);
+    try {
+      const response = await fetch(`/api/parts/job-items/${selectedPartForPrePick.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storageLocation: prePickLocation || null,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to update pre-pick location");
+      }
+
+      // Close modal
+      setIsPrePickModalOpen(false);
+      setSelectedPartForPrePick(null);
+
+      // Refresh job data
+      if (typeof onRefreshJob === "function") {
+        onRefreshJob();
+      }
+    } catch (error) {
+      console.error("Failed to update pre-pick location:", error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setUpdatingPrePick(false);
+    }
+  }, [selectedPartForPrePick, canEdit, onRefreshJob]);
+
   // Get unallocated parts
   const unallocatedParts = jobParts.filter((part) => !part.allocatedToRequestId);
 
@@ -631,6 +684,52 @@ export default function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUser
                     <div style={{ fontSize: "11px", color: "var(--info)" }}>
                       Part #: {part.partNumber} · Qty: {part.quantity} · £{Number(part.unitPrice || 0).toFixed(2)}
                     </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+                      {part.storageLocation && part.storageLocation !== "Not assigned" ? (
+                        <>
+                          <div style={{ fontSize: "11px", color: "var(--success-dark)" }}>
+                            Pre-Pick: {part.storageLocation.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                          </div>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenPrePickModal(part)}
+                              style={{
+                                padding: "2px 6px",
+                                fontSize: "10px",
+                                borderRadius: "4px",
+                                border: "1px solid var(--info)",
+                                background: "var(--surface)",
+                                color: "var(--info)",
+                                cursor: "pointer",
+                                fontWeight: 500,
+                              }}
+                            >
+                              Change
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenPrePickModal(part)}
+                            style={{
+                              padding: "4px 8px",
+                              fontSize: "11px",
+                              borderRadius: "6px",
+                              border: "1px solid var(--accent-purple)",
+                              background: "var(--accent-purple-surface)",
+                              color: "var(--accent-purple)",
+                              cursor: "pointer",
+                              fontWeight: 600,
+                            }}
+                          >
+                            Set Pre-Pick Location
+                          </button>
+                        )
+                      )}
+                    </div>
                   </div>
                   {canEdit && (
                     <select
@@ -790,6 +889,16 @@ export default function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUser
           </div>
         </div>
       </div>
+
+      {/* Pre-Pick Location Modal */}
+      <PrePickLocationModal
+        isOpen={isPrePickModalOpen}
+        onClose={handleClosePrePickModal}
+        onConfirm={handleUpdatePrePickLocation}
+        partName={selectedPartForPrePick?.name || "Part"}
+        initialLocation={selectedPartForPrePick?.storageLocation || ""}
+        allowSkip={true}
+      />
     </div>
   );
 }

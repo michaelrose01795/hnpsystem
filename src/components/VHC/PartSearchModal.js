@@ -71,6 +71,10 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
     type: "info",
     text: "Enter a part number or name and click Search to query the stock catalogue",
   });
+  const [activeTab, setActiveTab] = useState("search"); // "search" or "bulk"
+  const [bulkData, setBulkData] = useState("");
+  const [bulkFeedback, setBulkFeedback] = useState(null);
+  const [bulkResults, setBulkResults] = useState([]);
 
   const vhcItem = vhcItemData?.vhcItem;
   const linkedParts = vhcItemData?.linkedParts || [];
@@ -258,6 +262,197 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
     }
   }, [selectedPart, vhcItemData, jobNumber, quantity, labourHours, onPartSelected, onClose, defaultFilter]);
 
+  // Parse bulk import data
+  const parseBulkData = useCallback((text) => {
+    const lines = text.trim().split("\n").filter(line => line.trim());
+    const rows = [];
+    let currentRow = [];
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+
+      // Check if this might be a new row (starts with order ref pattern like ORD001)
+      if (currentRow.length >= 8 && /^[A-Z]{3}\d{3}/.test(trimmedLine)) {
+        rows.push(currentRow);
+        currentRow = [trimmedLine];
+      } else {
+        currentRow.push(trimmedLine);
+      }
+    }
+
+    // Add the last row
+    if (currentRow.length >= 8) {
+      rows.push(currentRow);
+    }
+
+    // Parse each row into structured data
+    return rows.map((row, idx) => ({
+      index: idx,
+      orderRef: row[0] || "",
+      partNumber: row[1] || "",
+      name: row[2] || "",
+      supplier: row[3] || "",
+      location: row[4] || "",
+      costPrice: row[5]?.replace(/[£$]/g, "") || "0",
+      sellPrice: row[6]?.replace(/[£$]/g, "") || "0",
+      quantity: parseInt(row[7]) || 1,
+    }));
+  }, []);
+
+  // Handle bulk import
+  const handleBulkImport = useCallback(async () => {
+    if (!bulkData.trim()) {
+      setBulkFeedback({
+        type: "warning",
+        text: "Please paste bulk data to import",
+      });
+      return;
+    }
+
+    setLoading(true);
+    setBulkFeedback({ type: "info", text: "Processing bulk import..." });
+
+    try {
+      const parsedRows = parseBulkData(bulkData);
+
+      if (parsedRows.length === 0) {
+        setBulkFeedback({
+          type: "warning",
+          text: "No valid data found. Please ensure data is in the correct format.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Get job ID
+      const { data: jobData, error: jobError } = await supabase
+        .from("jobs")
+        .select("id")
+        .eq("job_number", jobNumber)
+        .single();
+
+      if (jobError) {
+        setBulkFeedback({
+          type: "error",
+          text: "Error finding job. Please try again.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const results = [];
+
+      for (const row of parsedRows) {
+        try {
+          // Check if part exists in catalog
+          const { data: existingPart, error: searchError } = await supabase
+            .from("parts_catalog")
+            .select("*")
+            .eq("part_number", row.partNumber)
+            .maybeSingle();
+
+          let partId;
+
+          if (existingPart) {
+            partId = existingPart.id;
+            results.push({
+              ...row,
+              status: "found",
+              message: `Part ${row.partNumber} found in catalog`,
+              partId,
+            });
+          } else {
+            // Create new part in catalog
+            const { data: newPart, error: createError } = await supabase
+              .from("parts_catalog")
+              .insert({
+                part_number: row.partNumber,
+                name: row.name,
+                supplier: row.supplier,
+                storage_location: row.location,
+                unit_cost: parseFloat(row.costPrice) || 0,
+                unit_price: parseFloat(row.sellPrice) || 0,
+                qty_in_stock: 0,
+                is_active: true,
+              })
+              .select()
+              .single();
+
+            if (createError) {
+              results.push({
+                ...row,
+                status: "error",
+                message: `Failed to create part: ${createError.message}`,
+              });
+              continue;
+            }
+
+            partId = newPart.id;
+            results.push({
+              ...row,
+              status: "created",
+              message: `Part ${row.partNumber} created in catalog`,
+              partId,
+            });
+          }
+
+          // Add part to job
+          const { error: insertError } = await supabase
+            .from("parts_job_items")
+            .insert({
+              job_id: jobData.id,
+              part_id: partId,
+              quantity_requested: row.quantity,
+              status: "pending",
+              origin: "vhc",
+              vhc_item_id: vhcItemData.vhcId,
+              unit_cost: parseFloat(row.costPrice) || 0,
+              unit_price: parseFloat(row.sellPrice) || 0,
+              storage_location: row.location,
+              request_notes: `Bulk import - Order: ${row.orderRef}`,
+            });
+
+          if (insertError) {
+            results.push({
+              ...row,
+              status: "error",
+              message: `Failed to add to job: ${insertError.message}`,
+            });
+          }
+        } catch (err) {
+          results.push({
+            ...row,
+            status: "error",
+            message: `Unexpected error: ${err.message}`,
+          });
+        }
+      }
+
+      setBulkResults(results);
+
+      const successCount = results.filter(r => r.status === "found" || r.status === "created").length;
+      const errorCount = results.filter(r => r.status === "error").length;
+
+      setBulkFeedback({
+        type: successCount > 0 ? "success" : "error",
+        text: `Import complete: ${successCount} parts added, ${errorCount} errors`,
+      });
+
+      if (successCount > 0 && onPartSelected) {
+        onPartSelected({ bulkImport: true, count: successCount });
+      }
+    } catch (err) {
+      console.error("Unexpected error during bulk import:", err);
+      setBulkFeedback({
+        type: "error",
+        text: `Unexpected error: ${err.message}`,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [bulkData, jobNumber, vhcItemData, parseBulkData, onPartSelected]);
+
   if (!isOpen) return null;
 
   return (
@@ -394,7 +589,48 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
             </div>
           )}
 
-          {/* Part Search */}
+          {/* Tab Navigation */}
+          <div style={{ display: "flex", gap: "8px", borderBottom: "2px solid var(--accent-purple-surface)" }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab("search")}
+              style={{
+                padding: "10px 20px",
+                border: "none",
+                background: activeTab === "search" ? "var(--accent-purple-surface)" : "transparent",
+                color: activeTab === "search" ? "var(--accent-purple)" : "var(--info)",
+                fontWeight: 600,
+                cursor: "pointer",
+                borderBottom: activeTab === "search" ? "2px solid var(--primary)" : "none",
+                marginBottom: "-2px",
+                borderRadius: "8px 8px 0 0",
+              }}
+            >
+              Search Parts
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("bulk")}
+              style={{
+                padding: "10px 20px",
+                border: "none",
+                background: activeTab === "bulk" ? "var(--accent-purple-surface)" : "transparent",
+                color: activeTab === "bulk" ? "var(--accent-purple)" : "var(--info)",
+                fontWeight: 600,
+                cursor: "pointer",
+                borderBottom: activeTab === "bulk" ? "2px solid var(--primary)" : "none",
+                marginBottom: "-2px",
+                borderRadius: "8px 8px 0 0",
+              }}
+            >
+              Bulk Import
+            </button>
+          </div>
+
+          {/* Search Tab Content */}
+          {activeTab === "search" && (
+            <>
+              {/* Part Search */}
           <div>
             <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "var(--accent-purple)", marginBottom: "8px" }}>
               Search for Parts
@@ -642,50 +878,172 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
               </div>
             </div>
           )}
+            </>
+          )}
+
+          {/* Bulk Import Tab Content */}
+          {activeTab === "bulk" && (
+            <div>
+              <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--accent-purple)", marginBottom: "8px" }}>
+                Paste Bulk Data
+              </div>
+              <div style={{ fontSize: "12px", color: "var(--info)", marginBottom: "12px" }}>
+                Paste data in the following format (one field per line, 8 lines per part):
+                <br />
+                Order Ref, Part Number, Name, Supplier, Location, Cost Price, Sell Price, Quantity
+              </div>
+              <textarea
+                value={bulkData}
+                onChange={(e) => setBulkData(e.target.value)}
+                placeholder={`Example:\nORD001\nOILF1\nOil Filter\nEuro Car Parts\nA1\n£4.00\n£9.99\n10\nORD002\nBRAKE1\nBrake Pad\nHalford\nB2\n£15.00\n£29.99\n5`}
+                style={{
+                  width: "100%",
+                  minHeight: "200px",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--accent-purple-surface)",
+                  fontSize: "13px",
+                  fontFamily: "monospace",
+                  resize: "vertical",
+                }}
+              />
+
+              {bulkFeedback?.text && (
+                <div
+                  style={{
+                    marginTop: "10px",
+                    padding: "10px 12px",
+                    borderRadius: "10px",
+                    fontSize: "12px",
+                    color: FEEDBACK_THEME[bulkFeedback.type]?.color || "var(--info-dark)",
+                    background: FEEDBACK_THEME[bulkFeedback.type]?.background || "var(--info-surface)",
+                  }}
+                >
+                  {bulkFeedback.text}
+                </div>
+              )}
+
+              {bulkResults.length > 0 && (
+                <div style={{ marginTop: "16px" }}>
+                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--accent-purple)", marginBottom: "12px" }}>
+                    Import Results
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto" }}>
+                    {bulkResults.map((result, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          padding: "10px 12px",
+                          borderRadius: "8px",
+                          background: result.status === "error" ? "var(--danger-surface)" : "var(--success-surface)",
+                          border: `1px solid ${result.status === "error" ? "var(--danger)" : "var(--success)"}`,
+                        }}
+                      >
+                        <div style={{ fontWeight: 600, color: result.status === "error" ? "var(--danger)" : "var(--success)" }}>
+                          {result.partNumber} - {result.name}
+                        </div>
+                        <div style={{ fontSize: "11px", color: "var(--info-dark)", marginTop: "2px" }}>
+                          {result.message}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleBulkImport}
+                disabled={loading || !bulkData.trim()}
+                style={{
+                  marginTop: "16px",
+                  padding: "12px 24px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--primary)",
+                  background: loading || !bulkData.trim() ? "var(--surface-light)" : "var(--primary)",
+                  color: loading || !bulkData.trim() ? "var(--info)" : "var(--surface)",
+                  fontWeight: 600,
+                  cursor: loading || !bulkData.trim() ? "not-allowed" : "pointer",
+                  width: "100%",
+                }}
+              >
+                {loading ? "Processing..." : "Import Parts"}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div
-          style={{
-            padding: "16px 24px",
-            borderTop: "1px solid var(--accent-purple-surface)",
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "12px",
-          }}
-        >
-          <button
-            type="button"
-            onClick={onClose}
+        {activeTab === "search" && (
+          <div
             style={{
-              padding: "10px 20px",
-              borderRadius: "8px",
-              border: "1px solid var(--accent-purple-surface)",
-              background: "var(--surface)",
-              color: "var(--info-dark)",
-              fontWeight: 600,
-              cursor: "pointer",
+              padding: "16px 24px",
+              borderTop: "1px solid var(--accent-purple-surface)",
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "12px",
             }}
           >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleAddPart}
-            disabled={!selectedPart}
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: "10px 20px",
+                borderRadius: "8px",
+                border: "1px solid var(--accent-purple-surface)",
+                background: "var(--surface)",
+                color: "var(--info-dark)",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleAddPart}
+              disabled={!selectedPart}
+              style={{
+                padding: "10px 20px",
+                borderRadius: "8px",
+                border: "1px solid var(--primary)",
+                background: selectedPart ? "var(--primary)" : "var(--surface-light)",
+                color: selectedPart ? "var(--surface)" : "var(--info)",
+                fontWeight: 600,
+                cursor: selectedPart ? "pointer" : "not-allowed",
+              }}
+            >
+              Add New Part
+            </button>
+          </div>
+        )}
+        {activeTab === "bulk" && (
+          <div
             style={{
-              padding: "10px 20px",
-              borderRadius: "8px",
-              border: "1px solid var(--primary)",
-              background: selectedPart ? "var(--primary)" : "var(--surface-light)",
-              color: selectedPart ? "var(--surface)" : "var(--info)",
-              fontWeight: 600,
-              cursor: selectedPart ? "pointer" : "not-allowed",
+              padding: "16px 24px",
+              borderTop: "1px solid var(--accent-purple-surface)",
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "12px",
             }}
           >
-            Add Part
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: "10px 20px",
+                borderRadius: "8px",
+                border: "1px solid var(--accent-purple-surface)",
+                background: "var(--surface)",
+                color: "var(--info-dark)",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Close
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

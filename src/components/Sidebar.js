@@ -227,31 +227,6 @@ export default function Sidebar({
 
       {/* Navigation Content */}
       <div style={{ padding: "20px" }}>
-        {hasPartsSidebarAccess && (
-          <div style={{ marginBottom: "16px" }}>
-            <Link
-              href="/parts/deliveries"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "10px 14px",
-                borderRadius: "12px",
-                border: "1px solid var(--surface-light)",
-                background: "var(--surface-light)",
-                color: "var(--primary-dark)",
-                fontWeight: 600,
-                textDecoration: "none",
-                boxShadow: "none",
-              }}
-            >
-              <span role="img" aria-label="deliveries">
-                🚚
-              </span>
-              Deliveries
-            </Link>
-          </div>
-        )}
         {dashboardShortcuts.length > 0 && (
           <>
             <div

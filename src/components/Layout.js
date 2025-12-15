@@ -986,26 +986,6 @@ export default function Layout({ children, jobNumber }) {
                   <NextActionPrompt />
                 </div>
 
-                {hasPartsAccess && (
-                  <Link
-                    href="/parts/deliveries"
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "8px 14px",
-                      borderRadius: "14px",
-                      border: "1px solid var(--surface-light)",
-                      background: "var(--surface-light)",
-                      color: "var(--primary-dark)",
-                      fontWeight: 600,
-                      textDecoration: "none",
-                      boxShadow: "none",
-                    }}
-                  >
-                    Deliveries
-                  </Link>
-                )}
                 {userRoles.includes("admin manager") && (
                   <Link
                     href="/admin/users"

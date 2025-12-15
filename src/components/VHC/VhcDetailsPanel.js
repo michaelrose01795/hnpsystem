@@ -13,6 +13,7 @@ import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
 import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal";
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 import PartSearchModal from "@/components/VHC/PartSearchModal";
+import PrePickLocationModal from "@/components/VHC/PrePickLocationModal";
 
 const STATUS_BADGES = {
   red: "var(--danger)",
@@ -704,6 +705,9 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const [warrantyItems, setWarrantyItems] = useState(new Set());
   const [selectedVhcItem, setSelectedVhcItem] = useState(null);
   const [isPartSearchModalOpen, setIsPartSearchModalOpen] = useState(false);
+  const [isPrePickModalOpen, setIsPrePickModalOpen] = useState(false);
+  const [selectedPartForJob, setSelectedPartForJob] = useState(null);
+  const [addingPartToJob, setAddingPartToJob] = useState(false);
 
   const containerPadding = showNavigation ? "24px" : "0";
   const renderStatusMessage = (message, color = "var(--info)") => (
@@ -1839,6 +1843,65 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     }
   }, [resolvedJobNumber]);
 
+  // Handler for "Add to Job" button click
+  const handleAddToJobClick = useCallback((partItem) => {
+    setSelectedPartForJob(partItem);
+    setIsPrePickModalOpen(true);
+  }, []);
+
+  // Handler for confirming pre-pick location and adding part to job
+  const handleConfirmPrePickLocation = useCallback(async (prePickLocation) => {
+    if (!selectedPartForJob || !job?.id) return;
+
+    setAddingPartToJob(true);
+    try {
+      const part = selectedPartForJob.part || {};
+      const response = await fetch("/api/parts/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId: job.id,
+          partId: part.id,
+          quantityRequested: selectedPartForJob.quantity_requested || 1,
+          allocateFromStock: true,
+          prePickLocation: prePickLocation || null,
+          storageLocation: selectedPartForJob.storage_location || part.storage_location || null,
+          unitCost: selectedPartForJob.unit_cost || part.unit_cost || 0,
+          unitPrice: selectedPartForJob.unit_price || part.unit_price || 0,
+          requestNotes: `Added from VHC Parts Authorized - Job #${resolvedJobNumber}`,
+          origin: "vhc",
+          vhcItemId: selectedPartForJob.vhc_item_id || null,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to add part to job");
+      }
+
+      // Refresh job data
+      await handlePartAdded();
+
+      // Close modal and reset state
+      setIsPrePickModalOpen(false);
+      setSelectedPartForJob(null);
+
+      // Show success message (could use a toast notification here)
+      alert(`${part.name || "Part"} has been added to the job successfully!`);
+    } catch (error) {
+      console.error("Failed to add part to job:", error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setAddingPartToJob(false);
+    }
+  }, [selectedPartForJob, job, resolvedJobNumber, handlePartAdded]);
+
+  // Handler for closing the pre-pick modal
+  const handleClosePrePickModal = useCallback(() => {
+    setIsPrePickModalOpen(false);
+    setSelectedPartForJob(null);
+  }, []);
+
   // Render VHC items panel for Parts Identified (shows all red/amber VHC items)
   const renderVhcItemsPanel = useCallback(() => {
     if (!vhcItemsWithParts || vhcItemsWithParts.length === 0) {
@@ -2113,6 +2176,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                     <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "120px" }}>Location</th>
                     <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "100px" }}>Labour (hrs)</th>
                     <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "180px" }}>Pre-Pick Location</th>
+                    <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "120px" }}>Action</th>
                   </>
                 )}
                 {isOnOrderSection && (
@@ -2213,6 +2277,26 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                             <option value="no_pick">No Pick</option>
                             <option value="on_order">On Order</option>
                           </select>
+                        </td>
+                        <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                          <button
+                            type="button"
+                            onClick={() => handleAddToJobClick(partItem)}
+                            disabled={readOnly}
+                            style={{
+                              padding: "8px 16px",
+                              borderRadius: "8px",
+                              border: "1px solid var(--primary)",
+                              background: readOnly ? "var(--surface-light)" : "var(--primary)",
+                              color: readOnly ? "var(--info)" : "var(--surface)",
+                              fontWeight: 600,
+                              cursor: readOnly ? "not-allowed" : "pointer",
+                              fontSize: "12px",
+                              opacity: readOnly ? 0.5 : 1,
+                            }}
+                          >
+                            Add to Job
+                          </button>
                         </td>
                       </>
                     )}
@@ -2678,6 +2762,16 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
         vhcItemData={selectedVhcItem}
         jobNumber={resolvedJobNumber}
         onPartSelected={handlePartAdded}
+      />
+
+      {/* Pre-Pick Location Modal */}
+      <PrePickLocationModal
+        isOpen={isPrePickModalOpen}
+        onClose={handleClosePrePickModal}
+        onConfirm={handleConfirmPrePickLocation}
+        partName={selectedPartForJob?.part?.name || "Part"}
+        initialLocation=""
+        allowSkip={true}
       />
     </div>
   );

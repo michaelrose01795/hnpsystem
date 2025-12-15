@@ -485,15 +485,15 @@ div#main-content {
   align-items: center;
   text-align: center;
   gap: 12px;
-  padding-bottom: 8px;
-  margin-top: -200px;
+  padding-bottom: 16px;
+  margin-top: 0;
   pointer-events: none;
 }
 
 .login-logo {
-  height: 272px;
-  width: auto;
-  max-width: min(1280px, 70vw);
+  width: 452px;
+  height: auto;
+  max-width: 100%;
   object-fit: contain;
 }
 
@@ -507,6 +507,256 @@ div#main-content {
 
 [data-theme="dark"] .login-logo-dark {
   display: inline-block;
+}
+
+/* ========================================================= */
+/* === Login Page Responsive Styles === */
+/* ========================================================= */
+
+/* iPad Pro 12.9" and similar large tablets (portrait & landscape) */
+@media (max-width: 1024px) {
+  .login-page-wrapper {
+    padding: 48px 24px;
+  }
+
+  .login-stack {
+    max-width: 600px;
+    gap: 20px;
+  }
+
+  .login-card-stack {
+    max-width: 480px;
+    gap: 20px;
+  }
+
+  .login-logo {
+    width: 400px;
+  }
+}
+
+/* iPad and tablets (portrait & landscape) */
+@media (max-width: 820px) {
+  .login-page-wrapper {
+    padding: 40px 20px;
+  }
+
+  .login-stack {
+    max-width: 100%;
+    gap: 18px;
+  }
+
+  .login-card-stack {
+    max-width: 100%;
+    gap: 18px;
+  }
+
+  .login-logo {
+    width: 100%;
+    max-width: 380px;
+  }
+
+  .login-brand {
+    padding-bottom: 12px;
+  }
+
+  /* Adjust card padding for tablets */
+  .login-card-stack > div > div {
+    padding: 1.75rem;
+  }
+
+  .login-form {
+    gap: 18px;
+  }
+
+  .login-button {
+    padding: 13px 16px;
+    font-size: 0.95rem;
+  }
+}
+
+/* iPhone landscape and small tablets */
+@media (max-width: 768px) and (orientation: landscape) {
+  .login-page-wrapper {
+    padding: 24px 16px;
+    min-height: auto;
+  }
+
+  .login-stack {
+    gap: 16px;
+  }
+
+  .login-card-stack {
+    gap: 16px;
+  }
+
+  .login-logo {
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .login-brand {
+    padding-bottom: 8px;
+  }
+
+  /* Reduce card padding in landscape */
+  .login-card-stack > div > div {
+    padding: 1.5rem;
+  }
+
+  .login-form {
+    gap: 16px;
+  }
+
+  .login-card-inner {
+    gap: 16px;
+  }
+}
+
+/* iPhone and mobile devices (portrait) */
+@media (max-width: 480px) {
+  .login-page-wrapper {
+    padding: 32px 16px;
+  }
+
+  .login-stack {
+    gap: 16px;
+  }
+
+  .login-card-stack {
+    gap: 16px;
+  }
+
+  .login-logo {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .login-brand {
+    padding-bottom: 10px;
+  }
+
+  /* Adjust card styling for mobile */
+  .login-card-stack > div > div {
+    padding: 1.5rem;
+    border-radius: 24px;
+  }
+
+  .login-form {
+    gap: 16px;
+  }
+
+  .login-card-inner {
+    gap: 16px;
+  }
+
+  .login-input,
+  .login-select {
+    padding: 11px 14px;
+    font-size: 0.9rem;
+    border-radius: 20px;
+  }
+
+  .login-button {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    border-radius: 20px;
+  }
+
+  .login-label {
+    font-size: 0.8rem;
+  }
+
+  /* Adjust title sizes for mobile */
+  .login-card-stack h2 {
+    font-size: 1.3rem;
+  }
+
+  .login-card-stack p {
+    font-size: 0.88rem;
+  }
+}
+
+/* iPhone SE and small devices (portrait) */
+@media (max-width: 375px) {
+  .login-page-wrapper {
+    padding: 24px 12px;
+  }
+
+  .login-logo {
+    max-width: 260px;
+  }
+
+  .login-card-stack > div > div {
+    padding: 1.25rem;
+    border-radius: 20px;
+  }
+
+  .login-input,
+  .login-select {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    border-radius: 18px;
+  }
+
+  .login-button {
+    padding: 11px 14px;
+    font-size: 0.85rem;
+    border-radius: 18px;
+  }
+
+  .login-card-stack h2 {
+    font-size: 1.2rem;
+  }
+
+  .login-card-stack p {
+    font-size: 0.85rem;
+  }
+}
+
+/* iPhone landscape (very specific) */
+@media (max-width: 844px) and (max-height: 428px) and (orientation: landscape) {
+  .login-page-wrapper {
+    padding: 20px 16px;
+  }
+
+  .login-logo {
+    max-width: 240px;
+  }
+
+  .login-brand {
+    padding-bottom: 6px;
+  }
+
+  .login-card-stack > div > div {
+    padding: 1.25rem;
+  }
+
+  .login-form {
+    gap: 14px;
+  }
+
+  .login-card-inner {
+    gap: 14px;
+  }
+
+  .login-input,
+  .login-select {
+    padding: 9px 12px;
+    font-size: 0.85rem;
+  }
+
+  .login-button {
+    padding: 10px 14px;
+    font-size: 0.85rem;
+  }
+
+  .login-card-stack h2 {
+    font-size: 1.2rem;
+  }
+
+  .login-card-stack p {
+    font-size: 0.82rem;
+  }
 }
 
 /* ========================================================= */
