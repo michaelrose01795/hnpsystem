@@ -1,3 +1,15 @@
+in the cant fint part? add it now tab, cahnge to "add new part", inside that sectin add a bulk add which is where id paste soemthing like this "ORD001
+OILF1
+Oil Filter
+Euro Car Parts
+A1
+£4.00
+£9.99
+10
+ORD002"
+
+This is where the data should be auto filled out in, order Ref, Part number, Parts name, supplier, loaction, unit cost, unit price, quantity ordered (and quantily recived), this is so i can paste this whole detail in one paste and it auto fills it into the correct sections within the "Add new part" section. 
+
 Add a button which says update ”Add to job” (or along those lines) at the end of each row inside the parts authorised tab inside the job-cards/[jobnumber] page, when this is clicked it auto added the parts into the left section inside the parts tab and opens a popup asking for a pre pick location (an input can be added then or later inside the left section of the parts tab where it will have a button which will open the popup again. WAITING TO BE DONE
 
 Document tab inside the job-cards/[jobnumber] page needs to link to the upload documents popup in the create page so it loads the attachments into that section. This section needs to be simplified to only show the documents which we uploaded to the database and shown in the list view. 
