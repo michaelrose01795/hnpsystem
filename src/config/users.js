@@ -1,5 +1,6 @@
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
+
 // file located at: src/config/users.js
 // Map retail vs sales departments to provide grouped developer login options
 export const roleCategories = {

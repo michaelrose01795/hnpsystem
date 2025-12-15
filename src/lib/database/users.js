@@ -50,11 +50,11 @@ const fetchUsersByRoles = async (roles) => { // Shared helper to fetch users res
   const escapedList = roles
     .map((roleName) => `"${roleName.replace(/"/g, '\\"')}"`)
     .join(",");
-  const orFilter = [`job_title.in.(${escapedList})`, `role.in.(${escapedList})`].join(",");
+  const roleFilter = `role.in.(${escapedList})`;
   const { data, error } = await db // Execute the select query.
     .from(USERS_TABLE) // Target the users table.
     .select(USER_COLUMNS) // Fetch canonical columns.
-    .or(orFilter)
+    .or(roleFilter)
     .order("first_name", { ascending: true }); // Order alphabetically by first name.
   if (error) { // Handle query failures.
     throw new Error(`Failed to fetch users by role: ${error.message}`); // Provide descriptive diagnostics.
@@ -88,7 +88,7 @@ export const getUsersGroupedByRole = async () => { // Fetch all users and bucket
   } // Close guard.
   return (data || []).reduce((acc, row) => { // Build a dictionary keyed by role.
     const shaped = mapUserRow(row); // Normalize row once.
-  const key = shaped.jobTitle || shaped.role || "Unassigned"; // Default bucket when job title is absent.
+  const key = shaped.role || "Unassigned"; // Group by role only (permissions), not job title.
     if (!acc[key]) { // Initialize bucket if needed.
       acc[key] = []; // Create new array for this role.
     } // Close guard.

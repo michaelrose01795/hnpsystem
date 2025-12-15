@@ -158,7 +158,7 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle })
     first_name: firstName,
     last_name: lastName,
     phone: phone || null,
-    job_title: jobTitle || role,
+    job_title: jobTitle || null,
     role,
   };
 
@@ -193,7 +193,7 @@ async function upsertEmployeeProfile({ userId, payload }) {
   const profilePayload = {
     user_id: userId,
     department: payload.department || null,
-    job_title: payload.jobTitle || payload.role || null,
+    job_title: payload.jobTitle || null,
     employment_type: payload.employmentType || null,
     employment_status: payload.status || null,
     start_date: toIsoDate(payload.startDate),

@@ -6,8 +6,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useHrEmployeesData } from "@/hooks/useHrData";
 import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
 import EmployeeProfilePanel from "@/components/HR/EmployeeProfilePanel";
+import { roleCategories } from "@/config/users";
 
 const defaultFilters = { department: "all", status: "all", employmentType: "all" };
+
+// Get all available roles from Retail and Sales categories (excluding Customers)
+const AVAILABLE_ROLES = [
+  ...(roleCategories.Retail || []),
+  ...(roleCategories.Sales || []),
+].sort();
 
 const SAMPLE_PAYLOAD_FIELD_MAP = {
   "first name": "firstName",
@@ -98,6 +105,7 @@ export default function EmployeesTab() {
   const baseEmployees = data ?? [];
 
   const [filters, setFilters] = useState(defaultFilters);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
   const [isAddingEmployee, setIsAddingEmployee] = useState(false);
   const [localEmployees, setLocalEmployees] = useState([]);
@@ -162,9 +170,15 @@ export default function EmployeesTab() {
       const statusPass = filters.status === "all" || employee.status === filters.status;
       const employmentPass =
         filters.employmentType === "all" || employee.employmentType === filters.employmentType;
-      return departmentPass && statusPass && employmentPass;
+
+      // Search filter - only searches employee names
+      const searchPass =
+        searchQuery.trim() === "" ||
+        (employee.name && employee.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      return departmentPass && statusPass && employmentPass && searchPass;
     });
-  }, [employees, filters]);
+  }, [employees, filters, searchQuery]);
 
   const selectedEmployee = useMemo(
     () => employees.find((emp) => emp.id === selectedEmployeeId) ?? null,
@@ -430,6 +444,26 @@ export default function EmployeesTab() {
           />
         }
       >
+        {/* Search Bar */}
+        <div style={{ marginBottom: "16px" }}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by employee name..."
+            style={{
+              width: "100%",
+              padding: "10px 14px",
+              borderRadius: "8px",
+              border: "1px solid var(--surface-light)",
+              background: "var(--surface-light)",
+              color: "var(--text-primary)",
+              fontSize: "0.95rem",
+              outline: "none",
+            }}
+          />
+        </div>
+
         <div style={{ maxHeight: "600px", overflowY: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead style={{ position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>
@@ -664,6 +698,110 @@ function EmployeeForm({
   );
 }
 
+function SearchableRoleDropdown({ value, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const dropdownRef = React.useRef(null);
+
+  // Filter roles based on search term
+  const filteredRoles = useMemo(() => {
+    if (!searchTerm.trim()) return AVAILABLE_ROLES;
+    return AVAILABLE_ROLES.filter(role =>
+      role.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setSearchTerm("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelectRole = (role) => {
+    onChange({ target: { value: role } });
+    setIsOpen(false);
+    setSearchTerm("");
+  };
+
+  return (
+    <div ref={dropdownRef} style={{ position: "relative" }}>
+      <input
+        type="text"
+        value={isOpen ? searchTerm : value}
+        onChange={(e) => {
+          setSearchTerm(e.target.value);
+          if (!isOpen) setIsOpen(true);
+        }}
+        onFocus={() => setIsOpen(true)}
+        placeholder="Select or search role..."
+        style={{
+          padding: "10px",
+          borderRadius: "8px",
+          border: "1px solid var(--surface-light)",
+          width: "100%",
+          cursor: "pointer",
+        }}
+      />
+      {isOpen && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            maxHeight: "200px",
+            overflowY: "auto",
+            background: "var(--surface)",
+            border: "1px solid var(--surface-light)",
+            borderRadius: "8px",
+            marginTop: "4px",
+            zIndex: 1000,
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+          }}
+        >
+          {filteredRoles.length > 0 ? (
+            filteredRoles.map((role) => (
+              <div
+                key={role}
+                onClick={() => handleSelectRole(role)}
+                style={{
+                  padding: "10px 12px",
+                  cursor: "pointer",
+                  background: value === role ? "rgba(var(--accent-purple-rgb), 0.1)" : "transparent",
+                  color: value === role ? "var(--accent-purple)" : "var(--text-primary)",
+                  fontWeight: value === role ? 600 : 400,
+                }}
+                onMouseEnter={(e) => {
+                  if (value !== role) {
+                    e.currentTarget.style.background = "var(--surface-light)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (value !== role) {
+                    e.currentTarget.style.background = "transparent";
+                  }
+                }}
+              >
+                {role}
+              </div>
+            ))
+          ) : (
+            <div style={{ padding: "10px 12px", color: "var(--info)", fontSize: "0.9rem" }}>
+              No roles found
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function EmployeeDetailsFields({ values, onFieldChange }) {
   const update = (field) => (event) => onFieldChange(field, event.target.value);
 
@@ -744,13 +882,10 @@ function EmployeeDetailsFields({ values, onFieldChange }) {
             placeholder="Supervisor"
           />
         </FormField>
-        <FormField label="Role / Band">
-          <input
-            type="text"
+        <FormField label="Role">
+          <SearchableRoleDropdown
             value={values.role}
             onChange={update("role")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-            placeholder="HR_CORE"
           />
         </FormField>
         <FormField label="Employment Type">

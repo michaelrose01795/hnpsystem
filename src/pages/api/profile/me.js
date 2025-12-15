@@ -248,9 +248,9 @@ async function getUserProfile(userId) {
     id: `EMP-${userId}`,
     userId,
     name,
-    jobTitle: data.job_title || user.role || "Employee",
+    jobTitle: data.job_title || "Employee",
     department: data.department || "Unassigned",
-    role: user.role || data.job_title || "Employee",
+    role: user.role || "Employee",
     employmentType: data.employment_type || "Full-time",
     startDate: data.start_date,
     hourlyRate: 0, // Hidden for privacy unless admin

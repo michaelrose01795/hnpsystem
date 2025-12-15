@@ -34,7 +34,8 @@ export default function EmployeeProfilePanel({ employee }) {
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)] font-semibold">Employment Details</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
-          <ProfileItem label="Role" value={employee.role} />
+          <ProfileItem label="Job Title" value={employee.jobTitle} />
+          <ProfileItem label="Role (Permissions)" value={employee.role} />
           <ProfileItem label="Employment Type" value={employee.employmentType} />
           <ProfileItem label="Start Date" value={formatDate(employee.startDate)} />
           <ProfileItem label="Probation End" value={formatDate(employee.probationEnd)} />

@@ -408,8 +408,8 @@ export default function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUser
       });
 
       const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to update pre-pick location");
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Failed to update pre-pick location");
       }
 
       // Close modal

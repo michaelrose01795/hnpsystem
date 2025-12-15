@@ -240,15 +240,6 @@ export default function LoginPage() {
                   <p className="login-loading-text">Loading database users for dev login...</p>
                 )}
 
-                {selectedCategory === "Customers" && (
-                  <div className="login-preview">
-                    <CustomerViewPreview
-                      portalUrl={CUSTOMER_PORTAL_URL}
-                      selectedPersona={selectedUser?.name || ""}
-                      selectedDepartment={selectedDepartment}
-                    />
-                  </div>
-                )}
 
                 <button
                   onClick={handleDevLogin}

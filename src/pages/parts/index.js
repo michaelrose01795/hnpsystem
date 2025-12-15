@@ -314,6 +314,7 @@ function PartsPortalPage() {
           {links.slice(0, 3).map((link) => {
             const sourceMeta = resolveSourceMeta(link.source);
             const statusMeta = resolveStatusStyles(link.status);
+            const linkDeliveryInfo = link.delivery_info || null;
             return (
               <div key={`${link.type}-${link.job_id}-${link.request_id || ""}-${link.status}`}>
                 <div>
@@ -331,21 +332,24 @@ function PartsPortalPage() {
                 >
                   <div>
                     <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--primary-dark)" }}>Delivery plan</p>
-                    {jobDeliveryInfo ? (
+                    {linkDeliveryInfo ? (
                       <div style={{ fontWeight: 600 }}>
-                        Stop {jobDeliveryInfo.stop_number} ·{" "}
-                        {jobDeliveryInfo.delivery?.delivery_date
-                          ? new Date(jobDeliveryInfo.delivery.delivery_date).toLocaleDateString()
+                        Stop {linkDeliveryInfo.stop_number} ·{" "}
+                        {linkDeliveryInfo.delivery?.delivery_date
+                          ? new Date(linkDeliveryInfo.delivery.delivery_date).toLocaleDateString()
                           : "Scheduled"}
                       </div>
                     ) : (
                       <div style={{ fontWeight: 600, color: "var(--info)" }}>No upcoming delivery</div>
                     )}
                   </div>
-                  {needsDeliveryScheduling(jobData.waitingStatus || jobData.waiting_status) && (
+                  {needsDeliveryScheduling(link.waiting_status || link.waitingStatus) && (
                     <button
                       type="button"
-                      onClick={openScheduleModal}
+                      onClick={() => {
+                        // Schedule delivery for this specific job
+                        console.log("Schedule delivery for job:", link.job_number);
+                      }}
                       style={{
                         ...buttonStyle,
                         border: "1px solid var(--accent-purple)",

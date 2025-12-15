@@ -827,6 +827,22 @@ CREATE TABLE public.part_categories (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT part_categories_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.part_delivery_logs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  part_id uuid NOT NULL,
+  supplier text,
+  order_reference text,
+  qty_ordered integer NOT NULL DEFAULT 0,
+  qty_received integer NOT NULL DEFAULT 0,
+  unit_cost numeric,
+  delivery_date date,
+  notes text,
+  created_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT part_delivery_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT part_delivery_logs_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts_catalog(id),
+  CONSTRAINT part_delivery_logs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
+);
 CREATE TABLE public.parts_catalog (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   part_number text NOT NULL UNIQUE,
