@@ -31,7 +31,11 @@ Make the "Employment Details" in the "Employee Directory" page more modern and i
 
 add a search bar inside the "Employee Directory" with in the "hr/manager" page. make sure this search bar only searches for the users names. 
 
+
+Make sure the sidebar logo changes from dark to light when switching between dark mode and light mode.
+
 Remove all of the .md files and migration files. 
+
 
 LOOK INTO TRACKING PAGE + ADD WRITE UP PAGE IN JOBCARD FOR WORKSHOP MANAGER
 
