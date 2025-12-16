@@ -289,6 +289,8 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
 
       const result = await response.json();
 
+      console.log("✅ API Response:", result);
+
       if (!response.ok || !result.success) {
         const errorMessage = result.message || "Failed to add part to job";
         console.error("Error adding part:", result);
@@ -296,8 +298,11 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
         return;
       }
 
+      console.log("✅ Job part created:", result.jobPart);
+
       // Notify parent component - this will refresh the job data without a page reload
       if (onPartSelected) {
+        console.log("✅ Calling onPartSelected with:", result.jobPart);
         onPartSelected(result.jobPart);
       }
 

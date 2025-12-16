@@ -1846,6 +1846,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
   // Handler for when a part is added
   const handlePartAdded = useCallback(async (partData) => {
+    console.log("🔍 handlePartAdded called with:", partData);
+
     // Refresh job data to show the new part
     if (resolvedJobNumber) {
       const { data: updatedJob, error: fetchError } = await supabase
@@ -1900,6 +1902,9 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
         .eq("job_number", resolvedJobNumber)
         .maybeSingle();
 
+      console.log("🔍 Fetched updated job:", updatedJob);
+      console.log("🔍 Parts in updated job:", updatedJob?.parts_job_items);
+
       if (!fetchError && updatedJob) {
         const { vhc_checks = [], parts_job_items = [], job_files = [], ...jobFields } = updatedJob;
         setJob({
@@ -1924,29 +1929,46 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
           const part = partData.part || {};
           const partKey = `${vhcId}-${partData.id}`;
 
+          console.log("🔍 Creating part details for key:", partKey);
+          console.log("🔍 Part data:", part);
+
           // Calculate VAT (20%)
           const unitPrice = Number(partData.unit_price || part.unit_price || 0);
           const unitCost = Number(partData.unit_cost || part.unit_cost || 0);
           const vatAmount = unitPrice * 0.2;
           const priceWithVat = unitPrice + vatAmount;
 
-          setPartDetails((prev) => ({
-            ...prev,
-            [partKey]: {
-              partNumber: part.part_number || "",
-              partName: part.name || "",
-              costToCustomer: unitPrice,
-              costToCompany: unitCost,
-              vat: vatAmount,
-              totalWithVat: priceWithVat,
-              inStock: (part.qty_in_stock || 0) > 0,
-              backOrder: false,
-              warranty: false,
-            },
-          }));
+          const newPartDetail = {
+            partNumber: part.part_number || "",
+            partName: part.name || "",
+            costToCustomer: unitPrice,
+            costToCompany: unitCost,
+            vat: vatAmount,
+            totalWithVat: priceWithVat,
+            inStock: (part.qty_in_stock || 0) > 0,
+            backOrder: false,
+            warranty: false,
+          };
+
+          console.log("🔍 New part detail:", newPartDetail);
+
+          setPartDetails((prev) => {
+            console.log("🔍 Previous partDetails:", prev);
+            const updated = {
+              ...prev,
+              [partKey]: newPartDetail,
+            };
+            console.log("🔍 Updated partDetails:", updated);
+            return updated;
+          });
 
           // Expand the row to show the newly added part
-          setExpandedVhcItems((prev) => new Set(prev).add(vhcId));
+          setExpandedVhcItems((prev) => {
+            const newSet = new Set(prev);
+            newSet.add(vhcId);
+            console.log("🔍 Expanded VHC items:", Array.from(newSet));
+            return newSet;
+          });
         }
       }
     }
@@ -2013,6 +2035,11 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
   // Render VHC items panel for Parts Identified (shows all red/amber VHC items)
   const renderVhcItemsPanel = useCallback(() => {
+    console.log("🎨 Rendering VHC items panel");
+    console.log("🎨 vhcItemsWithParts:", vhcItemsWithParts);
+    console.log("🎨 partDetails:", partDetails);
+    console.log("🎨 expandedVhcItems:", Array.from(expandedVhcItems));
+
     if (!vhcItemsWithParts || vhcItemsWithParts.length === 0) {
       return (
         <div
