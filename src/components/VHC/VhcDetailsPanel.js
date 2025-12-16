@@ -708,6 +708,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const [isPrePickModalOpen, setIsPrePickModalOpen] = useState(false);
   const [selectedPartForJob, setSelectedPartForJob] = useState(null);
   const [addingPartToJob, setAddingPartToJob] = useState(false);
+  const [expandedVhcItems, setExpandedVhcItems] = useState(new Set());
+  const [partDetails, setPartDetails] = useState({});
 
   const containerPadding = showNavigation ? "24px" : "0";
   const renderStatusMessage = (message, color = "var(--info)") => (
@@ -878,6 +880,46 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       supabase.removeChannel(channel);
     };
   }, [job?.id]);
+
+  // Initialize part details for existing parts
+  useEffect(() => {
+    if (!job?.parts_job_items) return;
+
+    setPartDetails((prevDetails) => {
+      const newPartDetails = { ...prevDetails };
+      let hasChanges = false;
+
+      job.parts_job_items.forEach((part) => {
+        if (part.vhc_item_id && part.origin?.toLowerCase().includes("vhc")) {
+          const vhcId = String(part.vhc_item_id);
+          const partKey = `${vhcId}-${part.id}`;
+
+          // Only initialize if not already present
+          if (!newPartDetails[partKey]) {
+            const unitPrice = Number(part.unit_price || part.part?.unit_price || 0);
+            const unitCost = Number(part.unit_cost || part.part?.unit_cost || 0);
+            const vatAmount = unitPrice * 0.2;
+            const priceWithVat = unitPrice + vatAmount;
+
+            newPartDetails[partKey] = {
+              partNumber: part.part?.part_number || "",
+              partName: part.part?.name || "",
+              costToCustomer: unitPrice,
+              costToCompany: unitCost,
+              vat: vatAmount,
+              totalWithVat: priceWithVat,
+              inStock: (part.part?.qty_in_stock || 0) > 0,
+              backOrder: false,
+              warranty: false,
+            };
+            hasChanges = true;
+          }
+        }
+      });
+
+      return hasChanges ? newPartDetails : prevDetails;
+    });
+  }, [job?.parts_job_items]);
 
   const jobParts = useMemo(
     () =>
@@ -1767,9 +1809,33 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   }, []);
 
   // Handler for opening part search modal
-  const handleVhcItemClick = useCallback((vhcItemData) => {
+  const handleVhcItemRowClick = useCallback((vhcId) => {
+    setExpandedVhcItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(vhcId)) {
+        newSet.delete(vhcId);
+      } else {
+        newSet.add(vhcId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleAddPartButtonClick = useCallback((vhcItemData, e) => {
+    e.stopPropagation();
     setSelectedVhcItem(vhcItemData);
     setIsPartSearchModalOpen(true);
+  }, []);
+
+  // Handler for updating part detail fields
+  const handlePartDetailChange = useCallback((partKey, field, value) => {
+    setPartDetails((prev) => ({
+      ...prev,
+      [partKey]: {
+        ...(prev[partKey] || {}),
+        [field]: value,
+      },
+    }));
   }, []);
 
   // Handler for closing part search modal
@@ -1816,7 +1882,9 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
               id,
               part_number,
               name,
-              unit_price
+              unit_price,
+              unit_cost,
+              qty_in_stock
             )
           ),
           job_files(
@@ -1839,6 +1907,47 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
           parts_job_items: parts_job_items || [],
           job_files: job_files || [],
         });
+
+        // Update VHC data if the builder record is present
+        // This ensures that any newly created vhc_checks records are reflected in the UI
+        const builderRecord = vhc_checks.find(
+          (check) => check.section === "VHC_CHECKSHEET"
+        );
+        if (builderRecord) {
+          const parsedPayload = safeJsonParse(builderRecord?.issue_description || builderRecord?.data) || {};
+          setVhcData(buildVhcPayload(parsedPayload));
+        }
+
+        // Auto-populate part details for the newly added part
+        if (partData && partData.vhc_item_id) {
+          const vhcId = String(partData.vhc_item_id);
+          const part = partData.part || {};
+          const partKey = `${vhcId}-${partData.id}`;
+
+          // Calculate VAT (20%)
+          const unitPrice = Number(partData.unit_price || part.unit_price || 0);
+          const unitCost = Number(partData.unit_cost || part.unit_cost || 0);
+          const vatAmount = unitPrice * 0.2;
+          const priceWithVat = unitPrice + vatAmount;
+
+          setPartDetails((prev) => ({
+            ...prev,
+            [partKey]: {
+              partNumber: part.part_number || "",
+              partName: part.name || "",
+              costToCustomer: unitPrice,
+              costToCompany: unitCost,
+              vat: vatAmount,
+              totalWithVat: priceWithVat,
+              inStock: (part.qty_in_stock || 0) > 0,
+              backOrder: false,
+              warranty: false,
+            },
+          }));
+
+          // Expand the row to show the newly added part
+          setExpandedVhcItems((prev) => new Set(prev).add(vhcId));
+        }
       }
     }
   }, [resolvedJobNumber]);
@@ -1968,12 +2077,14 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
                 const severityBadgeStyles = vhcSeverity ? buildSeverityBadgeStyles(vhcSeverity) : null;
 
+                const isExpanded = expandedVhcItems.has(vhcId);
+
                 return (
+                  <React.Fragment key={vhcId}>
                   <tr
-                    key={vhcId}
-                    onClick={() => handleVhcItemClick(item)}
+                    onClick={() => handleVhcItemRowClick(vhcId)}
                     style={{
-                      borderBottom: "1px solid var(--info-surface)",
+                      borderBottom: isExpanded ? "none" : "1px solid var(--info-surface)",
                       background: vhcSeverity ? SEVERITY_THEME[vhcSeverity]?.background : "var(--surface)",
                       cursor: "pointer",
                       transition: "background 0.2s ease",
@@ -2114,6 +2225,313 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                       </button>
                     </td>
                   </tr>
+
+                  {/* Expandable Details Row */}
+                  {isExpanded && (
+                    <tr>
+                      <td colSpan="5" style={{ padding: "0", borderBottom: "1px solid var(--info-surface)" }}>
+                        <div style={{ padding: "24px", background: "var(--surface-light)" }}>
+                          {/* Add Part Button */}
+                          <div style={{ marginBottom: "20px" }}>
+                            <button
+                              type="button"
+                              onClick={(e) => handleAddPartButtonClick(item, e)}
+                              style={{
+                                padding: "10px 20px",
+                                borderRadius: "8px",
+                                border: "1px solid var(--primary)",
+                                background: "var(--primary)",
+                                color: "var(--surface)",
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                fontSize: "13px",
+                                transition: "all 0.2s ease",
+                              }}
+                            >
+                              + Add Part to Row
+                            </button>
+                          </div>
+
+                          {/* Part Details Sections */}
+                          {linkedParts.length === 0 ? (
+                            <div style={{
+                              padding: "24px",
+                              borderRadius: "12px",
+                              background: "var(--info-surface)",
+                              border: "1px solid var(--accent-purple-surface)",
+                              textAlign: "center",
+                              color: "var(--info)",
+                              fontSize: "13px",
+                            }}>
+                              No parts added yet. Click "Add Part to Row" to add parts to this VHC item.
+                            </div>
+                          ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                              {linkedParts.map((part) => {
+                                const partKey = `${vhcId}-${part.id}`;
+                                const details = partDetails[partKey] || {};
+                                const partNumber = details.partNumber || part.part?.part_number || "";
+                                const partName = details.partName || part.part?.name || "";
+                                const costToCustomer = details.costToCustomer !== undefined ? details.costToCustomer : (Number(part.unit_price || part.part?.unit_price || 0));
+                                const costToCompany = details.costToCompany !== undefined ? details.costToCompany : (Number(part.unit_cost || part.part?.unit_cost || 0));
+                                const vat = details.vat !== undefined ? details.vat : (costToCustomer * 0.2);
+                                const totalWithVat = details.totalWithVat !== undefined ? details.totalWithVat : (costToCustomer + vat);
+                                const inStock = details.inStock !== undefined ? details.inStock : ((part.part?.qty_in_stock || 0) > 0);
+                                const backOrder = details.backOrder || false;
+                                const warranty = details.warranty || false;
+
+                                return (
+                                  <div
+                                    key={partKey}
+                                    style={{
+                                      padding: "20px",
+                                      borderRadius: "12px",
+                                      background: "var(--surface)",
+                                      border: "1px solid var(--accent-purple-surface)",
+                                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                                    }}
+                                  >
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+                                      {/* Part Number */}
+                                      <div>
+                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                                          Part Number
+                                        </label>
+                                        <input
+                                          type="text"
+                                          value={partNumber}
+                                          readOnly
+                                          style={{
+                                            width: "100%",
+                                            padding: "10px",
+                                            borderRadius: "8px",
+                                            border: "1px solid var(--accent-purple-surface)",
+                                            background: "var(--info-surface)",
+                                            fontSize: "13px",
+                                            color: "var(--info-dark)",
+                                          }}
+                                        />
+                                      </div>
+
+                                      {/* Part Name */}
+                                      <div>
+                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                                          Part Name
+                                        </label>
+                                        <input
+                                          type="text"
+                                          value={partName}
+                                          readOnly
+                                          style={{
+                                            width: "100%",
+                                            padding: "10px",
+                                            borderRadius: "8px",
+                                            border: "1px solid var(--accent-purple-surface)",
+                                            background: "var(--info-surface)",
+                                            fontSize: "13px",
+                                            color: "var(--info-dark)",
+                                          }}
+                                        />
+                                      </div>
+
+                                      {/* Cost to Customer */}
+                                      <div>
+                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                                          Cost to Customer (ex VAT)
+                                        </label>
+                                        <input
+                                          type="text"
+                                          value={`£${costToCustomer.toFixed(2)}`}
+                                          readOnly
+                                          style={{
+                                            width: "100%",
+                                            padding: "10px",
+                                            borderRadius: "8px",
+                                            border: "1px solid var(--accent-purple-surface)",
+                                            background: "var(--info-surface)",
+                                            fontSize: "13px",
+                                            fontWeight: 600,
+                                            color: "var(--accent-purple)",
+                                          }}
+                                        />
+                                      </div>
+
+                                      {/* Cost to Company */}
+                                      <div>
+                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                                          Cost to Company
+                                        </label>
+                                        <input
+                                          type="text"
+                                          value={`£${costToCompany.toFixed(2)}`}
+                                          readOnly
+                                          style={{
+                                            width: "100%",
+                                            padding: "10px",
+                                            borderRadius: "8px",
+                                            border: "1px solid var(--accent-purple-surface)",
+                                            background: "var(--info-surface)",
+                                            fontSize: "13px",
+                                            color: "var(--info-dark)",
+                                          }}
+                                        />
+                                      </div>
+
+                                      {/* VAT (20%) */}
+                                      <div>
+                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                                          VAT (20%)
+                                        </label>
+                                        <input
+                                          type="text"
+                                          value={`£${vat.toFixed(2)}`}
+                                          readOnly
+                                          style={{
+                                            width: "100%",
+                                            padding: "10px",
+                                            borderRadius: "8px",
+                                            border: "1px solid var(--accent-purple-surface)",
+                                            background: "var(--info-surface)",
+                                            fontSize: "13px",
+                                            color: "var(--info-dark)",
+                                          }}
+                                        />
+                                      </div>
+
+                                      {/* Total with VAT */}
+                                      <div>
+                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                                          Total (inc VAT)
+                                        </label>
+                                        <input
+                                          type="text"
+                                          value={`£${totalWithVat.toFixed(2)}`}
+                                          readOnly
+                                          style={{
+                                            width: "100%",
+                                            padding: "10px",
+                                            borderRadius: "8px",
+                                            border: "1px solid var(--primary)",
+                                            background: "var(--accent-purple-surface)",
+                                            fontSize: "13px",
+                                            fontWeight: 700,
+                                            color: "var(--primary)",
+                                          }}
+                                        />
+                                      </div>
+
+                                      {/* In Stock Toggle */}
+                                      <div>
+                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                                          Stock Status
+                                        </label>
+                                        <label style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "8px",
+                                          padding: "10px",
+                                          cursor: "pointer",
+                                          userSelect: "none",
+                                        }}>
+                                          <input
+                                            type="checkbox"
+                                            checked={inStock}
+                                            onChange={(e) => handlePartDetailChange(partKey, "inStock", e.target.checked)}
+                                            style={{
+                                              width: "18px",
+                                              height: "18px",
+                                              cursor: "pointer",
+                                              accentColor: "var(--success)",
+                                            }}
+                                          />
+                                          <span style={{
+                                            fontSize: "13px",
+                                            fontWeight: 600,
+                                            color: inStock ? "var(--success)" : "var(--info-dark)",
+                                          }}>
+                                            {inStock ? "In Stock" : "Out of Stock"}
+                                          </span>
+                                        </label>
+                                      </div>
+
+                                      {/* Back Order Toggle */}
+                                      <div>
+                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                                          Order Status
+                                        </label>
+                                        <label style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "8px",
+                                          padding: "10px",
+                                          cursor: "pointer",
+                                          userSelect: "none",
+                                        }}>
+                                          <input
+                                            type="checkbox"
+                                            checked={backOrder}
+                                            onChange={(e) => handlePartDetailChange(partKey, "backOrder", e.target.checked)}
+                                            style={{
+                                              width: "18px",
+                                              height: "18px",
+                                              cursor: "pointer",
+                                              accentColor: "var(--warning)",
+                                            }}
+                                          />
+                                          <span style={{
+                                            fontSize: "13px",
+                                            fontWeight: 600,
+                                            color: backOrder ? "var(--warning)" : "var(--info-dark)",
+                                          }}>
+                                            {backOrder ? "On Back Order" : "Regular Order"}
+                                          </span>
+                                        </label>
+                                      </div>
+
+                                      {/* Warranty Checkbox */}
+                                      <div>
+                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                                          Warranty
+                                        </label>
+                                        <label style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "8px",
+                                          padding: "10px",
+                                          cursor: "pointer",
+                                          userSelect: "none",
+                                        }}>
+                                          <input
+                                            type="checkbox"
+                                            checked={warranty}
+                                            onChange={(e) => handlePartDetailChange(partKey, "warranty", e.target.checked)}
+                                            style={{
+                                              width: "18px",
+                                              height: "18px",
+                                              cursor: "pointer",
+                                              accentColor: "var(--primary)",
+                                            }}
+                                          />
+                                          <span style={{
+                                            fontSize: "13px",
+                                            fontWeight: 600,
+                                            color: warranty ? "var(--primary)" : "var(--info-dark)",
+                                          }}>
+                                            {warranty ? "Warranty Item" : "Standard Item"}
+                                          </span>
+                                        </label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 );
               })}
             </tbody>
@@ -2121,7 +2539,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
         </div>
       </div>
     );
-  }, [vhcItemsWithParts, partsNotRequired, warrantyItems, partsCostByVhcItem, handlePartsNotRequiredToggle, handleWarrantyToggle, handleVhcItemClick]);
+  }, [vhcItemsWithParts, partsNotRequired, warrantyItems, partsCostByVhcItem, handlePartsNotRequiredToggle, handleWarrantyToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handleAddPartButtonClick, handlePartDetailChange]);
 
   // Render parts panel with table
   const renderPartsPanel = useCallback((title, parts, emptyMessage) => {

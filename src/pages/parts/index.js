@@ -617,9 +617,15 @@ useEffect(() => {
       setDeliveryStorageLocation("");
       return;
     }
-    setDeliveryForm((prev) => ({ ...prev, partId: part.id || "" }));
-    const descriptor = [part.part_number, part.name].filter(Boolean).join(" · ");
-    setDeliveryPartSearch(descriptor);
+    setDeliveryForm((prev) => ({
+      ...prev,
+      partId: part.id || "",
+      supplier: part.supplier || "",
+      unitCost: part.unit_cost || "",
+      quantityOrdered: prev.quantityReceived || 1
+    }));
+    // Show only part number in search field
+    setDeliveryPartSearch(part.part_number || "");
     const normalisedLocation = normaliseLocationInput(part.storage_location || "");
     if (normalisedLocation) {
       setDeliveryStorageLocation(normalisedLocation);

@@ -296,16 +296,9 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
         return;
       }
 
-      // Notify parent component
+      // Notify parent component - this will refresh the job data without a page reload
       if (onPartSelected) {
         onPartSelected(result.jobPart);
-      }
-
-      // If we created a new vhc_checks record, reload the page to sync VHC item IDs
-      // This ensures the frontend VHC items use the database IDs instead of string IDs
-      if (!parseVhcItemId(vhcItemData.vhcId) && validVhcItemId) {
-        console.log("Reloading page to sync VHC item IDs after creating vhc_checks record");
-        setTimeout(() => window.location.reload(), 500);
       }
 
       setSearchFeedback({

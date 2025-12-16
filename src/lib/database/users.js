@@ -82,7 +82,9 @@ export const getUsersGroupedByRole = async () => { // Fetch all users and bucket
     .from(USERS_TABLE) // Target the users table.
     .select(USER_COLUMNS) // Fetch canonical columns.
     .order("role", { ascending: true }) // Order by role for consistent grouping.
-    .order("first_name", { ascending: true }); // Order within each role alphabetically.
+    .order("first_name", { ascending: true }) // Order within each role alphabetically.
+    .order("last_name", { ascending: true }) // Add secondary name sort for users with same first name.
+    .order("user_id", { ascending: true }); // Add stable sort by ID to prevent role switching for users with identical names.
   if (error) { // Handle query issues.
     throw new Error(`Failed to fetch users grouped by role: ${error.message}`); // Provide descriptive diagnostics.
   } // Close guard.

@@ -1,12 +1,4 @@
 
-when there are users inside the table with the same first name, something somewhere switches one of those users with the same first same with the role of th eother users with the first name so example there are now two Scotts with in the Parts Manager role when one scott as Scott (first name) W (last name) and Scott (first name) Parts (Last name)
-
-
-When i click of the searched by part number, have it so the data fills out the supplier, order reference, Part search only adds the Part number, not the name as well, Qty Ordered (same as the "Qty Received") and Unit Cost
-
-
-Have it so the page doesnt refresh when adding adding a part to the VHC item inside the "Add Parts to VHC Item" popup. have it so it just fills the column "Linked Parts" and "vParts Cost" with in the "Parts Identified" tab 
-
 
 Document tab inside the job-cards/[jobnumber] page needs to link to the upload documents popup in the create page so it loads the attachments into that section. This section needs to be simplified to only show the documents which we uploaded to the database and shown in the list view. 
 
@@ -83,4 +75,14 @@ Add a button which says update ”Add to job” (or along those lines) at the en
 example the search for part number auto adds the part number and name into the search when the row is clicked, example i searched FPAD1 which came up with the row but when clicked it auto fills the part number search bar with "FPAD1 · Front brake pads" insead of auto fillin gthe Supplier, orderr reference, Qty Ordered, Qty Received (auto put as the "Qty Ordered" but can be changed to 0 or higher if needed), Unit Cost from the last time that part was logged, keep a record of all of the logs inside the database Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first.
 
 Remove the "Bulk Import" tab in "the Add Parts to VHC Item" popup. Make it so when adding the "selected part" the quantity can be 1 or 2 or however many, atm it doesnt remove the first number as 1 from the quantiy to if i want 5 it enters 15. it comes up with "Error adding part. Please try again." can we make this more of a direct error so we can fix it. Remove labour hours from the selected aprt section and move the selected part section to under neath the "VHC ITEM DETAILS" section. 
+
+
+when there are users inside the table with the same first name, something somewhere switches one of those users with the same first same with the role of th eother users with the first name so example there are now two Scotts with in the Parts Manager role when one scott as Scott (first name) W (last name) and Scott (first name) Parts (Last name)
+
+
+When i click of the searched by part number, have it so the data fills out the supplier, order reference, Part search only adds the Part number, not the name as well, Qty Ordered (same as the "Qty Received") and Unit Cost
+
+
+Have it so the page doesnt refresh when adding adding a part to the VHC item inside the "Add Parts to VHC Item" popup. have it so it just fills the column "Linked Parts" and "vParts Cost" with in the "Parts Identified" tab 
+
 

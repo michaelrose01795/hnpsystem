@@ -51,9 +51,12 @@ export default function AdminUserManagement() {
             displayName: member.name || member.email || `User ${member.id}`,
             departments: member.departments || [],
           }))
-          .sort((a, b) =>
-            (a.displayName || "").localeCompare(b.displayName || "")
-          ),
+          .sort((a, b) => {
+            const nameCompare = (a.displayName || "").localeCompare(b.displayName || "");
+            if (nameCompare !== 0) return nameCompare;
+            // Add stable secondary sort by id to prevent users with same name from switching
+            return (a.id || 0) - (b.id || 0);
+          }),
       }))
       .sort((a, b) => a.role.localeCompare(b.role));
   }, [usersByRoleDetailed]);
