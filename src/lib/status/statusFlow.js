@@ -6,10 +6,21 @@ export const SERVICE_STATUS_FLOW = {
     id: 'booked',
     label: 'Appointment Booked',
     color: 'var(--info)', // blue
-    next: ['customer_arrived'],
+    next: ['customer_checkin_pending', 'customer_arrived'],
     department: 'Service Reception',
     canClockOn: false,
     pausesTime: true
+  },
+
+  CUSTOMER_CHECKIN_PENDING: {
+    id: 'customer_checkin_pending',
+    label: 'Customer Check-in Pending',
+    color: 'var(--accent-orange)',
+    next: ['customer_arrived'],
+    department: 'Service Reception',
+    canClockOn: false,
+    pausesTime: true,
+    requiresAction: 'Collect keys and check in customer'
   },
   
   CUSTOMER_ARRIVED: {
@@ -35,7 +46,7 @@ export const SERVICE_STATUS_FLOW = {
   // Stage 2: Assignment & Start
   ASSIGNED_TO_TECH: {
     id: 'assigned_to_tech',
-    label: 'Assigned to Technician',
+    label: 'Waiting to be Started',
     color: 'var(--warning)', // amber
     next: ['in_progress'],
     department: 'Workshop',
@@ -46,13 +57,32 @@ export const SERVICE_STATUS_FLOW = {
 
   IN_PROGRESS: {
     id: 'in_progress',
-    label: 'Work In Progress',
+    label: 'In Workshop',
     color: 'var(--info)', // green
-    next: ['waiting_for_parts', 'tea_break', 'vhc_in_progress', 'work_complete'],
+    next: [
+      'waiting_for_parts',
+      'tea_break',
+      'vhc_waiting',
+      'vhc_in_progress',
+      'in_mot',
+      'work_complete'
+    ],
     department: 'Workshop',
     canClockOn: true,
     pausesTime: false, // Time actively running
     autoSetOnClockOn: true
+  },
+
+  IN_MOT: {
+    id: 'in_mot',
+    label: 'In MOT Bay',
+    color: 'var(--warning)',
+    next: ['work_complete', 'waiting_for_parts', 'in_progress'],
+    department: 'MOT',
+    canClockOn: true,
+    pausesTime: false,
+    autoSetOnClockOn: true,
+    requiresAction: 'MOT tester must finish inspection'
   },
 
   // Stage 3: Paused States
@@ -90,25 +120,58 @@ export const SERVICE_STATUS_FLOW = {
   },
 
   // Stage 4: VHC Process
+  VHC_WAITING: {
+    id: 'vhc_waiting',
+    label: 'VHC Waiting',
+    color: 'var(--warning)',
+    next: ['vhc_in_progress'],
+    department: 'Workshop',
+    canClockOn: true,
+    pausesTime: true,
+    requiresAction: 'Technician must open the VHC tab'
+  },
+
   VHC_IN_PROGRESS: {
     id: 'vhc_in_progress',
     label: 'VHC Being Completed',
     color: 'var(--accent-purple)', // purple
-    next: ['vhc_sent_to_service'],
+    next: ['vhc_complete'],
     department: 'Workshop',
     canClockOn: true,
     pausesTime: false
+  },
+
+  VHC_COMPLETE: {
+    id: 'vhc_complete',
+    label: 'VHC Complete',
+    color: 'var(--success)',
+    next: ['vhc_sent_to_service'],
+    department: 'Workshop',
+    canClockOn: false,
+    pausesTime: true,
+    requiresAction: 'Send to service for pricing'
   },
 
   VHC_SENT_TO_SERVICE: {
     id: 'vhc_sent_to_service',
     label: 'VHC With Service Team',
     color: 'var(--warning)', // amber
-    next: ['vhc_priced', 'in_progress'],
+    next: ['waiting_for_pricing', 'vhc_priced', 'in_progress'],
     department: 'Service',
     canClockOn: true,
     pausesTime: true,
     notifyDepartment: 'Service'
+  },
+
+  WAITING_FOR_PRICING: {
+    id: 'waiting_for_pricing',
+    label: 'Waiting for Parts/Labour Pricing',
+    color: 'var(--danger)',
+    next: ['vhc_priced'],
+    department: 'Service',
+    canClockOn: false,
+    pausesTime: true,
+    requiresAction: 'Add labour time and parts values'
   },
 
   VHC_PRICED: {
@@ -123,7 +186,7 @@ export const SERVICE_STATUS_FLOW = {
 
   VHC_SENT_TO_CUSTOMER: {
     id: 'vhc_sent_to_customer',
-    label: 'Awaiting Customer Approval',
+    label: 'Waiting Authorisation',
     color: 'var(--warning)', // amber
     next: ['vhc_approved', 'vhc_declined', 'in_progress'],
     department: 'Service',
@@ -179,12 +242,13 @@ export const SERVICE_STATUS_FLOW = {
 
   BEING_VALETED: {
     id: 'being_valeted',
-    label: 'Being Valeted',
+    label: 'In Valet',
     color: 'var(--accent-purple)', // purple
     next: ['valet_complete'],
     department: 'Valeting',
     canClockOn: true,
-    pausesTime: false
+    pausesTime: false,
+    autoSetOnClockOn: true
   },
 
   VALET_COMPLETE: {
@@ -202,7 +266,7 @@ export const SERVICE_STATUS_FLOW = {
     id: 'ready_for_release',
     label: 'Ready for Customer',
     color: 'var(--info)', // green
-    next: ['delivered_to_customer', 'invoicing'],
+    next: ['released', 'delivered_to_customer', 'invoicing'],
     department: 'Service',
     canClockOn: false,
     pausesTime: true,
@@ -213,7 +277,7 @@ export const SERVICE_STATUS_FLOW = {
     id: 'delivered_to_customer',
     label: 'Delivered to Customer',
     color: 'var(--info-dark)', // teal
-    next: ['invoicing'],
+    next: ['released', 'invoicing'],
     department: 'Service',
     canClockOn: false,
     pausesTime: true,
@@ -224,10 +288,31 @@ export const SERVICE_STATUS_FLOW = {
     id: 'invoicing',
     label: 'Creating Invoice',
     color: 'var(--warning)', // amber
-    next: ['completed'],
+    next: ['invoiced'],
     department: 'Accounts',
     canClockOn: false,
     pausesTime: true
+  },
+
+  INVOICED: {
+    id: 'invoiced',
+    label: 'Invoice Complete',
+    color: 'var(--info)',
+    next: ['ready_for_release', 'released'],
+    department: 'Accounts',
+    canClockOn: false,
+    pausesTime: true
+  },
+
+  RELEASED: {
+    id: 'released',
+    label: 'Released',
+    color: 'var(--success)',
+    next: ['completed'],
+    department: 'Service',
+    canClockOn: false,
+    pausesTime: true,
+    requiresAction: 'Archive job card'
   },
 
   COMPLETED: {

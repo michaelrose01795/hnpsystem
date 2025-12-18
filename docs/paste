@@ -1,12 +1,3 @@
-Document tab inside the job-cards/[jobnumber] page needs to link to the upload documents popup in the create page so it loads the attachments into that section. This section needs to be simplified to only show the documents which we uploaded to the database and shown in the list view.
-
-
-The invoice tab can only be complete once the VHC is marked as complete, the write up is marked as complete, every part which is booked to the job number has been allocated to a request or additional request. 
-
-
-When adding a "Add new consumable" add these consuamblke to the "Consumable stock" list as well. 
-
-
 Find what has a status like in progress complete waiting to be started and make find what all of the status under that section has and what they don’t have 
 
 
@@ -28,6 +19,8 @@ add a search bar inside the "Employee Directory" with in the "hr/manager" page. 
 Make sure the sidebar logo changes from dark to light when switching between dark mode and light mode.
 
 Remove all of the .md files and migration files. 
+
+NOTE:
 
 
 LOOK INTO TRACKING PAGE + ADD WRITE UP PAGE IN JOBCARD FOR WORKSHOP MANAGER
@@ -87,3 +80,10 @@ When i click of the searched by part number, have it so the data fills out the s
 Have it so the page doesnt refresh when adding adding a part to the VHC item inside the "Add Parts to VHC Item" popup. have it so it just fills the column "Linked Parts" and "vParts Cost" with in the "Parts Identified" tab 
 
 
+Document tab inside the job-cards/[jobnumber] page needs to link to the upload documents popup in the create page so it loads the attachments into that section. This section needs to be simplified to only show the documents which we uploaded to the database and shown in the list view.
+
+
+The invoice tab can only be complete once the VHC is marked as complete, the write up is marked as complete, every part which is booked to the job number has been allocated to a request or additional request. 
+
+
+When adding a "Add new consumable" add these consuamblke to the "Consumable stock" list as well. 

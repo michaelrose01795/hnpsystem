@@ -19,17 +19,37 @@ export default async function handler(req, res) {
   const numericUnitCost = Number(unitCost) || 0;
 
   try {
-    const { error } = await supabase.from("workshop_consumables").insert({
-      item_name: trimmedName,
-      supplier: (supplier || "").trim() || null,
-      unit_cost: numericUnitCost,
-      updated_at: new Date().toISOString(),
-      created_at: new Date().toISOString(),
+    const timestamp = new Date().toISOString();
+    const { data: workshopConsumable, error: workshopError } = await supabase
+      .from("workshop_consumables")
+      .insert({
+        item_name: trimmedName,
+        supplier: (supplier || "").trim() || null,
+        unit_cost: numericUnitCost,
+        updated_at: timestamp,
+        created_at: timestamp,
+      })
+      .select("id")
+      .single();
+
+    if (workshopError) {
+      console.error("❌ Failed to insert workshop consumable", workshopError);
+      throw workshopError;
+    }
+
+    const { error: stockError } = await supabase.from("consumables").insert({
+      id: workshopConsumable.id,
+      name: trimmedName,
+      location: null,
+      location_id: null,
+      temporary: false,
+      created_at: timestamp,
     });
 
-    if (error) {
-      console.error("❌ Failed to insert consumable", error);
-      throw error;
+    if (stockError) {
+      console.error("❌ Failed to mirror consumable into stock list", stockError);
+      await supabase.from("workshop_consumables").delete().eq("id", workshopConsumable.id);
+      throw stockError;
     }
 
     return res.status(201).json({
