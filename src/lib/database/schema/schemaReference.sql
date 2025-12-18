@@ -600,9 +600,11 @@ CREATE TABLE public.job_notes (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   hidden_from_customer boolean DEFAULT true,
+  last_updated_by integer,
   CONSTRAINT job_notes_pkey PRIMARY KEY (note_id),
   CONSTRAINT job_notes_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
-  CONSTRAINT job_notes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+  CONSTRAINT job_notes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
+  CONSTRAINT job_notes_last_updated_by_fkey FOREIGN KEY (last_updated_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.job_progress (
   progress_id integer NOT NULL DEFAULT nextval('job_progress_progress_id_seq'::regclass),

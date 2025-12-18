@@ -885,6 +885,26 @@ export default function TechJobDetailPage() {
     return mandatoryComplete;
   }, [sectionStatus]);
 
+  const jobNumberForStatusFlow =
+    jobNumber ||
+    jobData?.jobCard?.jobNumber ||
+    jobData?.job?.jobNumber ||
+    null;
+
+  const handleCompleteVhcClick = useCallback(() => {
+    if (!canCompleteVhc || !jobNumberForStatusFlow) return;
+    if (typeof window === "undefined") return;
+
+    window.dispatchEvent(
+      new CustomEvent("openStatusFlow", {
+        detail: {
+          jobNumber: String(jobNumberForStatusFlow),
+          source: "vhcComplete",
+        },
+      })
+    );
+  }, [canCompleteVhc, jobNumberForStatusFlow]);
+
   // ✅ NOW all useEffects come AFTER all callbacks are defined
 
   // Effect: Load VHC data when vhcChecks changes
@@ -1868,6 +1888,31 @@ export default function TechJobDetailPage() {
                       Last saved: {formatDateTime(lastSavedAt)}
                     </span>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={handleCompleteVhcClick}
+                    disabled={!canCompleteVhc}
+                    style={{
+                      padding: "10px 18px",
+                      borderRadius: "999px",
+                      border: "1px solid var(--accent-purple)",
+                      backgroundColor: canCompleteVhc ? "var(--accent-purple)" : "transparent",
+                      color: canCompleteVhc ? "var(--surface)" : "var(--accent-purple)",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                      cursor: canCompleteVhc ? "pointer" : "not-allowed",
+                      opacity: canCompleteVhc ? 1 : 0.5,
+                      transition: "all 0.2s ease",
+                    }}
+                    title={
+                      canCompleteVhc
+                        ? "Open the status flow to mark this Vehicle Health Check as complete"
+                        : "Complete all mandatory sections to finish the VHC"
+                    }
+                  >
+                    ✓ Complete VHC
+                  </button>
 
                   {/* Camera Button - Always visible for technicians */}
                   {jobNumber && (

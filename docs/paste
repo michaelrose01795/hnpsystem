@@ -1,6 +1,3 @@
-Find what has a status like in progress complete waiting to be started and make find what all of the status under that section has and what they don’t have 
-
-
 Fix "Could not find a relationship between 'job_notes' and 'last_updated_by' in the schema cache" search the "-- file location: src/lib/database/schema/schemaReference.sql" for the database tables and add to "-- file location: src/lib/database/schema/addtable.sql"
 
 
@@ -87,3 +84,8 @@ The invoice tab can only be complete once the VHC is marked as complete, the wri
 
 
 When adding a "Add new consumable" add these consuamblke to the "Consumable stock" list as well. 
+
+
+Find what has a status like in progress complete waiting to be started and make find what all of the status under that section has and what they don’t have 
+
+

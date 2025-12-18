@@ -209,6 +209,29 @@ export default function Layout({ children, jobNumber }) {
   }, [isTablet]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleOpenStatusFlow = (event) => {
+      if (!canViewStatusSidebar) return;
+
+      const incomingId = event?.detail?.jobNumber
+        ? String(event.detail.jobNumber)
+        : null;
+      const currentActiveId = activeJobId ? String(activeJobId) : null;
+
+      if (incomingId && incomingId !== currentActiveId) {
+        setSearchedJobId(incomingId);
+        setIsAutoJobCleared(false);
+      }
+
+      setIsStatusSidebarOpen(true);
+    };
+
+    window.addEventListener("openStatusFlow", handleOpenStatusFlow);
+    return () => window.removeEventListener("openStatusFlow", handleOpenStatusFlow);
+  }, [canViewStatusSidebar, activeJobId]);
+
+  useEffect(() => {
     if (typeof window === "undefined" || !isTablet || !isSidebarOpen) return;
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
