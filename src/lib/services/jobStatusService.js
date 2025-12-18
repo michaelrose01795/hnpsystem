@@ -13,8 +13,9 @@ const STATUS_FLOW = {
   "Booked": ["Checked In", "Cancelled"], // From Booked, can go to Checked In or Cancelled
   "Checked In": ["Workshop/MOT", "Cancelled"], // From Checked In, can go to Workshop/MOT or Cancelled
   "Workshop/MOT": ["VHC Complete", "Being Washed", "Complete"], // From Workshop/MOT, can go to VHC Complete, Being Washed, or Complete
-  "VHC Complete": ["VHC Sent", "Being Washed"], // From VHC Complete, can go to VHC Sent or Being Washed
-  "VHC Sent": ["Additional Work Required", "Being Washed", "Complete"], // From VHC Sent, can go to Additional Work Required, Being Washed, or Complete
+  "VHC Complete": ["VHC Sent", "Being Washed", "VHC Reopened"], // From VHC Complete, can go to VHC Sent, Being Washed, or be reopened
+  "VHC Reopened": ["VHC Complete"], // From VHC Reopened, must go back to VHC Complete
+  "VHC Sent": ["Additional Work Required", "Being Washed", "Complete", "VHC Reopened"], // From VHC Sent, can go to Additional Work Required, Being Washed, Complete, or be reopened
   "Additional Work Required": ["Additional Work Being Carried Out"], // From Additional Work Required, can go to Additional Work Being Carried Out
   "Additional Work Being Carried Out": ["Being Washed", "Complete"], // From Additional Work Being Carried Out, can go to Being Washed or Complete
   "Being Washed": ["Complete"], // From Being Washed, can only go to Complete

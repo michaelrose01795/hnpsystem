@@ -45,6 +45,16 @@ const SECTION_TITLES = {
 const MANDATORY_SECTION_KEYS = ["wheelsTyres", "brakesHubs", "serviceIndicator"];
 const trackedSectionKeys = new Set(MANDATORY_SECTION_KEYS);
 
+const VHC_REOPENED_STATUS = "VHC Reopened";
+const VHC_REOPEN_ELIGIBLE_STATUSES = ["VHC Complete", "VHC Sent"];
+const VHC_COMPLETED_STATUSES = [
+  "VHC Complete",
+  "VHC Sent",
+  "VHC Approved",
+  "VHC Declined",
+  "Tech Complete",
+];
+
 const createDefaultSectionStatus = () =>
   MANDATORY_SECTION_KEYS.reduce((acc, key) => {
     acc[key] = "pending";
@@ -237,6 +247,12 @@ export default function TechJobDetailPage() {
   const [showGreenItems, setShowGreenItems] = useState(false);
 
   const jobCardId = jobData?.jobCard?.id ?? null;
+  const jobCardStatus = jobData?.jobCard?.status || "";
+  const jobNumberForStatusFlow =
+    jobNumber ||
+    jobData?.jobCard?.jobNumber ||
+    jobData?.job?.jobNumber ||
+    null;
   const jobCardNumber = jobData?.jobCard?.jobNumber ?? jobNumber;
   const username = user?.username?.trim();
 
@@ -885,25 +901,49 @@ export default function TechJobDetailPage() {
     return mandatoryComplete;
   }, [sectionStatus]);
 
-  const jobNumberForStatusFlow =
-    jobNumber ||
-    jobData?.jobCard?.jobNumber ||
-    jobData?.job?.jobNumber ||
-    null;
+  const showVhcReopenButton = VHC_REOPEN_ELIGIBLE_STATUSES.includes(jobCardStatus);
 
-  const handleCompleteVhcClick = useCallback(() => {
-    if (!canCompleteVhc || !jobNumberForStatusFlow) return;
-    if (typeof window === "undefined") return;
+  const handleCompleteVhcClick = useCallback(async () => {
+    if (!jobCardId) return;
+    if (!showVhcReopenButton && !canCompleteVhc) return;
 
-    window.dispatchEvent(
-      new CustomEvent("openStatusFlow", {
-        detail: {
-          jobNumber: String(jobNumberForStatusFlow),
-          source: "vhcComplete",
-        },
-      })
-    );
-  }, [canCompleteVhc, jobNumberForStatusFlow]);
+    const targetStatus = showVhcReopenButton ? VHC_REOPENED_STATUS : "VHC Complete";
+
+    try {
+      const updated = await syncJobStatus(targetStatus, jobCardStatus);
+      if (updated) {
+        if (targetStatus === "VHC Complete") {
+          setIsReopenMode(true);
+          setActiveTab("overview");
+        } else {
+          setIsReopenMode(false);
+        }
+
+        if (jobNumberForStatusFlow) {
+          window.dispatchEvent(
+            new CustomEvent("statusFlowRefresh", {
+              detail: {
+                jobNumber: String(jobNumberForStatusFlow),
+                status: targetStatus,
+              },
+            })
+          );
+        }
+      } else {
+        console.warn("⚠️ Failed to update VHC status");
+      }
+    } catch (error) {
+      console.error("❌ Error updating VHC status:", error);
+    }
+  }, [
+    jobCardId,
+    showVhcReopenButton,
+    canCompleteVhc,
+    syncJobStatus,
+    jobCardStatus,
+    setActiveTab,
+    jobNumberForStatusFlow,
+  ]);
 
   // ✅ NOW all useEffects come AFTER all callbacks are defined
 
@@ -957,7 +997,7 @@ export default function TechJobDetailPage() {
 
       // Detect reopen mode
       const jobStatus = jobData?.jobCard?.status || "";
-      setIsReopenMode(["VHC Complete", "VHC Sent"].includes(jobStatus));
+      setIsReopenMode(VHC_REOPEN_ELIGIBLE_STATUSES.includes(jobStatus));
     } else {
       console.log("⚠️ No VHC checksheet section found");
       setSectionStatus(createDefaultSectionStatus());
@@ -1081,11 +1121,10 @@ export default function TechJobDetailPage() {
 
   // Helper: Get dynamic VHC button text based on job status
   const getVhcButtonText = () => {
-    const jobCardStatus = jobData?.jobCard?.status;
     if (!jobData?.jobCard?.vhcRequired) return "VHC Not Required";
 
     // Reopen mode - VHC is complete or sent
-    if (["VHC Complete", "VHC Sent"].includes(jobCardStatus)) {
+    if (VHC_REOPEN_ELIGIBLE_STATUSES.includes(jobCardStatus)) {
       return "🔄 Reopen VHC";
     }
 
@@ -1100,10 +1139,9 @@ export default function TechJobDetailPage() {
 
   // Helper: Get VHC button color based on state
   const getVhcButtonColor = () => {
-    const jobCardStatus = jobData?.jobCard?.status;
     if (!jobData?.jobCard?.vhcRequired) return "var(--surface-light)";
 
-    if (["VHC Complete", "VHC Sent"].includes(jobCardStatus)) {
+    if (VHC_REOPEN_ELIGIBLE_STATUSES.includes(jobCardStatus)) {
       return "var(--warning)"; // Orange for reopen
     }
 
@@ -1116,10 +1154,9 @@ export default function TechJobDetailPage() {
 
   // Helper: Get VHC status message
   const getVhcStatusMessage = () => {
-    const jobCardStatus = jobData?.jobCard?.status;
     if (!jobData?.jobCard?.vhcRequired) return "";
 
-    if (["VHC Complete", "VHC Sent"].includes(jobCardStatus)) {
+    if (VHC_REOPEN_ELIGIBLE_STATUSES.includes(jobCardStatus)) {
       return "VHC completed. Click 'Reopen VHC' to view or make changes.";
     }
 
@@ -1392,7 +1429,7 @@ export default function TechJobDetailPage() {
   // Access check - only technicians can view this page
   if (!isTech) {
     return (
-      <Layout>
+      <Layout jobNumber={jobNumber}>
         <div style={{ padding: "40px", textAlign: "center" }}>
           <h2 style={{ color: "var(--primary)" }}>Access Denied</h2>
           <p>This page is only for Technicians.</p>
@@ -1404,7 +1441,7 @@ export default function TechJobDetailPage() {
   // Loading state with spinner animation
   if (loading) {
     return (
-      <Layout>
+      <Layout jobNumber={jobNumber}>
         <div style={{ 
           display: "flex", 
           alignItems: "center", 
@@ -1436,7 +1473,7 @@ export default function TechJobDetailPage() {
   // Handle case where job is not found
   if (!jobData?.jobCard) {
     return (
-      <Layout>
+      <Layout jobNumber={jobNumber}>
         <div style={{ padding: "40px", textAlign: "center" }}>
           <h2 style={{ color: "var(--primary)" }}>Job Not Found</h2>
           <button
@@ -1461,7 +1498,7 @@ export default function TechJobDetailPage() {
   // Extract job data
   const { jobCard, customer, vehicle } = jobData;
   const jobRequiresVhc = jobCard?.vhcRequired === true;
-  const jobCardStatus = jobCard?.status || "Unknown";
+  const jobStatusDisplay = jobCardStatus || "Unknown";
   const jobStatusColor = STATUS_COLORS[jobCardStatus] || "var(--info)";
   const partsCount = jobCard.partsRequests?.length || 0;
   const clockedHours = clockingStatus?.clock_in
@@ -1472,7 +1509,7 @@ export default function TechJobDetailPage() {
   const quickStats = [
     {
       label: "Status",
-      value: jobCardStatus,
+      value: jobStatusDisplay,
       accent: jobStatusColor,
       pill: true,
     },
@@ -1541,10 +1578,7 @@ export default function TechJobDetailPage() {
     rectificationsComplete;
 
   const isVhcComplete =
-    !jobRequiresVhc ||
-    ["VHC Complete", "VHC Sent", "VHC Approved", "VHC Declined", "Tech Complete"].includes(
-      jobCardStatus
-    );
+    !jobRequiresVhc || VHC_COMPLETED_STATUSES.includes(jobCardStatus);
 
   const canCompleteJob = writeUpComplete && isVhcComplete;
 
@@ -1555,14 +1589,14 @@ export default function TechJobDetailPage() {
 
   if (rosterLoading) {
     return (
-      <Layout>
+      <Layout jobNumber={jobNumber}>
         <div style={{ padding: "24px", color: "var(--info)" }}>Loading roster…</div>
       </Layout>
     );
   }
 
   return (
-    <Layout>
+    <Layout jobNumber={jobNumber}>
       <div
         style={{
           height: "100%",
@@ -1892,26 +1926,45 @@ export default function TechJobDetailPage() {
                   <button
                     type="button"
                     onClick={handleCompleteVhcClick}
-                    disabled={!canCompleteVhc}
+                    disabled={!showVhcReopenButton && !canCompleteVhc}
                     style={{
                       padding: "10px 18px",
                       borderRadius: "999px",
                       border: "1px solid var(--accent-purple)",
-                      backgroundColor: canCompleteVhc ? "var(--accent-purple)" : "transparent",
-                      color: canCompleteVhc ? "var(--surface)" : "var(--accent-purple)",
+                      backgroundColor:
+                        showVhcReopenButton || !canCompleteVhc
+                          ? "transparent"
+                          : "var(--accent-purple)",
+                      color: showVhcReopenButton
+                        ? "var(--accent-purple)"
+                        : canCompleteVhc
+                        ? "var(--surface)"
+                        : "var(--accent-purple)",
                       fontWeight: 600,
                       fontSize: "13px",
-                      cursor: canCompleteVhc ? "pointer" : "not-allowed",
-                      opacity: canCompleteVhc ? 1 : 0.5,
+                      cursor:
+                        showVhcReopenButton || canCompleteVhc ? "pointer" : "not-allowed",
+                      opacity: showVhcReopenButton || canCompleteVhc ? 1 : 0.5,
                       transition: "all 0.2s ease",
                     }}
+                    onMouseEnter={(e) => {
+                      if (!showVhcReopenButton && !canCompleteVhc) return;
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 6px 16px rgba(var(--info-rgb),0.4)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(var(--info-rgb),0.3)";
+                    }}
                     title={
-                      canCompleteVhc
-                        ? "Open the status flow to mark this Vehicle Health Check as complete"
+                      showVhcReopenButton
+                        ? "Reopen the Vehicle Health Check to make additional changes"
+                        : canCompleteVhc
+                        ? "Mark the Vehicle Health Check as complete"
                         : "Complete all mandatory sections to finish the VHC"
                     }
                   >
-                    ✓ Complete VHC
+                    {showVhcReopenButton ? "Reopen" : "✓ Complete VHC"}
                   </button>
 
                   {/* Camera Button - Always visible for technicians */}

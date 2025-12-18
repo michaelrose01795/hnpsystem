@@ -63,7 +63,7 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
           color: COLORS.textDark,
         }}
       >
-        Timeline Overview
+        Timeline
       </h3>
 
       {/* Scrollable area so long timelines remain accessible */}
@@ -82,23 +82,42 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
           const lowerStatus =
             item?.status?.toLowerCase?.() || item?.label?.toLowerCase?.() || "";
           const displayLabel = item?.label || item?.status || "Status";
+          const isEvent = item?.kind === "event";
           const isCurrent = normalizedCurrent
             ? lowerStatus === normalizedCurrent
             : index === orderedStatuses.length - 1;
           const isComplete = currentIndex > -1 && index < currentIndex;
-          const nodeColor = isCurrent
+          const fallbackColor = isEvent
+            ? "var(--accent-orange)"
+            : COLORS.base;
+          const resolvedColor = item?.color || fallbackColor;
+          const nodeColor = isEvent
+            ? resolvedColor
+            : isCurrent
             ? COLORS.current
             : isComplete
             ? COLORS.complete
-            : COLORS.base;
+            : resolvedColor;
           const connectorColor = COLORS.connector;
           const performer =
             item?.user ||
             item?.userName ||
             item?.performedBy ||
-            item?.userId ||
+            item?.meta?.userName ||
+            (item?.userId ? `User #${item.userId}` : null) ||
             "System";
-          const secondaryLine = item?.description || item?.notes || item?.department;
+          const secondaryLine =
+            item?.description ||
+            item?.notes ||
+            item?.department ||
+            item?.meta?.location ||
+            null;
+          const badgeLabel = isEvent
+            ? (item?.eventType || "Action").replace(/_/g, " ")
+            : item?.department || "Status";
+          const showTopConnector = index > 0;
+          const showBottomConnector =
+            index < orderedStatuses.length - 1 && index > 0;
 
           return (
             <div
@@ -110,6 +129,19 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
               }}
             >
               {/* Dot + connector */}
+              {showTopConnector && (
+                <span
+                  style={{
+                    position: "absolute",
+                    left: "24px",
+                    top: "-calc(50% + 12px)",
+                    width: "2px",
+                    height: "calc(50% + 12px)",
+                    backgroundColor: connectorColor,
+                    zIndex: 1,
+                  }}
+                />
+              )}
               <span
                 style={{
                   position: "absolute",
@@ -127,7 +159,7 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                   zIndex: 2,
                 }}
               />
-              {index < orderedStatuses.length - 1 && (
+              {showBottomConnector && (
                 <span
                   style={{
                     position: "absolute",
@@ -178,9 +210,27 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "12px",
+                      alignItems: "center",
                     }}
                   >
                     {displayLabel}
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        backgroundColor: "var(--surface-light)",
+                        borderRadius: "999px",
+                        padding: "2px 8px",
+                        color: isEvent ? "var(--accent-orange)" : "var(--grey-accent)",
+                        border: "1px solid rgba(var(--grey-accent-rgb),0.3)",
+                      }}
+                    >
+                      {badgeLabel}
+                    </span>
                   </div>
                   <div
                     style={{

@@ -15,6 +15,7 @@ const TODAY_STATUSES = [
   "Checked In",
   "Workshop/MOT",
   "VHC Complete",
+  "VHC Reopened",
   "VHC Sent",
   "Additional Work Required",
   "Additional Work Being Carried Out",

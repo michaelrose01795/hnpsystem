@@ -33,6 +33,15 @@ const normalizeStatusId = (status) => {
     .replace(/[^a-z0-9]+/g, "_"); // Convert textual statuses to snake_case identifiers
 };
 
+const ensureIsoString = (value, fallback = null) => {
+  if (!value) return fallback || new Date().toISOString();
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return fallback || new Date().toISOString();
+  }
+  return parsed.toISOString();
+};
+
 const buildStatusPayload = (statusText) => {
   const normalizedId = normalizeStatusId(statusText); // Derive snake_case identifier from stored text
   if (!normalizedId) {
@@ -75,6 +84,177 @@ const attachDurations = (entries, nowIso) => {
       duration: durationSeconds,
     }; // Merge duration into entry payload
   });
+};
+
+const fetchJobActionEvents = async (jobId) => {
+  if (!jobId) return [];
+
+  const keyEventsPromise = dbClient
+    .from("key_tracking_events")
+    .select(
+      "key_event_id, action, notes, performed_by, occurred_at, user:performed_by (name, first_name, last_name)"
+    )
+    .eq("job_id", jobId)
+    .order("occurred_at", { ascending: true });
+
+  const vehicleEventsPromise = dbClient
+    .from("vehicle_tracking_events")
+    .select(
+      "event_id, status, location, notes, created_by, occurred_at, user:created_by (name, first_name, last_name)"
+    )
+    .eq("job_id", jobId)
+    .order("occurred_at", { ascending: true });
+
+  const clockingPromise = dbClient
+    .from("job_clocking")
+    .select(
+      "id, user_id, clock_in, work_type, user:user_id (name, first_name, last_name)"
+    )
+    .eq("job_id", jobId)
+    .order("clock_in", { ascending: true });
+
+  const partsPromise = dbClient
+    .from("parts_requests")
+    .select(
+      "request_id, status, description, pre_pick_location, created_at, updated_at, requester:requested_by (name, first_name, last_name)"
+    )
+    .eq("job_id", jobId)
+    .order("updated_at", { ascending: true });
+
+  const [keyRes, vehicleRes, clockingRes, partsRes] = await Promise.all([
+    keyEventsPromise,
+    vehicleEventsPromise,
+    clockingPromise,
+    partsPromise,
+  ]);
+
+  const actionEntries = [];
+  const getUserName = (user) => {
+    if (!user) return null;
+    if (user.name) return user.name;
+    const parts = [user.first_name, user.last_name].filter(Boolean);
+    return parts.length ? parts.join(" ") : null;
+  };
+
+  if (keyRes.error) {
+    console.error("Failed to load key tracking events", keyRes.error);
+  } else {
+    (keyRes.data || []).forEach((row, index) => {
+      if (!row.occurred_at) return;
+      const label =
+        index === 0
+          ? "Added to parking & key tracking"
+          : row.action || "Keys updated";
+      actionEntries.push({
+        id: `key-${row.key_event_id}`,
+        kind: "event",
+        eventType: index === 0 ? "tracking_registered" : "key_tracking",
+        label,
+        timestamp: ensureIsoString(row.occurred_at),
+        userId: row.performed_by || null,
+        description: row.notes || null,
+        color: "var(--accent-purple)",
+        department: "Parking & Keys",
+        icon: "🔑",
+        meta: {
+          action: row.action || null,
+          notes: row.notes || null,
+          userName: getUserName(row.user),
+        },
+        userName: getUserName(row.user) || null,
+      });
+    });
+  }
+
+  if (vehicleRes.error) {
+    console.error("Failed to load vehicle tracking events", vehicleRes.error);
+  } else {
+    (vehicleRes.data || []).forEach((row) => {
+      if (!row.occurred_at) return;
+      const locationLabel = row.location
+        ? `Parking updated: ${row.location}`
+        : `Vehicle status: ${row.status}`;
+      actionEntries.push({
+        id: `vehicle-${row.event_id}`,
+        kind: "event",
+        eventType: "vehicle_tracking",
+        label: locationLabel,
+        timestamp: ensureIsoString(row.occurred_at),
+        userId: row.created_by || null,
+        description: row.notes || null,
+        color: "var(--accent-purple)",
+        department: "Parking & Keys",
+        icon: "🚗",
+        meta: {
+          status: row.status,
+          location: row.location,
+          userName: getUserName(row.user),
+        },
+        userName: getUserName(row.user) || null,
+      });
+    });
+  }
+
+  if (clockingRes.error) {
+    console.error("Failed to load job clocking entries", clockingRes.error);
+  } else {
+    (clockingRes.data || []).forEach((row) => {
+      if (!row.clock_in) return;
+      const workLabel = row.work_type
+        ? row.work_type.replace(/_/g, " ")
+        : "Technician clocked on";
+      actionEntries.push({
+        id: `clock-${row.id}`,
+        kind: "event",
+        eventType: "clock_in",
+        label: `${workLabel}`.trim(),
+        timestamp: ensureIsoString(row.clock_in),
+        userId: row.user_id || null,
+        description: "Technician clocked on",
+        color: "var(--info)",
+        department: "Workshop",
+        icon: "🛠️",
+        meta: {
+          workType: row.work_type || null,
+          userName: getUserName(row.user),
+        },
+        userName: getUserName(row.user) || null,
+      });
+    });
+  }
+
+  if (partsRes.error) {
+    console.error("Failed to load parts request entries", partsRes.error);
+  } else {
+    (partsRes.data || []).forEach((row) => {
+      const status = (row.status || "").toLowerCase();
+      const isOnOrder =
+        status === "ordered" || row.pre_pick_location === "on_order";
+      if (!isOnOrder) return;
+      actionEntries.push({
+        id: `parts-${row.request_id}`,
+        kind: "event",
+        eventType: "parts_on_order",
+        label: "Parts on order",
+        timestamp: ensureIsoString(row.updated_at || row.created_at),
+        userId: null,
+        description: row.description || null,
+        color: "var(--danger)",
+        department: "Parts",
+        icon: "📦",
+        meta: {
+          status: row.status,
+          prePickLocation: row.pre_pick_location,
+          userName: getUserName(row.requester),
+        },
+        userName: getUserName(row.requester) || null,
+      });
+    });
+  }
+
+  return actionEntries.sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
 };
 
 export default async function handler(req, res) {
@@ -170,6 +350,17 @@ export default async function handler(req, res) {
       return total;
     }, 0);
 
+    const actionEvents = await fetchJobActionEvents(jobRow.id);
+    const statusTimeline = timelineEntries.map((entry) => ({
+      ...entry,
+      kind: "status",
+      label: entry.statusLabel || entry.status || "Status",
+    }));
+
+    const combinedHistory = [...statusTimeline, ...actionEvents].sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
     const currentStatusPayload = buildStatusPayload(jobRow.status); // Prepare metadata for the job's current status
 
     return res.status(200).json({
@@ -178,7 +369,7 @@ export default async function handler(req, res) {
       jobNumber: jobRow.job_number,
       currentStatus: currentStatusPayload.id,
       currentStatusLabel: currentStatusPayload.label,
-      history: timelineEntries,
+      history: combinedHistory,
       totalTime: totalActiveSeconds,
       totalRecordedTime: totalRecordedSeconds,
       generatedAt: referenceNow,

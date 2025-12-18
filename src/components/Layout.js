@@ -5,7 +5,7 @@
 //       - Sidebar toggle button shrunk and edge-aligned on mobile/tablet
 //       - All page sections optimized for vertical phone mode
 // ✅ Imports converted to use absolute alias "@/"
-import React, { useEffect, useState } from "react"; // import React hooks
+import React, { useCallback, useEffect, useState } from "react"; // import React hooks
 import Link from "next/link"; // import Next.js link component
 import { useRouter } from "next/router"; // import router for navigation
 import { useUser } from "@/context/UserContext"; // import user context
@@ -106,6 +106,7 @@ export default function Layout({ children, jobNumber }) {
   const activeJobId = searchedJobId || (hasActiveAutoJob ? urlJobId : null);
   const timelineJobNumber = jobNumber || activeJobId || currentJob?.jobNumber || null;
   const [currentJobStatus, setCurrentJobStatus] = useState("booked");
+  const [statusSidebarRefreshKey, setStatusSidebarRefreshKey] = useState(0);
 
   const statusSidebarRoles = [
     "admin manager",
@@ -196,6 +197,17 @@ export default function Layout({ children, jobNumber }) {
   const hasPartsAccess = userRoles.some((role) => PARTS_NAV_ROLES.has(role));
   const isPartsManager = userRoles.includes("parts manager");
 
+  const fetchCurrentJobStatus = useCallback(async (id) => {
+    if (!id) return;
+    try {
+      const response = await fetch(`/api/status/getCurrentStatus?jobId=${id}`);
+      const data = await response.json();
+      if (data.success) setCurrentJobStatus(data.status);
+    } catch (error) {
+      console.error("Error fetching job status:", error);
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handleResize = () => setViewportWidth(getViewportWidth());
@@ -232,6 +244,30 @@ export default function Layout({ children, jobNumber }) {
   }, [canViewStatusSidebar, activeJobId]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleStatusFlowRefresh = (event) => {
+      if (!canViewStatusSidebar) return;
+      const incomingId = event?.detail?.jobNumber
+        ? String(event.detail.jobNumber)
+        : null;
+      if (!incomingId) return;
+
+      const matchesActive = activeJobId && String(activeJobId) === incomingId;
+      const matchesTimeline =
+        timelineJobNumber && String(timelineJobNumber) === incomingId;
+
+      if (matchesActive || matchesTimeline) {
+        fetchCurrentJobStatus(incomingId);
+        setStatusSidebarRefreshKey((prev) => prev + 1);
+      }
+    };
+
+    window.addEventListener("statusFlowRefresh", handleStatusFlowRefresh);
+    return () => window.removeEventListener("statusFlowRefresh", handleStatusFlowRefresh);
+  }, [activeJobId, timelineJobNumber, canViewStatusSidebar, fetchCurrentJobStatus]);
+
+  useEffect(() => {
     if (typeof window === "undefined" || !isTablet || !isSidebarOpen) return;
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
@@ -251,7 +287,7 @@ export default function Layout({ children, jobNumber }) {
 
   useEffect(() => {
     if (activeJobId) fetchCurrentJobStatus(activeJobId);
-  }, [activeJobId]);
+  }, [activeJobId, fetchCurrentJobStatus]);
 
   useEffect(() => {
     if (urlJobId) {
@@ -275,16 +311,6 @@ export default function Layout({ children, jobNumber }) {
   const handleModeSelect = (mode) => {
     if (!mode || mode === selectedMode) return;
     setSelectedMode(mode);
-  };
-
-  const fetchCurrentJobStatus = async (id) => {
-    try {
-      const response = await fetch(`/api/status/getCurrentStatus?jobId=${id}`);
-      const data = await response.json();
-      if (data.success) setCurrentJobStatus(data.status);
-    } catch (error) {
-      console.error("Error fetching job status:", error);
-    }
   };
 
   // Handle Tea Break - unclock from all active jobs
@@ -1205,6 +1231,7 @@ export default function Layout({ children, jobNumber }) {
               showToggleButton={false}
               variant="docked"
               canClose={false}
+              refreshKey={statusSidebarRefreshKey}
             />
           </div>
         </>
@@ -1228,6 +1255,7 @@ export default function Layout({ children, jobNumber }) {
             ) : null
           }
           showToggleButton={false}
+          refreshKey={statusSidebarRefreshKey}
         />
       )}
 

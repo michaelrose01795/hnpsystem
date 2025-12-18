@@ -19,10 +19,10 @@ export default function StatusSidebar({
   hasUrlJobId,
   viewportWidth = 1440,
   isCompact = false,
-  timelineContent = null,
   showToggleButton = true,
   variant = "overlay",
   canClose = true,
+  refreshKey = 0,
 }) {
   const [statusHistory, setStatusHistory] = useState([]); // Array of past statuses with timestamps
   const [totalTimeSpent, setTotalTimeSpent] = useState(0); // Total working time in minutes
@@ -54,7 +54,7 @@ export default function StatusSidebar({
     };
 
     loadHistory();
-  }, [jobId]);
+  }, [jobId, refreshKey]);
 
   // Fetch the complete status history for this job
   const fetchStatusHistory = async (targetJobId) => {
@@ -144,29 +144,41 @@ export default function StatusSidebar({
   const currentStatusForDisplay = currentStatus;
 
   const timelineStatuses = useMemo(() => {
-    const toTimelineEntry = (entry, index = 0) => {
-      const statusId = entry.status;
-      const config = SERVICE_STATUS_FLOW[statusId?.toUpperCase()] || {};
-      const fallbackLabel = statusId ? statusId.replace(/_/g, ' ') : 'Status';
-      const timestamp = entry.timestamp
-        ? new Date(entry.timestamp)
-        : new Date(Date.now() - index * 180000);
+    if (!Array.isArray(statusHistory)) return [];
 
-      return {
-        status: statusId,
-        label: entry.label || config.label || fallbackLabel,
-        department: entry.department || config.department,
-        timestamp: timestamp.toISOString(),
-      };
-    };
+    return statusHistory
+      .map((entry, index) => {
+        const statusId = entry.status;
+        const config =
+          statusId && SERVICE_STATUS_FLOW[statusId?.toUpperCase?.()]
+            ? SERVICE_STATUS_FLOW[statusId?.toUpperCase?.()]
+            : {};
+        const fallbackLabel = statusId
+          ? statusId.replace(/_/g, " ")
+          : entry.label || "Update";
+        const timestamp = entry.timestamp
+          ? new Date(entry.timestamp)
+          : new Date(Date.now() - index * 180000);
 
-    const normalizedHistory = (statusHistory || []).map((entry, index) =>
-      toTimelineEntry(entry, index)
-    );
-
-    return normalizedHistory.sort(
-      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-    );
+        return {
+          ...entry,
+          status: statusId || null,
+          label: entry.label || config.label || fallbackLabel,
+          department: entry.department || entry.category || config.department,
+          color:
+            entry.color ||
+            (entry.kind === "event"
+              ? "var(--accent-orange)"
+              : config.color || "var(--grey-accent-light)"),
+          timestamp: timestamp.toISOString(),
+          kind: entry.kind || (statusId ? "status" : "event"),
+          description: entry.description || entry.reason || entry.notes || null,
+          icon: entry.icon || null,
+          eventType: entry.eventType || null,
+          meta: entry.meta || {},
+        };
+      })
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }, [statusHistory]);
 
   // Format seconds to HH:MM:SS
@@ -535,26 +547,10 @@ export default function StatusSidebar({
               </div>
 
               <div style={{ marginBottom: '20px' }}>
-                {timelineStatuses.length > 0 ? (
-                  <JobProgressTracker
-                    statuses={timelineStatuses}
-                    currentStatus={currentStatusForDisplay}
-                  />
-                ) : (
-                  <div style={{ 
-                    textAlign: 'center', 
-                    padding: '20px', 
-                    color: 'var(--grey-accent-light)',
-                    fontSize: '14px'
-                  }}>
-                    No status history yet
-                  </div>
-                )}
-                {timelineContent && (
-                  <div style={{ marginTop: '16px' }}>
-                    {timelineContent}
-                  </div>
-                )}
+                <JobProgressTracker
+                  statuses={timelineStatuses}
+                  currentStatus={currentStatusForDisplay}
+                />
               </div>
             </>
           )}

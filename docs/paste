@@ -1,10 +1,4 @@
-Fix "Could not find a relationship between 'job_notes' and 'last_updated_by' in the schema cache" search the "-- file location: src/lib/database/schema/schemaReference.sql" for the database tables and add to "-- file location: src/lib/database/schema/addtable.sql"
-
-
 Add a "Add deleiver" button inside the "parts/delivery-planner" page, this button opens a popup where the users has options to search to invoice number, from the invoice number it adds all of the detals into the row with the chosen data for deleiver inside each row (date gets added for the deleiver Drivers page ("parts/deliveries")), when the row is clicked it brings up a popup with "Close", "Delete", "Save" button in the bottom right, this shows the information from the invoice with the part name, part number, deleiver date (which can be changed) and payment method (can be marked as "Paid" in green) if already paided for, Customers name, amout of parts, address, . Inside the "parts/deliveries" page this shows all of the rows of jobs which have been chosen to be deleivered for the selected data, when the row is clicked this give the same popup but to only view the part number, name, price, date of deleiver, name of customer, customer contract details, address, and a close button (no delete or save button). On each row inside this page there is a marked as deleivered button which updates the status of that row as complete taking it to the bottom of the list and turning it green background. Have it so that page can be clicked organised with up and down arrows for each row to move them above the other rows or below etc. have it so this page is really Iphone vertical view orientated as well as windows (only for the "parts/deliveries" page). make it so this data is linked to the dataabse with the marking complete, Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first. 
-
-
-Link the status bar to everything which gets done such as "is checked in", "added to parking and key tracking", "[tech] is clocked on", "ready for collection". "completed and invoice is ready", "washed complete", "parts on orded". All of these links to the Job number and hwos in the tree like view with on the left a bullet point ad the middle beginning of the action which has been marked ([teh] clocked on) the first action never has a ling going above or down off the buttlet point, only when a section bullet point as been added then a line connecting the top bullet point meets the section bullet point to create a line with clear bullet points for each action which gets complete which is to do with that job number. 
 
 
 Make the "Employment Details" in the "Employee Directory" page more modern and in a clearer layout to read. 
@@ -87,5 +81,11 @@ When adding a "Add new consumable" add these consuamblke to the "Consumable stoc
 
 
 Find what has a status like in progress complete waiting to be started and make find what all of the status under that section has and what they don’t have 
+
+
+Fix "Could not find a relationship between 'job_notes' and 'last_updated_by' in the schema cache" search the "-- file location: src/lib/database/schema/schemaReference.sql" for the database tables and add to "-- file location: src/lib/database/schema/addtable.sql"
+
+
+Link the status bar to everything which gets done such as "is checked in", "added to parking and key tracking", "[tech] is clocked on", "ready for collection". "completed and invoice is ready", "washed complete", "parts on orded". All of these links to the Job number and hwos in the tree like view with on the left a bullet point ad the middle beginning of the action which has been marked ([teh] clocked on) the first action never has a ling going above or down off the buttlet point, only when a section bullet point as been added then a line connecting the top bullet point meets the section bullet point to create a line with clear bullet points for each action which gets complete which is to do with that job number. 
 
 

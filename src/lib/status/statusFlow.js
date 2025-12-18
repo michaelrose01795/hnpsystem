@@ -145,11 +145,22 @@ export const SERVICE_STATUS_FLOW = {
     id: 'vhc_complete',
     label: 'VHC Complete',
     color: 'var(--success)',
-    next: ['vhc_sent_to_service'],
+    next: ['vhc_sent_to_service', 'vhc_reopened'],
     department: 'Workshop',
     canClockOn: false,
     pausesTime: true,
     requiresAction: 'Send to service for pricing'
+  },
+
+  VHC_REOPENED: {
+    id: 'vhc_reopened',
+    label: 'VHC Reopened',
+    color: 'var(--accent-orange)',
+    next: ['vhc_in_progress', 'vhc_complete'],
+    department: 'Workshop',
+    canClockOn: true,
+    pausesTime: false,
+    requiresAction: 'Technician must review updates and complete VHC again'
   },
 
   VHC_SENT_TO_SERVICE: {
