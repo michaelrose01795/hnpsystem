@@ -2146,7 +2146,7 @@ useEffect(() => {
             )}
           </div>
 
-          <div style={cardStyle}>
+          <div style={cardStyle} id="stock-catalogue">
             <h2 style={sectionTitleStyle}>Stock Catalogue</h2>
             <input
               type="search"

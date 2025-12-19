@@ -1060,24 +1060,6 @@ export default function PartsDeliveryPlannerPage() {
           </>
         ) : (
           <section style={{ ...sectionStyle, gap: "18px" }}>
-            <div>
-              <p
-                style={{
-                  margin: 0,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  color: "var(--info-dark)",
-                  fontSize: "0.8rem",
-                }}
-              >
-                Collection schedule
-              </p>
-              <h2 style={{ margin: "6px 0 0", color: "var(--primary-dark)" }}>Collection planner</h2>
-              <p style={{ margin: "4px 0 0", color: "var(--grey-accent-dark)" }}>
-                Mirror the appointments flow: scroll the day list, pick a date, then review all collections booked for
-                that day with a single tap into the originating parts card.
-              </p>
-            </div>
             {collectionError && <p style={{ color: "var(--danger)" }}>{collectionError}</p>}
             {collectionLoading ? (
               <p style={{ color: "var(--info)" }}>Loading collection schedule…</p>

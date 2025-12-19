@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -57,6 +58,30 @@ const sectionHeaderStyle = {
   gap: "12px",
 };
 
+const partLookupOverlayStyle = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0,0,0,0.45)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "16px",
+  zIndex: 90,
+};
+
+const partLookupContentStyle = {
+  background: "var(--surface)",
+  borderRadius: "18px",
+  padding: "20px",
+  width: "min(640px, 100%)",
+  maxHeight: "85vh",
+  overflowY: "auto",
+  border: "1px solid var(--surface-light)",
+  display: "flex",
+  flexDirection: "column",
+  gap: "14px",
+};
+
 const blankForm = {
   customer_id: null,
   customer_name: "",
@@ -70,15 +95,9 @@ const blankForm = {
   notes: "",
   delivery_type: "delivery",
   delivery_address: "",
-  delivery_contact: "",
-  delivery_phone: "",
   delivery_eta: "",
   delivery_window: "",
   delivery_notes: "",
-  invoice_reference: "",
-  invoice_total: "",
-  invoice_status: "draft",
-  invoice_notes: "",
 };
 
 const blankPart = () => ({
@@ -87,6 +106,8 @@ const blankPart = () => ({
   quantity: 1,
   unit_price: "",
   notes: "",
+  part_catalog_id: null,
+  catalog_snapshot: null,
 });
 
 const formatFullName = (record = {}) =>
@@ -113,16 +134,21 @@ export default function PartsJobCardPage() {
   const hasPartsAccess = roles.includes("parts") || roles.includes("parts manager");
   const isDarkMode = resolvedMode === "dark";
 
+  const router = useRouter();
   const [form, setForm] = useState(blankForm);
   const [partLines, setPartLines] = useState([blankPart()]);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [notification, setNotification] = useState("");
   const [customerRecord, setCustomerRecord] = useState(null);
   const [showExistingCustomer, setShowExistingCustomer] = useState(false);
   const [showNewCustomer, setShowNewCustomer] = useState(false);
   const [deliverySameAsBilling, setDeliverySameAsBilling] = useState(true);
   const [loadingVehicle, setLoadingVehicle] = useState(false);
+  const [partSearchOpen, setPartSearchOpen] = useState(false);
+  const [partSearchQuery, setPartSearchQuery] = useState("");
+  const [partSearchResults, setPartSearchResults] = useState([]);
+  const [partSearchLoading, setPartSearchLoading] = useState(false);
+  const [activePartLine, setActivePartLine] = useState(null);
 
   useEffect(() => {
     if (deliverySameAsBilling) {
@@ -133,6 +159,52 @@ export default function PartsJobCardPage() {
     }
   }, [deliverySameAsBilling, form.customer_address]);
 
+  useEffect(() => {
+    if (!partSearchOpen) {
+      setPartSearchResults([]);
+      setPartSearchLoading(false);
+      return;
+    }
+    const term = partSearchQuery.trim();
+    if (term.length < 2) {
+      setPartSearchResults([]);
+      setPartSearchLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setPartSearchLoading(true);
+    const searchParts = async () => {
+      try {
+        const wildcard = `%${term}%`;
+        const { data, error } = await supabaseClient
+          .from("parts_catalog")
+          .select(
+            "id, part_number, name, description, unit_price, unit_cost, qty_in_stock, qty_reserved, storage_location, supplier"
+          )
+          .or(`part_number.ilike.${wildcard},name.ilike.${wildcard}`)
+          .order("part_number", { ascending: true })
+          .limit(12);
+        if (error) throw error;
+        if (!cancelled) {
+          setPartSearchResults(data || []);
+        }
+      } catch (lookupError) {
+        console.error("Failed to search parts catalog:", lookupError);
+        if (!cancelled) {
+          setPartSearchResults([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setPartSearchLoading(false);
+        }
+      }
+    };
+    searchParts();
+    return () => {
+      cancelled = true;
+    };
+  }, [partSearchOpen, partSearchQuery]);
+
   const handleFieldChange = (field, value) => {
     setForm((prev) => ({
       ...prev,
@@ -142,7 +214,15 @@ export default function PartsJobCardPage() {
 
   const handlePartChange = (index, field, value) => {
     setPartLines((prev) =>
-      prev.map((line, lineIndex) => (lineIndex === index ? { ...line, [field]: value } : line))
+      prev.map((line, lineIndex) => {
+        if (lineIndex !== index) return line;
+        const next = { ...line, [field]: value };
+        if (field === "part_number" && line.part_catalog_id) {
+          next.part_catalog_id = null;
+          next.catalog_snapshot = null;
+        }
+        return next;
+      })
     );
   };
 
@@ -152,6 +232,57 @@ export default function PartsJobCardPage() {
 
   const handleRemovePart = (index) => {
     setPartLines((prev) => prev.filter((_, lineIndex) => lineIndex !== index));
+  };
+
+  const openPartSearch = (index) => {
+    setActivePartLine(index);
+    setPartSearchQuery(partLines[index]?.part_number || "");
+    setPartSearchOpen(true);
+  };
+
+  const closePartSearch = () => {
+    setPartSearchOpen(false);
+    setPartSearchLoading(false);
+    setPartSearchQuery("");
+    setPartSearchResults([]);
+    setActivePartLine(null);
+  };
+
+  const handlePartSelected = (part) => {
+    if (activePartLine === null || activePartLine === undefined) {
+      closePartSearch();
+      return;
+    }
+    setPartLines((prev) =>
+      prev.map((line, index) => {
+        if (index !== activePartLine) return line;
+        return {
+          ...line,
+          part_catalog_id: part.id,
+          part_number: part.part_number || line.part_number,
+          part_name: part.name || line.part_name,
+          unit_price:
+            part.unit_price === undefined || part.unit_price === null
+              ? line.unit_price
+              : String(part.unit_price),
+          catalog_snapshot: {
+            qty_in_stock: part.qty_in_stock,
+            qty_reserved: part.qty_reserved,
+            storage_location: part.storage_location,
+            supplier: part.supplier,
+          },
+        };
+      })
+    );
+    closePartSearch();
+  };
+
+  const handleClearPartLink = (index) => {
+    setPartLines((prev) =>
+      prev.map((line, lineIndex) =>
+        lineIndex === index ? { ...line, part_catalog_id: null, catalog_snapshot: null } : line
+      )
+    );
   };
 
   const fetchLatestVehicleForCustomer = useCallback(async (customerId) => {
@@ -229,11 +360,12 @@ export default function PartsJobCardPage() {
     setShowNewCustomer(false);
   };
 
-  const resetForm = () => {
+  const handleClearForm = () => {
     setForm({ ...blankForm });
     setPartLines([blankPart()]);
-    setNotification("Parts job card created.");
-    setTimeout(() => setNotification(""), 3500);
+    setCustomerRecord(null);
+    setDeliverySameAsBilling(true);
+    closePartSearch();
   };
 
   const handleSubmit = async (event) => {
@@ -255,11 +387,13 @@ export default function PartsJobCardPage() {
     try {
       const billingAddress = form.customer_address || "";
       const deliveryAddressValue = deliverySameAsBilling ? billingAddress : form.delivery_address || "";
+      const trimmedCustomerName = form.customer_name.trim();
+      const trimmedCustomerPhone = form.customer_phone.trim();
 
       const payload = {
         customer_id: customerRecord?.id || form.customer_id,
-        customer_name: form.customer_name.trim(),
-        customer_phone: form.customer_phone.trim() || null,
+        customer_name: trimmedCustomerName,
+        customer_phone: trimmedCustomerPhone || null,
         customer_email: form.customer_email.trim() || null,
         customer_address: billingAddress.trim() || null,
         vehicle_reg: form.vehicle_reg.trim() || null,
@@ -278,15 +412,11 @@ export default function PartsJobCardPage() {
           form.delivery_type === "delivery"
             ? deliveryAddressValue.trim() || null
             : null,
-        delivery_contact: form.delivery_contact.trim() || form.customer_name.trim() || null,
-        delivery_phone: form.delivery_phone.trim() || form.customer_phone.trim() || null,
+        delivery_contact: trimmedCustomerName || null,
+        delivery_phone: trimmedCustomerPhone || null,
         delivery_eta: form.delivery_eta || null,
         delivery_window: form.delivery_window || null,
         delivery_notes: form.delivery_notes.trim() || null,
-        invoice_reference: form.invoice_reference.trim() || null,
-        invoice_total: form.invoice_total === "" ? 0 : Number(form.invoice_total) || 0,
-        invoice_status: form.invoice_status || "draft",
-        invoice_notes: form.invoice_notes.trim() || null,
       };
 
       const { data: job, error: insertError } = await supabaseClient
@@ -298,6 +428,7 @@ export default function PartsJobCardPage() {
 
       const partPayload = validParts.map((line) => ({
         job_id: job.id,
+        part_catalog_id: line.part_catalog_id || null,
         part_number: line.part_number.trim() || null,
         part_name: line.part_name.trim() || null,
         quantity: Number(line.quantity) || 1,
@@ -316,7 +447,11 @@ export default function PartsJobCardPage() {
         job.items = [];
       }
 
-      resetForm();
+      if (job?.job_number) {
+        router.push(`/parts/parts-job-card/${job.job_number}`);
+      } else {
+        router.push("/parts/parts-job-card");
+      }
     } catch (submitError) {
       console.error("Failed to create parts job card:", submitError);
       setErrorMessage(submitError.message || "Unable to save parts job card.");
@@ -340,11 +475,6 @@ export default function PartsJobCardPage() {
       <Layout>
         <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
         <section style={cardStyle}>
-          {notification && (
-            <div style={{ padding: "10px", borderRadius: "10px", background: "var(--success-surface)", color: "var(--success)" }}>
-              {notification}
-            </div>
-          )}
           {errorMessage && (
             <div style={{ padding: "10px", borderRadius: "10px", background: "var(--danger-surface)", color: "var(--danger)" }}>
               {errorMessage}
@@ -355,9 +485,6 @@ export default function PartsJobCardPage() {
               <div style={sectionHeaderStyle}>
                 <div>
                   <strong style={{ fontSize: "1.05rem" }}>Customer details</strong>
-                  <p style={{ margin: 0, color: "var(--grey-accent-dark)", fontSize: "0.85rem" }}>
-                    Search for an existing customer or create a new record to preload address and vehicle data.
-                  </p>
                 </div>
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                   <button
@@ -409,7 +536,7 @@ export default function PartsJobCardPage() {
                   )}
                 </div>
               </div>
-              {customerRecord ? (
+              {customerRecord && (
                 <div
                   style={{
                     border: "1px solid var(--surface-light)",
@@ -426,10 +553,6 @@ export default function PartsJobCardPage() {
                     {customerRecord.address || "No saved address"}
                   </div>
                 </div>
-              ) : (
-                <p style={{ margin: 0, color: "var(--info-dark)", fontSize: "0.85rem" }}>
-                  No linked customer yet. Use the buttons above to search or create one.
-                </p>
               )}
               <div style={twoColumnGrid}>
                 <label style={fieldStyle}>
@@ -539,12 +662,7 @@ export default function PartsJobCardPage() {
 
             <div style={sectionCardStyle}>
               <div style={sectionHeaderStyle}>
-                <div>
-                  <strong style={{ fontSize: "1.05rem" }}>Delivery / Collection</strong>
-                  <p style={{ margin: 0, color: "var(--grey-accent-dark)", fontSize: "0.85rem" }}>
-                    Choose how the parts will be handed over and capture the date, time, and contact information.
-                  </p>
-                </div>
+                <strong style={{ fontSize: "1.05rem" }}>Delivery / Collection</strong>
               </div>
               <label style={fieldStyle}>
                 <span style={{ fontWeight: 600 }}>Fulfilment type</span>
@@ -578,32 +696,6 @@ export default function PartsJobCardPage() {
                     value={form.delivery_window || ""}
                     onChange={(event) => handleFieldChange("delivery_window", event.target.value)}
                     style={inputStyle}
-                  />
-                </label>
-              </div>
-              <div style={twoColumnGrid}>
-                <label style={fieldStyle}>
-                  <span style={{ fontWeight: 600 }}>
-                    {form.delivery_type === "delivery" ? "Delivery contact" : "Collection contact"}
-                  </span>
-                  <input
-                    type="text"
-                    value={form.delivery_contact}
-                    onChange={(event) => handleFieldChange("delivery_contact", event.target.value)}
-                    style={inputStyle}
-                    placeholder="Contact name"
-                  />
-                </label>
-                <label style={fieldStyle}>
-                  <span style={{ fontWeight: 600 }}>
-                    {form.delivery_type === "delivery" ? "Delivery phone" : "Collection phone"}
-                  </span>
-                  <input
-                    type="tel"
-                    value={form.delivery_phone}
-                    onChange={(event) => handleFieldChange("delivery_phone", event.target.value)}
-                    style={inputStyle}
-                    placeholder="Contact number"
                   />
                 </label>
               </div>
@@ -652,59 +744,6 @@ export default function PartsJobCardPage() {
             </div>
 
             <div style={sectionCardStyle}>
-              <div style={sectionHeaderStyle}>
-                <strong style={{ fontSize: "1.05rem" }}>Invoice details</strong>
-              </div>
-              <div style={twoColumnGrid}>
-                <label style={fieldStyle}>
-                  <span style={{ fontWeight: 600 }}>Invoice reference</span>
-                  <input
-                    type="text"
-                    value={form.invoice_reference}
-                    onChange={(event) => handleFieldChange("invoice_reference", event.target.value)}
-                    style={inputStyle}
-                    placeholder="e.g. INV-123"
-                  />
-                </label>
-                <label style={fieldStyle}>
-                  <span style={{ fontWeight: 600 }}>Invoice total (£)</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.invoice_total}
-                    onChange={(event) => handleFieldChange("invoice_total", event.target.value)}
-                    style={inputStyle}
-                    placeholder="0.00"
-                  />
-                </label>
-                <label style={fieldStyle}>
-                  <span style={{ fontWeight: 600 }}>Invoice status</span>
-                  <select
-                    value={form.invoice_status}
-                    onChange={(event) => handleFieldChange("invoice_status", event.target.value)}
-                    style={{ ...inputStyle, cursor: "pointer" }}
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="issued">Issued</option>
-                    <option value="paid">Paid</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </label>
-              </div>
-              <label style={fieldStyle}>
-                <span style={{ fontWeight: 600 }}>Invoice notes</span>
-                <textarea
-                  rows={2}
-                  value={form.invoice_notes}
-                  onChange={(event) => handleFieldChange("invoice_notes", event.target.value)}
-                  style={{ ...inputStyle, resize: "vertical" }}
-                  placeholder="Payment references, approvals, etc."
-                />
-              </label>
-            </div>
-
-            <div style={sectionCardStyle}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
                 <strong style={{ fontSize: "1.05rem" }}>Booked parts</strong>
                 <button
@@ -737,13 +776,56 @@ export default function PartsJobCardPage() {
                   >
                     <label style={fieldStyle}>
                       <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Part number</span>
-                      <input
-                        type="text"
-                        value={line.part_number}
-                        onChange={(event) => handlePartChange(index, "part_number", event.target.value)}
-                        style={inputStyle}
-                        placeholder="e.g. 5Q0129620D"
-                      />
+                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                        <input
+                          type="text"
+                          value={line.part_number}
+                          onChange={(event) => handlePartChange(index, "part_number", event.target.value)}
+                          style={{ ...inputStyle, flex: "1 1 160px" }}
+                          placeholder="e.g. 5Q0129620D"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => openPartSearch(index)}
+                          style={{
+                            borderRadius: "10px",
+                            border: "1px solid var(--surface-light)",
+                            background: "var(--primary)",
+                            color: "var(--surface)",
+                            padding: "8px 12px",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Search
+                        </button>
+                        {line.part_catalog_id && (
+                          <button
+                            type="button"
+                            onClick={() => handleClearPartLink(index)}
+                            style={{
+                              borderRadius: "10px",
+                              border: "1px solid var(--surface-light)",
+                              background: "var(--danger-surface)",
+                              color: "var(--danger)",
+                              padding: "8px 12px",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Unlink
+                          </button>
+                        )}
+                      </div>
+                      {line.catalog_snapshot && (
+                        <span style={{ fontSize: "0.75rem", color: "var(--info-dark)" }}>
+                          Linked to stock · {line.catalog_snapshot.supplier || "Supplier unknown"} ·{" "}
+                          {line.catalog_snapshot.storage_location || "No location"} ·{" "}
+                          {(Number(line.catalog_snapshot.qty_in_stock) || 0) -
+                            (Number(line.catalog_snapshot.qty_reserved) || 0)}{" "}
+                          available
+                        </span>
+                      )}
                     </label>
                     <label style={fieldStyle}>
                       <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Part name</span>
@@ -813,7 +895,7 @@ export default function PartsJobCardPage() {
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", flexWrap: "wrap" }}>
               <button
                 type="button"
-                onClick={resetForm}
+                onClick={handleClearForm}
                 disabled={saving}
                 style={{
                   borderRadius: "12px",
@@ -822,6 +904,7 @@ export default function PartsJobCardPage() {
                   padding: "10px 18px",
                   fontWeight: 600,
                   cursor: "pointer",
+                  color: isDarkMode ? "#ffffff" : "#000000",
                 }}
               >
                 Clear
@@ -840,13 +923,145 @@ export default function PartsJobCardPage() {
                   opacity: saving ? 0.7 : 1,
                 }}
               >
-                {saving ? "Saving…" : "Create job card"}
+                {saving ? "Saving…" : "Create Parts card"}
               </button>
             </div>
           </form>
         </section>
       </div>
     </Layout>
+    {partSearchOpen && (
+      <div style={partLookupOverlayStyle}>
+        <div style={partLookupContentStyle}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "12px",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <p
+                style={{
+                  margin: 0,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  fontSize: "0.75rem",
+                  color: "var(--info-dark)",
+                }}
+              >
+                Parts stock
+              </p>
+              <h3 style={{ margin: "4px 0 0", color: "var(--primary-dark)" }}>Search catalog</h3>
+            </div>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  closePartSearch();
+                  router.push("/parts#stock-catalogue");
+                }}
+                style={{
+                  borderRadius: "12px",
+                  border: "1px solid var(--surface-light)",
+                  background: "var(--danger-surface)",
+                  color: "var(--primary-dark)",
+                  padding: "8px 14px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Open stock catalogue
+              </button>
+              <button
+                type="button"
+                onClick={closePartSearch}
+                style={{
+                  borderRadius: "50%",
+                width: "36px",
+                height: "36px",
+                border: "1px solid var(--surface-light)",
+                background: "var(--surface)",
+                fontSize: "1.2rem",
+                cursor: "pointer",
+              }}
+                aria-label="Close part search"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          <input
+            type="search"
+            value={partSearchQuery}
+            onChange={(event) => setPartSearchQuery(event.target.value)}
+            placeholder="Search by part number, name, or supplier"
+            style={{
+              ...inputStyle,
+              width: "100%",
+              fontSize: "1rem",
+            }}
+          />
+          {partSearchLoading ? (
+            <p style={{ margin: 0, color: "var(--info-dark)" }}>Searching catalog…</p>
+          ) : partSearchQuery.trim().length < 2 ? (
+            <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>Enter at least two characters to search.</p>
+          ) : partSearchResults.length === 0 ? (
+            <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>No parts found for that search.</p>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                maxHeight: "50vh",
+                overflowY: "auto",
+              }}
+            >
+              {partSearchResults.map((part) => {
+                const available =
+                  (Number(part.qty_in_stock) || 0) - (Number(part.qty_reserved) || 0);
+                const unitPrice = Number(part.unit_price ?? 0);
+                return (
+                  <button
+                    key={part.id}
+                    type="button"
+                    onClick={() => handlePartSelected(part)}
+                    style={{
+                      borderRadius: "12px",
+                      border: "1px solid var(--surface-light)",
+                      padding: "10px 12px",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      background: "var(--surface)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
+                    }}
+                  >
+                    <strong style={{ color: "var(--primary-dark)" }}>
+                      {part.part_number} · {part.name}
+                    </strong>
+                    <span style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
+                      {part.description || "No description"}
+                    </span>
+                    <span style={{ fontSize: "0.8rem", color: "var(--grey-accent-dark)" }}>
+                      {available} available · Stored in {part.storage_location || "unspecified"} · Supplier:{" "}
+                      {part.supplier || "Unknown"}
+                    </span>
+                    <span style={{ fontSize: "0.85rem", color: "var(--primary-dark)", fontWeight: 600 }}>
+                      Unit price: £{unitPrice.toFixed(2)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
     {showExistingCustomer && (
       <ExistingCustomerPopup
         onClose={() => setShowExistingCustomer(false)}

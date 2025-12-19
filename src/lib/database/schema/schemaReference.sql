@@ -988,8 +988,10 @@ CREATE TABLE public.parts_job_card_items (
   notes text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  part_catalog_id uuid,
   CONSTRAINT parts_job_card_items_pkey PRIMARY KEY (id),
-  CONSTRAINT parts_job_card_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.parts_job_cards(id)
+  CONSTRAINT parts_job_card_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.parts_job_cards(id),
+  CONSTRAINT parts_job_card_items_part_catalog_id_fkey FOREIGN KEY (part_catalog_id) REFERENCES public.parts_catalog(id)
 );
 CREATE TABLE public.parts_job_cards (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
