@@ -5,12 +5,6 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
-CREATE TABLE public.account_settings (
-  id integer NOT NULL DEFAULT 1,
-  settings jsonb NOT NULL DEFAULT '{}'::jsonb,
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT account_settings_pkey PRIMARY KEY (id)
-);
 CREATE TABLE public.account_transactions (
   transaction_id uuid NOT NULL DEFAULT gen_random_uuid(),
   account_id text NOT NULL,
@@ -46,37 +40,6 @@ CREATE TABLE public.accounts (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT accounts_pkey PRIMARY KEY (account_id),
   CONSTRAINT accounts_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
-);
-CREATE TABLE public.activity_logs (
-  log_id integer NOT NULL DEFAULT nextval('activity_logs_log_id_seq'::regclass),
-  user_id integer,
-  action character varying,
-  table_name character varying,
-  record_id integer,
-  timestamp timestamp with time zone DEFAULT now(),
-  CONSTRAINT activity_logs_pkey PRIMARY KEY (log_id),
-  CONSTRAINT activity_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
-);
-CREATE TABLE public.appointment_day_capacity (
-  capacity_id bigint NOT NULL DEFAULT nextval('appointment_day_capacity_capacity_id_seq'::regclass),
-  day date NOT NULL UNIQUE,
-  technicians_available integer NOT NULL,
-  notes text,
-  created_by integer,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT appointment_day_capacity_pkey PRIMARY KEY (capacity_id),
-  CONSTRAINT appointment_day_capacity_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
-);
-CREATE TABLE public.appointment_notes (
-  note_id integer NOT NULL DEFAULT nextval('appointment_notes_note_id_seq'::regclass),
-  appointment_id integer NOT NULL,
-  user_id integer,
-  note_text text NOT NULL,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT appointment_notes_pkey PRIMARY KEY (note_id),
-  CONSTRAINT appointment_notes_appointment_id_fkey FOREIGN KEY (appointment_id) REFERENCES public.appointments(appointment_id),
-  CONSTRAINT appointment_notes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.appointments (
   appointment_id integer NOT NULL DEFAULT nextval('appointments_appointment_id_seq'::regclass),
@@ -226,61 +189,6 @@ CREATE TABLE public.hr_absences (
   CONSTRAINT hr_absences_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
   CONSTRAINT hr_absences_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(user_id)
 );
-CREATE TABLE public.hr_access_roles (
-  role_id bigint NOT NULL DEFAULT nextval('hr_access_roles_role_id_seq'::regclass),
-  name text NOT NULL UNIQUE,
-  permissions jsonb NOT NULL DEFAULT '[]'::jsonb,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT hr_access_roles_pkey PRIMARY KEY (role_id)
-);
-CREATE TABLE public.hr_action_items (
-  action_id bigint NOT NULL DEFAULT nextval('hr_action_items_action_id_seq'::regclass),
-  review_id bigint,
-  title text NOT NULL,
-  owner_id integer,
-  due_date date,
-  status text NOT NULL DEFAULT 'pending'::text,
-  CONSTRAINT hr_action_items_pkey PRIMARY KEY (action_id),
-  CONSTRAINT hr_action_items_review_id_fkey FOREIGN KEY (review_id) REFERENCES public.hr_performance_reviews(review_id),
-  CONSTRAINT hr_action_items_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(user_id)
-);
-CREATE TABLE public.hr_applicant_tasks (
-  task_id bigint NOT NULL DEFAULT nextval('hr_applicant_tasks_task_id_seq'::regclass),
-  applicant_id bigint,
-  assignee_id integer,
-  title text NOT NULL,
-  due_date date,
-  status text NOT NULL DEFAULT 'pending'::text,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT hr_applicant_tasks_pkey PRIMARY KEY (task_id),
-  CONSTRAINT hr_applicant_tasks_applicant_id_fkey FOREIGN KEY (applicant_id) REFERENCES public.hr_applicants(applicant_id),
-  CONSTRAINT hr_applicant_tasks_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES public.users(user_id)
-);
-CREATE TABLE public.hr_applicants (
-  applicant_id bigint NOT NULL DEFAULT nextval('hr_applicants_applicant_id_seq'::regclass),
-  job_id bigint,
-  first_name text,
-  last_name text,
-  email text,
-  phone text,
-  resume_url text,
-  status text NOT NULL DEFAULT 'applied'::text,
-  notes text,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT hr_applicants_pkey PRIMARY KEY (applicant_id),
-  CONSTRAINT hr_applicants_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.hr_recruitment_jobs(job_id)
-);
-CREATE TABLE public.hr_disciplinary_actions (
-  action_id bigint NOT NULL DEFAULT nextval('hr_disciplinary_actions_action_id_seq'::regclass),
-  case_id bigint,
-  action_date date,
-  action_type text,
-  taken_by integer,
-  notes text,
-  CONSTRAINT hr_disciplinary_actions_pkey PRIMARY KEY (action_id),
-  CONSTRAINT hr_disciplinary_actions_case_id_fkey FOREIGN KEY (case_id) REFERENCES public.hr_disciplinary_cases(case_id),
-  CONSTRAINT hr_disciplinary_actions_taken_by_fkey FOREIGN KEY (taken_by) REFERENCES public.users(user_id)
-);
 CREATE TABLE public.hr_disciplinary_cases (
   case_id bigint NOT NULL DEFAULT nextval('hr_disciplinary_cases_case_id_seq'::regclass),
   user_id integer NOT NULL,
@@ -341,17 +249,6 @@ CREATE TABLE public.hr_payroll_runs (
   CONSTRAINT hr_payroll_runs_pkey PRIMARY KEY (payroll_id),
   CONSTRAINT hr_payroll_runs_processed_by_fkey FOREIGN KEY (processed_by) REFERENCES public.users(user_id)
 );
-CREATE TABLE public.hr_performance_goals (
-  goal_id bigint NOT NULL DEFAULT nextval('hr_performance_goals_goal_id_seq'::regclass),
-  user_id integer NOT NULL,
-  title text NOT NULL,
-  description text,
-  due_date date,
-  status text NOT NULL DEFAULT 'open'::text,
-  progress numeric DEFAULT 0,
-  CONSTRAINT hr_performance_goals_pkey PRIMARY KEY (goal_id),
-  CONSTRAINT hr_performance_goals_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
-);
 CREATE TABLE public.hr_performance_reviews (
   review_id bigint NOT NULL DEFAULT nextval('hr_performance_reviews_review_id_seq'::regclass),
   user_id integer NOT NULL,
@@ -364,48 +261,6 @@ CREATE TABLE public.hr_performance_reviews (
   CONSTRAINT hr_performance_reviews_pkey PRIMARY KEY (review_id),
   CONSTRAINT hr_performance_reviews_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
   CONSTRAINT hr_performance_reviews_reviewer_id_fkey FOREIGN KEY (reviewer_id) REFERENCES public.users(user_id)
-);
-CREATE TABLE public.hr_policy_documents (
-  policy_id bigint NOT NULL DEFAULT nextval('hr_policy_documents_policy_id_seq'::regclass),
-  name text NOT NULL,
-  category text,
-  file_url text NOT NULL,
-  version text,
-  published_at timestamp with time zone DEFAULT now(),
-  created_by integer,
-  CONSTRAINT hr_policy_documents_pkey PRIMARY KEY (policy_id),
-  CONSTRAINT hr_policy_documents_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
-);
-CREATE TABLE public.hr_recruitment_jobs (
-  job_id bigint NOT NULL DEFAULT nextval('hr_recruitment_jobs_job_id_seq'::regclass),
-  title text NOT NULL,
-  department text,
-  location text,
-  status text NOT NULL DEFAULT 'open'::text,
-  description text,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT hr_recruitment_jobs_pkey PRIMARY KEY (job_id)
-);
-CREATE TABLE public.hr_reminder_tasks (
-  reminder_id bigint NOT NULL DEFAULT nextval('hr_reminder_tasks_reminder_id_seq'::regclass),
-  type text NOT NULL,
-  payload jsonb,
-  run_at timestamp with time zone NOT NULL,
-  status text NOT NULL DEFAULT 'scheduled'::text,
-  last_error text,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT hr_reminder_tasks_pkey PRIMARY KEY (reminder_id)
-);
-CREATE TABLE public.hr_shift_rules (
-  rule_id bigint NOT NULL DEFAULT nextval('hr_shift_rules_rule_id_seq'::regclass),
-  department text,
-  rule_name text NOT NULL,
-  details jsonb NOT NULL,
-  effective_from date,
-  created_by integer,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT hr_shift_rules_pkey PRIMARY KEY (rule_id),
-  CONSTRAINT hr_shift_rules_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.hr_training_assignments (
   assignment_id bigint NOT NULL DEFAULT nextval('hr_training_assignments_assignment_id_seq'::regclass),
@@ -430,17 +285,6 @@ CREATE TABLE public.hr_training_courses (
   renewal_interval_months integer,
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT hr_training_courses_pkey PRIMARY KEY (course_id)
-);
-CREATE TABLE public.hr_training_events (
-  event_id bigint NOT NULL DEFAULT nextval('hr_training_events_event_id_seq'::regclass),
-  course_id bigint,
-  scheduled_at timestamp with time zone,
-  location text,
-  instructor text,
-  capacity integer,
-  notes text,
-  CONSTRAINT hr_training_events_pkey PRIMARY KEY (event_id),
-  CONSTRAINT hr_training_events_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.hr_training_courses(course_id)
 );
 CREATE TABLE public.invoice_items (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -606,19 +450,6 @@ CREATE TABLE public.job_notes (
   CONSTRAINT job_notes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
   CONSTRAINT job_notes_last_updated_by_fkey FOREIGN KEY (last_updated_by) REFERENCES public.users(user_id)
 );
-CREATE TABLE public.job_progress (
-  progress_id integer NOT NULL DEFAULT nextval('job_progress_progress_id_seq'::regclass),
-  job_id integer NOT NULL,
-  job_number text NOT NULL,
-  status text NOT NULL,
-  updated_by integer,
-  notes text,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT job_progress_pkey PRIMARY KEY (progress_id),
-  CONSTRAINT job_progress_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
-  CONSTRAINT job_progress_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
-);
 CREATE TABLE public.job_requests (
   request_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   job_id integer NOT NULL,
@@ -782,6 +613,18 @@ CREATE TABLE public.messages (
   CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(user_id),
   CONSTRAINT messages_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES public.users(user_id),
   CONSTRAINT messages_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES public.message_threads(thread_id)
+);
+CREATE TABLE public.news_updates (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  content text NOT NULL,
+  departments ARRAY NOT NULL DEFAULT ARRAY[]::text[],
+  author text,
+  created_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT news_updates_pkey PRIMARY KEY (id),
+  CONSTRAINT news_updates_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.notifications (
   notification_id integer NOT NULL DEFAULT nextval('notifications_notification_id_seq'::regclass),
@@ -966,17 +809,6 @@ CREATE TABLE public.parts_delivery_settings (
   last_updated timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT parts_delivery_settings_pkey PRIMARY KEY (fuel_type)
 );
-CREATE TABLE public.parts_inventory (
-  part_id integer NOT NULL DEFAULT nextval('parts_inventory_part_id_seq'::regclass),
-  part_number character varying NOT NULL UNIQUE,
-  name character varying,
-  description text,
-  quantity integer DEFAULT 0,
-  price numeric,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT parts_inventory_pkey PRIMARY KEY (part_id)
-);
 CREATE TABLE public.parts_job_card_items (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   job_id uuid NOT NULL,
@@ -1128,22 +960,13 @@ CREATE TABLE public.payment_plans (
   CONSTRAINT payment_plans_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT payment_plans_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id)
 );
-CREATE TABLE public.sales_tracking (
-  sale_id integer NOT NULL DEFAULT nextval('sales_tracking_sale_id_seq'::regclass),
-  vehicle_id integer,
-  sold_by integer,
-  price numeric,
-  sold_at timestamp with time zone DEFAULT now(),
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT sales_tracking_pkey PRIMARY KEY (sale_id),
-  CONSTRAINT sales_tracking_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(vehicle_id),
-  CONSTRAINT sales_tracking_sold_by_fkey FOREIGN KEY (sold_by) REFERENCES public.users(user_id)
-);
-CREATE TABLE public.schema_migrations (
-  id integer NOT NULL DEFAULT nextval('schema_migrations_id_seq'::regclass),
-  migration_name text NOT NULL UNIQUE,
-  applied_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT schema_migrations_pkey PRIMARY KEY (id)
+CREATE TABLE public.profiles (
+  user_id integer NOT NULL,
+  dark_mode boolean,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT profiles_pkey PRIMARY KEY (user_id),
+  CONSTRAINT profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.staff_vehicle_history (
   history_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
@@ -1189,22 +1012,6 @@ CREATE TABLE public.time_records (
   CONSTRAINT time_records_pkey PRIMARY KEY (id),
   CONSTRAINT time_records_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
   CONSTRAINT time_records_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
-);
-CREATE TABLE public.tyre_inspections (
-  inspection_id bigint NOT NULL DEFAULT nextval('tyre_inspections_inspection_id_seq'::regclass),
-  job_id integer,
-  vehicle_id integer,
-  axle_position text,
-  brand text,
-  size text,
-  tread_depth numeric,
-  pressure_psi numeric,
-  measured_at timestamp with time zone DEFAULT now(),
-  source text DEFAULT 'TYRE_API'::text,
-  raw_payload jsonb,
-  CONSTRAINT tyre_inspections_pkey PRIMARY KEY (inspection_id),
-  CONSTRAINT tyre_inspections_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
-  CONSTRAINT tyre_inspections_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(vehicle_id)
 );
 CREATE TABLE public.user_signatures (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
@@ -1399,4 +1206,23 @@ CREATE TABLE public.workshop_consumables (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT workshop_consumables_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.writeup_rectification_items (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  job_id integer NOT NULL,
+  job_number text,
+  writeup_id integer,
+  description text NOT NULL,
+  status text NOT NULL DEFAULT 'waiting'::text,
+  is_additional_work boolean NOT NULL DEFAULT true,
+  vhc_item_id integer,
+  authorization_id integer,
+  authorized_amount numeric,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT writeup_rectification_items_pkey PRIMARY KEY (id),
+  CONSTRAINT writeup_rectification_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT writeup_rectification_items_writeup_id_fkey FOREIGN KEY (writeup_id) REFERENCES public.job_writeups(writeup_id),
+  CONSTRAINT writeup_rectification_items_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id),
+  CONSTRAINT writeup_rectification_items_authorization_id_fkey FOREIGN KEY (authorization_id) REFERENCES public.vhc_authorizations(id)
 );

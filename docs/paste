@@ -1,6 +1,6 @@
-Remove all of the .md files and migration files. 
-
 NOTE:
+
+See if database strucure links to all of the code with the src/lib/database/schema/schemaReference.sql also see if any tables are in the src/lib/database/schema/schemaReference.sql and are not being used inside the code and why they arent being used. Make sure that all of the code and inputes saves to the database where required and in the corrected locations add any tables/columns to src/lib/database/schema/addtable.sql
 
 
 LOOK INTO TRACKING PAGE + ADD WRITE UP PAGE IN JOBCARD FOR WORKSHOP MANAGER
@@ -87,3 +87,4 @@ Make the "Employment Details" in the "Employee Directory" page more modern and i
 add a search bar inside the "Employee Directory" with in the "hr/manager" page. make sure this search bar only searches for the users names. 
 
 
+Remove all of the .md files and migration files. 

@@ -66,6 +66,50 @@ const jobRowButtonStyle = {
   cursor: "pointer",
 };
 
+const collectionPlannerGridStyle = {
+  ...sectionStyle,
+  padding: "18px",
+  display: "grid",
+  gridTemplateRows: "minmax(110px, 10%) minmax(360px, 50%) minmax(320px, 40%)",
+  gap: "16px",
+  minHeight: "680px",
+  height: "calc(100vh - 220px)",
+};
+
+const collectionTableSectionStyle = {
+  borderRadius: "18px",
+  border: "1px solid var(--surface-light)",
+  background: "var(--surface)",
+  display: "flex",
+  flexDirection: "column",
+  overflow: "hidden",
+};
+
+const collectionTableScrollStyle = {
+  flex: "1 1 auto",
+  overflowY: "auto",
+};
+
+const collectionDetailsSectionStyle = {
+  borderRadius: "18px",
+  border: "1px solid var(--surface-light)",
+  padding: "18px",
+  background: "var(--surface)",
+  display: "flex",
+  flexDirection: "column",
+  gap: "14px",
+  overflow: "hidden",
+};
+
+const collectionListScrollStyle = {
+  flex: "1 1 auto",
+  overflowY: "auto",
+  display: "flex",
+  flexDirection: "column",
+  gap: "10px",
+  paddingRight: "4px",
+};
+
 const statusChipStyle = (variant = "scheduled") => {
   const variants = {
     scheduled: { background: "rgba(var(--warning-rgb),0.18)", color: "var(--danger-dark)" },
@@ -194,6 +238,8 @@ const collectionLoadTokens = {
   },
 };
 
+const COLLECTION_SCHEDULE_MONTH_RANGE = 2;
+
 const KM_PER_LITRE = 8;
 
 const customerName = (customer) => {
@@ -261,6 +307,10 @@ export default function PartsDeliveryPlannerPage() {
   const [collectionLoading, setCollectionLoading] = useState(true);
   const [collectionError, setCollectionError] = useState("");
   const [selectedCollectionDate, setSelectedCollectionDate] = useState(todayIso());
+  const [collectionSearchTerm, setCollectionSearchTerm] = useState("");
+  const [collectionSearchMessage, setCollectionSearchMessage] = useState("");
+  const [collectionSearchSuccess, setCollectionSearchSuccess] = useState(false);
+  const [searchHighlightDate, setSearchHighlightDate] = useState("");
   const pricePerLitre = fuelRate?.price_per_litre ?? 1.75;
 
   useEffect(() => {
@@ -433,21 +483,6 @@ export default function PartsDeliveryPlannerPage() {
   const collectionDateKey = (job) =>
     job.delivery_eta || (job.created_at ? job.created_at.slice(0, 10) : todayIso());
 
-  const collectionDates = useMemo(() => {
-    const today = todayIso();
-    const set = new Set([today]);
-    collectionJobs.forEach((job) => {
-      const key = collectionDateKey(job);
-      set.add(key);
-    });
-    const list = Array.from(set);
-    return list.sort((a, b) => {
-      if (a === today) return -1;
-      if (b === today) return 1;
-      return new Date(a) - new Date(b);
-    });
-  }, [collectionJobs]);
-
   const collectionJobsByDate = useMemo(() => {
     const map = {};
     collectionJobs.forEach((job) => {
@@ -465,15 +500,24 @@ export default function PartsDeliveryPlannerPage() {
     return map;
   }, [collectionJobs]);
 
-  useEffect(() => {
-    if (collectionDates.length === 0) return;
-    if (!collectionDates.includes(selectedCollectionDate)) {
-      setSelectedCollectionDate(collectionDates[0]);
+  const collectionScheduleDates = useMemo(() => {
+    const startIso = todayIso();
+    const start = new Date(`${startIso}T00:00:00Z`);
+    const end = new Date(start);
+    end.setUTCMonth(end.getUTCMonth() + COLLECTION_SCHEDULE_MONTH_RANGE);
+    const cursor = new Date(start);
+    const dates = [];
+    while (cursor <= end) {
+      if (cursor.getUTCDay() !== 0) {
+        dates.push(cursor.toISOString().slice(0, 10));
+      }
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
-  }, [collectionDates, selectedCollectionDate]);
+    return dates;
+  }, []);
 
   const collectionSummaries = useMemo(() => {
-    return collectionDates.map((date) => {
+    return collectionScheduleDates.map((date) => {
       const jobs = collectionJobsByDate[date] || [];
       const totalQuantity = jobs.reduce((sum, job) => sum + (Number(job.quantity) || 0), 0);
       const earliestWindow = jobs
@@ -490,7 +534,15 @@ export default function PartsDeliveryPlannerPage() {
         status,
       };
     });
-  }, [collectionDates, collectionJobsByDate]);
+  }, [collectionScheduleDates, collectionJobsByDate]);
+  const todayKey = todayIso();
+
+  useEffect(() => {
+    if (collectionScheduleDates.length === 0) return;
+    if (!collectionScheduleDates.includes(selectedCollectionDate)) {
+      setSelectedCollectionDate(collectionScheduleDates[0]);
+    }
+  }, [collectionScheduleDates, selectedCollectionDate]);
 
   const selectedCollectionJobs = collectionJobsByDate[selectedCollectionDate] || [];
   const selectedCollectionQuantity = selectedCollectionJobs.reduce(
@@ -502,11 +554,6 @@ export default function PartsDeliveryPlannerPage() {
       .map((job) => job.delivery_window)
       .filter(Boolean)
       .sort((a, b) => String(a).localeCompare(String(b)))[0] || "";
-  const todaysCollections = collectionJobsByDate[todayIso()] || [];
-  const todaysCollectionQuantity = todaysCollections.reduce(
-    (sum, job) => sum + (Number(job.quantity) || 0),
-    0
-  );
   const unscheduledCollections = collectionJobs.filter((job) => !job.delivery_window).length;
 
   const jobQueueByDate = useMemo(() => {
@@ -541,6 +588,47 @@ export default function PartsDeliveryPlannerPage() {
       [field]: value,
     }));
   };
+
+  const handleSelectCollectionDate = useCallback((date) => {
+    setSelectedCollectionDate(date);
+    setSearchHighlightDate("");
+  }, []);
+
+  const handleCollectionSearch = useCallback(
+    (event) => {
+      event.preventDefault();
+      const term = collectionSearchTerm.trim().toLowerCase();
+      if (!term) {
+        setCollectionSearchMessage("Enter a customer name, job number, or reference to search.");
+        setCollectionSearchSuccess(false);
+        setSearchHighlightDate("");
+        return;
+      }
+      const match = collectionSummaries.find((summary) =>
+        summary.jobs.some((job) => {
+          const fields = [
+            job.customer_name,
+            job.invoice_reference,
+            job.job_number,
+            job.delivery_address,
+          ];
+          return fields.some((value) => value && String(value).toLowerCase().includes(term));
+        })
+      );
+      if (match) {
+        setSelectedCollectionDate(match.date);
+        setSearchHighlightDate(match.date);
+        setCollectionSearchSuccess(true);
+        const label = match.jobCount === 1 ? "booking" : "bookings";
+        setCollectionSearchMessage(`Found ${match.jobCount} ${label} on ${formatDate(match.date)}.`);
+      } else {
+        setCollectionSearchMessage("No bookings match that search.");
+        setCollectionSearchSuccess(false);
+        setSearchHighlightDate("");
+      }
+    },
+    [collectionSearchTerm, collectionSummaries]
+  );
 
   const closeJobModal = () => {
     setJobModalOpen(false);
@@ -781,41 +869,45 @@ export default function PartsDeliveryPlannerPage() {
               Create parts job
             </button>
           </div>
-          <div
-            style={{
-              marginTop: "8px",
-              display: "flex",
-              gap: "16px",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <div style={{ fontSize: "0.75rem", color: "var(--primary-dark)" }}>Upcoming runs</div>
-              <strong style={{ fontSize: "1.6rem" }}>{runs.length}</strong>
-            </div>
-            <div>
-              <div style={{ fontSize: "0.75rem", color: "var(--primary-dark)" }}>Total mileage</div>
-              <strong style={{ fontSize: "1.6rem" }}>{totalMileage} km</strong>
-            </div>
-            <div>
-              <div style={{ fontSize: "0.75rem", color: "var(--primary-dark)" }}>Fuel estimate</div>
-              <strong style={{ fontSize: "1.6rem" }}>{formatCurrency(totalFuel)}</strong>
-            </div>
-          </div>
-          <div
-            style={{
-              color: "var(--info-dark)",
-              fontSize: "0.85rem",
-              marginTop: "6px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "12px",
-            }}
-          >
-            <span>Fuel rate: {priceLabel}</span>
-          </div>
+          {plannerTab === "delivery" && (
+            <>
+              <div
+                style={{
+                  marginTop: "8px",
+                  display: "flex",
+                  gap: "16px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: "0.75rem", color: "var(--primary-dark)" }}>Upcoming runs</div>
+                  <strong style={{ fontSize: "1.6rem" }}>{runs.length}</strong>
+                </div>
+                <div>
+                  <div style={{ fontSize: "0.75rem", color: "var(--primary-dark)" }}>Total mileage</div>
+                  <strong style={{ fontSize: "1.6rem" }}>{totalMileage} km</strong>
+                </div>
+                <div>
+                  <div style={{ fontSize: "0.75rem", color: "var(--primary-dark)" }}>Fuel estimate</div>
+                  <strong style={{ fontSize: "1.6rem" }}>{formatCurrency(totalFuel)}</strong>
+                </div>
+              </div>
+              <div
+                style={{
+                  color: "var(--info-dark)",
+                  fontSize: "0.85rem",
+                  marginTop: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "12px",
+                }}
+              >
+                <span>Fuel rate: {priceLabel}</span>
+              </div>
+            </>
+          )}
         </header>
 
         {plannerTab === "delivery" ? (
@@ -1059,263 +1151,286 @@ export default function PartsDeliveryPlannerPage() {
             </section>
           </>
         ) : (
-          <section style={{ ...sectionStyle, gap: "18px" }}>
-            {collectionError && <p style={{ color: "var(--danger)" }}>{collectionError}</p>}
-            {collectionLoading ? (
-              <p style={{ color: "var(--info)" }}>Loading collection schedule…</p>
-            ) : (
-              <>
-                <div
+          <section style={collectionPlannerGridStyle}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <form onSubmit={handleCollectionSearch} style={{ width: "100%" }}>
+                <label style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <span style={{ fontSize: "0.85rem", color: "var(--info-dark)", fontWeight: 600 }}>
+                    Search scheduled collections
+                  </span>
+                  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                    <input
+                      type="text"
+                      value={collectionSearchTerm}
+                      onChange={(event) => {
+                        const { value } = event.target;
+                        setCollectionSearchTerm(value);
+                        setCollectionSearchSuccess(false);
+                        if (value.trim()) {
+                          setCollectionSearchMessage("");
+                        } else {
+                          setSearchHighlightDate("");
+                          setCollectionSearchMessage("");
+                        }
+                      }}
+                      placeholder="Enter customer name, job number, or invoice reference"
+                      style={{
+                        flex: "1 1 260px",
+                        minWidth: "220px",
+                        borderRadius: "12px",
+                        border: "1px solid var(--surface-light)",
+                        padding: "10px 12px",
+                        fontSize: "1rem",
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      style={{
+                        borderRadius: "12px",
+                        padding: "10px 18px",
+                        border: "1px solid var(--primary)",
+                        background: "var(--primary)",
+                        color: "var(--surface)",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Find booking
+                    </button>
+                  </div>
+                </label>
+              </form>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+                <p style={{ margin: 0, color: "var(--grey-accent-dark)", fontSize: "0.85rem" }}>
+                  Highlight and jump to a collection day by searching for any linked customer or parts job reference.
+                </p>
+                <p style={{ margin: 0, color: "var(--info-dark)", fontSize: "0.85rem" }}>
+                  {collectionJobs.length} scheduled · {unscheduledCollections} awaiting time confirmation
+                </p>
+              </div>
+              {collectionSearchMessage && (
+                <p
                   style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "12px",
+                    margin: 0,
+                    color: collectionSearchSuccess ? "var(--success, #297C3B)" : "var(--danger)",
+                    fontWeight: 600,
                   }}
                 >
-                  <div
-                    style={{
-                      flex: "1 1 240px",
-                      border: "1px solid var(--surface-light)",
-                      borderRadius: "16px",
-                      padding: "14px",
-                      background: "var(--surface)",
-                    }}
-                  >
-                    <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--info-dark)", textTransform: "uppercase" }}>
-                      Today
-                    </p>
-                    <strong style={{ fontSize: "1.4rem", color: "var(--primary-dark)" }}>
-                      {todaysCollections.length} booking{todaysCollections.length === 1 ? "" : "s"}
-                    </strong>
-                    <p style={{ margin: "4px 0 0", color: "var(--grey-accent-dark)" }}>
-                      {todaysCollectionQuantity} part{todaysCollectionQuantity === 1 ? "" : "s"} ready to collect
-                    </p>
-                  </div>
-                  <div
-                    style={{
-                      flex: "1 1 240px",
-                      border: "1px solid var(--surface-light)",
-                      borderRadius: "16px",
-                      padding: "14px",
-                      background: "var(--surface)",
-                    }}
-                  >
-                    <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--info-dark)", textTransform: "uppercase" }}>
-                      All scheduled
-                    </p>
-                    <strong style={{ fontSize: "1.4rem", color: "var(--primary-dark)" }}>
-                      {collectionJobs.length} order{collectionJobs.length === 1 ? "" : "s"}
-                    </strong>
-                    <p style={{ margin: "4px 0 0", color: "var(--grey-accent-dark)" }}>
-                      {unscheduledCollections} awaiting time confirmation
-                    </p>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    borderRadius: "18px",
-                    border: "1px solid var(--surface-light)",
-                    overflow: "hidden",
-                    background: "var(--surface)",
-                  }}
-                >
-                  <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "640px" }}>
-                      <thead>
-                        <tr style={{ background: "var(--surface)", borderBottom: "2px solid var(--surface-light)" }}>
-                          {["Day / Date", "Collections", "Total parts", "Earliest slot", "Load"].map((heading) => (
-                            <th
-                              key={heading}
-                              style={{
-                                textAlign: "left",
-                                padding: "12px 14px",
-                                fontSize: "0.8rem",
-                                letterSpacing: "0.05em",
-                                color: "var(--info-dark)",
-                                textTransform: "uppercase",
-                              }}
-                            >
-                              {heading}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {collectionSummaries.map((summary) => {
-                          const tone = collectionLoadTokens[summary.status] || collectionLoadTokens.light;
-                          const isSelected = summary.date === selectedCollectionDate;
-                          const isToday = isSameCalendarDay(summary.date, todayIso());
-                          const background = isSelected
-                            ? "rgba(var(--primary-rgb),0.12)"
-                            : isToday
-                            ? "rgba(var(--primary-rgb),0.05)"
-                            : tone.background;
-                          const outline = isSelected ? "0 0 0 2px rgba(var(--primary-rgb),0.4) inset" : "none";
-                          return (
-                            <tr
-                              key={summary.date}
-                              onClick={() => setSelectedCollectionDate(summary.date)}
-                              style={{
-                                cursor: "pointer",
-                                background,
-                                transition: "background 0.2s",
-                                boxShadow: outline,
-                              }}
-                            >
-                              <td style={{ padding: "12px 14px", borderTop: "1px solid var(--surface-light)" }}>
-                                <div style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
-                                  {summary.date === todayIso() ? "Today" : formatShortDate(summary.date)}
-                                </div>
-                                <div style={{ fontSize: "0.8rem", color: "var(--grey-accent-dark)" }}>
-                                  {summary.jobCount} booking{summary.jobCount === 1 ? "" : "s"}
-                                </div>
-                              </td>
-                              <td style={{ padding: "12px 14px", borderTop: "1px solid var(--surface-light)" }}>
-                                {summary.jobCount}
-                              </td>
-                              <td style={{ padding: "12px 14px", borderTop: "1px solid var(--surface-light)" }}>
-                                {summary.totalQuantity}
-                              </td>
-                              <td style={{ padding: "12px 14px", borderTop: "1px solid var(--surface-light)" }}>
-                                {summary.earliestWindow ? formatTime(summary.earliestWindow) : "TBC"}
-                              </td>
-                              <td style={{ padding: "12px 14px", borderTop: "1px solid var(--surface-light)" }}>
-                                <span
-                                  style={{
-                                    padding: "6px 12px",
-                                    borderRadius: "999px",
-                                    fontSize: "0.8rem",
-                                    fontWeight: 600,
-                                    background: isSelected ? "var(--primary)" : tone.background,
-                                    color: isSelected ? "var(--surface)" : tone.color,
-                                    border: isSelected ? "1px solid var(--primary)" : "1px solid transparent",
-                                  }}
-                                >
-                                  {tone.label}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    borderRadius: "18px",
-                    border: "1px solid var(--surface-light)",
-                    padding: "18px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "14px",
-                    background: "var(--surface)",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "12px",
-                    }}
-                  >
-                    <div style={{ flex: "1 1 200px" }}>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: "0.75rem",
-                          letterSpacing: "0.08em",
-                          color: "var(--info-dark)",
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        Selected day
-                      </p>
-                      <strong style={{ fontSize: "1.2rem", color: "var(--primary-dark)" }}>
-                        {formatDate(selectedCollectionDate)}
-                      </strong>
-                    </div>
-                    <div style={{ flex: "1 1 160px" }}>
-                      <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--info-dark)", textTransform: "uppercase" }}>
-                        Bookings
-                      </p>
-                      <strong style={{ fontSize: "1.2rem", color: "var(--primary-dark)" }}>
-                        {selectedCollectionJobs.length}
-                      </strong>
-                    </div>
-                    <div style={{ flex: "1 1 160px" }}>
-                      <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--info-dark)", textTransform: "uppercase" }}>
-                        Total parts
-                      </p>
-                      <strong style={{ fontSize: "1.2rem", color: "var(--primary-dark)" }}>
-                        {selectedCollectionQuantity}
-                      </strong>
-                    </div>
-                    <div style={{ flex: "1 1 160px" }}>
-                      <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--info-dark)", textTransform: "uppercase" }}>
-                        First slot
-                      </p>
-                      <strong style={{ fontSize: "1.2rem", color: "var(--primary-dark)" }}>
-                        {selectedCollectionWindow ? formatTime(selectedCollectionWindow) : "TBC"}
-                      </strong>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    {selectedCollectionJobs.length === 0 ? (
-                      <p style={{ margin: 0, color: "var(--info-dark)" }}>
-                        No collections scheduled for {formatDate(selectedCollectionDate)}.
-                      </p>
-                    ) : (
-                      selectedCollectionJobs.map((job) => (
-                        <button
-                          key={job.id}
-                          type="button"
-                          onClick={() => router.push(`/parts/parts-job-card/${job.job_number}`)}
-                          style={{
-                            border: "1px solid rgba(var(--primary-rgb),0.15)",
-                            borderRadius: "16px",
-                            padding: "14px",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "6px",
-                            textAlign: "left",
-                            background: "var(--surface)",
-                            cursor: "pointer",
-                          }}
-                        >
-                          <div
+                  {collectionSearchMessage}
+                </p>
+              )}
+            </div>
+            <div style={collectionTableSectionStyle}>
+              <div style={{ padding: "16px 18px", borderBottom: "1px solid var(--surface-light)" }}>
+                <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--primary-dark)", fontWeight: 600 }}>
+                  Daily collection pipeline
+                </p>
+                <p style={{ margin: "4px 0 0", color: "var(--grey-accent-dark)", fontSize: "0.85rem" }}>
+                  Plan the next eight days at a glance and scroll for up to two months ahead.
+                </p>
+              </div>
+              {collectionError ? (
+                <div style={{ padding: "18px", color: "var(--danger)" }}>{collectionError}</div>
+              ) : collectionLoading ? (
+                <div style={{ padding: "18px", color: "var(--info)" }}>Loading collection schedule…</div>
+              ) : (
+                <div style={{ ...collectionTableScrollStyle, overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "640px" }}>
+                    <thead>
+                      <tr style={{ background: "var(--surface)", borderBottom: "2px solid var(--surface-light)" }}>
+                        {["Day / Date", "Collections", "Total parts", "Earliest slot", "Load"].map((heading) => (
+                          <th
+                            key={heading}
                             style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              gap: "12px",
-                              flexWrap: "wrap",
+                              textAlign: "left",
+                              padding: "12px 14px",
+                              fontSize: "0.8rem",
+                              letterSpacing: "0.05em",
+                              color: "var(--info-dark)",
+                              textTransform: "uppercase",
                             }}
                           >
-                            <strong style={{ color: "var(--primary-dark)" }}>
-                              {job.customer_name || "Customer"}
-                            </strong>
-                            <span style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
-                              {job.invoice_reference || job.job_number}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: "0.85rem", color: "var(--grey-accent-dark)" }}>
-                            {job.quantity} part{job.quantity === 1 ? "" : "s"} ·{" "}
-                            {job.delivery_window ? formatTime(job.delivery_window) : "Time TBC"}
-                          </div>
-                          <div style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
-                            {job.delivery_address || job.customer_address || "Collection address recorded on parts card"}
-                          </div>
-                          <div style={{ fontSize: "0.8rem", color: "var(--grey-accent-dark)" }}>
-                            Parts card #{job.job_number} · tap to open
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
+                            {heading}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {collectionSummaries.map((summary) => {
+                        const tone = collectionLoadTokens[summary.status] || collectionLoadTokens.light;
+                        const isSelected = summary.date === selectedCollectionDate;
+                        const isToday = isSameCalendarDay(summary.date, todayKey);
+                        const isSearchHighlight = Boolean(searchHighlightDate && summary.date === searchHighlightDate);
+                        const background = isSearchHighlight
+                          ? "rgba(var(--success-rgb,34,139,34),0.18)"
+                          : isSelected
+                          ? "rgba(var(--primary-rgb),0.12)"
+                          : isToday
+                          ? "rgba(var(--primary-rgb),0.05)"
+                          : tone.background;
+                        const outline = isSearchHighlight
+                          ? "0 0 0 2px rgba(var(--success-rgb,34,139,34),0.4) inset"
+                          : isSelected
+                          ? "0 0 0 2px rgba(var(--primary-rgb),0.4) inset"
+                          : "none";
+                        return (
+                          <tr
+                            key={summary.date}
+                            onClick={() => handleSelectCollectionDate(summary.date)}
+                            style={{
+                              cursor: "pointer",
+                              background,
+                              transition: "background 0.2s",
+                              boxShadow: outline,
+                            }}
+                          >
+                            <td style={{ padding: "12px 14px", borderTop: "1px solid var(--surface-light)" }}>
+                              <div style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
+                                {summary.date === todayKey ? "Today" : formatShortDate(summary.date)}
+                              </div>
+                              <div style={{ fontSize: "0.8rem", color: "var(--grey-accent-dark)" }}>
+                                {summary.jobCount} booking{summary.jobCount === 1 ? "" : "s"}
+                              </div>
+                            </td>
+                            <td style={{ padding: "12px 14px", borderTop: "1px solid var(--surface-light)" }}>
+                              {summary.jobCount}
+                            </td>
+                            <td style={{ padding: "12px 14px", borderTop: "1px solid var(--surface-light)" }}>
+                              {summary.totalQuantity}
+                            </td>
+                            <td style={{ padding: "12px 14px", borderTop: "1px solid var(--surface-light)" }}>
+                              {summary.earliestWindow ? formatTime(summary.earliestWindow) : "TBC"}
+                            </td>
+                            <td style={{ padding: "12px 14px", borderTop: "1px solid var(--surface-light)" }}>
+                              <span
+                                style={{
+                                  padding: "6px 12px",
+                                  borderRadius: "999px",
+                                  fontSize: "0.8rem",
+                                  fontWeight: 600,
+                                  background: isSelected ? "var(--primary)" : tone.background,
+                                  color: isSelected ? "var(--surface)" : tone.color,
+                                  border: isSelected ? "1px solid var(--primary)" : "1px solid transparent",
+                                }}
+                              >
+                                {tone.label}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-              </>
-            )}
+              )}
+            </div>
+            <div style={collectionDetailsSectionStyle}>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "12px",
+                }}
+              >
+                <div style={{ flex: "1 1 200px" }}>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "0.75rem",
+                      letterSpacing: "0.08em",
+                      color: "var(--info-dark)",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Selected day
+                  </p>
+                  <strong style={{ fontSize: "1.2rem", color: "var(--primary-dark)" }}>
+                    {formatDate(selectedCollectionDate)}
+                  </strong>
+                </div>
+                <div style={{ flex: "1 1 160px" }}>
+                  <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--info-dark)", textTransform: "uppercase" }}>
+                    Bookings
+                  </p>
+                  <strong style={{ fontSize: "1.2rem", color: "var(--primary-dark)" }}>
+                    {selectedCollectionJobs.length}
+                  </strong>
+                </div>
+                <div style={{ flex: "1 1 160px" }}>
+                  <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--info-dark)", textTransform: "uppercase" }}>
+                    Total parts
+                  </p>
+                  <strong style={{ fontSize: "1.2rem", color: "var(--primary-dark)" }}>
+                    {selectedCollectionQuantity}
+                  </strong>
+                </div>
+                <div style={{ flex: "1 1 160px" }}>
+                  <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--info-dark)", textTransform: "uppercase" }}>
+                    First slot
+                  </p>
+                  <strong style={{ fontSize: "1.2rem", color: "var(--primary-dark)" }}>
+                    {selectedCollectionWindow ? formatTime(selectedCollectionWindow) : "TBC"}
+                  </strong>
+                </div>
+              </div>
+              {collectionLoading ? (
+                <p style={{ margin: 0, color: "var(--info)" }}>Loading collection jobs…</p>
+              ) : (
+                <div style={collectionListScrollStyle}>
+                  {selectedCollectionJobs.length === 0 ? (
+                    <p style={{ margin: 0, color: "var(--info-dark)" }}>
+                      No collections scheduled for {formatDate(selectedCollectionDate)}.
+                    </p>
+                  ) : (
+                    selectedCollectionJobs.map((job) => (
+                      <button
+                        key={job.id}
+                        type="button"
+                        onClick={() => router.push(`/parts/parts-job-card/${job.job_number}`)}
+                        style={{
+                          border: "1px solid rgba(var(--primary-rgb),0.15)",
+                          borderRadius: "16px",
+                          padding: "14px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "6px",
+                          textAlign: "left",
+                          background: "var(--surface)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "12px",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <strong style={{ color: "var(--primary-dark)" }}>
+                            {job.customer_name || "Customer"}
+                          </strong>
+                          <span style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
+                            {job.invoice_reference || job.job_number}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: "0.85rem", color: "var(--grey-accent-dark)" }}>
+                          {job.quantity} part{job.quantity === 1 ? "" : "s"} ·{" "}
+                          {job.delivery_window ? formatTime(job.delivery_window) : "Time TBC"}
+                        </div>
+                        <div style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
+                          {job.delivery_address || job.customer_address || "Collection address recorded on parts card"}
+                        </div>
+                        <div style={{ fontSize: "0.8rem", color: "var(--grey-accent-dark)" }}>
+                          Parts card #{job.job_number} · tap to open
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
           </section>
         )}
       </div>

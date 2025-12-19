@@ -40,12 +40,47 @@ async function handler(req, res, session) {
     .order("payment_date", { ascending: false });
   let job = null;
   if (invoice.job_number) {
-    const { data: jobRecord } = await supabase
-      .from("job_cards")
-      .select("job_number, status, reg, service_advisor")
+    const { data: jobRecord, error: jobError } = await supabase
+      .from("jobs")
+      .select(
+        `
+          job_number,
+          status,
+          vehicle_reg,
+          vehicle_make_model,
+          assigned_to,
+          advisor:assigned_to (
+            user_id,
+            name,
+            first_name,
+            last_name
+          )
+        `
+      )
       .eq("job_number", invoice.job_number)
       .maybeSingle();
-    job = jobRecord || null;
+
+    if (jobError && jobError.code !== "PGRST116") {
+      console.error("Failed to fetch linked job", jobError);
+      res.status(500).json({ success: false, message: "Unable to load linked job" });
+      return;
+    }
+
+    if (jobRecord) {
+      const advisorName =
+        jobRecord.advisor?.name ||
+        [jobRecord.advisor?.first_name, jobRecord.advisor?.last_name]
+          .filter(Boolean)
+          .join(" ") ||
+        null;
+      job = {
+        job_number: jobRecord.job_number,
+        status: jobRecord.status,
+        reg: jobRecord.vehicle_reg,
+        vehicle: jobRecord.vehicle_make_model || jobRecord.vehicle_reg,
+        advisor: advisorName,
+      };
+    }
   }
   res.status(200).json({ success: true, data: invoice, payments: payments || [], job });
 }
