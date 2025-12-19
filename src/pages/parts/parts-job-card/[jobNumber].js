@@ -102,7 +102,7 @@ export default function PartsJobCardDetail() {
       try {
         const { data, error: fetchError } = await supabase
           .from("parts_job_cards")
-          .select("*, items:parts_job_items(*)")
+          .select("*, items:parts_job_card_items(*)")
           .eq("job_number", jobNumber)
           .maybeSingle();
         if (fetchError) throw fetchError;

@@ -204,13 +204,8 @@ export const sidebarSections = [
         roles: ["parts"],
       },
       {
-        label: "Delivery Planner",
+        label: "Delivery/Collection Planner",
         href: "/parts/delivery-planner",
-        roles: ["parts"],
-      },
-      {
-        label: "Create Parts Job",
-        href: "/parts/parts-job-card",
         roles: ["parts"],
       },
       {
@@ -245,13 +240,8 @@ export const sidebarSections = [
         roles: ["parts manager"],
       },
       {
-        label: "Delivery Planner",
+        label: "Delivery/Collection Planner",
         href: "/parts/delivery-planner",
-        roles: ["parts manager"],
-      },
-      {
-        label: "Create Parts Job",
-        href: "/parts/parts-job-card",
         roles: ["parts manager"],
       },
       {

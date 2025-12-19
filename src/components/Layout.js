@@ -63,6 +63,11 @@ const SERVICE_ACTION_LINKS = [
   { label: "Appointments", href: "/job-cards/appointments" },
 ];
 
+const PARTS_ACTION_LINKS = [
+  { label: "Delivery Planner", href: "/parts/delivery-planner" },
+  { label: "Create Parts Job", href: "/parts/parts-job-card" },
+];
+
 const MODE_STORAGE_KEY = "appModeSelection";
 const MODE_ROLE_MAP = {
   Retail: new Set((roleCategories.Retail || []).map((role) => role.toLowerCase())),
@@ -585,14 +590,9 @@ export default function Layout({ children, jobNumber }) {
       description: "Review inbound deliveries and update stock",
       section: "Parts",
     });
-    addNavItem("Delivery Planner", "/parts/delivery-planner", {
-      keywords: ["delivery planner", "routes", "outbound"],
-      description: "Plan outbound parts run timing, stops, and costs",
-      section: "Parts",
-    });
-    addNavItem("Create Parts Job", "/parts/parts-job-card", {
-      keywords: ["parts job", "parts order", "parts card"],
-      description: "Raise parts-only jobs for collection or delivery",
+    addNavItem("Delivery/Collection Planner", "/parts/delivery-planner", {
+      keywords: ["delivery planner", "collection planner", "routes", "outbound"],
+      description: "Plan outbound runs and manage scheduled collections",
       section: "Parts",
     });
   }
@@ -999,6 +999,50 @@ export default function Layout({ children, jobNumber }) {
                           boxShadow: "none",
                           transition:
                             "background-color 0.2s ease, color 0.2s ease",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {action.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+
+              {hasPartsAccess && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "10px",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    flex: isMobile ? "1 1 100%" : "0 1 auto",
+                    minWidth: isMobile ? "100%" : "260px",
+                    marginLeft: isMobile ? 0 : "auto",
+                    marginRight: isMobile ? 0 : "auto",
+                    textAlign: "center",
+                  }}
+                >
+                  {PARTS_ACTION_LINKS.map((action) => {
+                    const active =
+                      router.pathname === action.href ||
+                      router.pathname.startsWith(`${action.href}/`);
+                    return (
+                      <Link
+                        key={action.href}
+                        href={action.href}
+                        style={{
+                          padding: isMobile ? "10px 18px" : "10px 20px",
+                          borderRadius: "999px",
+                          border: active ? "1px solid var(--primary-dark)" : "1px solid rgba(var(--primary-rgb),0.35)",
+                          backgroundColor: active ? "var(--primary-dark)" : "rgba(var(--primary-rgb),0.08)",
+                          color: active ? "var(--surface)" : "var(--primary-dark)",
+                          fontWeight: 700,
+                          fontSize: "0.9rem",
+                          textDecoration: "none",
+                          boxShadow: "none",
+                          transition: "background-color 0.2s ease, color 0.2s ease",
                           whiteSpace: "nowrap",
                         }}
                       >
