@@ -209,6 +209,11 @@ export const sidebarSections = [
         roles: ["parts"],
       },
       {
+        label: "Create Parts Job",
+        href: "/parts/parts-job-card",
+        roles: ["parts"],
+      },
+      {
         label: "VHC Dashboard",
         href: "/vhc/dashboard",
         roles: ["parts"],
@@ -242,6 +247,11 @@ export const sidebarSections = [
       {
         label: "Delivery Planner",
         href: "/parts/delivery-planner",
+        roles: ["parts manager"],
+      },
+      {
+        label: "Create Parts Job",
+        href: "/parts/parts-job-card",
         roles: ["parts manager"],
       },
       {

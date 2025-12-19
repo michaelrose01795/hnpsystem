@@ -590,6 +590,11 @@ export default function Layout({ children, jobNumber }) {
       description: "Plan outbound parts run timing, stops, and costs",
       section: "Parts",
     });
+    addNavItem("Create Parts Job", "/parts/parts-job-card", {
+      keywords: ["parts job", "parts order", "parts card"],
+      description: "Raise parts-only jobs for collection or delivery",
+      section: "Parts",
+    });
   }
 
   if (isPartsManager) {

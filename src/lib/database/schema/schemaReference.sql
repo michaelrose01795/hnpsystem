@@ -910,6 +910,37 @@ CREATE TABLE public.parts_delivery_items (
   CONSTRAINT parts_delivery_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
   CONSTRAINT parts_delivery_items_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
 );
+CREATE TABLE public.parts_delivery_jobs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  invoice_id uuid,
+  invoice_number text,
+  job_id integer,
+  customer_id uuid,
+  customer_name text,
+  part_name text,
+  part_number text,
+  quantity integer NOT NULL DEFAULT 1,
+  unit_price numeric DEFAULT 0,
+  total_price numeric DEFAULT 0,
+  items jsonb NOT NULL DEFAULT '[]'::jsonb,
+  payment_method text,
+  is_paid boolean NOT NULL DEFAULT false,
+  delivery_date date NOT NULL DEFAULT CURRENT_DATE,
+  address text,
+  contact_name text,
+  contact_phone text,
+  contact_email text,
+  notes text,
+  status text NOT NULL DEFAULT 'scheduled'::text CHECK (status = ANY (ARRAY['scheduled'::text, 'en_route'::text, 'completed'::text])),
+  sort_order integer NOT NULL DEFAULT 0,
+  completed_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT parts_delivery_jobs_pkey PRIMARY KEY (id),
+  CONSTRAINT parts_delivery_jobs_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id),
+  CONSTRAINT parts_delivery_jobs_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT parts_delivery_jobs_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
+);
 CREATE TABLE public.parts_delivery_runs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   job_id integer NOT NULL,
