@@ -175,18 +175,17 @@ export default function PartsJobCardPage() {
     setPartSearchLoading(true);
     const searchParts = async () => {
       try {
-        const wildcard = `%${term}%`;
-        const { data, error } = await supabaseClient
-          .from("parts_catalog")
-          .select(
-            "id, part_number, name, description, unit_price, unit_cost, qty_in_stock, qty_reserved, storage_location, supplier"
-          )
-          .or(`part_number.ilike.${wildcard},name.ilike.${wildcard}`)
-          .order("part_number", { ascending: true })
-          .limit(12);
-        if (error) throw error;
+        const params = new URLSearchParams({
+          search: term,
+          limit: "25",
+        });
+        const response = await fetch(`/api/parts/catalog?${params.toString()}`);
+        const payload = await response.json();
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.message || "Failed to search parts catalogue.");
+        }
         if (!cancelled) {
-          setPartSearchResults(data || []);
+          setPartSearchResults(payload.parts || []);
         }
       } catch (lookupError) {
         console.error("Failed to search parts catalog:", lookupError);
@@ -448,9 +447,9 @@ export default function PartsJobCardPage() {
       }
 
       if (job?.job_number) {
-        router.push(`/parts/parts-job-card/${job.job_number}`);
+        router.push(`/parts/create-order/${job.job_number}`);
       } else {
-        router.push("/parts/parts-job-card");
+        router.push("/parts/create-order");
       }
     } catch (submitError) {
       console.error("Failed to create parts job card:", submitError);

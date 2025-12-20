@@ -115,7 +115,7 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
         params.set("category", category.value);
       }
 
-      const response = await fetch(`/api/vhc/parts-search?${params.toString()}`);
+      const response = await fetch(`/api/parts/catalog?${params.toString()}`);
       const payload = await response.json();
 
       if (!response.ok || !payload?.success) {

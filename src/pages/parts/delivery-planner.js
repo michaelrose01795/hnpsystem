@@ -599,7 +599,7 @@ export default function PartsDeliveryPlannerPage() {
       event.preventDefault();
       const term = collectionSearchTerm.trim().toLowerCase();
       if (!term) {
-        setCollectionSearchMessage("Enter a customer name, job number, or reference to search.");
+        setCollectionSearchMessage("Enter a customer name, order number, or reference to search.");
         setCollectionSearchSuccess(false);
         setSearchHighlightDate("");
         return;
@@ -866,7 +866,7 @@ export default function PartsDeliveryPlannerPage() {
                 cursor: "pointer",
               }}
             >
-              Create parts job
+              Create parts order
             </button>
           </div>
           {plannerTab === "delivery" && (
@@ -1155,9 +1155,6 @@ export default function PartsDeliveryPlannerPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <form onSubmit={handleCollectionSearch} style={{ width: "100%" }}>
                 <label style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <span style={{ fontSize: "0.85rem", color: "var(--info-dark)", fontWeight: 600 }}>
-                    Search scheduled collections
-                  </span>
                   <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                     <input
                       type="text"
@@ -1173,7 +1170,7 @@ export default function PartsDeliveryPlannerPage() {
                           setCollectionSearchMessage("");
                         }
                       }}
-                      placeholder="Enter customer name, job number, or invoice reference"
+                      placeholder="Enter customer name, order number, or invoice reference"
                       style={{
                         flex: "1 1 260px",
                         minWidth: "220px",
@@ -1200,14 +1197,6 @@ export default function PartsDeliveryPlannerPage() {
                   </div>
                 </label>
               </form>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-                <p style={{ margin: 0, color: "var(--grey-accent-dark)", fontSize: "0.85rem" }}>
-                  Highlight and jump to a collection day by searching for any linked customer or parts job reference.
-                </p>
-                <p style={{ margin: 0, color: "var(--info-dark)", fontSize: "0.85rem" }}>
-                  {collectionJobs.length} scheduled · {unscheduledCollections} awaiting time confirmation
-                </p>
-              </div>
               {collectionSearchMessage && (
                 <p
                   style={{
@@ -1221,14 +1210,6 @@ export default function PartsDeliveryPlannerPage() {
               )}
             </div>
             <div style={collectionTableSectionStyle}>
-              <div style={{ padding: "16px 18px", borderBottom: "1px solid var(--surface-light)" }}>
-                <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--primary-dark)", fontWeight: 600 }}>
-                  Daily collection pipeline
-                </p>
-                <p style={{ margin: "4px 0 0", color: "var(--grey-accent-dark)", fontSize: "0.85rem" }}>
-                  Plan the next eight days at a glance and scroll for up to two months ahead.
-                </p>
-              </div>
               {collectionError ? (
                 <div style={{ padding: "18px", color: "var(--danger)" }}>{collectionError}</div>
               ) : collectionLoading ? (
@@ -1386,7 +1367,7 @@ export default function PartsDeliveryPlannerPage() {
                       <button
                         key={job.id}
                         type="button"
-                        onClick={() => router.push(`/parts/parts-job-card/${job.job_number}`)}
+                        onClick={() => router.push(`/parts/create-order/${job.job_number}`)}
                         style={{
                           border: "1px solid rgba(var(--primary-rgb),0.15)",
                           borderRadius: "16px",
@@ -1522,7 +1503,7 @@ function DeliveryJobModal({
           <input
             type="text"
             value={invoiceQuery}
-            placeholder="Enter invoice or job number"
+            placeholder="Enter invoice or order number"
             onChange={(event) => setInvoiceQuery(event.target.value)}
             style={{
               width: "100%",

@@ -377,32 +377,41 @@ function PartsPortalPage() {
     );
   };
 
-  const fetchInventory = useCallback(
-    async (term = "") => {
-      setInventoryLoading(true);
-      setInventoryError("");
-      try {
+  const fetchInventory = useCallback(async (term = "") => {
+    setInventoryLoading(true);
+    setInventoryError("");
+    try {
+      const trimmed = (term || "").trim();
+      if (trimmed.length >= 2) {
+        const searchParams = new URLSearchParams({
+          search: trimmed,
+          limit: "100",
+        });
+        const response = await fetch(`/api/parts/catalog?${searchParams.toString()}`);
+        const payload = await response.json();
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.message || "Failed to load inventory");
+        }
+        setInventory(payload.parts || []);
+      } else {
         const query = new URLSearchParams({
-          search: term,
+          search: trimmed,
           includeInactive: "false",
           limit: "100",
         });
         const response = await fetch(`/api/parts/inventory?${query}`);
         const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          throw new Error(data.message || "Failed to load inventory");
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.message || "Failed to load inventory");
         }
-
         setInventory(data.parts || []);
-      } catch (err) {
-        setInventoryError(err.message || "Unable to load inventory");
-      } finally {
-        setInventoryLoading(false);
       }
-    },
-    []
-  );
+    } catch (err) {
+      setInventoryError(err.message || "Unable to load inventory");
+    } finally {
+      setInventoryLoading(false);
+    }
+  }, []);
 
   const fetchDeliveries = useCallback(async () => {
     setDeliveriesLoading(true);
@@ -1041,7 +1050,7 @@ useEffect(() => {
             padding: "28px",
           }}
         >
-          <h2 style={{ ...sectionTitleStyle, marginBottom: "16px" }}>Log Delivery</h2>
+          <h2 style={{ ...sectionTitleStyle, marginBottom: "16px" }}>Goods In</h2>
 
           <label style={{ display: "block", marginBottom: "12px" }}>
             <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
@@ -2272,7 +2281,7 @@ useEffect(() => {
               }}
               style={buttonStyle}
             >
-              Log Delivery
+              Goods in
             </button>
           </div>
 

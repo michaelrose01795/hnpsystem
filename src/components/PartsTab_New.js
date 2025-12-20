@@ -1,7 +1,6 @@
 // ✅ New Parts Tab with Drag & Drop Allocation
 // file location: src/components/PartsTab_New.js
 import React, { useState, useCallback, useEffect, useMemo } from "react";
-import { supabase } from "@/lib/supabaseClient";
 import PrePickLocationModal from "@/components/VHC/PrePickLocationModal";
 
 // Helper functions (keep existing)
@@ -136,42 +135,19 @@ export default function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUser
 
     setCatalogLoading(true);
     try {
-      let query = supabase
-        .from("parts_catalog")
-        .select(
-          "id, part_number, name, description, supplier, category, storage_location, qty_in_stock, qty_reserved, qty_on_order, unit_cost, unit_price"
-        )
-        .order("name", { ascending: true })
-        .limit(25);
-
-      const sanitised = rawTerm.replace(/[%]/g, "").replace(/,/g, "");
-      const pattern = `%${sanitised}%`;
-      const clauses = [
-        `name.ilike.${pattern}`,
-        `part_number.ilike.${pattern}`,
-        `supplier.ilike.${pattern}`,
-        `category.ilike.${pattern}`,
-        `description.ilike.${pattern}`,
-        `oem_reference.ilike.${pattern}`,
-        `storage_location.ilike.${pattern}`,
-      ];
-      if (/^\d+(?:\.\d+)?$/.test(sanitised)) {
-        const numericValue = Number.parseFloat(sanitised);
-        if (!Number.isNaN(numericValue)) {
-          clauses.push(`unit_price.eq.${numericValue}`);
-          clauses.push(`unit_cost.eq.${numericValue}`);
-        }
+      const params = new URLSearchParams({
+        search: rawTerm,
+        limit: "25",
+      });
+      const response = await fetch(`/api/parts/catalog?${params.toString()}`);
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Unable to search stock catalogue");
       }
-      query = query.or(clauses.join(","));
 
-      const { data, error } = await query;
-      if (error) throw error;
-      setCatalogResults(data || []);
-      if (!data || data.length === 0) {
-        setCatalogError("No parts found in stock catalogue.");
-      } else {
-        setCatalogError("");
-      }
+      const results = Array.isArray(payload.parts) ? payload.parts : [];
+      setCatalogResults(results);
+      setCatalogError(results.length === 0 ? "No parts found in stock catalogue." : "");
     } catch (error) {
       console.error("Stock search failed", error);
       setCatalogResults([]);
