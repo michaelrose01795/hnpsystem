@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTheme } from "@/styles/themeProvider";
 
 const renderMessageLines = (message) => {
   if (!message && message !== 0) return [];
@@ -18,6 +19,8 @@ export default function ConfirmationDialog({
   onCancel,
   onConfirm,
 }) {
+  const { resolvedMode } = useTheme();
+  const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
   useEffect(() => {
     if (!isOpen || typeof window === "undefined") return undefined;
 
@@ -107,13 +110,16 @@ export default function ConfirmationDialog({
             style={{
               border: "none",
               background: "transparent",
-              fontSize: "1.5rem",
+              fontSize: "0.95rem",
               lineHeight: 1,
               cursor: "pointer",
-              color: "var(--info)",
+              color: closeButtonColor,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
             }}
           >
-            ×
+            Close
           </button>
         </div>
         <div

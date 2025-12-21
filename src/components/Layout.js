@@ -64,7 +64,7 @@ const SERVICE_ACTION_LINKS = [
 ];
 
 const PARTS_ACTION_LINKS = [
-  { label: "Delivery Planner", href: "/parts/delivery-planner" },
+  { label: "Delivery/Collection Planner", href: "/parts/delivery-planner" },
   { label: "Create Order", href: "/parts/create-order" },
 ];
 

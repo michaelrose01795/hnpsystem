@@ -30,7 +30,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const [jobResponse, customerResponse] = await Promise.all([
+    const [jobResponse, customerResponse, orderResponse] = await Promise.all([
       supabase
         .from("jobs")
         .select(
@@ -72,6 +72,29 @@ export default async function handler(req, res) {
         )
         .order("created_at", { ascending: false })
         .limit(15),
+      supabase
+        .from("parts_job_cards")
+        .select(`
+          id,
+          order_number,
+          status,
+          customer_name,
+          customer_phone,
+          customer_email,
+          vehicle_reg,
+          vehicle_make,
+          vehicle_model,
+          delivery_type,
+          delivery_status,
+          delivery_eta,
+          delivery_window,
+          created_at
+        `)
+        .or(
+          `order_number.ilike.%${term}%,customer_name.ilike.%${term}%,vehicle_reg.ilike.%${term}%,vehicle_make.ilike.%${term}%,vehicle_model.ilike.%${term}%`
+        )
+        .order("created_at", { ascending: false })
+        .limit(15),
     ]);
 
     if (jobResponse.error) {
@@ -87,6 +110,14 @@ export default async function handler(req, res) {
       return res.status(500).json({
         success: false,
         message: "Failed to run customer search",
+      });
+    }
+
+    if (orderResponse.error) {
+      console.error("Global search order error:", orderResponse.error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to run parts order search",
       });
     }
 
@@ -199,6 +230,26 @@ export default async function handler(req, res) {
           vehicleMakeModel: preferredJob?.vehicle_make_model || "",
         });
       }
+    });
+
+    (orderResponse.data || []).forEach((order) => {
+      const orderNumber = (order.order_number || "").toUpperCase();
+      results.push({
+        type: "parts_order",
+        id: order.id,
+        orderNumber,
+        status: order.status,
+        title: `Order ${orderNumber}`,
+        subtitle: [
+          order.customer_name || order.customer_email || "Parts order",
+          order.vehicle_reg || "",
+          order.delivery_type ? order.delivery_type.toUpperCase() : "",
+        ]
+          .filter(Boolean)
+          .join(" • "),
+        deliveryStatus: order.delivery_status,
+        deliveryEta: order.delivery_eta,
+      });
     });
 
     res.status(200).json({

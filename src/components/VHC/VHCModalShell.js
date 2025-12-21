@@ -1,6 +1,7 @@
 // file location: src/components/VHC/VHCModalShell.js
 import React from "react";
 import { vhcModalStyles, createVhcButtonStyle } from "@/styles/appTheme";
+import { useTheme } from "@/styles/themeProvider";
 
 export default function VHCModalShell({
   isOpen,
@@ -13,6 +14,8 @@ export default function VHCModalShell({
   children,
   hideCloseButton = false,
 }) {
+  const { resolvedMode } = useTheme();
+  const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
   if (!isOpen) return null;
 
   return (
@@ -35,11 +38,14 @@ export default function VHCModalShell({
                 border: "none",
                 boxShadow: "none",
                 padding: "6px 12px",
-                fontSize: "18px",
-                fontWeight: "700",
+                fontSize: "0.95rem",
+                fontWeight: 700,
+                color: closeButtonColor,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
               }}
             >
-              ×
+              Close
             </button>
           )}
         </div>

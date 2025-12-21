@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { useTheme } from "@/styles/themeProvider";
 
 const sectionStyle = {
   background: "var(--surface)",
@@ -349,7 +350,7 @@ export default function PartsDeliveryPlannerPage() {
       const { data, error: fetchError } = await supabaseClient
         .from("parts_job_cards")
         .select(
-          `id, job_number, customer_name, invoice_reference, delivery_type, delivery_eta, delivery_window, created_at,
+          `id, order_number, customer_name, invoice_reference, delivery_type, delivery_eta, delivery_window, created_at,
            items:parts_job_card_items(quantity)`
         )
         .eq("delivery_type", "collection")
@@ -359,7 +360,8 @@ export default function PartsDeliveryPlannerPage() {
       const normalized = (data || []).map((job) => {
         const items = Array.isArray(job.items) ? job.items : [];
         const quantity = items.reduce((total, item) => total + (Number(item.quantity) || 0), 0);
-        return { ...job, quantity };
+        const orderNumber = (job.order_number || "").trim().toUpperCase();
+        return { ...job, quantity, order_number: orderNumber };
       });
       setCollectionJobs(normalized);
     } catch (fetchErr) {
@@ -1367,7 +1369,7 @@ export default function PartsDeliveryPlannerPage() {
                       <button
                         key={job.id}
                         type="button"
-                        onClick={() => router.push(`/parts/create-order/${job.job_number}`)}
+                        onClick={() => router.push(`/parts/create-order/${job.order_number}`)}
                         style={{
                           border: "1px solid rgba(var(--primary-rgb),0.15)",
                           borderRadius: "16px",
@@ -1393,7 +1395,7 @@ export default function PartsDeliveryPlannerPage() {
                             {job.customer_name || "Customer"}
                           </strong>
                           <span style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
-                            {job.invoice_reference || job.job_number}
+                            {job.invoice_reference || job.order_number}
                           </span>
                         </div>
                         <div style={{ fontSize: "0.85rem", color: "var(--grey-accent-dark)" }}>
@@ -1404,7 +1406,7 @@ export default function PartsDeliveryPlannerPage() {
                           {job.delivery_address || job.customer_address || "Collection address recorded on parts card"}
                         </div>
                         <div style={{ fontSize: "0.8rem", color: "var(--grey-accent-dark)" }}>
-                          Parts card #{job.job_number} · tap to open
+                          Parts card #{job.order_number} · tap to open
                         </div>
                       </button>
                     ))
@@ -1451,6 +1453,8 @@ function DeliveryJobModal({
   error,
   saving,
 }) {
+  const { resolvedMode } = useTheme();
+  const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
   if (!job) return null;
   const items = Array.isArray(job.items) ? job.items : [];
   const totalQuantity =
@@ -1482,17 +1486,18 @@ function DeliveryJobModal({
             type="button"
             onClick={onClose}
             style={{
-              border: "1px solid var(--surface-light)",
-              borderRadius: "50%",
-              width: "38px",
-              height: "38px",
-              background: "var(--surface)",
+              border: "none",
+              background: "transparent",
               cursor: "pointer",
-              fontSize: "1.2rem",
+              fontSize: "0.95rem",
+              color: closeButtonColor,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
             }}
             aria-label="Close delivery job"
           >
-            ×
+            Close
           </button>
         </div>
 

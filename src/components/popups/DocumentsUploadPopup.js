@@ -2,6 +2,7 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
+import { useTheme } from "@/styles/themeProvider";
 
 const generateTempJobId = () => `temp-${Date.now()}`;
 
@@ -25,6 +26,8 @@ export default function DocumentsUploadPopup({
   const [uploadProgress, setUploadProgress] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [backgroundUploads, setBackgroundUploads] = useState(false);
+  const { resolvedMode } = useTheme();
+  const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
 
   const effectiveJobId = jobId ? String(jobId) : null;
 
@@ -297,12 +300,15 @@ export default function DocumentsUploadPopup({
             style={{
               border: "none",
               background: "transparent",
-              fontSize: "22px",
+              fontSize: "0.95rem",
+              fontWeight: 700,
               cursor: "pointer",
-              color: "var(--info)"
+              color: closeButtonColor,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em"
             }}
           >
-            ×
+            Close
           </button>
         </div>
 

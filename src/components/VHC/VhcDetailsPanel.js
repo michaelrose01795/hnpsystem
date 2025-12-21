@@ -702,7 +702,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const [sectionSaveError, setSectionSaveError] = useState("");
   const [lastSectionSavedAt, setLastSectionSavedAt] = useState(null);
   const [partsNotRequired, setPartsNotRequired] = useState(new Set());
-  const [warrantyItems, setWarrantyItems] = useState(new Set());
   const [selectedVhcItem, setSelectedVhcItem] = useState(null);
   const [isPartSearchModalOpen, setIsPartSearchModalOpen] = useState(false);
   const [isPrePickModalOpen, setIsPrePickModalOpen] = useState(false);
@@ -710,6 +709,118 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const [addingPartToJob, setAddingPartToJob] = useState(false);
   const [expandedVhcItems, setExpandedVhcItems] = useState(new Set());
   const [partDetails, setPartDetails] = useState({});
+  const [vhcIdAliases, setVhcIdAliases] = useState({});
+  const [vhcItemAliasRecords, setVhcItemAliasRecords] = useState([]);
+  const [removingPartIds, setRemovingPartIds] = useState(new Set());
+
+  const resolveCanonicalVhcId = useCallback(
+    (vhcId) => {
+      if (vhcId === null || vhcId === undefined) return "";
+      const key = String(vhcId);
+      const alias = vhcIdAliases[key];
+      return alias ? String(alias) : key;
+    },
+    [vhcIdAliases]
+  );
+
+  const canonicalToDisplayMap = useMemo(() => {
+    const map = new Map();
+    Object.entries(vhcIdAliases).forEach(([displayId, canonicalId]) => {
+      if (canonicalId === null || canonicalId === undefined) return;
+      const canonicalKey = String(canonicalId);
+      if (!canonicalKey) return;
+      map.set(canonicalKey, displayId);
+    });
+    return map;
+  }, [vhcIdAliases]);
+
+  const upsertVhcItemAlias = useCallback(
+    async (displayId, canonicalId) => {
+      if (!displayId || canonicalId === null || canonicalId === undefined) return;
+      const canonicalValue = String(canonicalId);
+
+      setVhcIdAliases((prev) => {
+        if (prev[displayId] === canonicalValue) return prev;
+        return { ...prev, [displayId]: canonicalValue };
+      });
+
+      if (!job?.id) return;
+
+      try {
+        const response = await fetch("/api/vhc/item-aliases", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jobId: job.id,
+            displayId,
+            vhcItemId: canonicalValue,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.message || "Failed to persist VHC alias");
+        }
+
+        if (data.alias) {
+          setVhcItemAliasRecords((prev) => {
+            const others = prev.filter((entry) => entry.display_id !== data.alias.display_id);
+            return [...others, data.alias];
+          });
+        }
+      } catch (error) {
+        console.error("Failed to persist VHC alias:", error);
+      }
+    },
+    [job?.id]
+  );
+
+  const removeVhcItemAlias = useCallback(
+    async (displayId, canonicalId = null) => {
+      if (!displayId) return;
+      setVhcIdAliases((prev) => {
+        if (!prev[displayId]) return prev;
+        const next = { ...prev };
+        delete next[displayId];
+        return next;
+      });
+      setVhcItemAliasRecords((prev) => prev.filter((entry) => entry.display_id !== displayId));
+
+      if (!job?.id) return;
+
+      try {
+        const response = await fetch("/api/vhc/item-aliases", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jobId: job.id,
+            displayId,
+            vhcItemId: canonicalId ? String(canonicalId) : null,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.message || "Failed to remove VHC alias");
+        }
+      } catch (error) {
+        console.error("Failed to remove VHC alias:", error);
+      }
+    },
+    [job?.id]
+  );
+
+  const warrantyRows = useMemo(() => {
+    const rows = new Set();
+    Object.entries(partDetails).forEach(([key, detail]) => {
+      if (!detail || detail.warranty !== true) return;
+      const [vhcKey] = key.split("-");
+      if (vhcKey) {
+        rows.add(vhcKey);
+      }
+    });
+    return rows;
+  }, [partDetails]);
 
   const containerPadding = showNavigation ? "24px" : "0";
   const renderStatusMessage = (message, color = "var(--info)") => (
@@ -785,6 +896,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                 unit_price
               )
             ),
+            vhc_item_aliases(display_id, vhc_item_id),
             job_files(
               file_id,
               file_name,
@@ -820,7 +932,21 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
           return;
         }
 
-        const { vhc_checks = [], parts_job_items = [], job_files = [], ...jobFields } = jobRow;
+        const {
+          vhc_checks = [],
+          parts_job_items = [],
+          job_files = [],
+          vhc_item_aliases: aliasRows = [],
+          ...jobFields
+        } = jobRow;
+        const sanitizedAliasRows = Array.isArray(aliasRows) ? aliasRows.filter(Boolean) : [];
+        const aliasMapFromDb = {};
+        sanitizedAliasRows.forEach((alias) => {
+          if (!alias?.display_id || alias.vhc_item_id === null || alias.vhc_item_id === undefined) return;
+          aliasMapFromDb[String(alias.display_id)] = String(alias.vhc_item_id);
+        });
+        setVhcItemAliasRecords(sanitizedAliasRows);
+        setVhcIdAliases(aliasMapFromDb);
         setJob({
           ...jobFields,
           parts_job_items: parts_job_items || [],
@@ -892,7 +1018,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       job.parts_job_items.forEach((part) => {
         if (part.vhc_item_id && part.origin?.toLowerCase().includes("vhc")) {
           const vhcId = String(part.vhc_item_id);
-          const partKey = `${vhcId}-${part.id}`;
+          const displayId = canonicalToDisplayMap.get(vhcId) || vhcId;
+          const partKey = `${displayId}-${part.id}`;
 
           // Only initialize if not already present
           if (!newPartDetails[partKey]) {
@@ -919,7 +1046,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
       return hasChanges ? newPartDetails : prevDetails;
     });
-  }, [job?.parts_job_items]);
+  }, [job?.parts_job_items, canonicalToDisplayMap]);
 
   const jobParts = useMemo(
     () =>
@@ -1169,64 +1296,68 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
   // Combined VHC items with their parts for Parts Identified section
   const vhcItemsWithParts = useMemo(() => {
-    // We need to wait for summaryItems to be available
     if (!summaryItems || summaryItems.length === 0) return [];
 
     const items = [];
-    const processedVhcIds = new Set();
+    const processedCanonicalIds = new Set();
 
-    // Group parts by vhc_item_id
     const partsByVhcId = new Map();
     partsIdentified.forEach((part) => {
-      if (part?.vhc_item_id) {
-        const key = String(part.vhc_item_id);
-        if (!partsByVhcId.has(key)) {
-          partsByVhcId.set(key, []);
-        }
-        partsByVhcId.get(key).push(part);
+      if (!part?.vhc_item_id) return;
+      const key = String(part.vhc_item_id);
+      if (!partsByVhcId.has(key)) {
+        partsByVhcId.set(key, []);
       }
+      partsByVhcId.get(key).push(part);
     });
 
-    // Add summary items (these are the VHC red/amber findings)
     summaryItems.forEach((summaryItem) => {
-      const vhcId = String(summaryItem.id);
-      const linkedParts = partsByVhcId.get(vhcId) || [];
+      const displayVhcId = String(summaryItem.id);
+      const canonicalVhcId = resolveCanonicalVhcId(displayVhcId);
+      const linkedParts = partsByVhcId.get(canonicalVhcId) || [];
 
       items.push({
         vhcItem: summaryItem,
         linkedParts,
-        vhcId,
+        vhcId: displayVhcId,
+        canonicalVhcId,
       });
 
-      processedVhcIds.add(vhcId);
+      processedCanonicalIds.add(canonicalVhcId);
     });
 
-    // Add any parts that don't have a matching summary item (shouldn't happen, but handle it)
     partsIdentified.forEach((part) => {
-      if (part?.vhc_item_id) {
-        const vhcId = String(part.vhc_item_id);
-        if (!processedVhcIds.has(vhcId)) {
-          items.push({
-            vhcItem: null,
-            linkedParts: [part],
-            vhcId,
-          });
-          processedVhcIds.add(vhcId);
-        }
-      }
+      if (!part?.vhc_item_id) return;
+      const canonicalVhcId = String(part.vhc_item_id);
+      if (processedCanonicalIds.has(canonicalVhcId)) return;
+
+      items.push({
+        vhcItem: null,
+        linkedParts: [part],
+        vhcId: canonicalVhcId,
+        canonicalVhcId,
+      });
+      processedCanonicalIds.add(canonicalVhcId);
     });
 
     return items;
-  }, [summaryItems, partsIdentified]);
+  }, [summaryItems, partsIdentified, resolveCanonicalVhcId]);
 
   const partsCostByVhcItem = useMemo(() => {
     const map = new Map();
+    const canonicalNotRequired = new Set();
+
+    partsNotRequired.forEach((rawId) => {
+      const key = String(rawId);
+      const alias = vhcIdAliases[key];
+      canonicalNotRequired.add(alias ? String(alias) : key);
+    });
+
     partsIdentified.forEach((part) => {
       if (!part?.vhc_item_id) return;
       const key = String(part.vhc_item_id);
 
-      // If parts not required is toggled for this VHC item, set cost to 0
-      if (partsNotRequired.has(key)) {
+      if (canonicalNotRequired.has(key)) {
         map.set(key, 0);
         return;
       }
@@ -1239,16 +1370,17 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       map.set(key, (map.get(key) || 0) + subtotal);
     });
 
-    // Also add entries for VHC items marked as "parts not required" even if they have no parts
     summaryItems.forEach((item) => {
-      const key = String(item.id);
-      if (partsNotRequired.has(key) && !map.has(key)) {
-        map.set(key, 0);
+      const displayId = String(item.id);
+      if (!partsNotRequired.has(displayId)) return;
+      const canonicalId = vhcIdAliases[displayId] ? String(vhcIdAliases[displayId]) : displayId;
+      if (!map.has(canonicalId)) {
+        map.set(canonicalId, 0);
       }
     });
 
     return map;
-  }, [partsIdentified, partsNotRequired, summaryItems]);
+  }, [partsIdentified, partsNotRequired, summaryItems, vhcIdAliases]);
 
   const ensureEntryValue = (state, itemId) =>
     state[itemId] || { partsCost: "", laborHours: "", totalOverride: "", status: null };
@@ -1270,8 +1402,9 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const computeLabourCost = (hours) => parseNumericValue(hours) * LABOUR_RATE;
 
   const resolvePartsCost = (itemId, entry) => {
-    if (partsCostByVhcItem.has(itemId)) {
-      return partsCostByVhcItem.get(itemId);
+    const canonicalId = resolveCanonicalVhcId(itemId);
+    if (partsCostByVhcItem.has(canonicalId)) {
+      return partsCostByVhcItem.get(canonicalId);
     }
     if (entry.partsCost !== "" && entry.partsCost !== null && entry.partsCost !== undefined) {
       return parseNumericValue(entry.partsCost);
@@ -1417,7 +1550,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                   ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
                   : null;
                 const isChecked = selectedSet.has(item.id);
-                const isWarranty = warrantyItems.has(String(item.id));
+                const isWarranty = warrantyRows.has(String(item.id));
                 const rowSeverity = item.displaySeverity || severity;
                 const rowTheme = SEVERITY_THEME[rowSeverity] || {};
                 const detailLabel = item.label || item.sectionName || "Recorded item";
@@ -1795,19 +1928,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     });
   }, []);
 
-  // Handler for "Warranty" toggle
-  const handleWarrantyToggle = useCallback((vhcItemId) => {
-    setWarrantyItems((prev) => {
-      const next = new Set(prev);
-      if (next.has(vhcItemId)) {
-        next.delete(vhcItemId);
-      } else {
-        next.add(vhcItemId);
-      }
-      return next;
-    });
-  }, []);
-
   // Handler for opening part search modal
   const handleVhcItemRowClick = useCallback((vhcId) => {
     setExpandedVhcItems((prev) => {
@@ -1845,8 +1965,16 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   }, []);
 
   // Handler for when a part is added
-  const handlePartAdded = useCallback(async (partData) => {
-    console.log("🔍 handlePartAdded called with:", partData);
+  const selectedVhcRowId = selectedVhcItem?.vhcId ? String(selectedVhcItem.vhcId) : null;
+
+  const handlePartAdded = useCallback(async (payload) => {
+    const partData = payload?.jobPart || payload;
+    const sourceVhcId = payload?.sourceVhcId ? String(payload.sourceVhcId) : selectedVhcRowId;
+    console.log("🔍 handlePartAdded called with:", partData, "source row:", sourceVhcId);
+
+    if (sourceVhcId && partData?.vhc_item_id) {
+      await upsertVhcItemAlias(sourceVhcId, partData.vhc_item_id);
+    }
 
     // Refresh job data to show the new part
     if (resolvedJobNumber) {
@@ -1889,6 +2017,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
               qty_in_stock
             )
           ),
+          vhc_item_aliases(display_id, vhc_item_id),
           job_files(
             file_id,
             file_name,
@@ -1906,11 +2035,45 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       console.log("🔍 Parts in updated job:", updatedJob?.parts_job_items);
 
       if (!fetchError && updatedJob) {
-        const { vhc_checks = [], parts_job_items = [], job_files = [], ...jobFields } = updatedJob;
-        setJob({
-          ...jobFields,
-          parts_job_items: parts_job_items || [],
-          job_files: job_files || [],
+        const {
+          vhc_checks = [],
+          parts_job_items = [],
+          job_files = [],
+          vhc_item_aliases: aliasRows = [],
+          ...jobFields
+        } = updatedJob;
+        const sanitizedAliasRows = Array.isArray(aliasRows) ? aliasRows.filter(Boolean) : [];
+        const aliasMapFromDb = {};
+        sanitizedAliasRows.forEach((alias) => {
+          if (!alias?.display_id || alias.vhc_item_id === null || alias.vhc_item_id === undefined) return;
+          aliasMapFromDb[String(alias.display_id)] = String(alias.vhc_item_id);
+        });
+        setVhcItemAliasRecords(sanitizedAliasRows);
+        setVhcIdAliases(aliasMapFromDb);
+        setJob((prevJob) => {
+          const existingParts = Array.isArray(prevJob?.parts_job_items) ? prevJob.parts_job_items : [];
+          const mergedPartsMap = new Map();
+          existingParts.forEach((part) => {
+            if (part?.id) {
+              mergedPartsMap.set(part.id, part);
+            }
+          });
+          (Array.isArray(parts_job_items) ? parts_job_items : []).forEach((part) => {
+            if (part?.id) {
+              mergedPartsMap.set(part.id, part);
+            }
+          });
+          if (partData?.id) {
+            const current = mergedPartsMap.get(partData.id) || {};
+            mergedPartsMap.set(partData.id, { ...current, ...partData });
+          }
+          const mergedParts = Array.from(mergedPartsMap.values());
+          return {
+            ...(prevJob || {}),
+            ...jobFields,
+            parts_job_items: mergedParts,
+            job_files: job_files || [],
+          };
         });
 
         // Update VHC data if the builder record is present
@@ -1925,9 +2088,10 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
         // Auto-populate part details for the newly added part
         if (partData && partData.vhc_item_id) {
-          const vhcId = String(partData.vhc_item_id);
+          const canonicalVhcId = String(partData.vhc_item_id);
+          const displayVhcId = sourceVhcId || canonicalVhcId;
           const part = partData.part || {};
-          const partKey = `${vhcId}-${partData.id}`;
+          const partKey = `${displayVhcId}-${partData.id}`;
 
           console.log("🔍 Creating part details for key:", partKey);
           console.log("🔍 Part data:", part);
@@ -1965,14 +2129,99 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
           // Expand the row to show the newly added part
           setExpandedVhcItems((prev) => {
             const newSet = new Set(prev);
-            newSet.add(vhcId);
+            newSet.add(displayVhcId);
             console.log("🔍 Expanded VHC items:", Array.from(newSet));
             return newSet;
           });
         }
       }
     }
-  }, [resolvedJobNumber]);
+
+    if (partData) {
+      setJob((prev) => {
+        if (!prev) return prev;
+        const existingParts = Array.isArray(prev.parts_job_items) ? [...prev.parts_job_items] : [];
+        if (existingParts.some((part) => part.id === partData.id)) {
+          return prev;
+        }
+        return {
+          ...prev,
+          parts_job_items: [...existingParts, partData],
+        };
+      });
+    }
+  }, [resolvedJobNumber, selectedVhcRowId, upsertVhcItemAlias]);
+
+  const handleRemovePart = useCallback(
+    async (partItem, displayVhcId) => {
+      if (!partItem?.id) return;
+      const confirmRemove =
+        typeof window !== "undefined"
+          ? window.confirm(`Remove ${partItem.part?.name || "this part"} from the VHC item?`)
+          : true;
+      if (!confirmRemove) return;
+
+      const canonicalId = partItem?.vhc_item_id
+        ? String(partItem.vhc_item_id)
+        : resolveCanonicalVhcId(displayVhcId);
+      const otherPartsBeforeRemoval =
+        Array.isArray(job?.parts_job_items) && canonicalId
+          ? job.parts_job_items.filter(
+              (item) => item.id !== partItem.id && String(item?.vhc_item_id || "") === canonicalId
+            )
+          : [];
+
+      setRemovingPartIds((prev) => {
+        const next = new Set(prev);
+        next.add(partItem.id);
+        return next;
+      });
+
+      try {
+        const response = await fetch(`/api/parts/job-items/${partItem.id}`, {
+          method: "DELETE",
+        });
+        const data = await response.json();
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.error || data?.message || "Failed to remove part");
+        }
+
+        setJob((prev) => {
+          if (!prev) return prev;
+          const remainingParts = Array.isArray(prev.parts_job_items)
+            ? prev.parts_job_items.filter((item) => item.id !== partItem.id)
+            : [];
+          return {
+            ...prev,
+            parts_job_items: remainingParts,
+          };
+        });
+
+        setPartDetails((prev) => {
+          if (!prev) return prev;
+          const partKey = `${displayVhcId}-${partItem.id}`;
+          if (!prev[partKey]) return prev;
+          const next = { ...prev };
+          delete next[partKey];
+          return next;
+        });
+
+        if (canonicalId && otherPartsBeforeRemoval.length === 0) {
+          await removeVhcItemAlias(displayVhcId, canonicalId);
+        }
+      } catch (error) {
+        console.error("Failed to remove part from VHC row:", error);
+        alert(`Failed to remove part: ${error.message || "Unknown error"}`);
+      } finally {
+        setRemovingPartIds((prev) => {
+          const next = new Set(prev);
+          next.delete(partItem.id);
+          return next;
+        });
+      }
+    },
+    [job?.parts_job_items, removeVhcItemAlias, resolveCanonicalVhcId]
+  );
 
   // Handler for "Add to Job" button click
   const handleAddToJobClick = useCallback((partItem) => {
@@ -2087,10 +2336,10 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
             </thead>
             <tbody>
               {vhcItemsWithParts.map((item) => {
-                const { vhcItem, linkedParts, vhcId } = item;
+                const { vhcItem, linkedParts, vhcId, canonicalVhcId } = item;
                 const isPartsNotRequired = partsNotRequired.has(vhcId);
-                const isWarranty = warrantyItems.has(vhcId);
-                const partsCost = partsCostByVhcItem.get(vhcId) || 0;
+                const isWarranty = warrantyRows.has(vhcId);
+                const partsCost = partsCostByVhcItem.get(canonicalVhcId || vhcId) || 0;
                 const hasParts = linkedParts.length > 0;
 
                 // VHC item details
@@ -2200,42 +2449,36 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                       )}
                     </td>
                     <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                      <label
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: "8px",
-                          cursor: "pointer",
-                          userSelect: "none",
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isWarranty}
-                          onChange={() => handleWarrantyToggle(vhcId)}
-                          style={{
-                            width: "18px",
-                            height: "18px",
-                            cursor: "pointer",
-                            accentColor: "var(--primary)",
-                          }}
-                        />
+                      {isWarranty ? (
                         <span
                           style={{
-                            fontSize: "12px",
-                            fontWeight: 600,
-                            color: isWarranty ? "var(--primary)" : "var(--info-dark)",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: "26px",
+                            height: "26px",
+                            borderRadius: "6px",
+                            background: "var(--primary)",
+                            color: "var(--surface)",
+                            fontWeight: 700,
+                            fontSize: "13px",
+                            letterSpacing: "0.06em",
                           }}
+                          title="Warranty part linked"
                         >
-                          {isWarranty ? "Warranty" : ""}
+                          W
                         </span>
-                      </label>
+                      ) : (
+                        <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
+                      )}
                     </td>
                     <td style={{ padding: "12px 16px", textAlign: "center" }}>
                       <button
                         type="button"
-                        onClick={() => handlePartsNotRequiredToggle(vhcId)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handlePartsNotRequiredToggle(vhcId);
+                        }}
                         style={{
                           padding: "8px 16px",
                           borderRadius: "8px",
@@ -2275,7 +2518,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                                 transition: "all 0.2s ease",
                               }}
                             >
-                              + Add Part to Row
+                              + Add New Part
                             </button>
                           </div>
 
@@ -2290,7 +2533,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                               color: "var(--info)",
                               fontSize: "13px",
                             }}>
-                              No parts added yet. Click "Add Part to Row" to add parts to this VHC item.
+                              No parts added yet. Click "Add New Part" to add parts to this VHC item.
                             </div>
                           ) : (
                             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -2306,6 +2549,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                                 const inStock = details.inStock !== undefined ? details.inStock : ((part.part?.qty_in_stock || 0) > 0);
                                 const backOrder = details.backOrder || false;
                                 const warranty = details.warranty || false;
+                                const isRemovingPart = removingPartIds.has(part.id);
 
                                 return (
                                   <div
@@ -2425,7 +2669,16 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                                         />
                                       </div>
 
-                                      {/* Total with VAT */}
+                                    </div>
+                                    <div
+                                      style={{
+                                        display: "grid",
+                                        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                                        gap: "16px",
+                                        marginTop: "16px",
+                                        alignItems: "end",
+                                      }}
+                                    >
                                       <div>
                                         <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                                           Total (inc VAT)
@@ -2446,8 +2699,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                                           }}
                                         />
                                       </div>
-
-                                      {/* In Stock Toggle */}
                                       <div>
                                         <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                                           Stock Status
@@ -2459,6 +2710,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                                           padding: "10px",
                                           cursor: "pointer",
                                           userSelect: "none",
+                                          border: "1px solid var(--accent-purple-surface)",
+                                          borderRadius: "8px",
                                         }}>
                                           <input
                                             type="checkbox"
@@ -2480,8 +2733,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                                           </span>
                                         </label>
                                       </div>
-
-                                      {/* Back Order Toggle */}
                                       <div>
                                         <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                                           Order Status
@@ -2493,6 +2744,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                                           padding: "10px",
                                           cursor: "pointer",
                                           userSelect: "none",
+                                          border: "1px solid var(--accent-purple-surface)",
+                                          borderRadius: "8px",
                                         }}>
                                           <input
                                             type="checkbox"
@@ -2514,8 +2767,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                                           </span>
                                         </label>
                                       </div>
-
-                                      {/* Warranty Checkbox */}
                                       <div>
                                         <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                                           Warranty
@@ -2527,6 +2778,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                                           padding: "10px",
                                           cursor: "pointer",
                                           userSelect: "none",
+                                          borderRadius: "8px",
+                                          border: "1px solid var(--accent-purple-surface)",
                                         }}>
                                           <input
                                             type="checkbox"
@@ -2548,6 +2801,31 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                                           </span>
                                         </label>
                                       </div>
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          justifyContent: "flex-end",
+                                          alignItems: "flex-end",
+                                        }}
+                                      >
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemovePart(part, vhcId)}
+                                          disabled={isRemovingPart}
+                                          style={{
+                                            padding: "10px 18px",
+                                            borderRadius: "8px",
+                                            border: "1px solid var(--danger)",
+                                            background: isRemovingPart ? "var(--danger-surface)" : "var(--surface)",
+                                            color: "var(--danger)",
+                                            fontWeight: 600,
+                                            cursor: isRemovingPart ? "not-allowed" : "pointer",
+                                            transition: "all 0.2s ease",
+                                          }}
+                                        >
+                                          {isRemovingPart ? "Removing…" : "Remove"}
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 );
@@ -2566,7 +2844,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
         </div>
       </div>
     );
-  }, [vhcItemsWithParts, partsNotRequired, warrantyItems, partsCostByVhcItem, handlePartsNotRequiredToggle, handleWarrantyToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handleAddPartButtonClick, handlePartDetailChange]);
+  }, [vhcItemsWithParts, partsNotRequired, warrantyRows, partsCostByVhcItem, handlePartsNotRequiredToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handleAddPartButtonClick, handlePartDetailChange, handleRemovePart, removingPartIds]);
 
   // Render parts panel with table
   const renderPartsPanel = useCallback((title, parts, emptyMessage) => {

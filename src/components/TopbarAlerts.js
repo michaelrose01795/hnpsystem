@@ -1,5 +1,6 @@
 import React from "react";
 import { useAlerts } from "@/context/AlertContext";
+import { useTheme } from "@/styles/themeProvider";
 
 const toneStyles = {
   success: { bg: "var(--success)", text: "var(--surface)" },
@@ -42,6 +43,8 @@ export function AlertBadge() {
 
 export default function TopbarAlerts() {
   const { alerts, dismissAlert } = useAlerts();
+  const { resolvedMode } = useTheme();
+  const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
   if (!alerts.length) return null;
 
   const latestAlerts = alerts.slice(-1);
@@ -82,19 +85,18 @@ export default function TopbarAlerts() {
               onClick={() => dismissAlert(alert.id)}
               style={{
                 border: "none",
-                background: "rgba(var(--surface-rgb), 0.15)",
-                color: tone.text,
+                background: "transparent",
+                color: closeButtonColor,
                 borderRadius: "999px",
-                width: "26px",
-                height: "26px",
-                display: "grid",
-                placeItems: "center",
+                padding: "4px 8px",
                 cursor: "pointer",
                 fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
               }}
               aria-label="Dismiss alert"
             >
-              ×
+              Close
             </button>
           </div>
         );

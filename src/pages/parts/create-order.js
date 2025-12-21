@@ -377,7 +377,7 @@ export default function PartsJobCardPage() {
       (line) => line.part_name.trim() || line.part_number.trim() || Number(line.quantity) > 0
     );
     if (validParts.length === 0) {
-      setErrorMessage("Add at least one part to the job card.");
+      setErrorMessage("Add at least one part to the order.");
       return;
     }
 
@@ -418,7 +418,7 @@ export default function PartsJobCardPage() {
         delivery_notes: form.delivery_notes.trim() || null,
       };
 
-      const { data: job, error: insertError } = await supabaseClient
+      const { data: orderRecord, error: insertError } = await supabaseClient
         .from("parts_job_cards")
         .insert([payload])
         .select("*, items:parts_job_card_items(*)")
@@ -426,7 +426,7 @@ export default function PartsJobCardPage() {
       if (insertError) throw insertError;
 
       const partPayload = validParts.map((line) => ({
-        job_id: job.id,
+        job_id: orderRecord.id,
         part_catalog_id: line.part_catalog_id || null,
         part_number: line.part_number.trim() || null,
         part_name: line.part_name.trim() || null,
@@ -441,19 +441,19 @@ export default function PartsJobCardPage() {
           .insert(partPayload)
           .select("*");
         if (itemsError) throw itemsError;
-        job.items = itemsData;
+        orderRecord.items = itemsData;
       } else {
-        job.items = [];
+        orderRecord.items = [];
       }
 
-      if (job?.job_number) {
-        router.push(`/parts/create-order/${job.job_number}`);
+      if (orderRecord?.order_number) {
+        router.push(`/parts/create-order/${orderRecord.order_number}`);
       } else {
         router.push("/parts/create-order");
       }
     } catch (submitError) {
-      console.error("Failed to create parts job card:", submitError);
-      setErrorMessage(submitError.message || "Unable to save parts job card.");
+      console.error("Failed to create parts order:", submitError);
+      setErrorMessage(submitError.message || "Unable to save parts order.");
     } finally {
       setSaving(false);
     }
@@ -463,7 +463,7 @@ export default function PartsJobCardPage() {
     return (
       <Layout>
         <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
-          You do not have permission to access parts job cards.
+          You do not have permission to access parts orders.
         </div>
       </Layout>
     );
@@ -750,11 +750,12 @@ export default function PartsJobCardPage() {
                   onClick={handleAddPart}
                   style={{
                     borderRadius: "10px",
-                    border: "1px solid var(--surface-light)",
-                    background: "var(--danger-surface)",
+                    border: "1px solid transparent",
+                    background: isDarkMode ? "var(--accent-purple)" : "var(--danger)",
                     padding: "8px 14px",
                     fontWeight: 600,
                     cursor: "pointer",
+                    color: "var(--surface)",
                   }}
                 >
                   + Add part
@@ -922,7 +923,7 @@ export default function PartsJobCardPage() {
                   opacity: saving ? 0.7 : 1,
                 }}
               >
-                {saving ? "Saving…" : "Create Parts card"}
+                {saving ? "Saving…" : "Create order"}
               </button>
             </div>
           </form>
@@ -958,37 +959,21 @@ export default function PartsJobCardPage() {
             <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
               <button
                 type="button"
-                onClick={() => {
-                  closePartSearch();
-                  router.push("/parts#stock-catalogue");
-                }}
-                style={{
-                  borderRadius: "12px",
-                  border: "1px solid var(--surface-light)",
-                  background: "var(--danger-surface)",
-                  color: "var(--primary-dark)",
-                  padding: "8px 14px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                Open stock catalogue
-              </button>
-              <button
-                type="button"
                 onClick={closePartSearch}
                 style={{
-                  borderRadius: "50%",
-                width: "36px",
-                height: "36px",
-                border: "1px solid var(--surface-light)",
-                background: "var(--surface)",
-                fontSize: "1.2rem",
-                cursor: "pointer",
-              }}
+                  border: "none",
+                  background: "transparent",
+                  fontSize: "0.95rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                  color: isDarkMode ? "var(--accent-purple)" : "var(--danger)",
+                  cursor: "pointer",
+                  padding: "6px 0",
+                }}
                 aria-label="Close part search"
               >
-                ×
+                Close
               </button>
             </div>
           </div>

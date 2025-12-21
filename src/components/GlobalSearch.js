@@ -8,6 +8,7 @@ const typeLabels = {
   job: "Job Card",
   customer: "Customer",
   navigation: "Navigation",
+  parts_order: "Parts Order",
 };
 
 const GlobalSearch = ({
@@ -152,6 +153,14 @@ const GlobalSearch = ({
         return {
           ...result,
           href: result.jobNumber ? `/job-cards/${result.jobNumber}` : null,
+        };
+      }
+
+      if (result.type === "parts_order") {
+        const orderId = result.orderNumber || result.jobNumber || "";
+        return {
+          ...result,
+          href: orderId ? `/parts/create-order/${orderId}` : null,
         };
       }
 

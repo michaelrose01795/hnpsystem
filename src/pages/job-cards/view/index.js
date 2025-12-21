@@ -3,12 +3,13 @@
 // Edit: Responsive improvements - optimized mobile/tablet layout with better stacking, reduced padding, and improved grid templates
 "use client"; // enables client-side rendering for Next.js
 
-import React, { useState, useEffect, useMemo } from "react"; // import React and hooks
+import React, { useState, useEffect, useMemo, useCallback } from "react"; // import React and hooks
 import Layout from "@/components/Layout"; // import layout wrapper
 import { useNextAction } from "@/context/NextActionContext"; // import next action context
 import { useRouter } from "next/router"; // for navigation
 import { getAllJobs, updateJobStatus } from "@/lib/database/jobs"; // import database functions
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
+import { useUser } from "@/context/UserContext";
 
 const TODAY_STATUSES = [
   "Booked",
@@ -46,6 +47,7 @@ const getTodayDate = () => {
 const BASE_STATUS_OPTIONS = {
   today: TODAY_STATUSES,
   carryOver: CARRY_OVER_STATUSES,
+  orders: [],
 };
 
 const buildStatusOptions = (jobs, baseStatuses) => {
@@ -180,20 +182,45 @@ const renderVhcBadge = (job) => {
 ================================ */
 export default function ViewJobCards() {
   const [jobs, setJobs] = useState([]); // store all jobs
+  const [orders, setOrders] = useState([]); // store parts orders
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const [popupJob, setPopupJob] = useState(null); // store selected job for popup
   const [searchValues, setSearchValues] = useState({
     today: "",
     carryOver: "",
+    orders: "",
   });
   const [activeStatusFilters, setActiveStatusFilters] = useState({
     today: "All",
     carryOver: "All",
+    orders: "All",
   });
   const [activeTab, setActiveTab] = useState("today"); // track active tab
   const [loading, setLoading] = useState(true); // loading state
   const router = useRouter(); // router for navigation
   const { triggerNextAction } = useNextAction(); // next action dispatcher
+  const { user } = useUser();
   const today = getTodayDate(); // get today's date
+
+  const userRoles = useMemo(() => {
+    if (!user?.roles) return [];
+    return user.roles
+      .map((role) =>
+        typeof role === "string" ? role.trim().toLowerCase() : ""
+      )
+      .filter(Boolean);
+  }, [user]);
+
+  const showOrdersTab = useMemo(() => {
+    if (!userRoles.length) return false;
+    return userRoles.some((role) => role === "parts" || role === "parts manager");
+  }, [userRoles]);
+
+  useEffect(() => {
+    if (!showOrdersTab && activeTab === "orders") {
+      setActiveTab("today");
+    }
+  }, [showOrdersTab, activeTab]);
 
   /* ----------------------------
      Fetch jobs from Supabase
@@ -209,6 +236,31 @@ export default function ViewJobCards() {
   useEffect(() => {
     fetchJobs(); // fetch jobs on component mount
   }, []);
+
+  const fetchOrders = useCallback(async () => {
+    setOrdersLoading(true);
+    try {
+      const response = await fetch("/api/parts/orders");
+      if (!response.ok) {
+        throw new Error("Failed to load orders");
+      }
+      const payload = await response.json();
+      setOrders(payload?.orders || []);
+    } catch (orderError) {
+      console.error("Failed to fetch parts orders", orderError);
+      setOrders([]);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showOrdersTab) {
+      fetchOrders();
+    } else {
+      setOrders([]);
+    }
+  }, [showOrdersTab, fetchOrders]);
 
   /* ----------------------------
      Go to job card page
@@ -281,6 +333,45 @@ export default function ViewJobCards() {
     [jobs, today, jobDateLookup]
   );
 
+  const normalizedOrders = useMemo(() => {
+    if (!Array.isArray(orders)) return [];
+    return orders
+      .map((order) => {
+        const makeModel = [order.vehicle_make, order.vehicle_model]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        const appointment = order.delivery_eta
+          ? {
+              date: order.delivery_eta,
+              time: order.delivery_window || "",
+            }
+          : null;
+        const fallbackCustomer =
+          order.customer_name ||
+          order.delivery_contact ||
+          order.customer_email ||
+          "Parts order customer";
+        const normalizedNumber = (order.order_number || "").trim().toUpperCase();
+
+        return {
+          ...order,
+          orderNumber: normalizedNumber,
+          reg: order.vehicle_reg || "",
+          customer: fallbackCustomer,
+          makeModel: makeModel || order.vehicle_make || order.vehicle_model || "",
+          waitingStatus:
+            order.delivery_status || order.delivery_type || order.status || "Order",
+          appointment,
+          createdAt: order.created_at,
+          requests: order.items || [],
+        };
+      })
+      .filter((order) => Boolean(order.orderNumber) && order.orderNumber.startsWith("P"));
+  }, [orders]);
+
+  const orderJobs = normalizedOrders;
+
   const todayStatusCounts = useMemo(
     () => getStatusCounts(todayJobs),
     [todayJobs]
@@ -288,6 +379,10 @@ export default function ViewJobCards() {
   const carryStatusCounts = useMemo(
     () => getStatusCounts(carryOverJobs),
     [carryOverJobs]
+  );
+  const orderStatusCounts = useMemo(
+    () => getStatusCounts(orderJobs),
+    [orderJobs]
   );
 
   const handleSearchValueChange = (tab, value) => {
@@ -301,20 +396,39 @@ export default function ViewJobCards() {
     }));
   };
 
-  const baseJobs = activeTab === "today" ? todayJobs : carryOverJobs;
+  const isOrdersTab = activeTab === "orders";
+  const baseJobs =
+    activeTab === "today"
+      ? todayJobs
+      : activeTab === "carryOver"
+      ? carryOverJobs
+      : orderJobs;
   const statusOptionsMap = useMemo(
     () => ({
       today: buildStatusOptions(todayJobs, BASE_STATUS_OPTIONS.today),
       carryOver: buildStatusOptions(carryOverJobs, BASE_STATUS_OPTIONS.carryOver),
+      orders: buildStatusOptions(orderJobs, BASE_STATUS_OPTIONS.orders),
     }),
-    [todayJobs, carryOverJobs]
+    [todayJobs, carryOverJobs, orderJobs]
   );
-  const statusOptions = statusOptionsMap[activeTab];
+  const statusOptions = statusOptionsMap[activeTab] || [];
   const statusTabs = ["All", ...statusOptions];
   const statusCounts =
-    activeTab === "today" ? todayStatusCounts : carryStatusCounts;
+    activeTab === "today"
+      ? todayStatusCounts
+      : activeTab === "carryOver"
+      ? carryStatusCounts
+      : orderStatusCounts;
   const activeStatusFilter = activeStatusFilters[activeTab];
   const searchValue = searchValues[activeTab]?.trim().toLowerCase() || "";
+  const searchPlaceholder = isOrdersTab ? "Search orders..." : "Search jobs...";
+  const emptyStateMessage = searchValue
+    ? isOrdersTab
+      ? "No orders match your search."
+      : "No jobs match your search."
+    : isOrdersTab
+    ? "No orders available."
+    : "No jobs in this status group.";
   const activeFilterLabel =
     activeStatusFilter === "All"
       ? "Showing every status"
@@ -472,6 +586,24 @@ export default function ViewJobCards() {
               >
                 Carry over
               </button>
+              {showOrdersTab && (
+                <button
+                  onClick={() => setActiveTab("orders")}
+                  style={{
+                    padding: "10px 20px",
+                    border: "none",
+                    borderRadius: "999px",
+                    background: activeTab === "orders" ? "var(--primary)" : "transparent",
+                    color: activeTab === "orders" ? "white" : "var(--accent-purple)",
+                    fontWeight: 600,
+                    fontSize: "0.9rem",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  Orders
+                </button>
+              )}
             </div>
           </div>
 
@@ -514,7 +646,7 @@ export default function ViewJobCards() {
               >
                 <input
                   type="search"
-                  placeholder="Search jobs..."
+                  placeholder={searchPlaceholder}
                   value={searchValues[activeTab]}
                   onChange={(event) =>
                     handleSearchValueChange(activeTab, event.target.value)
@@ -529,86 +661,90 @@ export default function ViewJobCards() {
                   }}
                 />
               </div>
-              <div
-                style={{
-                  flex: "0 1 auto",
-                  minWidth: "auto",
-                  padding: "10px 14px",
-                  borderRadius: "14px",
-                  border: "1px solid var(--surface-light)",
-                  background: "var(--accent-purple-surface)",
-                  color: "var(--accent-purple)",
-                  fontSize: "0.8rem",
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textAlign: "center",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {activeFilterLabel}
-              </div>
+              {!isOrdersTab && (
+                <div
+                  style={{
+                    flex: "0 1 auto",
+                    minWidth: "auto",
+                    padding: "10px 14px",
+                    borderRadius: "14px",
+                    border: "1px solid var(--surface-light)",
+                    background: "var(--accent-purple-surface)",
+                    color: "var(--accent-purple)",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {activeFilterLabel}
+                </div>
+              )}
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "10px",
-                padding: "12px",
-                marginBottom: "16px",
-                background: "var(--surface)",
-                borderRadius: "18px",
-                border: "1px solid var(--surface-light)",
-                boxShadow: "none",
-              }}
-            >
-              {statusTabs.map((status) => {
-                const isActive = activeStatusFilter === status;
-                const count =
-                  status === "All" ? baseJobs.length : statusCounts[status] || 0;
-                return (
-                  <button
-                    key={status}
-                    type="button"
-                    onClick={() => handleStatusFilterChange(activeTab, status)}
-                    style={{
-                      padding: "10px 18px",
-                      borderRadius: "14px",
-                      border: "1px solid",
-                      borderColor: isActive ? "transparent" : "rgba(var(--primary-rgb), 0.3)",
-                      background: isActive ? "var(--primary)" : "rgba(var(--surface-rgb), 0.9)",
-                      color: isActive ? "white" : "var(--accent-purple)",
-                      cursor: "pointer",
-                      fontWeight: 600,
-                      fontSize: "13px",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      boxShadow: "none",
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    <span>{status}</span>
-                    <span
+            {!isOrdersTab && (
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "10px",
+                  padding: "12px",
+                  marginBottom: "16px",
+                  background: "var(--surface)",
+                  borderRadius: "18px",
+                  border: "1px solid var(--surface-light)",
+                  boxShadow: "none",
+                }}
+              >
+                {statusTabs.map((status) => {
+                  const isActive = activeStatusFilter === status;
+                  const count =
+                    status === "All" ? baseJobs.length : statusCounts[status] || 0;
+                  return (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => handleStatusFilterChange(activeTab, status)}
                       style={{
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        padding: "2px 10px",
-                        borderRadius: "999px",
-                        backgroundColor: isActive
-                          ? "rgba(var(--surface-rgb), 0.25)"
-                          : "rgba(var(--primary-rgb), 0.1)",
-                            color: isActive ? "white" : "var(--accent-purple)",
+                        padding: "10px 18px",
+                        borderRadius: "14px",
+                        border: "1px solid",
+                        borderColor: isActive ? "transparent" : "rgba(var(--primary-rgb), 0.3)",
+                        background: isActive ? "var(--primary)" : "rgba(var(--surface-rgb), 0.9)",
+                        color: isActive ? "white" : "var(--accent-purple)",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        fontSize: "13px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        boxShadow: "none",
+                        transition: "all 0.2s ease",
                       }}
                     >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                      <span>{status}</span>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          padding: "2px 10px",
+                          borderRadius: "999px",
+                          backgroundColor: isActive
+                            ? "rgba(var(--surface-rgb), 0.25)"
+                            : "rgba(var(--primary-rgb), 0.1)",
+                          color: isActive ? "white" : "var(--accent-purple)",
+                        }}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             <div
               style={{
@@ -629,7 +765,7 @@ export default function ViewJobCards() {
                   gap: "12px",
                 }}
               >
-                {sortedJobs.length === 0 ? (
+                {isOrdersTab && ordersLoading ? (
                   <div
                     style={{
                       padding: "32px",
@@ -640,18 +776,37 @@ export default function ViewJobCards() {
                       background: "var(--info-surface)",
                     }}
                   >
-                    {searchValue
-                      ? "No jobs match your search."
-                      : "No jobs in this status group."}
+                    Loading orders...
+                  </div>
+                ) : sortedJobs.length === 0 ? (
+                  <div
+                    style={{
+                      padding: "32px",
+                      textAlign: "center",
+                      color: "var(--info)",
+                      border: "1px dashed var(--accent-purple-surface)",
+                      borderRadius: "12px",
+                      background: "var(--info-surface)",
+                    }}
+                  >
+                    {emptyStateMessage}
                   </div>
                 ) : (
-                  sortedJobs.map((job) => (
-                    <JobListCard
-                      key={job.jobNumber}
-                      job={job}
-                      onNavigate={() => handleCardNavigation(job.jobNumber)}
-                    />
-                  ))
+                  sortedJobs.map((job) =>
+                    isOrdersTab ? (
+                      <OrderListCard
+                        key={job.id || job.orderNumber}
+                        order={job}
+                        onNavigate={() => router.push(`/parts/create-order/${job.orderNumber}`)}
+                      />
+                    ) : (
+                      <JobListCard
+                        key={job.jobNumber}
+                        job={job}
+                        onNavigate={() => handleCardNavigation(job.jobNumber)}
+                      />
+                    )
+                  )
                 )}
               </div>
             </div>
@@ -1114,6 +1269,144 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
           </div>
           <div style={{ fontSize: "12px", color: "var(--info-dark)", lineHeight: "1.4" }}>
             {customerRequests.join(" • ")}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const OrderListCard = ({ order, onNavigate }) => {
+  const items = order.requests || order.items || [];
+  const totalItems = items.length;
+  const deliveryLabel = order.delivery_type === "collection" ? "Collection" : "Delivery";
+  const deliveryWindow = order.appointment
+    ? order.appointment.time
+      ? `${order.appointment.date} · ${order.appointment.time}`
+      : order.appointment.date
+    : "ETA not set";
+  const primaryStatus =
+    order.status || order.delivery_status || order.invoice_status || "Draft";
+
+  return (
+    <div
+      onClick={onNavigate}
+      style={{
+        border: "1px solid var(--surface-light)",
+        padding: "14px 16px",
+        borderRadius: "12px",
+        backgroundColor: "var(--surface)",
+        boxShadow: "none",
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+        cursor: "pointer",
+        transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+      }}
+      onMouseEnter={(event) => {
+        event.currentTarget.style.transform = "translateY(-2px)";
+        event.currentTarget.style.boxShadow = "none";
+        event.currentTarget.style.borderColor = "var(--primary)";
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.transform = "translateY(0)";
+        event.currentTarget.style.boxShadow = "none";
+        event.currentTarget.style.borderColor = "var(--surface-light)";
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "10px",
+        }}
+      >
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--info-dark)" }}>
+            {order.orderNumber}
+          </span>
+          <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--primary)" }}>
+            {order.customer || "Customer"}
+          </span>
+          <span style={{ fontSize: "13px", color: "var(--info)" }}>
+            {order.makeModel || order.vehicle_reg || "Vehicle pending"}
+          </span>
+        </div>
+        <span
+          style={{
+            padding: "4px 10px",
+            borderRadius: "999px",
+            backgroundColor: "var(--accent-purple-surface)",
+            color: "var(--accent-purple)",
+            fontWeight: 600,
+            fontSize: "12px",
+            textTransform: "capitalize",
+          }}
+        >
+          {primaryStatus}
+        </span>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+          gap: "8px",
+          fontSize: "13px",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>
+            Fulfilment
+          </span>
+          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{deliveryLabel}</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>
+            Scheduled
+          </span>
+          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{deliveryWindow}</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>
+            Items
+          </span>
+          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>
+            {totalItems} line{totalItems === 1 ? "" : "s"}
+          </span>
+        </div>
+        {order.invoice_total !== undefined && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>
+              Invoice Value
+            </span>
+            <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>
+              £{Number(order.invoice_total || 0).toFixed(2)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {items.length > 0 && (
+        <div
+          style={{
+            padding: "8px 10px",
+            borderRadius: "8px",
+            backgroundColor: "var(--info-surface)",
+            border: "1px solid var(--surface-light)",
+          }}
+        >
+          <div style={{ fontSize: "10px", color: "var(--warning)", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>
+            Parts Summary
+          </div>
+          <div style={{ fontSize: "12px", color: "var(--info-dark)", lineHeight: "1.4" }}>
+            {items
+              .slice(0, 4)
+              .map((item) => item.part_name || item.part_number || "Part")
+              .join(" • ")}
+            {items.length > 4 ? " +" + (items.length - 4) + " more" : ""}
           </div>
         </div>
       )}

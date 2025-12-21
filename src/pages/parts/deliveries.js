@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
+import { useTheme } from "@/styles/themeProvider";
 
 const pageStyles = {
   container: {
@@ -530,6 +531,8 @@ function DeliveryJobRow({ job, index, total, onView, onMove, onMarkDelivered, ac
 
 function DeliveryJobViewModal({ job, onClose }) {
   const items = Array.isArray(job.items) ? job.items : [];
+  const { resolvedMode } = useTheme();
+  const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
 
   return (
     <div style={modalOverlayStyle}>
@@ -553,17 +556,18 @@ function DeliveryJobViewModal({ job, onClose }) {
             type="button"
             onClick={onClose}
             style={{
-              border: "1px solid var(--surface-light)",
-              borderRadius: "50%",
-              width: "38px",
-              height: "38px",
-              background: "var(--surface)",
+              border: "none",
+              background: "transparent",
               cursor: "pointer",
-              fontSize: "1.2rem",
+              fontSize: "0.95rem",
+              color: closeButtonColor,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
             }}
             aria-label="Close delivery details"
           >
-            ×
+            Close
           </button>
         </div>
 

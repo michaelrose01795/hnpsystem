@@ -81,20 +81,24 @@ const statusChip = (label, tone = "info") => {
   );
 };
 
-export default function PartsJobCardDetail() {
+export default function PartsOrderDetail() {
   const router = useRouter();
-  const { jobNumber } = router.query;
+  const { jobNumber: legacyJobNumber, orderNumber } = router.query;
+  const resolvedOrderNumber =
+    typeof orderNumber === "string" && orderNumber.trim().length > 0
+      ? orderNumber
+      : legacyJobNumber;
   const { user } = useUser();
   const roles = (user?.roles || []).map((role) => String(role).toLowerCase());
   const hasPartsAccess = roles.includes("parts") || roles.includes("parts manager");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [job, setJob] = useState(null);
+  const [order, setOrder] = useState(null);
   const [activeTab, setActiveTab] = useState("parts");
 
   useEffect(() => {
-    if (!jobNumber) return;
+    if (!resolvedOrderNumber) return;
     if (!hasPartsAccess) return;
     const fetchJob = async () => {
       setLoading(true);
@@ -103,22 +107,22 @@ export default function PartsJobCardDetail() {
         const { data, error: fetchError } = await supabase
           .from("parts_job_cards")
           .select("*, items:parts_job_card_items(*)")
-          .eq("job_number", jobNumber)
+          .eq("order_number", resolvedOrderNumber)
           .maybeSingle();
         if (fetchError) throw fetchError;
-        setJob(data || null);
+        setOrder(data || null);
       } catch (fetchErr) {
-        console.error("Failed to load parts job card:", fetchErr);
-        setError(fetchErr.message || "Unable to load parts job card.");
+        console.error("Failed to load parts order:", fetchErr);
+        setError(fetchErr.message || "Unable to load parts order.");
       } finally {
         setLoading(false);
       }
     };
     fetchJob();
-  }, [jobNumber, hasPartsAccess]);
+  }, [resolvedOrderNumber, hasPartsAccess]);
 
   const totals = useMemo(() => {
-    const items = Array.isArray(job?.items) ? job.items : [];
+    const items = Array.isArray(order?.items) ? order.items : [];
     const lineTotals = items.map((item) => {
       const qty = Number(item.quantity) || 0;
       const price = Number(item.unit_price) || 0;
@@ -129,13 +133,13 @@ export default function PartsJobCardDetail() {
       itemsCount: items.length,
       subtotal,
     };
-  }, [job]);
+  }, [order]);
 
   if (!hasPartsAccess) {
     return (
       <Layout>
         <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
-          You do not have permission to view parts job cards.
+          You do not have permission to view parts orders.
         </div>
       </Layout>
     );
@@ -154,7 +158,7 @@ export default function PartsJobCardDetail() {
               fontSize: "0.8rem",
             }}
           >
-            Parts Card
+            Parts Order
           </p>
           <div
             style={{
@@ -167,20 +171,20 @@ export default function PartsJobCardDetail() {
           >
             <div>
               <h1 style={{ margin: "6px 0 0", color: "var(--primary-dark)" }}>
-                {job?.job_number || jobNumber || "Loading…"}
+                {order?.order_number || resolvedOrderNumber || "Loading…"}
               </h1>
               <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
-                {job?.customer_name || "Customer"} · {job?.vehicle_reg || "No registration"}
+                {order?.customer_name || "Customer"} · {order?.vehicle_reg || "No registration"}
               </p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
               {statusChip(
-                job?.delivery_status ? job.delivery_status.replace(/_/g, " ") : "Pending",
-                job?.delivery_status === "delivered" ? "success" : "info"
+                order?.delivery_status ? order.delivery_status.replace(/_/g, " ") : "Pending",
+                order?.delivery_status === "delivered" ? "success" : "info"
               )}
               {statusChip(
-                job?.invoice_status ? job.invoice_status.replace(/_/g, " ") : "Draft",
-                job?.invoice_status === "paid" ? "success" : job?.invoice_status === "issued" ? "info" : "warning"
+                order?.invoice_status ? order.invoice_status.replace(/_/g, " ") : "Draft",
+                order?.invoice_status === "paid" ? "success" : order?.invoice_status === "issued" ? "info" : "warning"
               )}
             </div>
           </div>
@@ -189,7 +193,7 @@ export default function PartsJobCardDetail() {
             <SummaryPill label="Subtotal" value={formatCurrency(totals.subtotal)} />
             <SummaryPill
               label="Invoice total"
-              value={formatCurrency(job?.invoice_total || totals.subtotal)}
+              value={formatCurrency(order?.invoice_total || totals.subtotal)}
             />
           </div>
         </div>
@@ -197,22 +201,22 @@ export default function PartsJobCardDetail() {
         <div style={sectionCard}>
           <h2 style={{ margin: "0 0 12px", color: "var(--primary-dark)" }}>Customer & Vehicle</h2>
           <div style={infoGrid}>
-            <InfoCell label="Customer" value={job?.customer_name || "—"} />
-            <InfoCell label="Phone" value={job?.customer_phone || "—"} />
-            <InfoCell label="Email" value={job?.customer_email || "—"} />
-            <InfoCell label="Vehicle Reg" value={job?.vehicle_reg || "—"} />
+            <InfoCell label="Customer" value={order?.customer_name || "—"} />
+            <InfoCell label="Phone" value={order?.customer_phone || "—"} />
+            <InfoCell label="Email" value={order?.customer_email || "—"} />
+            <InfoCell label="Vehicle Reg" value={order?.vehicle_reg || "—"} />
             <InfoCell
               label="Vehicle"
               value={
-                job?.vehicle_make || job?.vehicle_model
-                  ? `${job.vehicle_make || ""} ${job.vehicle_model || ""}`.trim()
+                order?.vehicle_make || order?.vehicle_model
+                  ? `${order.vehicle_make || ""} ${order.vehicle_model || ""}`.trim()
                   : "—"
               }
             />
-            <InfoCell label="VIN" value={job?.vehicle_vin || "—"} />
+            <InfoCell label="VIN" value={order?.vehicle_vin || "—"} />
           </div>
-          <InfoCell label="Address" value={job?.customer_address || "—"} fullWidth />
-          <InfoCell label="Notes" value={job?.notes || "No notes recorded"} fullWidth />
+          <InfoCell label="Address" value={order?.customer_address || "—"} fullWidth />
+          <InfoCell label="Notes" value={order?.notes || "No notes recorded"} fullWidth />
         </div>
 
         <div style={sectionCard}>
@@ -244,15 +248,15 @@ export default function PartsJobCardDetail() {
             <p style={{ color: "var(--info)" }}>Loading…</p>
           ) : error ? (
             <p style={{ color: "var(--danger)" }}>{error}</p>
-          ) : !job ? (
-            <p style={{ color: "var(--info)" }}>Parts job card not found.</p>
+          ) : !order ? (
+            <p style={{ color: "var(--info)" }}>Parts order not found.</p>
           ) : (
             <>
               {activeTab === "parts" && (
-                <PartsTab items={job.items || []} jobNotes={job.notes} />
+                <PartsTab items={order.items || []} orderNotes={order.notes} />
               )}
-              {activeTab === "delivery" && <DeliveryTab job={job} />}
-              {activeTab === "invoice" && <InvoiceTab job={job} totals={totals} />}
+              {activeTab === "delivery" && <DeliveryTab order={order} />}
+              {activeTab === "invoice" && <InvoiceTab order={order} totals={totals} />}
             </>
           )}
         </div>
@@ -286,9 +290,9 @@ function InfoCell({ label, value, fullWidth = false }) {
   );
 }
 
-function PartsTab({ items, jobNotes }) {
+function PartsTab({ items, orderNotes }) {
   if (!items || items.length === 0) {
-    return <p style={{ color: "var(--info)" }}>No parts have been recorded for this job.</p>;
+    return <p style={{ color: "var(--info)" }}>No parts have been recorded for this order.</p>;
   }
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -315,7 +319,7 @@ function PartsTab({ items, jobNotes }) {
           {item.notes && <InfoCell label="Notes" value={item.notes} fullWidth />}
         </div>
       ))}
-      {jobNotes && (
+      {orderNotes && (
         <div
           style={{
             borderRadius: "16px",
@@ -323,40 +327,40 @@ function PartsTab({ items, jobNotes }) {
             padding: "12px",
           }}
         >
-          <InfoCell label="Job notes" value={jobNotes} fullWidth />
+          <InfoCell label="Order notes" value={orderNotes} fullWidth />
         </div>
       )}
     </div>
   );
 }
 
-function DeliveryTab({ job }) {
+function DeliveryTab({ order }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-      <InfoCell label="Delivery type" value={job.delivery_type || "—"} />
-      <InfoCell label="Delivery status" value={job.delivery_status || "pending"} />
-      <InfoCell label="ETA" value={formatDate(job.delivery_eta)} />
-      <InfoCell label="Time window" value={job.delivery_window || "—"} />
-      <InfoCell label="Delivery contact" value={job.delivery_contact || job.customer_name || "—"} />
-      <InfoCell label="Delivery phone" value={job.delivery_phone || job.customer_phone || "—"} />
+      <InfoCell label="Delivery type" value={order.delivery_type || "—"} />
+      <InfoCell label="Delivery status" value={order.delivery_status || "pending"} />
+      <InfoCell label="ETA" value={formatDate(order.delivery_eta)} />
+      <InfoCell label="Time window" value={order.delivery_window || "—"} />
+      <InfoCell label="Delivery contact" value={order.delivery_contact || order.customer_name || "—"} />
+      <InfoCell label="Delivery phone" value={order.delivery_phone || order.customer_phone || "—"} />
       <InfoCell
         label="Delivery address"
-        value={job.delivery_address || job.customer_address || "—"}
+        value={order.delivery_address || order.customer_address || "—"}
         fullWidth
       />
-      <InfoCell label="Delivery notes" value={job.delivery_notes || "No delivery notes provided"} fullWidth />
+      <InfoCell label="Delivery notes" value={order.delivery_notes || "No delivery notes provided"} fullWidth />
     </div>
   );
 }
 
-function InvoiceTab({ job, totals }) {
-  const netTotal = job.invoice_total || totals.subtotal;
+function InvoiceTab({ order, totals }) {
+  const netTotal = order.invoice_total || totals.subtotal;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      <InfoCell label="Invoice reference" value={job.invoice_reference || "—"} />
-      <InfoCell label="Invoice status" value={job.invoice_status || "draft"} />
+      <InfoCell label="Invoice reference" value={order.invoice_reference || "—"} />
+      <InfoCell label="Invoice status" value={order.invoice_status || "draft"} />
       <InfoCell label="Invoice total" value={formatCurrency(netTotal)} />
-      <InfoCell label="Invoice notes" value={job.invoice_notes || "No invoice notes"} fullWidth />
+      <InfoCell label="Invoice notes" value={order.invoice_notes || "No invoice notes"} fullWidth />
       <div>
         <p style={{ margin: "0 0 6px", fontWeight: 600 }}>Items summary</p>
         <div style={{ border: "1px solid var(--surface-light)", borderRadius: "14px", padding: "12px" }}>

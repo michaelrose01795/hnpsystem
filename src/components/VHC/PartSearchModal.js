@@ -63,8 +63,8 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedPart, setSelectedPart] = useState(null);
-  const [quantity, setQuantity] = useState(1);
+  const [selectedParts, setSelectedParts] = useState([]);
+  const [addingSelectedParts, setAddingSelectedParts] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState(null);
   const [searchFeedback, setSearchFeedback] = useState({
     type: "info",
@@ -76,10 +76,17 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
 
   const defaultFilter = useMemo(() => deriveCategoryFilter(vhcItem), [vhcItem]);
 
+useEffect(() => {
+  if (!isOpen) return;
+  setCategoryFilter(withFilterMode(defaultFilter));
+}, [defaultFilter, isOpen]);
+
   useEffect(() => {
-    if (!isOpen) return;
-    setCategoryFilter(withFilterMode(defaultFilter));
-  }, [defaultFilter, isOpen]);
+    if (!isOpen) {
+      setSelectedParts([]);
+      setAddingSelectedParts(false);
+    }
+  }, [isOpen]);
 
   // Search parts function
   const searchParts = useCallback(async (query, category) => {
@@ -188,30 +195,79 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
     searchParts(searchQuery, manualFilter);
   }, [defaultFilter, searchQuery, searchParts]);
 
-  // Handle part selection and fetch delivery history
-  const handleSelectPart = useCallback(async (part) => {
-    setSelectedPart(part);
+  const handleTogglePartSelection = useCallback(async (part) => {
+    let addedPart = false;
+    setSelectedParts((prev) => {
+      const exists = prev.some((entry) => entry.part.id === part.id);
+      if (exists) {
+        return prev.filter((entry) => entry.part.id !== part.id);
+      }
+      addedPart = true;
+      return [...prev, { part, quantity: 1 }];
+    });
 
-    // Fetch last delivery info for this part
+    if (!addedPart) return;
+
     try {
       const response = await fetch(`/api/parts/delivery-logs/${part.id}`);
       const data = await response.json();
 
       if (response.ok && data.success && data.deliveryLog) {
-        // Store delivery info with the selected part
-        setSelectedPart((prev) => ({
-          ...prev,
-          lastDelivery: data.deliveryLog,
-        }));
+        setSelectedParts((prev) =>
+          prev.map((entry) =>
+            entry.part.id === part.id
+              ? {
+                  ...entry,
+                  part: {
+                    ...entry.part,
+                    lastDelivery: data.deliveryLog,
+                  },
+                }
+              : entry
+          )
+        );
       }
     } catch (err) {
       console.error("Error fetching delivery history:", err);
     }
   }, []);
 
+  const handleSelectedPartQuantityChange = useCallback((partId, value) => {
+    setSelectedParts((prev) =>
+      prev.map((entry) =>
+        entry.part.id === partId
+          ? {
+              ...entry,
+              quantity: value,
+            }
+          : entry
+      )
+    );
+  }, []);
+
+  const handleSelectedPartQuantityBlur = useCallback((partId) => {
+    setSelectedParts((prev) =>
+      prev.map((entry) => {
+        if (entry.part.id !== partId) return entry;
+        const parsed = Number(entry.quantity);
+        const resolved = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+        return {
+          ...entry,
+          quantity: resolved,
+        };
+      })
+    );
+  }, []);
+
+  const handleRemoveSelectedPart = useCallback((partId) => {
+    setSelectedParts((prev) => prev.filter((entry) => entry.part.id !== partId));
+  }, []);
+
   // Handle adding part to VHC item
   const handleAddPart = useCallback(async () => {
-    if (!selectedPart || !vhcItemData || !jobNumber) return;
+    if (!vhcItemData || !jobNumber || selectedParts.length === 0) return;
+
+    setAddingSelectedParts(true);
 
     try {
       // Get job ID from job number
@@ -227,21 +283,14 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
         return;
       }
 
-      // Ensure quantity is a valid number (default to 1 if empty or invalid)
-      const validQuantity = quantity === "" || quantity === 0 ? 1 : Number(quantity);
-
-      // Parse vhc_item_id - only use it if it's a valid integer
-      // VHC items without database records use string IDs like "Wheels & Tyres-1"
       const parseVhcItemId = (vhcId) => {
         if (!vhcId) return null;
         const parsed = Number(vhcId);
-        // Check if it's a valid integer (not NaN and is a safe integer)
         return Number.isInteger(parsed) && Number.isSafeInteger(parsed) ? parsed : null;
       };
 
       let validVhcItemId = parseVhcItemId(vhcItemData.vhcId);
 
-      // If VHC item doesn't have a database ID yet (string ID), create a vhc_checks record
       if (!validVhcItemId && vhcItemData.vhcId && vhcItemData.vhcItem) {
         console.log("Creating vhc_checks record for VHC item with string ID:", vhcItemData.vhcId);
 
@@ -269,59 +318,75 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
         }
       }
 
-      // Use the API endpoint instead of direct Supabase insert to bypass RLS
-      const response = await fetch("/api/parts/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jobId: jobData.id,
-          partId: selectedPart.id,
-          quantityRequested: validQuantity,
-          allocateFromStock: false,
-          status: "pending",
-          origin: "vhc",
-          vhcItemId: validVhcItemId,
-          unitPrice: selectedPart.unit_price,
-          unitCost: selectedPart.unit_cost || 0,
-          requestNotes: `Linked from VHC: ${vhcItemData.vhcItem?.label || "VHC Item"}`,
-        }),
-      });
+      let successCount = 0;
+      const errors = [];
 
-      const result = await response.json();
+      for (const selection of selectedParts) {
+        const selectedPart = selection.part;
+        const rawQuantity = selection.quantity;
+        const parsedQuantity = Number(rawQuantity);
+        const validQuantity = Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
 
-      console.log("✅ API Response:", result);
+        try {
+          const response = await fetch("/api/parts/jobs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jobId: jobData.id,
+              partId: selectedPart.id,
+              quantityRequested: validQuantity,
+              allocateFromStock: false,
+              status: "pending",
+              origin: "vhc",
+              vhcItemId: validVhcItemId,
+              unitPrice: selectedPart.unit_price,
+              unitCost: selectedPart.unit_cost || 0,
+              requestNotes: `Linked from VHC: ${vhcItemData.vhcItem?.label || "VHC Item"}`,
+            }),
+          });
 
-      if (!response.ok || !result.success) {
-        const errorMessage = result.message || "Failed to add part to job";
-        console.error("Error adding part:", result);
-        alert(`Error adding part: ${errorMessage}`);
-        return;
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.message || "Failed to add part to job");
+          }
+
+          successCount += 1;
+
+          if (onPartSelected) {
+            onPartSelected({
+              jobPart: result.jobPart,
+              sourceVhcId: vhcItemData?.vhcId || null,
+            });
+          }
+        } catch (error) {
+          console.error("Error adding part:", error);
+          errors.push(`${selectedPart.part_number || selectedPart.name}: ${error.message || "Failed to add part"}`);
+        }
       }
 
-      console.log("✅ Job part created:", result.jobPart);
-
-      // Notify parent component - this will refresh the job data without a page reload
-      if (onPartSelected) {
-        console.log("✅ Calling onPartSelected with:", result.jobPart);
-        onPartSelected(result.jobPart);
+      if (successCount > 0) {
+        setSearchFeedback({
+          type: "success",
+          text: `${successCount} part${successCount === 1 ? "" : "s"} linked to the VHC item`,
+        });
+        setSelectedParts([]);
       }
 
-      setSearchFeedback({
-        type: "success",
-        text: `${selectedPart.part_number || selectedPart.name} linked to the VHC item`,
-      });
+      if (errors.length > 0) {
+        alert(`Some parts could not be added:\n${errors.join("\n")}`);
+      }
 
-      // Reset and close
-      setSelectedPart(null);
-      setQuantity(1);
-      setSearchQuery("");
-      setCategoryFilter(withFilterMode(defaultFilter));
-      onClose();
     } catch (err) {
       console.error("Unexpected error adding part:", err);
       alert(`Unexpected error: ${err.message || "An unknown error occurred. Please try again."}`);
+    } finally {
+      setAddingSelectedParts(false);
+      if (typeof onClose === "function") {
+        onClose();
+      }
     }
-  }, [selectedPart, vhcItemData, jobNumber, quantity, onPartSelected, onClose, defaultFilter]);
+  }, [selectedParts, vhcItemData, jobNumber, onPartSelected, onClose]);
 
   if (!isOpen) return null;
 
@@ -429,106 +494,121 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
             )}
           </div>
 
-          {/* Selected Part Details - Moved here underneath VHC Item Details */}
-          {selectedPart && (
-            <div
-              style={{
-                padding: "16px",
-                borderRadius: "12px",
-                background: "var(--accent-purple-surface)",
-                border: "2px solid var(--primary)",
-              }}
-            >
-              <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--accent-purple)", marginBottom: "12px" }}>
-                Selected Part
-              </div>
-              <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--accent-purple)" }}>
-                {selectedPart.name}
-              </div>
-              <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "4px" }}>
-                Part #: {selectedPart.part_number} | £{Number(selectedPart.unit_price || 0).toFixed(2)}
-              </div>
-              <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
-                Stock on hand: {selectedPart.qty_in_stock ?? 0}
-              </div>
-              <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "2px" }}>
-                Reserved: {selectedPart.qty_reserved ?? 0} · On order: {selectedPart.qty_on_order ?? 0}
-              </div>
-              {selectedPart.storage_location && (
-                <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "2px" }}>
-                  Location: {selectedPart.storage_location}
-                </div>
-              )}
-
-              {/* Last Delivery Information */}
-              {selectedPart.lastDelivery && (
-                <div
-                  style={{
-                    marginTop: "12px",
-                    padding: "12px",
-                    borderRadius: "8px",
-                    background: "var(--info-surface)",
-                    border: "1px solid var(--info)",
-                  }}
-                >
-                  <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px" }}>
-                    Last Delivery Information
-                  </div>
-                  <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>
-                    {selectedPart.lastDelivery.supplier && (
-                      <div>Supplier: {selectedPart.lastDelivery.supplier}</div>
-                    )}
-                    {selectedPart.lastDelivery.order_reference && (
-                      <div>Order Ref: {selectedPart.lastDelivery.order_reference}</div>
-                    )}
-                    <div>
-                      Qty Ordered: {selectedPart.lastDelivery.qty_ordered} · Received: {selectedPart.lastDelivery.qty_received}
-                    </div>
-                    {selectedPart.lastDelivery.unit_cost && (
-                      <div>Unit Cost: £{Number(selectedPart.lastDelivery.unit_cost).toFixed(2)}</div>
-                    )}
-                    {selectedPart.lastDelivery.delivery_date && (
-                      <div>Date: {new Date(selectedPart.lastDelivery.delivery_date).toLocaleDateString()}</div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div style={{ marginTop: "16px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info-dark)", marginBottom: "4px" }}>
-                  Quantity
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={quantity}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Allow empty string or numbers only
-                    if (value === "" || /^\d+$/.test(value)) {
-                      setQuantity(value === "" ? "" : Number(value));
-                    }
-                  }}
-                  onBlur={(e) => {
-                    // If empty on blur, set to 1
-                    if (e.target.value === "") {
-                      setQuantity(1);
-                    }
-                  }}
-                  placeholder="1"
-                  style={{
-                    width: "70px",
-                    padding: "8px",
-                    borderRadius: "8px",
-                    border: "1px solid var(--accent-purple-surface)",
-                    fontSize: "14px",
-                    textAlign: "center",
-                  }}
-                />
-              </div>
+          {/* Selected Parts */}
+          <div
+            style={{
+              padding: "16px",
+              borderRadius: "12px",
+              border: "1px solid var(--accent-purple-surface)",
+              background: "var(--surface)",
+            }}
+          >
+            <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--accent-purple)", marginBottom: "12px" }}>
+              Selected Parts ({selectedParts.length})
             </div>
-          )}
+            {selectedParts.length === 0 ? (
+              <div style={{ fontSize: "13px", color: "var(--info)" }}>Select parts from the search results to add them to this VHC item.</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {selectedParts.map(({ part, quantity }) => (
+                  <div
+                    key={part.id}
+                    style={{
+                      border: "1px solid var(--accent-purple-surface)",
+                      borderRadius: "10px",
+                      padding: "12px",
+                      background: "var(--info-surface)",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                      <div>
+                        <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--accent-purple)" }}>{part.name}</div>
+                        <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "2px" }}>
+                          Part #: {part.part_number} | £{Number(part.unit_price || 0).toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "2px" }}>
+                          Stock on hand: {part.qty_in_stock ?? 0} · Reserved: {part.qty_reserved ?? 0} · On order: {part.qty_on_order ?? 0}
+                        </div>
+                        {part.storage_location && (
+                          <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "2px" }}>
+                            Location: {part.storage_location}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSelectedPart(part.id)}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          color: "var(--danger)",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div style={{ marginTop: "12px", display: "flex", gap: "16px", alignItems: "center" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info-dark)", marginBottom: "4px" }}>
+                          Quantity
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={quantity === "" ? "" : quantity}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === "" || /^\d+$/.test(value)) {
+                              handleSelectedPartQuantityChange(part.id, value === "" ? "" : Number(value));
+                            }
+                          }}
+                          onBlur={() => handleSelectedPartQuantityBlur(part.id)}
+                          placeholder="1"
+                          style={{
+                            width: "70px",
+                            padding: "8px",
+                            borderRadius: "8px",
+                            border: "1px solid var(--accent-purple-surface)",
+                            fontSize: "14px",
+                            textAlign: "center",
+                          }}
+                        />
+                      </div>
+                      {part.lastDelivery && (
+                        <div
+                          style={{
+                            flex: 1,
+                            padding: "12px",
+                            borderRadius: "8px",
+                            background: "var(--surface)",
+                            border: "1px solid var(--accent-purple-surface)",
+                          }}
+                        >
+                          <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "4px" }}>
+                            Last Delivery
+                          </div>
+                          <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>
+                            {part.lastDelivery.supplier && <div>Supplier: {part.lastDelivery.supplier}</div>}
+                            {part.lastDelivery.order_reference && <div>Order Ref: {part.lastDelivery.order_reference}</div>}
+                            <div>
+                              Qty Ordered: {part.lastDelivery.qty_ordered} · Received: {part.lastDelivery.qty_received}
+                            </div>
+                            {part.lastDelivery.unit_cost && <div>Unit Cost: £{Number(part.lastDelivery.unit_cost).toFixed(2)}</div>}
+                            {part.lastDelivery.delivery_date && (
+                              <div>Date: {new Date(part.lastDelivery.delivery_date).toLocaleDateString()}</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Currently Linked Parts */}
           {linkedParts.length > 0 && (
@@ -692,15 +772,17 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
                 Search Results ({searchResults.length})
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto" }}>
-                {searchResults.map((part) => (
+                {searchResults.map((part) => {
+                  const isSelected = selectedParts.some((entry) => entry.part.id === part.id);
+                  return (
                   <div
                     key={part.id}
-                    onClick={() => handleSelectPart(part)}
+                    onClick={() => handleTogglePartSelection(part)}
                     style={{
                       padding: "12px",
                       borderRadius: "8px",
-                      background: selectedPart?.id === part.id ? "var(--accent-purple-surface)" : "var(--surface)",
-                      border: `1px solid ${selectedPart?.id === part.id ? "var(--primary)" : "var(--accent-purple-surface)"}`,
+                      background: isSelected ? "var(--accent-purple-surface)" : "var(--surface)",
+                      border: `1px solid ${isSelected ? "var(--primary)" : "var(--accent-purple-surface)"}`,
                       cursor: "pointer",
                       transition: "all 0.2s ease",
                     }}
@@ -729,8 +811,11 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
                         Location: {part.storage_location}
                       </div>
                     )}
+                    <div style={{ marginTop: "8px", fontSize: "11px", fontWeight: 600, color: isSelected ? "var(--primary)" : "var(--info)" }}>
+                      {isSelected ? "✓ Selected" : "Click to Select"}
+                    </div>
                   </div>
-                ))}
+                )})}
               </div>
             </div>
           )}
@@ -765,18 +850,25 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
           <button
             type="button"
             onClick={handleAddPart}
-            disabled={!selectedPart}
+            disabled={selectedParts.length === 0 || addingSelectedParts}
             style={{
               padding: "10px 20px",
               borderRadius: "8px",
               border: "1px solid var(--primary)",
-              background: selectedPart ? "var(--primary)" : "var(--surface-light)",
-              color: selectedPart ? "var(--surface)" : "var(--info)",
+              background:
+                selectedParts.length === 0 || addingSelectedParts ? "var(--surface-light)" : "var(--primary)",
+              color: selectedParts.length === 0 || addingSelectedParts ? "var(--info)" : "var(--surface)",
               fontWeight: 600,
-              cursor: selectedPart ? "pointer" : "not-allowed",
+              cursor:
+                selectedParts.length === 0 || addingSelectedParts ? "not-allowed" : "pointer",
+              minWidth: "160px",
             }}
           >
-            Add New Part
+            {addingSelectedParts
+              ? "Adding Parts..."
+              : selectedParts.length > 0
+              ? `Add ${selectedParts.length} Part${selectedParts.length === 1 ? "" : "s"}`
+              : "Add Parts"}
           </button>
         </div>
       </div>

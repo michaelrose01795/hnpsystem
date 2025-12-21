@@ -4,6 +4,7 @@
 import React, { useMemo, useState } from "react"; // import React helpers
 import { useNextAction } from "@/context/NextActionContext"; // import next action context hook
 import { useUser } from "@/context/UserContext"; // import user context to capture performer id
+import { useTheme } from "@/styles/themeProvider";
 
 const KEY_LOCATIONS = [
   "Completed Hooks – Row A",
@@ -31,6 +32,8 @@ const statusLabelForAction = (actionType, fallback) => {
 export default function NextActionPrompt() {
   const { nextAction, clearNextAction, markOpened } = useNextAction(); // read action state
   const { dbUserId, user } = useUser(); // read supabase user id and identity
+  const { resolvedMode } = useTheme();
+  const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
   const [isOpen, setIsOpen] = useState(false); // track modal visibility
   const [keyLocation, setKeyLocation] = useState(KEY_LOCATIONS[0]); // selected key hook
   const [vehicleLocation, setVehicleLocation] = useState(VEHICLE_LOCATIONS[0]); // selected bay
@@ -155,14 +158,17 @@ export default function NextActionPrompt() {
                 style={{
                   border: "none",
                   background: "transparent",
-                  color: "var(--info)",
-                  fontSize: "1.5rem",
+                  color: closeButtonColor,
+                  fontSize: "0.95rem",
+                  fontWeight: 700,
                   cursor: "pointer",
                   lineHeight: 1,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
                 }}
                 aria-label="Close next action"
               >
-                ×
+                Close
               </button>
             </div>
 

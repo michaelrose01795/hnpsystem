@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import CheckSheetPopup from "@/components/popups/CheckSheetPopup";
+import { useTheme } from "@/styles/themeProvider";
 
 // ✅ Helper ensures every paragraph is prefixed with a bullet dash
 const formatNoteValue = (value = "") => {
@@ -396,6 +397,9 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   const { user } = useUser();
   const username = user?.username;
   const { usersByRole, isLoading: rosterLoading } = useRoster();
+  const { resolvedMode } = useTheme();
+  const isDarkMode = resolvedMode === "dark";
+  const closeButtonColor = isDarkMode ? "var(--accent-purple)" : "var(--danger)";
 
   const [jobData, setJobData] = useState(null);
   const [, setAuthorizedItems] = useState([]);
@@ -1589,12 +1593,16 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
                 style={{
                   border: "none",
                   background: "transparent",
-                  fontSize: "22px",
+                  fontSize: "0.95rem",
+                  fontWeight: 700,
                   cursor: "pointer",
-                  color: "var(--info)",
+                  color: closeButtonColor,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  padding: "4px 0",
                 }}
               >
-                ×
+                Close
               </button>
             </div>
             <div style={{ display: "flex", gap: "12px" }}>

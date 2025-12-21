@@ -827,7 +827,7 @@ CREATE TABLE public.parts_job_card_items (
 );
 CREATE TABLE public.parts_job_cards (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  job_number text NOT NULL DEFAULT ('P'::text || lpad((nextval('parts_job_cards_job_number_seq'::regclass))::text, 5, '0'::text)) UNIQUE,
+  order_number text NOT NULL DEFAULT ('P'::text || lpad((nextval('parts_job_cards_order_number_seq'::regclass))::text, 5, '0'::text)) UNIQUE,
   status text NOT NULL DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'booked'::text, 'ready'::text, 'complete'::text])),
   priority text NOT NULL DEFAULT 'normal'::text CHECK (priority = ANY (ARRAY['low'::text, 'normal'::text, 'high'::text])),
   customer_id uuid,
