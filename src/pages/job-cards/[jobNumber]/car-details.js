@@ -5,57 +5,118 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
-import { getJobByNumberOrReg } from "@/lib/database/jobs";
+import useJobcardsApi from "@/hooks/api/useJobcardsApi";
 
 export default function CarDetailsPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
   const [carData, setCarData] = useState(null);
+  const [error, setError] = useState("");
+  const { getJobcard } = useJobcardsApi();
 
   useEffect(() => {
     if (!jobNumber) return;
 
+    let isMounted = true;
+
     const fetchJobData = async () => {
-      const job = await getJobByNumberOrReg(jobNumber);
-      if (job) {
+      setError("");
+      try {
+        const payload = await getJobcard(jobNumber);
+        if (!payload || !isMounted) {
+          return;
+        }
+        const job = payload?.job || payload?.legacy?.jobCard || null;
+        if (!job) {
+          throw new Error("Job card not found");
+        }
+
+        const vehicle =
+          job.vehicle ||
+          payload?.legacy?.vehicle ||
+          payload?.structured?.jobCard?.vehicle ||
+          {};
+        const customer =
+          vehicle?.customer || payload?.legacy?.customer || job.customer || {};
+        const vhcChecks = job.vhcChecks || vehicle?.vhcChecks || {};
+        const notesSource =
+          payload?.legacy?.jobCard?.notes ||
+          job.notes ||
+          payload?.structured?.jobCard?.notes ||
+          [];
+        const formattedNotes = Array.isArray(notesSource)
+          ? notesSource
+              .map(
+                (note) =>
+                  note?.note || note?.text || note?.content || note?.message || ""
+              )
+              .filter(Boolean)
+              .join(", ")
+          : "";
+
+        if (!isMounted) {
+          return;
+        }
+
         setCarData({
-          registration: job.reg,
-          make: job.vehicle?.make || "",
-          model: job.vehicle?.model || "",
-          year: job.vehicle?.year || "",
-          colour: job.vehicle?.colour || "",
-          vin: job.vehicle?.vin || "",
-          engineNumber: job.vehicle?.engine_number || "",
-          mileage: job.vehicle?.mileage || "",
-          fuelType: job.vehicle?.fuel_type || "",
-          transmission: job.vehicle?.transmission || "",
-          bodyStyle: job.vehicle?.body_style || "",
-          MOTDue: job.vehicle?.mot_due || "",
-          serviceHistory: job.vehicle?.service_history || "",
-          ownerName: job.customer || "",
-          address: job.vehicle?.customer?.address || "",
-          email: job.vehicle?.customer?.email || "",
-          phone: job.vehicle?.customer?.phone || "",
-          contactPreference: job.vehicle?.customer?.contact_preference || "",
-          warrantyType: job.vehicle?.warranty_type || "",
-          warrantyExpiry: job.vehicle?.warranty_expiry || "",
-          insuranceProvider: job.vehicle?.insurance_provider || "",
-          insurancePolicyNumber: job.vehicle?.insurance_policy_number || "",
-          engineOil: job.vhcChecks?.engineOil || "",
-          brakesCondition: job.vhcChecks?.brakesCondition || "",
-          tyresCondition: job.vhcChecks?.tyresCondition || "",
-          batteryStatus: job.vhcChecks?.batteryStatus || "",
-          suspension: job.vhcChecks?.suspension || "",
-          electronics: job.vhcChecks?.electronics || "",
-          airCon: job.vhcChecks?.airCon || "",
-          warningLights: job.vhcChecks?.warningLights || "",
-          comments: job.notes?.map(n => n.note).join(", ") || ""
+          registration:
+            job.reg ||
+            job.vehicle_reg ||
+            vehicle.registration ||
+            vehicle.reg ||
+            "",
+          make: vehicle.make || "",
+          model: vehicle.model || "",
+          year: vehicle.year || "",
+          colour: vehicle.colour || "",
+          vin: vehicle.vin || "",
+          engineNumber: vehicle.engine_number || vehicle.engineNumber || "",
+          mileage: vehicle.mileage || "",
+          fuelType: vehicle.fuel_type || vehicle.fuelType || "",
+          transmission: vehicle.transmission || "",
+          bodyStyle: vehicle.body_style || vehicle.bodyStyle || "",
+          MOTDue: vehicle.mot_due || "",
+          serviceHistory: vehicle.service_history || "",
+          ownerName:
+            customer.fullName ||
+            customer.name ||
+            [customer.firstname, customer.lastname]
+              .filter(Boolean)
+              .join(" ")
+              .trim(),
+          address: customer.address || "",
+          email: customer.email || "",
+          phone: customer.phone || customer.mobile || customer.telephone || "",
+          contactPreference: customer.contact_preference || "",
+          warrantyType: vehicle.warranty_type || "",
+          warrantyExpiry: vehicle.warranty_expiry || "",
+          insuranceProvider: vehicle.insurance_provider || "",
+          insurancePolicyNumber: vehicle.insurance_policy_number || "",
+          engineOil: vhcChecks?.engineOil || "",
+          brakesCondition: vhcChecks?.brakesCondition || "",
+          tyresCondition: vhcChecks?.tyresCondition || "",
+          batteryStatus: vhcChecks?.batteryStatus || "",
+          suspension: vhcChecks?.suspension || "",
+          electronics: vhcChecks?.electronics || "",
+          airCon: vhcChecks?.airCon || "",
+          warningLights: vhcChecks?.warningLights || "",
+          comments: formattedNotes,
         });
+      } catch (loadError) {
+        console.error("Failed to load car details", loadError);
+        if (isMounted) {
+          setError(loadError.message || "Unable to load car details");
+          setCarData(null);
+        }
       }
     };
 
     fetchJobData();
-  }, [jobNumber]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [jobNumber, getJobcard]);
 
   const handleBack = () => router.back();
   const handleVHC = () => router.push(`/job-cards/myjobs/${jobNumber}?tab=vhc`);
@@ -89,7 +150,23 @@ export default function CarDetailsPage() {
     fontSize: "1rem"
   };
 
-  if (!carData) return <Layout><p>Loading car details...</p></Layout>;
+  if (error) {
+    return (
+      <Layout>
+        <div style={{ padding: "24px" }}>
+          <p style={{ color: "var(--danger)" }}>{error}</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!carData) {
+    return (
+      <Layout>
+        <p>Loading car details...</p>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

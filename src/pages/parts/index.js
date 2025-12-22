@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabaseClient";
 import DeliverySchedulerModal from "@/components/Parts/DeliverySchedulerModal";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
+import usePartsApi from "@/hooks/api/usePartsApi";
 
 const PRE_PICK_OPTIONS = [
   { value: "", label: "Not assigned" },
@@ -178,6 +179,17 @@ const RequirementBadge = ({ label, background, color }) => (
 
 function PartsPortalPage() {
   const { user, dbUserId, authUserId } = useUser();
+  const {
+    searchCatalog,
+    listInventory,
+    createInventoryPart,
+    listDeliveries,
+    createDelivery,
+    listJobParts,
+    getJobPart,
+    updateJobPart,
+    allocatePartToRequest,
+  } = usePartsApi();
   const actingUserId = useMemo(() => {
     if (typeof authUserId === "string" && isValidUuid(authUserId)) return authUserId;
     if (typeof user?.authUuid === "string" && isValidUuid(user.authUuid)) return user.authUuid;
@@ -377,64 +389,56 @@ function PartsPortalPage() {
     );
   };
 
-  const fetchInventory = useCallback(async (term = "") => {
-    setInventoryLoading(true);
-    setInventoryError("");
-    try {
-      const trimmed = (term || "").trim();
-      if (trimmed.length >= 2) {
-        const searchParams = new URLSearchParams({
-          search: trimmed,
-          limit: "100",
-        });
-        const response = await fetch(`/api/parts/catalog?${searchParams.toString()}`);
-        const payload = await response.json();
-        if (!response.ok || !payload?.success) {
+  const fetchInventory = useCallback(
+    async (term = "") => {
+      setInventoryLoading(true);
+      setInventoryError("");
+      try {
+        const trimmed = (term || "").trim();
+        let payload;
+        if (trimmed.length >= 2) {
+          payload = await searchCatalog({
+            search: trimmed,
+            limit: "100",
+          });
+        } else {
+          payload = await listInventory({
+            search: trimmed,
+            includeInactive: "false",
+            limit: "100",
+          });
+        }
+        if (!payload?.success) {
           throw new Error(payload?.message || "Failed to load inventory");
         }
         setInventory(payload.parts || []);
-      } else {
-        const query = new URLSearchParams({
-          search: trimmed,
-          includeInactive: "false",
-          limit: "100",
-        });
-        const response = await fetch(`/api/parts/inventory?${query}`);
-        const data = await response.json();
-        if (!response.ok || !data?.success) {
-          throw new Error(data?.message || "Failed to load inventory");
-        }
-        setInventory(data.parts || []);
+      } catch (err) {
+        setInventoryError(err.message || "Unable to load inventory");
+      } finally {
+        setInventoryLoading(false);
       }
-    } catch (err) {
-      setInventoryError(err.message || "Unable to load inventory");
-    } finally {
-      setInventoryLoading(false);
-    }
-  }, []);
+    },
+    [listInventory, searchCatalog]
+  );
 
   const fetchDeliveries = useCallback(async () => {
     setDeliveriesLoading(true);
     setDeliveriesError("");
     try {
-      const query = new URLSearchParams({
+      const payload = await listDeliveries({
         status: "all",
         limit: "10",
       });
-      const response = await fetch(`/api/parts/deliveries?${query}`);
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to load deliveries");
+      if (!payload?.success) {
+        throw new Error(payload?.message || "Failed to load deliveries");
       }
-
-      setDeliveries(data.deliveries || []);
+      setDeliveries(payload.deliveries || []);
     } catch (err) {
       setDeliveriesError(err.message || "Unable to load deliveries");
     } finally {
       setDeliveriesLoading(false);
     }
-  }, []);
+  }, [listDeliveries]);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -471,19 +475,16 @@ function PartsPortalPage() {
       setJobLoading(true);
       setJobError("");
       try {
-        const query = new URLSearchParams({ search: term });
-        const response = await fetch(`/api/parts/jobs?${query}`);
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
+        const payload = await listJobParts({ search: term });
+        if (!payload?.success) {
           throw new Error(
-            data.message || "Job card not found or inaccessible"
+            payload?.message || "Job card not found or inaccessible"
           );
         }
 
-        setJobData(data.job || null);
-        setJobParts(data.parts || []);
-        setJobRequests(data.requests || []);
+        setJobData(payload.job || null);
+        setJobParts(payload.parts || []);
+        setJobRequests(payload.requests || []);
       } catch (err) {
         setJobError(err.message || "Unable to load job card");
         setJobData(null);
@@ -493,7 +494,7 @@ function PartsPortalPage() {
         setJobLoading(false);
       }
     },
-    []
+    [listJobParts]
   );
 
   const refreshJob = useCallback(() => {
@@ -506,16 +507,14 @@ function PartsPortalPage() {
 
   const loadDeliveryRoutesList = useCallback(async () => {
     try {
-      const query = new URLSearchParams({ status: "all", limit: "20" });
-      const response = await fetch(`/api/parts/deliveries?${query}`);
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setDeliveryRoutesList(data.deliveries || []);
+      const payload = await listDeliveries({ status: "all", limit: "20" });
+      if (payload?.success) {
+        setDeliveryRoutesList(payload.deliveries || []);
       }
     } catch (err) {
       console.error("Unable to load deliveries for scheduling", err);
     }
-  }, []);
+  }, [listDeliveries]);
 
   const loadJobDeliveryInfo = useCallback(async () => {
     if (!jobData?.id) {
@@ -701,25 +700,20 @@ useEffect(() => {
     setNewPartSaving(true);
     setNewPartFormError("");
     try {
-      const response = await fetch("/api/parts/inventory", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: actingUserId,
-          userNumericId: actingUserNumericId,
-          partNumber: trimmedNumber,
-          partName: trimmedName,
-          supplier: newPartForm.supplier || null,
-          category: newPartForm.category || null,
-          storageLocation: resolvedLocation,
-          unitCost: newPartForm.unitCost ? Number(newPartForm.unitCost) : null,
-          unitPrice: newPartForm.unitPrice ? Number(newPartForm.unitPrice) : null,
-        }),
+      const data = await createInventoryPart({
+        userId: actingUserId,
+        userNumericId: actingUserNumericId,
+        partNumber: trimmedNumber,
+        partName: trimmedName,
+        supplier: newPartForm.supplier || null,
+        category: newPartForm.category || null,
+        storageLocation: resolvedLocation,
+        unitCost: newPartForm.unitCost ? Number(newPartForm.unitCost) : null,
+        unitPrice: newPartForm.unitPrice ? Number(newPartForm.unitPrice) : null,
       });
 
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to create part");
+      if (!data?.success) {
+        throw new Error(data?.message || "Failed to create part");
       }
 
       const createdPart = data.part;
@@ -889,31 +883,26 @@ useEffect(() => {
           }
 
           // Log delivery for this part
-          const response = await fetch("/api/parts/deliveries", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              supplier: row.supplier || null,
-              orderReference: row.orderRef || null,
-              notes: `Bulk import - ${row.orderRef}`,
-              status: "received",
-              userId: actingUserId,
-              userNumericId: actingUserNumericId,
-              items: [
-                {
-                  partId: partId,
-                  quantityOrdered: row.quantity,
-                  quantityReceived: row.quantity,
-                  unitCost: parseFloat(row.costPrice) || null,
-                  storageLocation: normaliseLocationInput(row.location),
-                  notes: `Bulk import - ${row.orderRef}`,
-                },
-              ],
-            }),
+          const data = await createDelivery({
+            supplier: row.supplier || null,
+            orderReference: row.orderRef || null,
+            notes: `Bulk import - ${row.orderRef}`,
+            status: "received",
+            userId: actingUserId,
+            userNumericId: actingUserNumericId,
+            items: [
+              {
+                partId: partId,
+                quantityOrdered: row.quantity,
+                quantityReceived: row.quantity,
+                unitCost: parseFloat(row.costPrice) || null,
+                storageLocation: normaliseLocationInput(row.location),
+                notes: `Bulk import - ${row.orderRef}`,
+              },
+            ],
           });
 
-          const data = await response.json();
-          if (!response.ok || !data.success) {
+          if (!data?.success) {
             results[results.length - 1].message += ` (Warning: Delivery log failed)`;
           }
         } catch (err) {
@@ -949,25 +938,19 @@ useEffect(() => {
     } finally {
       setBulkImportLoading(false);
     }
-  }, [bulkImportData, parseBulkImportData, actingUserId, actingUserNumericId, fetchInventory, inventorySearch, fetchDeliveries]);
+  }, [bulkImportData, parseBulkImportData, actingUserId, actingUserNumericId, createDelivery, fetchInventory, inventorySearch, fetchDeliveries]);
 
 
   const handleJobPartUpdate = async (jobPartId, updates) => {
     try {
-      const response = await fetch(`/api/parts/jobs/${jobPartId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...updates,
-          userId: actingUserId,
-          userNumericId: actingUserNumericId,
-        }),
+      const data = await updateJobPart(jobPartId, {
+        ...updates,
+        userId: actingUserId,
+        userNumericId: actingUserNumericId,
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to update job part");
+      if (!data?.success) {
+        throw new Error(data?.message || "Failed to update job part");
       }
 
       await Promise.all([
@@ -990,32 +973,27 @@ useEffect(() => {
     }
 
     try {
-      const response = await fetch("/api/parts/deliveries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          supplier: deliveryForm.supplier || null,
-          orderReference: deliveryForm.orderReference || null,
-          notes: deliveryForm.notes || null,
-          status: deliveryForm.quantityReceived > 0 ? "received" : "ordering",
-          userId: actingUserId,
-          userNumericId: actingUserNumericId,
-          items: [
-            {
-              partId: deliveryForm.partId,
-              quantityOrdered: deliveryForm.quantityOrdered,
-              quantityReceived: deliveryForm.quantityReceived,
-              unitCost: deliveryForm.unitCost || null,
-              storageLocation: deliveryStorageLocation,
-              notes: deliveryForm.notes || null,
-            },
-          ],
-        }),
+      const data = await createDelivery({
+        supplier: deliveryForm.supplier || null,
+        orderReference: deliveryForm.orderReference || null,
+        notes: deliveryForm.notes || null,
+        status: deliveryForm.quantityReceived > 0 ? "received" : "ordering",
+        userId: actingUserId,
+        userNumericId: actingUserNumericId,
+        items: [
+          {
+            partId: deliveryForm.partId,
+            quantityOrdered: deliveryForm.quantityOrdered,
+            quantityReceived: deliveryForm.quantityReceived,
+            unitCost: deliveryForm.unitCost || null,
+            storageLocation: deliveryStorageLocation,
+            notes: deliveryForm.notes || null,
+          },
+        ],
       });
 
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to log delivery");
+      if (!data?.success) {
+        throw new Error(data?.message || "Failed to log delivery");
       }
 
       setShowDeliveryModal(false);

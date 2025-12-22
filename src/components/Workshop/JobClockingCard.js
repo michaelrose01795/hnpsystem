@@ -10,8 +10,8 @@ import {
   getTechnicianDailySummary,
   switchJob
 } from "@/lib/database/jobClocking"; // Import clocking functions
-import { getAllJobs } from "@/lib/database/jobs"; // Import jobs function
 import { useConfirmation } from "@/context/ConfirmationContext";
+import useJobcardsApi from "@/hooks/api/useJobcardsApi";
 
 export default function JobClockingCard() {
   const { user, setStatus, refreshCurrentJob, setCurrentJob, dbUserId } = useUser(); // Get logged-in user and helpers
@@ -25,6 +25,7 @@ export default function JobClockingCard() {
   const [loading, setLoading] = useState(false); // Loading state
   const [searchTerm, setSearchTerm] = useState(""); // Search filter for jobs
   const [showAvailableJobs, setShowAvailableJobs] = useState(false); // Toggle available jobs view
+  const { listJobcards } = useJobcardsApi();
 
   // ✅ Fetch data on component mount and every 30 seconds
   useEffect(() => {
@@ -60,7 +61,8 @@ export default function JobClockingCard() {
     
     // Fetch available jobs (only if showing available jobs)
     if (showAvailableJobs) {
-      const allJobs = await getAllJobs();
+      const payload = await listJobcards();
+      const allJobs = Array.isArray(payload?.jobCards) ? payload.jobCards : [];
       // Filter to jobs that are active and not completed
       const activeJobsList = allJobs.filter(job => 
         !["Complete", "Completed", "Invoiced", "Collected", "Cancelled"].includes(job.status)

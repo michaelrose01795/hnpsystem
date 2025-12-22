@@ -4,18 +4,18 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
-import {
-  getWriteUpByJobNumber,
-  saveWriteUpToDatabase,
-  getJobByNumber,
-  updateJobStatus,
-  getAuthorizedAdditionalWorkByJob,
-} from "@/lib/database/jobs";
-import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import CheckSheetPopup from "@/components/popups/CheckSheetPopup";
 import { useTheme } from "@/styles/themeProvider";
+import {
+  fetchJobcardAuthorizedWork,
+  fetchJobcardDetails,
+  fetchJobcardWriteUp,
+  saveJobcardWriteUp,
+  saveJobcardWriteUpSnapshot,
+  updateJobcard,
+} from "@/lib/api/jobcards";
 
 // ✅ Helper ensures every paragraph is prefixed with a bullet dash
 const formatNoteValue = (value = "") => {
@@ -450,30 +450,40 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   const isTech = techsList.includes(username);
 
   const refreshAuthorizedWork = useCallback(async () => {
-    if (!writeUpMeta.jobId) {
+    if (!jobNumber) {
       return;
     }
 
     try {
-      const latestAuthorizedItems = await getAuthorizedAdditionalWorkByJob(writeUpMeta.jobId);
-      setAuthorizedItems(Array.isArray(latestAuthorizedItems) ? latestAuthorizedItems : []);
+      const payload = await fetchJobcardAuthorizedWork(jobNumber);
+      const latestAuthorizedItems =
+        Array.isArray(payload?.items) ? payload.items : payload?.data || [];
+      const jobIdForKeys = payload?.jobId || writeUpMeta.jobId || null;
+      setAuthorizedItems(latestAuthorizedItems);
 
       setWriteUpData((prev) => {
-        const normalizedEntries = (Array.isArray(latestAuthorizedItems) ? latestAuthorizedItems : []).map(
-          (item, index) => {
-            const description = (item?.description || item?.label || "").toString().trim();
-            return {
-              ...item,
-              source: "vhc",
-              sourceKey: createAuthorizedSourceKey(item || {}, index, writeUpMeta.jobId),
-              label: description
-                ? `Authorized Work: ${description}`
-                : `Authorized Work ${index + 1}`,
-              status: item?.status === "complete" ? "complete" : "additional_work",
-            };
-          }
+        const normalizedEntries = latestAuthorizedItems.map((item, index) => {
+          const description = (item?.description || item?.label || "")
+            .toString()
+            .trim();
+          return {
+            ...item,
+            source: "vhc",
+            sourceKey: createAuthorizedSourceKey(
+              item || {},
+              index,
+              jobIdForKeys || 0
+            ),
+            label: description
+              ? `Authorized Work: ${description}`
+              : `Authorized Work ${index + 1}`,
+            status: item?.status === "complete" ? "complete" : "additional_work",
+          };
+        });
+        const mergedTasks = ensureAuthorizedTasks(
+          prev.tasks,
+          normalizedEntries
         );
-        const mergedTasks = ensureAuthorizedTasks(prev.tasks, normalizedEntries);
         if (tasksAreEqual(prev.tasks, mergedTasks)) {
           return prev;
         }
@@ -485,7 +495,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
     } catch (error) {
       console.error("❌ Failed to refresh authorized work:", error);
     }
-  }, [writeUpMeta.jobId]);
+  }, [jobNumber, writeUpMeta.jobId]);
 
   // ✅ Fetch job + write-up data whenever the job number changes
   useEffect(() => {

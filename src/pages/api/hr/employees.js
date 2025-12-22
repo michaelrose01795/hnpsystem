@@ -93,7 +93,10 @@ async function handleCreateOrUpdate(req, res) {
   const email = payload.email.toLowerCase();
   const firstName = payload.firstName;
   const lastName = payload.lastName;
-  const role = payload.role || "EMPLOYEE";
+  const normalizedRole =
+    typeof payload.role === "string" && payload.role.trim().length > 0
+      ? payload.role.trim()
+      : null;
 
   try {
     const userRecord = await upsertUser({
@@ -101,7 +104,7 @@ async function handleCreateOrUpdate(req, res) {
       firstName,
       lastName,
       phone: payload.phone || null,
-      role,
+      role: normalizedRole,
       jobTitle: payload.jobTitle,
     });
 
@@ -116,13 +119,16 @@ async function handleCreateOrUpdate(req, res) {
         (entry) => entry.userId === userRecord.user_id || entry.email?.toLowerCase() === email
       ) ?? null;
 
+    const fallbackRole =
+      normalizedRole || employeeFromDirectory?.role || userRecord.role || "EMPLOYEE";
+
     const fallbackEmployee = employeeFromDirectory || {
       id: `EMP-${userRecord.user_id}`,
       userId: userRecord.user_id,
       name: `${firstName} ${lastName}`.trim(),
-      jobTitle: payload.jobTitle || userRecord.job_title || role,
+      jobTitle: payload.jobTitle || userRecord.job_title || fallbackRole,
       department: payload.department || "Unassigned",
-      role,
+      role: fallbackRole,
       employmentType: payload.employmentType || "Full-time",
       status: payload.status || "Active",
       startDate: payload.startDate || null,
@@ -159,8 +165,11 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle })
     last_name: lastName,
     phone: phone || null,
     job_title: jobTitle || null,
-    role,
   };
+
+  if (role) {
+    userPayload.role = role;
+  }
 
   if (existingUser) {
     const { data, error } = await supabaseService
@@ -174,9 +183,10 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle })
   }
 
   const insertPayload = {
-    ...userPayload,
     email,
     password_hash: "external_auth",
+    role: role || "EMPLOYEE",
+    ...userPayload,
   };
 
   const { data, error } = await supabaseService

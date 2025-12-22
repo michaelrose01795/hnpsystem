@@ -11,6 +11,7 @@ import AfterSalesManagerDashboard from "@/components/dashboards/AfterSalesManage
 import RetailManagersDashboard from "@/components/dashboards/RetailManagersDashboard"; // import retail managers dashboard component
 import { roleCategories } from "@/config/users"; // import role category definitions
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
+import useJobcardsApi from "@/hooks/api/useJobcardsApi";
 
 const retailManagerRoles = (roleCategories?.Retail || []) // build a list of retail manager roles
   .filter((roleName) => /manager|director/i.test(roleName)) // keep only manager or director titles
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState(""); // store search term input
   const [searchResults, setSearchResults] = useState([]); // store filtered search results
   const [isRedirecting, setIsRedirecting] = useState(false); // avoid rendering content while routing users
+  const { listJobcards } = useJobcardsApi();
 
   useEffect(() => {
     if (!user) return; // stop if user data not ready
@@ -64,13 +66,19 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchJobs = async () => {
       if (user) { // only fetch when user is available
-        const { getAllJobs } = await import("@/lib/database/jobs"); // lazy load jobs helper
-        const allJobs = await getAllJobs(); // fetch all jobs from database
-        setJobs(allJobs); // store fetched jobs in context
+        try {
+          const payload = await listJobcards();
+          const jobCards = Array.isArray(payload?.jobCards)
+            ? payload.jobCards
+            : [];
+          setJobs(jobCards); // store fetched jobs in context
+        } catch (error) {
+          console.error("Failed to load jobs for dashboard", error);
+        }
       }
     };
     fetchJobs(); // execute fetch on mount
-  }, [user, setJobs]); // re-run when user or setter changes
+  }, [user, setJobs, listJobcards]); // re-run when user or setter changes
 
   if (!user || isRedirecting) return null; // do not render until user data exists or when redirecting
 

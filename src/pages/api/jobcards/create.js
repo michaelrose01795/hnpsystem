@@ -1,7 +1,102 @@
 // file location: src/pages/api/jobcards/create.js
 
-import { supabase } from '@/lib/supabaseClient' // Import Supabase client
-import { formatJobNumberFromId } from "@/lib/database/jobs";
+import { supabase } from "@/lib/supabaseClient"; // Import Supabase client
+import { addJobToDatabase } from "@/lib/database/jobs";
+
+const toNullableString = (value) => {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  const trimmed = String(value).trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+const insertJobRequests = async (jobId, requests = []) => {
+  if (!jobId || !Array.isArray(requests) || requests.length === 0) {
+    return;
+  }
+
+  const timestamp = new Date().toISOString();
+  const payload = requests
+    .map((entry, index) => {
+      const rawText =
+        entry?.text ||
+        entry?.description ||
+        "";
+      const text = rawText.trim();
+      if (!text) {
+        return null;
+      }
+
+      const parsedHours =
+        entry?.time === "" || entry?.time === null || entry?.time === undefined
+          ? null
+          : Number(entry.time);
+      const hours = Number.isFinite(parsedHours) ? parsedHours : null;
+
+      return {
+        job_id: jobId,
+        description: text,
+        hours,
+        job_type: toNullableString(entry?.paymentType) || "Customer",
+        sort_order: index + 1,
+        created_at: timestamp,
+        updated_at: timestamp,
+      };
+    })
+    .filter(Boolean);
+
+  if (payload.length === 0) {
+    return;
+  }
+
+  const { error } = await supabase.from("job_requests").insert(payload);
+  if (error) {
+    throw error;
+  }
+};
+
+const saveCosmeticDamage = async (jobId, { present = false, notes = null } = {}) => {
+  if (!jobId) {
+    return;
+  }
+
+  const timestamp = new Date().toISOString();
+  const payload = {
+    job_id: jobId,
+    has_damage: Boolean(present),
+    notes: toNullableString(notes),
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
+
+  const { error } = await supabase
+    .from("job_cosmetic_damage")
+    .upsert(payload, { onConflict: "job_id" });
+
+  if (error) {
+    throw error;
+  }
+};
+
+const saveCustomerStatus = async (jobId, status) => {
+  if (!jobId) {
+    return;
+  }
+
+  const timestamp = new Date().toISOString();
+  const payload = {
+    job_id: jobId,
+    status: status || "Neither",
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
+
+  const { error } = await supabase.from("job_customer_statuses").insert([payload]);
+  if (error) {
+    throw error;
+  }
+};
 
 /**
  * API endpoint to create a new job card
@@ -169,56 +264,77 @@ export default async function handler(req, res) {
       }
     }
 
-    // ✅ Step 3: Create Job Card
-    // Build description from requests
-    const description = jobCard.requests.map(r => r.description).join(', ')
+    // ✅ Step 3: Create Job Card & related metadata
+    const sanitizedRequests = Array.isArray(jobCard.requests)
+      ? jobCard.requests.map((entry) => ({
+          text:
+            (entry?.text ||
+              entry?.description ||
+              "").trim(),
+          time: entry?.time ?? null,
+          paymentType: entry?.paymentType || entry?.job_type || "Customer",
+        }))
+      : [];
 
-    // Determine job type from categories
-    let jobType = 'Service'
-    if (jobCard.jobCategories?.includes('MOT')) jobType = 'MOT'
-    else if (jobCard.jobCategories?.includes('Repair')) jobType = 'Repair'
-    else if (jobCard.jobCategories?.includes('Diagnostic')) jobType = 'Diagnostic'
+    const description = sanitizedRequests
+      .map((r) => r.text)
+      .filter(Boolean)
+      .join(", ");
 
-    const { data: newJob, error: jobError } = await supabase
-      .from('jobs')
-      .insert([{
-        reg: jobCard.vehicle.reg.toUpperCase(),
-        customer_id: customerId,
-        assigned_to: null, // Will be assigned later
-        type: jobType,
-        description: description,
-        status: 'pending',
-        created_at: jobCard.createdAt || new Date().toISOString(),
-      }])
-      .select()
-      .single()
+    const jobType = (() => {
+      if (jobCard.jobCategories?.includes("MOT")) return "MOT";
+      if (jobCard.jobCategories?.includes("Repair")) return "Repair";
+      if (jobCard.jobCategories?.includes("Diagnostic")) return "Diagnostic";
+      return jobCard.jobSource === "Warranty" ? "Warranty" : "Service";
+    })();
 
-    if (jobError) {
+    const jobPayload = {
+      regNumber: jobCard.vehicle.reg.toUpperCase(),
+      jobNumber: jobCard.jobNumber || null,
+      description: description || `Job card for ${jobCard.vehicle.reg}`,
+      type: jobType,
+      assignedTo: jobCard.assignedTo || null,
+      customerId,
+      vehicleId: vehicleRecord.vehicle_id || vehicleRecord.id || null,
+      waitingStatus: jobCard.waitingStatus || "Neither",
+      jobSource: jobCard.jobSource || "Retail",
+      jobCategories: jobCard.jobCategories || ["Other"],
+      requests: sanitizedRequests,
+      cosmeticNotes: jobCard.cosmeticNotes || null,
+      vhcRequired: jobCard.vhcRequired || false,
+      maintenanceInfo: jobCard.maintenanceInfo || {
+        cosmeticDamagePresent: jobCard.cosmeticDamage?.present || false,
+      },
+    };
+
+    const jobResult = await addJobToDatabase(jobPayload);
+
+    if (!jobResult.success || !jobResult.data) {
       return res.status(500).json({
-        message: "Failed to create job card",
+        message: jobResult.error?.message || "Failed to create job card",
         code: "JOB_ERROR",
-        error: jobError.message
-      })
+      });
     }
 
-    const generatedJobNumber = formatJobNumberFromId(newJob?.id);
-    if (!generatedJobNumber) {
-      throw new Error("Unable to generate job number");
+    const createdJob = jobResult.data;
+    const jobId = createdJob?.id;
+
+    if (!jobId) {
+      throw new Error("Job ID missing after creation");
     }
 
-    const { data: jobWithNumber, error: jobNumberError } = await supabase
-      .from('jobs')
-      .update({ job_number: generatedJobNumber })
-      .eq('id', newJob.id)
-      .select("job_number")
-      .single()
-
-    if (jobNumberError) {
-      throw jobNumberError;
-    }
-
-    const persistedJobNumber = jobWithNumber?.job_number || generatedJobNumber;
-    console.log('✅ Job card created successfully:', persistedJobNumber)
+    await insertJobRequests(jobId, sanitizedRequests);
+    await saveCosmeticDamage(jobId, {
+      present:
+        jobCard.cosmeticDamage?.present ??
+        jobCard.maintenanceInfo?.cosmeticDamagePresent ??
+        false,
+      notes:
+        jobCard.cosmeticDamage?.notes ??
+        jobCard.cosmeticNotes ??
+        null,
+    });
+    await saveCustomerStatus(jobId, jobCard.customerStatus || jobCard.waitingStatus || "Neither");
 
     // ✅ Get job history counts
     const { count: customerJobCount } = await supabase
@@ -231,21 +347,23 @@ export default async function handler(req, res) {
       .select('*', { count: 'exact', head: true })
       .eq('reg', jobCard.vehicle.reg.toUpperCase())
 
-    const responseJobNumber = persistedJobNumber || jobCard.jobNumber || null;
+    const responseJobNumber = createdJob?.jobNumber || createdJob?.job_number || jobCard.jobNumber || null;
 
     // ✅ Respond with success
     return res.status(200).json({
       message: `Job Card ${responseJobNumber} created successfully!`,
       code: "SUCCESS",
       jobCard: {
+        id: jobId,
+        jobId,
         jobNumber: responseJobNumber,
         createdAt: jobCard.createdAt || new Date().toISOString(),
-        status: "pending",
+        status: createdJob?.status || "pending",
         vehicleReg: jobCard.vehicle.reg,
         customerId: customerId,
         description: description,
         type: jobType,
-        requests: jobCard.requests,
+        requests: sanitizedRequests,
         cosmeticNotes: jobCard.cosmeticNotes || "",
         vhcRequired: jobCard.vhcRequired || false,
         waitingStatus: jobCard.waitingStatus || "Neither",

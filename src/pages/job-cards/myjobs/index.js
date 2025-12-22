@@ -7,12 +7,12 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
-import { getAllJobs } from "@/lib/database/jobs";
 import { getClockingStatus } from "@/lib/database/clocking";
 import JobCardModal from "@/components/JobCards/JobCardModal"; // Import Start Job modal
 import { getUserActiveJobs } from "@/lib/database/jobClocking";
 import { supabase } from "@/lib/supabaseClient";
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
+import useJobcardsApi from "@/hooks/api/useJobcardsApi";
 
 const STATUS_BADGE_STYLES = {
   "In Progress": { background: "var(--info-surface)", color: "var(--accent-purple)" },
@@ -50,6 +50,7 @@ export default function MyJobsPage() {
   const router = useRouter();
   const { user, status: techStatus, currentJob, dbUserId } = useUser();
   const { usersByRole, isLoading: rosterLoading } = useRoster();
+  const { listJobcards } = useJobcardsApi();
   
   const [jobs, setJobs] = useState([]);
   const [myJobs, setMyJobs] = useState([]);
@@ -117,7 +118,8 @@ export default function MyJobsPage() {
     setLoading(true);
 
     try {
-      const fetchedJobs = await getAllJobs();
+      const payload = await listJobcards();
+      const fetchedJobs = Array.isArray(payload?.jobCards) ? payload.jobCards : [];
       console.log("[MyJobs] fetched jobs:", fetchedJobs);
       setJobs(fetchedJobs);
 
@@ -137,7 +139,7 @@ export default function MyJobsPage() {
     } finally {
       setLoading(false);
     }
-  }, [hasTechnicianAccess, dbUserId, isAssignedToTechnician]);
+  }, [hasTechnicianAccess, dbUserId, isAssignedToTechnician, listJobcards]);
 
   useEffect(() => {
     if (!hasTechnicianAccess || !dbUserId) return;

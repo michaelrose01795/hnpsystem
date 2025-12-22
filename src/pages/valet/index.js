@@ -4,7 +4,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
-import { getAllJobs, updateJob } from "@/lib/database/jobs";
+import { updateJob } from "@/lib/database/jobs";
+import useJobcardsApi from "@/hooks/api/useJobcardsApi";
 
 const WASH_KEYWORDS = ["wash", "valet", "clean"];
 
@@ -261,6 +262,7 @@ export default function ValetDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const { listJobcards } = useJobcardsApi();
 
   const userRoles = useMemo(
     () => user?.roles?.map((role) => role.toLowerCase()) || [],
@@ -285,7 +287,8 @@ export default function ValetDashboard() {
       setLoading(true);
       setError("");
       try {
-        const allJobs = await getAllJobs();
+        const payload = await listJobcards();
+        const allJobs = Array.isArray(payload?.jobCards) ? payload.jobCards : [];
         const washJobs = (allJobs || []).filter(jobHasWashFlag);
 
         if (!cancelled) {
@@ -310,7 +313,7 @@ export default function ValetDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [user, hasAccess]);
+  }, [user, hasAccess, listJobcards]);
 
   const filteredJobs = useMemo(() => {
     if (!searchTerm.trim()) return jobs;

@@ -6,11 +6,12 @@
 import React, { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import { supabase } from "@/lib/supabaseClient";
-import { getAllJobs } from "@/lib/database/jobs";
+import useJobcardsApi from "@/hooks/api/useJobcardsApi";
 
 export default function Clocking() {
   const [techs, setTechs] = useState([]);
   const [statuses, setStatuses] = useState({});
+  const { listJobcards } = useJobcardsApi();
 
   // ✅ Fetch all technicians and their current job status
   useEffect(() => {
@@ -29,7 +30,8 @@ export default function Clocking() {
       setTechs(users || []);
 
       // Get all current jobs to find which techs are clocked in
-      const jobs = await getAllJobs();
+      const payload = await listJobcards();
+      const jobs = Array.isArray(payload?.jobCards) ? payload.jobCards : [];
 
       const techStatuses = {};
       users.forEach((tech) => {
@@ -57,7 +59,7 @@ export default function Clocking() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [listJobcards]);
 
   // ✅ Placeholder actions for managers
   const managerFeatures = [

@@ -5,7 +5,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { sidebarSections } from "@/config/navigation";
@@ -36,6 +36,7 @@ export default function Sidebar({
   const pathname = usePathname();
   const { user, logout, dbUserId } = useUser();
   const { resolvedMode } = useTheme(); // tap into the existing theme provider so logo swaps instantly on toggle
+  const [logoSrc, setLogoSrc] = useState("/images/logo/LightLogo.png");
   const { unreadCount } = useMessagesBadge(dbUserId);
   const derivedRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
   const userRoles =
@@ -48,7 +49,13 @@ export default function Sidebar({
     if (!shortcut.roles || shortcut.roles.length === 0) return true;
     return shortcut.roles.some((role) => userRoles.includes(role));
   });
-  const logoSrc = resolvedMode === "dark" ? "/images/logo/DarkLogo.png" : "/images/logo/LightLogo.png"; // choose the appropriate asset for the resolved theme
+  useEffect(() => {
+    const nextSrc =
+      resolvedMode === "dark"
+        ? "/images/logo/DarkLogo.png"
+        : "/images/logo/LightLogo.png";
+    setLogoSrc(nextSrc);
+  }, [resolvedMode]);
   const headerLogoStyle = {
     width: "100%",
     height: "auto",
@@ -327,9 +334,8 @@ export default function Sidebar({
 
         {/* Department Sections - NO COLLAPSE, just headers */}
         {departmentSections.map((section) => (
-          <>
+          <div key={`department-${section.label}`}>
             <div
-              key={`${section.label}-header`}
               style={{
                 color: "var(--primary-dark)",
                 fontWeight: 700,
@@ -369,7 +375,7 @@ export default function Sidebar({
                 </Link>
               );
             })}
-          </>
+          </div>
         ))}
 
         {/* Account Section */}

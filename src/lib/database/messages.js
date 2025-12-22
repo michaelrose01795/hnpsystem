@@ -152,22 +152,27 @@ export const getThreadsForUser = async (userId) => {
         role,
         joined_at,
         last_read_at,
-        user:user_id(user_id, first_name, last_name, email, role)
+        user:users!message_thread_members_user_id_fkey(user_id, first_name, last_name, email, role)
       ),
-      recent_messages:messages!messages_thread_id_fkey(order=created_at.desc,limit=1)(
+      recent_messages:messages!messages_thread_id_fkey(
         message_id,
         thread_id,
         content,
         created_at,
         sender_id,
         receiver_id,
-        sender:sender_id(user_id, first_name, last_name, email, role),
+        sender:users!messages_sender_id_fkey(user_id, first_name, last_name, email, role),
         metadata,
         saved_forever
       )
     `
     )
     .in("thread_id", threadIds)
+    .order("created_at", {
+      ascending: false,
+      foreignTable: "recent_messages",
+    })
+    .limit(1, { foreignTable: "recent_messages" })
     .order("updated_at", { ascending: false });
 
   if (error) {
@@ -197,22 +202,27 @@ const fetchThreadRecord = async (threadId) => {
         role,
         joined_at,
         last_read_at,
-        user:user_id(user_id, first_name, last_name, email, role)
+        user:users!message_thread_members_user_id_fkey(user_id, first_name, last_name, email, role)
       ),
-      recent_messages:messages!messages_thread_id_fkey(order=created_at.desc,limit=1)(
+      recent_messages:messages!messages_thread_id_fkey(
         message_id,
         thread_id,
         content,
         created_at,
         sender_id,
         receiver_id,
-        sender:sender_id(user_id, first_name, last_name, email, role),
+        sender:users!messages_sender_id_fkey(user_id, first_name, last_name, email, role),
         metadata,
         saved_forever
       )
     `
     )
     .eq("thread_id", threadId)
+    .order("created_at", {
+      ascending: false,
+      foreignTable: "recent_messages",
+    })
+    .limit(1, { foreignTable: "recent_messages" })
     .maybeSingle();
 
   if (error) throw error;
@@ -512,6 +522,84 @@ export const updateGroupMembers = async ({
   return snapshot;
 };
 
+export const renameGroupThread = async ({ threadId, actorId, title }) => {
+  assertMessagingWriteAccess();
+  const threadIdNum = Number(threadId);
+  const actorUserId = normalizeUserId(actorId);
+  if (!threadIdNum || !actorUserId) {
+    throw new Error("threadId and actorId are required.");
+  }
+
+  const { data: threadRow, error: threadError } = await dbClient
+    .from("message_threads")
+    .select("thread_type")
+    .eq("thread_id", threadIdNum)
+    .maybeSingle();
+
+  if (threadError) throw threadError;
+  if (!threadRow) throw new Error("Thread not found.");
+  if (threadRow.thread_type !== "group") {
+    throw new Error("Only group chats can be renamed.");
+  }
+
+  const { data: actorMembership, error: actorError } = await dbClient
+    .from("message_thread_members")
+    .select("role")
+    .eq("thread_id", threadIdNum)
+    .eq("user_id", actorUserId)
+    .maybeSingle();
+
+  if (actorError) throw actorError;
+  if (actorMembership?.role !== "leader") {
+    throw new Error("Only group leaders can update the chat name.");
+  }
+
+  const nextTitle = title?.trim() || null;
+  const { error: updateError } = await dbClient
+    .from("message_threads")
+    .update({ title: nextTitle })
+    .eq("thread_id", threadIdNum);
+
+  if (updateError) throw updateError;
+
+  const snapshot = await getThreadSnapshotForUser(threadIdNum, actorUserId);
+  if (!snapshot) {
+    throw new Error("Unable to refresh the group conversation.");
+  }
+  return snapshot;
+};
+
+export const deleteThreadCascade = async ({ threadId, actorId }) => {
+  assertMessagingWriteAccess();
+  const threadIdNum = Number(threadId);
+  const actorUserId = normalizeUserId(actorId);
+  if (!threadIdNum || !actorUserId) {
+    throw new Error("threadId and actorId are required.");
+  }
+
+  const { data: membership, error: membershipError } = await dbClient
+    .from("message_thread_members")
+    .select("member_id")
+    .eq("thread_id", threadIdNum)
+    .eq("user_id", actorUserId)
+    .maybeSingle();
+
+  if (membershipError) throw membershipError;
+  if (!membership) {
+    throw new Error("You are not part of this conversation.");
+  }
+
+  await dbClient.from("messages").delete().eq("thread_id", threadIdNum);
+  await dbClient.from("message_thread_members").delete().eq("thread_id", threadIdNum);
+  const { error: threadError } = await dbClient
+    .from("message_threads")
+    .delete()
+    .eq("thread_id", threadIdNum);
+
+  if (threadError) throw threadError;
+  return true;
+};
+
 export const getThreadMessages = async (threadId, userId, limit = 50, before) => {
   const threadIdNum = Number(threadId);
   const userIdNum = normalizeUserId(userId);
@@ -541,7 +629,7 @@ export const getThreadMessages = async (threadId, userId, limit = 50, before) =>
       created_at,
       sender_id,
       receiver_id,
-      sender:sender_id(user_id, first_name, last_name, email, role)
+      sender:users!messages_sender_id_fkey(user_id, first_name, last_name, email, role)
     `
     )
     .eq("thread_id", threadIdNum)
@@ -634,7 +722,7 @@ export const sendThreadMessage = async ({
       created_at,
       sender_id,
       receiver_id,
-      sender:sender_id(user_id, first_name, last_name, email, role),
+      sender:users!messages_sender_id_fkey(user_id, first_name, last_name, email, role),
       metadata,
       saved_forever
     `
@@ -676,7 +764,7 @@ export const markMessageSaved = async ({ messageId, saved = true }) => {
       receiver_id,
       metadata,
       saved_forever,
-      sender:sender_id(user_id, first_name, last_name, email, role)
+      sender:users!messages_sender_id_fkey(user_id, first_name, last_name, email, role)
     `
     )
     .maybeSingle();

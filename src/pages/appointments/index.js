@@ -9,7 +9,6 @@ import { useRouter } from "next/router"; // For reading query params
 import { useUser } from "@/context/UserContext"; // Access current user for check-in attribution
 import { useNextAction } from "@/context/NextActionContext"; // Trigger follow-up actions after check-in
 import { 
-  getAllJobs, 
   createOrUpdateAppointment, 
   getJobByNumberOrReg,
   getJobsByDate // ✅ NEW: Get appointments by date
@@ -17,6 +16,7 @@ import {
 import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService"; // Shared status transition helper
 import supabase from "@/lib/supabaseClient"; // Supabase client for live tech availability
 import { useConfirmation } from "@/context/ConfirmationContext";
+import useJobcardsApi from "@/hooks/api/useJobcardsApi";
 
 const TECH_AVAILABILITY_TABLE = "job_clocking"; // Source table for tech availability data
 
@@ -369,16 +369,19 @@ export default function Appointments() {
   const [techHoursOverrides, setTechHoursOverrides] = useState({});
 
   // ---------------- Fetch Jobs ----------------
-  const fetchJobs = async () => {
+  const { listJobcards } = useJobcardsApi();
+
+  const fetchJobs = useCallback(async () => {
     console.log("Fetching all jobs...");
     setIsLoading(true);
     
     try {
-      const jobsFromDb = await getAllJobs();
-      console.log("Jobs fetched:", jobsFromDb.length);
+      const payload = await listJobcards();
+      const jobCards = Array.isArray(payload?.jobCards) ? payload.jobCards : [];
+      console.log("Jobs fetched:", jobCards.length);
       
       // ✅ Filter only jobs with appointments
-      const jobsWithAppointments = jobsFromDb.filter(job => job.appointment);
+      const jobsWithAppointments = jobCards.filter(job => job.appointment);
       console.log("Jobs with appointments:", jobsWithAppointments.length);
       
       setJobs(jobsWithAppointments);
@@ -388,7 +391,7 @@ export default function Appointments() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [listJobcards]);
 
   const fetchJobRequestHours = useCallback(async (jobIds = []) => {
     if (!jobIds || jobIds.length === 0) {
@@ -567,7 +570,7 @@ export default function Appointments() {
   useEffect(() => {
     setDates(generateDates(60));
     fetchJobs();
-  }, []);
+  }, [fetchJobs]);
 
   useEffect(() => {
     if (!dates.length) return;
