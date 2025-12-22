@@ -1,3 +1,4 @@
+//file: src/pages/api/jobcards/[jobNumber]/notes/[noteId].js
 import { getJobByNumberOrReg } from "@/lib/database/jobs";
 import { deleteJobNote, updateJobNote } from "@/lib/database/notes";
 

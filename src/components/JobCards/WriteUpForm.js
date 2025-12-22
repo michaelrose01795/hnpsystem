@@ -16,6 +16,7 @@ import {
   saveJobcardWriteUpSnapshot,
   updateJobcard,
 } from "@/lib/api/jobcards";
+import { getJobByNumber, getWriteUpByJobNumber } from "@/lib/database/jobs";
 
 // ✅ Helper ensures every paragraph is prefixed with a bullet dash
 const formatNoteValue = (value = "") => {

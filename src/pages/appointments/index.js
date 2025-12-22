@@ -8,15 +8,15 @@ import Popup from "@/components/popups/Popup"; // Reusable popup modal
 import { useRouter } from "next/router"; // For reading query params
 import { useUser } from "@/context/UserContext"; // Access current user for check-in attribution
 import { useNextAction } from "@/context/NextActionContext"; // Trigger follow-up actions after check-in
-import { 
-  createOrUpdateAppointment, 
+import {
+  getAllJobs,
+  createOrUpdateAppointment,
   getJobByNumberOrReg,
   getJobsByDate // ✅ NEW: Get appointments by date
 } from "@/lib/database/jobs"; // DB functions
 import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService"; // Shared status transition helper
 import supabase from "@/lib/supabaseClient"; // Supabase client for live tech availability
 import { useConfirmation } from "@/context/ConfirmationContext";
-import useJobcardsApi from "@/hooks/api/useJobcardsApi";
 
 const TECH_AVAILABILITY_TABLE = "job_clocking"; // Source table for tech availability data
 
@@ -369,21 +369,18 @@ export default function Appointments() {
   const [techHoursOverrides, setTechHoursOverrides] = useState({});
 
   // ---------------- Fetch Jobs ----------------
-  const { listJobcards } = useJobcardsApi();
-
-  const fetchJobs = useCallback(async () => {
+  const fetchJobs = async () => {
     console.log("Fetching all jobs...");
     setIsLoading(true);
-    
+
     try {
-      const payload = await listJobcards();
-      const jobCards = Array.isArray(payload?.jobCards) ? payload.jobCards : [];
-      console.log("Jobs fetched:", jobCards.length);
-      
+      const jobsFromDb = await getAllJobs();
+      console.log("Jobs fetched:", jobsFromDb.length);
+
       // ✅ Filter only jobs with appointments
-      const jobsWithAppointments = jobCards.filter(job => job.appointment);
+      const jobsWithAppointments = jobsFromDb.filter(job => job.appointment);
       console.log("Jobs with appointments:", jobsWithAppointments.length);
-      
+
       setJobs(jobsWithAppointments);
     } catch (error) {
       console.error("Error fetching jobs:", error);
@@ -391,7 +388,7 @@ export default function Appointments() {
     } finally {
       setIsLoading(false);
     }
-  }, [listJobcards]);
+  };
 
   const fetchJobRequestHours = useCallback(async (jobIds = []) => {
     if (!jobIds || jobIds.length === 0) {
@@ -570,7 +567,8 @@ export default function Appointments() {
   useEffect(() => {
     setDates(generateDates(60));
     fetchJobs();
-  }, [fetchJobs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!dates.length) return;

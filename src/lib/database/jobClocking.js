@@ -99,10 +99,12 @@ const formatCustomerName = (customer = {}) => {
   const first =
     customer.customer_firstname ??
     customer.firstname ??
+    customer.firstName ??
     (typeof customer.first_name === "string" ? customer.first_name : "");
   const last =
     customer.customer_lastname ??
     customer.lastname ??
+    customer.lastName ??
     (typeof customer.last_name === "string" ? customer.last_name : "");
   return `${first} ${last}`.trim();
 };

@@ -190,6 +190,7 @@ export default function JobCardDetailPage() {
 
   // ✅ State Management
   const [jobData, setJobData] = useState(null);
+  const [jobId, setJobId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("customer-requests");
@@ -307,8 +308,7 @@ export default function JobCardDetailPage() {
         setError(null);
 
         const payload = await fetchJobcardDetails(jobNumber);
-        const structured = payload?.structured || null;
-        const jobCard = structured?.jobCard || payload?.job || null;
+        const jobCard = payload?.job || null;
 
         if (!jobCard) {
           setError("Job card not found");
@@ -336,20 +336,10 @@ export default function JobCardDetailPage() {
         );
         setSharedNoteMeta(latestSharedNote);
 
-        if (structured) {
-          setJobData({
-            ...structured,
-            jobCard: hydratedJobCard,
-          });
-          setVehicleJobHistory(
-            structured.vehicleJobHistory ||
-              payload?.vehicleJobHistory ||
-              []
-          );
-        } else {
-          setJobData(hydratedJobCard);
-          setVehicleJobHistory(payload?.vehicleJobHistory || []);
-        }
+        // Use payload.job (which has customer as string) instead of structured
+        setJobData(hydratedJobCard);
+        setJobId(hydratedJobCard?.id || null);
+        setVehicleJobHistory(payload?.vehicleJobHistory || []);
       } catch (err) {
         console.error("❌ Exception fetching job:", err);
         setError(err?.message || "Failed to load job card");
@@ -423,25 +413,25 @@ export default function JobCardDetailPage() {
   }, []);
 
   useEffect(() => {
-    if (!jobData?.id) return;
+    if (!jobId) return;
 
     const tablesToWatch = [
-      { table: "jobs", filter: `id=eq.${jobData.id}` },
-      { table: "appointments", filter: `job_id=eq.${jobData.id}` },
-      { table: "parts_job_items", filter: `job_id=eq.${jobData.id}` },
-      { table: "parts_requests", filter: `job_id=eq.${jobData.id}` },
-      { table: "vhc_checks", filter: `job_id=eq.${jobData.id}` },
-      { table: "job_clocking", filter: `job_id=eq.${jobData.id}` },
-      { table: "job_writeups", filter: `job_id=eq.${jobData.id}` },
-      { table: "job_requests", filter: `job_id=eq.${jobData.id}` },
-      { table: "job_files", filter: `job_id=eq.${jobData.id}` },
-      { table: "job_cosmetic_damage", filter: `job_id=eq.${jobData.id}` },
-      { table: "job_customer_statuses", filter: `job_id=eq.${jobData.id}` },
-      { table: "job_progress", filter: `job_id=eq.${jobData.id}` },
-      { table: "job_booking_requests", filter: `job_id=eq.${jobData.id}` },
+      { table: "jobs", filter: `id=eq.${jobId}` },
+      { table: "appointments", filter: `job_id=eq.${jobId}` },
+      { table: "parts_job_items", filter: `job_id=eq.${jobId}` },
+      { table: "parts_requests", filter: `job_id=eq.${jobId}` },
+      { table: "vhc_checks", filter: `job_id=eq.${jobId}` },
+      { table: "job_clocking", filter: `job_id=eq.${jobId}` },
+      { table: "job_writeups", filter: `job_id=eq.${jobId}` },
+      { table: "job_requests", filter: `job_id=eq.${jobId}` },
+      { table: "job_files", filter: `job_id=eq.${jobId}` },
+      { table: "job_cosmetic_damage", filter: `job_id=eq.${jobId}` },
+      { table: "job_customer_statuses", filter: `job_id=eq.${jobId}` },
+      { table: "job_progress", filter: `job_id=eq.${jobId}` },
+      { table: "job_booking_requests", filter: `job_id=eq.${jobId}` },
       {
         table: "job_notes",
-        filter: `job_id=eq.${jobData.id}`,
+        filter: `job_id=eq.${jobId}`,
         shouldRefresh: false,
         onPayload: () =>
           refreshSharedNote(
@@ -477,7 +467,7 @@ export default function JobCardDetailPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [jobData?.id, jobData?.jobNumber, jobData?.jobCard?.jobNumber, jobNumber, refreshSharedNote, scheduleRealtimeRefresh]);
+  }, [jobId, jobNumber, refreshSharedNote, scheduleRealtimeRefresh]);
 
   const handleCustomerDetailsSave = useCallback(
     async (updatedDetails) => {

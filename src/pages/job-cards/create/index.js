@@ -276,12 +276,13 @@ export default function CreateJobCardPage() {
         mileage: storedVehicle.mileage ? String(storedVehicle.mileage) : prev.mileage,
       }));
 
-      if (storedVehicle.mot_due) { // hydrate MOT date when available
-        const motDate = new Date(storedVehicle.mot_due);
-        if (!Number.isNaN(motDate.getTime())) {
-          setNextMotDate(motDate.toISOString().split("T")[0]); // store ISO date for preview
-        }
-      }
+      // ✅ MOT date hydration removed - nextMotDate state not defined
+      // if (storedVehicle.mot_due) {
+      //   const motDate = new Date(storedVehicle.mot_due);
+      //   if (!Number.isNaN(motDate.getTime())) {
+      //     setNextMotDate(motDate.toISOString().split("T")[0]);
+      //   }
+      // }
 
       if (storedVehicle.customer) { // auto-link stored customer when present
         setCustomer(normalizeCustomerRecord(storedVehicle.customer));
