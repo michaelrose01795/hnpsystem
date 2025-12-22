@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
-import { useUser } from "@/context/UserContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useTheme } from "@/styles/themeProvider";
 
@@ -282,9 +281,6 @@ const normalizeJobRecord = (job = {}) => ({
 });
 
 export default function PartsDeliveryPlannerPage() {
-  const { user } = useUser();
-  const roles = (user?.roles || []).map((role) => String(role).toLowerCase());
-  const hasPartsAccess = roles.includes("parts") || roles.includes("parts manager");
   const router = useRouter();
 
   const [runs, setRuns] = useState([]);
@@ -315,7 +311,6 @@ export default function PartsDeliveryPlannerPage() {
   const pricePerLitre = fuelRate?.price_per_litre ?? 1.75;
 
   useEffect(() => {
-    if (!hasPartsAccess) return;
     const loadRuns = async () => {
       setLoading(true);
       setError("");
@@ -340,10 +335,9 @@ export default function PartsDeliveryPlannerPage() {
     };
 
     loadRuns();
-  }, [hasPartsAccess]);
+  }, []);
 
   const loadCollectionJobs = useCallback(async () => {
-    if (!hasPartsAccess) return;
     setCollectionLoading(true);
     setCollectionError("");
     try {
@@ -370,14 +364,13 @@ export default function PartsDeliveryPlannerPage() {
     } finally {
       setCollectionLoading(false);
     }
-  }, [hasPartsAccess]);
+  }, []);
 
   useEffect(() => {
     loadCollectionJobs();
   }, [loadCollectionJobs]);
 
   const loadDeliveryJobs = useCallback(async () => {
-    if (!hasPartsAccess) return;
     setJobsLoading(true);
     setJobsError("");
     try {
@@ -398,7 +391,7 @@ export default function PartsDeliveryPlannerPage() {
     } finally {
       setJobsLoading(false);
     }
-  }, [hasPartsAccess]);
+  }, []);
 
   useEffect(() => {
     loadDeliveryJobs();
@@ -815,16 +808,6 @@ export default function PartsDeliveryPlannerPage() {
     value: date,
     label: date === "unscheduled" ? "Unscheduled" : formatDate(date),
   }));
-
-  if (!hasPartsAccess) {
-    return (
-      <Layout>
-        <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
-          You do not have access to the delivery planner.
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>

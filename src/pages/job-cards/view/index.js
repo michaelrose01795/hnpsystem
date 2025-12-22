@@ -211,17 +211,6 @@ export default function ViewJobCards() {
       .filter(Boolean);
   }, [user]);
 
-  const showOrdersTab = useMemo(() => {
-    if (!userRoles.length) return false;
-    return userRoles.some((role) => role === "parts" || role === "parts manager");
-  }, [userRoles]);
-
-  useEffect(() => {
-    if (!showOrdersTab && activeTab === "orders") {
-      setActiveTab("today");
-    }
-  }, [showOrdersTab, activeTab]);
-
   /* ----------------------------
      Fetch jobs from Supabase
   ---------------------------- */
@@ -255,12 +244,8 @@ export default function ViewJobCards() {
   }, []);
 
   useEffect(() => {
-    if (showOrdersTab) {
-      fetchOrders();
-    } else {
-      setOrders([]);
-    }
-  }, [showOrdersTab, fetchOrders]);
+    fetchOrders();
+  }, [fetchOrders]);
 
   /* ----------------------------
      Go to job card page
@@ -434,13 +419,15 @@ export default function ViewJobCards() {
       ? "Showing every status"
       : `Filtered by "${activeStatusFilter}"`;
 
-  const filteredByStatus =
-    activeStatusFilter === "All"
-      ? baseJobs
-      : baseJobs.filter((job) => {
-          const jobStatus = job.status || "Unknown";
-          return jobStatus === activeStatusFilter;
-        });
+  // For Orders tab, show all orders regardless of status filter
+  const filteredByStatus = isOrdersTab
+    ? baseJobs
+    : activeStatusFilter === "All"
+    ? baseJobs
+    : baseJobs.filter((job) => {
+        const jobStatus = job.status || "Unknown";
+        return jobStatus === activeStatusFilter;
+      });
 
   const filteredJobs = searchValue
     ? filteredByStatus.filter((job) => matchesSearchTerm(job, searchValue))
@@ -586,24 +573,22 @@ export default function ViewJobCards() {
               >
                 Carry over
               </button>
-              {showOrdersTab && (
-                <button
-                  onClick={() => setActiveTab("orders")}
-                  style={{
-                    padding: "10px 20px",
-                    border: "none",
-                    borderRadius: "999px",
-                    background: activeTab === "orders" ? "var(--primary)" : "transparent",
-                    color: activeTab === "orders" ? "white" : "var(--accent-purple)",
-                    fontWeight: 600,
-                    fontSize: "0.9rem",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  Orders
-                </button>
-              )}
+              <button
+                onClick={() => setActiveTab("orders")}
+                style={{
+                  padding: "10px 20px",
+                  border: "none",
+                  borderRadius: "999px",
+                  background: activeTab === "orders" ? "var(--primary)" : "transparent",
+                  color: activeTab === "orders" ? "white" : "var(--accent-purple)",
+                  fontWeight: 600,
+                  fontSize: "0.9rem",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Orders
+              </button>
             </div>
           </div>
 

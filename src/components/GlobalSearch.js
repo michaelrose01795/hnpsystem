@@ -177,10 +177,27 @@ const GlobalSearch = ({
   const handleSelect = (item) => {
     if (!item) return;
 
-    if (!item.href) {
+    const partsOrderDestination =
+      item.type === "parts_order"
+        ? (() => {
+            const orderId = item.orderNumber || item.jobNumber || null;
+            return orderId ? `/parts/create-order/${encodeURIComponent(orderId)}` : null;
+          })()
+        : null;
+
+    const destination = partsOrderDestination || item.href;
+
+    if (!destination) {
       setFeedback("No destination found for that item.");
       return;
     }
+
+    const normalisedDestination = (() => {
+      if (typeof destination !== "string") return destination;
+      if (/^https?:\/\//i.test(destination)) return destination;
+      if (destination.startsWith("/")) return destination;
+      return `/${destination.replace(/^\/+/, "")}`;
+    })();
 
     setQuery("");
     setIsOpen(false);
@@ -188,7 +205,7 @@ const GlobalSearch = ({
     setNavResults([]);
     setActiveIndex(0);
 
-    router.push(item.href);
+    router.push(normalisedDestination);
   };
 
   const handleKeyDown = (event) => {

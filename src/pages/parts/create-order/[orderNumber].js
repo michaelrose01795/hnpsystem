@@ -3,7 +3,6 @@
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
-import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 
 const containerStyle = {
@@ -88,10 +87,6 @@ export default function PartsOrderDetail() {
     typeof orderNumber === "string" && orderNumber.trim().length > 0
       ? orderNumber
       : legacyJobNumber;
-  const { user } = useUser();
-  const roles = (user?.roles || []).map((role) => String(role).toLowerCase());
-  const hasPartsAccess = roles.includes("parts") || roles.includes("parts manager");
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [order, setOrder] = useState(null);
@@ -99,7 +94,6 @@ export default function PartsOrderDetail() {
 
   useEffect(() => {
     if (!resolvedOrderNumber) return;
-    if (!hasPartsAccess) return;
     const fetchJob = async () => {
       setLoading(true);
       setError("");
@@ -119,7 +113,7 @@ export default function PartsOrderDetail() {
       }
     };
     fetchJob();
-  }, [resolvedOrderNumber, hasPartsAccess]);
+  }, [resolvedOrderNumber]);
 
   const totals = useMemo(() => {
     const items = Array.isArray(order?.items) ? order.items : [];
@@ -134,16 +128,6 @@ export default function PartsOrderDetail() {
       subtotal,
     };
   }, [order]);
-
-  if (!hasPartsAccess) {
-    return (
-      <Layout>
-        <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
-          You do not have permission to view parts orders.
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>

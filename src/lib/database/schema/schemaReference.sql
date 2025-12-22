@@ -1128,6 +1128,17 @@ CREATE TABLE public.vhc_declinations (
   CONSTRAINT vhc_declinations_pkey PRIMARY KEY (id),
   CONSTRAINT vhc_declinations_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
+CREATE TABLE public.vhc_item_aliases (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  job_id integer NOT NULL,
+  display_id text NOT NULL,
+  vhc_item_id integer NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT vhc_item_aliases_pkey PRIMARY KEY (id),
+  CONSTRAINT vhc_item_aliases_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT vhc_item_aliases_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id)
+);
 CREATE TABLE public.vhc_send_history (
   id integer NOT NULL DEFAULT nextval('vhc_send_history_id_seq'::regclass),
   job_id integer NOT NULL,
