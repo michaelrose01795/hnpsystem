@@ -219,7 +219,8 @@ export default function PartsDeliveriesPage() {
     } finally {
       setLoading(false);
     }
-  }, [hasAccess, listDeliveryJobs, selectedDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasAccess, selectedDate]);
 
   useEffect(() => {
     fetchJobs();

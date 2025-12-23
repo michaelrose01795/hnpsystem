@@ -15,17 +15,20 @@ import { ThemeProvider } from "@/styles/themeProvider";
 import { ConfirmationProvider } from "@/context/ConfirmationContext";
 import useJobcardsApi from "@/hooks/api/useJobcardsApi";
 import { initDropdownStyleObserver } from "@/utils/dropdownStyleApi";
+import { initScrollbarStyleObserver } from "@/utils/scrollbarStyleApi";
 
 function AppWrapper({ Component, pageProps }) {
   const { user } = useUser() || {}; // read logged in user
   const { setJobs } = useJobs() || {}; // obtain setter from jobs context
   const { listJobcards } = useJobcardsApi();
   useEffect(() => {
-    let disconnect = () => {};
-    if (typeof window !== "undefined") {
-      disconnect = initDropdownStyleObserver();
-    }
-    return () => disconnect();
+    if (typeof window === "undefined") return undefined;
+    const disconnectDropdown = initDropdownStyleObserver();
+    const disconnectScrollbar = initScrollbarStyleObserver();
+    return () => {
+      disconnectDropdown?.();
+      disconnectScrollbar?.();
+    };
   }, []);
 
   useEffect(() => {
@@ -44,7 +47,8 @@ function AppWrapper({ Component, pageProps }) {
       }
     };
     fetchJobs();
-  }, [user, setJobs, listJobcards]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   return <Component {...pageProps} />; // render the requested page
 }

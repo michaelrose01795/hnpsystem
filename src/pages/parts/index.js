@@ -438,7 +438,8 @@ function PartsPortalPage() {
     } finally {
       setDeliveriesLoading(false);
     }
-  }, [listDeliveries]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -494,7 +495,8 @@ function PartsPortalPage() {
         setJobLoading(false);
       }
     },
-    [listJobParts]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
   );
 
   const refreshJob = useCallback(() => {
@@ -514,7 +516,8 @@ function PartsPortalPage() {
     } catch (err) {
       console.error("Unable to load deliveries for scheduling", err);
     }
-  }, [listDeliveries]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadJobDeliveryInfo = useCallback(async () => {
     if (!jobData?.id) {

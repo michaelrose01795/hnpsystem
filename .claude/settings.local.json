@@ -14,7 +14,8 @@
       "Bash(chmod:*)",
       "Bash(timeout 60 npm run build)",
       "Bash(psql:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

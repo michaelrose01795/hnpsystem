@@ -5,10 +5,6 @@ Have it so the workshop/consumables-tracker page follows more of the dark theme 
 
 
 
-now applie the drop down style usered within the login page to all of the other drop downs within the whole app, use an api to make this easier and quicker to use the same style and design. Do the same with any scroll bar used in any page, make a seperate api for the scroll bar. 
-
-
-
 LOOK INTO TRACKING PAGE
 
 
@@ -121,3 +117,6 @@ add a search bar inside the "Employee Directory" with in the "hr/manager" page. 
 
 
 Remove all of the .md files and migration files. 
+
+
+now applie the drop down style usered within the login page to all of the other drop downs within the whole app, use an api to make this easier and quicker to use the same style and design. Do the same with any scroll bar used in any page, make a seperate api for the scroll bar. 

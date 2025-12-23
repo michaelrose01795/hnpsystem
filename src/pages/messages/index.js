@@ -396,7 +396,8 @@ function MessagesPage() {
     } finally {
       setLoadingThreads(false);
     }
-  }, [dbUserId, listThreads]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dbUserId]);
 
   const fetchDirectory = useCallback(
     async (searchTerm = "") => {
@@ -419,7 +420,8 @@ function MessagesPage() {
         setDirectoryLoading(false);
       }
     },
-    [dbUserId, listDirectoryUsers]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dbUserId]
   );
 
   const openThread = useCallback(
@@ -447,7 +449,8 @@ function MessagesPage() {
         setLoadingMessages(false);
       }
     },
-    [dbUserId, listThreadMessages, setThreads]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dbUserId]
   );
 
   const openSystemNotificationsThread = useCallback(() => {
@@ -481,7 +484,8 @@ function MessagesPage() {
         return false;
       }
     },
-    [createThreadApi, dbUserId, fetchThreads, mergeThread, openThread]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dbUserId, fetchThreads, mergeThread, openThread]
   );
 
   const handleCreateGroup = useCallback(async () => {
@@ -513,8 +517,8 @@ function MessagesPage() {
       setComposeError(error.message || "Unable to create group");
       return false;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    createThreadApi,
     dbUserId,
     fetchThreads,
     groupName,
@@ -592,6 +596,7 @@ function MessagesPage() {
         setSending(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       activeThread,
       activeThreadId,
@@ -599,7 +604,6 @@ function MessagesPage() {
       fetchThreads,
       messageDraft,
       openThread,
-      sendThreadMessage,
     ]
   );
 
@@ -649,7 +653,8 @@ function MessagesPage() {
     return () => {
       cancelled = true;
     };
-  }, [dbUserId, listDirectoryUsers, newChatModalOpen, directorySearch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dbUserId, newChatModalOpen, directorySearch]);
 
   useEffect(() => {
     let cancelled = false;
@@ -900,7 +905,8 @@ function MessagesPage() {
         setGroupManageBusy(false);
       }
     },
-    [activeThreadId, addMembers, dbUserId, mergeThread]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeThreadId, dbUserId, mergeThread]
   );
 
   const handleRemoveMemberFromGroup = useCallback(
@@ -923,7 +929,8 @@ function MessagesPage() {
         setGroupManageBusy(false);
       }
     },
-    [activeThreadId, dbUserId, mergeThread, removeMembers]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeThreadId, dbUserId, mergeThread]
   );
 
   const handleSaveGroupDetails = useCallback(async () => {
@@ -947,7 +954,8 @@ function MessagesPage() {
     } finally {
       setGroupEditBusy(false);
     }
-  }, [activeThreadId, dbUserId, fetchThreads, groupEditTitle, mergeThread, updateThread]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeThreadId, dbUserId, fetchThreads, groupEditTitle, mergeThread]);
 
   const openGroupEditModal = useCallback(() => {
     setGroupEditError("");
@@ -996,15 +1004,12 @@ function MessagesPage() {
     } finally {
       setThreadDeleteBusy(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeThreadId,
     dbUserId,
-    deleteThreadApi,
     fetchThreads,
     selectedThreadIds,
-    setThreads,
-    setMessages,
-    setThreadSelectionMode,
   ]);
 
   const handleCloseSelectionMode = useCallback(() => {

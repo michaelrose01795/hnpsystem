@@ -8,6 +8,189 @@ import dayjs from "dayjs";
 
 const supabase = getDatabaseClient();
 
+const JOB_DEFAULT_SELECT = `
+      id,
+      job_number,
+      description,
+      type,
+      status,
+      completion_status,
+      assigned_to,
+      customer_id,
+      vehicle_id,
+      vehicle_reg,
+      vehicle_make_model,
+      waiting_status,
+      job_source,
+      job_categories,
+      requests,
+      cosmetic_notes,
+      vhc_required,
+      checked_in_at,
+      vhc_completed_at,
+      maintenance_info,
+      warranty_linked_job_id,
+      warranty_vhc_master_job_id,
+      linked_warranty_job:warranty_linked_job_id(
+        id,
+        job_number,
+        status,
+        job_source,
+        vehicle_reg,
+        vehicle_make_model
+      ),
+      vhc_master_job:warranty_vhc_master_job_id(
+        id,
+        job_number,
+        status,
+        job_source
+      ),
+      created_at,
+      updated_at,
+      vehicle:vehicle_id(
+        vehicle_id,
+        registration,
+        reg_number,
+        make,
+        model,
+        make_model,
+        year,
+        colour,
+        vin,
+        chassis,
+        engine_number,
+        engine,
+        mileage,
+        fuel_type,
+        transmission,
+        body_style,
+        mot_due,
+        service_history,
+        warranty_type,
+        warranty_expiry,
+        insurance_provider,
+        insurance_policy_number,
+        customer:customer_id(
+          id,
+          firstname,
+          lastname,
+          email,
+          mobile,
+          telephone,
+          address,
+          postcode,
+          contact_preference
+        )
+      ),
+      technician:assigned_to(user_id, first_name, last_name, email, role),
+      appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
+      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at),
+      parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
+      parts_job_items(
+        id,
+        part_id,
+        quantity_requested,
+        quantity_allocated,
+        quantity_fitted,
+        allocated_to_request_id,
+        status,
+        origin,
+        pre_pick_location,
+        storage_location,
+        unit_cost,
+        unit_price,
+        request_notes,
+        allocated_by,
+        picked_by,
+        fitted_by,
+        created_at,
+        updated_at,
+        part:part_id(
+          id,
+          part_number,
+          name,
+          description,
+          unit_cost,
+          unit_price,
+          qty_in_stock,
+          qty_reserved,
+          qty_on_order,
+          storage_location
+        )
+      ),
+      job_notes(note_id, note_text, user_id, created_at, updated_at),
+      job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time, technician_id, created_at, updated_at),
+      job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at),
+      booking_request:job_booking_requests(
+        request_id,
+        job_id,
+        status,
+        description,
+        waiting_status,
+        submitted_by,
+        submitted_by_name,
+        submitted_at,
+        approved_by,
+        approved_by_name,
+        approved_at,
+        confirmation_sent_at,
+        price_estimate,
+        estimated_completion,
+        loan_car_details,
+        confirmation_notes
+      )
+    `;
+
+const JOB_APPOINTMENT_SELECT = `
+      id,
+      job_number,
+      description,
+      type,
+      status,
+      completion_status,
+      assigned_to,
+      customer_id,
+      vehicle_id,
+      vehicle_reg,
+      vehicle_make_model,
+      waiting_status,
+      job_source,
+      job_categories,
+      requests,
+      cosmetic_notes,
+      vhc_required,
+      checked_in_at,
+      maintenance_info,
+      created_at,
+      updated_at,
+      vehicle:vehicle_id(
+        vehicle_id,
+        registration,
+        reg_number,
+        make,
+        model,
+        make_model,
+        year,
+        colour,
+        customer:customer_id(
+          id,
+          firstname,
+          lastname,
+          email,
+          mobile,
+          telephone,
+          address,
+          postcode,
+          contact_preference
+        )
+      ),
+      technician:assigned_to(user_id, first_name, last_name, email, role),
+      appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at)
+    `;
+
+const getJobSelectForScope = (scope = "default") =>
+  scope === "appointments" ? JOB_APPOINTMENT_SELECT : JOB_DEFAULT_SELECT;
+
 const normaliseJobNumberInput = (value) => {
   if (value === null || value === undefined) {
     return null;
@@ -323,144 +506,20 @@ const syncWriteUpRectificationItems = async ({
    Gets all jobs along with linked vehicles, customers,
    technicians, appointments, VHC checks, parts, notes, write-ups, and files
 ============================================ */
-export const getAllJobs = async () => {
+export const getAllJobs = async (options = {}) => {
+  const { scope = "default", limit = null } = options;
   console.log("🔍 getAllJobs: Starting fetch..."); // Debug log
-  
-  const { data, error } = await supabase
+  const selectClause = getJobSelectForScope(scope);
+  let query = supabase
     .from("jobs")
-    .select(`
-      id,
-      job_number,
-      description,
-      type,
-      status,
-      completion_status,
-      assigned_to,
-      customer_id,
-      vehicle_id,
-      vehicle_reg,
-      vehicle_make_model,
-      waiting_status,
-      job_source,
-      job_categories,
-      requests,
-      cosmetic_notes,
-      vhc_required,
-      checked_in_at,
-      vhc_completed_at,
-      maintenance_info,
-      warranty_linked_job_id,
-      warranty_vhc_master_job_id,
-      linked_warranty_job:warranty_linked_job_id(
-        id,
-        job_number,
-        status,
-        job_source,
-        vehicle_reg,
-        vehicle_make_model
-      ),
-      vhc_master_job:warranty_vhc_master_job_id(
-        id,
-        job_number,
-        status,
-        job_source
-      ),
-      created_at,
-      updated_at,
-      vehicle:vehicle_id(
-        vehicle_id,
-        registration,
-        reg_number,
-        make,
-        model,
-        make_model,
-        year,
-        colour,
-        vin,
-        chassis,
-        engine_number,
-        engine,
-        mileage,
-        fuel_type,
-        transmission,
-        body_style,
-        mot_due,
-        service_history,
-        warranty_type,
-        warranty_expiry,
-        insurance_provider,
-        insurance_policy_number,
-        customer:customer_id(
-          id,
-          firstname,
-          lastname,
-          email,
-          mobile,
-          telephone,
-          address,
-          postcode,
-          contact_preference
-        )
-      ),
-      technician:assigned_to(user_id, first_name, last_name, email, role),
-      appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
-      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at),
-      parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
-      parts_job_items(
-        id,
-        part_id,
-        quantity_requested,
-        quantity_allocated,
-        quantity_fitted,
-        allocated_to_request_id,
-        status,
-        origin,
-        pre_pick_location,
-        storage_location,
-        unit_cost,
-        unit_price,
-        request_notes,
-        allocated_by,
-        picked_by,
-        fitted_by,
-        created_at,
-        updated_at,
-        part:part_id(
-          id,
-          part_number,
-          name,
-          description,
-          unit_cost,
-          unit_price,
-          qty_in_stock,
-          qty_reserved,
-          qty_on_order,
-          storage_location
-        )
-      ),
-      job_notes(note_id, note_text, user_id, created_at, updated_at),
-      job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time, technician_id, created_at, updated_at),
-      job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at),
-      booking_request:job_booking_requests(
-        request_id,
-        job_id,
-        status,
-        description,
-        waiting_status,
-        submitted_by,
-        submitted_by_name,
-        submitted_at,
-        approved_by,
-        approved_by_name,
-        approved_at,
-        confirmation_sent_at,
-        price_estimate,
-        estimated_completion,
-        loan_car_details,
-        confirmation_notes
-      )
-    `)
-    .order('created_at', { ascending: false }); // Order by newest first
+    .select(selectClause)
+    .order("created_at", { ascending: false });
+
+  if (typeof limit === "number" && limit > 0) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("❌ getAllJobs error:", error);

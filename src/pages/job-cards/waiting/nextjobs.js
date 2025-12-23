@@ -500,7 +500,8 @@ export default function NextJobsPage() {
     } finally {
       setLoading(false);
     }
-  }, [listJobcards]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchTechnicians = useCallback(async () => { // Wrap technician lookup in stable callback
     try {

@@ -144,12 +144,11 @@ export default async function handler(req, res) {
         baseJobCard.vehicle?.customer?.id ||
         null;
 
-      const customerJobs = customerId
-        ? await getCustomerJobs(customerId)
-        : [];
-      const vehicleJobHistory = customerJobs.length
+      const customerJobs = customerId ? await getCustomerJobs(customerId) : [];
+      const limitedCustomerJobs = customerJobs.slice(0, 75);
+      const vehicleJobHistory = limitedCustomerJobs.length
         ? mapCustomerJobsToHistory(
-            customerJobs,
+            limitedCustomerJobs,
             baseJobCard.reg ||
               baseJobCard.vehicle_reg ||
               baseJobCard.vehicle?.reg_number ||
@@ -165,7 +164,7 @@ export default async function handler(req, res) {
         : [];
 
       const legacyJobCard = buildLegacyJobCard(baseJobCard, notes);
-      const legacyCustomer = buildLegacyCustomer(baseJobCard, customerJobs);
+      const legacyCustomer = buildLegacyCustomer(baseJobCard, limitedCustomerJobs);
       const legacyVehicle = buildLegacyVehicle(
         baseJobCard,
         vehicleMaintenanceHistory

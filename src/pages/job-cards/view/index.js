@@ -259,7 +259,8 @@ export default function ViewJobCards() {
     } finally {
       setLoading(false);
     }
-  }, [listJobcards]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetchJobs();
@@ -276,7 +277,8 @@ export default function ViewJobCards() {
     } finally {
       setOrdersLoading(false);
     }
-  }, [listOrders]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetchOrders();

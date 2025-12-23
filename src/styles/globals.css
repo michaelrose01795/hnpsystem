@@ -395,6 +395,109 @@ div#main-content {
   gap: 20px;
 }
 
+/* ========================================================= */
+/* === Dropdown Theme API Styles === */
+/* ========================================================= */
+
+.dropdown-theme {
+  position: relative;
+  display: block;
+  width: 100%;
+  border-radius: 28px;
+  padding: 2px;
+  background: var(--dropdown-border);
+  box-shadow: var(--dropdown-shadow);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.dropdown-theme::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 24px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid rgba(var(--text-secondary-rgb), 0.55);
+  border-bottom: 2px solid rgba(var(--text-secondary-rgb), 0.55);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.dropdown-theme:focus-within {
+  box-shadow:
+    0 0 0 2px var(--dropdown-border-strong),
+    var(--dropdown-shadow);
+}
+
+.dropdown-theme:focus-within::after {
+  border-color: var(--primary);
+  transform: translateY(-20%) rotate(225deg);
+}
+
+.dropdown-theme__select {
+  appearance: none;
+  border: none;
+  border-radius: 26px;
+  background: var(--dropdown-surface);
+  color: var(--dropdown-value);
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 16px 56px 16px 20px;
+  width: 100%;
+  min-height: 56px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dropdown-theme__select:focus {
+  outline: none;
+  background: var(--dropdown-surface-muted);
+  box-shadow:
+    0 0 0 2px rgba(var(--primary-rgb), 0.35),
+    var(--dropdown-shadow);
+}
+
+.dropdown-theme__select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.dropdown-theme__select option,
+.dropdown-theme__select optgroup {
+  color: var(--text-primary);
+  background: var(--surface);
+  font-weight: 500;
+}
+
+.dropdown-theme__select::-ms-expand {
+  display: none;
+}
+
+.dropdown-theme--glass {
+  background: linear-gradient(
+    135deg,
+    rgba(var(--primary-rgb), 0.28),
+    rgba(var(--primary-rgb), 0.12)
+  );
+}
+
+.dropdown-theme--glass .dropdown-theme__select {
+  background: var(--dropdown-surface);
+  color: var(--dropdown-value);
+}
+
+.dropdown-theme__select--glass {
+  background: var(--dropdown-surface);
+}
+
+.dropdown-theme--glass:focus-within {
+  transform: translateY(-1px);
+}
+
 .login-dropdown {
   display: flex;
   flex-direction: column;
@@ -491,15 +594,16 @@ div#main-content {
   flex-direction: column;
   border-radius: 28px;
   padding: 2px;
-  background: rgba(var(--primary-rgb), 0.18);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  background: var(--dropdown-border);
+  box-shadow: var(--dropdown-shadow);
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .login-dropdown--test-field.open {
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.65),
-    0 28px 60px rgba(15, 23, 42, 0.15);
+    0 0 0 2px var(--dropdown-border-strong),
+    var(--dropdown-shadow);
+  transform: translateY(-1px);
 }
 
 .login-dropdown--test-field::after {
@@ -509,8 +613,8 @@ div#main-content {
   right: 24px;
   width: 10px;
   height: 10px;
-  border-right: 2px solid rgba(var(--text-secondary-rgb), 0.6);
-  border-bottom: 2px solid rgba(var(--text-secondary-rgb), 0.6);
+  border-right: 2px solid var(--dropdown-label);
+  border-bottom: 2px solid var(--dropdown-label);
   transform: translateY(-60%) rotate(45deg);
   pointer-events: none;
   transition: border-color 0.2s ease;
@@ -523,14 +627,14 @@ div#main-content {
 .login-dropdown--test-select {
   border: none;
   border-radius: 26px;
-  background: rgba(var(--surface-rgb), 0.95);
-  color: var(--text-primary);
+  background: var(--dropdown-surface);
+  color: var(--dropdown-value);
   padding: 16px 52px 16px 20px;
   font-size: 1rem;
   font-weight: 600;
   width: 100%;
   appearance: none;
-  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
   transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   display: flex;
   align-items: center;
@@ -541,22 +645,22 @@ div#main-content {
 
 .login-dropdown--test-select:focus {
   outline: none;
-  background: var(--surface);
+  background: var(--dropdown-surface-muted);
   box-shadow:
     0 0 0 2px rgba(var(--primary-rgb), 0.45),
-    0 28px 55px rgba(15, 23, 42, 0.25);
+    var(--dropdown-shadow);
 }
 
 .login-dropdown--test-field.has-value .login-dropdown--test-select,
 .login-dropdown--test-field.open .login-dropdown--test-select {
-  background: var(--surface);
-  color: var(--text-primary);
+  background: var(--dropdown-surface);
+  color: var(--dropdown-value);
 }
 
 .login-dropdown--test-select.is-open {
   box-shadow:
     0 0 0 2px rgba(var(--primary-rgb), 0.35),
-    0 28px 55px rgba(15, 23, 42, 0.28);
+    var(--dropdown-shadow);
 }
 
 .login-dropdown--test-value {
@@ -578,7 +682,7 @@ div#main-content {
   transform: translateY(-50%);
   font-size: 0.9rem;
   font-weight: 600;
-  color: rgba(var(--text-secondary-rgb), 0.85);
+  color: var(--dropdown-label);
   pointer-events: none;
   transition: all 0.2s ease;
   opacity: 0;
@@ -590,7 +694,7 @@ div#main-content {
   transform: translateY(-60%);
   font-size: 0.75rem;
   color: var(--primary);
-  background: rgba(var(--surface-rgb), 0.95);
+  background: var(--dropdown-surface);
   padding: 0 10px;
   border-radius: 999px;
   letter-spacing: 0.02em;
@@ -601,10 +705,10 @@ div#main-content {
   position: relative;
   margin-top: 10px;
   border-radius: 20px;
-  background: var(--surface);
+  background: var(--dropdown-surface);
   box-shadow:
-    0 40px 80px rgba(15, 23, 42, 0.35),
-    0 0 0 1px rgba(var(--primary-rgb), 0.2);
+    var(--dropdown-shadow),
+    0 0 0 1px var(--dropdown-border);
   padding: 10px;
   display: none;
   flex-direction: column;
@@ -620,7 +724,7 @@ div#main-content {
   border-radius: 16px;
   padding: 12px 16px;
   background: transparent;
-  color: var(--text-primary);
+  color: var(--dropdown-value);
   text-align: left;
   font-size: 0.95rem;
   font-weight: 600;
@@ -682,6 +786,45 @@ div#main-content {
 
 [data-theme="dark"] .login-logo-dark {
   display: inline-block;
+}
+
+/* ========================================================= */
+/* === Scrollbar Theme API Styles === */
+/* ========================================================= */
+
+body.scrollbar-theme,
+body.scrollbar-theme * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+body.scrollbar-theme ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+body.scrollbar-theme ::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 999px;
+}
+
+body.scrollbar-theme ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid var(--scrollbar-track);
+  transition: background 0.2s ease;
+}
+
+body.scrollbar-theme ::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+body.scrollbar-theme ::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active);
+}
+
+body.scrollbar-theme ::-webkit-scrollbar-corner {
+  background: var(--scrollbar-corner);
 }
 
 /* ========================================================= */

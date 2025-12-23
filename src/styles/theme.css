@@ -59,6 +59,21 @@
   --search-text: #000000;
   --overlay: rgba(var(--primary-rgb), 0.35);
 
+  --dropdown-surface: rgba(var(--surface-rgb), 0.95);
+  --dropdown-surface-muted: rgba(var(--surface-rgb), 0.75);
+  --dropdown-border: rgba(var(--primary-rgb), 0.28);
+  --dropdown-border-strong: rgba(var(--primary-rgb), 0.5);
+  --dropdown-label: rgba(var(--text-secondary-rgb), 0.8);
+  --dropdown-value: var(--text-primary);
+  --dropdown-placeholder: rgba(var(--text-secondary-rgb), 0.75);
+  --dropdown-shadow: 0 25px 60px rgba(15, 15, 15, 0.18);
+
+  --scrollbar-track: rgba(var(--surface-rgb), 0.8);
+  --scrollbar-thumb: rgba(var(--primary-rgb), 0.6);
+  --scrollbar-thumb-hover: rgba(var(--primary-rgb), 0.8);
+  --scrollbar-thumb-active: rgba(var(--primary-rgb), 0.95);
+  --scrollbar-corner: rgba(var(--surface-rgb), 0.9);
+
 
   --layer-section-level-1: #ffffff;
   --layer-section-level-2: #fbfbfb;
@@ -128,6 +143,21 @@
   --search-surface-muted: #3a3a42;
   --search-text: #c1a3ff;
   --overlay: rgba(var(--accent-purple-rgb), 0.5);
+
+  --dropdown-surface: rgba(var(--surface-rgb), 0.98);
+  --dropdown-surface-muted: rgba(var(--surface-rgb), 0.65);
+  --dropdown-border: rgba(var(--primary-rgb), 0.35);
+  --dropdown-border-strong: rgba(var(--primary-rgb), 0.65);
+  --dropdown-label: rgba(var(--text-secondary-rgb), 0.9);
+  --dropdown-value: var(--text-primary);
+  --dropdown-placeholder: rgba(var(--text-secondary-rgb), 0.7);
+  --dropdown-shadow: 0 30px 55px rgba(0, 0, 0, 0.65);
+
+  --scrollbar-track: rgba(var(--surface-rgb), 0.28);
+  --scrollbar-thumb: rgba(var(--primary-rgb), 0.8);
+  --scrollbar-thumb-hover: rgba(var(--primary-rgb), 1);
+  --scrollbar-thumb-active: rgba(var(--primary-rgb), 1);
+  --scrollbar-corner: rgba(var(--surface-rgb), 0.45);
 
 
   --layer-section-level-1: #1f2027;

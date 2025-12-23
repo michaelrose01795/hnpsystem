@@ -374,7 +374,7 @@ export default function Appointments() {
     setIsLoading(true);
 
     try {
-      const jobsFromDb = await getAllJobs();
+      const jobsFromDb = await getAllJobs({ scope: "appointments" });
       console.log("Jobs fetched:", jobsFromDb.length);
 
       // ✅ Filter only jobs with appointments
