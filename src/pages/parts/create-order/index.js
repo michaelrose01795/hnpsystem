@@ -8,6 +8,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup";
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup";
 import { useTheme } from "@/styles/themeProvider";
+import { updateCustomer } from "@/lib/database/customers";
 
 const cardStyle = {
   borderRadius: "20px",
@@ -116,6 +117,21 @@ const formatFullName = (record = {}) =>
     .join(" ")
     .trim();
 
+const splitFullName = (fullName = "", fallback = {}) => {
+  const trimmed = (fullName || "").trim();
+  if (!trimmed.length) {
+    return {
+      firstName: fallback.firstname || fallback.firstName || "",
+      lastName: fallback.lastname || fallback.lastName || "",
+    };
+  }
+  const [firstName, ...rest] = trimmed.split(/\s+/);
+  return {
+    firstName: firstName || fallback.firstname || fallback.firstName || "",
+    lastName: rest.join(" ").trim() || fallback.lastname || fallback.lastName || "",
+  };
+};
+
 const normalizeCustomerRecord = (record = {}) => ({
   id: record.id || record.customer_id || null,
   firstname: record.firstname || record.firstName || "",
@@ -142,6 +158,8 @@ export default function PartsJobCardPage() {
   const [customerRecord, setCustomerRecord] = useState(null);
   const [showExistingCustomer, setShowExistingCustomer] = useState(false);
   const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [isCustomerEditing, setIsCustomerEditing] = useState(false);
+  const [savingCustomerDetails, setSavingCustomerDetails] = useState(false);
   const [deliverySameAsBilling, setDeliverySameAsBilling] = useState(true);
   const [loadingVehicle, setLoadingVehicle] = useState(false);
   const [partSearchOpen, setPartSearchOpen] = useState(false);
@@ -149,6 +167,7 @@ export default function PartsJobCardPage() {
   const [partSearchResults, setPartSearchResults] = useState([]);
   const [partSearchLoading, setPartSearchLoading] = useState(false);
   const [activePartLine, setActivePartLine] = useState(null);
+  const hasCustomerSelected = Boolean(customerRecord);
 
   useEffect(() => {
     if (deliverySameAsBilling) {
@@ -316,6 +335,7 @@ export default function PartsJobCardPage() {
       if (!record) return;
       const normalized = normalizeCustomerRecord(record);
       setCustomerRecord(normalized);
+      setIsCustomerEditing(false);
       setForm((prev) => {
         const nextState = {
           ...prev,
@@ -339,6 +359,7 @@ export default function PartsJobCardPage() {
 
   const handleCustomerCleared = () => {
     setCustomerRecord(null);
+    setIsCustomerEditing(false);
     setForm((prev) => ({
       ...prev,
       customer_id: null,
@@ -346,7 +367,83 @@ export default function PartsJobCardPage() {
       customer_phone: "",
       customer_email: "",
       customer_address: "",
+      delivery_address: deliverySameAsBilling ? "" : prev.delivery_address,
     }));
+  };
+
+  const syncFormWithCustomerRecord = useCallback(() => {
+    if (!customerRecord) return;
+    setForm((prev) => {
+      const nextState = {
+        ...prev,
+        customer_id: customerRecord.id,
+        customer_name: formatFullName(customerRecord),
+        customer_phone: customerRecord.mobile || customerRecord.telephone || "",
+        customer_email: customerRecord.email || "",
+        customer_address: customerRecord.address || "",
+      };
+      if (deliverySameAsBilling) {
+        nextState.delivery_address = customerRecord.address || "";
+      }
+      return nextState;
+    });
+  }, [customerRecord, deliverySameAsBilling]);
+
+  const handleStartCustomerEdit = () => {
+    if (!customerRecord) return;
+    syncFormWithCustomerRecord();
+    setIsCustomerEditing(true);
+  };
+
+  const handleCancelCustomerEdit = () => {
+    syncFormWithCustomerRecord();
+    setIsCustomerEditing(false);
+  };
+
+  const handleSaveCustomerDetails = async () => {
+    if (!customerRecord?.id) return;
+    setSavingCustomerDetails(true);
+    const toNullable = (value) => {
+      const trimmed = (value || "").trim();
+      return trimmed.length ? trimmed : null;
+    };
+    const { firstName, lastName } = splitFullName(form.customer_name, customerRecord);
+    const phoneValue = toNullable(form.customer_phone);
+    try {
+      const result = await updateCustomer(customerRecord.id, {
+        firstname: firstName || customerRecord.firstname || customerRecord.firstName || "",
+        lastname: lastName || customerRecord.lastname || customerRecord.lastName || "",
+        email: toNullable(form.customer_email),
+        mobile: phoneValue,
+        telephone: phoneValue,
+        address: toNullable(form.customer_address),
+      });
+      if (!result?.success || !result?.data) {
+        throw new Error(result?.error?.message || "Failed to update customer details.");
+      }
+      const normalized = normalizeCustomerRecord(result.data);
+      setCustomerRecord(normalized);
+      setForm((prev) => {
+        const nextState = {
+          ...prev,
+          customer_id: normalized.id,
+          customer_name: formatFullName(normalized),
+          customer_phone: normalized.mobile || normalized.telephone || "",
+          customer_email: normalized.email || "",
+          customer_address: normalized.address || "",
+        };
+        if (deliverySameAsBilling) {
+          nextState.delivery_address = normalized.address || "";
+        }
+        return nextState;
+      });
+      setIsCustomerEditing(false);
+    } catch (saveError) {
+      console.error("Failed to update customer details:", saveError);
+      setErrorMessage(saveError.message || "Unable to update customer details.");
+    } finally {
+      setSavingCustomerDetails(false);
+    }
   };
 
   const handleExistingCustomerSelect = (record) => {
@@ -390,6 +487,7 @@ export default function PartsJobCardPage() {
       const trimmedCustomerPhone = form.customer_phone.trim();
 
       const payload = {
+        status: "booked",
         customer_id: customerRecord?.id || form.customer_id,
         customer_name: trimmedCustomerName,
         customer_phone: trimmedCustomerPhone || null,
@@ -485,41 +583,66 @@ export default function PartsJobCardPage() {
                 <div>
                   <strong style={{ fontSize: "1.05rem" }}>Customer details</strong>
                 </div>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowExistingCustomer(true)}
-                    style={{
-                      borderRadius: "10px",
-                      border: "1px solid transparent",
-                      background: isDarkMode ? "#7D3FFF" : "#E53935",
-                      color: "#ffffff",
-                      padding: "8px 14px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Search existing
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowNewCustomer(true)}
-                    style={{
-                      borderRadius: "10px",
-                      border: "1px solid var(--primary)",
-                      background: "var(--primary)",
-                      color: "var(--surface)",
-                      padding: "8px 14px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Add customer
-                  </button>
-                  {customerRecord && (
+                {hasCustomerSelected && (
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    {isCustomerEditing ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleSaveCustomerDetails}
+                          disabled={savingCustomerDetails}
+                          style={{
+                            borderRadius: "10px",
+                            border: "1px solid var(--primary)",
+                            background: "var(--primary)",
+                            color: "var(--surface)",
+                            padding: "8px 14px",
+                            fontWeight: 600,
+                            cursor: savingCustomerDetails ? "not-allowed" : "pointer",
+                            opacity: savingCustomerDetails ? 0.7 : 1,
+                          }}
+                        >
+                          {savingCustomerDetails ? "Saving…" : "Save customer details"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCancelCustomerEdit}
+                          disabled={savingCustomerDetails}
+                          style={{
+                            borderRadius: "10px",
+                            border: "1px solid var(--surface-light)",
+                            background: "var(--surface)",
+                            color: "var(--primary-dark)",
+                            padding: "8px 14px",
+                            fontWeight: 600,
+                            cursor: savingCustomerDetails ? "not-allowed" : "pointer",
+                            opacity: savingCustomerDetails ? 0.7 : 1,
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleStartCustomerEdit}
+                        style={{
+                          borderRadius: "10px",
+                          border: "1px solid var(--primary)",
+                          background: "var(--primary)",
+                          color: "var(--surface)",
+                          padding: "8px 14px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Edit customer details
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={handleCustomerCleared}
+                      disabled={savingCustomerDetails}
                       style={{
                         borderRadius: "10px",
                         border: "1px solid var(--danger)",
@@ -527,85 +650,140 @@ export default function PartsJobCardPage() {
                         color: "var(--danger)",
                         padding: "8px 14px",
                         fontWeight: 600,
-                        cursor: "pointer",
+                        cursor: savingCustomerDetails ? "not-allowed" : "pointer",
+                        opacity: savingCustomerDetails ? 0.7 : 1,
                       }}
                     >
-                      Clear
+                      Clear customer
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
-              {customerRecord && (
+              {!hasCustomerSelected ? (
                 <div
                   style={{
-                    border: "1px solid var(--surface-light)",
-                    borderRadius: "14px",
-                    padding: "12px",
-                    background: "var(--surface)",
+                    minHeight: "180px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center",
                   }}
                 >
-                  <strong>{formatFullName(customerRecord)}</strong>
-                  <div style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
-                    {customerRecord.email || "No email"} · {customerRecord.mobile || customerRecord.telephone || "No phone"}
-                  </div>
-                  <div style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
-                    {customerRecord.address || "No saved address"}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
+                    <p style={{ margin: 0, color: "var(--info)" }}>Search for or add a customer to continue.</p>
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowExistingCustomer(true)}
+                        style={{
+                          borderRadius: "10px",
+                          border: "1px solid transparent",
+                          background: isDarkMode ? "#7D3FFF" : "#E53935",
+                          color: "#ffffff",
+                          padding: "10px 18px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Search existing
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowNewCustomer(true)}
+                        style={{
+                          borderRadius: "10px",
+                          border: "1px solid var(--primary)",
+                          background: "var(--primary)",
+                          color: "var(--surface)",
+                          padding: "10px 18px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Add customer
+                      </button>
+                    </div>
                   </div>
                 </div>
+              ) : (
+                <>
+                  {customerRecord && (
+                    <div
+                      style={{
+                        border: "1px solid var(--surface-light)",
+                        borderRadius: "14px",
+                        padding: "12px",
+                        background: "var(--surface)",
+                      }}
+                    >
+                      <strong>{formatFullName(customerRecord)}</strong>
+                      <div style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
+                        {customerRecord.email || "No email"} · {customerRecord.mobile || customerRecord.telephone || "No phone"}
+                      </div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
+                        {customerRecord.address || "No saved address"}
+                      </div>
+                    </div>
+                  )}
+                  <div style={twoColumnGrid}>
+                    <label style={fieldStyle}>
+                      <span style={{ fontWeight: 600 }}>Customer name</span>
+                      <input
+                        type="text"
+                        required
+                        disabled={!isCustomerEditing}
+                        value={form.customer_name}
+                        onChange={(event) => handleFieldChange("customer_name", event.target.value)}
+                        style={inputStyle}
+                        placeholder="Name"
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      <span style={{ fontWeight: 600 }}>Customer phone</span>
+                      <input
+                        type="tel"
+                        disabled={!isCustomerEditing}
+                        value={form.customer_phone}
+                        onChange={(event) => handleFieldChange("customer_phone", event.target.value)}
+                        style={inputStyle}
+                        placeholder="Phone"
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      <span style={{ fontWeight: 600 }}>Customer email</span>
+                      <input
+                        type="email"
+                        disabled={!isCustomerEditing}
+                        value={form.customer_email}
+                        onChange={(event) => handleFieldChange("customer_email", event.target.value)}
+                        style={inputStyle}
+                        placeholder="Email"
+                      />
+                    </label>
+                  </div>
+                  <label style={fieldStyle}>
+                    <span style={{ fontWeight: 600 }}>Billing address</span>
+                    <textarea
+                      rows={2}
+                      disabled={!isCustomerEditing}
+                      value={form.customer_address}
+                      onChange={(event) => handleFieldChange("customer_address", event.target.value)}
+                      style={{ ...inputStyle, resize: "vertical" }}
+                      placeholder="Billing address"
+                    />
+                  </label>
+                  <label style={fieldStyle}>
+                    <span style={{ fontWeight: 600 }}>Customer notes</span>
+                    <textarea
+                      rows={3}
+                      value={form.notes}
+                      onChange={(event) => handleFieldChange("notes", event.target.value)}
+                      style={{ ...inputStyle, resize: "vertical" }}
+                      placeholder="Special instructions or payment notes"
+                    />
+                  </label>
+                </>
               )}
-              <div style={twoColumnGrid}>
-                <label style={fieldStyle}>
-                  <span style={{ fontWeight: 600 }}>Customer name</span>
-                  <input
-                    type="text"
-                    required
-                    value={form.customer_name}
-                    onChange={(event) => handleFieldChange("customer_name", event.target.value)}
-                    style={inputStyle}
-                    placeholder="Name"
-                  />
-                </label>
-                <label style={fieldStyle}>
-                  <span style={{ fontWeight: 600 }}>Customer phone</span>
-                  <input
-                    type="tel"
-                    value={form.customer_phone}
-                    onChange={(event) => handleFieldChange("customer_phone", event.target.value)}
-                    style={inputStyle}
-                    placeholder="Phone"
-                  />
-                </label>
-                <label style={fieldStyle}>
-                  <span style={{ fontWeight: 600 }}>Customer email</span>
-                  <input
-                    type="email"
-                    value={form.customer_email}
-                    onChange={(event) => handleFieldChange("customer_email", event.target.value)}
-                    style={inputStyle}
-                    placeholder="Email"
-                  />
-                </label>
-              </div>
-              <label style={fieldStyle}>
-                <span style={{ fontWeight: 600 }}>Billing address</span>
-                <textarea
-                  rows={2}
-                  value={form.customer_address}
-                  onChange={(event) => handleFieldChange("customer_address", event.target.value)}
-                  style={{ ...inputStyle, resize: "vertical" }}
-                  placeholder="Billing address"
-                />
-              </label>
-              <label style={fieldStyle}>
-                <span style={{ fontWeight: 600 }}>Customer notes</span>
-                <textarea
-                  rows={3}
-                  value={form.notes}
-                  onChange={(event) => handleFieldChange("notes", event.target.value)}
-                  style={{ ...inputStyle, resize: "vertical" }}
-                  placeholder="Special instructions or payment notes"
-                />
-              </label>
             </div>
 
             <div style={sectionCardStyle}>

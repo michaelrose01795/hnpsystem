@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Layout from "@/components/Layout";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -58,6 +58,44 @@ const formatDate = (value) => {
   });
 };
 
+const orderStatusLabels = {
+  draft: "Draft",
+  booked: "Part Ordered",
+  ready: "In Progress",
+  complete: "Complete",
+};
+
+const deliveryStatusLabels = {
+  pending: "Part Ordered",
+  scheduled: "Arrived at dealership",
+  dispatched: "Out for delivery",
+  delivered: "Delivered",
+};
+
+const invoiceStatusLabels = {
+  draft: "Invoice draft",
+  issued: "Invoice issued",
+  paid: "Invoice paid",
+  cancelled: "Invoice cancelled",
+};
+
+const DELIVERY_STAGES = [
+  { value: "pending", label: "Part ordered" },
+  { value: "scheduled", label: "Arrived at dealership" },
+  { value: "dispatched", label: "Out for delivery" },
+  { value: "delivered", label: "Delivered" },
+];
+
+const INVOICE_STAGES = [
+  { value: "draft", label: "Not invoiced" },
+  { value: "issued", label: "Invoice raised" },
+  { value: "paid", label: "Paid" },
+];
+
+const formatDeliveryStatus = (value) => deliveryStatusLabels[value] || "Pending";
+const formatInvoiceStatus = (value) => invoiceStatusLabels[value] || "Draft";
+const formatOrderStatus = (value) => orderStatusLabels[value] || orderStatusLabels.draft;
+
 const statusChip = (label, tone = "info") => {
   const tones = {
     info: { background: "rgba(var(--info-rgb),0.15)", color: "var(--info-dark)" },
@@ -91,6 +129,11 @@ export default function PartsOrderDetail() {
   const [error, setError] = useState("");
   const [order, setOrder] = useState(null);
   const [activeTab, setActiveTab] = useState("parts");
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [statusError, setStatusError] = useState("");
+  const orderId = order?.id;
+  const lastOrderRef = useRef(null);
+  const hasPatchedDraftRef = useRef(false);
 
   useEffect(() => {
     if (!resolvedOrderNumber) return;
@@ -114,6 +157,97 @@ export default function PartsOrderDetail() {
     };
     fetchJob();
   }, [resolvedOrderNumber]);
+
+  const updateOrderRecord = useCallback(
+    async (updates = {}, { skipAutoComplete = false } = {}) => {
+      if (!orderId) return null;
+      setStatusError("");
+      setStatusSaving(true);
+      try {
+        const { data, error: updateError } = await supabase
+          .from("parts_job_cards")
+          .update({ ...updates, updated_at: new Date().toISOString() })
+          .eq("id", orderId)
+          .select("*, items:parts_job_card_items(*)")
+          .maybeSingle();
+        if (updateError) throw updateError;
+        let nextOrder = data || null;
+        const shouldAutoComplete =
+          !skipAutoComplete &&
+          nextOrder?.delivery_status === "delivered" &&
+          nextOrder?.invoice_status === "paid" &&
+          nextOrder?.status !== "complete";
+        if (shouldAutoComplete && nextOrder?.id) {
+          const completionPayload = {
+            status: "complete",
+            updated_at: new Date().toISOString(),
+          };
+          if (Object.prototype.hasOwnProperty.call(nextOrder, "archived_at")) {
+            completionPayload.archived_at = new Date().toISOString();
+          }
+          const { data: completedOrder, error: completionError } = await supabase
+            .from("parts_job_cards")
+            .update(completionPayload)
+            .eq("id", nextOrder.id)
+            .select("*, items:parts_job_card_items(*)")
+            .maybeSingle();
+          if (!completionError && completedOrder) {
+            nextOrder = completedOrder;
+          }
+        }
+        setOrder(nextOrder);
+        return nextOrder;
+      } catch (updateErr) {
+        console.error("Failed to update parts order:", updateErr);
+        setStatusError(updateErr.message || "Unable to update status.");
+        return null;
+      } finally {
+        setStatusSaving(false);
+      }
+    },
+    [orderId]
+  );
+
+  useEffect(() => {
+    if (!order?.id) return;
+    if (lastOrderRef.current !== order.id) {
+      lastOrderRef.current = order.id;
+      hasPatchedDraftRef.current = false;
+    }
+    if (order.status === "draft" && !hasPatchedDraftRef.current) {
+      hasPatchedDraftRef.current = true;
+      updateOrderRecord({ status: "booked" }, { skipAutoComplete: true });
+    }
+  }, [order, updateOrderRecord]);
+
+  const deriveOrderStatusFromDelivery = (stageValue) => {
+    if (order?.status === "complete") return "complete";
+    if (stageValue === "pending") return "booked";
+    if (stageValue === "delivered" && order?.invoice_status === "paid") return "complete";
+    return "ready";
+  };
+
+  const handleDeliveryStatusChange = useCallback(
+    async (nextValue) => {
+      if (!order?.id || order.delivery_status === nextValue) return;
+      await updateOrderRecord(
+        {
+          delivery_status: nextValue,
+          status: deriveOrderStatusFromDelivery(nextValue),
+        },
+        { skipAutoComplete: nextValue === "pending" }
+      );
+    },
+    [order, updateOrderRecord]
+  );
+
+  const handleInvoiceStatusChange = useCallback(
+    async (nextValue) => {
+      if (!order?.id || order.invoice_status === nextValue) return;
+      await updateOrderRecord({ invoice_status: nextValue });
+    },
+    [order, updateOrderRecord]
+  );
 
   const totals = useMemo(() => {
     const items = Array.isArray(order?.items) ? order.items : [];
@@ -163,11 +297,15 @@ export default function PartsOrderDetail() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
               {statusChip(
-                order?.delivery_status ? order.delivery_status.replace(/_/g, " ") : "Pending",
+                formatOrderStatus(order?.status),
+                order?.status === "complete" ? "success" : order?.status === "draft" ? "warning" : "info"
+              )}
+              {statusChip(
+                formatDeliveryStatus(order?.delivery_status),
                 order?.delivery_status === "delivered" ? "success" : "info"
               )}
               {statusChip(
-                order?.invoice_status ? order.invoice_status.replace(/_/g, " ") : "Draft",
+                formatInvoiceStatus(order?.invoice_status),
                 order?.invoice_status === "paid" ? "success" : order?.invoice_status === "issued" ? "info" : "warning"
               )}
             </div>
@@ -207,6 +345,13 @@ export default function PartsOrderDetail() {
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "12px" }}>
             <button
               type="button"
+              onClick={() => setActiveTab("status")}
+              style={tabButtonStyle(activeTab === "status")}
+            >
+              Status
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveTab("parts")}
               style={tabButtonStyle(activeTab === "parts")}
             >
@@ -236,6 +381,15 @@ export default function PartsOrderDetail() {
             <p style={{ color: "var(--info)" }}>Parts order not found.</p>
           ) : (
             <>
+              {activeTab === "status" && order && (
+                <StatusTab
+                  order={order}
+                  onDeliveryChange={handleDeliveryStatusChange}
+                  onInvoiceChange={handleInvoiceStatusChange}
+                  saving={statusSaving}
+                  error={statusError}
+                />
+              )}
               {activeTab === "parts" && (
                 <PartsTab items={order.items || []} orderNotes={order.notes} />
               )}
@@ -271,6 +425,145 @@ function InfoCell({ label, value, fullWidth = false }) {
       <p style={{ margin: 0, color: "var(--info)", fontSize: "0.8rem" }}>{label}</p>
       <div style={{ fontWeight: 600 }}>{value || "—"}</div>
     </div>
+  );
+}
+
+function StatusTab({ order, onDeliveryChange, onInvoiceChange, saving, error }) {
+  const deliveryStage = order?.delivery_status || "pending";
+  const invoiceStage = order?.invoice_status || "draft";
+  const deliveryIndex = Math.max(
+    DELIVERY_STAGES.findIndex((stage) => stage.value === deliveryStage),
+    0
+  );
+  const invoiceIndex = Math.max(
+    INVOICE_STAGES.findIndex((stage) => stage.value === invoiceStage),
+    0
+  );
+  const completionReady = deliveryStage === "delivered" && invoiceStage === "paid";
+  const isArchived = order?.status === "complete";
+  const archiveStamp =
+    order?.archived_at ||
+    (isArchived ? order?.updated_at : null);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+      {error && (
+        <div
+          style={{
+            border: "1px solid var(--danger)",
+            borderRadius: "12px",
+            padding: "10px 14px",
+            color: "var(--danger)",
+          }}
+        >
+          {error}
+        </div>
+      )}
+      {saving && <p style={{ color: "var(--info)" }}>Saving status…</p>}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Delivery milestones</h3>
+        <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
+          Update the live journey from part ordered through to delivery.
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+          {DELIVERY_STAGES.map((stage, index) => (
+            <StatusStageButton
+              key={stage.value}
+              label={stage.label}
+              active={deliveryStage === stage.value}
+              completed={index <= deliveryIndex}
+              disabled={saving}
+              onClick={() => onDeliveryChange(stage.value)}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Invoice progress</h3>
+        <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
+          Track when the order has been invoiced and when payment clears.
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+          {INVOICE_STAGES.map((stage, index) => (
+            <StatusStageButton
+              key={stage.value}
+              label={stage.label}
+              active={invoiceStage === stage.value}
+              completed={index <= invoiceIndex}
+              disabled={saving}
+              onClick={() => onInvoiceChange(stage.value)}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div
+        style={{
+          border: "1px dashed var(--surface-light)",
+          borderRadius: "14px",
+          padding: "14px",
+          background: completionReady
+            ? "rgba(var(--success-rgb,34,139,34),0.08)"
+            : "var(--surface-light)",
+        }}
+      >
+        <p style={{ margin: "0 0 6px", fontWeight: 600 }}>
+          Current status: {formatOrderStatus(order?.status)}
+        </p>
+        {completionReady ? (
+          <p style={{ margin: 0, color: "var(--success, #297C3B)" }}>
+            Delivered and paid — order is marked complete and archived automatically.
+          </p>
+        ) : (
+          <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
+            Once delivery is marked as delivered and the invoice is paid, we will complete and archive
+            this order number automatically.
+          </p>
+        )}
+        {isArchived && (
+          <p style={{ margin: "8px 0 0", color: "var(--grey-accent)" }}>
+            Archived {archiveStamp ? formatDate(archiveStamp) : "recently"} — still available via search.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatusStageButton({ label, active, completed, onClick, disabled }) {
+  const background = active
+    ? "var(--primary-dark)"
+    : completed
+    ? "rgba(var(--primary-rgb,99,52,255),0.12)"
+    : "var(--surface-light)";
+  const color = active ? "var(--surface)" : "var(--primary-dark)";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        borderRadius: "12px",
+        border: active ? "1px solid var(--primary-dark)" : "1px solid var(--surface-light)",
+        padding: "10px 14px",
+        minWidth: "160px",
+        textAlign: "left",
+        background,
+        color,
+        opacity: disabled ? 0.7 : 1,
+        cursor: disabled ? "default" : "pointer",
+        display: "flex",
+        flexDirection: "column",
+        gap: "4px",
+      }}
+    >
+      <span style={{ fontWeight: 600 }}>{label}</span>
+      <small style={{ opacity: 0.75 }}>
+        {active ? "Current stage" : completed ? "Completed" : "Select to update"}
+      </small>
+    </button>
   );
 }
 
@@ -322,7 +615,7 @@ function DeliveryTab({ order }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       <InfoCell label="Delivery type" value={order.delivery_type || "—"} />
-      <InfoCell label="Delivery status" value={order.delivery_status || "pending"} />
+      <InfoCell label="Delivery status" value={formatDeliveryStatus(order.delivery_status)} />
       <InfoCell label="ETA" value={formatDate(order.delivery_eta)} />
       <InfoCell label="Time window" value={order.delivery_window || "—"} />
       <InfoCell label="Delivery contact" value={order.delivery_contact || order.customer_name || "—"} />
@@ -342,7 +635,7 @@ function InvoiceTab({ order, totals }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       <InfoCell label="Invoice reference" value={order.invoice_reference || "—"} />
-      <InfoCell label="Invoice status" value={order.invoice_status || "draft"} />
+      <InfoCell label="Invoice status" value={formatInvoiceStatus(order.invoice_status)} />
       <InfoCell label="Invoice total" value={formatCurrency(netTotal)} />
       <InfoCell label="Invoice notes" value={order.invoice_notes || "No invoice notes"} fullWidth />
       <div>
