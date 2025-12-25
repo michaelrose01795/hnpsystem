@@ -324,22 +324,27 @@ function MessagesPage() {
     });
   }, []);
 
-  const fetchThreads = useCallback(async () => {
-    if (!dbUserId) return;
-    setLoadingThreads(true);
-    try {
-      const response = await fetch(
-        `/api/messages/threads${buildQuery({ userId: dbUserId })}`
-      );
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.message || "Failed to load threads");
-      setThreads(payload.data || []);
-    } catch (error) {
-      console.error("❌ Failed to load threads:", error);
-    } finally {
-      setLoadingThreads(false);
-    }
-  }, [dbUserId]);
+  const fetchThreads = useCallback(
+    async () => {
+      if (!dbUserId) return;
+      setLoadingThreads(true);
+      try {
+        const response = await fetch(
+          `/api/messages/threads${buildQuery({ userId: dbUserId })}`
+        );
+        const payload = await response.json();
+        if (!response.ok)
+          throw new Error(payload.message || "Failed to load threads");
+        setThreads(payload.data || []);
+      } catch (error) {
+        console.error("❌ Failed to load threads:", error);
+      } finally {
+        setLoadingThreads(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dbUserId]
+  );
 
   const fetchDirectory = useCallback(
     async (searchTerm = "") => {
@@ -367,6 +372,7 @@ function MessagesPage() {
         setDirectoryLoading(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [dbUserId]
   );
 
@@ -394,6 +400,7 @@ function MessagesPage() {
         setLoadingMessages(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [dbUserId]
   );
 
@@ -432,50 +439,56 @@ function MessagesPage() {
         setComposeError(error.message || "Unable to start chat");
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [dbUserId, fetchThreads, mergeThread, openThread]
   );
 
-  const handleCreateGroup = useCallback(async () => {
-    if (!dbUserId) return;
-    if (selectedRecipients.length === 0) {
-      setComposeError("Select at least one colleague for the group.");
-      return;
-    }
+  const handleCreateGroup = useCallback(
+    async () => {
+      if (!dbUserId) return;
+      if (selectedRecipients.length === 0) {
+        setComposeError("Select at least one colleague for the group.");
+        return;
+      }
 
-    setComposeError("");
-    try {
-      const response = await fetch("/api/messages/threads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "group",
-          createdBy: dbUserId,
-          title: groupName,
-          memberIds: selectedRecipients.map((user) => user.id),
-        }),
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.message || "Unable to create group");
-      const thread = payload.data;
-      if (!thread) throw new Error("Group thread was not created.");
-      setSelectedRecipients([]);
-      setGroupName("");
-      setComposeMode("direct");
-      mergeThread(thread);
-      await fetchThreads();
-      await openThread(thread.id);
-    } catch (error) {
-      console.error("❌ Failed to create group:", error);
-      setComposeError(error.message || "Unable to create group");
-    }
-  }, [
-    dbUserId,
-    fetchThreads,
-    groupName,
-    mergeThread,
-    openThread,
-    selectedRecipients,
-  ]);
+      setComposeError("");
+      try {
+        const response = await fetch("/api/messages/threads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "group",
+            createdBy: dbUserId,
+            title: groupName,
+            memberIds: selectedRecipients.map((user) => user.id),
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok)
+          throw new Error(payload.message || "Unable to create group");
+        const thread = payload.data;
+        if (!thread) throw new Error("Group thread was not created.");
+        setSelectedRecipients([]);
+        setGroupName("");
+        setComposeMode("direct");
+        mergeThread(thread);
+        await fetchThreads();
+        await openThread(thread.id);
+      } catch (error) {
+        console.error("❌ Failed to create group:", error);
+        setComposeError(error.message || "Unable to create group");
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      dbUserId,
+      fetchThreads,
+      groupName,
+      mergeThread,
+      openThread,
+      selectedRecipients,
+    ]
+  );
 
   const handleSendMessage = useCallback(
     async (event) => {
@@ -485,15 +498,18 @@ function MessagesPage() {
       setConversationError("");
       try {
         const metadata = parseSlashCommandMetadata(messageDraft, activeThread);
-        const response = await fetch(`/api/messages/threads/${activeThreadId}/messages`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            senderId: dbUserId,
-            content: messageDraft.trim(),
-            metadata,
-          }),
-        });
+        const response = await fetch(
+          `/api/messages/threads/${activeThreadId}/messages`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              senderId: dbUserId,
+              content: messageDraft.trim(),
+              metadata,
+            }),
+          }
+        );
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.message || "Unable to send message");
         const newMessage = payload.data;
@@ -509,6 +525,7 @@ function MessagesPage() {
         setSending(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeThreadId, dbUserId, fetchThreads, messageDraft, openThread, activeThread]
   );
 
@@ -733,6 +750,7 @@ function MessagesPage() {
         setGroupManageBusy(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeThreadId, dbUserId, mergeThread]
   );
 
@@ -763,6 +781,7 @@ function MessagesPage() {
         setGroupManageBusy(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeThreadId, dbUserId, mergeThread]
   );
 
