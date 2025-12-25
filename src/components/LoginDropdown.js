@@ -1,5 +1,7 @@
 // file location: /src/components/LoginDropdown.js
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+
+const mergeClassNames = (...classes) => classes.filter(Boolean).join(" ");
 
 /**
  * LoginDropdown
@@ -12,6 +14,7 @@ import React, { useEffect, useMemo } from "react";
  * - setSelectedUser: setter for user
  * - usersByRole: object containing users grouped by role
  * - roleCategories: mapping of category -> departments
+ * - styleApi: optional styling config to override default dropdown appearance
  */
 export default function LoginDropdown({
   selectedCategory,
@@ -23,6 +26,7 @@ export default function LoginDropdown({
   usersByRole,
   roleCategories,
   className = "",
+  styleApi,
 }) {
   // Format user display names for managers
   const formatUserName = (role, user) => {
@@ -77,78 +81,260 @@ export default function LoginDropdown({
     }
   }, [selectedDepartment, userOptions, selectedUser, setSelectedUser]);
 
-  const wrapperClassName = ["login-dropdown", className].filter(Boolean).join(" ").trim();
+  const includeDefaultClasses = styleApi?.inheritDefaultClasses !== false;
+  const enableCustomFieldRendering = typeof styleApi?.renderField === "function";
+
+  const [openFieldKey, setOpenFieldKey] = useState(null);
+  const closeOnOutsideClick = styleApi?.closeOnOutsideClick !== false;
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!enableCustomFieldRendering || !closeOnOutsideClick) return undefined;
+    const handlePointerDown = (event) => {
+      if (!containerRef.current) return;
+      if (containerRef.current.contains(event.target)) return;
+      setOpenFieldKey(null);
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [enableCustomFieldRendering, closeOnOutsideClick]);
+
+  useEffect(() => {
+    if (!enableCustomFieldRendering) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setOpenFieldKey(null);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [enableCustomFieldRendering]);
+
+  useEffect(() => {
+    setOpenFieldKey(null);
+  }, [selectedCategory, selectedDepartment]);
+
+  const handleCategoryChange = (nextCategory) => {
+    setSelectedCategory(nextCategory);
+    setSelectedDepartment("");
+    setSelectedUser(null);
+  };
+
+  const handleDepartmentChange = (nextDepartment) => {
+    setSelectedDepartment(nextDepartment);
+    setSelectedUser(null);
+  };
+
+  const handleUserChangeById = (userId) => {
+    if (!userId) {
+      setSelectedUser(null);
+      return;
+    }
+    const nextUser = userOptions.find((user) => String(user.id) === String(userId));
+    setSelectedUser(nextUser || null);
+  };
+
+  const handleUserChangeByOption = (option) => {
+    if (!option || !option.payload) {
+      setSelectedUser(null);
+      return;
+    }
+    setSelectedUser(option.payload);
+  };
+
+  const categoryOptions = Object.keys(roleCategories).map((category) => ({
+    value: category,
+    label: category,
+  }));
+
+  const departmentOptions =
+    selectedCategory && roleCategories[selectedCategory]
+      ? roleCategories[selectedCategory]
+          .filter((department) => usersByRole[department])
+          .map((department) => ({
+            value: department,
+            label: department,
+          }))
+      : [];
+
+  const userOptionObjects = userOptions.map((user) => ({
+    value: String(user.id),
+    label: formatUserName(selectedDepartment, user.name),
+    payload: user,
+  }));
+
+  const fieldConfigs = [
+    {
+      key: "category",
+      label: "Select Area",
+      value: selectedCategory,
+      displayValue: selectedCategory,
+      options: categoryOptions,
+      placeholderOption: { value: "", label: "Select Area", isPlaceholder: true },
+      onChangeValue: handleCategoryChange,
+      hasValue: Boolean(selectedCategory),
+    },
+    selectedCategory
+      ? {
+          key: "department",
+          label: "Select Department",
+          value: selectedDepartment,
+          displayValue: selectedDepartment,
+          options: departmentOptions,
+          placeholderOption: { value: "", label: "Select Department", isPlaceholder: true },
+          onChangeValue: handleDepartmentChange,
+          hasValue: Boolean(selectedDepartment),
+        }
+      : null,
+    selectedDepartment
+      ? {
+          key: "user",
+          label: "Select User",
+          value: selectedUser?.id ? String(selectedUser.id) : "",
+          displayValue: selectedUser
+            ? formatUserName(
+                selectedDepartment,
+                selectedUser.name ||
+                  selectedUser.displayName ||
+                  selectedUser.fullName ||
+                  selectedUser.email ||
+                  ""
+              )
+            : "",
+          options: userOptionObjects,
+          placeholderOption: { value: "", label: "Select User", isPlaceholder: true },
+          onChangeValue: handleUserChangeById,
+          onChangeOption: handleUserChangeByOption,
+          hasValue: Boolean(selectedUser),
+        }
+      : null,
+  ].filter(Boolean);
+
+  const containerClassName = mergeClassNames(
+    includeDefaultClasses ? "login-dropdown" : "",
+    styleApi?.containerClassName,
+    className
+  );
+
+  const buildFieldProps = (fieldKey, state) => {
+    const overrides = styleApi?.getFieldProps?.(fieldKey, state) || {};
+    return {
+      wrapperClassName: mergeClassNames(
+        includeDefaultClasses ? "login-select-wrapper" : "",
+        styleApi?.fieldClassName,
+        overrides.wrapperClassName,
+        state.hasValue ? "has-value" : ""
+      ),
+      wrapperStyle: {
+        ...(styleApi?.fieldStyle || {}),
+        ...(overrides.wrapperStyle || {}),
+      },
+      selectClassName: mergeClassNames(
+        includeDefaultClasses ? "login-select" : "",
+        styleApi?.selectClassName,
+        overrides.selectClassName
+      ),
+      selectStyle: {
+        ...(styleApi?.selectStyle || {}),
+        ...(overrides.selectStyle || {}),
+      },
+      labelClassName: mergeClassNames(
+        includeDefaultClasses ? "login-select-label" : "",
+        styleApi?.labelClassName,
+        overrides.labelClassName
+      ),
+      labelStyle: {
+        ...(styleApi?.labelStyle || {}),
+        ...(overrides.labelStyle || {}),
+      },
+      optionClassName: mergeClassNames(
+        styleApi?.optionClassName,
+        overrides.optionClassName
+      ),
+      optionStyle: {
+        ...(styleApi?.optionStyle || {}),
+        ...(overrides.optionStyle || {}),
+      },
+    };
+  };
+
+  const renderDefaultField = (config, fieldProps) => (
+    <div
+      key={config.key}
+      className={fieldProps.wrapperClassName}
+      style={fieldProps.wrapperStyle}
+    >
+      <select
+        value={config.value}
+        onChange={(e) => config.onChangeValue?.(e.target.value)}
+        className={fieldProps.selectClassName}
+        style={fieldProps.selectStyle}
+      >
+        <option
+          value=""
+          className={fieldProps.optionClassName}
+          style={fieldProps.optionStyle}
+        ></option>
+        {config.options.map((option) => (
+          <option
+            key={option.value}
+            value={option.value}
+            className={fieldProps.optionClassName}
+            style={fieldProps.optionStyle}
+          >
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <label className={fieldProps.labelClassName} style={fieldProps.labelStyle}>
+        {config.label}
+      </label>
+    </div>
+  );
+
+  const handleToggleField = (fieldKey) => {
+    setOpenFieldKey((current) => (current === fieldKey ? null : fieldKey));
+  };
+
+  const renderCustomField = (config, fieldProps) => {
+    if (!enableCustomFieldRendering) return null;
+    const context = {
+      ...config,
+      fieldKey: config.key,
+      fieldProps,
+      isOpen: openFieldKey === config.key,
+      toggleOpen: () => handleToggleField(config.key),
+      closeDropdown: () => setOpenFieldKey(null),
+      options: config.options,
+    };
+    return (
+      <React.Fragment key={config.key}>
+        {styleApi.renderField(context)}
+      </React.Fragment>
+    );
+  };
 
   return (
-    <div className={wrapperClassName}>
-      {/* Retail vs Sales selector */}
-      <div className={`login-select-wrapper ${selectedCategory ? "has-value" : ""}`}>
-        <select
-          value={selectedCategory}
-          onChange={(e) => {
-            setSelectedCategory(e.target.value);
-            setSelectedDepartment("");
-            setSelectedUser(null);
-          }}
-          className="login-select"
-        >
-          <option value=""></option>
-          {Object.keys(roleCategories).map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-        <label className="login-select-label">Select Area</label>
-      </div>
-
-      {/* Department selector - filtered by category */}
-      {selectedCategory && (
-        <div className={`login-select-wrapper ${selectedDepartment ? "has-value" : ""}`}>
-          <select
-            value={selectedDepartment}
-            onChange={(e) => {
-              setSelectedDepartment(e.target.value);
-              setSelectedUser(null);
-            }}
-            className="login-select"
-          >
-            <option value=""></option>
-            {(roleCategories[selectedCategory] || [])
-              .filter((department) => usersByRole[department])
-              .map((department) => (
-                <option key={department} value={department}>
-                  {department}
-                </option>
-              ))}
-          </select>
-          <label className="login-select-label">Select Department</label>
-        </div>
-      )}
-
-      {/* User selector */}
-      {selectedDepartment && (
-        <div className={`login-select-wrapper ${selectedUser ? "has-value" : ""}`}>
-          <select
-            value={selectedUser?.id || ""}
-            onChange={(e) => {
-              const nextUser = userOptions.find(
-                (user) => String(user.id) === e.target.value
-              );
-              setSelectedUser(nextUser || null);
-            }}
-            className="login-select"
-          >
-            <option value=""></option>
-            {userOptions.map((user) => (
-              <option key={user.id} value={user.id}>
-                {formatUserName(selectedDepartment, user.name)}
-              </option>
-            ))}
-          </select>
-          <label className="login-select-label">Select User</label>
-        </div>
-      )}
+    <div
+      className={containerClassName}
+      style={styleApi?.containerStyle}
+      ref={enableCustomFieldRendering ? containerRef : null}
+    >
+      {fieldConfigs.map((config) => {
+        const fieldProps = buildFieldProps(config.key, {
+          hasValue: config.hasValue,
+        });
+        if (enableCustomFieldRendering) {
+          return renderCustomField(config, fieldProps);
+        }
+        return renderDefaultField(config, fieldProps);
+      })}
     </div>
   );
 }

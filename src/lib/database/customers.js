@@ -162,8 +162,7 @@ export const getCustomerVehicles = async (customerId) => {
       updated_at
     `)
     .eq("customer_id", customerId)
-    .order('created_at', { ascending: false })
-    .limit(50);
+    .order('created_at', { ascending: false });
 
   if (error) {
     console.error("❌ getCustomerVehicles error:", error.message);
@@ -198,8 +197,7 @@ export const getCustomerJobs = async (customerId) => {
       updated_at
     `)
     .eq("customer_id", customerId)
-    .order('created_at', { ascending: false })
-    .limit(75);
+    .order('created_at', { ascending: false });
 
   if (error) {
     console.error("❌ getCustomerJobs error:", error.message);
@@ -447,3 +445,4 @@ export const createCustomer = async (customerData) => {
     return { success: false, error: message };
   }
 };
+

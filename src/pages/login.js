@@ -172,89 +172,84 @@ export default function LoginPage() {
           </div>
 
           <div className="login-card-stack">
-            <div className="login-card-layout">
-              <div className="login-card-layout__primary">
-                <LoginCard title="Login" subtitle="Secure access with your email and password">
-                  <form onSubmit={handleDbLogin} className="login-form">
-                    <div className="login-field">
-                      <label htmlFor="email" className="login-label">
-                        Email
-                      </label>
-                      <input
-                        id="email"
-                        type="email"
-                        placeholder="you@hpautomotive.co.uk"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="login-input"
-                        required
-                      />
-                    </div>
+            <LoginCard title="Login" subtitle="Secure access with your email and password">
+              <form onSubmit={handleDbLogin} className="login-form">
+                <div className="login-field">
+                  <label htmlFor="email" className="login-label">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="you@hpautomotive.co.uk"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="login-input"
+                    required
+                  />
+                </div>
 
-                    <div className="login-field">
-                      <label htmlFor="password" className="login-label">
-                        Password
-                      </label>
-                      <input
-                        id="password"
-                        type="password"
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="login-input"
-                        required
-                      />
-                    </div>
+                <div className="login-field">
+                  <label htmlFor="password" className="login-label">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="login-input"
+                    required
+                  />
+                </div>
 
-                    {errorMessage && (
-                      <p className="login-error" role="alert">
-                        {errorMessage}
-                      </p>
-                    )}
+                {errorMessage && (
+                  <p className="login-error" role="alert">
+                    {errorMessage}
+                  </p>
+                )}
 
-                    <button
-                      type="submit"
-                      className="login-button"
-                      style={{ background: "var(--primary)" }}
-                    >
-                      Login
-                    </button>
-                  </form>
-                </LoginCard>
-              </div>
-
-              <div className="login-card-layout__developer">
-                <LoginCard
-                  title="Developer Login"
-                  subtitle="Use predefined personas to explore the platform safely"
+                <button
+                  type="submit"
+                  className="login-button"
+                  style={{ background: "var(--primary)" }}
                 >
-                  <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                    <LoginDropdown
-                      selectedCategory={selectedCategory}
-                      setSelectedCategory={setSelectedCategory}
-                      selectedDepartment={selectedDepartment}
-                      setSelectedDepartment={setSelectedDepartment}
-                      selectedUser={selectedUser}
-                      setSelectedUser={setSelectedUser}
-                      usersByRole={usersByRole}
-                      roleCategories={roleCategories}
-                    />
+                  Login
+                </button>
+              </form>
+            </LoginCard>
 
-                    {(loadingDevUsers || rosterLoading) && (
-                      <p className="login-loading-text">Loading database users for dev login...</p>
-                    )}
+            <LoginCard
+              title="Developer Login"
+              subtitle="Use predefined personas to explore the platform safely"
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <LoginDropdown
+                  selectedCategory={selectedCategory}
+                  setSelectedCategory={setSelectedCategory}
+                  selectedDepartment={selectedDepartment}
+                  setSelectedDepartment={setSelectedDepartment}
+                  selectedUser={selectedUser}
+                  setSelectedUser={setSelectedUser}
+                  usersByRole={usersByRole}
+                  roleCategories={roleCategories}
+                />
 
-                    <button
-                      onClick={handleDevLogin}
-                      className="login-button"
-                      style={{ background: "var(--primary)" }}
-                    >
-                      Dev Login
-                    </button>
-                  </div>
-                </LoginCard>
+                {(loadingDevUsers || rosterLoading) && (
+                  <p className="login-loading-text">Loading database users for dev login...</p>
+                )}
+
+
+                <button
+                  onClick={handleDevLogin}
+                  className="login-button"
+                  style={{ background: "var(--primary)" }}
+                >
+                  Dev Login
+                </button>
               </div>
-            </div>
+            </LoginCard>
           </div>
         </div>
       </div>

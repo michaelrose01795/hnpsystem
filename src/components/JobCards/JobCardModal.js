@@ -58,11 +58,8 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
       j?.vehicle?.make_model ??
       "", // Make/model text
     customer:
-      (typeof j?.customer === 'object' && j.customer !== null
-        ? `${j.customer.firstName ?? j.customer.firstname ?? ""} ${j.customer.lastName ?? j.customer.lastname ?? ""}`.trim()
-        : typeof j?.customer === 'string'
-        ? j.customer
-        : j?.vehicle?.customer
+      j?.customer ??
+      (j?.vehicle?.customer
         ? `${j.vehicle.customer.firstname ?? ""} ${j.vehicle.customer.lastname ?? ""}`.trim()
         : ""), // Customer name
     status: j?.status ?? "New" // Status fallback

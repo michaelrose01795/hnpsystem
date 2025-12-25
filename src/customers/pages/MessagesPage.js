@@ -8,7 +8,7 @@ import AppointmentTimeline from "@/customers/components/AppointmentTimeline";
 import { useCustomerPortalData } from "@/customers/hooks/useCustomerPortalData";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
-import { supabase } from "@/lib/supabaseClient";
+import useMessagesApi from "@/hooks/api/useMessagesApi";
 
 const STAFF_ROLE_ALLOWLIST = new Set([
   "workshop manager",
@@ -16,17 +16,6 @@ const STAFF_ROLE_ALLOWLIST = new Set([
   "after sales manager",
   "service advisor",
 ]);
-
-// Helper function to build query strings
-const buildQuery = (params = {}) => {
-  const query = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === "") return;
-    query.append(key, value);
-  });
-  const stringified = query.toString();
-  return stringified ? `?${stringified}` : "";
-};
 
 // Helper function to format notification timestamps
 const formatNotificationTimestamp = (value) => {
@@ -76,6 +65,15 @@ export default function CustomerMessagesPage() {
   const { timeline, customer, vehicles, isLoading, error } = useCustomerPortalData();
   const { dbUserId } = useUser();
   const { confirm } = useConfirmation();
+  const {
+    listThreads,
+    listThreadMessages,
+    createThread: createThreadApi,
+    sendMessage: sendThreadMessage,
+    listDirectoryUsers,
+    saveMessage: saveMessageApi,
+    listSystemNotifications,
+  } = useMessagesApi();
 
   // Composer state
   const [composerOpen, setComposerOpen] = useState(false);
@@ -110,6 +108,7 @@ export default function CustomerMessagesPage() {
   const [messageDraft, setMessageDraft] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
   const [savingMessageId, setSavingMessageId] = useState(null);
+  const activeThreadId = activeThread?.id || null;
 
   // Helper function to check if a role matches allowlist
   const matchesAllowedRole = (role) => {
@@ -138,14 +137,14 @@ export default function CustomerMessagesPage() {
     setThreadsLoading(true);
     setThreadsError("");
     try {
-      const response = await fetch(`/api/messages/threads${buildQuery({ userId: dbUserId })}`);
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.message || "Unable to load conversations.");
-      }
-      const threadRows = Array.isArray(payload.data) ? payload.data : [];
+      const payload = await listThreads({ userId: dbUserId });
+      const threadRows = Array.isArray(payload?.data)
+        ? payload.data
+        : payload?.threads || [];
       const sorted = [...threadRows].sort(
-        (a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
+        (a, b) =>
+          new Date(b.updatedAt || b.createdAt) -
+          new Date(a.updatedAt || a.createdAt)
       );
       setThreads(filterThreadsForCustomer(sorted));
     } catch (fetchError) {
@@ -154,7 +153,7 @@ export default function CustomerMessagesPage() {
     } finally {
       setThreadsLoading(false);
     }
-  }, [dbUserId, customer?.id]); // Added customer.id as dependency
+  }, [dbUserId, customer?.id, listThreads]); // Added customer.id as dependency
 
   // Open thread function - now fetchThreads is defined
   const openThread = useCallback(
@@ -165,14 +164,10 @@ export default function CustomerMessagesPage() {
       setMessagesLoading(true);
       setMessagesError("");
       try {
-        const response = await fetch(
-          `/api/messages/threads/${thread.id}/messages${buildQuery({ userId: dbUserId })}`
-        );
-        const payload = await response.json();
-        if (!response.ok) {
-          throw new Error(payload.message || "Unable to load conversation.");
-        }
-        setThreadMessages(payload.data || []);
+        const payload = await listThreadMessages(thread.id, {
+          userId: dbUserId,
+        });
+        setThreadMessages(payload?.data || payload?.messages || []);
         await fetchThreads();
       } catch (fetchError) {
         console.error("❌ Failed to load conversation:", fetchError);
@@ -181,7 +176,7 @@ export default function CustomerMessagesPage() {
         setMessagesLoading(false);
       }
     },
-    [dbUserId, fetchThreads]
+    [dbUserId, fetchThreads, listThreadMessages]
   );
 
   const openSystemNotificationsThread = useCallback(() => {
@@ -214,20 +209,12 @@ export default function CustomerMessagesPage() {
     setConversationError("");
     setConversationFeedback("");
     try {
-      const response = await fetch("/api/messages/threads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "group",
-          createdBy: dbUserId,
-          memberIds: composerSelection.map((user) => user.id),
-        }),
+      const payload = await createThreadApi({
+        type: "group",
+        createdBy: dbUserId,
+        memberIds: composerSelection.map((user) => user.id),
       });
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.message || "Unable to create group conversation.");
-      }
-      const thread = payload.data;
+      const thread = payload?.data || payload?.thread;
       setComposerOpen(false);
       setComposerSelection([]);
       setComposerSearch("");
@@ -242,7 +229,7 @@ export default function CustomerMessagesPage() {
     } finally {
       setComposerCreating(false);
     }
-  }, [composerSelection, dbUserId, fetchThreads, openThread]);
+  }, [composerSelection, createThreadApi, dbUserId, fetchThreads, openThread]);
 
   // Handle send message
   const handleSendMessage = useCallback(
@@ -253,20 +240,15 @@ export default function CustomerMessagesPage() {
       setMessagesError("");
       try {
         const metadata = parseSlashCommandMetadata(messageDraft, customer, vehicles);
-        const response = await fetch(`/api/messages/threads/${activeThread.id}/messages`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            senderId: dbUserId,
-            content: messageDraft.trim(),
-            metadata,
-          }),
+        const payload = await sendThreadMessage(activeThread.id, {
+          senderId: dbUserId,
+          content: messageDraft.trim(),
+          metadata,
         });
-        const payload = await response.json();
-        if (!response.ok) {
-          throw new Error(payload.message || "Unable to send message.");
+        const newMessage = payload?.data || payload?.message;
+        if (!newMessage) {
+          throw new Error("Message payload missing.");
         }
-        const newMessage = payload.data;
         setThreadMessages((prev) => [...prev, newMessage]);
         setMessageDraft("");
         setActiveThread((prev) =>
@@ -287,7 +269,15 @@ export default function CustomerMessagesPage() {
         setSendingMessage(false);
       }
     },
-    [activeThread, dbUserId, messageDraft, fetchThreads, customer, vehicles]
+    [
+      activeThread,
+      customer,
+      dbUserId,
+      fetchThreads,
+      messageDraft,
+      sendThreadMessage,
+      vehicles,
+    ]
   );
 
   // Handle save message
@@ -301,16 +291,8 @@ export default function CustomerMessagesPage() {
       setSavingMessageId(message.id);
       setMessagesError("");
       try {
-        const response = await fetch(`/api/messages/messages/${message.id}/save`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ saved: true }),
-        });
-        const payload = await response.json();
-        if (!response.ok) {
-          throw new Error(payload.message || "Unable to save message.");
-        }
-        const updated = payload.data;
+        const payload = await saveMessageApi(message.id, { saved: true });
+        const updated = payload?.data || payload?.message;
         setThreadMessages((prev) =>
           (prev || []).map((entry) => (entry.id === updated.id ? updated : entry))
         );
@@ -322,7 +304,7 @@ export default function CustomerMessagesPage() {
         setSavingMessageId(null);
       }
     },
-    [fetchThreads, confirm]
+    [confirm, fetchThreads, saveMessageApi]
   );
 
   // Effect: Load composer users when composer opens
@@ -341,29 +323,23 @@ export default function CustomerMessagesPage() {
     }
 
     let cancelled = false;
-    const controller = new AbortController();
     setComposerLoading(true);
     setComposerError("");
 
     (async () => {
       try {
-        const response = await fetch(
-          `/api/messages/users${buildQuery({
-            q: searchTerm,
-            limit: 20,
-            exclude: dbUserId,
-          })}`,
-          { signal: controller.signal }
-        );
-        const payload = await response.json();
-        if (!response.ok) {
-          throw new Error(payload.message || "Unable to load users.");
-        }
+        const payload = await listDirectoryUsers({
+          q: searchTerm,
+          limit: 20,
+          exclude: dbUserId,
+        });
         if (!cancelled) {
-          setComposerResults(filterComposerUsers(payload.data || []));
+          setComposerResults(
+            filterComposerUsers(payload?.data || payload?.users || [])
+          );
         }
       } catch (fetchError) {
-        if (cancelled || fetchError.name === "AbortError") return;
+        if (cancelled) return;
         console.error("❌ Composer search failed:", fetchError);
         setComposerError(fetchError.message || "Unable to load users.");
         setComposerResults([]);
@@ -376,9 +352,8 @@ export default function CustomerMessagesPage() {
 
     return () => {
       cancelled = true;
-      controller.abort();
     };
-  }, [composerOpen, composerSearch, dbUserId]);
+  }, [composerOpen, composerSearch, dbUserId, listDirectoryUsers]);
 
   // Effect: Reset composer state when closed
   useEffect(() => {
@@ -388,7 +363,7 @@ export default function CustomerMessagesPage() {
     }
   }, [composerOpen]);
 
-  // Effect: Load system notifications
+  // Poll system notifications for customers
   useEffect(() => {
     let cancelled = false;
 
@@ -396,18 +371,16 @@ export default function CustomerMessagesPage() {
       setSystemLoading(true);
       setSystemError("");
       try {
-        const { data, error } = await supabase
-          .from("notifications")
-          .select("notification_id, message, created_at, target_role")
-          .or("target_role.ilike.%customer%,target_role.is.null")
-          .order("created_at", { ascending: false })
-          .limit(5);
-        if (error) throw error;
+        const payload = await listSystemNotifications({
+          audience: "customer",
+          limit: 5,
+        });
         if (!cancelled) {
-          setSystemNotifications(data || []);
+          setSystemNotifications(payload?.data || payload?.notifications || []);
         }
       } catch (fetchError) {
         if (!cancelled) {
+          console.error("❌ Failed to load system notifications:", fetchError);
           setSystemError(
             fetchError?.message || "Unable to load system notifications."
           );
@@ -421,29 +394,13 @@ export default function CustomerMessagesPage() {
     };
 
     loadSystemNotifications();
-    const channel = supabase
-      .channel("customer-system-notifications")
-      .on(
-        "postgres_changes",
-        { schema: "public", table: "notifications", event: "INSERT" },
-        (payload) => {
-          const entry = payload?.new;
-          if (!entry) return;
-          const targetRole = (entry.target_role || "").toLowerCase();
-          if (targetRole && !targetRole.includes("customer")) return;
-          setSystemNotifications((prev) => {
-            const next = [entry, ...prev];
-            return next.slice(0, 5);
-          });
-        }
-      )
-      .subscribe();
+    const interval = setInterval(loadSystemNotifications, 30000);
 
     return () => {
       cancelled = true;
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
-  }, []);
+  }, [listSystemNotifications]);
 
   // Effect: Load threads on mount
   useEffect(() => {
@@ -457,37 +414,31 @@ export default function CustomerMessagesPage() {
     openThread(threads[0]);
   }, [threads, activeThread, openThread]);
 
-  // Effect: Subscribe to real-time updates (CLIENT-SIDE ONLY)
-  useEffect(() => {
-    if (!dbUserId || typeof window === "undefined") return undefined;
+  const refreshActiveThreadMessages = useCallback(async () => {
+    if (!dbUserId || !activeThreadId) return;
+    try {
+      const payload = await listThreadMessages(activeThreadId, {
+        userId: dbUserId,
+      });
+      setThreadMessages(payload?.data || payload?.messages || []);
+    } catch (refreshError) {
+      console.error("❌ Failed to refresh conversation:", refreshError);
+    }
+  }, [activeThreadId, dbUserId, listThreadMessages]);
 
-    const channel = supabase
-      .channel(`customer-messaging-${dbUserId}`)
-      .on("postgres_changes", { schema: "public", table: "messages", event: "INSERT" }, (payload) => {
-        if (!payload?.new) return;
-        fetchThreads();
-        if (activeThread?.id === payload.new.thread_id && payload.new.sender_id !== dbUserId) {
-          openThread(activeThread);
-        }
-      })
-      .on(
-        "postgres_changes",
-        {
-          schema: "public",
-          table: "message_thread_members",
-          event: "UPDATE",
-          filter: `user_id=eq.${dbUserId}`,
-        },
-        () => {
-          fetchThreads();
-        }
-      )
-      .subscribe();
+  // Effect: poll for new messages and thread updates
+  useEffect(() => {
+    if (!dbUserId) return undefined;
+
+    const interval = setInterval(() => {
+      fetchThreads();
+      refreshActiveThreadMessages();
+    }, 15000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
-  }, [dbUserId, fetchThreads, activeThread, openThread]);
+  }, [dbUserId, fetchThreads, refreshActiveThreadMessages]);
 
   const latestSystemNotification = systemNotifications?.[0];
   const latestSystemMessage = latestSystemNotification?.message || "No system updates yet.";

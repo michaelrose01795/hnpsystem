@@ -2,26 +2,6 @@
 const DEFAULT_SELECTOR = 'select:not([data-dropdown-style="native"])';
 const DEFAULT_VARIANT = "glass";
 
-const transferMarginsToWrapper = (select, wrapper) => {
-  if (typeof window === "undefined") return;
-  const computed = window.getComputedStyle(select);
-  if (!computed) return;
-  const hasMargin =
-    computed.marginTop !== "0px" ||
-    computed.marginRight !== "0px" ||
-    computed.marginBottom !== "0px" ||
-    computed.marginLeft !== "0px";
-  if (!hasMargin) return;
-  wrapper.style.marginTop = computed.marginTop;
-  wrapper.style.marginRight = computed.marginRight;
-  wrapper.style.marginBottom = computed.marginBottom;
-  wrapper.style.marginLeft = computed.marginLeft;
-  select.style.marginTop = "0px";
-  select.style.marginRight = "0px";
-  select.style.marginBottom = "0px";
-  select.style.marginLeft = "0px";
-};
-
 const wrapSelectElement = (select, variantClass) => {
   let wrapper = select.closest(".dropdown-theme");
   if (wrapper) {
@@ -34,7 +14,6 @@ const wrapSelectElement = (select, variantClass) => {
   if (parent) {
     parent.insertBefore(wrapper, select);
     wrapper.appendChild(select);
-    transferMarginsToWrapper(select, wrapper);
   }
   return wrapper;
 };
