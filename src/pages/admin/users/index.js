@@ -8,6 +8,22 @@ import { useRoster } from "@/context/RosterContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
+const defaultCompanyProfile = {
+  company_name: "",
+  address_line1: "",
+  address_line2: "",
+  city: "",
+  postcode: "",
+  phone_service: "",
+  phone_parts: "",
+  website: "",
+  bank_name: "",
+  sort_code: "",
+  account_number: "",
+  account_name: "",
+  payment_reference_hint: "",
+};
+
 export default function AdminUserManagement() {
   const { usersByRole, usersByRoleDetailed, allUsers, isLoading: rosterLoading } = useRoster();
   const { confirm } = useConfirmation();
@@ -18,6 +34,11 @@ export default function AdminUserManagement() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [previewMember, setPreviewMember] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
+  const [companyProfile, setCompanyProfile] = useState(defaultCompanyProfile);
+  const [companyLoading, setCompanyLoading] = useState(true);
+  const [companyMessage, setCompanyMessage] = useState("");
+  const [companySaving, setCompanySaving] = useState(false);
 
   const [directory, setDirectory] = useState([]);
   const [directoryLoading, setDirectoryLoading] = useState(true);
@@ -85,6 +106,27 @@ export default function AdminUserManagement() {
   }, []);
 
   useEffect(() => {
+    const loadCompanyProfile = async () => {
+      setCompanyLoading(true);
+      setCompanyMessage("");
+      try {
+        const response = await fetch("/api/settings/company-profile");
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload?.message || "Failed to load company profile");
+        }
+        setCompanyProfile({ ...defaultCompanyProfile, ...(payload.data || {}) });
+      } catch (error) {
+        console.error("Failed to load company profile", error);
+        setCompanyMessage(error.message || "Unable to load company profile.");
+      } finally {
+        setCompanyLoading(false);
+      }
+    };
+    loadCompanyProfile();
+  }, []);
+
+  useEffect(() => {
     const controller = new AbortController();
     const loadDirectory = async () => {
       setDirectoryLoading(true);
@@ -132,6 +174,33 @@ export default function AdminUserManagement() {
       alert(err.message || "Unable to delete user");
     }
   };
+
+  const handleCompanyInputChange = (field, value) => {
+    setCompanyProfile((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCompanySave = async () => {
+    setCompanyMessage("");
+    setCompanySaving(true);
+    try {
+      const response = await fetch("/api/settings/company-profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(companyProfile),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.message || "Failed to save company profile");
+      }
+      setCompanyProfile(payload.data || defaultCompanyProfile);
+      setCompanyMessage("Company & bank details saved.");
+    } catch (error) {
+      console.error("Failed to save company profile", error);
+      setCompanyMessage(error.message || "Unable to save company profile.");
+    } finally {
+      setCompanySaving(false);
+    }
+  };
   const handleProfileView = (member) => {
     if (!member) return;
     setActiveUser(member.displayName);
@@ -147,6 +216,141 @@ export default function AdminUserManagement() {
             Provision platform accounts and review department ownership. These records are driven by the shared Supabase roster for consistent testing.
           </p>
         </header>
+
+        <SectionCard
+          title="Company & Bank Details"
+          subtitle="Invoice headers and payment instructions shared across all invoice screens."
+          action={
+            <button
+              type="button"
+              onClick={handleCompanySave}
+              disabled={companySaving}
+              style={{
+                padding: "10px 16px",
+                borderRadius: "10px",
+                border: "none",
+                background: "var(--primary-dark)",
+                color: "#fff",
+                fontWeight: 600,
+                cursor: companySaving ? "not-allowed" : "pointer",
+                opacity: companySaving ? 0.6 : 1,
+              }}
+            >
+              {companySaving ? "Saving…" : "Save Details"}
+            </button>
+          }
+        >
+          {companyMessage && (
+            <div
+              style={{
+                padding: "10px 12px",
+                borderRadius: "10px",
+                marginBottom: "12px",
+                background: companyMessage.includes("saved") ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.12)",
+                color: companyMessage.includes("saved") ? "#065f46" : "#b91c1c",
+                fontWeight: 600,
+              }}
+            >
+              {companyMessage}
+            </div>
+          )}
+          {companyLoading ? (
+            <p style={{ color: "var(--text-secondary)" }}>Loading company profile…</p>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: "12px",
+              }}
+            >
+              <input
+                value={companyProfile.company_name}
+                onChange={(event) => handleCompanyInputChange("company_name", event.target.value)}
+                placeholder="Company name"
+                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+              />
+              <input
+                value={companyProfile.address_line1}
+                onChange={(event) => handleCompanyInputChange("address_line1", event.target.value)}
+                placeholder="Address line 1"
+                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+              />
+              <input
+                value={companyProfile.address_line2}
+                onChange={(event) => handleCompanyInputChange("address_line2", event.target.value)}
+                placeholder="Address line 2"
+                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+              />
+              <input
+                value={companyProfile.city}
+                onChange={(event) => handleCompanyInputChange("city", event.target.value)}
+                placeholder="City"
+                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+              />
+              <input
+                value={companyProfile.postcode}
+                onChange={(event) => handleCompanyInputChange("postcode", event.target.value)}
+                placeholder="Postcode"
+                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+              />
+              <input
+                value={companyProfile.phone_service}
+                onChange={(event) => handleCompanyInputChange("phone_service", event.target.value)}
+                placeholder="Service phone"
+                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+              />
+              <input
+                value={companyProfile.phone_parts}
+                onChange={(event) => handleCompanyInputChange("phone_parts", event.target.value)}
+                placeholder="Parts phone"
+                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+              />
+              <input
+                value={companyProfile.website}
+                onChange={(event) => handleCompanyInputChange("website", event.target.value)}
+                placeholder="Website"
+                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+              />
+              <input
+                value={companyProfile.bank_name}
+                onChange={(event) => handleCompanyInputChange("bank_name", event.target.value)}
+                placeholder="Bank name"
+                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+              />
+              <input
+                value={companyProfile.sort_code}
+                onChange={(event) => handleCompanyInputChange("sort_code", event.target.value)}
+                placeholder="Sort code"
+                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+              />
+              <input
+                value={companyProfile.account_number}
+                onChange={(event) => handleCompanyInputChange("account_number", event.target.value)}
+                placeholder="Account number"
+                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+              />
+              <input
+                value={companyProfile.account_name}
+                onChange={(event) => handleCompanyInputChange("account_name", event.target.value)}
+                placeholder="Account name"
+                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+              />
+              <textarea
+                value={companyProfile.payment_reference_hint}
+                onChange={(event) => handleCompanyInputChange("payment_reference_hint", event.target.value)}
+                placeholder="Payment reference hint"
+                rows={3}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "10px",
+                  border: "1px solid var(--surface-light)",
+                  gridColumn: "1 / -1",
+                }}
+              />
+            </div>
+          )}
+        </SectionCard>
 
         {showAddForm && <AdminUserForm onCreated={handleUserCreated} />}
 

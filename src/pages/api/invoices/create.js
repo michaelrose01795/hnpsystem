@@ -23,6 +23,95 @@ const insertNotification = async ({ jobNumber, method, targetRole, message }) =>
   });
 };
 
+const generateInvoiceNumber = async () => {
+  const year = new Date().getFullYear();
+  const prefix = `INV-${year}-`;
+  const { data } = await dbClient
+    .from("invoices")
+    .select("invoice_number")
+    .not("invoice_number", "is", null)
+    .ilike("invoice_number", `${prefix}%`)
+    .order("invoice_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const lastSequence = data?.invoice_number ? Number(data.invoice_number.split("-")[2]) : 0;
+  const nextSequence = Number.isFinite(lastSequence) ? lastSequence + 1 : 1;
+  return `${prefix}${String(nextSequence).padStart(5, "0")}`;
+};
+
+const fetchJobContext = async (jobId) => {
+  const { data: job, error: jobError } = await dbClient
+    .from("jobs")
+    .select("id, job_number, customer_id, vehicle_id, account_id, vehicle_reg, vehicle_make_model, mileage_at_service")
+    .eq("id", jobId)
+    .maybeSingle();
+  if (jobError) {
+    throw jobError;
+  }
+  if (!job) {
+    throw new Error("Job not found");
+  }
+  let customer = null;
+  if (job?.customer_id) {
+    const { data, error } = await dbClient
+      .from("customers")
+      .select("firstname, lastname, name, email, mobile, telephone, address, postcode")
+      .eq("id", job.customer_id)
+      .maybeSingle();
+    if (error) throw error;
+    customer = data;
+  }
+  let vehicle = null;
+  if (job?.vehicle_id) {
+    const { data, error } = await dbClient
+      .from("vehicles")
+      .select("registration, reg_number, make, model, make_model, chassis, engine, engine_number, mileage, month_of_first_registration")
+      .eq("vehicle_id", job.vehicle_id)
+      .maybeSingle();
+    if (error) throw error;
+    vehicle = data;
+  }
+  const buildAddress = (record) => {
+    if (!record) {
+      return { name: job?.customer || "Customer", lines: [], postcode: "", phone: "", email: "" };
+    }
+    const name =
+      record.name ||
+      [record.firstname, record.lastname].filter(Boolean).join(" ").trim() ||
+      job?.customer ||
+      "Customer";
+    const lines = (record.address || "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    return {
+      name,
+      lines,
+      postcode: record.postcode || "",
+      phone: record.mobile || record.telephone || "",
+      email: record.email || ""
+    };
+  };
+  const buildVehicleSnapshot = () => ({
+    reg: job?.vehicle_reg || vehicle?.registration || vehicle?.reg_number || "",
+    vehicle:
+      vehicle?.make_model ||
+      [vehicle?.make, vehicle?.model].filter(Boolean).join(" ").trim() ||
+      job?.vehicle_make_model ||
+      "",
+    chassis: vehicle?.chassis || "",
+    engine: vehicle?.engine || vehicle?.engine_number || "",
+    reg_date: vehicle?.month_of_first_registration || "",
+    mileage: job?.mileage_at_service || vehicle?.mileage || ""
+  });
+  return {
+    accountNumber: job?.account_id || null,
+    invoiceTo: buildAddress(customer),
+    deliverTo: buildAddress(customer),
+    vehicleDetails: buildVehicleSnapshot()
+  };
+};
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
@@ -31,6 +120,7 @@ export default async function handler(req, res) {
   const {
     jobId,
     jobNumber,
+    orderNumber,
     customerId,
     customerEmail,
     providerId,
@@ -46,6 +136,9 @@ export default async function handler(req, res) {
   }
 
   try {
+    const invoiceNumber = await generateInvoiceNumber(); // derive friendly sequential invoice number
+    const jobContext = await fetchJobContext(jobId); // capture customer and vehicle snapshot
+
     const provider =
       PAYMENT_PROVIDERS.find((item) => item.id === providerId) || PAYMENT_PROVIDERS[0];
 
@@ -61,7 +154,18 @@ export default async function handler(req, res) {
       sent_email_at: sendEmail ? now : null,
       sent_portal_at: sendPortal ? now : null,
       created_at: now,
-      updated_at: now
+      updated_at: now,
+      invoice_number: invoiceNumber,
+      job_number: jobNumber,
+      order_number: orderNumber || null,
+      account_number: jobContext.accountNumber || null,
+      invoice_date: now,
+      invoice_to: jobContext.invoiceTo,
+      deliver_to: jobContext.deliverTo,
+      vehicle_details: jobContext.vehicleDetails,
+      service_total: Number(totals.partsTotal || 0) + Number(totals.labourTotal || 0),
+      vat_total: Number(totals.vatTotal || 0),
+      invoice_total: Number(totals.total || 0)
     };
 
     const { data: invoice, error: invoiceError } = await dbClient

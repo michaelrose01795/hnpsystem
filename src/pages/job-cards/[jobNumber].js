@@ -231,14 +231,8 @@ export default function JobCardDetailPage() {
   const canEdit = !isArchiveMode && canEditBase;
   const canManageDocuments = !isArchiveMode && canManageDocumentsBase;
 
-  // Invoice visibility permission check
-  const canViewInvoice = [
-    "service",
-    "service manager",
-    "workshop manager",
-    "admin",
-    "admin manager"
-  ].some((role) => userRoles.includes(role));
+  // Invoice tab is visible for anyone who can open this page to make review easier
+  const canViewInvoice = true;
 
   // Check for tab query parameter to switch to invoice tab
   useEffect(() => {
@@ -259,8 +253,7 @@ export default function JobCardDetailPage() {
     if (
       currentStatus === "Complete" &&
       previousStatus !== null &&
-      previousStatus !== "Complete" &&
-      canViewInvoice
+      previousStatus !== "Complete"
     ) {
       // Redirect to invoice tab when job is completed
       router.push(`/job-cards/${jobData.jobNumber}?tab=invoice`);
@@ -268,7 +261,7 @@ export default function JobCardDetailPage() {
 
     // Update the ref for next comparison
     previousStatusRef.current = currentStatus;
-  }, [jobData?.status, jobData?.jobNumber, canViewInvoice, router]);
+  }, [jobData?.status, jobData?.jobNumber, router]);
 
   const fetchSharedNote = useCallback(async (jobId) => {
     if (!jobId) return null;

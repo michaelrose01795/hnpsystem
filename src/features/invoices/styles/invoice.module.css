@@ -1,0 +1,227 @@
+/* // file location: src/features/invoices/styles/invoice.module.css */
+.invoiceShell { /* // outer container with padding and print friendly background */
+  background: var(--surface); /* // match app surface color */
+  border: 1px solid var(--surface-light); /* // subtle border for print feel */
+  border-radius: 16px; /* // soften corners */
+  padding: 24px; /* // internal spacing */
+  color: var(--text-primary); /* // ensure readable text */
+  display: flex; /* // use flex for vertical layout */
+  flex-direction: column; /* // stack children vertically */
+  gap: 20px; /* // consistent spacing between sections */
+} /* // end invoiceShell */
+
+.companyHeader { /* // company info row */
+  display: flex; /* // arrange children horizontally */
+  justify-content: space-between; /* // separate company and print button */
+  flex-wrap: wrap; /* // allow wrap for mobile */
+  gap: 16px; /* // spacing between columns */
+  border-bottom: 2px solid var(--surface-light); /* // emphasize top section */
+  padding-bottom: 16px; /* // spacing below content */
+} /* // end companyHeader */
+
+.companyInfo { /* // container for company text */
+  flex: 1; /* // allow growth */
+  min-width: 220px; /* // keep readable width */
+} /* // end companyInfo */
+
+.companyInfo h1 { /* // company name heading */
+  margin: 0; /* // remove default margin */
+  font-size: 1.4rem; /* // emphasize brand */
+} /* // end companyInfo h1 */
+
+.companyInfo p { /* // company detail line */
+  margin: 2px 0; /* // tight spacing */
+  font-size: 0.95rem; /* // comfortable text size */
+} /* // end companyInfo p */
+
+.printButton { /* // print button style */
+  align-self: flex-start; /* // align to top */
+  padding: 10px 18px; /* // comfortable touch target */
+  border-radius: 999px; /* // pill shape */
+  border: 1px solid var(--primary-dark); /* // accent border */
+  background: var(--primary-dark); /* // accent background */
+  color: #fff; /* // white text */
+  font-weight: 600; /* // bold text */
+  cursor: pointer; /* // show clickable */
+} /* // end printButton */
+
+.headerGrid { /* // grid for invoice to/deliver to/job info */
+  display: grid; /* // enable grid layout */
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* // responsive columns */
+  gap: 16px; /* // spacing between boxes */
+} /* // end headerGrid */
+
+.headerBox { /* // shared header card */
+  border: 1px solid var(--surface-light); /* // subtle border */
+  border-radius: 12px; /* // soft corners */
+  padding: 16px; /* // internal spacing */
+  background: var(--surface-secondary, var(--surface)); /* // support dark mode tokens */
+} /* // end headerBox */
+
+.headerBox h3 { /* // header title */
+  margin: 0 0 8px 0; /* // remove default top margin */
+  font-size: 1rem; /* // uniform heading size */
+  text-transform: uppercase; /* // mimic printed invoice style */
+  letter-spacing: 0.08em; /* // add spacing */
+  color: var(--text-secondary); /* // softer tone */
+} /* // end headerBox h3 */
+
+.headerList { /* // list for info rows */
+  list-style: none; /* // remove bullets */
+  margin: 0; /* // reset margin */
+  padding: 0; /* // remove padding */
+  font-size: 0.95rem; /* // comfortable size */
+  display: flex; /* // flex column for spacing */
+  flex-direction: column; /* // stack vertically */
+  gap: 4px; /* // spacing between lines */
+} /* // end headerList */
+
+.vehicleRow { /* // container for vehicle detail grid */
+  display: grid; /* // grid layout */
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* // responsive columns */
+  gap: 12px; /* // spacing between columns */
+  border: 1px solid var(--surface-light); /* // border for emphasis */
+  border-radius: 12px; /* // soft corners */
+  padding: 12px; /* // internal spacing */
+} /* // end vehicleRow */
+
+.vehicleItem { /* // each vehicle data cell */
+  display: flex; /* // align label/value */
+  flex-direction: column; /* // stack label and value */
+  font-size: 0.85rem; /* // subtle text size */
+} /* // end vehicleItem */
+
+.vehicleItem span { /* // label text */
+  color: var(--text-secondary); /* // muted label */
+  font-size: 0.75rem; /* // small label text */
+  text-transform: uppercase; /* // printed invoice feel */
+} /* // end vehicleItem span */
+
+.requestBlock { /* // container for each request section */
+  border: 1px solid var(--surface-light); /* // border to separate requests */
+  border-radius: 14px; /* // soft corners */
+  padding: 16px; /* // internal spacing */
+  display: flex; /* // flex column reflow */
+  flex-direction: column; /* // stack elements */
+  gap: 14px; /* // spacing */
+} /* // end requestBlock */
+
+.requestHeader { /* // header row for request title/labour */
+  display: flex; /* // align horizontally */
+  flex-wrap: wrap; /* // allow wrap on small screens */
+  justify-content: space-between; /* // push content apart */
+  gap: 10px; /* // spacing */
+} /* // end requestHeader */
+
+.partsTableWrapper { /* // enable horizontal scroll on small screens */
+  width: 100%; /* // full width */
+  overflow-x: auto; /* // allow horizontal scroll */
+} /* // end partsTableWrapper */
+
+.partsTable { /* // table for parts list */
+  width: 100%; /* // fill container */
+  border-collapse: collapse; /* // clean borders */
+  min-width: 640px; /* // ensure horizontal scroll on very small screens */
+} /* // end partsTable */
+
+.partsTable th { /* // header cells */
+  text-align: left; /* // left align text */
+  font-size: 0.8rem; /* // small header text */
+  text-transform: uppercase; /* // printed style */
+  letter-spacing: 0.05em; /* // spacing */
+  color: var(--text-secondary); /* // muted color */
+  border-bottom: 1px solid var(--surface-light); /* // underline header */
+  padding: 8px; /* // spacing */
+  background: var(--surface-secondary, var(--surface)); /* // subtle background */
+  position: sticky; /* // optional sticky header */
+  top: 0; /* // stick to top */
+} /* // end partsTable th */
+
+.partsTable td { /* // table cell styling */
+  padding: 8px; /* // consistent spacing */
+  border-bottom: 1px solid var(--surface-light); /* // row divider */
+  font-size: 0.9rem; /* // text size */
+} /* // end partsTable td */
+
+.totalsFooter { /* // footer totals row */
+  display: grid; /* // use grid for columns */
+  grid-template-columns: repeat(auto-fit, minmax(160px, auto)); /* // responsive columns */
+  gap: 12px; /* // spacing */
+  border-top: 2px solid var(--primary-dark); /* // accent border top */
+  padding-top: 12px; /* // spacing above totals */
+} /* // end totalsFooter */
+
+.totalCard { /* // individual total card */
+  background: var(--surface-secondary, var(--surface)); /* // subtle background */
+  border-radius: 10px; /* // soft corners */
+  padding: 12px; /* // spacing */
+  border: 1px solid var(--surface-light); /* // border */
+} /* // end totalCard */
+
+.totalCard span { /* // label text */
+  font-size: 0.75rem; /* // small label */
+  text-transform: uppercase; /* // uppercase label */
+  color: var(--text-secondary); /* // muted color */
+} /* // end totalCard span */
+
+.totalCard strong { /* // amount text */
+  display: block; /* // stack amount below label */
+  font-size: 1.1rem; /* // emphasize number */
+  margin-top: 4px; /* // spacing */
+} /* // end totalCard strong */
+
+.paymentDetails { /* // payment/bank detail box */
+  border: 1px solid var(--surface-light); /* // subtle border */
+  border-radius: 12px; /* // corners */
+  padding: 16px; /* // spacing */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.02)); /* // soft gradient for depth */
+} /* // end paymentDetails */
+
+.paymentDetails h3 { /* // payment heading */
+  margin: 0 0 8px 0; /* // spacing */
+  text-transform: uppercase; /* // uppercase label */
+  font-size: 0.95rem; /* // heading size */
+  letter-spacing: 0.08em; /* // spacing */
+} /* // end paymentDetails h3 */
+
+.paymentGrid { /* // layout for payment fields */
+  display: grid; /* // grid layout */
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); /* // responsive columns */
+  gap: 10px; /* // spacing */
+} /* // end paymentGrid */
+
+.statusMessage { /* // shared style for error/empty states */
+  border: 1px solid var(--surface-light); /* // border */
+  border-radius: 12px; /* // corners */
+  padding: 18px; /* // spacing */
+  text-align: center; /* // center text */
+} /* // end statusMessage */
+
+.error { /* // error modifier */
+  color: var(--danger-dark); /* // danger text */
+  border-color: var(--danger); /* // highlight border */
+} /* // end error */
+
+.skeleton { /* // skeleton loader container */
+  display: grid; /* // grid layout */
+  gap: 12px; /* // spacing */
+} /* // end skeleton */
+
+.skeletonRow { /* // skeleton shimmer row */
+  height: 16px; /* // row height */
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.4), rgba(255,255,255,0)); /* // shimmer gradient */
+  animation: shimmer 1.4s infinite; /* // animate shimmer */
+  border-radius: 999px; /* // pill shape */
+} /* // end skeletonRow */
+
+@keyframes shimmer { /* // shimmer animation keyframes */
+  0% { transform: translateX(-50%); } /* // start outside left */
+  50% { transform: translateX(0%); } /* // center */
+  100% { transform: translateX(50%); } /* // exit right */
+} /* // end shimmer */
+
+@media (max-width: 640px) { /* // responsive tweaks for small screens */
+  .invoiceShell { padding: 16px; } /* // reduce padding */
+  .companyHeader { flex-direction: column; align-items: flex-start; } /* // stack header */
+  .partsTable { min-width: 520px; } /* // allow smaller scroll width */
+} /* // end media query */

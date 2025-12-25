@@ -1,9 +1,12 @@
 "use client";
 
+// file location: src/pages/parts/create-order/[orderNumber].js
+
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Layout from "@/components/Layout";
 import { supabase } from "@/lib/supabaseClient";
+import InvoiceDetailSection from "@/features/invoices/components/InvoiceDetailSection"; // shared invoice viewer
 
 const containerStyle = {
   display: "flex",
@@ -394,7 +397,9 @@ export default function PartsOrderDetail() {
                 <PartsTab items={order.items || []} orderNotes={order.notes} />
               )}
               {activeTab === "delivery" && <DeliveryTab order={order} />}
-              {activeTab === "invoice" && <InvoiceTab order={order} totals={totals} />}
+              {activeTab === "invoice" && (
+                <InvoiceTab order={order} totals={totals} orderNumber={resolvedOrderNumber} /> // pass order number into invoice tab
+              )}
             </>
           )}
         </div>
@@ -630,33 +635,17 @@ function DeliveryTab({ order }) {
   );
 }
 
-function InvoiceTab({ order, totals }) {
-  const netTotal = order.invoice_total || totals.subtotal;
+function InvoiceTab({ orderNumber }) {
+  if (!orderNumber) {
+    return (
+      <div style={{ border: "1px solid var(--surface-light)", borderRadius: "14px", padding: "12px" }}>
+        <p style={{ margin: 0, color: "var(--danger-dark)" }}>Order number missing — cannot render invoice.</p>
+      </div>
+    );
+  }
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      <InfoCell label="Invoice reference" value={order.invoice_reference || "—"} />
-      <InfoCell label="Invoice status" value={formatInvoiceStatus(order.invoice_status)} />
-      <InfoCell label="Invoice total" value={formatCurrency(netTotal)} />
-      <InfoCell label="Invoice notes" value={order.invoice_notes || "No invoice notes"} fullWidth />
-      <div>
-        <p style={{ margin: "0 0 6px", fontWeight: 600 }}>Items summary</p>
-        <div style={{ border: "1px solid var(--surface-light)", borderRadius: "14px", padding: "12px" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>Lines</span>
-              <strong>{totals.itemsCount}</strong>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>Subtotal</span>
-              <strong>{formatCurrency(totals.subtotal)}</strong>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>Total</span>
-              <strong>{formatCurrency(netTotal)}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
+      <InvoiceDetailSection orderNumber={orderNumber} />
     </div>
   );
 }

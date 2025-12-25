@@ -66,6 +66,27 @@ CREATE TABLE public.clocking (
   CONSTRAINT clocking_pkey PRIMARY KEY (id),
   CONSTRAINT clocking_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
 );
+CREATE TABLE public.company_profile_settings (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  company_name text NOT NULL,
+  address_line1 text,
+  address_line2 text,
+  city text,
+  postcode text,
+  phone_service text,
+  phone_parts text,
+  website text,
+  bank_name text,
+  sort_code text,
+  account_number text,
+  account_name text,
+  payment_reference_hint text,
+  updated_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT company_profile_settings_pkey PRIMARY KEY (id),
+  CONSTRAINT company_profile_settings_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
+);
 CREATE TABLE public.company_settings (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   setting_key text NOT NULL UNIQUE,
@@ -303,6 +324,31 @@ CREATE TABLE public.invoice_payments (
   CONSTRAINT invoice_payments_pkey PRIMARY KEY (payment_id),
   CONSTRAINT invoice_payments_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id)
 );
+CREATE TABLE public.invoice_request_items (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  request_id uuid NOT NULL,
+  part_number text,
+  description text NOT NULL,
+  retail numeric,
+  qty numeric NOT NULL DEFAULT 1,
+  net_price numeric NOT NULL DEFAULT 0,
+  vat_amount numeric NOT NULL DEFAULT 0,
+  vat_rate numeric NOT NULL DEFAULT 20,
+  CONSTRAINT invoice_request_items_pkey PRIMARY KEY (id),
+  CONSTRAINT invoice_request_items_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.invoice_requests(id)
+);
+CREATE TABLE public.invoice_requests (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  invoice_id uuid NOT NULL,
+  request_number integer NOT NULL,
+  title text NOT NULL,
+  notes text,
+  labour_net numeric NOT NULL DEFAULT 0,
+  labour_vat numeric NOT NULL DEFAULT 0,
+  labour_vat_rate numeric NOT NULL DEFAULT 20,
+  CONSTRAINT invoice_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT invoice_requests_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id)
+);
 CREATE TABLE public.invoices (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   job_id integer,
@@ -327,6 +373,16 @@ CREATE TABLE public.invoices (
   grand_total numeric DEFAULT 0,
   payment_status text DEFAULT 'Draft'::text,
   due_date date,
+  invoice_number text UNIQUE,
+  order_number text,
+  account_number text,
+  invoice_date date DEFAULT CURRENT_DATE,
+  invoice_to jsonb DEFAULT '{}'::jsonb,
+  deliver_to jsonb DEFAULT '{}'::jsonb,
+  vehicle_details jsonb DEFAULT '{}'::jsonb,
+  service_total numeric DEFAULT 0,
+  vat_total numeric DEFAULT 0,
+  invoice_total numeric DEFAULT 0,
   CONSTRAINT invoices_pkey PRIMARY KEY (id),
   CONSTRAINT invoices_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT invoices_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
