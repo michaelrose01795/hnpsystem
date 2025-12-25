@@ -289,13 +289,48 @@ div#main-content {
 
 .login-card-stack {
   width: 100%;
-  max-width: 520px;
+  max-width: 1100px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 24px;
   position: relative;
   z-index: 1;
+}
+
+.login-card-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.login-card-layout__primary,
+.login-card-layout__developer {
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .login-card-layout {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .login-card-layout__primary,
+  .login-card-layout__developer {
+    flex: 0 0 auto;
+    max-width: 520px;
+  }
+
+  .login-card-layout__developer {
+    order: 1;
+  }
+
+  .login-card-layout__primary {
+    order: 2;
+  }
 }
 
 .login-form {
