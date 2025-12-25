@@ -1,29 +1,35 @@
 TO DO:
 
+api
+You are Codex working inside /workspaces/hnpsystem (Next.js + Supabase/Prisma app). 
+Primary spec lives in docs/paste — follow everything still under “TO DO” and “NOTE”.
+Key actions:
+  1. Finish the user messaging experience (front end + API) so users can message each other seamlessly.
+  2. Build out the tracking page plus the workshop write-up page in job cards.
+  3. Ensure every data input across the job-card, VHC, parts, consumables, deliveries, HR, etc. pages saves to the database tables defined in src/lib/database/schema/schemaReference.sql. Add any missing tables/columns to src/lib/database/schema/addtable.sql, keeping names and relationships consistent. Fix the “job_notes/last_updated_by” relationship issue noted in docs/paste.
+  4. Align all UI/UX tweaks described in docs/paste (button styles, car/key tracker popup, VHC media capture, parts bulk add, deliveries workflow, employee directory updates, etc.). When instructions mention dark-mode colors, drag/drop behavior, clipboard buttons, or de-duping first names, implement them exactly as written.
+  5. Link every status indicator/job progress item to the underlying job number events and surface them in the tree/line visualization described in docs/paste. Ensure the invoice tab gating logic matches the dependency list.
+  6. Remove obsolete .md and migration files only where explicitly requested in docs/paste (avoid touching schemaReference/addtable).
 
-Have it so the workshop/consumables-tracker page follows more of the dark theme when in dark mode than the light them (use less red and more purple)
+Workflow expectations:
+  • Read docs/paste carefully, item by item, and keep a running checklist.
+  • Touch only files under /workspaces/hnpsystem (sandbox is workspace-write, no network). 
+  • For every new API/DB change, update both the handler and any client hooks/components that consume it; wire requests through src/utils/apiClient.js.
+  • Update or add tests/helpers as needed; run lint/test suites relevant to changed areas.
+  • Leave concise comments only when logic is non-obvious; keep formatting consistent.
+  • Before finishing, verify each requirement is satisfied (manual testing or unit/integration checks), summarize changes, and mention any follow-up risks.
+
+Deliverables:
+  • Updated code, schemas, and docs implementing every outstanding requirement from docs/paste.
+  • Clear summary of what changed, how to validate it, and any TODOs you could not complete.
 
 
 
-LOOK INTO TRACKING PAGE
+Complete the messages page and get that working correctly so its a simple messaging to other users 
 
 
 
-
-ADD WRITE UP PAGE IN JOBCARD FOR WORKSHOP MANAGER
-
-
-
-
-Not yet. The main job-card page now uses /api/jobcards/** for updates, file deletes, notes, and warranty linking, but plenty of other surfaces still call the database helpers directly—e.g.:
-
-WriteUpForm.js (updateJobStatus, Supabase channels, write-up CRUD)
-VhcDetailsPanel.js (direct Supabase queries)
-[jobNumber].js (notes, status updates)
-Consumables/parts dashboards and other pages under src/pages/parts/**, src/pages/workshop/**, etc.
-Those still need corresponding /api endpoints and client helpers before the API migration is complete. Let me know which area you’d like tackled next.
-
-Carry on completeing the next steps with "within my code, can apis be used more to not use/repeat as much code etc find where the files are in what sections and show me how many can be used in what sections. do change anything yet just find out how much can be changed to api to make it easier"
+LOOK INTO TRACKING PAGE + ADD WRITE UP PAGE IN JOBCARD FOR WORKSHOP MANAGER
 
 
 
@@ -117,6 +123,3 @@ add a search bar inside the "Employee Directory" with in the "hr/manager" page. 
 
 
 Remove all of the .md files and migration files. 
-
-
-now applie the drop down style usered within the login page to all of the other drop downs within the whole app, use an api to make this easier and quicker to use the same style and design. Do the same with any scroll bar used in any page, make a seperate api for the scroll bar. 

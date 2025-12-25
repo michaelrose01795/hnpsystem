@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import PartsOpsDashboard from "@/components/dashboards/PartsOpsDashboard";
+import { supabaseClient } from "@/lib/supabaseClient";
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
 import DeliverySchedulerModal from "@/components/Parts/DeliverySchedulerModal";
 
@@ -60,6 +61,8 @@ const SOURCE_META = {
 };
 
 const EMPTY_PIPELINE_SUMMARY = summarizePartsPipeline([]);
+
+const OPEN_REQUEST_STATUSES = ["waiting_authorisation", "pending", "awaiting_stock", "on_order"];
 
 const formatStatusLabel = (status) =>
   status ? status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "Unknown";
@@ -213,26 +216,26 @@ export default function PartsManagerDashboard() {
   const [scheduleModalJob, setScheduleModalJob] = useState(null);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
-  const refreshJobDeliveryMap = useCallback(async (jobIds = []) => {
-    if (!jobIds.length) {
-      setJobDeliveryMap({});
-      return;
-    }
-    try {
-      const response = await fetch("/api/parts/delivery-stops", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobIds }),
-      });
-      const payload = await response.json();
-      if (!response.ok || !payload?.success) {
-        throw new Error(payload?.message || "Unable to load delivery stops");
+  const refreshJobDeliveryMap = useCallback(
+    async (jobIds = []) => {
+      if (!jobIds.length) {
+        setJobDeliveryMap({});
+        return;
       }
-      setJobDeliveryMap(groupByJobId(payload.stops || []));
-    } catch (error) {
-      console.error("Failed to load delivery stops for jobs:", error);
-    }
-  }, []);
+      const { data, error } = await supabaseClient
+        .from("delivery_stops")
+        .select("job_id, status, stop_number, delivery:deliveries(id, delivery_date, vehicle_reg)")
+        .in("job_id", jobIds)
+        .in("status", ["planned", "en_route"])
+        .order("stop_number", { ascending: true });
+      if (error) {
+        console.error("Failed to load delivery stops for jobs:", error);
+        return;
+      }
+      setJobDeliveryMap(groupByJobId(data || []));
+    },
+    []
+  );
 
   const openScheduleModalForRow = useCallback((row) => {
     if (!row?.jobId) return;
@@ -257,8 +260,33 @@ export default function PartsManagerDashboard() {
       const [summaryResponse, deliveriesResponse, jobItemsResponse, techRequestsResponse] = await Promise.all([
         fetch("/api/parts/summary").then((res) => res.json()),
         fetch("/api/parts/deliveries?limit=5").then((res) => res.json()),
-        fetch("/api/parts/job-items/feed?limit=8").then((res) => res.json()),
-        fetch("/api/parts/requests/open?limit=10").then((res) => res.json()),
+        supabaseClient
+          .from("parts_job_items")
+          .select(
+            `id, status, origin, quantity_requested, created_at, job:jobs(id, job_number, vehicle_reg, waiting_status, status), part:parts_catalog(part_number, name, supplier, unit_price)`
+          )
+          .in("status", [
+            "waiting_authorisation",
+            "pending",
+            "awaiting_stock",
+            "on_order",
+            "pre_picked",
+            "stock",
+            "allocated",
+            "picked",
+          ])
+          .order("created_at", { ascending: false })
+          .limit(8),
+        supabaseClient
+          .from("parts_requests")
+          .select(
+            `request_id, part_id, job_id, quantity, status, source, description, created_at,
+             job:jobs!inner(job_number, waiting_status),
+             part:parts_catalog(part_number, name)`
+          )
+          .in("status", OPEN_REQUEST_STATUSES)
+          .order("created_at", { ascending: false })
+          .limit(10),
       ]);
 
       if (!summaryResponse.success) {
@@ -269,18 +297,18 @@ export default function PartsManagerDashboard() {
         throw new Error(deliveriesResponse.message || "Unable to load deliveries");
       }
 
-      if (!jobItemsResponse.success) {
-        throw new Error(jobItemsResponse.message || "Unable to load job data");
+      if (jobItemsResponse.error) {
+        throw new Error(jobItemsResponse.error.message || "Unable to load job data");
       }
 
-      if (!techRequestsResponse.success) {
-        throw new Error(techRequestsResponse.message || "Unable to load tech requests");
+      if (techRequestsResponse.error) {
+        throw new Error(techRequestsResponse.error.message || "Unable to load tech requests");
       }
 
       const summary = summaryResponse.summary || {};
       const lowStock = summary.lowStockParts || [];
-      const jobRows = jobItemsResponse.items || [];
-      const techRequests = techRequestsResponse.requests || [];
+      const jobRows = jobItemsResponse.data || [];
+      const techRequests = techRequestsResponse.data || [];
       const pipelineSummary = summarizePartsPipeline(jobRows, {
         quantityField: "quantity_requested",
       });

@@ -1,7 +1,16 @@
 // file location: src/hooks/useMessagesBadge.js
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { fetchMessageThreads } from "@/lib/api/messages";
+
+const buildQuery = (params = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    query.append(key, value);
+  });
+  const stringified = query.toString();
+  return stringified ? `?${stringified}` : "";
+};
 
 export function useMessagesBadge(userId) {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -13,12 +22,12 @@ export function useMessagesBadge(userId) {
     }
 
     try {
-      const payload = await fetchMessageThreads({ userId });
-      const threads = Array.isArray(payload?.data)
-        ? payload.data
-        : Array.isArray(payload?.threads)
-        ? payload.threads
-        : [];
+      const response = await fetch(`/api/messages/threads${buildQuery({ userId })}`);
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.message || "Unable to load conversations.");
+      }
+      const threads = Array.isArray(payload.data) ? payload.data : [];
       const totalUnread = threads.reduce(
         (sum, thread) => sum + (thread.hasUnread ? 1 : 0),
         0

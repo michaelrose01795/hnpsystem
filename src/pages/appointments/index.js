@@ -8,9 +8,9 @@ import Popup from "@/components/popups/Popup"; // Reusable popup modal
 import { useRouter } from "next/router"; // For reading query params
 import { useUser } from "@/context/UserContext"; // Access current user for check-in attribution
 import { useNextAction } from "@/context/NextActionContext"; // Trigger follow-up actions after check-in
-import {
-  getAllJobs,
-  createOrUpdateAppointment,
+import { 
+  getAllJobs, 
+  createOrUpdateAppointment, 
   getJobByNumberOrReg,
   getJobsByDate // ✅ NEW: Get appointments by date
 } from "@/lib/database/jobs"; // DB functions
@@ -372,15 +372,15 @@ export default function Appointments() {
   const fetchJobs = async () => {
     console.log("Fetching all jobs...");
     setIsLoading(true);
-
+    
     try {
-      const jobsFromDb = await getAllJobs({ scope: "appointments" });
+      const jobsFromDb = await getAllJobs();
       console.log("Jobs fetched:", jobsFromDb.length);
-
+      
       // ✅ Filter only jobs with appointments
       const jobsWithAppointments = jobsFromDb.filter(job => job.appointment);
       console.log("Jobs with appointments:", jobsWithAppointments.length);
-
+      
       setJobs(jobsWithAppointments);
     } catch (error) {
       console.error("Error fetching jobs:", error);
@@ -567,7 +567,6 @@ export default function Appointments() {
   useEffect(() => {
     setDates(generateDates(60));
     fetchJobs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

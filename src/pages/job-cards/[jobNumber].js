@@ -9,8 +9,18 @@ import InvoiceBuilderPopup from "@/components/popups/InvoiceBuilderPopup";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/supabaseClient";
-import { getCustomerVehicles } from "@/lib/database/customers";
-import { normalizeRequests } from "@/lib/jobcards/utils";
+import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile } from "@/lib/database/jobs";
+import {
+  getNotesByJob,
+  createJobNote,
+  deleteJobNote,
+  updateJobNote
+} from "@/lib/database/notes";
+import { getCustomerJobs, getCustomerVehicles } from "@/lib/database/customers";
+import {
+  normalizeRequests,
+  mapCustomerJobsToHistory
+} from "@/lib/jobcards/utils";
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
 import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
 import InvoiceSection from "@/components/Invoices/InvoiceSection";
@@ -18,17 +28,6 @@ import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import PartsTabNew from "@/components/PartsTab_New";
 import NotesTabNew from "@/components/NotesTab_New";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
-import {
-  createJobcardNote,
-  deleteJobcardFile,
-  deleteJobcardNote,
-  fetchJobcardDetails,
-  fetchJobcardNotes,
-  fetchWarrantyOptions,
-  linkWarrantyJob,
-  updateJobcard,
-  updateJobcardNote,
-} from "@/lib/api/jobcards";
 
 const deriveVhcSeverity = (check = {}) => {
   const fields = [
@@ -190,7 +189,6 @@ export default function JobCardDetailPage() {
 
   // ✅ State Management
   const [jobData, setJobData] = useState(null);
-  const [jobId, setJobId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("customer-requests");
@@ -272,14 +270,11 @@ export default function JobCardDetailPage() {
     previousStatusRef.current = currentStatus;
   }, [jobData?.status, jobData?.jobNumber, canViewInvoice, router]);
 
-  const fetchSharedNote = useCallback(async (jobNumberValue) => {
-    if (!jobNumberValue) return null;
+  const fetchSharedNote = useCallback(async (jobId) => {
+    if (!jobId) return null;
 
     try {
-      const payload = await fetchJobcardNotes(jobNumberValue);
-      const notes = Array.isArray(payload?.data)
-        ? payload.data
-        : payload?.notes || [];
+      const notes = await getNotesByJob(jobId);
       return notes[0] || null;
     } catch (noteError) {
       console.error("❌ Failed to load shared note:", noteError);
@@ -287,9 +282,9 @@ export default function JobCardDetailPage() {
     }
   }, []);
 
-  const refreshSharedNote = useCallback(async (jobNumberValue) => {
-    if (!jobNumberValue) return null;
-    const latest = await fetchSharedNote(jobNumberValue);
+  const refreshSharedNote = useCallback(async (jobId) => {
+    if (!jobId) return null;
+    const latest = await fetchSharedNote(jobId);
     setSharedNote(latest?.noteText || "");
     setSharedNoteMeta(latest);
     return latest;
@@ -307,39 +302,31 @@ export default function JobCardDetailPage() {
         }
         setError(null);
 
-        const payload = await fetchJobcardDetails(jobNumber);
-        const jobCard = payload?.job || null;
+        const { data, error } = await getJobByNumber(jobNumber);
 
-        if (!jobCard) {
-          setError("Job card not found");
+        if (error || !data?.jobCard) {
+          setError(error?.message || "Job card not found");
           return;
         }
 
+        const jobCard = data.jobCard;
         const mappedFiles = (jobCard.files || []).map(mapJobFileRecord);
         const hydratedJobCard = { ...jobCard, files: mappedFiles };
-        const resolvedJobNumber =
-          hydratedJobCard.job_number ||
-          hydratedJobCard.jobNumber ||
-          jobNumber;
+        setJobData(hydratedJobCard);
         setJobDocuments(mappedFiles);
 
-        const sharedNoteFromApi = payload?.sharedNote || null;
-        const latestSharedNote = sharedNoteFromApi
-          ? sharedNoteFromApi
-          : resolvedJobNumber
-          ? await fetchSharedNote(resolvedJobNumber)
+        const latestSharedNote = jobCard.id
+          ? await fetchSharedNote(jobCard.id)
           : null;
-        setSharedNote(
-          latestSharedNote?.noteText ||
-            latestSharedNote?.note_text ||
-            ""
-        );
+        setSharedNote(latestSharedNote?.noteText || "");
         setSharedNoteMeta(latestSharedNote);
 
-        // Use payload.job (which has customer as string) instead of structured
-        setJobData(hydratedJobCard);
-        setJobId(hydratedJobCard?.id || null);
-        setVehicleJobHistory(payload?.vehicleJobHistory || []);
+        const customerJobs = jobCard.customerId
+          ? await getCustomerJobs(jobCard.customerId)
+          : [];
+        setVehicleJobHistory(
+          mapCustomerJobsToHistory(customerJobs, jobCard.reg)
+        );
       } catch (err) {
         console.error("❌ Exception fetching job:", err);
         setError(err?.message || "Failed to load job card");
@@ -413,30 +400,27 @@ export default function JobCardDetailPage() {
   }, []);
 
   useEffect(() => {
-    if (!jobId) return;
+    if (!jobData?.id) return;
 
     const tablesToWatch = [
-      { table: "jobs", filter: `id=eq.${jobId}` },
-      { table: "appointments", filter: `job_id=eq.${jobId}` },
-      { table: "parts_job_items", filter: `job_id=eq.${jobId}` },
-      { table: "parts_requests", filter: `job_id=eq.${jobId}` },
-      { table: "vhc_checks", filter: `job_id=eq.${jobId}` },
-      { table: "job_clocking", filter: `job_id=eq.${jobId}` },
-      { table: "job_writeups", filter: `job_id=eq.${jobId}` },
-      { table: "job_requests", filter: `job_id=eq.${jobId}` },
-      { table: "job_files", filter: `job_id=eq.${jobId}` },
-      { table: "job_cosmetic_damage", filter: `job_id=eq.${jobId}` },
-      { table: "job_customer_statuses", filter: `job_id=eq.${jobId}` },
-      { table: "job_progress", filter: `job_id=eq.${jobId}` },
-      { table: "job_booking_requests", filter: `job_id=eq.${jobId}` },
+      { table: "jobs", filter: `id=eq.${jobData.id}` },
+      { table: "appointments", filter: `job_id=eq.${jobData.id}` },
+      { table: "parts_job_items", filter: `job_id=eq.${jobData.id}` },
+      { table: "parts_requests", filter: `job_id=eq.${jobData.id}` },
+      { table: "vhc_checks", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_clocking", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_writeups", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_requests", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_files", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_cosmetic_damage", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_customer_statuses", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_progress", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_booking_requests", filter: `job_id=eq.${jobData.id}` },
       {
         table: "job_notes",
-        filter: `job_id=eq.${jobId}`,
+        filter: `job_id=eq.${jobData.id}`,
         shouldRefresh: false,
-        onPayload: () =>
-          refreshSharedNote(
-            jobData?.jobNumber || jobData?.jobCard?.jobNumber || jobNumber
-          )
+        onPayload: () => refreshSharedNote(jobData.id)
       }
     ];
 
@@ -467,7 +451,7 @@ export default function JobCardDetailPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [jobId, jobNumber, refreshSharedNote, scheduleRealtimeRefresh]);
+  }, [jobData?.id, refreshSharedNote, scheduleRealtimeRefresh]);
 
   const handleCustomerDetailsSave = useCallback(
     async (updatedDetails) => {
@@ -490,29 +474,26 @@ export default function JobCardDetailPage() {
           contact_preference: updatedDetails.contactPreference || null
         };
 
-        const response = await fetch(`/api/customers/${jobData.customerId}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
-        const customerPayload = await response.json();
-        if (!response.ok) {
-          throw new Error(
-            customerPayload?.message || "Failed to update customer details"
-          );
+        const { error: customerError } = await supabase
+          .from("customers")
+          .update(payload)
+          .eq("id", jobData.customerId);
+
+        if (customerError) {
+          throw customerError;
         }
 
-        const updatedName = `${updatedDetails.firstName || ""} ${
-          updatedDetails.lastName || ""
-        }`.trim();
-        try {
-          await updateJobcard(jobData.jobNumber, {
+        const updatedName = `${updatedDetails.firstName || ""} ${updatedDetails.lastName || ""}`.trim();
+
+        const { error: jobError } = await supabase
+          .from("jobs")
+          .update({
             customer: updatedName || null
-          });
-        } catch (jobError) {
-          console.warn("⚠️ Customer updated but job label failed:", jobError);
+          })
+          .eq("id", jobData.id);
+
+        if (jobError) {
+          throw jobError;
         }
 
         await fetchJobData({ silent: true });
@@ -647,7 +628,13 @@ export default function JobCardDetailPage() {
           }
         }
 
-        await updateJobcard(jobData.jobNumber, updates);
+        const result = await updateJob(jobData.id, updates);
+
+        if (!result?.success) {
+          throw (
+            result?.error || new Error("Failed to update booking details")
+          );
+        }
 
         setJobData((prev) => {
           if (!prev) return prev;
@@ -818,10 +805,9 @@ export default function JobCardDetailPage() {
         throw new Error(payload?.error || "Failed to create invoice");
       }
 
-      try {
-        await updateJobcard(jobData.jobNumber, { status: "Invoicing" });
-      } catch (statusError) {
-        console.warn("Invoice created but failed to update status:", statusError);
+      const statusResult = await updateJobStatus(jobData.id, "Invoicing");
+      if (!statusResult?.success) {
+        console.warn("Invoice created but failed to update status:", statusResult?.error);
       }
       alert(
         `✅ Invoice created. Payment link ready: ${payload.paymentLink?.checkout_url || ""}`
@@ -844,7 +830,7 @@ export default function JobCardDetailPage() {
     jobData?.jobNumber,
     jobData?.customerId,
     jobData?.customerEmail,
-    router
+    updateJobStatus
   ]);
 
   const handleDeleteDocument = useCallback(
@@ -864,7 +850,11 @@ export default function JobCardDetailPage() {
           }
         }
 
-        await deleteJobcardFile(file.id);
+        const result = await deleteJobFile(file.id);
+        if (!result?.success) {
+          alert(result?.error?.message || "Failed to delete document");
+          return;
+        }
 
         setJobDocuments((prev) => prev.filter((doc) => doc.id !== file.id));
         setJobData((prev) =>
@@ -882,9 +872,7 @@ export default function JobCardDetailPage() {
 
   const saveSharedNote = useCallback(
     async (value) => {
-      if (!jobData?.jobNumber && !jobData?.jobCard?.jobNumber) return;
-      const noteJobNumber =
-        jobData?.jobNumber || jobData?.jobCard?.jobNumber || null;
+      if (!jobData?.id) return;
 
       try {
         setSharedNoteSaving(true);
@@ -892,10 +880,13 @@ export default function JobCardDetailPage() {
         const isEmpty = draftValue.trim().length === 0;
 
         if (isEmpty && sharedNoteMeta?.noteId) {
-          await deleteJobcardNote(
-            noteJobNumber,
-            sharedNoteMeta.noteId
+          const deleteResult = await deleteJobNote(
+            sharedNoteMeta.noteId,
+            user?.user_id || null
           );
+          if (!deleteResult?.success) {
+            throw deleteResult?.error || new Error("Failed to delete note");
+          }
           setSharedNote("");
           setSharedNoteMeta(null);
           return;
@@ -906,19 +897,28 @@ export default function JobCardDetailPage() {
         }
 
         if (sharedNoteMeta?.noteId) {
-          await updateJobcardNote(noteJobNumber, sharedNoteMeta.noteId, {
-            noteText: draftValue,
-            userId: user?.user_id || null,
-          });
+          const updateResult = await updateJobNote(
+            sharedNoteMeta.noteId,
+            draftValue,
+            user?.user_id || null
+          );
+
+          if (!updateResult?.success) {
+            throw updateResult?.error || new Error("Failed to update note");
+          }
         } else {
-          await createJobcardNote(noteJobNumber, {
-            noteText: draftValue,
-            hiddenFromCustomer: true,
-            userId: user?.user_id || null,
+          const createResult = await createJobNote({
+            job_id: jobData.id,
+            user_id: user?.user_id || null,
+            note_text: draftValue
           });
+
+          if (!createResult?.success) {
+            throw createResult?.error || new Error("Failed to create note");
+          }
         }
 
-        const latest = await fetchSharedNote(noteJobNumber);
+        const latest = await fetchSharedNote(jobData.id);
         setSharedNote(latest?.noteText || "");
         setSharedNoteMeta(latest);
       } catch (saveError) {
@@ -928,13 +928,7 @@ export default function JobCardDetailPage() {
         setSharedNoteSaving(false);
       }
     },
-    [
-      jobData?.jobNumber,
-      jobData?.jobCard?.jobNumber,
-      sharedNoteMeta?.noteId,
-      user?.user_id,
-      fetchSharedNote,
-    ]
+    [jobData?.id, sharedNoteMeta?.noteId, user?.user_id, fetchSharedNote]
   );
 
   const handleSharedNoteChange = useCallback((value) => {
@@ -955,14 +949,19 @@ export default function JobCardDetailPage() {
 
   // ✅ Update Job Request Handler
   const handleUpdateRequests = async (updatedRequests) => {
-    if (!canEdit || !jobData?.id || !jobData?.jobNumber) return;
+    if (!canEdit || !jobData?.id) return;
 
     try {
-      await updateJobcard(jobData.jobNumber, {
+      const result = await updateJob(jobData.id, {
         requests: updatedRequests
       });
-      setJobData({ ...jobData, requests: updatedRequests });
-      alert("✅ Job requests updated successfully");
+
+      if (result.success) {
+        setJobData({ ...jobData, requests: updatedRequests });
+        alert("✅ Job requests updated successfully");
+      } else {
+        alert("Failed to update job requests");
+      }
     } catch (error) {
       console.error("Error updating requests:", error);
       alert("Failed to update job requests");
@@ -970,7 +969,7 @@ export default function JobCardDetailPage() {
   };
 
   const handleToggleVhcRequired = async (nextValue) => {
-    if (!canEdit || !jobData?.id || !jobData?.jobNumber) return;
+    if (!canEdit || !jobData?.id) return;
 
     if (!nextValue) {
       const confirmed = await confirm(
@@ -980,11 +979,16 @@ export default function JobCardDetailPage() {
     }
 
     try {
-      await updateJobcard(jobData.jobNumber, {
+      const result = await updateJob(jobData.id, {
         vhc_required: nextValue
       });
-      setJobData((prev) => (prev ? { ...prev, vhcRequired: nextValue } : prev));
-      alert(nextValue ? "✅ VHC marked as required" : "✅ VHC marked as not required");
+
+      if (result.success) {
+        setJobData((prev) => (prev ? { ...prev, vhcRequired: nextValue } : prev));
+        alert(nextValue ? "✅ VHC marked as required" : "✅ VHC marked as not required");
+      } else {
+        alert(result?.error?.message || "Failed to update VHC requirement");
+      }
     } catch (toggleError) {
       console.error("Error updating VHC requirement:", toggleError);
       alert("Failed to update VHC requirement");
@@ -4886,18 +4890,31 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
   const isLinked = Boolean(jobData?.linkedWarrantyJobId);
 
   const loadWarrantyJobs = useCallback(async () => {
-    if (!canEdit || !jobData?.jobNumber) return;
+    if (!canEdit) return;
     setLoadingJobs(true);
     try {
-      const payload = await fetchWarrantyOptions(jobData.jobNumber);
-      const options = Array.isArray(payload?.data)
-        ? payload.data
-        : payload?.jobs || [];
-      setAvailableJobs(options);
+      const { data, error } = await supabase
+        .from("jobs")
+        .select(
+          "id, job_number, status, job_source, vehicle_reg, vehicle_make_model, warranty_linked_job_id"
+        )
+        .eq("job_source", "Warranty")
+        .neq("id", jobData.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) {
+        throw error;
+      }
+
+      const filtered = (data || []).filter(
+        (record) =>
+          !record.warranty_linked_job_id ||
+          record.warranty_linked_job_id === jobData.id
+      );
+      setAvailableJobs(filtered);
       setLinkError(
-        options.length
-          ? ""
-          : "No warranty jobs are available to link right now."
+        filtered.length ? "" : "No warranty jobs are available to link right now."
       );
     } catch (err) {
       console.error("❌ Failed to load warranty jobs:", err);
@@ -4905,7 +4922,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
     } finally {
       setLoadingJobs(false);
     }
-  }, [canEdit, jobData?.jobNumber]);
+  }, [canEdit, jobData?.id]);
 
   useEffect(() => {
     if (linkMode) {
@@ -4923,11 +4940,6 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
       return;
     }
 
-    if (!jobData?.jobNumber) {
-      setLinkError("Unable to determine current job number.");
-      return;
-    }
-
     const numericJobId = Number(selectedJobId);
     if (Number.isNaN(numericJobId)) {
       setLinkError("Invalid job selection.");
@@ -4942,20 +4954,48 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
       return;
     }
 
+    const targetIsWarranty =
+      (targetJob.job_source || "").toLowerCase() === "warranty";
+    const currentIsWarranty =
+      (jobData?.jobSource || "").toLowerCase() === "warranty";
+
+    const masterJobId =
+      !currentIsWarranty && targetIsWarranty
+        ? jobData.id
+        : currentIsWarranty && !targetIsWarranty
+        ? targetJob.id
+        : jobData.id;
+
     setLinking(true);
     setLinkError("");
-    const targetJobNumber = targetJob.job_number || targetJob.jobNumber || null;
-    if (!targetJobNumber) {
-      setLinkError("Selected job is missing a job number.");
+
+    const currentUpdate = await updateJob(jobData.id, {
+      warranty_linked_job_id: numericJobId,
+      warranty_vhc_master_job_id: masterJobId
+    });
+
+    if (!currentUpdate?.success) {
+      setLinkError(
+        currentUpdate?.error?.message || "Failed to update primary job."
+      );
       setLinking(false);
       return;
     }
 
-    try {
-      await linkWarrantyJob(jobData.jobNumber, { targetJobNumber });
-    } catch (linkErrorInternal) {
-      console.error("❌ Failed to link warranty jobs:", linkErrorInternal);
-      setLinkError(linkErrorInternal?.message || "Failed to link warranty job.");
+    const targetUpdate = await updateJob(numericJobId, {
+      warranty_linked_job_id: jobData.id,
+      warranty_vhc_master_job_id: masterJobId,
+      status: jobData.status
+    });
+
+    if (!targetUpdate?.success) {
+      await updateJob(jobData.id, {
+        warranty_linked_job_id: null,
+        warranty_vhc_master_job_id: null
+      });
+      setLinkError(
+        targetUpdate?.error?.message || "Failed to update warranty job."
+      );
       setLinking(false);
       return;
     }

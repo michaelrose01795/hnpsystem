@@ -5,45 +5,25 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
-import useJobcardsApi from "@/hooks/api/useJobcardsApi";
+import { getJobByNumberOrReg } from "@/lib/database/jobs";
 
 export default function DealerCarDetailsPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
   const [jobData, setJobData] = useState(null);
   const [file, setFile] = useState(null);
-  const [error, setError] = useState("");
-  const { getJobcard } = useJobcardsApi();
 
   // Fetch job details from database
   useEffect(() => {
     if (!jobNumber) return;
-    let mounted = true;
 
     const fetchJob = async () => {
-      setError("");
-      try {
-        const payload = await getJobcard(jobNumber);
-        if (!mounted) return;
-        const job = payload?.job || payload?.legacy?.jobCard || null;
-        if (!job) {
-          throw new Error("Job card not found");
-        }
-        setJobData(job);
-      } catch (loadError) {
-        console.error("Failed to load dealer details", loadError);
-        if (mounted) {
-          setError(loadError.message || "Unable to load job details");
-          setJobData(null);
-        }
-      }
+      const job = await getJobByNumberOrReg(jobNumber);
+      if (job) setJobData(job);
     };
 
     fetchJob();
-    return () => {
-      mounted = false;
-    };
-  }, [jobNumber, getJobcard]);
+  }, [jobNumber]);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -78,23 +58,7 @@ export default function DealerCarDetailsPage() {
     router.push(`/appointments?jobNumber=${jobNumber}`);
   };
 
-  if (error) {
-    return (
-      <Layout>
-        <div style={{ padding: "24px" }}>
-          <p style={{ color: "var(--danger)" }}>{error}</p>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!jobData) {
-    return (
-      <Layout>
-        <p>Loading dealer car details...</p>
-      </Layout>
-    );
-  }
+  if (!jobData) return <Layout><p>Loading dealer car details...</p></Layout>;
 
   return (
     <Layout>

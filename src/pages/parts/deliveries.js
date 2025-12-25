@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
+import { supabase } from "@/lib/supabaseClient";
 import { useTheme } from "@/styles/themeProvider";
-import usePartsApi from "@/hooks/api/usePartsApi";
 
 const pageStyles = {
   container: {
@@ -187,7 +187,6 @@ const normalizeJobRecord = (job = {}) => ({
 
 export default function PartsDeliveriesPage() {
   const { user } = useUser();
-  const { listDeliveryJobs, updateDeliveryJob } = usePartsApi();
   const roles = (user?.roles || []).map((role) => String(role).toLowerCase());
   const hasAccess = roles.includes("parts") || roles.includes("parts manager");
 
@@ -203,15 +202,20 @@ export default function PartsDeliveriesPage() {
     setLoading(true);
     setError("");
     try {
-      const payload = await listDeliveryJobs({
-        date: selectedDate || undefined,
-      });
+      let query = supabase
+        .from("parts_delivery_jobs")
+        .select("*")
+        .order("status", { ascending: true })
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true });
 
-      if (!payload?.success) {
-        throw new Error(payload?.message || "Unable to load delivery list");
+      if (selectedDate) {
+        query = query.eq("delivery_date", selectedDate);
       }
 
-      setJobs((payload.jobs || []).map((record) => normalizeJobRecord(record)));
+      const { data, error: fetchError } = await query;
+      if (fetchError) throw fetchError;
+      setJobs((data || []).map((record) => normalizeJobRecord(record)));
     } catch (fetchErr) {
       console.error("Failed to load deliveries:", fetchErr);
       setError(fetchErr?.message || "Unable to load delivery list");
@@ -219,8 +223,7 @@ export default function PartsDeliveriesPage() {
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasAccess, selectedDate]);
+  }, [selectedDate, hasAccess]);
 
   useEffect(() => {
     fetchJobs();
@@ -243,19 +246,20 @@ export default function PartsDeliveriesPage() {
     setError("");
     try {
       const completedSort = (sortedJobs.length + 1) * 100 + (job.sort_order ?? 0);
-      const completedAt = new Date().toISOString();
-      const response = await updateDeliveryJob(job.id, {
-        status: "completed",
-        completedAt,
-        sortOrder: completedSort,
-      });
-      if (!response?.success || !response?.job) {
-        throw new Error(response?.message || "Unable to update job status");
-      }
-      const normalized = normalizeJobRecord(response.job);
+      const { error: updateError } = await supabase
+        .from("parts_delivery_jobs")
+        .update({
+          status: "completed",
+          completed_at: new Date().toISOString(),
+          sort_order: completedSort,
+        })
+        .eq("id", job.id);
+      if (updateError) throw updateError;
       setJobs((prev) =>
         prev.map((item) =>
-          item.id === job.id ? normalized : item
+          item.id === job.id
+            ? { ...item, status: "completed", completed_at: new Date().toISOString(), sort_order: completedSort }
+            : item
         )
       );
     } catch (actionError) {
@@ -276,33 +280,29 @@ export default function PartsDeliveriesPage() {
     setRowActionId(jobId);
     setError("");
     try {
-      const [currentUpdate, targetUpdate] = await Promise.all([
-        updateDeliveryJob(currentJob.id, {
-          sortOrder: targetJob.sort_order ?? targetIndex,
-        }),
-        updateDeliveryJob(targetJob.id, {
-          sortOrder: currentJob.sort_order ?? currentIndex,
-        }),
+      const [firstResult, secondResult] = await Promise.all([
+        supabase
+          .from("parts_delivery_jobs")
+          .update({ sort_order: targetJob.sort_order ?? targetIndex })
+          .eq("id", currentJob.id),
+        supabase
+          .from("parts_delivery_jobs")
+          .update({ sort_order: currentJob.sort_order ?? currentIndex })
+          .eq("id", targetJob.id),
       ]);
-      if (!currentUpdate?.success || !targetUpdate?.success) {
-        throw new Error("Unable to reorder deliveries");
-      }
-      setJobs((prev) => {
-        const replacements = new Map();
-        if (currentUpdate?.job) {
-          replacements.set(
-            currentUpdate.job.id,
-            normalizeJobRecord(currentUpdate.job)
-          );
-        }
-        if (targetUpdate?.job) {
-          replacements.set(
-            targetUpdate.job.id,
-            normalizeJobRecord(targetUpdate.job)
-          );
-        }
-        return prev.map((job) => replacements.get(job.id) || job);
-      });
+      if (firstResult.error) throw firstResult.error;
+      if (secondResult.error) throw secondResult.error;
+      setJobs((prev) =>
+        prev.map((job) => {
+          if (job.id === currentJob.id) {
+            return { ...job, sort_order: targetJob.sort_order ?? targetIndex };
+          }
+          if (job.id === targetJob.id) {
+            return { ...job, sort_order: currentJob.sort_order ?? currentIndex };
+          }
+          return job;
+        })
+      );
     } catch (moveError) {
       console.error("Failed to reorder deliveries:", moveError);
       setError(moveError?.message || "Unable to reorder deliveries");

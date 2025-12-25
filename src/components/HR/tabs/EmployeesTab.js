@@ -300,19 +300,8 @@ export default function EmployeesTab() {
         throw new Error(payload?.message || "Failed to save employee");
       }
 
-      const baseEmployeeData = selectedEmployee || {};
       if (payload.employee) {
-        const mergedEmployee = {
-          ...baseEmployeeData,
-          ...payload.employee,
-          ...editEmployee,
-        };
-        upsertLocalEmployee(mergedEmployee);
-      } else {
-        upsertLocalEmployee({
-          ...baseEmployeeData,
-          ...editEmployee,
-        });
+        upsertLocalEmployee(payload.employee);
       }
 
       resetNewEmployeeForm();
@@ -365,19 +354,8 @@ export default function EmployeesTab() {
         throw new Error(payload?.message || "Failed to save employee");
       }
 
-      const baseEmployeeData = selectedEmployee || {};
       if (payload.employee) {
-        const mergedEmployee = {
-          ...baseEmployeeData,
-          ...payload.employee,
-          ...editEmployee,
-        };
-        upsertLocalEmployee(mergedEmployee);
-      } else {
-        upsertLocalEmployee({
-          ...baseEmployeeData,
-          ...editEmployee,
-        });
+        upsertLocalEmployee(payload.employee);
       }
 
       setIsEditingEmployee(false);
@@ -724,13 +702,11 @@ function SearchableRoleDropdown({ value, onChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = React.useRef(null);
-  const inputRef = React.useRef(null);
-  const currentValue = value || "";
 
   // Filter roles based on search term
   const filteredRoles = useMemo(() => {
     if (!searchTerm.trim()) return AVAILABLE_ROLES;
-    return AVAILABLE_ROLES.filter((role) =>
+    return AVAILABLE_ROLES.filter(role =>
       role.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [searchTerm]);
@@ -747,42 +723,22 @@ function SearchableRoleDropdown({ value, onChange }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const closeDropdown = () => {
+  const handleSelectRole = (role) => {
+    onChange({ target: { value: role } });
     setIsOpen(false);
     setSearchTerm("");
-  };
-
-  const handleSelectRole = (role) => {
-    if (typeof onChange === "function") {
-      onChange(role);
-    }
-    closeDropdown();
-    if (inputRef.current) {
-      requestAnimationFrame(() => inputRef.current && inputRef.current.blur());
-    }
-  };
-
-  const handleOptionPointerDown = (event, role) => {
-    event.preventDefault();
-    handleSelectRole(role);
   };
 
   return (
     <div ref={dropdownRef} style={{ position: "relative" }}>
       <input
-        ref={inputRef}
         type="text"
-        value={isOpen ? searchTerm : currentValue}
+        value={isOpen ? searchTerm : value}
         onChange={(e) => {
           setSearchTerm(e.target.value);
           if (!isOpen) setIsOpen(true);
         }}
-        onFocus={() => {
-          if (!isOpen) {
-            setIsOpen(true);
-            setSearchTerm("");
-          }
-        }}
+        onFocus={() => setIsOpen(true)}
         placeholder="Select or search role..."
         style={{
           padding: "10px",
@@ -813,23 +769,21 @@ function SearchableRoleDropdown({ value, onChange }) {
             filteredRoles.map((role) => (
               <div
                 key={role}
-                onMouseDown={(event) => handleOptionPointerDown(event, role)}
-                onTouchStart={(event) => handleOptionPointerDown(event, role)}
+                onClick={() => handleSelectRole(role)}
                 style={{
                   padding: "10px 12px",
                   cursor: "pointer",
-                  background:
-                    currentValue === role ? "rgba(var(--accent-purple-rgb), 0.1)" : "transparent",
-                  color: currentValue === role ? "var(--accent-purple)" : "var(--text-primary)",
-                  fontWeight: currentValue === role ? 600 : 400,
+                  background: value === role ? "rgba(var(--accent-purple-rgb), 0.1)" : "transparent",
+                  color: value === role ? "var(--accent-purple)" : "var(--text-primary)",
+                  fontWeight: value === role ? 600 : 400,
                 }}
                 onMouseEnter={(e) => {
-                  if (currentValue !== role) {
+                  if (value !== role) {
                     e.currentTarget.style.background = "var(--surface-light)";
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (currentValue !== role) {
+                  if (value !== role) {
                     e.currentTarget.style.background = "transparent";
                   }
                 }}
@@ -850,7 +804,6 @@ function SearchableRoleDropdown({ value, onChange }) {
 
 function EmployeeDetailsFields({ values, onFieldChange }) {
   const update = (field) => (event) => onFieldChange(field, event.target.value);
-  const handleRoleChange = (roleValue) => onFieldChange("role", roleValue || "");
 
   return (
     <>
@@ -932,7 +885,7 @@ function EmployeeDetailsFields({ values, onFieldChange }) {
         <FormField label="Role">
           <SearchableRoleDropdown
             value={values.role}
-            onChange={handleRoleChange}
+            onChange={update("role")}
           />
         </FormField>
         <FormField label="Employment Type">

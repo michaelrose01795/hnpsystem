@@ -9,14 +9,14 @@ import { useUser } from "@/context/UserContext";
 import { useNextAction } from "@/context/NextActionContext";
 import { useRoster } from "@/context/RosterContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
-import { updateJobStatus, saveChecksheet } from "@/lib/database/jobs";
+import { getJobByNumber, updateJobStatus } from "@/lib/database/jobs";
 import { getVHCChecksByJob } from "@/lib/database/vhc";
 import { getClockingStatus } from "@/lib/database/clocking";
 import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
 import { supabase } from "@/lib/supabaseClient";
 import WriteUpForm from "@/components/JobCards/WriteUpForm";
+import { getJobByNumberOrReg, saveChecksheet } from "@/lib/database/jobs";
 import { createJobNote, getNotesByJob } from "@/lib/database/notes";
-import { fetchJobcardDetails } from "@/lib/api/jobcards";
 
 // VHC Section Modals
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
@@ -410,18 +410,17 @@ export default function TechJobDetailPage() {
 
     setLoading(true);
     try {
-      const payload = await fetchJobcardDetails(jobNumber);
-      const structured = payload?.structured;
+      const { data: job, error: jobError } = await getJobByNumber(jobNumber);
 
-      if (!structured?.jobCard) {
+      if (jobError || !job) {
         alert("Job not found");
         router.push("/job-cards/myjobs");
         return;
       }
 
-      setJobData(structured);
+      setJobData(job);
 
-      const jobCardIdForFetch = structured.jobCard.id;
+      const jobCardIdForFetch = job?.jobCard?.id;
       if (jobCardIdForFetch) {
         const checks = await getVHCChecksByJob(jobCardIdForFetch);
         setVhcChecks(checks);

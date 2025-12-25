@@ -5,10 +5,10 @@
 import React, { useEffect, useState } from "react"; // import React hooks for stateful UI
 import Layout from "@/components/Layout"; // import shared layout component
 import { useRouter } from "next/router"; // import router hook for navigation
+import { getAllJobs } from "@/lib/database/jobs"; // import Supabase helper to fetch jobs
 import { getVhcChecksByJob, getVhcWorkflowStatus } from "@/lib/database/vhc"; // import Supabase helpers to fetch VHC data and workflow status
 import { useUser } from "@/context/UserContext"; // import context hook to read current user roles
 import { getDatabaseClient } from "@/lib/database/client"; // import shared Supabase client for additional VHC history lookups
-import useJobcardsApi from "@/hooks/api/useJobcardsApi";
 import {
   STATUS_COLORS,
   VALID_VHC_STATUSES,
@@ -491,7 +491,6 @@ export default function VHCDashboard() {
   ]; // roles allowed to see full workshop data
   const hasWorkshopPrivileges = userRoles.some((role) => workshopViewRoles.includes(role)); // detect workshop access
   const partsOnlyMode = isPartsRole && !hasWorkshopPrivileges; // limit parts team to relevant jobs
-  const { listJobcards } = useJobcardsApi();
 
   useEffect(() => {
     const fetchVhcJobs = async () => {
@@ -499,8 +498,7 @@ export default function VHCDashboard() {
       console.log("Fetching VHC dashboard data..."); // debug log
 
       try {
-        const payload = await listJobcards(); // fetch jobs from API
-        const jobs = Array.isArray(payload?.jobCards) ? payload.jobCards : [];
+        const jobs = await getAllJobs(); // fetch jobs from Supabase
         console.log("Jobs fetched:", jobs.length); // debug count
 
         const vhcEligibleJobs = jobs.filter((job) => job.vhcRequired === true);
@@ -677,7 +675,7 @@ export default function VHCDashboard() {
     };
 
     fetchVhcJobs(); // kick off fetch cycle
-  }, [partsOnlyMode, listJobcards]);
+  }, [partsOnlyMode]);
 
   const filteredJobs = vhcJobs
     .filter((job) => filter === "All" || job.vhcStatus === filter) // status filter

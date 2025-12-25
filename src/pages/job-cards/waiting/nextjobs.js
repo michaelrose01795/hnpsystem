@@ -7,11 +7,15 @@ import Layout from "@/components/Layout"; // Main layout wrapper
 import { useUser } from "@/context/UserContext"; // Logged-in user context
 import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router"; // Next.js router for navigation
+import {
+  assignTechnicianToJob, 
+  unassignTechnicianFromJob, 
+  updateJobPosition 
+} from "@/lib/database/jobs"; // ✅ Fetch and update jobs from Supabase
 import { getTechnicianUsers, getMotTesterUsers } from "@/lib/database/users";
 import { normalizeDisplayName } from "@/utils/nameUtils";
 import { supabase } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
-import useJobcardsApi from "@/hooks/api/useJobcardsApi";
 
 // Layout constants ensure consistent panel sizing and scroll thresholds
 const VISIBLE_JOBS_PER_PANEL = 5;
@@ -248,12 +252,6 @@ export default function NextJobsPage() {
   const { user } = useUser(); // Current logged-in user
   const { usersByRole, isLoading: rosterLoading } = useRoster();
   const router = useRouter(); // Next.js router for navigation
-  const {
-    listJobcards,
-    assignTechnician: assignJobTechnician,
-    unassignTechnician: unassignJobTechnician,
-    updateJobPosition: updateJobPositionApi,
-  } = useJobcardsApi();
   const [jobs, setJobs] = useState([]); // Jobs from database
   const [dbTechnicians, setDbTechnicians] = useState([]);
   const [dbMotTesters, setDbMotTesters] = useState([]);
@@ -347,160 +345,129 @@ export default function NextJobsPage() {
     [waitingJobs]
   );
 
-  const mapJobFromDatabase = (row = {}) => {
-    const vehicleSource =
-      typeof row.vehicle === "object" && row.vehicle !== null
-        ? row.vehicle
-        : {};
+  const mapJobFromDatabase = (row) => {
+    const customerFirst = row.customer?.firstname?.trim() || "";
+    const customerLast = row.customer?.lastname?.trim() || "";
+    const customerName =
+      row.customer?.name ||
+      [customerFirst, customerLast].filter(Boolean).join(" ").trim();
 
-    const customerRecord =
-      typeof row.customer === "object" && row.customer !== null
-        ? row.customer
-        : null;
+    const vehicleReg =
+      row.vehicle_reg ||
+      row.vehicle?.registration ||
+      row.vehicle?.reg_number ||
+      "";
 
-    const assignedTechRecord =
-      (typeof row.technician === "object" && row.technician !== null
-        ? row.technician
-        : null) ||
-      (typeof row.assignedTech === "object" && row.assignedTech !== null
-        ? row.assignedTech
-        : null);
-
+    const assignedTechRecord = row.technician;
     const assignedTech = assignedTechRecord
       ? {
-          id: assignedTechRecord.user_id || assignedTechRecord.id || null,
+          id: assignedTechRecord.user_id || null,
           name:
-            [
-              assignedTechRecord.first_name,
-              assignedTechRecord.last_name,
-            ]
+            [assignedTechRecord.first_name, assignedTechRecord.last_name]
               .filter(Boolean)
               .join(" ")
-              .trim() ||
-            assignedTechRecord.name ||
-            assignedTechRecord.email ||
-            "",
+              .trim() || assignedTechRecord.email || "",
           role: assignedTechRecord.role || "",
           email: assignedTechRecord.email || "",
         }
       : null;
 
-    const jobNumber = row.job_number || row.jobNumber || null;
-    if (!jobNumber) {
-      return null;
-    }
-
-    const jobCategoriesRaw =
-      row.job_categories || row.jobCategories || row.categories;
-
-    const appointmentRecord =
-      row.appointments?.[0] ||
-      row.appointment ||
-      null;
-
-    const customerName =
-      row.customer ||
-      row.customerName ||
-      (customerRecord
-        ? [customerRecord.firstname, customerRecord.lastname]
-            .filter(Boolean)
-            .join(" ")
-            .trim()
-        : "");
-
-    const vehicleReg =
-      row.vehicle_reg ||
-      row.reg ||
-      vehicleSource.registration ||
-      vehicleSource.reg ||
-      vehicleSource.reg_number ||
-      "";
-
     return {
       id: row.id,
-      jobNumber,
-      description: row.description || row.jobDescription || "",
+      jobNumber: row.job_number,
+      description: row.description || "",
       type: row.type || "Service",
       status: row.status || "",
       reg: vehicleReg,
-      make: vehicleSource.make || row.make || "",
-      model: vehicleSource.model || row.model || "",
-      makeModel:
-        row.vehicle_make_model ||
-        vehicleSource.make_model ||
-        row.makeModel ||
-        "",
-      waitingStatus: row.waiting_status || row.waitingStatus || "Neither",
-      jobCategories: Array.isArray(jobCategoriesRaw)
-        ? jobCategoriesRaw
-        : jobCategoriesRaw
-        ? [jobCategoriesRaw].flat()
+      make: row.vehicle?.make || "",
+      model: row.vehicle?.model || "",
+      makeModel: row.vehicle_make_model || row.vehicle?.make_model || "",
+      waitingStatus: row.waiting_status || "Neither",
+      jobCategories: Array.isArray(row.job_categories)
+        ? row.job_categories
+        : row.job_categories
+        ? [row.job_categories].flat()
         : [],
       requests: row.requests || null,
       jobRequestsCount: getJobRequestsCountFromPayload(row.requests),
-      vhcRequired: Boolean(
-        row.vhc_required !== undefined ? row.vhc_required : row.vhcRequired
-      ),
-      assignedTo: row.assigned_to || row.assignedTo || null,
+      vhcRequired: Boolean(row.vhc_required),
+      assignedTo: row.assigned_to,
       assignedTech,
-      technician: assignedTech?.name || row.technician || "",
+      technician: assignedTech?.name || "",
       technicianRole: assignedTech?.role || "",
-      customer: customerName,
-      customerId: row.customer_id || row.customerId || null,
-      customerPhone:
-        customerRecord?.mobile ||
-        customerRecord?.telephone ||
-        row.customerPhone ||
-        "",
-      customerEmail: customerRecord?.email || row.customerEmail || "",
-      customerAddress: customerRecord?.address || row.customerAddress || "",
-      customerPostcode: customerRecord?.postcode || row.customerPostcode || "",
-      customerContactPreference:
-        customerRecord?.contact_preference ||
-        row.customerContactPreference ||
-        "email",
-      checkedInAt: row.checked_in_at || row.checkedInAt || null,
-      workshopStartedAt: row.workshop_started_at || row.workshopStartedAt || null,
-      completedAt: row.completed_at || row.completedAt || null,
-      createdAt: row.created_at || row.createdAt || null,
-      updatedAt: row.updated_at || row.updatedAt || null,
+      customer: customerName || "",
+      customerId: row.customer_id || null,
+      customerPhone: row.customer?.mobile || row.customer?.telephone || "",
+      customerEmail: row.customer?.email || "",
+      customerAddress: row.customer?.address || "",
+      customerPostcode: row.customer?.postcode || "",
+      customerContactPreference: row.customer?.contact_preference || "email",
+      checkedInAt: row.checked_in_at || null,
+      workshopStartedAt: row.workshop_started_at || null,
+      completedAt: row.completed_at || null,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
       position: row.position || null,
-      appointment: appointmentRecord
+      appointment: row.appointments?.[0]
         ? {
-            appointmentId:
-              appointmentRecord.appointment_id ||
-              appointmentRecord.appointmentId ||
-              null,
-            scheduledTime:
-              appointmentRecord.scheduled_time ||
-              appointmentRecord.scheduledTime ||
-              appointmentRecord.date ||
-              null,
-            status: appointmentRecord.status || "",
-            notes: appointmentRecord.notes || "",
+            appointmentId: row.appointments[0].appointment_id,
+            scheduledTime: row.appointments[0].scheduled_time,
+            status: row.appointments[0].status,
+            notes: row.appointments[0].notes || "",
           }
         : null,
     };
   };
 
-  const fetchJobs = useCallback(async () => {
-    setLoading(true);
-    try {
-      const payload = await listJobcards();
-      const formatted = (payload?.jobCards || [])
-        .map(mapJobFromDatabase)
-        .filter((job) => job && job.jobNumber && job.jobNumber.trim() !== "")
-        .filter(isWaitingJob);
-      setJobs(formatted);
-      return formatted;
-    } catch (error) {
+  const fetchJobs = useCallback(async () => { // Wrap Supabase fetch in stable callback to avoid TDZ
+    setLoading(true); // Start loading to show spinner
+
+    const { data, error } = await supabase
+      .from("jobs")
+      .select(
+        `
+        id,
+        job_number,
+        description,
+        type,
+        status,
+        assigned_to,
+        waiting_status,
+        job_categories,
+        requests,
+        vhc_required,
+        vehicle_reg,
+        vehicle_make_model,
+        customer_id,
+        checked_in_at,
+        workshop_started_at,
+        completed_at,
+        created_at,
+        updated_at,
+        technician:assigned_to(user_id, first_name, last_name, email, role),
+        customer:customer_id(firstname, lastname, name, mobile, telephone, email, address, postcode, contact_preference),
+        vehicle:vehicle_id(registration, reg_number, make, model, make_model),
+        appointments(appointment_id, scheduled_time, status, notes)
+      `
+      )
+      .order("checked_in_at", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    if (error) {
       console.error("❌ Error fetching waiting jobs:", error);
       setJobs([]);
-      return [];
-    } finally {
       setLoading(false);
+      return [];
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    const formatted = (data || [])
+      .map(mapJobFromDatabase)
+      .filter((job) => job.jobNumber && job.jobNumber.trim() !== "")
+      .filter(isWaitingJob);
+
+    setJobs(formatted);
+    setLoading(false); // Stop loading
+    return formatted;
   }, []);
 
   const fetchTechnicians = useCallback(async () => { // Wrap technician lookup in stable callback
@@ -782,11 +749,6 @@ export default function NextJobsPage() {
     if (!selectedJob) return; // Exit if no job selected
     const jobId = selectedJob.id;
     const jobNumber = selectedJob.jobNumber;
-    if (!jobNumber) {
-      console.warn("⚠️ Cannot assign technician without job number", selectedJob);
-      return;
-    }
-
     const technicianName = tech.name;
     const rawIdentifier = tech.id ?? tech.user_id ?? technicianName;
     const technicianIdentifier =
@@ -794,40 +756,50 @@ export default function NextJobsPage() {
         ? Number(rawIdentifier)
         : rawIdentifier;
 
-    console.log("🔄 Assigning technician:", technicianName, "to job:", jobId);
+    console.log("🔄 Assigning technician:", technicianName, "to job:", jobId); // Debug log
     setFeedbackMessage(null);
 
+    // Use the dedicated helper function - it now returns formatted job data or null
+    let updatedJob;
     try {
-      const response = await assignJobTechnician(jobNumber, {
+      updatedJob = await assignTechnicianToJob(
+        jobId,
         technicianIdentifier,
-        technicianName,
-      });
-
-      if (!response?.success) {
-        throw new Error(response?.message || "Failed to assign technician");
-      }
-
-      console.log("✅ Technician assigned successfully:", response);
-
-      const latestJobs = await fetchJobs();
-      const refreshedJob = latestJobs.find((job) => job.id === jobId);
-
-      setAssignPopup(false);
-      setSelectedJob(refreshedJob || selectedJob);
-      setFeedbackMessage({
-        type: "success",
-        text: `Job ${jobNumber} assigned to ${technicianName}`,
-      });
+        technicianName
+      );
     } catch (err) {
-      console.error("❌ Error assigning technician:", err);
+      console.error("❌ Exception assigning technician:", err);
       setAssignPopup(false);
       setFeedbackMessage({
         type: "error",
-        text: `Failed to assign ${jobNumber} to ${technicianName}: ${
-          err?.message || "Unknown error"
+        text: `Failed to assign ${jobNumber} to ${technicianName}: ${err?.message || "Unknown error"}`,
+      });
+      return;
+    }
+
+    if (!updatedJob?.success) {
+      console.error("❌ Failed to assign technician:", updatedJob?.error);
+      setAssignPopup(false);
+      setFeedbackMessage({
+        type: "error",
+        text: `Failed to assign ${jobNumber} to ${technicianName}${
+          updatedJob?.error?.message ? `: ${updatedJob.error.message}` : ""
         }`,
       });
+      return;
     }
+
+    console.log("✅ Technician assigned successfully:", updatedJob); // Debug log
+
+    const latestJobs = await fetchJobs();
+    const refreshedJob = latestJobs.find((job) => job.id === jobId);
+
+    setAssignPopup(false); // Close assign popup
+    setSelectedJob(refreshedJob || selectedJob); // Keep modal open with latest info
+    setFeedbackMessage({
+      type: "success",
+      text: `Job ${jobNumber} assigned to ${technicianName}`,
+    });
   };
 
   // ✅ Unassign technician (save to Supabase)
@@ -835,39 +807,44 @@ export default function NextJobsPage() {
     if (!selectedJob) return; // Exit if no job selected
     const jobId = selectedJob.id;
     const jobNumber = selectedJob.jobNumber;
-    if (!jobNumber) {
-      console.warn("⚠️ Cannot unassign technician without job number", selectedJob);
+
+    console.log("🔄 Unassigning technician from job:", jobId); // Debug log
+    setFeedbackMessage(null);
+
+    // Use the dedicated helper function - it now returns formatted job data or null
+    let updatedJob;
+    try {
+      updatedJob = await unassignTechnicianFromJob(jobId);
+    } catch (err) {
+      console.error("❌ Exception unassigning technician:", err);
+      setFeedbackMessage({
+        type: "error",
+        text: `Failed to unassign technician from ${jobNumber}: ${err?.message || "Unknown error"}`,
+      });
       return;
     }
 
-    console.log("🔄 Unassigning technician from job:", jobId);
-    setFeedbackMessage(null);
-
-    try {
-      const response = await unassignJobTechnician(jobNumber);
-      if (!response?.success) {
-        throw new Error(response?.message || "Failed to unassign technician");
-      }
-
-      console.log("✅ Technician unassigned successfully:", response);
-
-      const latestJobs = await fetchJobs();
-      const refreshedJob = latestJobs.find((job) => job.id === jobId);
-
-      setSelectedJob(refreshedJob || selectedJob);
-      setFeedbackMessage({
-        type: "success",
-        text: `Technician unassigned from job ${jobNumber}`,
-      });
-    } catch (err) {
-      console.error("❌ Error unassigning technician:", err);
+    if (!updatedJob?.success) {
+      console.error("❌ Failed to unassign technician:", updatedJob?.error);
       setFeedbackMessage({
         type: "error",
-        text: `Failed to unassign technician from ${jobNumber}: ${
-          err?.message || "Unknown error"
+        text: `Failed to unassign technician from ${jobNumber}${
+          updatedJob?.error?.message ? `: ${updatedJob.error.message}` : ""
         }`,
       });
+      return;
     }
+
+    console.log("✅ Technician unassigned successfully:", updatedJob); // Debug log
+
+    const latestJobs = await fetchJobs();
+    const refreshedJob = latestJobs.find((job) => job.id === jobId);
+
+    setSelectedJob(refreshedJob || selectedJob);
+    setFeedbackMessage({
+      type: "success",
+      text: `Technician unassigned from job ${jobNumber}`,
+    });
   };
 
   // ✅ Drag handlers for reordering and reassigning
@@ -921,27 +898,13 @@ export default function NextJobsPage() {
     const targetTech = normalizeDisplayName(tech.name);
 
     // If dropping on a different technician, reassign the job
-    if (draggingJobTech !== targetTech && draggingJob.jobNumber) {
-      console.log("🔄 Reassigning job to new technician:", tech.name);
+    if (draggingJobTech !== targetTech) {
+      console.log("🔄 Reassigning job to new technician:", tech.name); // Debug log
       const identifier =
         tech.id && Number.isInteger(Number(tech.id))
           ? Number(tech.id)
           : tech.id || tech.name;
-      try {
-        await assignJobTechnician(draggingJob.jobNumber, {
-          technicianIdentifier: identifier,
-          technicianName: tech.name,
-        });
-      } catch (err) {
-        console.error("❌ Failed to reassign technician:", err);
-        setFeedbackMessage({
-          type: "error",
-          text: `Unable to reassign ${draggingJob.jobNumber}: ${
-            err?.message || "Unknown error"
-          }`,
-        });
-        return;
-      }
+      await assignTechnicianToJob(draggingJob.id, identifier, tech.name);
     }
 
     // Remove the dragged job from the tech's job list
@@ -967,14 +930,7 @@ export default function NextJobsPage() {
 
     // Update all reindexed jobs in Supabase using the helper function
     for (const job of reindexed) {
-      if (!job.jobNumber) {
-        continue;
-      }
-      try {
-        await updateJobPositionApi(job.jobNumber, { position: job.position });
-      } catch (err) {
-        console.error("❌ Failed to update job position:", err);
-      }
+      await updateJobPosition(job.id, job.position); // Update each job's position
     }
 
     console.log("✅ Positions updated successfully"); // Debug log
@@ -993,20 +949,7 @@ export default function NextJobsPage() {
     console.log("🔄 Dropping job on outstanding section"); // Debug log
 
     // Unassign the technician from the job
-    if (draggingJob.jobNumber) {
-      try {
-        await unassignJobTechnician(draggingJob.jobNumber);
-      } catch (err) {
-        console.error("❌ Failed to unassign job:", err);
-        setFeedbackMessage({
-          type: "error",
-          text: `Unable to unassign ${draggingJob.jobNumber}: ${
-            err?.message || "Unknown error"
-          }`,
-        });
-        return;
-      }
-    }
+    await unassignTechnicianFromJob(draggingJob.id);
 
     // Refresh jobs from database
     await fetchJobs();

@@ -605,6 +605,13 @@ export default function Layout({ children, jobNumber }) {
     });
   }
 
+  if (userRoles.some((role) => vhcAccessRoles.has(role))) {
+    addNavItem("VHC Dashboard", "/vhc/dashboard", {
+      keywords: ["vhc", "vehicle health check", "dashboard"],
+      section: "Workshop",
+    });
+  }
+
   const hrAccessRoles = ["hr manager", "admin manager", "owner", "admin"];
   if (userRoles.some((role) => hrAccessRoles.includes(role))) {
     addNavItem("HR Dashboard", "/hr", {

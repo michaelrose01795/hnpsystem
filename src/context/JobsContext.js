@@ -4,10 +4,11 @@
 
 import React, { createContext, useState, useContext, useEffect } from "react";
 import {
-  fetchJobcards,
-  createJobcard,
-  updateJobcard,
-} from "@/lib/api/jobcards"; // client API helpers
+  getAllJobs,
+  addJobToDatabase,
+  updateJobStatus,
+  getJobByNumberOrReg,
+} from "@/lib/database/jobs"; // database helper functions
 
 // Create the Jobs context
 const JobsContext = createContext();
@@ -42,11 +43,8 @@ export function JobsProvider({ children }) {
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      const payload = await fetchJobcards();
-      const jobCards = Array.isArray(payload?.jobCards)
-        ? payload.jobCards
-        : [];
-      setJobs(jobCards);
+      const data = await getAllJobs();
+      setJobs(data || []);
     } catch (err) {
       console.error("❌ Error fetching jobs:", err.message);
       setJobs([]);
@@ -64,12 +62,10 @@ export function JobsProvider({ children }) {
     const jobWithDefaults = { ...defaultJobFields, ...job };
 
     try {
-      const payload = await createJobcard(jobWithDefaults);
-      const createdJob = payload?.jobCard || null;
-      if (!createdJob) {
-        throw new Error("Job card payload missing from response");
-      }
-      setJobs((prev) => [...prev, createdJob]);
+      const { success, data, error } = await addJobToDatabase(jobWithDefaults);
+      if (!success) throw error;
+
+      setJobs((prev) => [...prev, data]);
     } catch (err) {
       console.error("❌ Error adding job:", err.message);
     }
@@ -78,30 +74,14 @@ export function JobsProvider({ children }) {
   // Update existing job
   const updateJob = async (updatedJob) => {
     try {
-      const resolvedJobNumber =
-        updatedJob?.jobNumber ||
-        updatedJob?.job_number ||
-        updatedJob?.jobNo ||
-        null;
-      if (!resolvedJobNumber) {
-        throw new Error("Job number is required to update a job card");
-      }
-
-      const payload = await updateJobcard(resolvedJobNumber, {
-        status: updatedJob.status,
-      });
-      const updated = payload?.jobCard || payload?.job || null;
-      if (!updated) {
-        throw new Error("Job card update response missing payload");
-      }
+      const { success, data, error } = await updateJobStatus(
+        updatedJob.id,
+        updatedJob.status
+      );
+      if (!success) throw error;
 
       setJobs((prev) =>
-        prev.map((job) =>
-          job.jobNumber === resolvedJobNumber ||
-          job.job_number === resolvedJobNumber
-            ? { ...job, ...updated }
-            : job
-        )
+        prev.map((job) => (job.id === data.id ? { ...job, ...data } : job))
       );
     } catch (err) {
       console.error("❌ Error updating job:", err.message);

@@ -10,45 +10,24 @@ import { NextActionProvider } from "@/context/NextActionContext"; // import next
 import { JobsProvider, useJobs } from "@/context/JobsContext"; // import jobs context
 import { ClockingProvider } from "@/context/ClockingContext"; // import clocking context
 import { RosterProvider } from "@/context/RosterContext"; // import roster context
+import { getAllJobs } from "@/lib/database/jobs"; // database helper to seed jobs in context
 import { AlertProvider } from "@/context/AlertContext";
 import { ThemeProvider } from "@/styles/themeProvider";
 import { ConfirmationProvider } from "@/context/ConfirmationContext";
-import useJobcardsApi from "@/hooks/api/useJobcardsApi";
-import { initDropdownStyleObserver } from "@/utils/dropdownStyleApi";
-import { initScrollbarStyleObserver } from "@/utils/scrollbarStyleApi";
 
 function AppWrapper({ Component, pageProps }) {
   const { user } = useUser() || {}; // read logged in user
   const { setJobs } = useJobs() || {}; // obtain setter from jobs context
-  const { listJobcards } = useJobcardsApi();
-  useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-    const disconnectDropdown = initDropdownStyleObserver();
-    const disconnectScrollbar = initScrollbarStyleObserver();
-    return () => {
-      disconnectDropdown?.();
-      disconnectScrollbar?.();
-    };
-  }, []);
 
   useEffect(() => {
     const fetchJobs = async () => {
       if (user && setJobs) {
-        try {
-          const payload = await listJobcards();
-          const jobCards = Array.isArray(payload?.jobCards)
-            ? payload.jobCards
-            : [];
-          setJobs(jobCards); // update jobs context cache
-        } catch (error) {
-          console.error("❌ Failed to hydrate jobs via API", error);
-          setJobs([]);
-        }
+        const jobs = await getAllJobs(); // pull jobs when user session changes
+        setJobs(jobs); // update jobs context cache
       }
     };
     fetchJobs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, setJobs]);
 
   return <Component {...pageProps} />; // render the requested page
 }

@@ -46,6 +46,11 @@ export const sidebarSections = [
         roles: ["admin manager"],
       },
       {
+        label: "VHC Dashboard",
+        href: "/vhc/dashboard",
+        roles: ["admin manager"],
+      },
+      {
         label: "User Admin",
         href: "/admin/users",
         roles: ["admin manager"],
@@ -77,6 +82,11 @@ export const sidebarSections = [
         href: "/job-cards/view",
         roles: ["service"],
       },
+      {
+        label: "VHC Dashboard",
+        href: "/vhc/dashboard",
+        roles: ["service"],
+      },
     ],
   },
   {
@@ -93,6 +103,11 @@ export const sidebarSections = [
         href: "/job-cards/view",
         roles: ["service manager"],
       },
+      {
+        label: "VHC Dashboard",
+        href: "/vhc/dashboard",
+        roles: ["service manager"],
+      },
     ],
   },
   {
@@ -107,6 +122,11 @@ export const sidebarSections = [
       {
         label: "Job Cards",
         href: "/job-cards/view",
+        roles: ["workshop manager"],
+      },
+      {
+        label: "VHC Dashboard",
+        href: "/vhc/dashboard",
         roles: ["workshop manager"],
       },
       {
@@ -128,6 +148,11 @@ export const sidebarSections = [
       {
         label: "Job Cards",
         href: "/job-cards/view",
+        roles: ["aftersales manager"],
+      },
+      {
+        label: "VHC Dashboard",
+        href: "/vhc/dashboard",
         roles: ["aftersales manager"],
       },
     ],
@@ -178,6 +203,11 @@ export const sidebarSections = [
         href: "/parts/deliveries",
         roles: ["parts"],
       },
+      {
+        label: "VHC Dashboard",
+        href: "/vhc/dashboard",
+        roles: ["parts"],
+      },
     ],
   },
   {
@@ -187,6 +217,11 @@ export const sidebarSections = [
       {
         label: "Job Cards",
         href: "/job-cards/view",
+        roles: ["parts manager"],
+      },
+      {
+        label: "VHC Dashboard",
+        href: "/vhc/dashboard",
         roles: ["parts manager"],
       },
       {

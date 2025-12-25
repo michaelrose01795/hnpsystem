@@ -7,11 +7,9 @@ import React, { useState, useEffect, useMemo, useCallback } from "react"; // imp
 import Layout from "@/components/Layout"; // import layout wrapper
 import { useNextAction } from "@/context/NextActionContext"; // import next action context
 import { useRouter } from "next/router"; // for navigation
-import { updateJobStatus } from "@/lib/database/jobs"; // import database functions
+import { getAllJobs, updateJobStatus } from "@/lib/database/jobs"; // import database functions
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useUser } from "@/context/UserContext";
-import useJobcardsApi from "@/hooks/api/useJobcardsApi";
-import usePartsApi from "@/hooks/api/usePartsApi";
 
 const TODAY_STATUSES = [
   "Booked",
@@ -34,9 +32,6 @@ const CARRY_OVER_STATUSES = [
   "Warranty Quality Control",
   "Warranty Ready to Claim",
 ];
-
-const ORDER_LIST_GRID_TEMPLATE =
-  "minmax(140px, 0.85fr) minmax(180px, 1fr) minmax(180px, 1fr) minmax(150px, 0.8fr) minmax(180px, 1fr) minmax(120px, 0.7fr)";
 
 /* ================================
    Utility function: today's date
@@ -110,34 +105,10 @@ const getStatusCounts = (jobs = []) => {
   }, {});
 };
 
-const formatOrderTimestamp = (value) => {
-  if (!value) return "Not scheduled";
-  const timestamp = new Date(value);
-  if (Number.isNaN(timestamp.getTime())) return "Not scheduled";
-  return timestamp.toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const formatCurrency = (value) => {
-  if (value === null || value === undefined || value === "") {
-    return "£0.00";
-  }
-  const numeric = Number(value);
-  if (Number.isNaN(numeric)) {
-    return "£0.00";
-  }
-  return `£${numeric.toFixed(2)}`;
-};
-
 const matchesSearchTerm = (job, value) => {
   if (!value) return true;
   const haystack = [
     job.jobNumber,
-    job.orderNumber,
     job.reg,
     job.customer,
     job.makeModel,
@@ -229,8 +200,6 @@ export default function ViewJobCards() {
   const router = useRouter(); // router for navigation
   const { triggerNextAction } = useNextAction(); // next action dispatcher
   const { user } = useUser();
-  const { listJobcards } = useJobcardsApi();
-  const { listOrders } = usePartsApi();
   const today = getTodayDate(); // get today's date
 
   const userRoles = useMemo(() => {
@@ -245,31 +214,26 @@ export default function ViewJobCards() {
   /* ----------------------------
      Fetch jobs from Supabase
   ---------------------------- */
-  const fetchJobs = useCallback(async () => {
-    setLoading(true);
-    try {
-      const payload = await listJobcards();
-      const jobCards = Array.isArray(payload?.jobCards)
-        ? payload.jobCards
-        : [];
-      setJobs(jobCards);
-    } catch (error) {
-      console.error("❌ Failed to fetch job cards via API", error);
-      setJobs([]);
-    } finally {
-      setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const fetchJobs = async () => {
+    setLoading(true); // show loading state
+    const jobsFromSupabase = await getAllJobs(); // get all jobs from database with full data
+    console.log("Fetched jobs:", jobsFromSupabase); // debug log
+    setJobs(jobsFromSupabase); // update state
+    setLoading(false); // hide loading state
+  };
 
   useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs]);
+    fetchJobs(); // fetch jobs on component mount
+  }, []);
 
   const fetchOrders = useCallback(async () => {
     setOrdersLoading(true);
     try {
-      const payload = await listOrders();
+      const response = await fetch("/api/parts/orders");
+      if (!response.ok) {
+        throw new Error("Failed to load orders");
+      }
+      const payload = await response.json();
       setOrders(payload?.orders || []);
     } catch (orderError) {
       console.error("Failed to fetch parts orders", orderError);
@@ -277,7 +241,6 @@ export default function ViewJobCards() {
     } finally {
       setOrdersLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -389,7 +352,7 @@ export default function ViewJobCards() {
           requests: order.items || [],
         };
       })
-      .filter((order) => Boolean(order.orderNumber));
+      .filter((order) => Boolean(order.orderNumber) && order.orderNumber.startsWith("P"));
   }, [orders]);
 
   const orderJobs = normalizedOrders;
@@ -470,25 +433,6 @@ export default function ViewJobCards() {
     ? filteredByStatus.filter((job) => matchesSearchTerm(job, searchValue))
     : filteredByStatus;
 
-  const getOrderSortValue = (order) => {
-    if (order?.createdAt) {
-      const createdValue = new Date(order.createdAt);
-      if (!Number.isNaN(createdValue.getTime())) {
-        return createdValue.getTime();
-      }
-    }
-    if (order?.appointment?.date) {
-      const base = `${order.appointment.date}T${
-        order.appointment.time || "00:00:00"
-      }`;
-      const appointmentValue = new Date(base);
-      if (!Number.isNaN(appointmentValue.getTime())) {
-        return appointmentValue.getTime();
-      }
-    }
-    return 0;
-  };
-
   const getSortValue = (job) => {
     if (job?.appointment?.date && job?.appointment?.time) {
       return new Date(`${job.appointment.date}T${job.appointment.time}`);
@@ -504,12 +448,7 @@ export default function ViewJobCards() {
 
   const sortedJobs = filteredJobs
     .slice()
-    .sort((a, b) =>
-      isOrdersTab
-        ? getOrderSortValue(b) - getOrderSortValue(a) ||
-          String(b.orderNumber || "").localeCompare(String(a.orderNumber || ""))
-        : getSortValue(a) - getSortValue(b)
-    );
+    .sort((a, b) => getSortValue(a) - getSortValue(b));
 
   const combinedStatusOptions = useMemo(() => {
     const union = new Set([...TODAY_STATUSES, ...CARRY_OVER_STATUSES]);
@@ -838,28 +777,21 @@ export default function ViewJobCards() {
                     {emptyStateMessage}
                   </div>
                 ) : (
-                  <>
-                    {isOrdersTab && sortedJobs.length > 0 && (
-                      <OrderListHeader />
-                    )}
-                    {sortedJobs.map((job) =>
-                      isOrdersTab ? (
-                        <OrderListCard
-                          key={job.id || job.orderNumber}
-                          order={job}
-                          onNavigate={() =>
-                            router.push(`/parts/create-order/${job.orderNumber}`)
-                          }
-                        />
-                      ) : (
-                        <JobListCard
-                          key={job.jobNumber}
-                          job={job}
-                          onNavigate={() => handleCardNavigation(job.jobNumber)}
-                        />
-                      )
-                    )}
-                  </>
+                  sortedJobs.map((job) =>
+                    isOrdersTab ? (
+                      <OrderListCard
+                        key={job.id || job.orderNumber}
+                        order={job}
+                        onNavigate={() => router.push(`/parts/create-order/${job.orderNumber}`)}
+                      />
+                    ) : (
+                      <JobListCard
+                        key={job.jobNumber}
+                        job={job}
+                        onNavigate={() => handleCardNavigation(job.jobNumber)}
+                      />
+                    )
+                  )
                 )}
               </div>
             </div>
@@ -1329,38 +1261,10 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
   );
 };
 
-const OrderListHeader = () => {
-  const headerCellStyle = {
-    fontSize: "11px",
-    textTransform: "uppercase",
-    fontWeight: 700,
-    color: "var(--info)",
-    letterSpacing: "0.4px",
-  };
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: ORDER_LIST_GRID_TEMPLATE,
-        gap: "12px",
-        padding: "0 16px 6px",
-      }}
-    >
-      <span style={headerCellStyle}>Order #</span>
-      <span style={headerCellStyle}>Customer</span>
-      <span style={headerCellStyle}>Vehicle</span>
-      <span style={headerCellStyle}>Fulfilment</span>
-      <span style={headerCellStyle}>ETA</span>
-      <span style={{ ...headerCellStyle, textAlign: "right" }}>Status</span>
-    </div>
-  );
-};
-
 const OrderListCard = ({ order, onNavigate }) => {
   const items = order.requests || order.items || [];
   const totalItems = items.length;
-  const deliveryLabel =
-    order.delivery_type === "collection" ? "Collection" : "Delivery";
+  const deliveryLabel = order.delivery_type === "collection" ? "Collection" : "Delivery";
   const deliveryWindow = order.appointment
     ? order.appointment.time
       ? `${order.appointment.date} · ${order.appointment.time}`
@@ -1368,27 +1272,21 @@ const OrderListCard = ({ order, onNavigate }) => {
     : "ETA not set";
   const primaryStatus =
     order.status || order.delivery_status || order.invoice_status || "Draft";
-  const secondaryContact = order.customer_email || order.delivery_contact || "";
-  const createdLabel = formatOrderTimestamp(order.createdAt);
-  const vehicleLabel =
-    order.reg || order.vehicle_reg || order.makeModel || "Vehicle pending";
 
   return (
     <div
       onClick={onNavigate}
       style={{
-        display: "grid",
-        gridTemplateColumns: ORDER_LIST_GRID_TEMPLATE,
         border: "1px solid var(--surface-light)",
-        padding: "12px 16px",
+        padding: "14px 16px",
         borderRadius: "12px",
         backgroundColor: "var(--surface)",
         boxShadow: "none",
-        gap: "12px",
-        alignItems: "center",
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
         cursor: "pointer",
-        transition:
-          "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+        transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
       }}
       onMouseEnter={(event) => {
         event.currentTarget.style.transform = "translateY(-2px)";
@@ -1401,94 +1299,26 @@ const OrderListCard = ({ order, onNavigate }) => {
         event.currentTarget.style.borderColor = "var(--surface-light)";
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-        <span
-          style={{
-            fontSize: "16px",
-            fontWeight: 700,
-            color: "var(--info-dark)",
-          }}
-        >
-          {order.orderNumber}
-        </span>
-        <span
-          style={{
-            fontSize: "11px",
-            color: "var(--info)",
-            fontWeight: 500,
-          }}
-        >
-          {createdLabel}
-        </span>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-        <span
-          style={{
-            fontSize: "13px",
-            fontWeight: 600,
-            color: "var(--info-dark)",
-          }}
-        >
-          {order.customer || "Customer"}
-        </span>
-        {secondaryContact && (
-          <span style={{ fontSize: "12px", color: "var(--info)" }}>
-            {secondaryContact}
-          </span>
-        )}
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-        <span
-          style={{
-            fontSize: "13px",
-            fontWeight: 600,
-            color: "var(--info-dark)",
-          }}
-        >
-          {vehicleLabel}
-        </span>
-        {order.makeModel && (
-          <span style={{ fontSize: "12px", color: "var(--info)" }}>
-            {order.makeModel}
-          </span>
-        )}
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-        <span style={{ fontSize: "13px", color: "var(--info-dark)" }}>
-          {deliveryLabel}
-        </span>
-        <span style={{ fontSize: "11px", color: "var(--info)" }}>
-          {totalItems} line{totalItems === 1 ? "" : "s"}
-        </span>
-      </div>
-
       <div
         style={{
           display: "flex",
-          flexDirection: "column",
-          gap: "2px",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "10px",
         }}
       >
-        <span
-          style={{
-            fontSize: "13px",
-            fontWeight: 600,
-            color: "var(--info-dark)",
-          }}
-        >
-          {deliveryWindow}
-        </span>
-        {order.invoice_total !== undefined && (
-          <span style={{ fontSize: "11px", color: "var(--info)" }}>
-            {formatCurrency(order.invoice_total)}
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--info-dark)" }}>
+            {order.orderNumber}
           </span>
-        )}
-      </div>
-
-      <div style={{ textAlign: "right" }}>
+          <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--primary)" }}>
+            {order.customer || "Customer"}
+          </span>
+          <span style={{ fontSize: "13px", color: "var(--info)" }}>
+            {order.makeModel || order.vehicle_reg || "Vehicle pending"}
+          </span>
+        </div>
         <span
           style={{
             padding: "4px 10px",
@@ -1504,67 +1334,65 @@ const OrderListCard = ({ order, onNavigate }) => {
         </span>
       </div>
 
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+          gap: "8px",
+          fontSize: "13px",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>
+            Fulfilment
+          </span>
+          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{deliveryLabel}</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>
+            Scheduled
+          </span>
+          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{deliveryWindow}</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>
+            Items
+          </span>
+          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>
+            {totalItems} line{totalItems === 1 ? "" : "s"}
+          </span>
+        </div>
+        {order.invoice_total !== undefined && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>
+              Invoice Value
+            </span>
+            <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>
+              £{Number(order.invoice_total || 0).toFixed(2)}
+            </span>
+          </div>
+        )}
+      </div>
+
       {items.length > 0 && (
         <div
           style={{
-            gridColumn: "1 / -1",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "8px",
-            marginTop: "6px",
+            padding: "8px 10px",
+            borderRadius: "8px",
+            backgroundColor: "var(--info-surface)",
+            border: "1px solid var(--surface-light)",
           }}
         >
-          {items.map((item) => (
-            <div
-              key={item.id || `${item.part_number}-${item.part_name}`}
-              style={{
-                flex: "0 1 220px",
-                minWidth: "200px",
-                border: "1px solid var(--surface-light)",
-                borderRadius: "10px",
-                padding: "8px 10px",
-                background: "var(--info-surface)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "2px",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: "var(--info-dark)",
-                }}
-              >
-                {item.part_name || item.part_number || "Part"}
-              </span>
-              {item.part_number && (
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "var(--info)",
-                    letterSpacing: "0.3px",
-                  }}
-                >
-                  {item.part_number}
-                </span>
-              )}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "12px",
-                  color: "var(--info-dark)",
-                  marginTop: "4px",
-                }}
-              >
-                <span>Qty: {item.quantity || 0}</span>
-                {item.unit_price !== undefined && (
-                  <span>{formatCurrency(item.unit_price)}</span>
-                )}
-              </div>
-            </div>
-          ))}
+          <div style={{ fontSize: "10px", color: "var(--warning)", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>
+            Parts Summary
+          </div>
+          <div style={{ fontSize: "12px", color: "var(--info-dark)", lineHeight: "1.4" }}>
+            {items
+              .slice(0, 4)
+              .map((item) => item.part_name || item.part_number || "Part")
+              .join(" • ")}
+            {items.length > 4 ? " +" + (items.length - 4) + " more" : ""}
+          </div>
         </div>
       )}
     </div>

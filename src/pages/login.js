@@ -12,109 +12,6 @@ import { supabase } from "@/lib/supabaseClient"; // Database connection
 import { roleCategories } from "@/config/users"; // Dev users config
 
 const FIELD_MAX_WIDTH = 380;
-const mergeLoginDropdownClasses = (...classes) => classes.filter(Boolean).join(" ");
-const loginDropdownStyleTestApi = {
-  inheritDefaultClasses: false,
-  containerClassName: "login-dropdown login-dropdown--test",
-  fieldClassName: "login-dropdown--test-field",
-  selectClassName: "login-dropdown--test-select",
-  labelClassName: "login-dropdown--test-label",
-  optionClassName: "login-dropdown--test-option",
-  closeOnOutsideClick: true,
-  renderField: ({
-    fieldKey,
-    label,
-    value,
-    displayValue,
-    placeholderOption,
-    options,
-    fieldProps,
-    isOpen,
-    toggleOpen,
-    closeDropdown,
-    onChangeValue,
-    onChangeOption,
-  }) => {
-    const optionList = [
-      ...(placeholderOption ? [placeholderOption] : []),
-      ...options,
-    ];
-
-    const handleSelect = (option) => {
-      if (!option || option.isPlaceholder) {
-        onChangeOption?.(null);
-        onChangeValue?.("");
-      } else {
-        onChangeOption?.(option);
-        onChangeValue?.(option.value || "");
-      }
-      closeDropdown?.();
-    };
-
-    return (
-      <div
-        key={fieldKey}
-        className={mergeLoginDropdownClasses(fieldProps.wrapperClassName, isOpen ? "open" : "")}
-        style={fieldProps.wrapperStyle}
-      >
-        <button
-          type="button"
-          className={mergeLoginDropdownClasses(
-            fieldProps.selectClassName,
-            displayValue ? "has-value" : "",
-            isOpen ? "is-open" : ""
-          )}
-          style={fieldProps.selectStyle}
-          aria-haspopup="listbox"
-          aria-expanded={isOpen}
-          aria-label={label}
-          onClick={() => toggleOpen?.()}
-        >
-          <span className="login-dropdown--test-value">
-            {displayValue || placeholderOption?.label || label}
-          </span>
-        </button>
-        <label
-          className={mergeLoginDropdownClasses(
-            fieldProps.labelClassName,
-            displayValue ? "has-value" : "",
-            isOpen ? "is-open" : ""
-          )}
-          style={fieldProps.labelStyle}
-        >
-          {label}
-        </label>
-        <div
-          className={mergeLoginDropdownClasses(
-            "login-dropdown--test-options",
-            isOpen ? "open" : ""
-          )}
-          role="listbox"
-        >
-          {optionList.map((option) => (
-            <button
-              type="button"
-              key={`${fieldKey}-${option.value || "placeholder"}`}
-              className={mergeLoginDropdownClasses(
-                "login-dropdown--test-option",
-                value && option.value === value ? "is-active" : "",
-                option.isPlaceholder ? "is-placeholder" : ""
-              )}
-              role="option"
-              aria-selected={Boolean(value) && option.value === value}
-              onClick={() => handleSelect(option)}
-            >
-              <span>{option.label}</span>
-            </button>
-          ))}
-          {options.length === 0 && (
-            <div className="login-dropdown--test-empty">No options available</div>
-          )}
-        </div>
-      </div>
-    );
-  },
-};
 
 const LoginCard = ({ title, subtitle, children, contentMaxWidth = FIELD_MAX_WIDTH }) => (
   <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
@@ -337,7 +234,6 @@ export default function LoginPage() {
                   setSelectedUser={setSelectedUser}
                   usersByRole={usersByRole}
                   roleCategories={roleCategories}
-                  styleApi={loginDropdownStyleTestApi}
                 />
 
                 {(loadingDevUsers || rosterLoading) && (

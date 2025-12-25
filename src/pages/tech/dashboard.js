@@ -7,9 +7,9 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
+import { getAllJobs } from "@/lib/database/jobs";
 import { getClockingStatus, clockIn, clockOut } from "@/lib/database/clocking";
 import { useConfirmation } from "@/context/ConfirmationContext";
-import useJobcardsApi from "@/hooks/api/useJobcardsApi";
 
 export default function TechsDashboard() {
   const router = useRouter();
@@ -23,7 +23,6 @@ export default function TechsDashboard() {
   const [clockingStatus, setClockingStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [displayDate, setDisplayDate] = useState("Loading date...");
-  const { listJobcards } = useJobcardsApi();
 
   const username = user?.username;
   const techsList = usersByRole?.["Techs"] || [];
@@ -44,8 +43,7 @@ export default function TechsDashboard() {
 
       try {
         // Fetch all jobs
-        const payload = await listJobcards();
-        const fetchedJobs = Array.isArray(payload?.jobCards) ? payload.jobCards : [];
+        const fetchedJobs = await getAllJobs();
         setJobs(fetchedJobs);
 
         // Filter jobs assigned to this tech
@@ -83,7 +81,7 @@ export default function TechsDashboard() {
     };
 
     fetchData();
-  }, [username, isTech, listJobcards]);
+  }, [username, isTech]);
 
   // ✅ Handle clock in
   const handleClockIn = async () => {

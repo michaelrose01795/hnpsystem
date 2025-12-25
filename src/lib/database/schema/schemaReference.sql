@@ -1,3 +1,7 @@
+-- file location: src/lib/database/schema/schemaReference.sql
+-- This file mirrors the database schema shared during the HR module scaffolding discussion.
+-- Each entry represents a single column definition with its table, data type, nullability, and default.
+
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
@@ -605,7 +609,6 @@ CREATE TABLE public.messages (
   created_at timestamp with time zone DEFAULT now(),
   thread_id integer,
   metadata jsonb,
-  saved_forever boolean NOT NULL DEFAULT false,
   CONSTRAINT messages_pkey PRIMARY KEY (message_id),
   CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(user_id),
   CONSTRAINT messages_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES public.users(user_id),

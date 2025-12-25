@@ -11,9 +11,9 @@ import {
   clockOutFromJob,
   getUserActiveJobs
 } from "@/lib/database/jobClocking"; // DB: job clocking
+import { getAllJobs } from "@/lib/database/jobs"; // DB: fetch list of jobs
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
-import useJobcardsApi from "@/hooks/api/useJobcardsApi";
 
 /* -------------------------- UI COMPONENT -------------------------- */
 
@@ -32,7 +32,6 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
   const [workType, setWorkType] = useState("initial"); // "initial" or "additional"
   const [searchTerm, setSearchTerm] = useState(""); // Filter text for lists
   const inputRef = useRef(null); // Ref for auto-focus on input
-  const { listJobcards } = useJobcardsApi();
 
   // ✅ Prefill job number when modal opens with a job selected
   useEffect(() => {
@@ -98,8 +97,8 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
         if (act.success) setActiveJobs(act.data); // Put into state
 
         // Fetch all jobs, keep only active ones, normalize shape
-        const payload = await listJobcards(); // Fetch jobs list via API
-        const allJobs = Array.isArray(payload?.jobCards) ? payload.jobCards : []; // Safe array
+        const allJobsRaw = await getAllJobs(); // Fetch jobs list
+        const allJobs = Array.isArray(allJobsRaw) ? allJobsRaw : []; // Safe array
         const activeOnly = allJobs
           .filter(
             (job) =>
@@ -219,8 +218,8 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
     try {
       const act = await getUserActiveJobs(dbUserId); // Active clock-ins
       if (act.success) setActiveJobs(act.data); // Save
-      const payload = await listJobcards(); // All jobs via API
-      const all = Array.isArray(payload?.jobCards) ? payload.jobCards : []; // Safe array
+      const raw = await getAllJobs(); // All jobs
+      const all = Array.isArray(raw) ? raw : []; // Safe array
       const list = all
         .filter(
           (job) =>
