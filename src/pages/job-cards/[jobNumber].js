@@ -28,6 +28,7 @@ import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import PartsTabNew from "@/components/PartsTab_New";
 import NotesTabNew from "@/components/NotesTab_New";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
+import WriteUpForm from "@/components/JobCards/WriteUpForm";
 
 const deriveVhcSeverity = (check = {}) => {
   const fields = [
@@ -1117,7 +1118,7 @@ export default function JobCardDetailPage() {
     { id: "warranty", label: "Warranty"},
     { id: "messages", label: "Messages"},
     { id: "documents", label: "Documents"},
-    ...(canViewInvoice ? [{ id: "invoice", label: "Invoice" }] : [])
+    { id: "invoice", label: "Invoice"}
   ];
 
   // ✅ Main Render
@@ -1498,32 +1499,34 @@ export default function JobCardDetailPage() {
           )}
 
           {/* Invoice Tab */}
-          {activeTab === "invoice" && canViewInvoice && (
-            invoicePrerequisitesMet ? (
+          {activeTab === "invoice" && (
+            <>
+              {!invoicePrerequisitesMet && (
+                <div
+                  style={{
+                    padding: "24px",
+                    border: "1px dashed var(--warning)",
+                    borderRadius: "16px",
+                    backgroundColor: "var(--warning-surface)",
+                    color: "var(--warning-dark)",
+                    marginBottom: "16px"
+                  }}
+                >
+                  <h3 style={{ marginTop: 0, color: "var(--warning-dark)" }}>Invoice prerequisites incomplete</h3>
+                  <p style={{ marginBottom: "12px" }}>
+                    Review the invoice layout below, but complete these tasks before sharing with the customer:
+                  </p>
+                  <ul style={{ margin: 0, paddingLeft: "20px", color: "var(--danger-dark)", fontWeight: 600 }}>
+                    {invoiceBlockingReasons.map((reason) => (
+                      <li key={reason} style={{ marginBottom: "6px" }}>
+                        {reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <InvoiceSection jobData={jobData} />
-            ) : (
-              <div
-                style={{
-                  padding: "24px",
-                  border: "1px dashed var(--warning)",
-                  borderRadius: "16px",
-                  backgroundColor: "var(--warning-surface)",
-                  color: "var(--warning-dark)"
-                }}
-              >
-                <h3 style={{ marginTop: 0, color: "var(--warning-dark)" }}>Invoice locked</h3>
-                <p style={{ marginBottom: "12px" }}>
-                  Finish the steps below before creating or viewing the invoice.
-                </p>
-                <ul style={{ margin: 0, paddingLeft: "20px", color: "var(--danger-dark)", fontWeight: 600 }}>
-                  {invoiceBlockingReasons.map((reason) => (
-                    <li key={reason} style={{ marginBottom: "6px" }}>
-                      {reason}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )
+            </>
           )}
         </div>
         <InvoiceBuilderPopup

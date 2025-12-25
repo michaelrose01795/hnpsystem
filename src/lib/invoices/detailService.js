@@ -328,20 +328,43 @@ function buildPaymentBlock(profile) { // shape payment block for API
   }; // end object
 } // end buildPaymentBlock
 
+function aggregateRequestTotals(requests = []) { // summarize request totals into header-level values
+  return requests.reduce(
+    (acc, request) => ({
+      service_total: acc.service_total + (request.totals?.request_total_net || 0),
+      vat_total: acc.vat_total + (request.totals?.request_total_vat || 0),
+      invoice_total: acc.invoice_total + (request.totals?.request_total_gross || 0)
+    }),
+    { service_total: 0, vat_total: 0, invoice_total: 0 }
+  );
+} // end aggregateRequestTotals
+
 export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // main orchestration helper for API routes
   if (!jobNumber && !orderNumber) { // ensure identifier provided
     throw new Error("MISSING_IDENTIFIER"); // throw descriptive error
   }
   const invoice = await fetchInvoiceRecord({ jobNumber, orderNumber }); // fetch invoice header
-  if (!invoice) { // handle missing invoice
+  const configPromise = Promise.all([ // fetch shared config concurrently
+    fetchCompanyRates(),
+    fetchCompanyProfile()
+  ]);
+  const [{ vatRate, labourRate }, companyProfile] = await configPromise; // await shared config
+  if (!invoice) { // handle missing invoice by building fallback payloads
+    if (jobNumber) {
+      const fallbackFromJob = await buildJobInvoiceFallback({ jobNumber, vatRate, labourRate, companyProfile });
+      if (fallbackFromJob) {
+        return fallbackFromJob;
+      }
+    } else if (orderNumber) {
+      const fallbackFromOrder = await buildOrderInvoiceFallback({ orderNumber, vatRate, companyProfile });
+      if (fallbackFromOrder) {
+        return fallbackFromOrder;
+      }
+    }
     const error = new Error("NOT_FOUND"); // create descriptive error
     error.status = 404; // attach HTTP status
     throw error; // propagate error
   }
-  const [{ vatRate, labourRate }, companyProfile] = await Promise.all([ // parallel fetch configuration + profile
-    fetchCompanyRates(), // load VAT + labour rates
-    fetchCompanyProfile() // load company profile row
-  ]); // finish parallel fetch
   const { job, customer, vehicle } = await fetchJobSnapshot( // fetch job snapshot
     invoice.job_number || jobNumber || null, // job number fallback
     invoice.job_id || null // job id fallback
@@ -359,15 +382,7 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
   } else { // fallback when no job at all
     requests = []; // keep empty list
   }
-  const totals = requests.reduce( // compute aggregated totals
-    (acc, request) => ({ // reduce function
-      service_total: acc.service_total + request.totals.request_total_net, // accumulate net values
-      vat_total: acc.vat_total + request.totals.request_total_vat, // accumulate VAT
-      invoice_total:
-        acc.invoice_total + request.totals.request_total_net + request.totals.request_total_vat // accumulate gross
-    }), // end reducer body
-    { service_total: 0, vat_total: 0, invoice_total: 0 } // initial accumulator
-  ); // finish reduce
+  const totals = aggregateRequestTotals(requests); // compute aggregated totals
   const invoiceTo = invoice.invoice_to && Object.keys(invoice.invoice_to).length > 0 // check stored invoice_to snapshot
     ? invoice.invoice_to // reuse stored JSON
     : formatAddress(customer); // fallback to derived customer address
