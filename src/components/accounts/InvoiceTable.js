@@ -2,6 +2,7 @@
 import React from "react"; // import React for JSX
 import PropTypes from "prop-types";
 import { INVOICE_STATUSES } from "@/config/accounts";
+import { CalendarField } from "@/components/calendarAPI";
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
 const isInvoiceOverdue = (invoice) => {
   if (!invoice) return false;
@@ -29,8 +30,12 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
               <option value={status} key={status}>{status}</option>
             ))}
           </select>
-          <input type="date" name="from" value={filters.from} onChange={handleFilterChange} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }} />
-          <input type="date" name="to" value={filters.to} onChange={handleFilterChange} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }} />
+          <div style={{ flex: "0 0 180px" }}>
+            <CalendarField name="from" placeholder="From date" value={filters.from} onChange={handleFilterChange} size="sm" />
+          </div>
+          <div style={{ flex: "0 0 180px" }}>
+            <CalendarField name="to" placeholder="To date" value={filters.to} onChange={handleFilterChange} size="sm" />
+          </div>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
           <button type="button" onClick={() => onFilterChange({ search: "", status: "", from: "", to: "" })} style={{ padding: "8px 14px", borderRadius: "10px", border: "1px solid var(--surface-light)", background: "var(--surface-light)", color: "var(--text-secondary)" }}>Clear</button>

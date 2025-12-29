@@ -7,6 +7,7 @@ import { useHrEmployeesData } from "@/hooks/useHrData";
 import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
 import EmployeeProfilePanel from "@/components/HR/EmployeeProfilePanel";
 import { roleCategories } from "@/config/users";
+import { CalendarField } from "@/components/calendarAPI"; // Date input component
 
 const defaultFilters = { department: "all", status: "all", employmentType: "all" };
 
@@ -912,19 +913,19 @@ function EmployeeDetailsFields({ values, onFieldChange }) {
           </select>
         </FormField>
         <FormField label="Start Date">
-          <input
-            type="date"
+          <CalendarField
+            name="startDate"
+            id="startDate"
             value={values.startDate}
             onChange={update("startDate")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
           />
         </FormField>
         <FormField label="Probation Ends">
-          <input
-            type="date"
+          <CalendarField
+            name="probationEnd"
+            id="probationEnd"
             value={values.probationEnd}
             onChange={update("probationEnd")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
           />
         </FormField>
         <FormField label="Contracted Hours per Week">

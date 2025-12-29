@@ -9,6 +9,7 @@ import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup";
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup";
 import { useTheme } from "@/styles/themeProvider";
 import { updateCustomer } from "@/lib/database/customers";
+import { CalendarField } from "@/components/calendarAPI";
 
 const cardStyle = {
   borderRadius: "20px",
@@ -853,17 +854,12 @@ export default function PartsJobCardPage() {
                 </select>
               </label>
               <div style={twoColumnGrid}>
-                <label style={fieldStyle}>
-                  <span style={{ fontWeight: 600 }}>
-                    {form.delivery_type === "delivery" ? "Delivery date" : "Collection date"}
-                  </span>
-                  <input
-                    type="date"
-                    value={form.delivery_eta || ""}
-                    onChange={(event) => handleFieldChange("delivery_eta", event.target.value)}
-                    style={inputStyle}
-                  />
-                </label>
+                <CalendarField
+                  label={form.delivery_type === "delivery" ? "Delivery date" : "Collection date"}
+                  value={form.delivery_eta || ""}
+                  onChange={(value) => handleFieldChange("delivery_eta", value)}
+                  name="delivery_eta"
+                />
                 <label style={fieldStyle}>
                   <span style={{ fontWeight: 600 }}>
                     {form.delivery_type === "delivery" ? "Delivery window / time" : "Collection time"}

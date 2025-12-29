@@ -60,12 +60,12 @@
   --overlay: rgba(var(--primary-rgb), 0.35);
 
   /* Three-tier background system - Light Mode */
-  /* Level 1 (Top layer - nearly white): search bars, job cards, clocking cards */
-  --layer-section-level-1: #fefefe;
-  /* Level 2 (Middle layer - lighter): section containers, tech panels */
-  --layer-section-level-2: #fff0f0;
-  /* Level 3 (Bottom layer - light red): page background, main containers */
-  --layer-section-level-3: #ffe0e0;
+  /* Level 1 (Top layer - almost white): inner cards, stats blocks */
+  --layer-section-level-1: #fff9f9;
+  /* Level 2 (Middle layer - softer blush): primary card sections */
+  --layer-section-level-2: #fff2f2;
+  /* Level 3 (Bottom layer - pale red): page background + outer shell */
+  --layer-section-level-3: #ffeaea;
   /* Level 4 (Extra dark if needed) */
   --layer-section-level-4: #ffd0d0;
   --row-background: #ffffff;
@@ -149,15 +149,15 @@
   --overlay: rgba(var(--accent-purple-rgb), 0.5);
 
   /* Three-tier background system - Dark Mode */
-  /* Level 1 (Top layer - dark purple): search bars, job cards, clocking cards - matches login background */
-  --layer-section-level-1: #0f172a;
-  /* Level 2 (Middle layer - lighter grey): section containers, tech panels */
-  --layer-section-level-2: #1a1d2e;
-  /* Level 3 (Bottom layer - dark grey): page background, main containers */
-  --layer-section-level-3: #0d0f17;
+  /* Level 1 (Top layer - softened charcoal): inner cards, stats blocks */
+  --layer-section-level-1: #1e2027;
+  /* Level 2 (Middle layer - muted grey): section containers */
+  --layer-section-level-2: #16181f;
+  /* Level 3 (Bottom layer - lighter dark grey): outer shell */
+  --layer-section-level-3: #0e1015;
   /* Level 4 (Extra dark if needed) */
   --layer-section-level-4: #080a0f;
-  --row-background: #2a2a2e;
+  --row-background: #1a1c20;
   --text-color: #ffffff;
 
   /* Section gradient shadows - Dark Mode (for future use) */

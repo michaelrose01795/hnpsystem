@@ -30,7 +30,7 @@ const WORKSHOP_SHORTCUT_ROLES = ["workshop manager", "aftersales manager"];
 
 const WORKSHOP_SHORTCUT_LINKS = [
   {
-    label: "⏱️ Clocking",
+    label: "Clocking",
     href: "/clocking",
     roles: WORKSHOP_SHORTCUT_ROLES,
     keywords: ["clocking", "time", "overview"],
@@ -714,7 +714,7 @@ export default function Layout({ children, jobNumber }) {
           display: "flex",
           flexDirection: "column",
           gap: hideSidebar ? 0 : isTablet ? "16px" : "20px",
-          padding: hideSidebar ? "0" : isTablet ? "16px 12px" : "24px 16px",
+          padding: hideSidebar ? "0" : isTablet ? "16px 12px" : "16px 16px",
           background: hideSidebar ? "transparent" : colors.mainBg,
           height: "auto",
           maxHeight: "none",
@@ -816,11 +816,13 @@ export default function Layout({ children, jobNumber }) {
               borderRadius: "16px",
               border: "1px solid rgba(var(--primary-rgb),0.12)",
               boxShadow: "none",
-              padding: isMobile ? "10px 12px" : "12px 14px",
+              padding: isMobile ? "10px 12px" : "0 16px",
               display: "flex",
               flexDirection: "column",
               gap: isMobile ? "8px" : "12px",
               backdropFilter: "blur(10px)",
+              minHeight: isMobile ? "auto" : "75px",
+              justifyContent: "center",
             }}
           >
             <div
@@ -828,34 +830,23 @@ export default function Layout({ children, jobNumber }) {
                 display: "flex",
                 flexWrap: "wrap",
                 alignItems: "center",
-                gap: "12px",
+                gap: "16px",
                 justifyContent: "space-between",
               }}
             >
               <div
                 style={{
                   display: "flex",
-                  flexDirection: "column",
-                  gap: "4px",
-                  minWidth: isMobile ? "100%" : "220px",
-                  flex: "1 1 220px",
+                  alignItems: "center",
+                  gap: "12px",
+                  minWidth: isMobile ? "100%" : "auto",
+                  flex: "0 0 auto",
                 }}
               >
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "0.55rem",
-                    letterSpacing: "0.15em",
-                    textTransform: "uppercase",
-                    color: colors.mutedText,
-                  }}
-                >
-                  Operations Overview
-                </p>
                 <div
                   style={{
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "baseline",
                     flexWrap: "wrap",
                     gap: "8px",
                   }}
@@ -871,30 +862,18 @@ export default function Layout({ children, jobNumber }) {
                   >
                     Welcome back, {user?.username || "Guest"}
                   </h1>
-                  <span
-                    style={{
-                      padding: "3px 10px",
-                      borderRadius: "999px",
-                      background: "rgba(var(--primary-rgb),0.12)",
-                      color: colors.accent,
-                      fontWeight: 600,
-                      fontSize: "0.7rem",
-                    }}
-                  >
-                    Role: {roleDisplay}
-                  </span>
                   {availableModes.length > 0 && (
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "6px",
-                        fontSize: "0.75rem",
+                        gap: "4px",
+                        fontSize: "0.65rem",
                         fontWeight: 600,
                       }}
                     >
                       <span style={{ color: colors.mutedText, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                        Mode
+                        Mode:
                       </span>
                       {availableModes.length > 1 ? (
                         <DropdownField
@@ -903,11 +882,11 @@ export default function Layout({ children, jobNumber }) {
                           style={{
                             borderRadius: "999px",
                             border: "none",
-                            padding: "4px 12px",
+                            padding: "2px 8px",
                             background: "var(--surface-light)",
                             color: colors.accent,
                             fontWeight: 600,
-                            fontSize: "0.75rem",
+                            fontSize: "0.65rem",
                             cursor: "pointer",
                           }}
                         >
@@ -920,10 +899,8 @@ export default function Layout({ children, jobNumber }) {
                       ) : (
                         <span
                           style={{
-                            padding: "4px 10px",
-                            borderRadius: "999px",
-                            background: "rgba(var(--info-rgb), 0.15)",
-                            color: "var(--info-dark)",
+                            color: colors.accent,
+                            fontWeight: 600,
                           }}
                         >
                           {activeModeLabel}
@@ -1058,18 +1035,18 @@ export default function Layout({ children, jobNumber }) {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "10px",
-                  flex: "1 1 280px",
-                  minWidth: isTablet ? "100%" : "280px",
+                  gap: "12px",
+                  flex: "1 1 auto",
+                  minWidth: isTablet ? "100%" : "320px",
                   justifyContent: isTablet ? "flex-start" : "flex-end",
                 }}
               >
                 <div
                   style={{
-                    flex: "1 1 220px",
-                    minWidth: "180px",
+                    flex: "1 1 auto",
+                    minWidth: "240px",
                     width: "100%",
-                    maxWidth: isMobile ? "100%" : "260px",
+                    maxWidth: isMobile ? "100%" : "600px",
                     position: "relative",
                   }}
                 >

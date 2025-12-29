@@ -10,6 +10,7 @@ import { addConsumableOrder, listConsumablesForTracker } from "@/lib/database/co
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useTheme } from "@/styles/themeProvider";
 import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
+import { CalendarField } from "@/components/calendarAPI";
 
 const containerStyle = {
   flex: 1,
@@ -27,7 +28,7 @@ const workspaceShellStyle = {
   borderRadius: "24px",
   boxShadow: "none",
   border: "1px solid var(--surface-light)",
-  background: "var(--surface)",
+  background: "var(--layer-section-level-2)",
   padding: "24px",
   minHeight: 0,
   overflow: "hidden",
@@ -45,7 +46,7 @@ const mainColumnStyle = {
 };
 
 const cardStyle = {
-  backgroundColor: "var(--surface)",
+  backgroundColor: "var(--layer-section-level-1)",
   borderRadius: "16px",
   padding: "20px",
   boxShadow: "none",
@@ -83,7 +84,7 @@ const orderHistoryContainerStyle = {
   marginTop: "12px",
   borderRadius: "12px",
   border: "1px solid var(--surface-light)",
-  background: "var(--surface)",
+  background: "var(--surface-light)",
   padding: "12px",
   maxHeight: "190px",
   overflowY: "auto",
@@ -106,17 +107,6 @@ const orderHistoryHeaderStyle = {
 };
 
 const orderHistoryRowBorder = "1px solid rgba(var(--primary-rgb),0.1)";
-
-const orderHistoryRowStyle = {
-  display: "grid",
-  gridTemplateColumns: orderHistoryGridTemplate,
-  gap: "12px",
-  alignItems: "center",
-  fontSize: "0.9rem",
-  color: mutedTextColor,
-  padding: "8px 0",
-  borderBottom: orderHistoryRowBorder,
-};
 
 const orderModalOverlayStyle = {
   ...popupOverlayStyles,
@@ -429,8 +419,14 @@ function ConsumablesTrackerPage() {
   );
   const themedOrderHistoryRowStyle = useMemo(
     () => ({
-      ...orderHistoryRowStyle,
+      display: "grid",
+      gridTemplateColumns: orderHistoryGridTemplate,
+      gap: "12px",
+      alignItems: "center",
+      fontSize: "0.9rem",
       color: mutedTextColor,
+      padding: "8px 0",
+      borderBottom: orderHistoryRowBorder,
     }),
     [mutedTextColor]
   );
@@ -1334,14 +1330,12 @@ function ConsumablesTrackerPage() {
                       />
                     </div>
                     <div style={orderModalFormGroupStyle}>
-                      <label style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
-                        Order Date
-                      </label>
-                      <input
-                        type="date"
+                      <CalendarField
+                        label="Order Date"
                         value={orderForm.orderDate}
                         onChange={handleOrderFormChange("orderDate")}
-                        style={orderModalInputStyle}
+                        name="orderDate"
+                        id="orderDate"
                       />
                     </div>
                     <button

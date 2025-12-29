@@ -3,6 +3,7 @@
 import React from "react";
 import Layout from "@/components/Layout";
 import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
+import { CalendarField } from "@/components/calendarAPI"; // Date input component
 
 // TODO: Back these incident lists with real disciplinary case records from the database.
 
@@ -133,10 +134,11 @@ function DisciplinaryContent() {
               <span>Department</span>
               <input style={inputStyle} type="text" placeholder="Department / team" />
             </label>
-            <label style={labelStyle}>
-              <span>Incident Date</span>
-              <input style={inputStyle} type="date" />
-            </label>
+            <CalendarField
+              label="Incident Date"
+              name="incidentDate"
+              id="incidentDate"
+            />
             <label style={labelStyle}>
               <span>Warning Level</span>
               <select style={inputStyle} defaultValue="">

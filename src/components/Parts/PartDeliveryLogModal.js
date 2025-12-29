@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useUser } from "@/context/UserContext";
+import { CalendarField } from "@/components/calendarAPI";
 
 export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, onDeliveryLogged }) {
   const { dbUserId } = useUser();
@@ -349,23 +350,12 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
             />
           </div>
 
-          <div>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--info-dark)", marginBottom: "6px" }}>
-              Delivery Date
-            </label>
-            <input
-              type="date"
-              value={formData.deliveryDate}
-              onChange={(e) => handleChange("deliveryDate", e.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                borderRadius: "8px",
-                border: "1px solid var(--accent-purple-surface)",
-                fontSize: "14px",
-              }}
-            />
-          </div>
+          <CalendarField
+            label="Delivery Date"
+            value={formData.deliveryDate}
+            onChange={(value) => handleChange("deliveryDate", value)}
+            name="deliveryDate"
+          />
 
           <div>
             <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--info-dark)", marginBottom: "6px" }}>

@@ -3,6 +3,7 @@ import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 import { useTheme } from "@/styles/themeProvider";
+import { CalendarField } from "@/components/calendarAPI";
 
 const pageStyles = {
   container: {
@@ -364,17 +365,10 @@ export default function PartsDeliveriesPage() {
               >
                 Previous day
               </button>
-              <input
-                type="date"
+              <CalendarField
                 value={selectedDate}
-                onChange={(event) => setSelectedDate(event.target.value)}
-                style={{
-                  borderRadius: "10px",
-                  border: "1px solid var(--surface-light)",
-                  padding: "10px 12px",
-                  fontWeight: 600,
-                  color: "var(--primary-dark)",
-                }}
+                onChange={(value) => setSelectedDate(value)}
+                name="selectedDate"
               />
               <button
                 type="button"

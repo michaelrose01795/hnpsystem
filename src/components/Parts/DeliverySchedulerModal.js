@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useTheme } from "@/styles/themeProvider";
+import { CalendarField } from "@/components/calendarAPI";
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -220,21 +221,12 @@ export default function DeliverySchedulerModal({
           {scheduleMode === "new" && (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px" }}>
-                <label style={{ fontWeight: 600, color: "var(--grey-accent-dark)" }}>
-                  Delivery date
-                  <input
-                    type="date"
-                    value={newDeliveryDate}
-                    onChange={(event) => setNewDeliveryDate(event.target.value)}
-                    style={{
-                      width: "100%",
-                      marginTop: "4px",
-                      borderRadius: "10px",
-                      border: "1px solid var(--surface-light)",
-                      padding: "8px 10px",
-                    }}
-                  />
-                </label>
+                <CalendarField
+                  label="Delivery date"
+                  value={newDeliveryDate}
+                  onChange={(value) => setNewDeliveryDate(value)}
+                  name="newDeliveryDate"
+                />
                 <label style={{ fontWeight: 600, color: "var(--grey-accent-dark)" }}>
                   Vehicle reg
                   <input

@@ -29,6 +29,9 @@ import PartsTabNew from "@/components/PartsTab_New";
 import NotesTabNew from "@/components/NotesTab_New";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import WriteUpForm from "@/components/JobCards/WriteUpForm";
+import { DropdownField } from "@/components/dropdownAPI";
+import { CalendarField } from "@/components/calendarAPI";
+import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
 
 const deriveVhcSeverity = (check = {}) => {
   const fields = [
@@ -147,6 +150,23 @@ const areAllPartsAllocated = (allocations = []) => {
     const assigned = item.allocatedToRequestId ?? item.allocated_to_request_id ?? null;
     return Boolean(assigned);
   });
+};
+
+const buildDateTimeFromInputs = (dateValue = "", timeValue = "") => {
+  if (!dateValue || !timeValue) return null;
+  const [year, month, day] = dateValue.split("-").map((segment) => parseInt(segment, 10));
+  const [hours, minutes] = timeValue.split(":").map((segment) => parseInt(segment, 10));
+  if (
+    [year, month, day, hours, minutes].some(
+      (part) => Number.isNaN(part) || part === null || part === undefined
+    )
+  ) {
+    return null;
+  }
+  const date = new Date();
+  date.setFullYear(year, month - 1, day);
+  date.setHours(hours, minutes, 0, 0);
+  return date;
 };
 
 const formatBookingDescriptionInput = (value = "") => {
@@ -1117,25 +1137,25 @@ export default function JobCardDetailPage() {
     { id: "write-up", label: "Write Up"},
     { id: "vhc", label: "VHC", badge: vhcTabBadge},
     { id: "warranty", label: "Warranty"},
+    { id: "clocking", label: "Clocking"},
     { id: "messages", label: "Messages"},
     { id: "documents", label: "Documents"},
     { id: "invoice", label: "Invoice"}
   ];
 
+  const pageStackStyle = {
+    display: "flex",
+    flexDirection: "column",
+    gap: "16px",
+  };
+
   // ✅ Main Render
   return (
     <Layout>
-      <div style={{ 
-        height: "100%", 
-        display: "flex", 
-        flexDirection: "column", 
-        padding: "16px",
-        overflow: "hidden" 
-      }}>
+      <div style={pageStackStyle}>
         {isArchiveMode && (
-          <div
+          <section
             style={{
-              marginBottom: "16px",
               padding: "12px 16px",
               borderRadius: "12px",
               border: "1px solid var(--danger-surface)",
@@ -1146,17 +1166,16 @@ export default function JobCardDetailPage() {
             }}
           >
             Archived copy &middot; Job #{jobData.jobNumber} is read-only. VHC, notes, and documents are preserved for audit.
-          </div>
+          </section>
         )}
 
         {/* ✅ Header Section */}
-        <div style={{
+        <section style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "16px",
           padding: "20px",
-          backgroundColor: "var(--surface)",
+          backgroundColor: "var(--layer-section-level-1)",
           borderRadius: "12px",
           boxShadow: "none",
           border: "1px solid var(--surface-light)",
@@ -1220,7 +1239,7 @@ export default function JobCardDetailPage() {
               }}
               style={{
                 padding: "10px 20px",
-                backgroundColor: "var(--danger)",
+                backgroundColor: "var(--primary)",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
@@ -1229,8 +1248,8 @@ export default function JobCardDetailPage() {
                 fontSize: "14px",
                 transition: "background-color 0.2s"
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger-dark)"}
-              onMouseLeave={(e) => e.target.style.backgroundColor = "var(--danger)"}
+              onMouseEnter={(e) => e.target.style.backgroundColor = "var(--primary-dark)"}
+              onMouseLeave={(e) => e.target.style.backgroundColor = "var(--primary)"}
             >
               Car and Key Tracker
             </button>
@@ -1283,19 +1302,18 @@ export default function JobCardDetailPage() {
               Back
             </button>
           </div>
-        </div>
+        </section>
 
         {/* ✅ Vehicle & Customer Info Bar */}
-        <div style={{
+        <section style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: "16px",
-          marginBottom: "16px",
           flexShrink: 0
         }}>
           <div style={{
             padding: "16px 20px",
-            backgroundColor: "var(--surface)",
+            backgroundColor: "var(--layer-section-level-1)",
             borderRadius: "12px",
             boxShadow: "none",
             border: "1px solid var(--surface-light)"
@@ -1324,16 +1342,15 @@ export default function JobCardDetailPage() {
               {jobData.customerPhone || jobData.customerEmail || "No contact info"}
             </div>
           </div>
-        </div>
+        </section>
 
         {/* ✅ Tabs Navigation */}
-        <div style={{
+        <section style={{
           display: "flex",
           gap: "8px",
           overflowX: "auto",
-          marginBottom: "16px",
           padding: "8px",
-          backgroundColor: "var(--surface)",
+          backgroundColor: "var(--layer-section-level-1)",
           borderRadius: "12px",
           boxShadow: "none",
           border: "1px solid var(--surface-light)",
@@ -1386,13 +1403,11 @@ export default function JobCardDetailPage() {
               )}
             </button>
           ))}
-        </div>
+        </section>
 
         {/* ✅ Tab Content */}
-        <div style={{
-          flex: 1,
-          overflowY: "auto",
-          backgroundColor: "var(--surface)",
+        <section style={{
+          backgroundColor: "var(--layer-section-level-2)",
           borderRadius: "12px",
           boxShadow: "none",
           border: "1px solid var(--surface-light)",
@@ -1496,6 +1511,11 @@ export default function JobCardDetailPage() {
             />
           )}
 
+          {/* Clocking Tab */}
+          {activeTab === "clocking" && (
+            <ClockingTab jobData={jobData} canEdit={canEdit} />
+          )}
+
           {/* Messages Tab */}
           {activeTab === "messages" && (
             <MessagesTab
@@ -1547,7 +1567,7 @@ export default function JobCardDetailPage() {
               <InvoiceSection jobData={jobData} />
             </>
           )}
-        </div>
+        </section>
         <InvoiceBuilderPopup
           isOpen={invoicePopupOpen}
           onClose={() => {
@@ -1985,7 +2005,7 @@ function CustomerRequestsTab({
                 fontSize: "14px",
                 fontWeight: "600",
                 cursor: "pointer",
-                backgroundColor: jobData.vhcRequired ? "var(--danger)" : "var(--info)",
+                backgroundColor: jobData.vhcRequired ? "var(--danger)" : "var(--success)",
                 color: "white",
                 boxShadow: "none",
                 alignSelf: "center"
@@ -2883,8 +2903,8 @@ function SchedulingTab({
                     minWidth: "140px",
                     padding: "12px 16px",
                     borderRadius: "10px",
-                    border: "2px solid var(--accent-purple)",
-                    backgroundColor: isActive ? "var(--accent-purple)" : "var(--text-primary)",
+                    border: isActive ? "2px solid var(--primary)" : "2px solid var(--primary)",
+                    backgroundColor: isActive ? "var(--primary)" : "var(--grey-accent)",
                     color: "white",
                     fontWeight: "600",
                     cursor: canEdit ? "pointer" : "default",
@@ -3217,30 +3237,12 @@ function SchedulingTab({
                     />
                   </div>
                   <div>
-                    <label
-                      style={{
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        color: "var(--info)",
-                        display: "block",
-                        marginBottom: "6px"
-                      }}
-                    >
-                      ETA Date
-                    </label>
-                    <input
-                      type="date"
+                    <CalendarField
+                      label="ETA Date"
                       value={approvalForm.etaDate}
                       onChange={(event) =>
                         handleApprovalFieldChange("etaDate", event.target.value)
                       }
-                      style={{
-                        width: "100%",
-                        padding: "10px 12px",
-                        borderRadius: "8px",
-                        border: "1px solid var(--info)",
-                        fontSize: "14px"
-                      }}
                     />
                   </div>
                   <div>
@@ -3441,31 +3443,13 @@ function SchedulingTab({
           }}
         >
           <div>
-            <label
-              style={{
-                fontSize: "12px",
-                fontWeight: "600",
-                color: "var(--info)",
-                display: "block",
-                marginBottom: "6px"
-              }}
-            >
-              Date
-            </label>
-            <input
-              type="date"
+            <CalendarField
+              label="Date"
               value={appointmentForm.date}
               onChange={(event) =>
                 handleAppointmentFieldChange("date", event.target.value)
               }
               disabled={!canEdit || appointmentSaving}
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                borderRadius: "8px",
-                border: "1px solid var(--info)",
-                fontSize: "14px"
-              }}
             />
           </div>
           <div>
@@ -4886,6 +4870,573 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
             )}
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+function ClockingTab({ jobData, canEdit }) {
+  const jobNumberValue = jobData?.jobNumber ?? jobData?.job_number ?? "";
+  const normalizedJobNumber = jobNumberValue ? String(jobNumberValue).trim() : "";
+  const [technicians, setTechnicians] = useState([]);
+  const [techniciansLoading, setTechniciansLoading] = useState(false);
+  const [techniciansError, setTechniciansError] = useState("");
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState("");
+  const [clockInDate, setClockInDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [clockOutDate, setClockOutDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [clockInTime, setClockInTime] = useState("");
+  const [clockOutTime, setClockOutTime] = useState("");
+  const [selectedRequest, setSelectedRequest] = useState("job");
+  const [formError, setFormError] = useState("");
+  const [formSuccess, setFormSuccess] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [refreshSignal, setRefreshSignal] = useState(0);
+
+  const jobId = useMemo(() => {
+    if (jobData?.id === undefined || jobData?.id === null) {
+      return null;
+    }
+    const numeric = typeof jobData.id === "number" ? jobData.id : Number(jobData.id);
+    return Number.isNaN(numeric) ? null : numeric;
+  }, [jobData?.id]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadTechnicians = async () => {
+      setTechniciansLoading(true);
+      setTechniciansError("");
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("user_id, first_name, last_name, role")
+          .ilike("role", "%tech%")
+          .order("first_name", { ascending: true })
+          .order("last_name", { ascending: true });
+
+        if (error) {
+          throw error;
+        }
+
+        if (isMounted) {
+          setTechnicians(data || []);
+        }
+      } catch (err) {
+        console.error("Failed to load technicians:", err);
+        if (isMounted) {
+          setTechniciansError(err?.message || "Unable to load technicians.");
+        }
+      } finally {
+        if (isMounted) {
+          setTechniciansLoading(false);
+        }
+      }
+    };
+
+    loadTechnicians();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const technicianOptions = useMemo(
+    () =>
+      (technicians || []).map((tech) => ({
+        key: tech.user_id,
+        value: String(tech.user_id),
+        label: `${tech.first_name || ""} ${tech.last_name || ""}`.trim() || `Technician ${tech.user_id}`,
+        description: tech.role || "Technician",
+      })),
+    [technicians]
+  );
+
+  const requestOptions = useMemo(() => {
+    const normalized = normalizeRequests(jobData?.requests || []);
+
+    // Calculate total allocated hours for all requests
+    const totalAllocatedHours = normalized.reduce((sum, req) => {
+      const hours = parseFloat(req.time) || 0;
+      return sum + hours;
+    }, 0);
+
+    const options = [
+      {
+        key: "job",
+        value: "job",
+        label: `Job #${normalizedJobNumber || ""}`,
+        description: normalized.length === 1
+          ? `${normalized[0].time || 0}h allocated`
+          : totalAllocatedHours > 0
+            ? `${totalAllocatedHours}h total allocated`
+            : "Clock onto the main job"
+      }
+    ];
+
+    normalized.forEach((req, index) => {
+      const requestText = req.text || req.title || "Request";
+      const allocatedTime = req.time || req.hours || 0;
+      options.push({
+        key: req.key || `request-${index}`,
+        value: req.key || `request-${index}`,
+        label: requestText,
+        description: `${allocatedTime}h allocated`
+      });
+    });
+
+    return options;
+  }, [jobData?.requests, normalizedJobNumber]);
+
+  const handleSubmit = useCallback(
+    async (event) => {
+      event.preventDefault();
+      if (!canEdit) return;
+      setFormError("");
+      setFormSuccess("");
+
+      if (!jobId || !normalizedJobNumber) {
+        setFormError("Job details are unavailable for manual clocking.");
+        return;
+      }
+
+      if (!selectedTechnicianId) {
+        setFormError("Select a technician to create a clocking entry.");
+        return;
+      }
+
+      if (!clockInDate || !clockOutDate) {
+        setFormError("Choose dates for the manual entry.");
+        return;
+      }
+
+      if (!clockInTime || !clockOutTime) {
+        setFormError("Provide both start and finish times.");
+        return;
+      }
+
+      const technicianId = Number(selectedTechnicianId);
+      if (Number.isNaN(technicianId) || technicianId <= 0) {
+        setFormError("Select a valid technician.");
+        return;
+      }
+
+      const startDate = buildDateTimeFromInputs(clockInDate, clockInTime);
+      const finishDate = buildDateTimeFromInputs(clockOutDate, clockOutTime);
+
+      if (!startDate || !finishDate) {
+        setFormError("Provide valid start and finish values.");
+        return;
+      }
+
+      if (finishDate <= startDate) {
+        setFormError("Clock-out must be after clock-in.");
+        return;
+      }
+
+      const durationMs = finishDate.getTime() - startDate.getTime();
+      if (durationMs <= 0) {
+        setFormError("Finish time must come after the start time.");
+        return;
+      }
+
+      const hoursWorked = Number((durationMs / (1000 * 60 * 60)).toFixed(2));
+      setSubmitting(true);
+
+      try {
+        const nowIso = new Date().toISOString();
+
+        // Build request snapshot for notes field
+        const normalized = normalizeRequests(jobData?.requests || []);
+        const selectedRequestData = normalized.find(r => r.key === selectedRequest);
+        let notesPayload = null;
+
+        if (selectedRequest && selectedRequest !== "job") {
+          notesPayload = JSON.stringify({
+            requestKey: selectedRequest,
+            requestLabel: selectedRequest,
+            requestTitle: selectedRequestData?.title || selectedRequest,
+            requestHours: selectedRequestData?.hours || null
+          });
+        } else {
+          notesPayload = JSON.stringify({
+            requestKey: "job",
+            requestLabel: `Job #${normalizedJobNumber}`,
+            requestTitle: `Job #${normalizedJobNumber}`
+          });
+        }
+
+        const timeRecordPayload = {
+          user_id: technicianId,
+          job_id: jobId,
+          job_number: normalizedJobNumber,
+          clock_in: startDate.toISOString(),
+          clock_out: finishDate.toISOString(),
+          date: clockInDate,
+          hours_worked: hoursWorked,
+          notes: notesPayload,
+          created_at: nowIso,
+          updated_at: nowIso,
+        };
+
+        const { error: timeRecordsError } = await supabase
+          .from("time_records")
+          .insert([timeRecordPayload]);
+
+        if (timeRecordsError) {
+          throw timeRecordsError;
+        }
+
+        const { error: jobClockingError } = await supabase.from("job_clocking").insert([
+          {
+            user_id: technicianId,
+            job_id: jobId,
+            job_number: normalizedJobNumber,
+            clock_in: startDate.toISOString(),
+            clock_out: finishDate.toISOString(),
+            work_type: "manual",
+            created_at: nowIso,
+            updated_at: nowIso,
+          },
+        ]);
+
+        if (jobClockingError) {
+          throw jobClockingError;
+        }
+
+        const { error: jobUpdateError } = await supabase
+          .from("jobs")
+          .update({ updated_at: nowIso })
+          .eq("id", jobId);
+
+        if (jobUpdateError) {
+          throw jobUpdateError;
+        }
+
+        setFormSuccess("Manual clocking entry saved for this job.");
+        setClockInTime("");
+        setClockOutTime("");
+        setClockInDate(new Date().toISOString().split("T")[0]);
+        setClockOutDate(new Date().toISOString().split("T")[0]);
+        setSelectedRequest("job");
+        setSelectedTechnicianId("");
+        setRefreshSignal((prev) => prev + 1);
+      } catch (err) {
+        console.error("Manual clocking error:", err);
+        setFormError(err?.message || "Unable to save the clocking entry.");
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [
+      canEdit,
+      jobId,
+      normalizedJobNumber,
+      selectedTechnicianId,
+      clockInDate,
+      clockOutDate,
+      clockInTime,
+      clockOutTime,
+      selectedRequest,
+      jobData?.requests,
+    ]
+  );
+
+  const handleReset = () => {
+    setSelectedTechnicianId("");
+    setClockInDate(new Date().toISOString().split("T")[0]);
+    setClockOutDate(new Date().toISOString().split("T")[0]);
+    setClockInTime("");
+    setClockOutTime("");
+    setSelectedRequest("job");
+    setFormError("");
+    setFormSuccess("");
+  };
+
+  const inputControlStyle = {
+    width: "100%",
+    borderRadius: "14px",
+    border: "1px solid var(--surface-light)",
+    backgroundColor: "var(--surface-light)",
+    padding: "12px 14px",
+    fontSize: "0.95rem",
+    color: "var(--text-primary)",
+    boxShadow: "none",
+  };
+
+  const infoPillStyle = {
+    padding: "8px 14px",
+    borderRadius: "999px",
+    backgroundColor: "var(--info-surface)",
+    color: "var(--info-dark)",
+    fontWeight: 600,
+    fontSize: "0.85rem",
+  };
+
+  const disabledMessage =
+    !canEdit && "This job card is read-only. Clocking entries can only be added by staff with edit access.";
+
+  return (
+    <div
+      style={{
+        padding: "20px",
+        borderRadius: "12px",
+        border: "1px solid var(--accent-purple-surface)",
+        backgroundColor: "var(--surface)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "18px",
+      }}
+    >
+      <header
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+          gap: "12px",
+          alignItems: "center",
+        }}
+      >
+        <div>
+          <h2 style={{ margin: "0 0 6px 0", fontSize: "20px", fontWeight: 600, color: "var(--text-primary)" }}>
+            Manual clocking entry
+          </h2>
+          <p style={{ margin: 0, fontSize: "0.95rem", color: "var(--info)" }}>
+            Record corrections directly on Job #{normalizedJobNumber || "—"}. Job number and labour notes are
+            stored automatically with the selected technician.
+          </p>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-end" }}>
+          <span style={infoPillStyle}>
+            {techniciansLoading ? "Loading technicians…" : `${technicianOptions.length} techs`}
+          </span>
+          {normalizedJobNumber ? (
+            <span style={{ ...infoPillStyle, backgroundColor: "var(--success-surface)", color: "var(--success-dark)" }}>
+              Job #{normalizedJobNumber}
+            </span>
+          ) : null}
+        </div>
+      </header>
+
+      {techniciansError && (
+        <div
+          style={{
+            borderRadius: "12px",
+            border: "1px solid var(--danger)",
+            backgroundColor: "var(--danger-surface)",
+            padding: "12px 14px",
+            color: "var(--danger-dark)",
+            fontSize: "0.9rem",
+          }}
+        >
+          {techniciansError}
+        </div>
+      )}
+
+      {disabledMessage && (
+        <div
+          style={{
+            borderRadius: "12px",
+            border: "1px solid var(--warning)",
+            backgroundColor: "var(--warning-surface)",
+            padding: "12px 14px",
+            color: "var(--warning-dark)",
+            fontSize: "0.9rem",
+          }}
+        >
+          {disabledMessage}
+        </div>
+      )}
+
+      {formError && (
+        <div
+          style={{
+            borderRadius: "12px",
+            border: "1px solid var(--danger)",
+            backgroundColor: "var(--danger-surface)",
+            padding: "12px 14px",
+            color: "var(--danger-dark)",
+            fontSize: "0.9rem",
+          }}
+        >
+          {formError}
+        </div>
+      )}
+
+      {formSuccess && (
+        <div
+          style={{
+            borderRadius: "12px",
+            border: "1px solid var(--success)",
+            backgroundColor: "var(--success-surface)",
+            padding: "12px 14px",
+            color: "var(--success-dark)",
+            fontSize: "0.9rem",
+          }}
+        >
+          {formSuccess}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+        {/* Row 1: Clock-in date, Clock-out date, Clock-in time, Clock-out time */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "16px",
+          }}
+        >
+          <CalendarField
+            id="clocking-in-date"
+            label="Clock-in date"
+            value={clockInDate}
+            onChange={(event) => {
+              setClockInDate(event.target.value);
+              // Auto-set clock-out date to match clock-in date
+              if (!clockOutDate || clockOutDate < event.target.value) {
+                setClockOutDate(event.target.value);
+              }
+            }}
+            required
+            disabled={!canEdit}
+          />
+          <CalendarField
+            id="clocking-out-date"
+            label="Clock-out date"
+            value={clockOutDate}
+            onChange={(event) => setClockOutDate(event.target.value)}
+            required
+            disabled={!canEdit}
+          />
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label
+              htmlFor="clocking-start-time"
+              style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--info-dark)" }}
+            >
+              Clock-in time
+            </label>
+            <input
+              id="clocking-start-time"
+              type="time"
+              value={clockInTime}
+              onChange={(event) => setClockInTime(event.target.value)}
+              style={inputControlStyle}
+              required
+              disabled={!canEdit}
+            />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label
+              htmlFor="clocking-finish-time"
+              style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--info-dark)" }}
+            >
+              Clock-out time
+            </label>
+            <input
+              id="clocking-finish-time"
+              type="time"
+              value={clockOutTime}
+              onChange={(event) => setClockOutTime(event.target.value)}
+              style={inputControlStyle}
+              required
+              disabled={!canEdit}
+            />
+          </div>
+        </div>
+
+        {/* Row 2: Request selector, Tech selector */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
+            gap: "16px",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label
+              htmlFor="clocking-request-selector"
+              style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--info-dark)" }}
+            >
+              Job / Request
+            </label>
+            <DropdownField
+              id="clocking-request-selector"
+              placeholder="Select job or request"
+              options={requestOptions}
+              value={selectedRequest}
+              onChange={(event) => setSelectedRequest(event.target.value)}
+              disabled={!canEdit}
+              required
+              style={{ width: "100%" }}
+            />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label
+              htmlFor="clocking-tech-selector"
+              style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--info-dark)" }}
+            >
+              Technician
+            </label>
+            <DropdownField
+              id="clocking-tech-selector"
+              placeholder={techniciansLoading ? "Loading technicians…" : "Select technician"}
+              options={technicianOptions}
+              value={selectedTechnicianId}
+              onChange={(event) => setSelectedTechnicianId(event.target.value)}
+              disabled={!canEdit || techniciansLoading}
+              required
+              style={{ width: "100%" }}
+            />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+          <button
+            type="submit"
+            disabled={!canEdit || submitting}
+            style={{
+              borderRadius: "12px",
+              border: "none",
+              backgroundColor: "var(--primary)",
+              color: "white",
+              padding: "12px 20px",
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              cursor: !canEdit || submitting ? "not-allowed" : "pointer",
+              opacity: !canEdit || submitting ? 0.6 : 1,
+            }}
+          >
+            {submitting ? "Saving…" : "Save clocking entry"}
+          </button>
+          <button
+            type="button"
+            onClick={handleReset}
+            disabled={submitting}
+            style={{
+              borderRadius: "12px",
+              border: "1px solid var(--info)",
+              backgroundColor: "transparent",
+              color: "var(--info)",
+              padding: "12px 20px",
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              cursor: submitting ? "not-allowed" : "pointer",
+            }}
+          >
+            Reset form
+          </button>
+        </div>
+      </form>
+
+      {jobId && normalizedJobNumber && (
+        <ClockingHistorySection
+          jobId={jobId}
+          jobNumber={normalizedJobNumber}
+          requests={normalizeRequests(jobData?.requests || [])}
+          jobAllocatedHours={jobData?.labour_hours || null}
+          refreshSignal={refreshSignal}
+          enableRequestClick={false}
+          title="Clocking history"
+        />
       )}
     </div>
   );

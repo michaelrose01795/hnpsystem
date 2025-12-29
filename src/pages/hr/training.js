@@ -4,6 +4,7 @@ import React from "react"; // React runtime for page rendering
 import Layout from "@/components/Layout"; // shared site layout
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook
 import { SectionCard, StatusTag } from "@/components/HR/MetricCard"; // shared HR UI widgets
+import { CalendarField } from "@/components/calendarAPI"; // Date input component
 
 // TODO: Swap placeholder course catalogue for real LMS integration after testing.
 // TODO: Persist assigned courses and renewals in the HR training database tables.
@@ -133,10 +134,11 @@ function TrainingContent() {
               ))}
             </select>
           </label>
-          <label style={labelStyle}>
-            <span>Due Date</span>
-            <input style={inputStyle} type="date" />
-          </label>
+          <CalendarField
+            label="Due Date"
+            name="dueDate"
+            id="dueDate"
+          />
           <label style={{ ...labelStyle, gridColumn: "1 / -1" }}>
             <span>Notes for employee</span>
             <textarea

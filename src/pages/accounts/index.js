@@ -9,6 +9,7 @@ import AccountSummary from "@/components/accounts/AccountSummary";
 import { ACCOUNT_STATUSES, ACCOUNT_TYPES } from "@/config/accounts";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import { exportToCsv } from "@/utils/exportUtils";
+import { CalendarField } from "@/components/calendarAPI";
 const ALLOWED_ROLES = [
   "ADMIN",
   "OWNER",
@@ -146,8 +147,12 @@ export default function AccountsListPage() {
           <option key={type} value={type}>{type}</option>
         ))}
       </select>
-      <input type="date" name="dateFrom" value={filters.dateFrom} onChange={(event) => setFilters((prev) => ({ ...prev, dateFrom: event.target.value }))} style={{ flex: "0 0 180px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }} />
-      <input type="date" name="dateTo" value={filters.dateTo} onChange={(event) => setFilters((prev) => ({ ...prev, dateTo: event.target.value }))} style={{ flex: "0 0 180px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }} />
+      <div style={{ flex: "0 0 180px" }}>
+        <CalendarField name="dateFrom" placeholder="From date" value={filters.dateFrom} onChange={(event) => setFilters((prev) => ({ ...prev, dateFrom: event.target.value }))} />
+      </div>
+      <div style={{ flex: "0 0 180px" }}>
+        <CalendarField name="dateTo" placeholder="To date" value={filters.dateTo} onChange={(event) => setFilters((prev) => ({ ...prev, dateTo: event.target.value }))} />
+      </div>
       <input type="number" name="minBalance" value={filters.minBalance} placeholder="Min Balance" onChange={(event) => setFilters((prev) => ({ ...prev, minBalance: event.target.value }))} style={{ flex: "0 0 140px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }} />
       <input type="number" name="maxBalance" value={filters.maxBalance} placeholder="Max Balance" onChange={(event) => setFilters((prev) => ({ ...prev, maxBalance: event.target.value }))} style={{ flex: "0 0 140px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }} />
     </div>

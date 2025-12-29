@@ -1,12 +1,28 @@
 TO DO:
 
 
+why does the " ✓ Ready in 2s
+ GET / 200 in 1980ms (compile: 1921ms, render: 59ms)
+ GET /api/auth/session 200 in 767ms (compile: 758ms, render: 8ms)
+ GET /api/users/roster 304 in 916ms (compile: 47ms, render: 869ms)
+ GET /api/messages/threads?userId=45 304 in 134ms (compile: 15ms, render: 119ms)
+ GET /api/messages/threads?userId=45 304 in 104ms (compile: 1992µs, render: 102ms)
+ GET /api/messages/threads?userId=45 304 in 884ms (compile: 4ms, render: 880ms)
+ GET /api/messages/threads?userId=45 304 in 108ms (compile: 4ms, render: 104ms)
+ GET /api/messages/threads?userId=45 304 in 110ms (compile: 1749µs, render: 108ms)
+ GET /api/messages/threads?userId=45 304 in 99ms (compile: 1790µs, render: 97ms)
+ GET /api/messages/threads?userId=45 304 in 105ms (compile: 2ms, render: 103ms)
+ GET /api/messages/threads?userId=45 304 in 95ms (compile: 1786µs, render: 93ms)
+ GET /api/messages/threads?userId=45 304 in 91ms (compile: 1247µs, render: 90ms)
+ GET /api/messages/threads?userId=45 304 in 89ms (compile: 1370µs, render: 87ms)" 
+
+"GET /api/messages/threads?userId=45 304 in" load so many times? does it need to, how do we stop it from 
+
 
 
 
 
 LOOK INTO TRACKING PAGE
-
 
 
 

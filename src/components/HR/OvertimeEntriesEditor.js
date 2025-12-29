@@ -2,6 +2,7 @@
 // file location: src/components/HR/OvertimeEntriesEditor.js
 import React, { useEffect, useMemo, useState } from "react";
 import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
+import { CalendarField } from "@/components/calendarAPI"; // Date input component
 
 function formatTime(value) {
   if (!value) return "—";
@@ -121,10 +122,13 @@ export default function OvertimeEntriesEditor({
             marginBottom: "16px",
           }}
         >
-          <label style={labelStyle}>
-            <span>Date</span>
-            <input name="date" type="date" value={form.date} onChange={handleChange} style={inputStyle} />
-          </label>
+          <CalendarField
+            label="Date"
+            name="date"
+            id="date"
+            value={form.date}
+            onChange={handleChange}
+          />
           <label style={labelStyle}>
             <span>Start time</span>
             <input name="start" type="time" value={form.start} onChange={handleChange} style={inputStyle} />

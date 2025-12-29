@@ -1,3 +1,4 @@
+// file: src/pages/clocking/[technicianSlug].js
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -6,6 +7,9 @@ import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 import { generateTechnicianSlug } from "@/utils/technicianSlug";
+import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
+import { DropdownField } from "@/components/dropdownAPI";
+import { CalendarField } from "@/components/calendarAPI";
 
 const STATUS_STATES = ["In Progress", "Tea Break", "Waiting for Job"];
 
@@ -107,12 +111,20 @@ export default function UserClockingHistory() {
   const [activeJobsLoading, setActiveJobsLoading] = useState(true);
   const [formJobNumber, setFormJobNumber] = useState("");
   const [selectedJobId, setSelectedJobId] = useState(null);
+  const [selectedRequest, setSelectedRequest] = useState("job");
+  const [jobRequests, setJobRequests] = useState([]);
+  const [clockInDate, setClockInDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [clockOutDate, setClockOutDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [formStartTime, setFormStartTime] = useState("");
   const [formFinishTime, setFormFinishTime] = useState("");
-  const [formStatus, setFormStatus] = useState("In Progress");
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
   const [formSubmitting, setFormSubmitting] = useState(false);
+  const [lastClockedJobId, setLastClockedJobId] = useState(null);
+  const [lastClockedJobNumber, setLastClockedJobNumber] = useState("");
+  const [lastClockedJobRequests, setLastClockedJobRequests] = useState([]);
+  const [lastClockedJobAllocatedHours, setLastClockedJobAllocatedHours] = useState(null);
+  const [historyRefreshSignal, setHistoryRefreshSignal] = useState(0);
 
   useEffect(() => {
     if (resolvedUserId) {
@@ -305,13 +317,37 @@ export default function UserClockingHistory() {
     };
   }, [fetchActiveJobs]);
 
-  const handleJobNumberChange = (value) => {
+  const handleJobNumberChange = async (value) => {
     setFormJobNumber(value);
     const match =
       activeJobs.find(
         (job) => job.job_number?.toLowerCase() === (value || "").trim().toLowerCase()
       ) || null;
     setSelectedJobId(match?.job_id ?? null);
+
+    // Fetch requests for the selected job
+    if (match?.job_id) {
+      try {
+        const { data, error } = await supabase
+          .from("job_requests")
+          .select("request_id, description, hours, job_type, sort_order")
+          .eq("job_id", match.job_id)
+          .order("sort_order", { ascending: true });
+
+        if (!error && data) {
+          setJobRequests(data);
+          setSelectedRequest("job"); // Reset to job level
+        } else {
+          setJobRequests([]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch job requests:", err);
+        setJobRequests([]);
+      }
+    } else {
+      setJobRequests([]);
+      setSelectedRequest("job");
+    }
   };
 
   const resolveJobIdByNumber = useCallback(
@@ -339,6 +375,29 @@ export default function UserClockingHistory() {
     [activeJobs]
   );
 
+  const requestOptions = useMemo(() => {
+    const options = [
+      {
+        key: "job",
+        value: "job",
+        label: formJobNumber ? `Job #${formJobNumber}` : "Job (select job first)",
+        description: "Clock onto the main job"
+      }
+    ];
+
+    jobRequests.forEach((req) => {
+      const requestKey = `R${req.request_id}`;
+      options.push({
+        key: requestKey,
+        value: requestKey,
+        label: `${requestKey}: ${req.description || "Request"}`,
+        description: `${req.hours || 0}h allocated`
+      });
+    });
+
+    return options;
+  }, [jobRequests, formJobNumber]);
+
   const handleManualEntrySubmit = useCallback(
     async (event) => {
       event.preventDefault();
@@ -350,15 +409,18 @@ export default function UserClockingHistory() {
         return;
       }
 
+      if (!clockInDate || !clockOutDate) {
+        setFormError("Clock-in and clock-out dates are required.");
+        return;
+      }
+
       if (!formStartTime || !formFinishTime) {
         setFormError("Start and finish times are required.");
         return;
       }
 
-      const baseDate = new Date();
-      baseDate.setHours(0, 0, 0, 0);
-      const startDate = buildDateFromTime(formStartTime, baseDate);
-      const finishDate = buildDateFromTime(formFinishTime, startDate || baseDate);
+      const startDate = buildDateFromTime(formStartTime, new Date(clockInDate));
+      const finishDate = buildDateFromTime(formFinishTime, new Date(clockOutDate));
 
       if (!startDate || !finishDate) {
         setFormError("Please provide valid time values.");
@@ -366,7 +428,8 @@ export default function UserClockingHistory() {
       }
 
       if (finishDate <= startDate) {
-        finishDate.setDate(finishDate.getDate() + 1);
+        setFormError("Clock-out must be after clock-in.");
+        return;
       }
 
       const durationMs = finishDate.getTime() - startDate.getTime();
@@ -391,12 +454,31 @@ export default function UserClockingHistory() {
         }
       }
 
-      const dateString = startDate.toISOString().split("T")[0];
+      const dateString = clockInDate;
       const hoursWorked = Number((durationMs / (1000 * 60 * 60)).toFixed(2));
 
       setFormSubmitting(true);
 
       try {
+        // Build request snapshot for notes field
+        const selectedRequestData = jobRequests.find(r => `R${r.request_id}` === selectedRequest);
+        let notesPayload = null;
+
+        if (selectedRequest && selectedRequest !== "job") {
+          notesPayload = JSON.stringify({
+            requestKey: selectedRequest,
+            requestLabel: selectedRequest,
+            requestTitle: selectedRequestData?.description || selectedRequest,
+            requestHours: selectedRequestData?.hours || null
+          });
+        } else {
+          notesPayload = JSON.stringify({
+            requestKey: "job",
+            requestLabel: `Job #${jobNumberTrimmed}`,
+            requestTitle: `Job #${jobNumberTrimmed}`
+          });
+        }
+
         const { error: insertError } = await supabase.from("time_records").insert([
           {
             user_id: technicianUserId,
@@ -406,7 +488,7 @@ export default function UserClockingHistory() {
             clock_out: finishDate.toISOString(),
             date: dateString,
             hours_worked: hoursWorked,
-            notes: formStatus,
+            notes: notesPayload,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
@@ -445,11 +527,48 @@ export default function UserClockingHistory() {
         }
 
         setFormSuccess("Clocking entry saved successfully.");
+        setLastClockedJobId(jobIdForEntry);
+        setLastClockedJobNumber(jobNumberTrimmed);
+
+        // Fetch job details for ClockingHistorySection
+        try {
+          const { data: jobData, error: jobError } = await supabase
+            .from("jobs")
+            .select("labour_hours, requests")
+            .eq("id", jobIdForEntry)
+            .single();
+
+          if (!jobError && jobData) {
+            setLastClockedJobAllocatedHours(jobData.labour_hours || null);
+
+            // Normalize requests from the job
+            const normalizedRequests = [];
+            if (jobData.requests && typeof jobData.requests === 'object') {
+              Object.entries(jobData.requests).forEach(([key, req]) => {
+                if (req && typeof req === 'object') {
+                  normalizedRequests.push({
+                    key,
+                    title: req.title || req.description || key,
+                    hours: req.hours || req.labour_hours || 0
+                  });
+                }
+              });
+            }
+            setLastClockedJobRequests(normalizedRequests);
+          }
+        } catch (err) {
+          console.error("Failed to fetch job details for history:", err);
+        }
+
+        setHistoryRefreshSignal((prev) => prev + 1);
         setFormJobNumber("");
         setSelectedJobId(null);
+        setSelectedRequest("job");
+        setJobRequests([]);
+        setClockInDate(new Date().toISOString().split("T")[0]);
+        setClockOutDate(new Date().toISOString().split("T")[0]);
         setFormStartTime("");
         setFormFinishTime("");
-        setFormStatus("In Progress");
         fetchEntries();
         fetchActiveJobs();
       } catch (err) {
@@ -461,11 +580,14 @@ export default function UserClockingHistory() {
     },
     [
       technicianUserId,
+      clockInDate,
+      clockOutDate,
       formStartTime,
       formFinishTime,
       formJobNumber,
-      formStatus,
+      selectedRequest,
       selectedJobId,
+      jobRequests,
       fetchEntries,
       fetchActiveJobs,
       resolveJobIdByNumber,
@@ -511,7 +633,7 @@ export default function UserClockingHistory() {
   const basePanelStyle = {
     borderRadius: "28px",
     border: "1px solid var(--surface-light)",
-    background: "var(--surface)",
+    background: "var(--layer-section-level-2)",
     padding: "32px",
     boxShadow: "none",
     display: "flex",
@@ -543,8 +665,8 @@ export default function UserClockingHistory() {
 
   const statCardStyle = {
     borderRadius: "20px",
-    border: "1px solid rgba(var(--text-primary-rgb), 0.08)",
-    background: "rgba(var(--text-primary-rgb), 0.05)",
+    border: "1px solid var(--border)",
+    background: "var(--layer-section-level-1)",
     padding: "18px",
     display: "flex",
     flexDirection: "column",
@@ -832,38 +954,28 @@ export default function UserClockingHistory() {
               )}
 
               <form style={{ display: "flex", flexDirection: "column", gap: "18px" }} onSubmit={handleManualEntrySubmit}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label htmlFor="jobNumber" style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}>
-                      Job number
-                    </label>
-                    <input
-                      id="jobNumber"
-                      type="text"
-                      value={formJobNumber}
-                      onChange={(event) => handleJobNumberChange(event.target.value)}
-                      placeholder="Enter job number"
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label htmlFor="statusSelect" style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}>
-                      Status / Note
-                    </label>
-                    <select
-                      id="statusSelect"
-                      value={formStatus}
-                      onChange={(event) => setFormStatus(event.target.value)}
-                      style={{ ...inputStyle, appearance: "none" }}
-                    >
-                      <option value="In Progress">In Progress</option>
-                      <option value="Waiting for Job">Waiting for Job</option>
-                      <option value="Tea Break">Tea Break</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
+                {/* Row 1: Clock-in date, Clock-out date, Clock-in time, Clock-out time */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+                  <CalendarField
+                    id="clockInDate"
+                    label="Clock-in date"
+                    value={clockInDate}
+                    onChange={(event) => {
+                      setClockInDate(event.target.value);
+                      // Auto-set clock-out date to match clock-in date
+                      if (!clockOutDate || clockOutDate < event.target.value) {
+                        setClockOutDate(event.target.value);
+                      }
+                    }}
+                    required
+                  />
+                  <CalendarField
+                    id="clockOutDate"
+                    label="Clock-out date"
+                    value={clockOutDate}
+                    onChange={(event) => setClockOutDate(event.target.value)}
+                    required
+                  />
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label htmlFor="startTime" style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}>
                       Clock-in time
@@ -892,6 +1004,38 @@ export default function UserClockingHistory() {
                   </div>
                 </div>
 
+                {/* Row 2: Job number, Request selector */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label htmlFor="jobNumber" style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}>
+                      Job number
+                    </label>
+                    <input
+                      id="jobNumber"
+                      type="text"
+                      value={formJobNumber}
+                      onChange={(event) => handleJobNumberChange(event.target.value)}
+                      placeholder="Enter job number"
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label htmlFor="requestSelector" style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}>
+                      Job / Request
+                    </label>
+                    <DropdownField
+                      id="requestSelector"
+                      placeholder="Select job or request"
+                      options={requestOptions}
+                      value={selectedRequest}
+                      onChange={(event) => setSelectedRequest(event.target.value)}
+                      disabled={!formJobNumber}
+                      required
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                </div>
+
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
                   <button type="submit" disabled={formSubmitting} style={{ ...buttonPrimaryStyle, opacity: formSubmitting ? 0.7 : 1, cursor: formSubmitting ? "not-allowed" : "pointer" }}>
                     {formSubmitting ? "Saving entry…" : "Save clocking entry"}
@@ -901,9 +1045,12 @@ export default function UserClockingHistory() {
                     onClick={() => {
                       setFormJobNumber("");
                       setSelectedJobId(null);
+                      setSelectedRequest("job");
+                      setJobRequests([]);
+                      setClockInDate(new Date().toISOString().split("T")[0]);
+                      setClockOutDate(new Date().toISOString().split("T")[0]);
                       setFormStartTime("");
                       setFormFinishTime("");
-                      setFormStatus("In Progress");
                       setFormError("");
                       setFormSuccess("");
                     }}
@@ -914,6 +1061,18 @@ export default function UserClockingHistory() {
                 </div>
               </form>
             </section>
+          )}
+
+          {isManager && lastClockedJobId && lastClockedJobNumber && (
+            <ClockingHistorySection
+              jobId={lastClockedJobId}
+              jobNumber={lastClockedJobNumber}
+              requests={[]}
+              jobAllocatedHours={null}
+              refreshSignal={historyRefreshSignal}
+              enableRequestClick={false}
+              title="Clocking history"
+            />
           )}
           </div>
         </div>

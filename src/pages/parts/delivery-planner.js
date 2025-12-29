@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useTheme } from "@/styles/themeProvider";
+import { CalendarField } from "@/components/calendarAPI";
 
 const sectionStyle = {
   background: "var(--surface)",
@@ -1542,20 +1543,12 @@ function DeliveryJobModal({
         )}
 
         <div style={modalFieldColumnStyle}>
-          <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span style={{ fontWeight: 600 }}>Delivery date</span>
-            <input
-              type="date"
-              value={job.delivery_date || ""}
-              onChange={(event) => onFieldChange("delivery_date", event.target.value)}
-              style={{
-                borderRadius: "10px",
-                border: "1px solid var(--surface-light)",
-                padding: "10px",
-                fontWeight: 600,
-              }}
-            />
-          </label>
+          <CalendarField
+            label="Delivery date"
+            value={job.delivery_date || ""}
+            onChange={(value) => onFieldChange("delivery_date", value)}
+            name="delivery_date"
+          />
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <span style={{ fontWeight: 600 }}>Payment method</span>
             <input
