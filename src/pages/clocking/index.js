@@ -4,27 +4,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { supabase } from "@/lib/supabaseClient";
+import { clockInToJob, clockOutFromJob } from "@/lib/database/jobClocking";
+import { generateTechnicianSlug } from "@/utils/technicianSlug";
 
 const TECH_ROLES = ["Techs", "Technician", "Technician Lead", "Lead Technician"];
 const MOT_ROLES = ["MOT Tester", "Tester"];
 const TARGET_ROLES = [...new Set([...TECH_ROLES, ...MOT_ROLES])];
 const TARGET_ROLE_SET = new Set(TARGET_ROLES.map((role) => role.toLowerCase()));
-
-const STATUS_STYLES = {
-  "In Progress": "bg-emerald-100 border-emerald-300 text-emerald-800",
-  "Waiting for Job": "bg-slate-100 border-slate-300 text-slate-700",
-  "Tea Break": "bg-amber-100 border-amber-300 text-amber-800",
-  "On MOT": "bg-sky-100 border-sky-300 text-sky-800",
-  "Not Clocked In": "bg-slate-100 border-slate-300 text-slate-600",
-};
-
-const STATUS_LEGEND_ORDER = [
-  "In Progress",
-  "On MOT",
-  "Tea Break",
-  "Waiting for Job",
-  "Not Clocked In",
-];
+const MOT_ROLE_SET = new Set(MOT_ROLES.map((role) => role.toLowerCase()));
 
 const formatTime = (value) => {
   if (!value) return "—";
@@ -47,22 +34,10 @@ const getDurationMs = (startValue, endValue) => {
 
 const formatDuration = (durationMs) => {
   if (!durationMs || durationMs < 1000) {
-    return "0m";
+    return "0.00h";
   }
-  const totalMinutes = Math.floor(durationMs / 60000);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  const parts = [];
-  if (hours) {
-    parts.push(`${hours}h`);
-  }
-  if (minutes) {
-    parts.push(`${minutes}m`);
-  }
-  if (!parts.length) {
-    parts.push("0m");
-  }
-  return parts.join(" ");
+  const hours = durationMs / 3600000;
+  return `${hours.toFixed(2)}h`;
 };
 
 const deriveStatus = (jobEntry, timeRecord, referenceTime, hasClocked = false) => {
@@ -78,6 +53,9 @@ const deriveStatus = (jobEntry, timeRecord, referenceTime, hasClocked = false) =
       status: isMotJob ? "On MOT" : "In Progress",
       duration,
       jobNumber: jobEntry.job_number || jobEntry.job?.job_number || null,
+      jobId: jobEntry.job_id || jobEntry.job?.id || null,
+      clockingId: jobEntry.id || null,
+      clockIn: jobEntry.clock_in || null,
     };
   }
 
@@ -90,6 +68,9 @@ const deriveStatus = (jobEntry, timeRecord, referenceTime, hasClocked = false) =
       status: isTea ? "Tea Break" : "Waiting for Job",
       duration,
       jobNumber: null,
+      jobId: null,
+      clockingId: null,
+      clockIn: timeRecord.clock_in || null,
     };
   }
 
@@ -97,6 +78,9 @@ const deriveStatus = (jobEntry, timeRecord, referenceTime, hasClocked = false) =
     status: hasClocked ? "Waiting for Job" : "Not Clocked In",
     duration: 0,
     jobNumber: null,
+    jobId: null,
+    clockingId: null,
+    clockIn: null,
   };
 };
 
@@ -105,6 +89,10 @@ function ClockingOverviewTab({ onSummaryChange }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState("");
+  const [selectedTechnician, setSelectedTechnician] = useState(null);
+  const [modalJobNumber, setModalJobNumber] = useState("");
+  const [modalError, setModalError] = useState("");
+  const [modalSubmitting, setModalSubmitting] = useState(false);
 
   const fetchClocking = useCallback(async () => {
     setLoading(true);
@@ -131,7 +119,9 @@ function ClockingOverviewTab({ onSummaryChange }) {
         .from("job_clocking")
         .select(
           `
+            id,
             user_id,
+            job_id,
             job_number,
             clock_in,
             job:job_id (
@@ -177,24 +167,39 @@ function ClockingOverviewTab({ onSummaryChange }) {
       const prepared = (users || []).map((user) => {
         const jobEntry = jobMap.get(user.user_id);
         const timeRecord = timeMap.get(user.user_id);
-        const { status, duration, jobNumber } = deriveStatus(
+        const derived = deriveStatus(
           jobEntry,
           timeRecord,
           referenceTime,
           clockedUserIds.has(user.user_id)
         );
+        const roleLabel = user.role || "Tech";
+        const isMotRole = MOT_ROLE_SET.has((roleLabel || "").toLowerCase());
+        const isActiveJob = derived.status === "In Progress" || derived.status === "On MOT";
+
+        const slug = generateTechnicianSlug(user.first_name, user.last_name, user.user_id);
 
         return {
           userId: user.user_id,
           name: `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Unnamed",
-          role: user.role || "Tech",
-          status,
-          jobNumber,
-          timeOnActivity: duration > 0 ? formatDuration(duration) : "—",
+          role: roleLabel,
+          isMotRole,
+          slug: slug || `${user.user_id}`,
+          status: derived.status,
+          jobNumber: derived.jobNumber,
+          jobId: derived.jobId,
+          clockEntryId: derived.clockingId,
+          clockIn: derived.clockIn,
+          timeOnActivity: isActiveJob && derived.duration > 0 ? formatDuration(derived.duration) : "—",
         };
       });
 
-      prepared.sort((a, b) => a.name.localeCompare(b.name));
+      prepared.sort((a, b) => {
+        if (a.isMotRole !== b.isMotRole) {
+          return a.isMotRole ? 1 : -1;
+        }
+        return a.name.localeCompare(b.name);
+      });
 
       const summaryPayload = {
         total: prepared.length,
@@ -249,6 +254,140 @@ function ClockingOverviewTab({ onSummaryChange }) {
     };
   }, [fetchClocking]);
 
+  useEffect(() => {
+    if (!selectedTechnician) {
+      return;
+    }
+    const updated = teamStatus.find((tech) => tech.userId === selectedTechnician.userId);
+    if (!updated) {
+      return;
+    }
+    setSelectedTechnician((prev) => {
+      if (!prev) {
+        return prev;
+      }
+      const unchanged =
+        prev.status === updated.status &&
+        prev.jobNumber === updated.jobNumber &&
+        prev.timeOnActivity === updated.timeOnActivity &&
+        prev.clockEntryId === updated.clockEntryId &&
+        prev.jobId === updated.jobId;
+      if (unchanged) {
+        return prev;
+      }
+      return { ...prev, ...updated };
+    });
+  }, [teamStatus, selectedTechnician]);
+
+  const resolveJobIdByNumber = useCallback(async (jobNumber) => {
+    const normalized = (jobNumber || "").trim();
+    if (!normalized) {
+      throw new Error("Enter a job number.");
+    }
+
+    const { data, error } = await supabase
+      .from("jobs")
+      .select("id, job_number")
+      .ilike("job_number", normalized)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data?.id) {
+      throw new Error("Job number not found.");
+    }
+
+    return data;
+  }, []);
+
+  const closeClockModal = useCallback(() => {
+    setSelectedTechnician(null);
+    setModalJobNumber("");
+    setModalError("");
+    setModalSubmitting(false);
+  }, []);
+
+  const openClockModal = useCallback((tech) => {
+    setSelectedTechnician(tech);
+    setModalJobNumber(tech.jobNumber || "");
+    setModalError("");
+    setModalSubmitting(false);
+  }, []);
+
+  const handleClockInSubmit = useCallback(async () => {
+    if (!selectedTechnician) {
+      return;
+    }
+    const trimmedNumber = (modalJobNumber || "").trim();
+    if (!trimmedNumber) {
+      setModalError("Please enter a job number.");
+      return;
+    }
+
+    setModalSubmitting(true);
+    try {
+      const jobRecord = await resolveJobIdByNumber(trimmedNumber);
+      const result = await clockInToJob({
+        userId: selectedTechnician.userId,
+        jobId: jobRecord.id,
+        jobNumber: jobRecord.job_number || trimmedNumber,
+        workType: "manual",
+      });
+
+      if (!result?.success) {
+        throw new Error(result?.error || "Unable to clock onto the job.");
+      }
+
+      await fetchClocking();
+      closeClockModal();
+    } catch (err) {
+      setModalError(err?.message || "Unable to clock onto the job.");
+    } finally {
+      setModalSubmitting(false);
+    }
+  }, [selectedTechnician, modalJobNumber, resolveJobIdByNumber, fetchClocking, closeClockModal]);
+
+  const handleClockOutSubmit = useCallback(async () => {
+    if (!selectedTechnician?.clockEntryId) {
+      setModalError("No active clocking entry found for this user.");
+      return;
+    }
+    setModalSubmitting(true);
+    try {
+      const result = await clockOutFromJob({
+        userId: selectedTechnician.userId,
+        jobId: selectedTechnician.jobId,
+        clockingId: selectedTechnician.clockEntryId,
+      });
+
+      if (!result?.success) {
+        throw new Error(result?.error || "Unable to clock the user off.");
+      }
+
+      await fetchClocking();
+      setModalError("");
+      setModalJobNumber("");
+      setSelectedTechnician((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "Not Clocked In",
+              jobNumber: null,
+              jobId: null,
+              clockEntryId: null,
+              timeOnActivity: "—",
+            }
+          : prev
+      );
+    } catch (err) {
+      setModalError(err?.message || "Unable to clock the user off.");
+    } finally {
+      setModalSubmitting(false);
+    }
+  }, [selectedTechnician, fetchClocking]);
+
   const summaryStats = useMemo(() => {
     const summary = {
       total: teamStatus.length,
@@ -276,40 +415,17 @@ function ClockingOverviewTab({ onSummaryChange }) {
         minute: "2-digit",
       })
     : "—";
+  const modalOpen = Boolean(selectedTechnician);
+  const modalTechClockedIn =
+    selectedTechnician &&
+    (selectedTechnician.status === "In Progress" || selectedTechnician.status === "On MOT");
+  const trimmedModalJobNumber = (modalJobNumber || "").trim();
+  const modalActionDisabled = modalSubmitting || (!modalTechClockedIn && !trimmedModalJobNumber);
+  const modalActionLabel = modalTechClockedIn ? "Clock off" : "Clock in";
+  const jobNumberInputId = "clocking-job-number-input";
 
   return (
     <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
-      {/* Page Header */}
-      <header
-        style={{
-          borderRadius: "18px",
-          padding: "24px",
-          border: "1px solid var(--surface-light)",
-          background: "var(--surface)",
-          boxShadow: "none",
-          display: "flex",
-          flexDirection: "column",
-          gap: "6px",
-        }}
-      >
-        <span
-          style={{
-            textTransform: "uppercase",
-            letterSpacing: "0.15em",
-            fontSize: "0.78rem",
-            color: "var(--primary-dark)",
-          }}
-        >
-          Workshop Operations
-        </span>
-        <h1 style={{ margin: 0, fontSize: "1.8rem", color: "var(--danger-dark)" }}>
-          Live Workshop Overview
-        </h1>
-        <p style={{ margin: 0, color: "var(--info)" }}>
-          Real-time technician status and activity feed
-        </p>
-      </header>
-
       {/* Summary Stats Section */}
       <section
         style={{
@@ -558,9 +674,6 @@ function ClockingOverviewTab({ onSummaryChange }) {
           <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>
             Technician Status
           </h2>
-          <p style={{ margin: "4px 0 0", color: "var(--info)" }}>
-            Live technician activity and job assignments
-          </p>
         </div>
 
         {loading && teamStatus.length === 0 ? (
@@ -586,94 +699,145 @@ function ClockingOverviewTab({ onSummaryChange }) {
               gap: "16px",
             }}
           >
-            {teamStatus.map((tech) => (
-              <Link
-                key={tech.userId}
-                href={`/clocking/${tech.userId}`}
-                style={{ textDecoration: "none", color: "inherit" }}
-              >
-                <article
-                  style={{
-                    borderRadius: "18px",
-                    padding: "20px",
-                    background: "var(--background)",
-                    border: "1px solid var(--surface-light)",
-                    boxShadow: "none",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "14px",
-                    height: "100%",
-                    transition: "all 0.2s ease",
-                    cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
+            {teamStatus.map((tech) => {
+              const showClockButton =
+                tech.status === "Not Clocked In" ||
+                tech.status === "In Progress" ||
+                tech.status === "On MOT";
+              const clockButtonLabel =
+                tech.status === "Not Clocked In" ? "Not clocked in" : "Clocked in";
+              const buttonPalette =
+                tech.status === "Not Clocked In"
+                  ? {
+                      background: "var(--danger-surface)",
+                      border: "1px solid var(--danger-dark)",
+                      color: "var(--danger-dark)",
+                    }
+                  : {
+                      background: "var(--success-surface)",
+                      border: "1px solid var(--success)",
+                      color: "var(--success-dark)",
+                    };
+
+              const handleClockButtonClick = (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                openClockModal(tech);
+              };
+
+              return (
+                <Link
+                  key={tech.userId}
+                  href={`/clocking/${tech.slug}`}
+                  style={{ textDecoration: "none", color: "inherit" }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 600, color: "var(--primary-dark)" }}>
-                        {tech.name}
-                      </h3>
-                      <span
-                        style={{
-                          display: "inline-block",
-                          marginTop: "8px",
-                          padding: "6px 12px",
-                          borderRadius: "999px",
-                          border: "1px solid var(--surface-light)",
-                          fontSize: "0.7rem",
-                          fontWeight: 600,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                          color: "var(--info)",
-                          background: "var(--surface)",
-                        }}
-                      >
-                        {tech.role}
-                      </span>
-                    </div>
-                    <span
+                  <article
+                    style={{
+                      borderRadius: "18px",
+                      padding: "20px",
+                      background: "var(--background)",
+                      border: "1px solid var(--surface-light)",
+                      boxShadow: "none",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "14px",
+                      height: "100%",
+                      transition: "all 0.2s ease",
+                      cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                  >
+                    <div
                       style={{
-                        padding: "6px 12px",
-                        borderRadius: "10px",
-                        fontSize: "0.75rem",
-                        fontWeight: 600,
-                        ...(tech.status === "In Progress" && {
-                          background: "#d1fae5",
-                          border: "1px solid #6ee7b7",
-                          color: "#065f46",
-                        }),
-                        ...(tech.status === "On MOT" && {
-                          background: "#dbeafe",
-                          border: "1px solid #7dd3fc",
-                          color: "#075985",
-                        }),
-                        ...(tech.status === "Tea Break" && {
-                          background: "#fef3c7",
-                          border: "1px solid #fcd34d",
-                          color: "#92400e",
-                        }),
-                        ...(tech.status === "Waiting for Job" && {
-                          background: "#f1f5f9",
-                          border: "1px solid #cbd5e1",
-                          color: "#334155",
-                        }),
-                        ...(tech.status === "Not Clocked In" && {
-                          background: "#f1f5f9",
-                          border: "1px solid #cbd5e1",
-                          color: "#64748b",
-                        }),
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        gap: "12px",
                       }}
                     >
-                      {tech.status}
-                    </span>
-                  </div>
+                      <div style={{ flex: 1 }}>
+                        <h3
+                          style={{
+                            margin: 0,
+                            fontSize: "1.1rem",
+                            fontWeight: 600,
+                            color: "var(--primary-dark)",
+                          }}
+                        >
+                          {tech.name}
+                        </h3>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            marginTop: "8px",
+                            padding: "6px 12px",
+                            borderRadius: "999px",
+                            border: "1px solid var(--surface-light)",
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            color: "var(--info)",
+                            background: "var(--surface)",
+                          }}
+                        >
+                          {tech.role}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
+                        {showClockButton ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={handleClockButtonClick}
+                              style={{
+                                padding: "8px 16px",
+                                borderRadius: "12px",
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.05em",
+                                background: buttonPalette.background,
+                                border: buttonPalette.border,
+                                color: buttonPalette.color,
+                                cursor: "pointer",
+                              }}
+                            >
+                              {clockButtonLabel}
+                            </button>
+                            {tech.status !== "Not Clocked In" && (
+                              <span style={{ fontSize: "0.7rem", color: "var(--info)" }}>{tech.status}</span>
+                            )}
+                          </>
+                        ) : (
+                          <span
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: "10px",
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              background: "#f1f5f9",
+                              border: "1px solid #cbd5e1",
+                              color: "#334155",
+                              ...(tech.status === "Tea Break" && {
+                                background: "#fef3c7",
+                                border: "1px solid #fcd34d",
+                                color: "#92400e",
+                              }),
+                            }}
+                          >
+                            {tech.status}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
                   <div
                     style={{
@@ -787,203 +951,175 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   </div>
                 </article>
               </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
 
-      {/* Status Snapshot Summary Section */}
-      <section
-        style={{
-          background: "var(--surface)",
-          borderRadius: "18px",
-          padding: "24px",
-          border: "1px solid var(--surface-light)",
-          boxShadow: "none",
-          display: "flex",
-          flexDirection: "column",
-          gap: "14px",
-        }}
-      >
-        <div>
-          <p
-            style={{
-              margin: 0,
-              fontSize: "0.7rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              color: "var(--info)",
-              fontWeight: 600,
-            }}
-          >
-            Status Snapshot Summary
-          </p>
-          <h3 style={{ margin: "6px 0 0", fontSize: "1.1rem", fontWeight: 600, color: "var(--primary-dark)" }}>
-            {summaryStats.total} technicians monitored
-          </h3>
-        </div>
-
+      {modalOpen && selectedTechnician && (
         <div
+          className="clocking-modal-overlay"
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "12px",
+            position: "fixed",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "24px",
+            zIndex: 50,
+            backdropFilter: "blur(4px)",
           }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="clocking-modal-title"
         >
           <div
             style={{
-              borderRadius: "14px",
-              padding: "14px",
-              background: "var(--danger-surface)",
+              width: "min(460px, 100%)",
+              borderRadius: "22px",
+              background: "var(--surface)",
               border: "1px solid var(--surface-light)",
+              boxShadow: "0 25px 60px rgba(15, 15, 15, 0.25)",
+              padding: "24px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
             }}
           >
-            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--info)" }}>
-              Technicians
-            </p>
-            <p style={{ margin: "6px 0 0", fontSize: "1.6rem", fontWeight: 600, color: "var(--primary-dark)" }}>
-              {summaryStats.total}
-            </p>
-          </div>
+            <div>
+              <p style={{ margin: 0, fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                {selectedTechnician.name} · {selectedTechnician.role}
+              </p>
+              <h3 id="clocking-modal-title" style={{ margin: "6px 0 4px", fontSize: "1.3rem", color: "var(--primary-dark)" }}>
+                Clocking control
+              </h3>
+              {!modalTechClockedIn && <div style={{ height: "8px" }} />}
+            </div>
 
-          <div
-            style={{
-              borderRadius: "14px",
-              padding: "14px",
-              background: "var(--danger-surface)",
-              border: "1px solid var(--surface-light)",
-            }}
-          >
-            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--info)" }}>
-              In Progress
-            </p>
-            <p style={{ margin: "6px 0 0", fontSize: "1.6rem", fontWeight: 600, color: "var(--success)" }}>
-              {summaryStats.inProgress}
-            </p>
-          </div>
+            {modalError && (
+              <div
+                style={{
+                  borderRadius: "14px",
+                  padding: "10px 14px",
+                  border: "1px solid var(--danger)",
+                  background: "var(--danger-surface)",
+                  color: "var(--danger-dark)",
+                  fontSize: "0.85rem",
+                }}
+              >
+                {modalError}
+              </div>
+            )}
 
-          <div
-            style={{
-              borderRadius: "14px",
-              padding: "14px",
-              background: "var(--danger-surface)",
-              border: "1px solid var(--surface-light)",
-            }}
-          >
-            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--info)" }}>
-              On MOT
-            </p>
-            <p style={{ margin: "6px 0 0", fontSize: "1.6rem", fontWeight: 600, color: "var(--info)" }}>
-              {summaryStats.onMot}
-            </p>
-          </div>
+            {modalTechClockedIn ? (
+              <div
+                style={{
+                  borderRadius: "16px",
+                  border: "1px solid var(--surface-light)",
+                  background: "var(--surface-light)",
+                  padding: "16px",
+                  display: "grid",
+                  gap: "10px",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--info)" }}>
+                  <span style={{ fontWeight: 600 }}>Job number</span>
+                  <span>{selectedTechnician.jobNumber || "—"}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--info)" }}>
+                  <span style={{ fontWeight: 600 }}>Time on job</span>
+                  <span>{selectedTechnician.timeOnActivity}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--info)" }}>
+                  <span style={{ fontWeight: 600 }}>Status</span>
+                  <span>{selectedTechnician.status}</span>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <label htmlFor={jobNumberInputId} style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>
+                  Job number
+                </label>
+                <input
+                  id={jobNumberInputId}
+                  type="text"
+                  value={modalJobNumber}
+                  onChange={(event) => setModalJobNumber(event.target.value)}
+                  placeholder="job number"
+                  style={{
+                    width: "100%",
+                    borderRadius: "14px",
+                    border: "1px solid var(--surface-light)",
+                    background: "var(--surface-light)",
+                    padding: "12px",
+                    fontSize: "0.95rem",
+                    color: "var(--info)",
+                  }}
+                />
+              </div>
+            )}
 
-          <div
-            style={{
-              borderRadius: "14px",
-              padding: "14px",
-              background: "var(--danger-surface)",
-              border: "1px solid var(--surface-light)",
-            }}
-          >
-            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--info)" }}>
-              Tea Break
-            </p>
-            <p style={{ margin: "6px 0 0", fontSize: "1.6rem", fontWeight: 600, color: "var(--accent-purple)" }}>
-              {summaryStats.teaBreak}
-            </p>
-          </div>
-
-          <div
-            style={{
-              borderRadius: "14px",
-              padding: "14px",
-              background: "var(--danger-surface)",
-              border: "1px solid var(--surface-light)",
-            }}
-          >
-            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--info)" }}>
-              Waiting
-            </p>
-            <p style={{ margin: "6px 0 0", fontSize: "1.6rem", fontWeight: 600, color: "var(--primary)" }}>
-              {summaryStats.waiting}
-            </p>
-          </div>
-
-          <div
-            style={{
-              borderRadius: "14px",
-              padding: "14px",
-              background: "var(--danger-surface)",
-              border: "1px solid var(--surface-light)",
-            }}
-          >
-            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--info)" }}>
-              Offline
-            </p>
-            <p style={{ margin: "6px 0 0", fontSize: "1.6rem", fontWeight: 600, color: "var(--grey-accent)" }}>
-              {summaryStats.notClocked}
-            </p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+              <button
+                type="button"
+                onClick={closeClockModal}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: "12px",
+                  border: "1px solid var(--surface-light)",
+                  background: "var(--surface)",
+                  color: "var(--info)",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                }}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={modalTechClockedIn ? handleClockOutSubmit : handleClockInSubmit}
+                disabled={modalActionDisabled}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: "12px",
+                  border: "none",
+                  background: "var(--primary)",
+                  color: "var(--surface)",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  cursor: modalActionDisabled ? "not-allowed" : "pointer",
+                  opacity: modalActionDisabled ? 0.7 : 1,
+                }}
+              >
+                {modalActionLabel}
+              </button>
+            </div>
           </div>
         </div>
-
-        <p style={{ margin: "8px 0 0", fontSize: "0.75rem", color: "var(--info)" }}>
-          Last refreshed {formattedLastUpdated}. Figures update automatically from the live clocking feed.
-        </p>
-      </section>
+      )}
+      <style jsx>{`
+        #${jobNumberInputId}::placeholder {
+          color: var(--grey-accent);
+          opacity: 1;
+        }
+        :global([data-theme="dark"]) .clocking-modal-overlay {
+          background: rgba(10, 10, 10, 0.8);
+        }
+        :global(:not([data-theme="dark"])) .clocking-modal-overlay {
+          background: rgba(50, 50, 50, 0.45);
+        }
+      `}</style>
     </div>
   );
 }
 
 export default function ClockingPage() {
-  const [overviewStats, setOverviewStats] = useState(null);
-
-  const legendRows = STATUS_LEGEND_ORDER.map((label) => ({
-    label,
-    style: STATUS_STYLES[label],
-  }));
-
   return (
     <Layout>
       <div className="bg-slate-50 py-10">
         <div className="mx-auto w-full max-w-none space-y-6 px-4 sm:px-6 lg:px-10">
-          <section className="rounded-3xl border border-slate-200 bg-white/95 p-8 ">
-            <div className="flex flex-wrap items-center justify-between gap-6">
-              <div className="max-w-4xl space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Workshop clocking
-                </p>
-                <h1 className="text-3xl font-semibold text-slate-900">
-                  Live Workshop Overview
-                </h1>
-                <p className="text-base text-slate-500">
-                  Monitor every technician and MOT tester in real-time with live status updates and activity tracking.
-                </p>
-                {overviewStats && (
-                  <p className="text-sm text-slate-500">
-                    Tracking {overviewStats.total} technicians · Last update {overviewStats.lastUpdated
-                      ? new Date(overviewStats.lastUpdated).toLocaleTimeString("en-GB", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "—"}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {legendRows.map((row) => (
-                  <span
-                    key={row.label}
-                    className={`inline-flex items-center rounded-full border px-4 py-2 text-xs font-semibold tracking-wide ${row.style}`}
-                  >
-                    {row.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <ClockingOverviewTab onSummaryChange={setOverviewStats} />
+          <ClockingOverviewTab />
         </div>
       </div>
     </Layout>

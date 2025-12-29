@@ -501,6 +501,9 @@ export default function ViewJobCards() {
   ================================ */
   return (
     <Layout>
+      {
+        // bottom-layer
+      }
       <div
         style={{
           minHeight: "100vh",
@@ -515,16 +518,19 @@ export default function ViewJobCards() {
           style={{
             width: "100%",
             maxWidth: "1400px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+        }}
+      >
+        {
+          // middle-layer
+        }
+        <div
+          style={{
             display: "flex",
-            flexDirection: "column",
+            flexWrap: "wrap",
             gap: "16px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "16px",
               alignItems: "center",
               justifyContent: "space-between",
             }}
@@ -597,14 +603,17 @@ export default function ViewJobCards() {
               flex: 1,
               display: "flex",
               flexDirection: "column",
-              background: "var(--surface)",
-              borderRadius: "20px",
-              border: "1px solid var(--info-surface)",
-              boxShadow: "none",
-              padding: "16px",
-              minHeight: "0",
-            }}
-          >
+            background: "var(--surface)",
+            borderRadius: "20px",
+            border: "1px solid var(--info-surface)",
+            boxShadow: "none",
+            padding: "16px",
+            minHeight: "0",
+          }}
+        >
+          {
+            // top-layer
+          }
             <div
               style={{
                 display: "flex",
@@ -799,13 +808,17 @@ export default function ViewJobCards() {
 
           {/* ✅ Job Popup - Enhanced with all new fields */}
           {popupJob && (
-            <div
-              style={{
-                ...popupOverlayStyles,
-                zIndex: 1200,
-              }}
-              onClick={() => setPopupJob(null)}
-            >
+            <>
+              {
+                // top-layer
+              }
+              <div
+                style={{
+                  ...popupOverlayStyles,
+                  zIndex: 1200,
+                }}
+                onClick={() => setPopupJob(null)}
+              >
               <div
                 onClick={(e) => e.stopPropagation()}
                 style={{
@@ -1116,6 +1129,7 @@ export default function ViewJobCards() {
               </button>
             </div>
           </div>
+            </>
         )}
       </div>
     </div>
@@ -1124,6 +1138,7 @@ export default function ViewJobCards() {
 }
 
 const JobListCard = ({ job, onNavigate, onQuickView }) => {
+  // top-layer
   const jobType = deriveJobType(job);
   const appointmentLabel = getAppointmentDisplay(job);
   const jobDate = getJobDate(job);
@@ -1262,6 +1277,7 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
 };
 
 const OrderListCard = ({ order, onNavigate }) => {
+  // top-layer
   const items = order.requests || order.items || [];
   const totalItems = items.length;
   const deliveryLabel = order.delivery_type === "collection" ? "Collection" : "Delivery";

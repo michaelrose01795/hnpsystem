@@ -3,6 +3,8 @@ TO DO:
 
 
 
+
+
 LOOK INTO TRACKING PAGE
 
 
@@ -106,3 +108,10 @@ add a write up tab inbetween the Notes and VHC tab, have it so this mirrors the 
 
 
 Have it so the workshop/consumables-tracker page follows more of the dark theme when in dark mode than the light them (use less red and more purple)
+
+
+
+within the "Technician Focus" section removet text "Live callouts from the floor". within that section add a row of the 6 techs plus what ever MOT tester is loged on, if non loged on then show one bhut greyed out. remove the "Bay Readiness" section. have it so the "Technician Focus" is that full section but the techs are in two columns and however many rows requried. add to each tech the eta of the time the tech will be finishing. "Clocking Overview" section shows all 6 techs and there clocking status it shows "in progress" with their jobnumber they are clocked onto, "tea break" or "waiting for job". show this in a 2 column 3 row layout. remove the "Consumables" and "Important Notices" section. "Technicians Clocked In" links to the tech clocking and how many are set to "in progress", "Awaiting Parts" is linked to how many jobs are set to "Awaiting Parts" status, swich "QC / Road Test" to "Awaiting authoriseation" which is linked to when the VHC is set to send and is in the middle of being send and working being declinded or authorised. "Jobs On Site" this shows all of the jobnumners which are insdie the "/job-cards/view" within either the "Today's workload" or "Carry over" tab 
+
+
+
