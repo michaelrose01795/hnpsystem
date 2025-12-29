@@ -2,7 +2,7 @@
 // description: Reusable write-up form component that can be embedded in multiple locations
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
 import {
   getWriteUpByJobNumber,
@@ -183,6 +183,83 @@ const determineJobStatusFromTasks = (tasks = [], requests = [], hasRectification
   return hasPartsOnOrder(requests) ? "Awaiting Parts" : "In Progress";
 };
 
+const createSectionEditorsState = () => ({
+  fault: [],
+  cause: [],
+  rectification: [],
+});
+
+const normalizeSectionEditorList = (value) => {
+  if (Array.isArray(value)) {
+    return Array.from(
+      new Set(
+        value
+          .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+          .filter((entry) => entry.length > 0)
+      )
+    );
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    return [value.trim()];
+  }
+  return [];
+};
+
+const normalizeSectionEditors = (value = {}) => ({
+  fault: normalizeSectionEditorList(value.fault),
+  cause: normalizeSectionEditorList(value.cause),
+  rectification: normalizeSectionEditorList(value.rectification),
+});
+
+const buildTaskChecklistSnapshot = (tasks = []) =>
+  (Array.isArray(tasks) ? tasks : []).map((task) => ({
+    source: task?.source || "request",
+    sourceKey: task?.sourceKey || composeTaskKey(task),
+    label: task?.label || "",
+    status: task?.status === "complete" ? "complete" : "additional_work",
+  }));
+
+const buildTaskSignature = (tasks = [], completionStatus = "", sectionEditors = createSectionEditorsState()) => {
+  const list = (Array.isArray(tasks) ? tasks : []).map((task) =>
+    `${task?.source || "request"}:${task?.sourceKey || composeTaskKey(task)}:${task?.status || "additional_work"}:${task?.label || ""}`
+  );
+  return `${list.join("|")}::${completionStatus || ""}::${JSON.stringify(normalizeSectionEditors(sectionEditors))}`;
+};
+
+const parseTaskChecklistPayload = (raw = null) => {
+  if (!raw) return null;
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw);
+    } catch (_error) {
+      return null;
+    }
+  }
+  if (typeof raw === "object") {
+    return raw;
+  }
+  return null;
+};
+
+const extractSectionEditorsFromChecklist = (rawChecklist) => {
+  const parsed = parseTaskChecklistPayload(rawChecklist);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return createSectionEditorsState();
+  }
+  return normalizeSectionEditors(parsed.meta?.sectionEditors);
+};
+
+const extractTasksFromChecklist = (rawChecklist) => {
+  const parsed = parseTaskChecklistPayload(rawChecklist);
+  if (!parsed) {
+    return [];
+  }
+  if (Array.isArray(parsed)) {
+    return parsed;
+  }
+  return Array.isArray(parsed.tasks) ? parsed.tasks : [];
+};
+
 const sectionBoxStyle = {
   backgroundColor: "var(--info-surface)",
   padding: "18px",
@@ -201,6 +278,72 @@ const sectionScrollerStyle = {
   flex: 1,
   overflowY: "auto",
   paddingRight: "4px",
+};
+
+const defaultSectionEditorKeys = ["fault", "cause", "rectification"];
+
+const sanitizeSectionEditors = (value = {}) => {
+  const safe = {};
+  defaultSectionEditorKeys.forEach((key) => {
+    safe[key] = [];
+  });
+
+  if (value && typeof value === "object") {
+    Object.entries(value).forEach(([key, rawList]) => {
+      if (!Array.isArray(rawList)) {
+        return;
+      }
+      const cleaned = Array.from(
+        new Set(
+          rawList
+            .map((entry) => (entry || "").toString().trim())
+            .filter(Boolean)
+        )
+      );
+      if (cleaned.length > 0) {
+        safe[key] = cleaned;
+      }
+    });
+  }
+
+  return safe;
+};
+
+const computeSectionEditorsSignature = (value = {}) =>
+  JSON.stringify(sanitizeSectionEditors(value));
+
+const editorsAreEqual = (left = {}, right = {}) =>
+  computeSectionEditorsSignature(left) === computeSectionEditorsSignature(right);
+
+const extractSectionEditorsFromChecklist = (payload) => {
+  if (!payload) {
+    return sanitizeSectionEditors();
+  }
+  if (Array.isArray(payload)) {
+    return sanitizeSectionEditors();
+  }
+  if (typeof payload === "object") {
+    if (payload.sectionEditors) {
+      return sanitizeSectionEditors(payload.sectionEditors);
+    }
+    if (payload.meta && payload.meta.sectionEditors) {
+      return sanitizeSectionEditors(payload.meta.sectionEditors);
+    }
+  }
+  return sanitizeSectionEditors();
+};
+
+const computeTaskSignature = (tasks = [], completionStatus = "") => {
+  if (!Array.isArray(tasks) || tasks.length === 0) {
+    return JSON.stringify({ tasks: [], completionStatus });
+  }
+  const payload = tasks.map((task) => ({
+    source: task?.source || "",
+    key: task?.sourceKey || "",
+    status: task?.status || "",
+    label: task?.label || "",
+  }));
+  return JSON.stringify({ tasks: payload, completionStatus });
 };
 
 const modernInputStyle = {
@@ -396,6 +539,12 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   const router = useRouter();
   const { user } = useUser();
   const username = user?.username;
+  const userDisplayName =
+    user?.displayName ||
+    user?.fullName ||
+    user?.username ||
+    user?.email ||
+    "";
   const { usersByRole, isLoading: rosterLoading } = useRoster();
   const { resolvedMode } = useTheme();
   const isDarkMode = resolvedMode === "dark";
@@ -423,6 +572,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
     jobDescription: "",
     causeEntries: [],
     vhcAuthorizationId: null,
+    sectionEditors: sanitizeSectionEditors()
   });
 
   const [showCheckSheetPopup, setShowCheckSheetPopup] = useState(false);
@@ -430,11 +580,16 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   const [activeTab, setActiveTab] = useState("writeup");
 
   const liveSyncTimeoutRef = useRef(null);
+  const autoSaveTimeoutRef = useRef(null);
   const lastSyncedFieldsRef = useRef({
     fault: "",
     caused: "",
     rectification: "",
     causeSignature: "",
+    sectionEditorsSignature: "",
+  });
+  const lastSyncedTasksRef = useRef({
+    signature: "",
   });
   const [writeUpMeta, setWriteUpMeta] = useState({ jobId: null, writeupId: null });
   const markFieldsSynced = useCallback((fields) => {
@@ -443,11 +598,47 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       caused: fields.caused || "",
       rectification: fields.rectification || "",
       causeSignature: fields.causeSignature || "",
+      sectionEditorsSignature: fields.sectionEditorsSignature || "",
+    };
+  }, []);
+
+  const markTasksSynced = useCallback((signature) => {
+    lastSyncedTasksRef.current = {
+      signature: signature || "",
     };
   }, []);
 
   const techsList = usersByRole?.["Techs"] || [];
   const isTech = techsList.includes(username);
+
+  const recordSectionEditor = useCallback(
+    (sectionKey) => {
+      if (!sectionKey || isTech) {
+        return;
+      }
+
+      const editorName = userDisplayName.trim();
+      if (!editorName) {
+        return;
+      }
+
+      setWriteUpData((prev) => {
+        const nextEditors = sanitizeSectionEditors(prev.sectionEditors);
+        const existing = nextEditors[sectionKey] || [];
+        if (existing.includes(editorName)) {
+          return prev;
+        }
+        return {
+          ...prev,
+          sectionEditors: {
+            ...nextEditors,
+            [sectionKey]: [...existing, editorName],
+          },
+        };
+      });
+    },
+    [isTech, userDisplayName]
+  );
 
   const refreshAuthorizedWork = useCallback(async () => {
     if (!writeUpMeta.jobId) {
@@ -510,6 +701,8 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
           const incomingCauseEntries = hydrateCauseEntries(writeUpResponse.causeEntries || []);
           const authorisedItems = writeUpResponse.authorisedItems || [];
           const mergedTasks = ensureAuthorizedTasks(writeUpResponse.tasks || [], authorisedItems);
+          const normalizedEditors = sanitizeSectionEditors(writeUpResponse.sectionEditors);
+          const completionStatusValue = writeUpResponse.completionStatus || "additional_work";
           setAuthorizedItems(authorisedItems);
           setWriteUpData((prev) => ({
             ...prev,
@@ -526,17 +719,20 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
             qty: writeUpResponse.qty || createCheckboxArray(),
             booked: writeUpResponse.booked || createCheckboxArray(),
             tasks: mergedTasks,
-            completionStatus: writeUpResponse.completionStatus || "additional_work",
+            completionStatus: completionStatusValue,
             jobDescription: writeUpResponse.jobDescription || writeUpResponse.fault || "",
             vhcAuthorizationId: writeUpResponse.vhcAuthorizationId || null,
             causeEntries: incomingCauseEntries,
+            sectionEditors: normalizedEditors,
           }));
           markFieldsSynced({
             fault: writeUpResponse.fault || "",
             caused: writeUpResponse.caused || "",
             rectification: writeUpResponse.rectification || "",
             causeSignature: buildCauseSignature(incomingCauseEntries),
+            sectionEditorsSignature: computeSectionEditorsSignature(normalizedEditors),
           });
+          markTasksSynced(computeTaskSignature(mergedTasks, completionStatusValue));
         } else {
           const fallbackDescription = formatNoteValue(jobPayload?.jobCard?.description || "");
           setAuthorizedItems([]);
@@ -568,13 +764,16 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
             jobDescription: fallbackDescription,
             vhcAuthorizationId: null,
             causeEntries: [],
+            sectionEditors: sanitizeSectionEditors(),
           }));
           markFieldsSynced({
             fault: fallbackDescription,
             caused: "",
             rectification: "",
             causeSignature: "",
+            sectionEditorsSignature: computeSectionEditorsSignature(),
           });
+          markTasksSynced(computeTaskSignature([], "additional_work"));
         }
       } catch (error) {
         console.error("❌ Error fetching write-up:", error);
@@ -655,32 +854,43 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       fault: formatted,
       jobDescription: formatted,
     }));
+    recordSectionEditor("fault");
   };
 
   const handleRequestLabelChange = (taskKey) => (event) => {
     const value = event.target.value;
+    let updated = false;
     setWriteUpData((prev) => ({
       ...prev,
       tasks: prev.tasks.map((task) => {
         if (composeTaskKey(task) !== taskKey) {
           return task;
         }
+        updated = true;
         return { ...task, label: value };
       }),
     }));
+    if (updated) {
+      recordSectionEditor("fault");
+    }
   };
 
   const handleTaskLabelChange = (taskKey) => (event) => {
     const value = event.target.value;
+    let updated = false;
     setWriteUpData((prev) => ({
       ...prev,
       tasks: prev.tasks.map((task) => {
         if (composeTaskKey(task) !== taskKey) {
           return task;
         }
+        updated = true;
         return { ...task, label: value };
       }),
     }));
+    if (updated) {
+      recordSectionEditor("rectification");
+    }
   };
 
   const handleCauseRequestChange = (entryId) => (event) => {
@@ -698,6 +908,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
         };
       }),
     }));
+    recordSectionEditor("cause");
   };
 
   const handleCauseTextChange = (entryId) => (event) => {
@@ -714,6 +925,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
         };
       }),
     }));
+    recordSectionEditor("cause");
   };
 
   const addCauseRow = () => {
@@ -745,7 +957,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   };
 
   const persistLiveNotes = useCallback(
-    async ({ fault, caused, rectification, causeEntries }) => {
+    async ({ fault, caused, rectification, causeEntries, sectionEditors }) => {
       const jobId = writeUpMeta.jobId;
       if (!jobId) {
         return;
@@ -762,12 +974,16 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
         jobNumber || "",
         username || ""
       );
+      const normalizedEditors = sanitizeSectionEditors(sectionEditors);
       const payload = {
         work_performed: sanitizedFields.fault || null,
         recommendations: sanitizedFields.caused || null,
         ratification: sanitizedFields.rectification || null,
         cause_entries: normalizedCauseEntries,
         updated_at: new Date().toISOString(),
+        task_checklist: {
+          sectionEditors: normalizedEditors,
+        },
       };
 
       try {
@@ -818,6 +1034,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
         markFieldsSynced({
           ...sanitizedFields,
           causeSignature: buildCauseSignature(normalizedCauseEntries),
+          sectionEditorsSignature: computeSectionEditorsSignature(normalizedEditors),
         });
       } catch (error) {
         console.error("❌ Live write-up sync failed:", error);
@@ -828,10 +1045,14 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
 
   // ✅ Toggle checklist status and auto-update completion state
   const toggleTaskStatus = (taskKey) => {
+    let toggledSection = null;
     setWriteUpData((prev) => {
       const updatedTasks = prev.tasks.map((task) => {
         const currentKey = composeTaskKey(task);
         if (currentKey !== taskKey) return task;
+        if (!toggledSection) {
+          toggledSection = task?.source === "request" ? "fault" : "rectification";
+        }
         const nextStatus = task.status === "complete" ? "additional_work" : "complete";
         return { ...task, status: nextStatus };
       });
@@ -855,7 +1076,37 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
 
       return { ...prev, tasks: updatedTasks, completionStatus };
     });
+    if (toggledSection) {
+      recordSectionEditor(toggledSection);
+    }
   };
+
+  useEffect(() => {
+    if (!writeUpMeta.jobId || saving) {
+      return;
+    }
+
+    const signature = computeTaskSignature(writeUpData.tasks, writeUpData.completionStatus);
+    if (signature === lastSyncedTasksRef.current.signature) {
+      return;
+    }
+
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      autoSaveTimeoutRef.current = null;
+      void performWriteUpSave({ silent: true });
+    }, 800);
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+        autoSaveTimeoutRef.current = null;
+      }
+    };
+  }, [writeUpMeta.jobId, writeUpData.tasks, writeUpData.completionStatus, saving, performWriteUpSave]);
 
   useEffect(() => {
     if (!writeUpMeta.jobId) {
@@ -866,14 +1117,17 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       fault: writeUpData.fault,
       caused: writeUpData.caused,
       rectification: writeUpData.rectification,
+      sectionEditors: writeUpData.sectionEditors,
     };
     const causeSignature = buildCauseSignature(writeUpData.causeEntries);
+    const editorsSignature = computeSectionEditorsSignature(writeUpData.sectionEditors);
 
     const hasChanges =
       snapshot.fault !== lastSyncedFieldsRef.current.fault ||
       snapshot.caused !== lastSyncedFieldsRef.current.caused ||
       snapshot.rectification !== lastSyncedFieldsRef.current.rectification ||
-      causeSignature !== lastSyncedFieldsRef.current.causeSignature;
+      causeSignature !== lastSyncedFieldsRef.current.causeSignature ||
+      editorsSignature !== lastSyncedFieldsRef.current.sectionEditorsSignature;
 
     if (!hasChanges || saving) {
       return;
@@ -888,6 +1142,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
         persistLiveNotes({
           ...snapshot,
           causeEntries: writeUpData.causeEntries,
+          sectionEditors: snapshot.sectionEditors,
         });
       }, 600);
 
@@ -902,6 +1157,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
     writeUpData.caused,
     writeUpData.rectification,
     writeUpData.causeEntries,
+    writeUpData.sectionEditors,
     writeUpMeta.jobId,
     persistLiveNotes,
     saving,
@@ -911,6 +1167,9 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
     return () => {
       if (liveSyncTimeoutRef.current) {
         clearTimeout(liveSyncTimeoutRef.current);
+      }
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
       }
     };
   }, []);
@@ -930,6 +1189,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       const normalizedFault = incoming.work_performed ?? "";
       const normalizedCause = incoming.recommendations ?? "";
       const normalizedRectification = incoming.ratification ?? "";
+      const incomingEditors = extractSectionEditorsFromChecklist(incoming.task_checklist);
       setWriteUpData((prev) => {
         const nextState = { ...prev };
         let changed = false;
@@ -958,6 +1218,11 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
           changed = true;
         }
 
+        if (!editorsAreEqual(prev.sectionEditors, incomingEditors)) {
+          nextState.sectionEditors = incomingEditors;
+          changed = true;
+        }
+
         if (!changed) {
           return prev;
         }
@@ -967,6 +1232,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
           caused: nextState.caused,
           rectification: nextState.rectification,
           causeSignature,
+          sectionEditorsSignature: computeSectionEditorsSignature(incomingEditors),
         });
 
         return nextState;
@@ -998,49 +1264,90 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
     };
   }, [writeUpMeta.jobId, markFieldsSynced]);
 
-  // ✅ Persist write-up back to the database
-  const handleSave = async () => {
-    if (!jobNumber) {
-      alert("Missing job number");
-      return;
-    }
-
-    try {
-      setSaving(true);
-      const result = await saveWriteUpToDatabase(jobNumber, writeUpData);
-      setSaving(false);
-
-      if (result?.success) {
-        if (result.completionStatus) {
-          setWriteUpData((prev) => ({ ...prev, completionStatus: result.completionStatus }));
+  const performWriteUpSave = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!jobNumber) {
+        if (!silent) {
+          alert("Missing job number");
         }
-
-        const requestsForPartsStatus = jobData?.jobCard?.partsRequests || [];
-        const desiredStatus = determineJobStatusFromTasks(writeUpData.tasks, requestsForPartsStatus, rectificationTasks.length > 0);
-        if (desiredStatus && jobData?.jobCard?.id) {
-          try {
-            await updateJobStatus(jobData.jobCard.id, desiredStatus);
-          } catch (statusError) {
-            console.error("❌ Failed to update job status after saving write-up:", statusError);
-          }
-        }
-
-        alert("✅ Write-up saved successfully!");
-
-        // Call the callback if provided, otherwise navigate
-        if (onSaveSuccess) {
-          onSaveSuccess();
-        } else {
-          router.push(`/job-cards/${jobNumber}`);
-        }
-      } else {
-        alert(result?.error || "❌ Failed to save write-up");
+        return false;
       }
-    } catch (error) {
-      console.error("Error saving write-up:", error);
-      setSaving(false);
-      alert("❌ Error saving write-up");
-    }
+
+      try {
+        if (!silent) {
+          setSaving(true);
+        }
+        const result = await saveWriteUpToDatabase(jobNumber, writeUpData);
+
+        if (result?.success) {
+          const nextCompletionStatus = result.completionStatus || writeUpData.completionStatus;
+          setWriteUpData((prev) => ({
+            ...prev,
+            completionStatus: nextCompletionStatus,
+          }));
+
+          const requestsForPartsStatus = jobData?.jobCard?.partsRequests || [];
+          const desiredStatus = determineJobStatusFromTasks(
+            writeUpData.tasks,
+            requestsForPartsStatus,
+            rectificationTasks.length > 0
+          );
+          if (desiredStatus && jobData?.jobCard?.id) {
+            try {
+              await updateJobStatus(jobData.jobCard.id, desiredStatus);
+            } catch (statusError) {
+              console.error("❌ Failed to update job status after saving write-up:", statusError);
+            }
+          }
+
+          markTasksSynced(computeTaskSignature(writeUpData.tasks, nextCompletionStatus));
+
+          if (!silent) {
+            alert("✅ Write-up saved successfully!");
+            if (onSaveSuccess) {
+              onSaveSuccess();
+            } else if (isTech) {
+              router.push(`/job-cards/myjobs/${jobNumber}`);
+            } else {
+              router.push(`/job-cards/${jobNumber}`);
+            }
+          }
+          return true;
+        }
+
+        if (!silent) {
+          alert(result?.error || "❌ Failed to save write-up");
+        } else if (result?.error) {
+          console.error("❌ Failed to save write-up:", result.error);
+        }
+        return false;
+      } catch (error) {
+        console.error("Error saving write-up:", error);
+        if (!silent) {
+          alert("❌ Error saving write-up");
+        }
+        return false;
+      } finally {
+        if (!silent) {
+          setSaving(false);
+        }
+      }
+    },
+    [
+      jobNumber,
+      writeUpData,
+      jobData?.jobCard?.partsRequests,
+      jobData?.jobCard?.id,
+      rectificationTasks.length,
+      onSaveSuccess,
+      isTech,
+      router,
+      markTasksSynced,
+    ]
+  );
+
+  const handleSave = async () => {
+    await performWriteUpSave({ silent: false });
   };
 
   const goBackToJobCard = () => {
@@ -1085,8 +1392,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   const completionStatusLabel = getCompletionStatusLabel();
   const completionStatusColor = getCompletionStatusColor();
   const showRectificationStatus = rectificationTasks.length > 0;
-  const visibleRequestCount = Math.max(2, requestTasks.length);
-  const requestSlots = Array.from({ length: visibleRequestCount }, (_, index) => requestTasks[index] || null);
+  const requestSlots = requestTasks;
   const assignedRequestKeys = new Set(
     writeUpData.causeEntries
       .map((entry) => entry.requestKey)
@@ -1101,6 +1407,21 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       }
       return !assignedRequestKeys.has(task.sourceKey);
     });
+  const normalizedSectionEditors = useMemo(
+    () => sanitizeSectionEditors(writeUpData.sectionEditors),
+    [writeUpData.sectionEditors]
+  );
+  const renderSectionEditorMeta = (sectionKey) => {
+    const editors = normalizedSectionEditors[sectionKey] || [];
+    if (!Array.isArray(editors) || editors.length === 0) {
+      return null;
+    }
+    return (
+      <span style={{ ...sectionSubtitleStyle, color: "var(--accent-purple)", fontWeight: 600 }}>
+        Edited by {editors.join(", ")}
+      </span>
+    );
+  };
   const metadataFields = [
     { label: "Warranty Claim Number", field: "warrantyClaim", type: "input" },
     { label: "TSR Number", field: "tsrNumber", type: "input" },
@@ -1295,12 +1616,13 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
                   <div>
                     <p style={sectionTitleStyle}>Fault</p>
                     <span style={sectionSubtitleStyle}>Matching job requests</span>
+                    {renderSectionEditorMeta("fault")}
                   </div>
                   <span style={statusBadgeStyle}>Requests</span>
                 </div>
                 <div style={sectionScrollerStyle}>
                   {requestSlots.map((task, index) => {
-                    const slotKey = task ? composeTaskKey(task) : `slot-${index}`;
+                    const slotKey = composeTaskKey(task);
                     const isComplete = task?.status === "complete";
                     return (
                       <div key={slotKey} style={cardRowStyle(isComplete)}>
@@ -1308,8 +1630,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
                           <input
                             type="checkbox"
                             checked={isComplete}
-                            onChange={() => task && toggleTaskStatus(slotKey)}
-                            disabled={!task}
+                            onChange={() => toggleTaskStatus(slotKey)}
                             style={checkboxStyle}
                           />
                           {isComplete ? "Completed" : "Mark complete"}
@@ -1317,10 +1638,8 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
                         <div style={{ fontSize: "12px", color: "var(--info)" }}>Request {index + 1}</div>
                         <textarea
                           value={task?.label || ""}
-                          onChange={task ? handleRequestLabelChange(slotKey) : undefined}
-                          placeholder={task ? "" : "No request added yet."}
-                          readOnly={!task}
-                          style={task ? modernTextareaStyle : { ...modernTextareaStyle, borderStyle: "dashed", backgroundColor: "var(--info-surface)" }}
+                          onChange={handleRequestLabelChange(slotKey)}
+                          style={modernTextareaStyle}
                         />
                       </div>
                     );
@@ -1335,6 +1654,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
                   <div>
                     <p style={sectionTitleStyle}>Cause</p>
                     <span style={sectionSubtitleStyle}>Link faults to root causes</span>
+                    {renderSectionEditorMeta("cause")}
                   </div>
                   {canAddCause && (
                     <button
@@ -1395,6 +1715,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
                   <div>
                     <p style={sectionTitleStyle}>Rectification</p>
                     <span style={sectionSubtitleStyle}>Capture completed work</span>
+                    {renderSectionEditorMeta("rectification")}
                   </div>
                   {showRectificationStatus && (
                     <span style={{ ...completionBadgeStyle, backgroundColor: completionStatusColor }}>

@@ -339,6 +339,158 @@ function aggregateRequestTotals(requests = []) { // summarize request totals int
   );
 } // end aggregateRequestTotals
 
+async function buildJobInvoiceFallback({ jobNumber, vatRate, labourRate, companyProfile }) { // build proforma payload from job data
+  if (!jobNumber) {
+    return null;
+  }
+  const { job, customer, vehicle } = await fetchJobSnapshot(jobNumber, null); // reuse snapshot helper
+  if (!job) { // job missing => cannot build proforma
+    return null;
+  }
+  const [jobRequests, partAllocations] = await Promise.all([
+    fetchJobRequests(job.id),
+    fetchJobPartAllocations(job.id)
+  ]); // collect request + parts info
+  const requests = enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate); // derive request blocks
+  const totals = aggregateRequestTotals(requests); // compute totals
+  const invoiceTo = formatAddress(customer); // build customer address
+  const companyBlock = buildCompanyBlock(companyProfile); // company snapshot
+  const paymentBlock = buildPaymentBlock(companyProfile); // payment snapshot
+  const invoiceBlock = {
+    invoice_number: `PROFORMA-${job.job_number || jobNumber}`,
+    invoice_date: new Date().toISOString(),
+    account_number: job.account_number || "",
+    job_number: job.job_number || jobNumber,
+    order_number: "",
+    page_count: 1,
+    invoice_to: invoiceTo,
+    deliver_to: invoiceTo,
+    vehicle_details: buildVehicleDetails(null, job, vehicle),
+    totals
+  };
+  return {
+    company: companyBlock,
+    invoice: invoiceBlock,
+    requests,
+    payment: paymentBlock,
+    meta: {
+      isProforma: true,
+      source: "job",
+      notice: "Proforma totals generated from live job data until all invoice prerequisites are complete."
+    }
+  };
+} // end buildJobInvoiceFallback
+
+function formatOrderAddressBlock(name, address) { // helper to format order address strings
+  const lines = (address || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return {
+    name: name || "Customer",
+    lines,
+    postcode: ""
+  };
+}
+
+async function buildOrderInvoiceFallback({ orderNumber, vatRate, companyProfile }) { // build proforma payload from order data
+  if (!orderNumber) {
+    return null;
+  }
+  const { data: order, error } = await supabase
+    .from("parts_job_cards")
+    .select(
+      `
+        *,
+        items:parts_job_card_items(
+          id,
+          part_number,
+          part_name,
+          quantity,
+          unit_price,
+          unit_cost
+        )
+      `
+    )
+    .eq("order_number", orderNumber)
+    .limit(1)
+    .maybeSingle();
+  if (error && error.code !== "PGRST116") {
+    throw error;
+  }
+  if (!order) {
+    return null;
+  }
+  const parts = (order.items || []).map((item) => {
+    const qty = Number(item.quantity) || 0;
+    const unitPrice = Number(item.unit_price) || 0;
+    const net = unitPrice * qty;
+    const vat = net * (vatRate / 100);
+    return {
+      part_number: item.part_number || "",
+      description: item.part_name || "Part",
+      retail: unitPrice || null,
+      qty,
+      price: unitPrice,
+      vat,
+      rate: vatRate
+    };
+  });
+  const partsNet = parts.reduce((sum, part) => sum + part.price * part.qty, 0);
+  const partsVat = parts.reduce((sum, part) => sum + part.vat, 0);
+  const requests = [
+    {
+      request_number: 1,
+      title: "Parts Order Items",
+      summary: `Order ${orderNumber}`,
+      labour: { net: 0, vat: 0, rate: vatRate },
+      parts,
+      totals: {
+        request_total_net: partsNet,
+        request_total_vat: partsVat,
+        request_total_gross: partsNet + partsVat
+      }
+    }
+  ];
+  const totals = aggregateRequestTotals(requests);
+  const invoiceTo = formatOrderAddressBlock(order.customer_name, order.customer_address);
+  const deliverAddressBlock = order.delivery_address
+    ? formatOrderAddressBlock(order.delivery_contact || order.customer_name, order.delivery_address)
+    : invoiceTo;
+  const vehicleDetails = {
+    reg: order.vehicle_reg || "",
+    vehicle: [order.vehicle_make, order.vehicle_model].filter(Boolean).join(" ").trim(),
+    chassis: order.vehicle_vin || "",
+    engine: "",
+    reg_date: "",
+    mileage: "",
+    delivery_date: order.delivery_eta || order.updated_at || ""
+  };
+  const invoiceBlock = {
+    invoice_number: `PROFORMA-${orderNumber}`,
+    invoice_date: new Date().toISOString(),
+    account_number: "",
+    job_number: order.job_number || "",
+    order_number: orderNumber,
+    page_count: 1,
+    invoice_to,
+    deliver_to: deliverAddressBlock,
+    vehicle_details: vehicleDetails,
+    totals
+  };
+  return {
+    company: buildCompanyBlock(companyProfile),
+    invoice: invoiceBlock,
+    requests,
+    payment: buildPaymentBlock(companyProfile),
+    meta: {
+      isProforma: true,
+      source: "order",
+      notice: "Proforma totals generated from the live parts order until it is invoiced."
+    }
+  };
+} // end buildOrderInvoiceFallback
+
 export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // main orchestration helper for API routes
   if (!jobNumber && !orderNumber) { // ensure identifier provided
     throw new Error("MISSING_IDENTIFIER"); // throw descriptive error
@@ -412,6 +564,11 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
     company: companyBlock, // company info
     invoice: invoiceBlock, // invoice header
     requests, // request blocks
-    payment: paymentBlock // bank/payment info
+    payment: paymentBlock, // bank/payment info
+    meta: {
+      isProforma: false,
+      source: "invoice",
+      notice: ""
+    }
   }; // end payload
 } // end getInvoiceDetailPayload

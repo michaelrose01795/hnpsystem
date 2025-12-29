@@ -1114,6 +1114,7 @@ export default function JobCardDetailPage() {
     { id: "service-history", label: "Service History"},
     { id: "parts", label: "Parts"},
     { id: "notes", label: "Notes"},
+    { id: "write-up", label: "Write Up"},
     { id: "vhc", label: "VHC", badge: vhcTabBadge},
     { id: "warranty", label: "Warranty"},
     { id: "messages", label: "Messages"},
@@ -1461,6 +1462,24 @@ export default function JobCardDetailPage() {
               canEdit={canEdit}
               actingUserNumericId={actingUserNumericId}
             />
+          )}
+
+          {/* Write Up Tab */}
+          {activeTab === "write-up" && (
+            <div
+              style={{
+                height: "100%",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column"
+              }}
+            >
+              <WriteUpForm
+                jobNumber={jobData?.jobNumber || jobNumber}
+                showHeader={false}
+                onSaveSuccess={() => fetchJobData({ silent: true })}
+              />
+            </div>
           )}
 
           {/* VHC Tab */}

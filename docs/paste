@@ -1,80 +1,6 @@
 TO DO:
 
 
-add a write up tab inbetween the Notes and VHC tab, have it so this mirrors the exact thing that the tech write up section shows and any cahnges mades to the techs updates live to the job-cards/[jobnumber] page
-
-
-
-
-
-
-{}
-
-## Error Type
-Runtime Error
-
-## Error Message
-Invoice not found for order
-
-
-    at InvoiceDetailSection.useCallback[fetchInvoice] (src/features/invoices/components/InvoiceDetailSection.js:42:15)
-
-## Code Frame
-  40 |       }
-  41 |       if (!response.ok || !payload?.success) { // handle API failure
-> 42 |         throw new Error(payload?.message || "Unable to load invoice"); // throw descriptive error
-     |               ^
-  43 |       }
-  44 |       setData(payload.data); // store invoice payload
-  45 |     } catch (err) { // catch errors
-
-Next.js version: 16.0.10 (Turbopack)
-
-## Error Type
-Runtime Error
-
-## Error Message
-Invoice not found for job
-
-
-    at InvoiceDetailSection.useCallback[fetchInvoice] (src/features/invoices/components/InvoiceDetailSection.js:42:15)
-
-## Code Frame
-  40 |       }
-  41 |       if (!response.ok || !payload?.success) { // handle API failure
-> 42 |         throw new Error(payload?.message || "Unable to load invoice"); // throw descriptive error
-     |               ^
-  43 |       }
-  44 |       setData(payload.data); // store invoice payload
-  45 |     } catch (err) { // catch errors
-
-Next.js version: 16.0.10 (Turbopack)
-
-## Error Type
-Runtime Error
-
-## Error Message
-Unable to load invoice details
-
-
-    at InvoiceDetailSection.useCallback[fetchInvoice] (src/features/invoices/components/InvoiceDetailSection.js:42:15)
-
-## Code Frame
-  40 |       }
-  41 |       if (!response.ok || !payload?.success) { // handle API failure
-> 42 |         throw new Error(payload?.message || "Unable to load invoice"); // throw descriptive error
-     |               ^
-  43 |       }
-  44 |       setData(payload.data); // store invoice payload
-  45 |     } catch (err) { // catch errors
-
-Next.js version: 16.0.10 (Turbopack)
-fix all of these so the details within the inovice section can be viewed, make it so that if this isnt working because of the api have it so its within the actual page code. 
-
-
-  }
-
-
 Have it so the workshop/consumables-tracker page follows more of the dark theme when in dark mode than the light them (use less red and more purple)
 
 
@@ -178,3 +104,6 @@ add a search bar inside the "Employee Directory" with in the "hr/manager" page. 
 
 
 Remove all of the .md files and migration files. 
+
+
+add a write up tab inbetween the Notes and VHC tab, have it so this mirrors the exact thing that the tech write up section shows and any cahnges mades to the techs updates live to the job-cards/[jobnumber] page

@@ -17,6 +17,7 @@ export default function InvoiceDetailSection({ jobNumber, orderNumber }) { // ex
   const [loading, setLoading] = useState(true); // track loading state
   const [error, setError] = useState(""); // hold error messages
   const [data, setData] = useState(null); // store invoice payload
+  const [notice, setNotice] = useState(""); // friendly info messages (e.g. fallback)
 
   const identifier = jobNumber || orderNumber || ""; // compute identifier for memoization
 
@@ -25,10 +26,12 @@ export default function InvoiceDetailSection({ jobNumber, orderNumber }) { // ex
       setError("Provide a job number or order number to view invoice."); // set helpful message
       setData(null); // reset data
       setLoading(false); // stop spinner
+      setNotice(""); // no info banner needed
       return; // exit early
     }
     setLoading(true); // start loading state
     setError(""); // clear previous errors
+    setNotice(""); // clear info banner
     try { // run fetch
       const endpoint = jobNumber
         ? `/api/invoices/by-job/${encodeURIComponent(jobNumber)}`
@@ -42,10 +45,12 @@ export default function InvoiceDetailSection({ jobNumber, orderNumber }) { // ex
         throw new Error(payload?.message || "Unable to load invoice"); // throw descriptive error
       }
       setData(payload.data); // store invoice payload
+      setNotice(payload.data?.meta?.notice || ""); // display meta notice when available
     } catch (err) { // catch errors
       console.error("Invoice fetch failed", err); // log for debugging
       setError(err.message || "Unable to load invoice"); // show user friendly message
       setData(null); // clear data
+      setNotice(""); // clear notice on failure
     } finally {
       setLoading(false); // stop spinner
     }
@@ -90,5 +95,14 @@ export default function InvoiceDetailSection({ jobNumber, orderNumber }) { // ex
     );
   }
 
-  return <InvoiceDetail data={data} onPrint={handlePrint} />;
+  return (
+    <>
+      {notice && (
+        <div className={`${styles.statusMessage} ${styles.info}`}>
+          {notice}
+        </div>
+      )}
+      <InvoiceDetail data={data} onPrint={handlePrint} />
+    </>
+  );
 } // end InvoiceDetailSection

@@ -1445,6 +1445,80 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
   return merged;
 };
 
+const createSectionEditorsState = () => ({
+  fault: [],
+  cause: [],
+  rectification: [],
+});
+
+const normalizeSectionEditorList = (value) => {
+  if (Array.isArray(value)) {
+    return Array.from(
+      new Set(
+        value
+          .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+          .filter((entry) => entry.length > 0)
+      )
+    );
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    return [value.trim()];
+  }
+  return [];
+};
+
+const normalizeSectionEditors = (value = {}) => ({
+  fault: normalizeSectionEditorList(value.fault),
+  cause: normalizeSectionEditorList(value.cause),
+  rectification: normalizeSectionEditorList(value.rectification),
+});
+
+const buildTaskChecklistPayload = (tasks = [], sectionEditors = createSectionEditorsState()) => ({
+  version: 2,
+  tasks: (Array.isArray(tasks) ? tasks : []).map((task) => ({
+    source: task?.source || "request",
+    sourceKey: task?.sourceKey || task?.source_key || `${task?.source || "request"}-${task?.label || ""}`,
+    label: task?.label || "",
+    status: task?.status === "complete" ? "complete" : "additional_work",
+  })),
+  meta: {
+    sectionEditors: normalizeSectionEditors(sectionEditors),
+  },
+});
+
+const parseTaskChecklistPayload = (raw = null) => {
+  if (!raw) {
+    return null;
+  }
+
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw);
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  if (typeof raw === "object") {
+    return raw;
+  }
+
+  return null;
+};
+
+const extractSectionEditorsFromChecklist = (rawChecklist) => {
+  const parsed = parseTaskChecklistPayload(rawChecklist);
+  if (!parsed || typeof parsed !== "object") {
+    return createSectionEditorsState();
+  }
+
+  if (Array.isArray(parsed)) {
+    return createSectionEditorsState();
+  }
+
+  return normalizeSectionEditors(parsed.meta?.sectionEditors);
+};
+
 // ✅ Decide write-up completion state from checklist
 const determineCompletionStatus = (tasks, fallbackStatus = "additional_work") => {
   if (!Array.isArray(tasks) || tasks.length === 0) {
@@ -2407,6 +2481,8 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       extractAuthorizedItems(authorizationRows || [])
     );
 
+    const sectionEditors = extractSectionEditorsFromChecklist(writeUp?.task_checklist);
+
     const basePayload = {
       qty: writeUp?.qty || Array(10).fill(false),
       booked: writeUp?.booked || Array(10).fill(false),
@@ -2422,6 +2498,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       jobRequests: job.requests || [],
       vhcAuthorizationId: latestAuthorizationId,
       causeEntries: normaliseCauseEntries(writeUp?.cause_entries),
+      sectionEditors,
     };
 
     if (!writeUp) {
@@ -2438,6 +2515,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
         technicalSignature: "",
         qualityControl: "",
         additionalParts: "",
+        sectionEditors,
       };
     }
 
@@ -2458,6 +2536,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       technicalSignature: writeUp.technical_signature || "",
       qualityControl: writeUp.quality_control || "",
       additionalParts: ensureBulletFormat(writeUp.parts_used || ""),
+      sectionEditors,
     };
   } catch (error) {
     console.error("❌ getWriteUpByJobNumber error:", error);
@@ -2522,6 +2601,8 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       filteredTasks,
       writeUpData?.completionStatus
     );
+    const sectionEditors = normalizeSectionEditors(writeUpData?.sectionEditors);
+    const taskChecklistPayload = buildTaskChecklistPayload(filteredTasks, sectionEditors);
 
     const formattedFault = ensureBulletFormat(writeUpData?.fault || "");
     const formattedCaused = ensureBulletFormat(writeUpData?.caused || "");
@@ -2651,12 +2732,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       // ⚠️ Verify: table or column not found in Supabase schema
       vhc_authorization_reference: writeUpData?.vhcAuthorizationId || null,
       // ⚠️ Verify: table or column not found in Supabase schema
-      task_checklist: filteredTasks.map((task) => ({
-        source: task.source,
-        sourceKey: task.sourceKey,
-        label: task.label,
-        status: task.status,
-      })),
+      task_checklist: taskChecklistPayload,
     };
 
     let writeUpRecord = null;

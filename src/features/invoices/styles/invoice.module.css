@@ -202,6 +202,12 @@
   border-color: var(--danger); /* // highlight border */
 } /* // end error */
 
+.info { /* // info modifier for fallback notice */
+  color: var(--primary-dark); /* // informative text color */
+  border-color: var(--primary-dark); /* // highlight border */
+  background: rgba(124, 77, 255, 0.08); /* // subtle tint */
+} /* // end info */
+
 .skeleton { /* // skeleton loader container */
   display: grid; /* // grid layout */
   gap: 12px; /* // spacing */
