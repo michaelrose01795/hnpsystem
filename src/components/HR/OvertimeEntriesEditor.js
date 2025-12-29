@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
 import { CalendarField } from "@/components/calendarAPI"; // Date input component
+import { TimePickerField } from "@/components/timePickerAPI";
 
 function formatTime(value) {
   if (!value) return "—";
@@ -129,14 +130,20 @@ export default function OvertimeEntriesEditor({
             value={form.date}
             onChange={handleChange}
           />
-          <label style={labelStyle}>
-            <span>Start time</span>
-            <input name="start" type="time" value={form.start} onChange={handleChange} style={inputStyle} />
-          </label>
-          <label style={labelStyle}>
-            <span>End time</span>
-            <input name="end" type="time" value={form.end} onChange={handleChange} style={inputStyle} />
-          </label>
+          <TimePickerField
+            label="Start time"
+            name="start"
+            value={form.start}
+            onChange={handleChange}
+            style={inputStyle}
+          />
+          <TimePickerField
+            label="End time"
+            name="end"
+            value={form.end}
+            onChange={handleChange}
+            style={inputStyle}
+          />
           <button type="submit" style={{ ...buttonStyle, opacity: isSaving ? 0.7 : 1 }}>
             {isSaving ? "Saving…" : "Add session"}
           </button>

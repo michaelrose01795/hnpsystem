@@ -85,6 +85,10 @@
   --layout-card-padding: 24px;
   --layout-card-gap: 20px;
   --layout-stack-gap: 20px;
+
+  /* Scrollbar colors */
+  --scrollbar-thumb: #ef4444;
+  --scrollbar-thumb-hover: #dc2626;
 }
 
 :root[data-theme="dark"] {
@@ -165,4 +169,8 @@
   --section-gradient-inner: #1e1e28;
   --section-gradient-center: #23232b;
   --layer-gradient: var(--layer-section-level-3);
+
+  /* Scrollbar colors */
+  --scrollbar-thumb: #a855f7;
+  --scrollbar-thumb-hover: #9333ea;
 }

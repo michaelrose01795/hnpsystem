@@ -10,6 +10,7 @@ import NewCustomerPopup from "@/components/popups/NewCustomerPopup";
 import { useTheme } from "@/styles/themeProvider";
 import { updateCustomer } from "@/lib/database/customers";
 import { CalendarField } from "@/components/calendarAPI";
+import { TimePickerField } from "@/components/timePickerAPI";
 
 const cardStyle = {
   borderRadius: "20px",
@@ -860,17 +861,11 @@ export default function PartsJobCardPage() {
                   onChange={(value) => handleFieldChange("delivery_eta", value)}
                   name="delivery_eta"
                 />
-                <label style={fieldStyle}>
-                  <span style={{ fontWeight: 600 }}>
-                    {form.delivery_type === "delivery" ? "Delivery window / time" : "Collection time"}
-                  </span>
-                  <input
-                    type="time"
-                    value={form.delivery_window || ""}
-                    onChange={(event) => handleFieldChange("delivery_window", event.target.value)}
-                    style={inputStyle}
-                  />
-                </label>
+                <TimePickerField
+                  label={form.delivery_type === "delivery" ? "Delivery window / time" : "Collection time"}
+                  value={form.delivery_window || ""}
+                  onChange={(event) => handleFieldChange("delivery_window", event.target.value)}
+                />
               </div>
               {form.delivery_type === "delivery" && (
                 <div

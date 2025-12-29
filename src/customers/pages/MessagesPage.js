@@ -158,7 +158,7 @@ export default function CustomerMessagesPage() {
 
   // Open thread function - now fetchThreads is defined
   const openThread = useCallback(
-    async (thread) => {
+    async (thread, skipRefresh = false) => {
       if (!dbUserId || !thread?.id) return;
       setIsSystemThreadActive(false);
       setActiveThread(thread);
@@ -173,7 +173,9 @@ export default function CustomerMessagesPage() {
           throw new Error(payload.message || "Unable to load conversation.");
         }
         setThreadMessages(payload.data || []);
-        await fetchThreads();
+        if (!skipRefresh) {
+          await fetchThreads();
+        }
       } catch (fetchError) {
         console.error("❌ Failed to load conversation:", fetchError);
         setMessagesError(fetchError.message || "Unable to load conversation.");
@@ -454,7 +456,7 @@ export default function CustomerMessagesPage() {
   // Effect: Open first thread when threads load
   useEffect(() => {
     if (!threads.length || activeThread) return;
-    openThread(threads[0]);
+    openThread(threads[0], true); // Skip refresh since we just fetched threads
   }, [threads, activeThread, openThread]);
 
   // Effect: Subscribe to real-time updates (CLIENT-SIDE ONLY)
@@ -465,9 +467,11 @@ export default function CustomerMessagesPage() {
       .channel(`customer-messaging-${dbUserId}`)
       .on("postgres_changes", { schema: "public", table: "messages", event: "INSERT" }, (payload) => {
         if (!payload?.new) return;
+        // Only refresh threads list, don't re-open the thread
         fetchThreads();
+        // If message is for active thread and not from current user, just reload messages without refreshing threads again
         if (activeThread?.id === payload.new.thread_id && payload.new.sender_id !== dbUserId) {
-          openThread(activeThread);
+          openThread(activeThread, true); // Skip refresh since we just called fetchThreads
         }
       })
       .on(

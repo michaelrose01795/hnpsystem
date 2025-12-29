@@ -10,6 +10,7 @@ import { generateTechnicianSlug } from "@/utils/technicianSlug";
 import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
 import { DropdownField } from "@/components/dropdownAPI";
 import { CalendarField } from "@/components/calendarAPI";
+import { TimePickerField } from "@/components/timePickerAPI";
 
 const STATUS_STATES = ["In Progress", "Tea Break", "Waiting for Job"];
 
@@ -976,32 +977,22 @@ export default function UserClockingHistory() {
                     onChange={(event) => setClockOutDate(event.target.value)}
                     required
                   />
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label htmlFor="startTime" style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}>
-                      Clock-in time
-                    </label>
-                    <input
-                      id="startTime"
-                      type="time"
-                      value={formStartTime}
-                      onChange={(event) => setFormStartTime(event.target.value)}
-                      style={inputStyle}
-                      required
-                    />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label htmlFor="finishTime" style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}>
-                      Clock-out time
-                    </label>
-                    <input
-                      id="finishTime"
-                      type="time"
-                      value={formFinishTime}
-                      onChange={(event) => setFormFinishTime(event.target.value)}
-                      style={inputStyle}
-                      required
-                    />
-                  </div>
+                  <TimePickerField
+                    id="startTime"
+                    label="Clock-in time"
+                    value={formStartTime}
+                    onChange={(event) => setFormStartTime(event.target.value)}
+                    required
+                    style={inputStyle}
+                  />
+                  <TimePickerField
+                    id="finishTime"
+                    label="Clock-out time"
+                    value={formFinishTime}
+                    onChange={(event) => setFormFinishTime(event.target.value)}
+                    required
+                    style={inputStyle}
+                  />
                 </div>
 
                 {/* Row 2: Job number, Request selector */}

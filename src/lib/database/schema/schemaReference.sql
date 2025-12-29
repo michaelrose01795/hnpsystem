@@ -1066,6 +1066,32 @@ CREATE TABLE public.time_records (
   CONSTRAINT time_records_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
   CONSTRAINT time_records_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
+CREATE TABLE public.tracking_equipment_tools (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  last_checked timestamp with time zone,
+  next_due timestamp with time zone,
+  created_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tracking_equipment_tools_pkey PRIMARY KEY (id),
+  CONSTRAINT tracking_equipment_tools_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.tracking_oil_stock (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  stock text,
+  last_check timestamp with time zone,
+  next_check timestamp with time zone,
+  last_topped_up timestamp with time zone,
+  consumable_id uuid,
+  created_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tracking_oil_stock_pkey PRIMARY KEY (id),
+  CONSTRAINT tracking_oil_stock_consumable_id_fkey FOREIGN KEY (consumable_id) REFERENCES public.workshop_consumables(id),
+  CONSTRAINT tracking_oil_stock_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
+);
 CREATE TABLE public.user_signatures (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   user_id integer NOT NULL UNIQUE,

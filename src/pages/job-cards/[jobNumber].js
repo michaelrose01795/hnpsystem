@@ -31,6 +31,7 @@ import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import WriteUpForm from "@/components/JobCards/WriteUpForm";
 import { DropdownField } from "@/components/dropdownAPI";
 import { CalendarField } from "@/components/calendarAPI";
+import { TimePickerField } from "@/components/timePickerAPI";
 import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
 
 const deriveVhcSeverity = (check = {}) => {
@@ -3246,19 +3247,8 @@ function SchedulingTab({
                     />
                   </div>
                   <div>
-                    <label
-                      style={{
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        color: "var(--info)",
-                        display: "block",
-                        marginBottom: "6px"
-                      }}
-                    >
-                      ETA Time
-                    </label>
-                    <input
-                      type="time"
+                    <TimePickerField
+                      label="ETA Time"
                       value={approvalForm.etaTime}
                       onChange={(event) =>
                         handleApprovalFieldChange("etaTime", event.target.value)
@@ -3453,19 +3443,8 @@ function SchedulingTab({
             />
           </div>
           <div>
-            <label
-              style={{
-                fontSize: "12px",
-                fontWeight: "600",
-                color: "var(--info)",
-                display: "block",
-                marginBottom: "6px"
-              }}
-            >
-              Time
-            </label>
-            <input
-              type="time"
+            <TimePickerField
+              label="Time"
               value={appointmentForm.time}
               onChange={(event) =>
                 handleAppointmentFieldChange("time", event.target.value)
@@ -5307,40 +5286,22 @@ function ClockingTab({ jobData, canEdit }) {
             required
             disabled={!canEdit}
           />
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label
-              htmlFor="clocking-start-time"
-              style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--info-dark)" }}
-            >
-              Clock-in time
-            </label>
-            <input
-              id="clocking-start-time"
-              type="time"
-              value={clockInTime}
-              onChange={(event) => setClockInTime(event.target.value)}
-              style={inputControlStyle}
-              required
-              disabled={!canEdit}
-            />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label
-              htmlFor="clocking-finish-time"
-              style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--info-dark)" }}
-            >
-              Clock-out time
-            </label>
-            <input
-              id="clocking-finish-time"
-              type="time"
-              value={clockOutTime}
-              onChange={(event) => setClockOutTime(event.target.value)}
-              style={inputControlStyle}
-              required
-              disabled={!canEdit}
-            />
-          </div>
+          <TimePickerField
+            id="clocking-start-time"
+            label="Clock-in time"
+            value={clockInTime}
+            onChange={(event) => setClockInTime(event.target.value)}
+            required
+            disabled={!canEdit}
+          />
+          <TimePickerField
+            id="clocking-finish-time"
+            label="Clock-out time"
+            value={clockOutTime}
+            onChange={(event) => setClockOutTime(event.target.value)}
+            required
+            disabled={!canEdit}
+          />
         </div>
 
         {/* Row 2: Request selector, Tech selector */}

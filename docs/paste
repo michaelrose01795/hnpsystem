@@ -1,28 +1,6 @@
 TO DO:
 
 
-why does the " ✓ Ready in 2s
- GET / 200 in 1980ms (compile: 1921ms, render: 59ms)
- GET /api/auth/session 200 in 767ms (compile: 758ms, render: 8ms)
- GET /api/users/roster 304 in 916ms (compile: 47ms, render: 869ms)
- GET /api/messages/threads?userId=45 304 in 134ms (compile: 15ms, render: 119ms)
- GET /api/messages/threads?userId=45 304 in 104ms (compile: 1992µs, render: 102ms)
- GET /api/messages/threads?userId=45 304 in 884ms (compile: 4ms, render: 880ms)
- GET /api/messages/threads?userId=45 304 in 108ms (compile: 4ms, render: 104ms)
- GET /api/messages/threads?userId=45 304 in 110ms (compile: 1749µs, render: 108ms)
- GET /api/messages/threads?userId=45 304 in 99ms (compile: 1790µs, render: 97ms)
- GET /api/messages/threads?userId=45 304 in 105ms (compile: 2ms, render: 103ms)
- GET /api/messages/threads?userId=45 304 in 95ms (compile: 1786µs, render: 93ms)
- GET /api/messages/threads?userId=45 304 in 91ms (compile: 1247µs, render: 90ms)
- GET /api/messages/threads?userId=45 304 in 89ms (compile: 1370µs, render: 87ms)" 
-
-"GET /api/messages/threads?userId=45 304 in" load so many times? does it need to, how do we stop it from 
-
-
-
-
-
-LOOK INTO TRACKING PAGE
 
 
 
@@ -128,6 +106,13 @@ Have it so the workshop/consumables-tracker page follows more of the dark theme 
 
 
 within the "Technician Focus" section removet text "Live callouts from the floor". within that section add a row of the 6 techs plus what ever MOT tester is loged on, if non loged on then show one bhut greyed out. remove the "Bay Readiness" section. have it so the "Technician Focus" is that full section but the techs are in two columns and however many rows requried. add to each tech the eta of the time the tech will be finishing. "Clocking Overview" section shows all 6 techs and there clocking status it shows "in progress" with their jobnumber they are clocked onto, "tea break" or "waiting for job". show this in a 2 column 3 row layout. remove the "Consumables" and "Important Notices" section. "Technicians Clocked In" links to the tech clocking and how many are set to "in progress", "Awaiting Parts" is linked to how many jobs are set to "Awaiting Parts" status, swich "QC / Road Test" to "Awaiting authoriseation" which is linked to when the VHC is set to send and is in the middle of being send and working being declinded or authorised. "Jobs On Site" this shows all of the jobnumners which are insdie the "/job-cards/view" within either the "Today's workload" or "Carry over" tab 
+
+
+
+LOOK INTO TRACKING PAGE
+Remove the "Equipment services  Equipment & tools
+Track shared kit maintenance, upcoming inspections and who is responsible for each tool" and "Oil & stock checks   Oil / Stock
+Capture when to inspect service fluids and replenish stock for busy workshop days." and "Live tracker  Active jobs  Last updated: 22:33" text from the /tracking page. remove any mock data from any of the tabs within the /tracking page. inside the "Equipment & tools" section add a button in the top right which shows "Add Equipment/tools" this then opens the popup to the name, the Last checked, Next due. thats all the info, Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first. do the same with the "Oil / Stock" section just have the button say "Add Oil / Stock". this section will have a link to the Scheduled Consumables inside the "/workshop/consumables-tracker" page, these will mirror here. this popup will show the Stock, title, last check, next check, last topped up. 
 
 
 

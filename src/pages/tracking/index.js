@@ -9,6 +9,7 @@ import { buildApiUrl } from "@/utils/apiClient";
 import { fetchTrackingSnapshot } from "@/lib/database/tracking";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
+import { CalendarField } from "@/components/calendarAPI";
 
 const CAR_LOCATIONS = [
   { id: "service-side", label: "Service side" },
@@ -78,74 +79,9 @@ const NEXT_ACTION_ENDPOINT = "/api/tracking/next-action";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-const DEFAULT_EQUIPMENT_CHECKS = [
-  {
-    id: "hoist-4p",
-    name: "4 Post Hoist",
-    location: "Bay 2",
-    owner: "Service team",
-    frequencyDays: 14,
-    lastChecked: "2024-08-10T08:30:00Z",
-    nextDue: "2024-08-24T08:30:00Z",
-    status: "Ready",
-    notes: "Verify cables, locks and safety interlocks every two weeks.",
-  },
-  {
-    id: "pressure-washer",
-    name: "Pressure Washer",
-    location: "Valet bay",
-    owner: "Valet team",
-    frequencyDays: 7,
-    lastChecked: "2024-08-22T14:00:00Z",
-    nextDue: "2024-08-29T14:00:00Z",
-    status: "Ready",
-    notes: "Clean lance filters, inspect hoses and refill detergent tank.",
-  },
-  {
-    id: "wheel-balancer",
-    name: "Wheel Balancer",
-    location: "Wheel bay",
-    owner: "Tech lead",
-    frequencyDays: 30,
-    lastChecked: "2024-07-30T11:20:00Z",
-    nextDue: "2024-08-29T11:20:00Z",
-    status: "Due soon",
-    notes: "Calibration certificate is due for renewal at the end of the month.",
-  },
-];
+const DEFAULT_EQUIPMENT_CHECKS = [];
 
-const DEFAULT_OIL_CHECKS = [
-  {
-    id: "engine-oil",
-    name: "Engine oil 5W-30 (bulk)",
-    storageLocation: "Oil store rack A",
-    stockLevel: "18 × 5L cans",
-    frequencyDays: 3,
-    lastChecked: "2024-08-25T09:10:00Z",
-    nextDue: "2024-08-28T09:10:00Z",
-    guidance: "Keep minimum of two cans at each service bay; top up after busy shifts.",
-  },
-  {
-    id: "transmission-oil",
-    name: "ATF - Transmission fluid",
-    storageLocation: "Fluid cupboard",
-    stockLevel: "12 × 1L bottles",
-    frequencyDays: 7,
-    lastChecked: "2024-08-20T08:00:00Z",
-    nextDue: "2024-08-27T08:00:00Z",
-    guidance: "Order more once stock dips below 10 bottles or after commercial fleet checks.",
-  },
-  {
-    id: "coolant",
-    name: "Coolant & additives",
-    storageLocation: "Fluid locker",
-    stockLevel: "6 jugs (3.5L)",
-    frequencyDays: 14,
-    lastChecked: "2024-08-12T15:30:00Z",
-    nextDue: "2024-08-26T15:30:00Z",
-    guidance: "Monitor hybrid cooling kit stocks (AP02) every fortnight.",
-  },
-];
+const DEFAULT_OIL_CHECKS = [];
 
 const formatDateLabel = (value) => {
   if (!value) return "Pending";
@@ -381,6 +317,328 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
 
         {/* TODO: Replace static location lists with DB-driven results */}
       </div>
+    </div>
+  );
+};
+
+const EquipmentToolsModal = ({ onClose, onSave }) => {
+  const [form, setForm] = useState({
+    name: "",
+    lastCheckedDate: "",
+    nextDueDate: "",
+  });
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (!form.name) {
+      alert("Please enter equipment name");
+      return;
+    }
+
+    // Convert dates to ISO strings
+    const lastChecked = form.lastCheckedDate
+      ? new Date(`${form.lastCheckedDate}T00:00:00`).toISOString()
+      : null;
+    const nextDue = form.nextDueDate
+      ? new Date(`${form.nextDueDate}T00:00:00`).toISOString()
+      : null;
+
+    onSave({
+      name: form.name,
+      lastChecked,
+      nextDue,
+    });
+  };
+
+  return (
+    <div style={{ ...popupOverlayStyles, zIndex: 220 }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          ...popupCardStyles,
+          width: "min(600px, 100%)",
+          padding: "28px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h2 style={{ margin: 0 }}>Add Equipment/Tools</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              width: "38px",
+              height: "38px",
+              borderRadius: "50%",
+              border: "1px solid rgba(var(--shadow-rgb),0.15)",
+              backgroundColor: "var(--surface)",
+              cursor: "pointer",
+              fontWeight: 700,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+            Name *
+          </label>
+          <input
+            required
+            value={form.name}
+            onChange={(event) => handleChange("name", event.target.value)}
+            placeholder="Equipment name"
+            style={{
+              padding: "10px 12px",
+              borderRadius: "12px",
+              border: "1px solid var(--accent-purple-surface)",
+              fontSize: "0.95rem",
+            }}
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+            Last Checked
+          </label>
+          <CalendarField
+            value={form.lastCheckedDate}
+            onChange={(e) => handleChange("lastCheckedDate", e.target.value)}
+            placeholder="Select date"
+            size="md"
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+            Next Due
+          </label>
+          <CalendarField
+            value={form.nextDueDate}
+            onChange={(e) => handleChange("nextDueDate", e.target.value)}
+            placeholder="Select date"
+            size="md"
+          />
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              padding: "10px 16px",
+              borderRadius: "12px",
+              border: "1px solid var(--accent-purple-surface)",
+              backgroundColor: "transparent",
+              color: "var(--text)",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            style={{
+              padding: "10px 16px",
+              borderRadius: "12px",
+              border: "none",
+              background: "var(--primary)",
+              color: "white",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Add
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+const OilStockModal = ({ onClose, onSave }) => {
+  const [form, setForm] = useState({
+    stock: "",
+    title: "",
+    lastCheckDate: "",
+    nextCheckDate: "",
+    lastToppedUpDate: "",
+  });
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (!form.title) {
+      alert("Please enter title");
+      return;
+    }
+
+    // Convert dates to ISO strings
+    const lastCheck = form.lastCheckDate
+      ? new Date(`${form.lastCheckDate}T00:00:00`).toISOString()
+      : null;
+    const nextCheck = form.nextCheckDate
+      ? new Date(`${form.nextCheckDate}T00:00:00`).toISOString()
+      : null;
+    const lastToppedUp = form.lastToppedUpDate
+      ? new Date(`${form.lastToppedUpDate}T00:00:00`).toISOString()
+      : null;
+
+    onSave({
+      title: form.title,
+      stock: form.stock,
+      lastCheck,
+      nextCheck,
+      lastToppedUp,
+    });
+  };
+
+  return (
+    <div style={{ ...popupOverlayStyles, zIndex: 220 }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          ...popupCardStyles,
+          width: "min(650px, 100%)",
+          padding: "28px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h2 style={{ margin: 0 }}>Add Oil / Stock</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              width: "38px",
+              height: "38px",
+              borderRadius: "50%",
+              border: "1px solid rgba(var(--shadow-rgb),0.15)",
+              backgroundColor: "var(--surface)",
+              cursor: "pointer",
+              fontWeight: 700,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+            Title *
+          </label>
+          <input
+            required
+            value={form.title}
+            onChange={(event) => handleChange("title", event.target.value)}
+            placeholder="Oil/Stock title"
+            style={{
+              padding: "10px 12px",
+              borderRadius: "12px",
+              border: "1px solid var(--accent-purple-surface)",
+              fontSize: "0.95rem",
+            }}
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+            Stock
+          </label>
+          <input
+            value={form.stock}
+            onChange={(event) => handleChange("stock", event.target.value)}
+            placeholder="e.g., 18 × 5L cans"
+            style={{
+              padding: "10px 12px",
+              borderRadius: "12px",
+              border: "1px solid var(--accent-purple-surface)",
+              fontSize: "0.95rem",
+            }}
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+            Last Check
+          </label>
+          <CalendarField
+            value={form.lastCheckDate}
+            onChange={(e) => handleChange("lastCheckDate", e.target.value)}
+            placeholder="Select date"
+            size="md"
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+            Next Check
+          </label>
+          <CalendarField
+            value={form.nextCheckDate}
+            onChange={(e) => handleChange("nextCheckDate", e.target.value)}
+            placeholder="Select date"
+            size="md"
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+            Last Topped Up
+          </label>
+          <CalendarField
+            value={form.lastToppedUpDate}
+            onChange={(e) => handleChange("lastToppedUpDate", e.target.value)}
+            placeholder="Select date"
+            size="md"
+          />
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              padding: "10px 16px",
+              borderRadius: "12px",
+              border: "1px solid var(--accent-purple-surface)",
+              backgroundColor: "transparent",
+              color: "var(--text)",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            style={{
+              padding: "10px 16px",
+              borderRadius: "12px",
+              border: "none",
+              background: "var(--primary)",
+              color: "white",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Add
+          </button>
+        </div>
+      </form>
     </div>
   );
 };
@@ -967,6 +1225,8 @@ export default function TrackingDashboard() {
   const [entryModal, setEntryModal] = useState({ open: false, type: null, entry: null });
   const [simplifiedModal, setSimplifiedModal] = useState({ open: false, initialData: null });
   const [highlightedJobNumber, setHighlightedJobNumber] = useState(null);
+  const [equipmentModal, setEquipmentModal] = useState({ open: false });
+  const [oilStockModal, setOilStockModal] = useState({ open: false });
   const { dbUserId, user } = useUser();
   const userRoles = useMemo(() => (user?.roles || []).map((role) => role.toLowerCase()), [user]);
   const isWorkshopManager = userRoles.includes("workshop manager");
@@ -1075,11 +1335,38 @@ export default function TrackingDashboard() {
         if (item.id !== id) return item;
         return {
           ...item,
-          lastChecked: new Date().toISOString(),
-          nextDue: nextDueFrom(new Date(), item.frequencyDays),
+          lastCheck: new Date().toISOString(),
+          nextCheck: nextDueFrom(new Date(), 7),
         };
       })
     );
+  }, []);
+
+  const handleSaveEquipment = useCallback(async (form) => {
+    // TODO: Save to database
+    const newEquipment = {
+      id: `equipment-${Date.now()}`,
+      name: form.name,
+      lastChecked: form.lastChecked || new Date().toISOString(),
+      nextDue: form.nextDue || nextDueFrom(new Date(), 7),
+      status: "Ready",
+    };
+    setEquipmentChecks((prev) => [...prev, newEquipment]);
+    setEquipmentModal({ open: false });
+  }, []);
+
+  const handleSaveOilStock = useCallback(async (form) => {
+    // TODO: Save to database - note this should link to consumables-tracker
+    const newOilStock = {
+      id: `oil-${Date.now()}`,
+      title: form.title,
+      stock: form.stock,
+      lastCheck: form.lastCheck || new Date().toISOString(),
+      nextCheck: form.nextCheck || nextDueFrom(new Date(), 7),
+      lastToppedUp: form.lastToppedUp,
+    };
+    setOilChecks((prev) => [...prev, newOilStock]);
+    setOilStockModal({ open: false });
   }, []);
 
   const handleAutoMovement = useCallback(
@@ -1248,17 +1535,7 @@ export default function TrackingDashboard() {
         }}
       >
         <div>
-          <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.12em", color: "var(--info-dark)" }}>Live tracker</p>
           <h1 style={{ margin: "6px 0 0", fontSize: "1.5rem", color: "var(--accent-purple)" }}>Active jobs</h1>
-          <p style={{ margin: "6px 0 0", fontSize: "0.85rem", color: "var(--info)", fontWeight: 500 }}>
-            Last updated:{" "}
-            {lastUpdated
-              ? new Date(lastUpdated).toLocaleTimeString("en-GB", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : "Syncing..."}
-          </p>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
           <button
@@ -1358,16 +1635,25 @@ export default function TrackingDashboard() {
         }}
       >
         <div>
-          <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.12em", color: "var(--info-dark)" }}>
-            Equipment services
-          </p>
           <h1 style={{ margin: "6px 0 0", fontSize: "1.5rem", color: "var(--accent-purple)" }}>
             Equipment &amp; tools
           </h1>
-          <p style={{ margin: "4px 0 0", color: "var(--info)", maxWidth: "560px" }}>
-            Track shared kit maintenance, upcoming inspections and who is responsible for each tool.
-          </p>
         </div>
+        <button
+          type="button"
+          onClick={() => setEquipmentModal({ open: true })}
+          style={{
+            padding: "10px 18px",
+            borderRadius: "12px",
+            border: "none",
+            background: "var(--primary)",
+            color: "white",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Add Equipment/tools
+        </button>
       </div>
       <div
         style={{
@@ -1488,16 +1774,25 @@ export default function TrackingDashboard() {
         }}
       >
         <div>
-          <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.12em", color: "var(--info-dark)" }}>
-            Oil &amp; stock checks
-          </p>
           <h1 style={{ margin: "6px 0 0", fontSize: "1.5rem", color: "var(--accent-purple)" }}>
             Oil / Stock
           </h1>
-          <p style={{ margin: "4px 0 0", color: "var(--info)", maxWidth: "560px" }}>
-            Capture when to inspect service fluids and replenish stock for busy workshop days.
-          </p>
         </div>
+        <button
+          type="button"
+          onClick={() => setOilStockModal({ open: true })}
+          style={{
+            padding: "10px 18px",
+            borderRadius: "12px",
+            border: "none",
+            background: "var(--primary)",
+            color: "white",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Add Oil / Stock
+        </button>
       </div>
       <div
         style={{
@@ -1521,7 +1816,7 @@ export default function TrackingDashboard() {
           </div>
         )}
         {oilChecks.map((item) => {
-          const dueLabel = getDueLabel(item.nextDue);
+          const dueLabel = getDueLabel(item.nextCheck);
           const isDue = dueLabel === "Due now";
           return (
             <div
@@ -1545,10 +1840,7 @@ export default function TrackingDashboard() {
                 }}
               >
                 <div>
-                  <strong style={{ display: "block", fontSize: "1.05rem" }}>{item.name}</strong>
-                  <p style={{ margin: "2px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
-                    {item.storageLocation}
-                  </p>
+                  <strong style={{ display: "block", fontSize: "1.05rem" }}>{item.title}</strong>
                 </div>
                 <span
                   style={{
@@ -1571,18 +1863,21 @@ export default function TrackingDashboard() {
               >
                 <div>
                   <span style={{ display: "block", color: "var(--info)" }}>Stock</span>
-                  <strong>{item.stockLevel}</strong>
+                  <strong>{item.stock || "—"}</strong>
                 </div>
                 <div>
-                  <span style={{ display: "block", color: "var(--info)" }}>Last checked</span>
-                  <strong>{formatDateLabel(item.lastChecked)}</strong>
+                  <span style={{ display: "block", color: "var(--info)" }}>Last check</span>
+                  <strong>{formatDateLabel(item.lastCheck)}</strong>
                 </div>
                 <div>
                   <span style={{ display: "block", color: "var(--info)" }}>Next check</span>
-                  <strong>{formatDateLabel(item.nextDue)}</strong>
+                  <strong>{formatDateLabel(item.nextCheck)}</strong>
+                </div>
+                <div>
+                  <span style={{ display: "block", color: "var(--info)" }}>Last topped up</span>
+                  <strong>{formatDateLabel(item.lastToppedUp)}</strong>
                 </div>
               </div>
-              <p style={{ margin: "0", color: "var(--info)", fontSize: "0.85rem" }}>{item.guidance}</p>
               <button
                 type="button"
                 onClick={() => handleOilCheck(item.id)}
@@ -1702,6 +1997,20 @@ export default function TrackingDashboard() {
           initialData={simplifiedModal.initialData}
           onClose={() => setSimplifiedModal({ open: false, initialData: null })}
           onSave={handleSave}
+        />
+      )}
+
+      {equipmentModal.open && (
+        <EquipmentToolsModal
+          onClose={() => setEquipmentModal({ open: false })}
+          onSave={handleSaveEquipment}
+        />
+      )}
+
+      {oilStockModal.open && (
+        <OilStockModal
+          onClose={() => setOilStockModal({ open: false })}
+          onSave={handleSaveOilStock}
         />
       )}
     </Layout>
