@@ -1,11 +1,9 @@
 TO DO:
 
-
-Have it so the workshop/consumables-tracker page follows more of the dark theme when in dark mode than the light them (use less red and more purple)
-
+Ok now apply the login api to every dropdown within this repo, note what pages have this drop down for me to test
 
 
-now applie the drop down style usered within the login page to all of the other drop downs within the whole app, use an api to make this easier and quicker to use the same style and design. Do the same with any scroll bar used in any page, make a seperate api for the scroll bar. 
+apply drop down background colour to the sections for dark mode
 
 
 
@@ -107,3 +105,8 @@ Remove all of the .md files and migration files.
 
 
 add a write up tab inbetween the Notes and VHC tab, have it so this mirrors the exact thing that the tech write up section shows and any cahnges mades to the techs updates live to the job-cards/[jobnumber] page
+
+
+
+
+Have it so the workshop/consumables-tracker page follows more of the dark theme when in dark mode than the light them (use less red and more purple)

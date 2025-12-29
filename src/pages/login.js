@@ -13,8 +13,17 @@ import { roleCategories } from "@/config/users"; // Dev users config
 
 const FIELD_MAX_WIDTH = 380;
 
-const LoginCard = ({ title, subtitle, children, contentMaxWidth = FIELD_MAX_WIDTH }) => (
-  <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+const LoginCard = ({
+  title,
+  subtitle,
+  children,
+  contentMaxWidth = FIELD_MAX_WIDTH,
+  className = "",
+}) => (
+  <div
+    className={["login-card", className].filter(Boolean).join(" ")}
+    style={{ width: "100%", display: "flex", justifyContent: "center" }}
+  >
     <div
       style={{
         borderRadius: "32px",
@@ -172,7 +181,10 @@ export default function LoginPage() {
           </div>
 
           <div className="login-card-stack">
-            <LoginCard title="Login" subtitle="Secure access with your email and password">
+            <LoginCard
+              className="login-card--auth"
+              title="Login"
+            >
               <form onSubmit={handleDbLogin} className="login-form">
                 <div className="login-field">
                   <label htmlFor="email" className="login-label">
@@ -181,7 +193,7 @@ export default function LoginPage() {
                   <input
                     id="email"
                     type="email"
-                    placeholder="you@hpautomotive.co.uk"
+                    placeholder="email@humphriesandpark.co.uk"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="login-input"
@@ -221,8 +233,8 @@ export default function LoginPage() {
             </LoginCard>
 
             <LoginCard
+              className="login-card--dev"
               title="Developer Login"
-              subtitle="Use predefined personas to explore the platform safely"
             >
               <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                 <LoginDropdown

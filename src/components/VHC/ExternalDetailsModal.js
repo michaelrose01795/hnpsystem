@@ -7,6 +7,7 @@ import themeConfig, {
   popupOverlayStyles,
   popupCardStyles,
 } from "@/styles/appTheme";
+import { DropdownField } from "@/components/dropdownAPI";
 
 const palette = themeConfig.palette;
 
@@ -295,7 +296,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
               />
 
               <label style={fieldLabelStyle}>Status</label>
-              <select
+              <DropdownField
                 value={activeConcern.temp.status}
                 onChange={(e) =>
                   setActiveConcern((prev) => ({
@@ -310,7 +311,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                     {option}
                   </option>
                 ))}
-              </select>
+              </DropdownField>
 
               <button
                 type="button"
@@ -375,7 +376,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                     />
 
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-                      <select
+                      <DropdownField
                         value={concern.status}
                         onChange={(e) => updateConcern(activeConcern.category, idx, "status", e.target.value)}
                         style={{ ...statusSelectStyle, flex: "0 0 130px" }}
@@ -385,7 +386,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                             {option}
                           </option>
                         ))}
-                      </select>
+                      </DropdownField>
 
                       <button
                         type="button"

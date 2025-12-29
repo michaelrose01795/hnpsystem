@@ -9,6 +9,7 @@ import themeConfig, {
 } from "@/styles/appTheme";
 import TyreDiagram, { getReadingStatus } from "@/components/VHC/TyreDiagram";
 import TyresSection from "@/components/VHC/TyresSection"; // Import shared tyre search component
+import { DropdownField } from "@/components/dropdownAPI";
 
 const palette = themeConfig.palette;
 
@@ -814,7 +815,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                     <div style={sectionCardStyle}>
                       <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Repair Kit Date</span>
                       <div style={{ display: "flex", gap: "12px" }}>
-                        <select
+                        <DropdownField
                           value={tyres.Spare.month}
                           onChange={(event) =>
                             setTyres((prev) => ({
@@ -830,8 +831,8 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                               {month}
                             </option>
                           ))}
-                        </select>
-                        <select
+                        </DropdownField>
+                        <DropdownField
                           value={tyres.Spare.year}
                           onChange={(event) =>
                             setTyres((prev) => ({
@@ -847,7 +848,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                               {year}
                             </option>
                           ))}
-                        </select>
+                        </DropdownField>
                       </div>
                     </div>
                   ) : null}

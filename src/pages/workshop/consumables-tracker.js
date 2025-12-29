@@ -8,6 +8,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { addConsumableOrder, listConsumablesForTracker } from "@/lib/database/consumables";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
+import { useTheme } from "@/styles/themeProvider";
 import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
 
 const containerStyle = {
@@ -72,7 +73,7 @@ const budgetInputStyle = {
   width: "100%",
   padding: "10px 12px",
   borderRadius: "10px",
-  border: "1px solid var(--danger)",
+  border: "none",
   fontSize: "0.95rem",
 };
 
@@ -112,7 +113,7 @@ const orderHistoryRowStyle = {
   gap: "12px",
   alignItems: "center",
   fontSize: "0.9rem",
-  color: "var(--grey-accent-dark)",
+  color: mutedTextColor,
   padding: "8px 0",
   borderBottom: orderHistoryRowBorder,
 };
@@ -338,6 +339,7 @@ const statusBadgeStyles = {
 
 function ConsumablesTrackerPage() {
   const { user, dbUserId } = useUser();
+  const { isDark } = useTheme();
   const userRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
   const isWorkshopManager = userRoles.includes("workshop manager");
   const todayIso = useMemo(() => new Date().toISOString().split("T")[0], []);
@@ -398,6 +400,43 @@ function ConsumablesTrackerPage() {
     orderDate: todayIso,
   });
   const statusNotificationCacheRef = useRef(new Map());
+
+  const mutedTextColor = isDark ? "var(--grey-accent)" : "var(--grey-accent-dark)";
+  const quietLabelColor = isDark ? "var(--grey-accent)" : "var(--grey-accent-light)";
+  const highlightRowBackground = isDark ? "rgba(var(--accent-purple-rgb),0.22)" : "var(--danger-surface)";
+  const tableHeaderColor = isDark ? "var(--accent-purple)" : "var(--primary-dark)";
+  const accentDashedBorder = isDark
+    ? "1px dashed rgba(var(--accent-purple-rgb),0.35)"
+    : "1px dashed var(--surface-light)";
+  const themedBudgetInputStyle = useMemo(
+    () => ({
+      ...budgetInputStyle,
+      border: isDark ? "1px solid rgba(var(--accent-purple-rgb),0.45)" : budgetInputStyle.border,
+      background: isDark ? "var(--surface-light)" : "var(--surface)",
+      color: "var(--text-primary)",
+    }),
+    [isDark]
+  );
+  const themedOrderHistoryContainerStyle = useMemo(
+    () => ({
+      ...orderHistoryContainerStyle,
+      border: isDark
+        ? "1px solid rgba(var(--accent-purple-rgb),0.25)"
+        : orderHistoryContainerStyle.border,
+      background: isDark ? "var(--surface-light)" : orderHistoryContainerStyle.background,
+    }),
+    [isDark]
+  );
+  const themedOrderHistoryRowStyle = useMemo(
+    () => ({
+      ...orderHistoryRowStyle,
+      color: mutedTextColor,
+    }),
+    [mutedTextColor]
+  );
+  const themedOrderHistoryRowBorder = isDark
+    ? "1px solid rgba(var(--accent-purple-rgb),0.2)"
+    : orderHistoryRowBorder;
   const statusNotificationPendingRef = useRef(new Map());
 
   const closeOrderModal = useCallback(() => {
@@ -1084,7 +1123,7 @@ function ConsumablesTrackerPage() {
             <h1 style={{ color: "var(--primary-dark)", marginBottom: "16px" }}>
               Workshop Manager Access Only
             </h1>
-            <p style={{ marginBottom: "16px", color: "var(--grey-accent-dark)" }}>
+            <p style={{ marginBottom: "16px", color: mutedTextColor }}>
               This consumables tracker is limited to workshop management roles. If
               you believe you should have access please contact the systems
               administrator.
@@ -1119,13 +1158,13 @@ function ConsumablesTrackerPage() {
                 <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>
                   Potential Duplicate Consumables
                 </h3>
-                <p style={{ color: "var(--grey-accent-dark)", marginTop: "8px" }}>
+                <p style={{ color: mutedTextColor, marginTop: "8px" }}>
                   We detected items that resolve to the same name when
                   normalised. They have been grouped into a single record for
                   this view; please tidy the source data if these should remain
                   separate.
                 </p>
-                <ul style={{ paddingLeft: "20px", color: "var(--grey-accent-dark)" }}>
+                <ul style={{ paddingLeft: "20px", color: mutedTextColor }}>
                   {potentialDuplicates.map((entry) => (
                     <li key={entry.normalized} style={{ marginBottom: "6px" }}>
                       {entry.names.join(" / ")}
@@ -1176,12 +1215,12 @@ function ConsumablesTrackerPage() {
                 <h3 style={{ margin: "0 0 6px", color: "var(--primary-dark)" }}>
                   Order {orderModalConsumable.name}
                 </h3>
-                <p style={{ margin: "0 8px 16px", color: "var(--grey-accent-dark)" }}>
+                <p style={{ margin: "0 8px 16px", color: mutedTextColor }}>
                 Previous orders (latest three). &ldquo;Same Details&rdquo; will reuse the
                 most recent order, while &ldquo;Edit Details&rdquo; lets you adjust the
                   quantity, unit cost, supplier, or date before logging a new entry.
                 </p>
-                <div style={orderHistoryContainerStyle}>
+                <div style={themedOrderHistoryContainerStyle}>
                   <div style={orderHistoryHeaderStyle}>
                     <span>Item</span>
                     <span>Qty</span>
@@ -1201,10 +1240,8 @@ function ConsumablesTrackerPage() {
                         <div
                           key={`modal-log-${index}`}
                           style={{
-                            ...orderHistoryRowStyle,
-                            borderBottom: isLastLog
-                              ? "none"
-                              : orderHistoryRowBorder,
+                            ...themedOrderHistoryRowStyle,
+                            borderBottom: isLastLog ? "none" : themedOrderHistoryRowBorder,
                           }}
                         >
                           <span>{log.itemName || orderModalConsumable.name}</span>
@@ -1352,7 +1389,7 @@ function ConsumablesTrackerPage() {
                     Stock Check
                   </button>
                   <div style={{ textAlign: "right" }}>
-                    <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--grey-accent-light)" }}>
+                    <p style={{ margin: 0, fontSize: "0.8rem", color: quietLabelColor }}>
                       Budget for {monthLabel}
                     </p>
                     <strong style={{ fontSize: "1.4rem", color: "var(--primary-dark)" }}>
@@ -1493,26 +1530,26 @@ function ConsumablesTrackerPage() {
                   gap: "12px",
                 }}
               >
-                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: "1px dashed var(--surface-light)" }}>
-                  <p style={{ margin: 0, color: "var(--grey-accent-light)", fontSize: "0.8rem" }}>Spend</p>
+                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: accentDashedBorder }}>
+                  <p style={{ margin: 0, color: quietLabelColor, fontSize: "0.8rem" }}>Spend</p>
                   <strong style={{ fontSize: "1.2rem" }}>
                     {logsLoading ? "Loading…" : formatCurrency(logsSummary.spend)}
                   </strong>
                 </div>
-                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: "1px dashed var(--surface-light)" }}>
-                  <p style={{ margin: 0, color: "var(--grey-accent-light)", fontSize: "0.8rem" }}>Quantity</p>
+                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: accentDashedBorder }}>
+                  <p style={{ margin: 0, color: quietLabelColor, fontSize: "0.8rem" }}>Quantity</p>
                   <strong style={{ fontSize: "1.2rem" }}>
                     {logsLoading ? "Loading…" : logsSummary.quantity.toLocaleString()}
                   </strong>
                 </div>
-                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: "1px dashed var(--surface-light)" }}>
-                  <p style={{ margin: 0, color: "var(--grey-accent-light)", fontSize: "0.8rem" }}>Orders</p>
+                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: accentDashedBorder }}>
+                  <p style={{ margin: 0, color: quietLabelColor, fontSize: "0.8rem" }}>Orders</p>
                   <strong style={{ fontSize: "1.2rem" }}>
                     {logsLoading ? "Loading…" : logsSummary.orders}
                   </strong>
                 </div>
-                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: "1px dashed var(--surface-light)" }}>
-                  <p style={{ margin: 0, color: "var(--grey-accent-light)", fontSize: "0.8rem" }}>Suppliers</p>
+                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: accentDashedBorder }}>
+                  <p style={{ margin: 0, color: quietLabelColor, fontSize: "0.8rem" }}>Suppliers</p>
                   <strong style={{ fontSize: "1.2rem" }}>
                     {logsLoading ? "Loading…" : logsSummary.suppliers}
                   </strong>
@@ -1533,7 +1570,7 @@ function ConsumablesTrackerPage() {
                     <tr
                       style={{
                         textAlign: "left",
-                        color: "var(--primary-dark)",
+                        color: tableHeaderColor,
                         fontSize: "0.8rem",
                         textTransform: "uppercase",
                         letterSpacing: "0.08em",
@@ -1564,11 +1601,11 @@ function ConsumablesTrackerPage() {
                         <tr
                           key={`log-${log.id || log.date}-${log.itemName}`}
                           style={{
-                            background: "var(--danger-surface)",
+                            background: highlightRowBackground,
                             borderRadius: "12px",
                           }}
                         >
-                          <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                          <td style={{ padding: "12px", color: mutedTextColor }}>
                             {log.date
                               ? new Date(log.date).toLocaleDateString("en-GB", {
                                   day: "2-digit",
@@ -1580,13 +1617,13 @@ function ConsumablesTrackerPage() {
                           <td style={{ padding: "12px", fontWeight: 600, color: "var(--text-secondary)" }}>
                             {log.itemName || "—"}
                           </td>
-                          <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                          <td style={{ padding: "12px", color: mutedTextColor }}>
                             {Number(log.quantity || 0).toLocaleString()}
                           </td>
-                          <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                          <td style={{ padding: "12px", color: mutedTextColor }}>
                             {log.supplier || "—"}
                           </td>
-                          <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                          <td style={{ padding: "12px", color: mutedTextColor }}>
                             {formatCurrency(log.totalValue)}
                           </td>
                         </tr>
@@ -1618,7 +1655,7 @@ function ConsumablesTrackerPage() {
                     value={newItemForm.name}
                     onChange={handleNewItemChange("name")}
                     style={{
-                      ...budgetInputStyle,
+                      ...themedBudgetInputStyle,
                       marginTop: "6px",
                       padding: "8px 10px",
                     }}
@@ -1632,7 +1669,7 @@ function ConsumablesTrackerPage() {
                     value={newItemForm.supplier}
                     onChange={handleNewItemChange("supplier")}
                     style={{
-                      ...budgetInputStyle,
+                      ...themedBudgetInputStyle,
                       marginTop: "6px",
                       padding: "8px 10px",
                     }}
@@ -1647,7 +1684,7 @@ function ConsumablesTrackerPage() {
                     value={newItemForm.unitCost}
                     onChange={handleNewItemChange("unitCost")}
                     style={{
-                      ...budgetInputStyle,
+                      ...themedBudgetInputStyle,
                       marginTop: "6px",
                       padding: "8px 10px",
                     }}
@@ -1716,11 +1753,11 @@ function ConsumablesTrackerPage() {
                     ...cardStyle,
                     padding: "16px",
                     boxShadow: "none",
-                    border: "1px dashed var(--surface-light)",
+                    border: accentDashedBorder,
                   }}
                 >
                   <p
-                    style={{ margin: 0, color: "var(--grey-accent-light)", fontSize: "0.85rem" }}
+                    style={{ margin: 0, color: quietLabelColor, fontSize: "0.85rem" }}
                   >
                     This Month&apos;s Spend
                   </p>
@@ -1741,11 +1778,11 @@ function ConsumablesTrackerPage() {
                     ...cardStyle,
                     padding: "16px",
                     boxShadow: "none",
-                    border: "1px dashed var(--surface-light)",
+                    border: accentDashedBorder,
                   }}
                 >
                   <p
-                    style={{ margin: 0, color: "var(--grey-accent-light)", fontSize: "0.85rem" }}
+                    style={{ margin: 0, color: quietLabelColor, fontSize: "0.85rem" }}
                   >
                     Projected Spend (All Scheduled Orders)
                   </p>
@@ -1766,11 +1803,11 @@ function ConsumablesTrackerPage() {
                     ...cardStyle,
                     padding: "16px",
                     boxShadow: "none",
-                    border: "1px dashed var(--surface-light)",
+                    border: accentDashedBorder,
                   }}
                 >
                   <p
-                    style={{ margin: 0, color: "var(--grey-accent-light)", fontSize: "0.85rem" }}
+                    style={{ margin: 0, color: quietLabelColor, fontSize: "0.85rem" }}
                   >
                     Budget Remaining
                   </p>
@@ -1820,7 +1857,7 @@ function ConsumablesTrackerPage() {
                     step="50"
                     value={budgetInput}
                     onChange={handleBudgetInputChange}
-                    style={budgetInputStyle}
+                    style={themedBudgetInputStyle}
                   />
                   <button
                     type="button"
@@ -1849,7 +1886,7 @@ function ConsumablesTrackerPage() {
                   </p>
                 )}
                 {formattedBudgetUpdatedAt && (
-                  <p style={{ margin: "6px 0 0", color: "var(--grey-accent-dark)", fontSize: "0.85rem" }}>
+                  <p style={{ margin: "6px 0 0", color: mutedTextColor, fontSize: "0.85rem" }}>
                     Last updated {formattedBudgetUpdatedAt}
                   </p>
                 )}
@@ -1905,7 +1942,7 @@ function ConsumablesTrackerPage() {
                     <tr
                       style={{
                         textAlign: "left",
-                        color: "var(--primary-dark)",
+                        color: tableHeaderColor,
                         fontSize: "0.8rem",
                         textTransform: "uppercase",
                         letterSpacing: "0.08em",
@@ -1961,7 +1998,7 @@ function ConsumablesTrackerPage() {
                             <tr
                               key={`${item.id}-row`}
                               style={{
-                                background: "var(--danger-surface)",
+                                background: highlightRowBackground,
                                 borderRadius: "12px",
                               }}
                             >
@@ -1978,27 +2015,27 @@ function ConsumablesTrackerPage() {
                                   {item.name}
                                 </strong>
                               </td>
-                              <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                              <td style={{ padding: "12px", color: mutedTextColor }}>
                                 {formatDate(item.lastOrderDate)}
                               </td>
-                              <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                              <td style={{ padding: "12px", color: mutedTextColor }}>
                                 {formatDate(item.nextEstimatedOrderDate)}
                               </td>
-                              <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                              <td style={{ padding: "12px", color: mutedTextColor }}>
                                 {item.estimatedQuantity
                                   ? item.estimatedQuantity.toLocaleString()
                                   : "—"}
                               </td>
-                              <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                              <td style={{ padding: "12px", color: mutedTextColor }}>
                                 {item.supplier || "—"}
                               </td>
-                              <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                              <td style={{ padding: "12px", color: mutedTextColor }}>
                                 {formatCurrency(item.unitCost)}
                               </td>
-                            <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                            <td style={{ padding: "12px", color: mutedTextColor }}>
                               {formatCurrency(item.lastOrderTotalValue)}
                             </td>
-                            <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                            <td style={{ padding: "12px", color: mutedTextColor }}>
                               <button
                                 type="button"
                                 onClick={() => openOrderModal(item)}
@@ -2014,7 +2051,7 @@ function ConsumablesTrackerPage() {
                                 style={{ padding: "0 12px 12px" }}
                               >
                                 <div style={{ display: "block" }}>
-                                  <div style={orderHistoryContainerStyle}>
+                                  <div style={themedOrderHistoryContainerStyle}>
                                   <div style={orderHistoryHeaderStyle}>
                                     <span>Item</span>
                                     <span>Qty</span>
@@ -2041,10 +2078,10 @@ function ConsumablesTrackerPage() {
                                         <div
                                           key={`${item.id}-log-${logIndex}`}
                                           style={{
-                                            ...orderHistoryRowStyle,
+                                            ...themedOrderHistoryRowStyle,
                                             borderBottom: isLastLog
                                               ? "none"
-                                              : orderHistoryRowBorder,
+                                              : themedOrderHistoryRowBorder,
                                           }}
                                         >
                                           <span>
@@ -2118,7 +2155,7 @@ function ConsumablesTrackerPage() {
                   <tr
                     style={{
                       textAlign: "left",
-                      color: "var(--primary-dark)",
+                      color: tableHeaderColor,
                       fontSize: "0.8rem",
                       textTransform: "uppercase",
                       letterSpacing: "0.08em",
@@ -2137,20 +2174,20 @@ function ConsumablesTrackerPage() {
                     <tr
                       key={`request-${request.id}`}
                       style={{
-                        background: "var(--danger-surface)",
+                        background: highlightRowBackground,
                         borderRadius: "12px",
                       }}
                     >
-                      <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                      <td style={{ padding: "12px", color: mutedTextColor }}>
                         {request.itemName}
                       </td>
-                      <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                      <td style={{ padding: "12px", color: mutedTextColor }}>
                         {request.quantity.toLocaleString()}
                       </td>
-                      <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                      <td style={{ padding: "12px", color: mutedTextColor }}>
                         {request.requestedByName || "—"}
                       </td>
-                      <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                      <td style={{ padding: "12px", color: mutedTextColor }}>
                         {request.requestedAt
                           ? new Date(request.requestedAt).toLocaleDateString(
                               "en-GB",
@@ -2162,7 +2199,7 @@ function ConsumablesTrackerPage() {
                             )
                           : "—"}
                       </td>
-                      <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                      <td style={{ padding: "12px", color: mutedTextColor }}>
                         <span
                           style={{
                             display: "inline-flex",

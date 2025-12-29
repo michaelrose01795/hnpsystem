@@ -7,6 +7,7 @@ import themeConfig, {
   popupOverlayStyles,
   popupCardStyles,
 } from "@/styles/appTheme";
+import { DropdownField } from "@/components/dropdownAPI";
 
 const palette = themeConfig.palette;
 
@@ -544,7 +545,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: "13px", fontWeight: 600, color: palette.textMuted }}>{concern.source}</span>
-                      <select
+                      <DropdownField
                         value={concern.status}
                         onChange={(e) => updateConcern(idx, { status: e.target.value })}
                         style={{
@@ -562,7 +563,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                             {status}
                           </option>
                         ))}
-                      </select>
+                      </DropdownField>
                     </div>
                     <textarea
                       value={concern.text}

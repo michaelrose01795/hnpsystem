@@ -266,25 +266,45 @@ div#main-content {
 /* ========================================================= */
 /* === Login Page Layout Helpers === */
 /* ========================================================= */
+
+/* Prevent horizontal scroll on login page */
+body:has(.login-page-wrapper) {
+  overflow-x: hidden;
+  width: 100vw;
+  max-width: 100%;
+}
+
 .login-page-wrapper {
-  min-height: 100vh;
-  width: 100%;
+  height: 100vh;
+  width: 100vw;
+  max-width: 100%;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 64px 16px;
+  padding: 60px 0 0 0;
   background: transparent;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 250;
+  isolation: isolate;
 }
 
 .login-stack {
   width: 100%;
-  max-width: 672px;
+  max-width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  justify-content: flex-start;
+  gap: 2.5rem;
   position: relative;
+  z-index: 200;
+  transform: scale(0.9);
 }
 
 .login-card-stack {
@@ -293,9 +313,26 @@ div#main-content {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
   position: relative;
-  z-index: 1;
+  overflow: visible;
+  z-index: 201;
+}
+
+.login-card {
+  position: relative;
+  z-index: 202;
+  width: 100%;
+  max-width: 480px;
+}
+
+.login-card > div {
+  background: var(--surface);
+}
+
+[data-theme="dark"] .login-card > div {
+  background: rgba(15, 23, 42, 0.7) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
 }
 
 .login-form {
@@ -399,6 +436,42 @@ div#main-content {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+@media (min-width: 1100px) {
+  .login-stack {
+    max-width: 100%;
+    align-items: center;
+  }
+
+  .login-card-stack {
+    align-items: center;
+    position: static;
+    left: auto;
+    transform: none;
+    margin-right: 0;
+    display: flex;
+    flex-direction: row;
+    gap: 24px;
+    max-width: 1040px;
+    justify-content: center;
+  }
+
+  .login-card--auth {
+    margin-left: 0;
+    flex-shrink: 0;
+  }
+
+  .login-card--dev {
+    position: static;
+    flex-shrink: 0;
+    z-index: 203;
+    transform: none;
+  }
+}
+
+.login-dropdown__control {
+  width: 100%;
 }
 
 .login-select-wrapper {
@@ -507,6 +580,199 @@ div#main-content {
 
 [data-theme="dark"] .login-logo-dark {
   display: inline-block;
+}
+
+/* ========================================================= */
+/* === Dropdown API (Custom combobox for login & beyond) === */
+/* ========================================================= */
+[data-theme="dark"] .login-dropdown__control .dropdown-api__control {
+  background: rgba(15, 23, 42, 0.75);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.dropdown-api {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dropdown-api--sm .dropdown-api__control {
+  padding: 10px 14px;
+  border-radius: 18px;
+}
+
+.dropdown-api__label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+}
+
+.dropdown-api__control {
+  width: 100%;
+  min-height: 56px;
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  background: rgba(var(--surface-rgb), 0.95);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  padding: 16px 46px 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  box-shadow: none;
+}
+
+.dropdown-api.is-open .dropdown-api__control,
+.dropdown-api__control:focus-visible {
+  border-color: var(--primary);
+  outline: 2px solid rgba(var(--primary-rgb), 0.2);
+  outline-offset: 2px;
+  background-color: var(--surface);
+}
+
+.dropdown-api__control:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dropdown-api__value {
+  flex: 1;
+  text-align: left;
+  color: var(--text-primary);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-api__value.is-placeholder {
+  color: rgba(var(--text-secondary-rgb), 0.7);
+  font-weight: 500;
+}
+
+.dropdown-api__chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(var(--text-secondary-rgb), 0.85);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.dropdown-api.is-open .dropdown-api__chevron {
+  transform: rotate(180deg);
+}
+
+.dropdown-api__menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: 100%;
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  background: rgba(var(--surface-rgb), 0.98);
+  padding: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 30;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(12px);
+}
+
+.dropdown-api__menu[hidden] {
+  display: none;
+}
+
+.dropdown-api__option {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.dropdown-api__option:hover,
+.dropdown-api__option:focus-visible {
+  background: rgba(var(--primary-rgb), 0.08);
+  border-color: rgba(var(--primary-rgb), 0.35);
+  outline: none;
+}
+
+.dropdown-api__option.is-selected {
+  background: rgba(var(--primary-rgb), 0.15);
+  border-color: var(--primary);
+  color: var(--text-primary);
+}
+
+.dropdown-api__option.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.dropdown-api__option-label {
+  font-weight: 600;
+}
+
+.dropdown-api__option-description {
+  font-size: 0.8rem;
+  color: rgba(var(--text-secondary-rgb), 0.7);
+}
+
+.dropdown-api__helper {
+  font-size: 0.8rem;
+  color: rgba(var(--text-secondary-rgb), 0.8);
+  margin-top: 2px;
+}
+
+.dropdown-api__empty {
+  padding: 14px 10px;
+  font-size: 0.85rem;
+  color: rgba(var(--text-secondary-rgb), 0.75);
+  text-align: center;
+}
+
+.dropdown-api.is-disabled .dropdown-api__control {
+  background: rgba(var(--surface-rgb), 0.5);
+}
+
+[data-theme="dark"] .dropdown-api__control {
+  background: rgba(15, 23, 42, 0.7);
+}
+
+[data-theme="dark"] .dropdown-api__menu {
+  background: rgba(15, 23, 42, 0.95);
+  box-shadow: 0 30px 50px rgba(0, 0, 0, 0.55);
+}
+
+[data-theme="dark"] .dropdown-api__option.is-selected {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .dropdown-api__option-description {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dropdown-api__menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-api__menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dropdown-api__menu::-webkit-scrollbar-thumb {
+  background: rgba(var(--primary-rgb), 0.35);
+  border-radius: 999px;
 }
 
 /* ========================================================= */

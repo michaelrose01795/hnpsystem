@@ -1,5 +1,6 @@
 // file location: /src/components/LoginDropdown.js
 import React, { useEffect, useMemo } from "react";
+import { Dropdown } from "@/components/dropdownAPI";
 
 /**
  * LoginDropdown
@@ -79,75 +80,104 @@ export default function LoginDropdown({
 
   const wrapperClassName = ["login-dropdown", className].filter(Boolean).join(" ").trim();
 
+  const categoryOptions = useMemo(
+    () =>
+      Object.keys(roleCategories || {}).map((category) => ({
+        key: category,
+        value: category,
+        label: category,
+      })),
+    [roleCategories]
+  );
+
+  const departmentOptions = useMemo(() => {
+    if (!selectedCategory) return [];
+    return (roleCategories?.[selectedCategory] || [])
+      .filter((department) => usersByRole[department])
+      .map((department) => ({
+        key: department,
+        value: department,
+        label: department,
+      }));
+  }, [roleCategories, selectedCategory, usersByRole]);
+
+  const userDropdownOptions = useMemo(
+    () =>
+      userOptions.map((user) => {
+        const label = formatUserName(selectedDepartment, user.name);
+        const userId = String(user.id ?? user.user_id ?? user.email ?? user.name ?? "");
+        return {
+          key: userId,
+          value: userId,
+          label,
+          description: user.email || "",
+          raw: user,
+        };
+      }),
+    [userOptions, selectedDepartment]
+  );
+
+  const selectedUserId = selectedUser
+    ? String(selectedUser.id ?? selectedUser.user_id ?? selectedUser.email ?? selectedUser.name ?? "")
+    : "";
+
   return (
     <div className={wrapperClassName}>
-      {/* Retail vs Sales selector */}
-      <div className={`login-select-wrapper ${selectedCategory ? "has-value" : ""}`}>
-        <select
-          value={selectedCategory}
-          onChange={(e) => {
-            setSelectedCategory(e.target.value);
-            setSelectedDepartment("");
+      <Dropdown
+        label="Select Area"
+        placeholder="Choose an area"
+        options={categoryOptions}
+        value={selectedCategory || ""}
+        onChange={(raw) => {
+          const nextCategory =
+            (typeof raw === "string" && raw) || raw?.value || raw?.label || "";
+          setSelectedCategory(nextCategory);
+          setSelectedDepartment("");
+          setSelectedUser(null);
+        }}
+        className="login-dropdown__control"
+      />
+
+      {selectedCategory && (
+        <Dropdown
+          label="Select Department"
+          placeholder="Choose a department"
+          options={departmentOptions}
+          value={selectedDepartment || ""}
+          onChange={(raw) => {
+            const nextDepartment =
+              (typeof raw === "string" && raw) || raw?.value || raw?.label || "";
+            setSelectedDepartment(nextDepartment);
             setSelectedUser(null);
           }}
-          className="login-select"
-        >
-          <option value=""></option>
-          {Object.keys(roleCategories).map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-        <label className="login-select-label">Select Area</label>
-      </div>
-
-      {/* Department selector - filtered by category */}
-      {selectedCategory && (
-        <div className={`login-select-wrapper ${selectedDepartment ? "has-value" : ""}`}>
-          <select
-            value={selectedDepartment}
-            onChange={(e) => {
-              setSelectedDepartment(e.target.value);
-              setSelectedUser(null);
-            }}
-            className="login-select"
-          >
-            <option value=""></option>
-            {(roleCategories[selectedCategory] || [])
-              .filter((department) => usersByRole[department])
-              .map((department) => (
-                <option key={department} value={department}>
-                  {department}
-                </option>
-              ))}
-          </select>
-          <label className="login-select-label">Select Department</label>
-        </div>
+          className="login-dropdown__control"
+        />
       )}
 
-      {/* User selector */}
       {selectedDepartment && (
-        <div className={`login-select-wrapper ${selectedUser ? "has-value" : ""}`}>
-          <select
-            value={selectedUser?.id || ""}
-            onChange={(e) => {
-              const nextUser = userOptions.find(
-                (user) => String(user.id) === e.target.value
-              );
-              setSelectedUser(nextUser || null);
-            }}
-            className="login-select"
-          >
-            <option value=""></option>
-            {userOptions.map((user) => (
-              <option key={user.id} value={user.id}>
-                {formatUserName(selectedDepartment, user.name)}
-              </option>
-            ))}
-          </select>
-          <label className="login-select-label">Select User</label>
-        </div>
+        <Dropdown
+          label="Select User"
+          placeholder="Choose a user"
+          options={userDropdownOptions}
+          value={selectedUserId}
+          onChange={(raw, option) => {
+            const nextId =
+              (typeof raw === "object" && String(raw.id ?? raw.user_id ?? raw.value ?? "")) ||
+              option?.value ||
+              option?.key ||
+              "";
+            const nextUser =
+              (typeof raw === "object" && raw) ||
+              userOptions.find(
+                (user) =>
+                  String(user.id ?? user.user_id ?? user.email ?? user.name ?? "") ===
+                  String(nextId)
+              ) ||
+              null;
+            setSelectedUser(nextUser);
+          }}
+          className="login-dropdown__control"
+        />
       )}
     </div>
   );

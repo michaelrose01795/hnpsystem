@@ -241,7 +241,7 @@ const parseTaskChecklistPayload = (raw = null) => {
   return null;
 };
 
-const extractSectionEditorsFromChecklist = (rawChecklist) => {
+const deriveSectionEditorsFromChecklist = (rawChecklist) => {
   const parsed = parseTaskChecklistPayload(rawChecklist);
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     return createSectionEditorsState();
@@ -314,24 +314,6 @@ const computeSectionEditorsSignature = (value = {}) =>
 
 const editorsAreEqual = (left = {}, right = {}) =>
   computeSectionEditorsSignature(left) === computeSectionEditorsSignature(right);
-
-const extractSectionEditorsFromChecklist = (payload) => {
-  if (!payload) {
-    return sanitizeSectionEditors();
-  }
-  if (Array.isArray(payload)) {
-    return sanitizeSectionEditors();
-  }
-  if (typeof payload === "object") {
-    if (payload.sectionEditors) {
-      return sanitizeSectionEditors(payload.sectionEditors);
-    }
-    if (payload.meta && payload.meta.sectionEditors) {
-      return sanitizeSectionEditors(payload.meta.sectionEditors);
-    }
-  }
-  return sanitizeSectionEditors();
-};
 
 const computeTaskSignature = (tasks = [], completionStatus = "") => {
   if (!Array.isArray(tasks) || tasks.length === 0) {
@@ -678,7 +660,101 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
     }
   }, [writeUpMeta.jobId]);
 
+  const requestTasks = useMemo(
+    () => writeUpData.tasks.filter((task) => task && task.source === "request"),
+    [writeUpData.tasks]
+  );
+  const rectificationTasks = useMemo(
+    () => writeUpData.tasks.filter((task) => task && task.source !== "request"),
+    [writeUpData.tasks]
+  );
+  const showRectificationStatus = rectificationTasks.length > 0;
+  const totalTasks = writeUpData.tasks.length;
+  const completedTasks = writeUpData.tasks.filter((task) => task.status === "complete").length;
+
   // ✅ Fetch job + write-up data whenever the job number changes
+  const performWriteUpSave = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!jobNumber) {
+        if (!silent) {
+          alert("Missing job number");
+        }
+        return false;
+      }
+
+      try {
+        if (!silent) {
+          setSaving(true);
+        }
+        const result = await saveWriteUpToDatabase(jobNumber, writeUpData);
+
+        if (result?.success) {
+          const nextCompletionStatus = result.completionStatus || writeUpData.completionStatus;
+          setWriteUpData((prev) => ({
+            ...prev,
+            completionStatus: nextCompletionStatus,
+          }));
+
+          const requestsForPartsStatus = jobData?.jobCard?.partsRequests || [];
+          const desiredStatus = determineJobStatusFromTasks(
+            writeUpData.tasks,
+            requestsForPartsStatus,
+            rectificationTasks.length > 0
+          );
+          if (desiredStatus && jobData?.jobCard?.id) {
+            try {
+              await updateJobStatus(jobData.jobCard.id, desiredStatus);
+            } catch (statusError) {
+              console.error("❌ Failed to update job status after saving write-up:", statusError);
+            }
+          }
+
+          markTasksSynced(computeTaskSignature(writeUpData.tasks, nextCompletionStatus));
+
+          if (!silent) {
+            alert("✅ Write-up saved successfully!");
+            if (onSaveSuccess) {
+              onSaveSuccess();
+            } else if (isTech) {
+              router.push(`/job-cards/myjobs/${jobNumber}`);
+            } else {
+              router.push(`/job-cards/${jobNumber}`);
+            }
+          }
+          return true;
+        }
+
+        if (!silent) {
+          alert(result?.error || "❌ Failed to save write-up");
+        } else if (result?.error) {
+          console.error("❌ Failed to save write-up:", result.error);
+        }
+        return false;
+      } catch (error) {
+        console.error("Error saving write-up:", error);
+        if (!silent) {
+          alert("❌ Error saving write-up");
+        }
+        return false;
+      } finally {
+        if (!silent) {
+          setSaving(false);
+        }
+      }
+    },
+    [
+      jobNumber,
+      writeUpData,
+      jobData?.jobCard?.partsRequests,
+      jobData?.jobCard?.id,
+      rectificationTasks.length,
+      onSaveSuccess,
+      isTech,
+      router,
+      markTasksSynced,
+    ]
+  );
+
   useEffect(() => {
     if (!jobNumber) {
       return;
@@ -1080,7 +1156,6 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       recordSectionEditor(toggledSection);
     }
   };
-
   useEffect(() => {
     if (!writeUpMeta.jobId || saving) {
       return;
@@ -1189,7 +1264,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       const normalizedFault = incoming.work_performed ?? "";
       const normalizedCause = incoming.recommendations ?? "";
       const normalizedRectification = incoming.ratification ?? "";
-      const incomingEditors = extractSectionEditorsFromChecklist(incoming.task_checklist);
+      const incomingEditors = deriveSectionEditorsFromChecklist(incoming.task_checklist);
       setWriteUpData((prev) => {
         const nextState = { ...prev };
         let changed = false;
@@ -1263,89 +1338,6 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       supabase.removeChannel(channel);
     };
   }, [writeUpMeta.jobId, markFieldsSynced]);
-
-  const performWriteUpSave = useCallback(
-    async ({ silent = false } = {}) => {
-      if (!jobNumber) {
-        if (!silent) {
-          alert("Missing job number");
-        }
-        return false;
-      }
-
-      try {
-        if (!silent) {
-          setSaving(true);
-        }
-        const result = await saveWriteUpToDatabase(jobNumber, writeUpData);
-
-        if (result?.success) {
-          const nextCompletionStatus = result.completionStatus || writeUpData.completionStatus;
-          setWriteUpData((prev) => ({
-            ...prev,
-            completionStatus: nextCompletionStatus,
-          }));
-
-          const requestsForPartsStatus = jobData?.jobCard?.partsRequests || [];
-          const desiredStatus = determineJobStatusFromTasks(
-            writeUpData.tasks,
-            requestsForPartsStatus,
-            rectificationTasks.length > 0
-          );
-          if (desiredStatus && jobData?.jobCard?.id) {
-            try {
-              await updateJobStatus(jobData.jobCard.id, desiredStatus);
-            } catch (statusError) {
-              console.error("❌ Failed to update job status after saving write-up:", statusError);
-            }
-          }
-
-          markTasksSynced(computeTaskSignature(writeUpData.tasks, nextCompletionStatus));
-
-          if (!silent) {
-            alert("✅ Write-up saved successfully!");
-            if (onSaveSuccess) {
-              onSaveSuccess();
-            } else if (isTech) {
-              router.push(`/job-cards/myjobs/${jobNumber}`);
-            } else {
-              router.push(`/job-cards/${jobNumber}`);
-            }
-          }
-          return true;
-        }
-
-        if (!silent) {
-          alert(result?.error || "❌ Failed to save write-up");
-        } else if (result?.error) {
-          console.error("❌ Failed to save write-up:", result.error);
-        }
-        return false;
-      } catch (error) {
-        console.error("Error saving write-up:", error);
-        if (!silent) {
-          alert("❌ Error saving write-up");
-        }
-        return false;
-      } finally {
-        if (!silent) {
-          setSaving(false);
-        }
-      }
-    },
-    [
-      jobNumber,
-      writeUpData,
-      jobData?.jobCard?.partsRequests,
-      jobData?.jobCard?.id,
-      rectificationTasks.length,
-      onSaveSuccess,
-      isTech,
-      router,
-      markTasksSynced,
-    ]
-  );
-
   const handleSave = async () => {
     await performWriteUpSave({ silent: false });
   };
@@ -1373,10 +1365,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   const openDocumentsPopup = () => setShowDocumentsPopup(true);
   const closeDocumentsPopup = () => setShowDocumentsPopup(false);
 
-  const requestTasks = writeUpData.tasks.filter((task) => task && task.source === "request");
-  const totalTasks = writeUpData.tasks.length;
-  const completedTasks = writeUpData.tasks.filter((task) => task.status === "complete").length;
-  const rectificationTasks = writeUpData.tasks.filter((task) => task && task.source !== "request");
+
   const getCompletionStatusLabel = () => {
     if (writeUpData.completionStatus === "complete") return "Complete";
     if (writeUpData.completionStatus === "waiting_additional_work") return "Waiting for Additional Work";
@@ -1391,7 +1380,6 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
 
   const completionStatusLabel = getCompletionStatusLabel();
   const completionStatusColor = getCompletionStatusColor();
-  const showRectificationStatus = rectificationTasks.length > 0;
   const requestSlots = requestTasks;
   const assignedRequestKeys = new Set(
     writeUpData.causeEntries
@@ -1809,51 +1797,16 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
         </div>
       </div>
 
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-        gap: "12px",
-        marginTop: "12px",
-        paddingTop: "12px",
-        borderTop: "2px solid rgba(var(--primary-rgb), 0.1)",
-        flexShrink: 0
-      }}>
-        <button
-          onClick={goBackToJobCard}
-          style={{
-            ...modernButtonStyle,
-            backgroundColor: "var(--info-dark)",
-            color: "white",
-            boxShadow: "none",
-          }}
-        >
-          ← Back to job
-        </button>
-
-        <button
-          onClick={openCheckSheetPopup}
-          style={{
-            ...modernButtonStyle,
-            backgroundColor: "var(--primary)",
-            color: "white",
-            boxShadow: "none",
-          }}
-        >
-          📋 Check sheet
-        </button>
-
-        <button
-          onClick={openDocumentsPopup}
-          style={{
-            ...modernButtonStyle,
-            backgroundColor: "var(--primary)",
-            color: "white",
-            boxShadow: "none",
-          }}
-        >
-          🚗 Vehicle details
-        </button>
-
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginTop: "12px",
+          paddingTop: "12px",
+          borderTop: "2px solid rgba(var(--primary-rgb), 0.1)",
+          flexShrink: 0
+        }}
+      >
         <button
           onClick={handleSave}
           disabled={saving}
@@ -1862,6 +1815,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
             backgroundColor: saving ? "var(--info)" : "var(--info)",
             color: "white",
             boxShadow: "none",
+            minWidth: "200px"
           }}
         >
           {saving ? "💾 Saving..." : "💾 Save write-up"}

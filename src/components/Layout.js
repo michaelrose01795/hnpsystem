@@ -24,6 +24,7 @@ import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { roleCategories } from "@/config/users";
 import { getUserActiveJobs, clockOutFromJob } from "@/lib/database/jobClocking";
+import { DropdownField } from "@/components/dropdownAPI";
 
 const WORKSHOP_SHORTCUT_ROLES = ["workshop manager", "aftersales manager"];
 
@@ -646,9 +647,9 @@ export default function Layout({ children, jobNumber }) {
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
-  const mainColumnMaxWidth = hideSidebar ? "960px" : "100%";
+  const mainColumnMaxWidth = hideSidebar ? "100%" : "100%";
   const layoutStyles = {
-    display: "flex",
+    display: hideSidebar ? "block" : "flex",
     flexDirection: isTablet ? "column" : "row",
     height: "auto",
     minHeight: "100vh",
@@ -658,16 +659,16 @@ export default function Layout({ children, jobNumber }) {
     color: colors.text,
     justifyContent: hideSidebar ? "center" : "flex-start",
     alignItems: hideSidebar ? "center" : "stretch",
-    gap: isTablet ? "12px" : "24px",
+    gap: hideSidebar ? "0" : isTablet ? "12px" : "24px",
     padding: hideSidebar ? "0" : isTablet ? "12px" : "0 16px",
     boxSizing: "border-box",
-    overflow: "visible",
+    overflow: hideSidebar ? "hidden" : "visible",
     position: "relative",
   };
   const showDesktopSidebar = !hideSidebar && !isTablet;
   const showMobileSidebar = !hideSidebar && isTablet;
-  const showDesktopStatusControls = canViewStatusSidebar && !isTablet;
-  const showMobileStatusSidebar = canViewStatusSidebar && isTablet && isStatusSidebarOpen;
+  const showDesktopStatusControls = !hideSidebar && canViewStatusSidebar && !isTablet;
+  const showMobileStatusSidebar = !hideSidebar && canViewStatusSidebar && isTablet && isStatusSidebarOpen;
   const mobileDrawerWidth = Math.min(420, viewportWidth);
   const navDrawerTargetWidth = isTablet ? mobileDrawerWidth : NAV_DRAWER_WIDTH;
   const navButtonPaddingOffset = !isTablet && !hideSidebar ? 16 : 0;
@@ -707,20 +708,20 @@ export default function Layout({ children, jobNumber }) {
 
       <div
         style={{
-          flex: hideSidebar ? "0 1 auto" : 1,
+          flex: hideSidebar ? "none" : 1,
           maxWidth: mainColumnMaxWidth,
-          width: "100%",
+          width: hideSidebar ? "100%" : "100%",
           display: "flex",
           flexDirection: "column",
           gap: hideSidebar ? 0 : isTablet ? "16px" : "20px",
           padding: hideSidebar ? "0" : isTablet ? "16px 12px" : "24px 16px",
-          background: colors.mainBg,
+          background: hideSidebar ? "transparent" : colors.mainBg,
           height: "auto",
           maxHeight: "none",
           overflowY: "visible", // allow full page scroll across breakpoints
           overflowX: "hidden",
           position: "relative",
-          margin: hideSidebar ? "0 auto" : "0",
+          margin: hideSidebar ? "0" : "0",
         }}
       >
         {showMobileSidebar && (
@@ -896,12 +897,12 @@ export default function Layout({ children, jobNumber }) {
                         Mode
                       </span>
                       {availableModes.length > 1 ? (
-                        <select
+                        <DropdownField
                           value={selectedMode || activeModeLabel || ""}
                           onChange={(event) => handleModeSelect(event.target.value)}
                           style={{
                             borderRadius: "999px",
-                            border: "1px solid rgba(var(--primary-rgb),0.3)",
+                            border: "none",
                             padding: "4px 12px",
                             background: "var(--surface-light)",
                             color: colors.accent,
@@ -915,7 +916,7 @@ export default function Layout({ children, jobNumber }) {
                               {mode}
                             </option>
                           ))}
-                        </select>
+                        </DropdownField>
                       ) : (
                         <span
                           style={{
@@ -943,13 +944,13 @@ export default function Layout({ children, jobNumber }) {
                     marginLeft: isTablet ? "auto" : "0",
                   }}
                 >
-                  <select
+                  <DropdownField
                     value={status}
                     onChange={(e) => handleStatusChange(e.target.value)}
                     style={{
                       padding: isMobile ? "4px 10px" : isTablet ? "5px 12px" : "6px 14px",
                       borderRadius: isMobile ? "10px" : "12px",
-                      border: `1px solid ${colors.accent}`,
+                      border: "none",
                       backgroundColor: "var(--surface)",
                       color: colors.accent,
                       fontWeight: 600,
@@ -963,7 +964,7 @@ export default function Layout({ children, jobNumber }) {
                     <option>Waiting for Job</option>
                     <option>In Progress</option>
                     <option>Tea Break</option>
-                  </select>
+                  </DropdownField>
                 </div>
               )}
 

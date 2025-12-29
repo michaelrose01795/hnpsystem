@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import VHCModalShell from "./VHCModalShell";
 import { buildModalButton } from "./VHCModalShell";
+import { DropdownField } from "@/components/dropdownAPI";
 
 const PRE_PICK_LOCATIONS = [
   { value: "service_rack_1", label: "Service Rack 1" },
@@ -100,7 +101,7 @@ export default function PrePickLocationModal({
           >
             Pre-Pick Location
           </label>
-          <select
+          <DropdownField
             value={selectedLocation}
             onChange={(e) => {
               setSelectedLocation(e.target.value);
@@ -124,7 +125,7 @@ export default function PrePickLocationModal({
                 {location.label}
               </option>
             ))}
-          </select>
+          </DropdownField>
           {error && (
             <div
               style={{

@@ -7,6 +7,7 @@ import { useClockingContext } from "@/context/ClockingContext";
 import dayjs from "dayjs";
 import { consumableOrderHistory } from "@/lib/data/consumablesSample";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
+import { DropdownField } from "@/components/dropdownAPI";
 
 const monthKey = (dateString) => dayjs(dateString).format("YYYY-MM");
 const monthLabel = (key) => dayjs(`${key}-01`).format("MMMM YYYY");
@@ -330,14 +331,14 @@ export default function WorkshopManagerDashboard() {
               <label htmlFor="consumable-month" style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
                 Month
               </label>
-              <select
+              <DropdownField
                 id="consumable-month"
                 value={selectedMonth}
                 onChange={(event) => setSelectedMonth(event.target.value)}
                 style={{
                   padding: "8px 12px",
                   borderRadius: "10px",
-                  border: "1px solid var(--danger)",
+                  border: "none",
                   fontSize: "0.95rem",
                 }}
               >
@@ -346,7 +347,7 @@ export default function WorkshopManagerDashboard() {
                     {monthLabel(month)}
                   </option>
                 ))}
-              </select>
+              </DropdownField>
               <span style={{ color: "var(--grey-accent)", fontSize: "0.9rem" }}>
                 Showing orders from {monthLabel(selectedMonth)}.
               </span>

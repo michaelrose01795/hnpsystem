@@ -8,6 +8,7 @@ import themeConfig, {
   popupCardStyles,
 } from "@/styles/appTheme";
 import BrakeDiagram from "@/components/VHC/BrakeDiagram";
+import { DropdownField } from "@/components/dropdownAPI";
 
 const palette = themeConfig.palette;
 
@@ -696,7 +697,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
         />
 
         <label style={fieldLabelStyle}>Status</label>
-        <select
+        <DropdownField
           value={padData.status}
           onChange={(e) => updatePadStatus(category, e.target.value)}
           style={selectBaseStyle}
@@ -706,7 +707,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           <option>Red</option>
           <option>Amber</option>
           <option>Green</option>
-        </select>
+        </DropdownField>
       </div>
     );
   };
@@ -778,7 +779,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             </div>
 
             <label style={fieldLabelStyle}>Status</label>
-            <select
+            <DropdownField
               value={discData.measurements.status}
               onChange={(e) =>
                 updateDisc(category, "measurements", { status: e.target.value })
@@ -790,14 +791,14 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
               <option>Red</option>
               <option>Amber</option>
               <option>Green</option>
-            </select>
+            </DropdownField>
           </>
         )}
 
         {discData.tab === "visual" && (
           <>
             <label style={fieldLabelStyle}>Visual Inspection</label>
-            <select
+            <DropdownField
               value={discData.visual.status}
               onChange={(e) =>
                 updateDisc(category, "visual", { status: e.target.value })
@@ -809,7 +810,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
               <option>Red</option>
               <option>Amber</option>
               <option>Green</option>
-            </select>
+            </DropdownField>
           </>
         )}
 
@@ -1084,7 +1085,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                 />
 
                 <label style={fieldLabelStyle}>Severity</label>
-                <select
+                <DropdownField
                   value={concernPopup.tempConcern.status}
                   onChange={(e) =>
                     setConcernPopup((prev) => ({
@@ -1098,7 +1099,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                 >
                   <option>Red</option>
                   <option>Amber</option>
-                </select>
+                </DropdownField>
 
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", marginTop: "16px", flexWrap: "wrap" }}>
                   {concernPopup.editIndex !== null && (
