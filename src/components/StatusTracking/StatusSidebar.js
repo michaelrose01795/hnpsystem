@@ -466,8 +466,8 @@ export default function StatusSidebar({
         </div>
 
         {/* Scrollable content area */}
-        <div style={{ 
-          overflowY: 'auto', 
+        <div style={{
+          overflowY: 'auto',
           flex: 1, // Fill remaining vertical space so colored section reaches footer
           minHeight: 0, // Allow flex child to shrink for proper scrolling
           padding: '20px',

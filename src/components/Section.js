@@ -9,6 +9,7 @@ import React from "react";
  * - bgColor: background color (hex or CSS color)
  * - textColor: text color
  * - hoverShadow: whether to add subtle hover shadow
+ * - useGradientShadow: use gradient shadow effect (default: true)
  * - className: optional extra Tailwind classes
  */
 export default function Section({
@@ -17,6 +18,7 @@ export default function Section({
   bgColor = "var(--surface)",        // soft white background
   textColor = "var(--text-primary)",
   hoverShadow = true,
+  useGradientShadow = true,
   className = "",
 }) {
   return (
@@ -32,15 +34,13 @@ export default function Section({
         color: textColor,
         fontFamily: "inherit",
         transition: "all 0.2s ease-in-out",    // smooth hover effect
-        boxShadow: "none"
-          ? "0 1px 4px rgba(var(--shadow-rgb),0.08), 0 2px 6px rgba(var(--shadow-rgb),0.04)"
-          : "none",
+        boxShadow: "none",
       }}
       onMouseEnter={(e) => {
         if (hoverShadow) e.currentTarget.style.boxShadow = "0 4px 12px rgba(var(--shadow-rgb),0.12)";
       }}
       onMouseLeave={(e) => {
-        if (hoverShadow) e.currentTarget.style.boxShadow = "0 1px 4px rgba(var(--shadow-rgb),0.08), 0 2px 6px rgba(var(--shadow-rgb),0.04)";
+        if (hoverShadow) e.currentTarget.style.boxShadow = "none";
       }}
     >
       {title && (

@@ -980,7 +980,7 @@ export default function NextJobsPage() {
           <div
             key={panelKey}
             style={{
-              background: "var(--surface)",
+              background: "var(--layer-section-level-2)",
               border: dragOverTarget === assignee.name ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
               borderRadius: "8px",
               padding: "16px",
@@ -991,7 +991,7 @@ export default function NextJobsPage() {
               maxHeight: PANEL_HEIGHT_PX,
               boxShadow: dragOverTarget === assignee.name ? "0 4px 12px rgba(0, 0, 0, 0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.14)",
               transition: "all 0.2s ease",
-              backgroundColor: dragOverTarget === assignee.name ? "var(--surface-light)" : "var(--surface)"
+              backgroundColor: dragOverTarget === assignee.name ? "var(--surface-light)" : "var(--layer-section-level-2)"
             }}
       onDragOver={handleDragOver}
       onDragEnter={(e) => handleDragEnterSection(assignee.name, e)}
@@ -1016,7 +1016,7 @@ export default function NextJobsPage() {
           padding: "12px",
           borderRadius: "8px",
           border: currentClocking ? "1px solid var(--success)" : "1px dashed var(--accent-purple)",
-          backgroundColor: currentClocking ? "var(--success-surface)" : "var(--surface-light)",
+          backgroundColor: currentClocking ? "var(--success-surface)" : "var(--layer-section-level-1)",
           cursor: currentClocking ? "pointer" : "default",
         }}
         onClick={() => handleOpenCurrentClocking(currentClocking, assignee.name)}
@@ -1125,7 +1125,7 @@ export default function NextJobsPage() {
                   padding: "10px",
                   marginBottom: "8px",
                   backgroundColor:
-                    draggingJob?.jobNumber === job.jobNumber ? "var(--surface-light)" : "var(--surface)",
+                    draggingJob?.jobNumber === job.jobNumber ? "var(--surface-light)" : "var(--layer-section-level-1)",
                   cursor: hasAccess ? "grab" : "pointer",
                   transition: "all 0.2s",
                   opacity: draggingJob?.jobNumber === job.jobNumber ? 0.5 : 1
@@ -1138,7 +1138,7 @@ export default function NextJobsPage() {
                 }}
                 onMouseLeave={(e) => {
                   if (draggingJob?.jobNumber !== job.jobNumber) {
-                    e.currentTarget.style.backgroundColor = "var(--surface)";
+                    e.currentTarget.style.backgroundColor = "var(--layer-section-level-1)";
                     e.currentTarget.style.boxShadow = "none";
                   }
                 }}
@@ -1258,10 +1258,10 @@ export default function NextJobsPage() {
       }}>
         
         {/* ✅ Outstanding Jobs Section with Drop Zone */}
-            <div 
+            <div
               style={{
                 marginBottom: "12px",
-                background: "var(--search-surface)",
+                background: "var(--layer-section-level-2)",
                 borderRadius: "8px",
             border: dragOverTarget === "outstanding" ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
             boxShadow: dragOverTarget === "outstanding" ? "0 4px 12px rgba(0, 0, 0, 0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
@@ -1271,8 +1271,8 @@ export default function NextJobsPage() {
             minHeight: OUTSTANDING_GRID_MAX_HEIGHT_PX,
             flexShrink: 0,
             transition: "all 0.2s ease",
-            backgroundColor: dragOverTarget === "outstanding" ? "var(--search-surface-muted)" : "var(--search-surface)", // Highlight entire box
-            color: "var(--search-text)"
+            backgroundColor: dragOverTarget === "outstanding" ? "var(--surface-light)" : "var(--layer-section-level-2)", // Highlight entire box
+            color: "var(--text-primary)"
           }}
           onDragOver={handleDragOver}
           onDragEnter={(e) => handleDragEnterSection("outstanding", e)}
@@ -1304,15 +1304,15 @@ export default function NextJobsPage() {
               padding: "10px 12px",
               marginBottom: "12px",
               borderRadius: "8px",
-              border: "1px solid var(--search-surface-muted)",
-              backgroundColor: "var(--search-surface)",
-              color: "var(--search-text)",
+              border: "1px solid var(--surface-light)",
+              backgroundColor: "var(--layer-section-level-1)",
+              color: "var(--text-primary)",
               fontSize: "14px",
               outline: "none",
               transition: "border-color 0.2s"
             }}
             onFocus={(e) => e.currentTarget.style.borderColor = "var(--primary)"}
-            onBlur={(e) => e.currentTarget.style.borderColor = "var(--search-surface-muted)"}
+            onBlur={(e) => e.currentTarget.style.borderColor = "var(--surface-light)"}
           />
 
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -1354,9 +1354,9 @@ export default function NextJobsPage() {
                           border:
                             draggingJob?.jobNumber === job.jobNumber
                               ? "2px dashed var(--primary)"
-                              : "1px solid var(--info-surface)",
+                              : "1px solid var(--surface-light)",
                           backgroundColor:
-                            draggingJob?.jobNumber === job.jobNumber ? "var(--surface-light)" : "var(--background)",
+                            draggingJob?.jobNumber === job.jobNumber ? "var(--surface-light)" : "var(--layer-section-level-1)",
                           cursor: hasAccess ? "grab" : "pointer",
                           boxShadow: "none",
                           transition: "border 0.2s, background-color 0.2s, transform 0.2s",
@@ -1454,12 +1454,12 @@ export default function NextJobsPage() {
         </div>
 
         {/* ✅ Technicians Grid Section */}
-            <div style={{ 
+            <div style={{
               flex: "1 0 auto",
               borderRadius: "8px",
               boxShadow: "none",
               border: "1px solid var(--surface-light)",
-              background: "var(--surface)",
+              background: "var(--layer-section-level-3)",
               padding: "24px",
               display: "flex",
               flexDirection: "column",

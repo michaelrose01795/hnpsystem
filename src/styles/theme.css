@@ -60,12 +60,22 @@
   --overlay: rgba(var(--primary-rgb), 0.35);
 
 
-  --layer-section-level-1: #ffffff;
-  --layer-section-level-2: #fbfbfb;
-  --layer-section-level-3: #f7f7f7;
-  --layer-section-level-4: #f1f1f1;
+  /* Three-tier background system - Light Mode */
+  /* Level 1 (Top layer - nearly white): search bars, job cards, clocking cards */
+  --layer-section-level-1: #fefefe;
+  /* Level 2 (Middle layer - lighter): section containers, tech panels */
+  --layer-section-level-2: #fff0f0;
+  /* Level 3 (Bottom layer - light red): page background, main containers */
+  --layer-section-level-3: #ffe0e0;
+  /* Level 4 (Extra dark if needed) */
+  --layer-section-level-4: #ffd0d0;
   --row-background: #ffffff;
   --text-color: var(--text-primary);
+
+  /* Section gradient shadows - Light Mode (for future use) */
+  --section-gradient-outer: #ffe8e8;
+  --section-gradient-inner: #fffbfb;
+  --section-gradient-center: #ffffff;
 }
 
 :root[data-theme="dark"] {
@@ -130,10 +140,20 @@
   --overlay: rgba(var(--accent-purple-rgb), 0.5);
 
 
-  --layer-section-level-1: #1f2027;
-  --layer-section-level-2: #181a20;
-  --layer-section-level-3: #12121a;
-  --layer-section-level-4: #0e0e13;
+  /* Three-tier background system - Dark Mode */
+  /* Level 1 (Top layer - dark purple): search bars, job cards, clocking cards - matches login background */
+  --layer-section-level-1: #0f172a;
+  /* Level 2 (Middle layer - lighter grey): section containers, tech panels */
+  --layer-section-level-2: #1a1d2e;
+  /* Level 3 (Bottom layer - dark grey): page background, main containers */
+  --layer-section-level-3: #0d0f17;
+  /* Level 4 (Extra dark if needed) */
+  --layer-section-level-4: #080a0f;
   --row-background: #2a2a2e;
   --text-color: #ffffff;
+
+  /* Section gradient shadows - Dark Mode (for future use) */
+  --section-gradient-outer: #12121a;
+  --section-gradient-inner: #1e1e28;
+  --section-gradient-center: #23232b;
 }
