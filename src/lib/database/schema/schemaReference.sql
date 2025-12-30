@@ -1074,6 +1074,9 @@ CREATE TABLE public.tracking_equipment_tools (
   created_by integer,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  interval_days integer,
+  interval_months integer,
+  interval_label text,
   CONSTRAINT tracking_equipment_tools_pkey PRIMARY KEY (id),
   CONSTRAINT tracking_equipment_tools_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
 );
@@ -1088,6 +1091,9 @@ CREATE TABLE public.tracking_oil_stock (
   created_by integer,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  interval_days integer,
+  interval_months integer,
+  interval_label text,
   CONSTRAINT tracking_oil_stock_pkey PRIMARY KEY (id),
   CONSTRAINT tracking_oil_stock_consumable_id_fkey FOREIGN KEY (consumable_id) REFERENCES public.workshop_consumables(id),
   CONSTRAINT tracking_oil_stock_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)

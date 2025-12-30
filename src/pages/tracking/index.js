@@ -10,6 +10,8 @@ import { fetchTrackingSnapshot } from "@/lib/database/tracking";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { CalendarField } from "@/components/calendarAPI";
+import { DropdownField } from "@/components/dropdownAPI";
+import { addMonths } from "date-fns";
 
 const CAR_LOCATIONS = [
   { id: "service-side", label: "Service side" },
@@ -44,6 +46,19 @@ const KEY_LOCATIONS = KEY_LOCATION_GROUPS.flatMap((group) =>
   }))
 );
 
+const CAR_LOCATION_OPTIONS = CAR_LOCATIONS.map((location) => ({
+  key: location.id,
+  value: location.label,
+  label: location.label,
+}));
+
+const KEY_LOCATION_OPTIONS = KEY_LOCATIONS.map((location) => ({
+  key: location.id,
+  value: location.label,
+  label: location.label,
+  description: location.group,
+}));
+
 const AUTO_MOVEMENT_RULES = {
   "workshop in progress": {
     keyLocation: "Workshop Cupboard – Jobs in Progress",
@@ -75,6 +90,12 @@ const STATUS_COLORS = {
   "In Transit": "var(--accent-purple)",
 };
 
+const STATUS_OPTIONS = Object.keys(STATUS_COLORS).map((status) => ({
+  key: `status-${status.toLowerCase().replace(/\s+/g, "-")}`,
+  value: status,
+  label: status,
+}));
+
 const NEXT_ACTION_ENDPOINT = "/api/tracking/next-action";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -82,6 +103,145 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const DEFAULT_EQUIPMENT_CHECKS = [];
 
 const DEFAULT_OIL_CHECKS = [];
+
+const EQUIPMENT_API_ENDPOINT = "/api/tracking/equipment";
+const OIL_STOCK_API_ENDPOINT = "/api/tracking/oil-stock";
+
+const CHECK_DURATION_OPTIONS = [
+  ...Array.from({ length: 11 }, (_, index) => {
+    const months = index + 1;
+    return {
+      key: `m-${months}`,
+      value: months,
+      label: `${months} month${months === 1 ? "" : "s"}`,
+    };
+  }),
+  ...Array.from({ length: 3 }, (_, index) => {
+    const years = index + 1;
+    const months = years * 12;
+    return {
+      key: `y-${years}`,
+      value: months,
+      label: `${years} year${years === 1 ? "" : "s"}`,
+    };
+  }),
+];
+
+const parseDateOnly = (value) => {
+  if (!value || typeof value !== "string") return null;
+  const parts = value.split("-").map((part) => Number(part));
+  if (parts.length !== 3) return null;
+  const [year, month, day] = parts;
+  if (!year || !month || !day) return null;
+  const parsed = new Date(year, month - 1, day);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+};
+
+const formatDateOnly = (date) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const toDateInputValue = (value) => {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return formatDateOnly(parsed);
+};
+
+const calculateNextDateByDuration = (lastDateString, durationMonths) => {
+  if (!lastDateString || !durationMonths) return "";
+  const parsed = parseDateOnly(lastDateString);
+  if (!parsed) return "";
+  const months = Number(durationMonths);
+  if (!Number.isFinite(months) || months <= 0) return "";
+  const nextDate = addMonths(parsed, months);
+  return formatDateOnly(nextDate);
+};
+
+const calculateIntervalDaysFromIso = (startISO, endISO) => {
+  if (!startISO || !endISO) return null;
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+  const diff = end.getTime() - start.getTime();
+  if (diff <= 0) return null;
+  return Math.max(1, Math.round(diff / MS_PER_DAY));
+};
+
+const getDurationLabel = (months) => {
+  if (!months) return "";
+  const matched = CHECK_DURATION_OPTIONS.find(
+    (option) => Number(option.value) === Number(months)
+  );
+  return matched?.label || "";
+};
+
+const convertMonthsToDays = (months) => {
+  if (!months) return null;
+  const numericMonths = Number(months);
+  if (!Number.isFinite(numericMonths) || numericMonths <= 0) return null;
+  return Math.max(1, Math.round(numericMonths * 30.4375));
+};
+
+const getIntervalDays = (item, startKey, endKey, fallbackDays = 7) => {
+  if (!item) return fallbackDays;
+  const { intervalDays, frequencyDays } = item;
+  if (Number.isFinite(Number(intervalDays)) && Number(intervalDays) > 0) {
+    return Number(intervalDays);
+  }
+  if (Number.isFinite(Number(frequencyDays)) && Number(frequencyDays) > 0) {
+    return Number(frequencyDays);
+  }
+  const start = item[startKey];
+  const end = item[endKey];
+  const derived = calculateIntervalDaysFromIso(start, end);
+  if (derived) return derived;
+  return fallbackDays;
+};
+
+const deriveIntervalMonthsFromItem = (item) => {
+  if (!item) return "";
+  if (item.intervalMonths) {
+    return Number(item.intervalMonths);
+  }
+  const days = Number(item.intervalDays);
+  if (Number.isFinite(days) && days > 0) {
+    const approxMonths = Math.round(days / 30.4375);
+    const match = CHECK_DURATION_OPTIONS.find(
+      (option) => Number(option.value) === approxMonths
+    );
+    return match ? match.value : approxMonths;
+  }
+  const derived = calculateIntervalDaysFromIso(item.lastChecked, item.nextDue || item.nextCheck);
+  if (derived) {
+    const approxMonths = Math.round(derived / 30.4375);
+    const match = CHECK_DURATION_OPTIONS.find(
+      (option) => Number(option.value) === approxMonths
+    );
+    return match ? match.value : approxMonths;
+  }
+  return "";
+};
+
+const getDurationDisplay = (item) => {
+  if (!item) return "—";
+  if (item.intervalLabel) return item.intervalLabel;
+  const months =
+    item.intervalMonths || deriveIntervalMonthsFromItem(item) || null;
+  if (months) {
+    return getDurationLabel(months);
+  }
+  const days = item.intervalDays;
+  if (Number.isFinite(Number(days)) && Number(days) > 0) {
+    return `${days} day${days === 1 ? "" : "s"}`;
+  }
+  return "—";
+};
 
 const formatDateLabel = (value) => {
   if (!value) return "Pending";
@@ -321,21 +481,62 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
   );
 };
 
-const EquipmentToolsModal = ({ onClose, onSave }) => {
-  const [form, setForm] = useState({
-    name: "",
-    lastCheckedDate: "",
-    nextDueDate: "",
-  });
+const buildEquipmentFormState = (data = null) => {
+  const intervalMonths = data ? deriveIntervalMonthsFromItem(data) : "";
+  return {
+    id: data?.id || null,
+    name: data?.name || "",
+    lastCheckedDate: data?.lastChecked ? toDateInputValue(data.lastChecked) : "",
+    nextDueDate: data?.nextDue ? toDateInputValue(data.nextDue) : "",
+    intervalMonths: intervalMonths ? Number(intervalMonths) : "",
+  };
+};
+
+const buildOilFormState = (data = null) => {
+  const intervalMonths = data ? deriveIntervalMonthsFromItem(data) : "";
+  return {
+    id: data?.id || null,
+    stock: data?.stock || "",
+    title: data?.title || "",
+    lastCheckDate: data?.lastCheck ? toDateInputValue(data.lastCheck) : "",
+    nextCheckDate: data?.nextCheck ? toDateInputValue(data.nextCheck) : "",
+    lastToppedUpDate: data?.lastToppedUp ? toDateInputValue(data.lastToppedUp) : "",
+    intervalMonths: intervalMonths ? Number(intervalMonths) : "",
+  };
+};
+
+const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) => {
+  const [form, setForm] = useState(() => buildEquipmentFormState(initialData));
+
+  useEffect(() => {
+    setForm(buildEquipmentFormState(initialData));
+  }, [initialData]);
+
+  const { lastCheckedDate, intervalMonths } = form;
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  useEffect(() => {
+    setForm((prev) => {
+      const computedNext = calculateNextDateByDuration(lastCheckedDate, intervalMonths);
+      const normalizedPrev = prev.nextDueDate || "";
+      if (computedNext === normalizedPrev) {
+        return prev;
+      }
+      return { ...prev, nextDueDate: computedNext };
+    });
+  }, [lastCheckedDate, intervalMonths]);
+
   const handleSubmit = (event) => {
     event.preventDefault();
     if (!form.name) {
       alert("Please enter equipment name");
+      return;
+    }
+    if (!form.intervalMonths) {
+      alert("Please select a duration until the next check");
       return;
     }
 
@@ -346,11 +547,19 @@ const EquipmentToolsModal = ({ onClose, onSave }) => {
     const nextDue = form.nextDueDate
       ? new Date(`${form.nextDueDate}T00:00:00`).toISOString()
       : null;
+    const intervalMonthsValue = form.intervalMonths ? Number(form.intervalMonths) : null;
+    const intervalDays =
+      calculateIntervalDaysFromIso(lastChecked, nextDue) ||
+      convertMonthsToDays(intervalMonthsValue);
 
     onSave({
+      id: form.id || initialData?.id || null,
       name: form.name,
       lastChecked,
       nextDue,
+      intervalMonths: intervalMonthsValue,
+      intervalLabel: getDurationLabel(intervalMonthsValue),
+      intervalDays,
     });
   };
 
@@ -368,7 +577,7 @@ const EquipmentToolsModal = ({ onClose, onSave }) => {
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ margin: 0 }}>Add Equipment/Tools</h2>
+          <h2 style={{ margin: 0 }}>{initialData ? "Edit Equipment/Tools" : "Add Equipment/Tools"}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -418,69 +627,125 @@ const EquipmentToolsModal = ({ onClose, onSave }) => {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
-            Next Due
+            Duration until next check *
           </label>
-          <CalendarField
-            value={form.nextDueDate}
-            onChange={(e) => handleChange("nextDueDate", e.target.value)}
-            placeholder="Select date"
+          <DropdownField
+            required
+            options={CHECK_DURATION_OPTIONS}
+            value={form.intervalMonths}
+            onValueChange={(value) =>
+              handleChange("intervalMonths", value ? Number(value) : "")
+            }
+            placeholder="Select duration"
             size="md"
           />
         </div>
 
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+            Next Due
+          </label>
+          <CalendarField
+            value={form.nextDueDate}
+            placeholder="Select date"
+            size="md"
+            disabled
+          />
+        </div>
+
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: "10px 16px",
-              borderRadius: "12px",
-              border: "1px solid var(--accent-purple-surface)",
-              backgroundColor: "transparent",
-              color: "var(--text)",
-              cursor: "pointer",
-              fontWeight: 600,
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            style={{
-              padding: "10px 16px",
-              borderRadius: "12px",
-              border: "none",
-              background: "var(--primary)",
-              color: "white",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Add
-          </button>
+          <div style={{ display: "flex", gap: "10px" }}>
+            {initialData?.id && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!initialData?.id) return;
+                  const shouldDelete = window.confirm("Delete this equipment entry?");
+                  if (shouldDelete) {
+                    onDelete?.(initialData.id);
+                  }
+                }}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(var(--danger-rgb), 0.4)",
+                  backgroundColor: "transparent",
+                  color: "var(--danger)",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Delete
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: "10px 16px",
+                borderRadius: "12px",
+                border: "1px solid var(--accent-purple-surface)",
+                backgroundColor: "transparent",
+                color: "var(--text)",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              style={{
+                padding: "10px 16px",
+                borderRadius: "12px",
+                border: "none",
+                background: "var(--primary)",
+                color: "white",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              {initialData ? "Save" : "Add"}
+            </button>
+          </div>
         </div>
       </form>
     </div>
   );
 };
 
-const OilStockModal = ({ onClose, onSave }) => {
-  const [form, setForm] = useState({
-    stock: "",
-    title: "",
-    lastCheckDate: "",
-    nextCheckDate: "",
-    lastToppedUpDate: "",
-  });
+const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
+  const [form, setForm] = useState(() => buildOilFormState(initialData));
+
+  useEffect(() => {
+    setForm(buildOilFormState(initialData));
+  }, [initialData]);
+
+  const { lastCheckDate, intervalMonths } = form;
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  useEffect(() => {
+    setForm((prev) => {
+      const computedNext = calculateNextDateByDuration(lastCheckDate, intervalMonths);
+      const normalizedPrev = prev.nextCheckDate || "";
+      if (computedNext === normalizedPrev) {
+        return prev;
+      }
+      return { ...prev, nextCheckDate: computedNext };
+    });
+  }, [lastCheckDate, intervalMonths]);
+
   const handleSubmit = (event) => {
     event.preventDefault();
     if (!form.title) {
       alert("Please enter title");
+      return;
+    }
+    if (!form.intervalMonths) {
+      alert("Please select a duration until the next check");
       return;
     }
 
@@ -494,13 +759,21 @@ const OilStockModal = ({ onClose, onSave }) => {
     const lastToppedUp = form.lastToppedUpDate
       ? new Date(`${form.lastToppedUpDate}T00:00:00`).toISOString()
       : null;
+    const intervalMonthsValue = form.intervalMonths ? Number(form.intervalMonths) : null;
+    const intervalDays =
+      calculateIntervalDaysFromIso(lastCheck, nextCheck) ||
+      convertMonthsToDays(intervalMonthsValue);
 
     onSave({
+      id: form.id || initialData?.id || null,
       title: form.title,
       stock: form.stock,
       lastCheck,
       nextCheck,
       lastToppedUp,
+      intervalMonths: intervalMonthsValue,
+      intervalLabel: getDurationLabel(intervalMonthsValue),
+      intervalDays,
     });
   };
 
@@ -518,7 +791,7 @@ const OilStockModal = ({ onClose, onSave }) => {
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ margin: 0 }}>Add Oil / Stock</h2>
+          <h2 style={{ margin: 0 }}>{initialData ? "Edit Oil / Stock" : "Add Oil / Stock"}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -585,13 +858,29 @@ const OilStockModal = ({ onClose, onSave }) => {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+            Duration until next check *
+          </label>
+          <DropdownField
+            required
+            options={CHECK_DURATION_OPTIONS}
+            value={form.intervalMonths}
+            onValueChange={(value) =>
+              handleChange("intervalMonths", value ? Number(value) : "")
+            }
+            placeholder="Select duration"
+            size="md"
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
             Next Check
           </label>
           <CalendarField
             value={form.nextCheckDate}
-            onChange={(e) => handleChange("nextCheckDate", e.target.value)}
             placeholder="Select date"
             size="md"
+            disabled
           />
         </div>
 
@@ -607,36 +896,61 @@ const OilStockModal = ({ onClose, onSave }) => {
           />
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: "10px 16px",
-              borderRadius: "12px",
-              border: "1px solid var(--accent-purple-surface)",
-              backgroundColor: "transparent",
-              color: "var(--text)",
-              cursor: "pointer",
-              fontWeight: 600,
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            style={{
-              padding: "10px 16px",
-              borderRadius: "12px",
-              border: "none",
-              background: "var(--primary)",
-              color: "white",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Add
-          </button>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginTop: "10px", flexWrap: "wrap" }}>
+          {initialData?.id && (
+            <button
+              type="button"
+              onClick={() => {
+                if (!initialData?.id) return;
+                const shouldDelete = window.confirm("Delete this oil/stock entry?");
+                if (shouldDelete) {
+                  onDelete?.(initialData.id);
+                }
+              }}
+              style={{
+                padding: "10px 16px",
+                borderRadius: "12px",
+                border: "1px solid rgba(var(--danger-rgb), 0.4)",
+                backgroundColor: "transparent",
+                color: "var(--danger)",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              Delete
+            </button>
+          )}
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: "10px 16px",
+                borderRadius: "12px",
+                border: "1px solid var(--accent-purple-surface)",
+                backgroundColor: "transparent",
+                color: "var(--text)",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              style={{
+                padding: "10px 16px",
+                borderRadius: "12px",
+                border: "none",
+                background: "var(--primary)",
+                color: "white",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              {initialData ? "Save" : "Add"}
+            </button>
+          </div>
         </div>
       </form>
     </div>
@@ -836,50 +1150,31 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>Vehicle Location</span>
-              <select
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>
+                Vehicle Location
+              </label>
+              <DropdownField
+                options={CAR_LOCATION_OPTIONS}
                 value={form.vehicleLocation}
-                onChange={(e) => handleChange("vehicleLocation", e.target.value)}
-                style={{
-                  padding: "10px",
-                  borderRadius: "12px",
-                  border: "1px solid var(--accent-purple-surface)",
-                }}
-              >
-                {CAR_LOCATIONS.map((loc) => (
-                  <option key={loc.id} value={loc.label}>
-                    {loc.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+                onValueChange={(value) => handleChange("vehicleLocation", value)}
+                placeholder="Select location"
+                size="md"
+              />
+            </div>
 
-            <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>Key Location</span>
-              <select
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>
+                Key Location
+              </label>
+              <DropdownField
+                options={KEY_LOCATION_OPTIONS}
                 value={form.keyLocation}
-                onChange={(e) => handleChange("keyLocation", e.target.value)}
-                style={{
-                  padding: "10px",
-                  borderRadius: "12px",
-                  border: "1px solid var(--accent-purple-surface)",
-                }}
-              >
-                {KEY_LOCATION_GROUPS.map((group) => (
-                  <optgroup key={group.title} label={group.title}>
-                    {group.options.map((option) => {
-                      const label = `${group.title} – ${option.label}`;
-                      return (
-                        <option key={option.id} value={label}>
-                          {option.label}
-                        </option>
-                      );
-                    })}
-                  </optgroup>
-                ))}
-              </select>
-            </label>
+                onValueChange={(value) => handleChange("keyLocation", value)}
+                placeholder="Select key location"
+                size="md"
+              />
+            </div>
           </div>
 
           <button
@@ -926,50 +1221,31 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
             <h3 style={{ margin: "0", fontSize: "1rem", fontWeight: 600 }}>Update Location</h3>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>Vehicle Location</span>
-                <select
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>
+                  Vehicle Location
+                </label>
+                <DropdownField
+                  options={CAR_LOCATION_OPTIONS}
                   value={form.vehicleLocation}
-                  onChange={(e) => handleChange("vehicleLocation", e.target.value)}
-                  style={{
-                    padding: "10px",
-                    borderRadius: "12px",
-                    border: "1px solid var(--accent-purple-surface)",
-                  }}
-                >
-                  {CAR_LOCATIONS.map((loc) => (
-                    <option key={loc.id} value={loc.label}>
-                      {loc.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  onValueChange={(value) => handleChange("vehicleLocation", value)}
+                  placeholder="Select location"
+                  size="md"
+                />
+              </div>
 
-              <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>Key Location</span>
-                <select
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>
+                  Key Location
+                </label>
+                <DropdownField
+                  options={KEY_LOCATION_OPTIONS}
                   value={form.keyLocation}
-                  onChange={(e) => handleChange("keyLocation", e.target.value)}
-                  style={{
-                    padding: "10px",
-                    borderRadius: "12px",
-                    border: "1px solid var(--accent-purple-surface)",
-                  }}
-                >
-                  {KEY_LOCATION_GROUPS.map((group) => (
-                    <optgroup key={group.title} label={group.title}>
-                      {group.options.map((option) => {
-                        const label = `${group.title} – ${option.label}`;
-                        return (
-                          <option key={option.id} value={label}>
-                            {option.label}
-                          </option>
-                        );
-                      })}
-                    </optgroup>
-                  ))}
-                </select>
-              </label>
+                  onValueChange={(value) => handleChange("keyLocation", value)}
+                  placeholder="Select key location"
+                  size="md"
+                />
+              </div>
             </div>
 
             <button
@@ -1035,11 +1311,11 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
         onSubmit={handleSubmit}
         style={{
           ...popupCardStyles,
-          width: "min(720px, 100%)",
+          width: "min(640px, 100%)",
           padding: "28px",
           display: "flex",
           flexDirection: "column",
-          gap: "14px",
+          gap: "18px",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1079,96 +1355,93 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
             { label: "Customer", field: "customer", placeholder: "Customer name", required: false },
             { label: "Service Type", field: "serviceType", placeholder: "MOT, Service...", required: false },
           ].map((input) => (
-            <label key={input.field} style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600 }}>
-              <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>
+            <div key={input.field} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
                 {input.label}
                 {["jobNumber", "reg", "customer"].includes(input.field) && (
                   <span style={{ fontSize: "0.75rem", color: "var(--info)", fontWeight: 400 }}> (at least one required)</span>
                 )}
-              </span>
+              </label>
               <input
                 value={form[input.field]}
                 onChange={(event) => handleChange(input.field, event.target.value)}
                 placeholder={input.placeholder}
-                style={{ padding: "10px 12px", borderRadius: "12px", border: "1px solid var(--accent-purple-surface)" }}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "12px",
+                  border: "1px solid var(--accent-purple-surface)",
+                  fontSize: "0.95rem",
+                }}
               />
-            </label>
+            </div>
           ))}
         </div>
 
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
             gap: "10px",
           }}
         >
-          <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600 }}>
-            <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>Vehicle Location</span>
-            <select
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+              Vehicle Location
+            </label>
+            <DropdownField
+              options={CAR_LOCATION_OPTIONS}
               value={form.vehicleLocation}
-              onChange={(event) => handleChange("vehicleLocation", event.target.value)}
-              style={{ padding: "10px", borderRadius: "12px", border: "1px solid var(--accent-purple-surface)" }}
-            >
-              {CAR_LOCATIONS.map((loc) => (
-                <option key={loc.id} value={loc.label}>
-                  {loc.label}
-                </option>
-              ))}
-            </select>
-          </label>
+              onValueChange={(value) => handleChange("vehicleLocation", value)}
+              placeholder="Select location"
+              size="md"
+            />
+          </div>
 
-          <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600 }}>
-            <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>Key Location</span>
-            <select
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+              Key Location
+            </label>
+            <DropdownField
               required
+              options={KEY_LOCATION_OPTIONS}
               value={form.keyLocation}
-              onChange={(event) => handleChange("keyLocation", event.target.value)}
-              style={{ padding: "10px", borderRadius: "12px", border: "1px solid var(--accent-purple-surface)" }}
-            >
-              {KEY_LOCATION_GROUPS.map((group) => (
-                <optgroup key={group.title} label={group.title}>
-                  {group.options.map((option) => {
-                    const label = `${group.title} – ${option.label}`;
-                    return (
-                      <option key={option.id} value={label}>
-                        {option.label}
-                      </option>
-                    );
-                  })}
-                </optgroup>
-              ))}
-            </select>
-          </label>
+              onValueChange={(value) => handleChange("keyLocation", value)}
+              placeholder="Select key location"
+              size="md"
+            />
+          </div>
 
-          <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600 }}>
-            <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>Status</span>
-            <select
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>Status</label>
+            <DropdownField
+              options={STATUS_OPTIONS}
               value={form.status}
-              onChange={(event) => handleChange("status", event.target.value)}
-              style={{ padding: "10px", borderRadius: "12px", border: "1px solid var(--accent-purple-surface)" }}
-            >
-              {Object.keys(STATUS_COLORS).map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </label>
+              onValueChange={(value) => handleChange("status", value)}
+              placeholder="Select status"
+              size="md"
+            />
+          </div>
         </div>
 
-        <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600 }}>
-          <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>Key Tag / Guidance</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+            Key Tag / Guidance
+          </label>
           <input
             value={form.keyTip}
             onChange={(event) => handleChange("keyTip", event.target.value)}
             placeholder="Green tag #4, handover drawer, etc."
-            style={{ padding: "10px", borderRadius: "12px", border: "1px solid var(--accent-purple-surface)" }}
+            style={{
+              padding: "10px 12px",
+              borderRadius: "12px",
+              border: "1px solid var(--accent-purple-surface)",
+              fontSize: "0.95rem",
+            }}
           />
-        </label>
+        </div>
 
-        <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600 }}>
-          <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>Notes</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>Notes</label>
           <textarea
             rows={3}
             value={form.notes}
@@ -1176,7 +1449,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
             placeholder="Collection time, valet status, instructions..."
             style={{ padding: "10px", borderRadius: "12px", border: "1px solid var(--accent-purple-surface)", resize: "vertical" }}
           />
-        </label>
+        </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
           <button
@@ -1185,10 +1458,11 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
             style={{
               padding: "10px 16px",
               borderRadius: "12px",
-              border: "1px solid rgba(var(--shadow-rgb),0.15)",
-              backgroundColor: "var(--surface)",
+              border: "1px solid var(--accent-purple-surface)",
+              backgroundColor: "transparent",
               cursor: "pointer",
               fontWeight: 600,
+              color: "var(--text)",
             }}
           >
             Cancel
@@ -1225,8 +1499,8 @@ export default function TrackingDashboard() {
   const [entryModal, setEntryModal] = useState({ open: false, type: null, entry: null });
   const [simplifiedModal, setSimplifiedModal] = useState({ open: false, initialData: null });
   const [highlightedJobNumber, setHighlightedJobNumber] = useState(null);
-  const [equipmentModal, setEquipmentModal] = useState({ open: false });
-  const [oilStockModal, setOilStockModal] = useState({ open: false });
+  const [equipmentModal, setEquipmentModal] = useState({ open: false, item: null });
+  const [oilStockModal, setOilStockModal] = useState({ open: false, item: null });
   const { dbUserId, user } = useUser();
   const userRoles = useMemo(() => (user?.roles || []).map((role) => role.toLowerCase()), [user]);
   const isWorkshopManager = userRoles.includes("workshop manager");
@@ -1240,6 +1514,8 @@ export default function TrackingDashboard() {
   const [activeTab, setActiveTab] = useState("tracker");
   const [equipmentChecks, setEquipmentChecks] = useState(() => cloneList(DEFAULT_EQUIPMENT_CHECKS));
   const [oilChecks, setOilChecks] = useState(() => cloneList(DEFAULT_OIL_CHECKS));
+  const [equipmentLoading, setEquipmentLoading] = useState(false);
+  const [oilLoading, setOilLoading] = useState(false);
 
   const loadEntries = useCallback(async () => {
     setLoading(true);
@@ -1315,58 +1591,262 @@ export default function TrackingDashboard() {
     }
   }, [tabs, activeTab]);
 
-  const handleEquipmentCheck = useCallback((id) => {
-    setEquipmentChecks((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item;
-        return {
-          ...item,
-          lastChecked: new Date().toISOString(),
-          nextDue: nextDueFrom(new Date(), item.frequencyDays),
-          status: "Serviced",
-        };
-      })
-    );
+  const loadEquipmentChecks = useCallback(async () => {
+    if (!isWorkshopManager) return;
+    setEquipmentLoading(true);
+    try {
+      const response = await fetch(EQUIPMENT_API_ENDPOINT);
+      if (!response.ok) {
+        throw new Error("Failed to load equipment data");
+      }
+      const payload = await response.json();
+      if (!payload.success) {
+        throw new Error(payload.message || "Failed to load equipment data");
+      }
+      setEquipmentChecks(Array.isArray(payload.data) ? payload.data : []);
+    } catch (loadError) {
+      console.error("Equipment data load error", loadError);
+      setEquipmentChecks([]);
+    } finally {
+      setEquipmentLoading(false);
+    }
+  }, [isWorkshopManager]);
+
+  const loadOilChecks = useCallback(async () => {
+    if (!isWorkshopManager) return;
+    setOilLoading(true);
+    try {
+      const response = await fetch(OIL_STOCK_API_ENDPOINT);
+      if (!response.ok) {
+        throw new Error("Failed to load oil/stock data");
+      }
+      const payload = await response.json();
+      if (!payload.success) {
+        throw new Error(payload.message || "Failed to load oil/stock data");
+      }
+      setOilChecks(Array.isArray(payload.data) ? payload.data : []);
+    } catch (loadError) {
+      console.error("Oil/stock data load error", loadError);
+      setOilChecks([]);
+    } finally {
+      setOilLoading(false);
+    }
+  }, [isWorkshopManager]);
+
+  useEffect(() => {
+    if (!isWorkshopManager) return;
+    loadEquipmentChecks();
+    loadOilChecks();
+  }, [isWorkshopManager, loadEquipmentChecks, loadOilChecks]);
+
+  const handleEquipmentCheck = useCallback(
+    async (id) => {
+      const target = equipmentChecks.find((item) => item.id === id);
+      if (!target) return;
+      const intervalDays = getIntervalDays(target, "lastChecked", "nextDue");
+      const now = new Date();
+      const payload = {
+        id,
+        lastChecked: now.toISOString(),
+        nextDue: nextDueFrom(now, intervalDays),
+        intervalDays,
+      };
+
+      try {
+        const response = await fetch(EQUIPMENT_API_ENDPOINT, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Failed to log equipment check");
+        }
+        const updated = result.data;
+        setEquipmentChecks((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      } catch (error) {
+        console.error("Equipment check update failed", error);
+        alert(error.message || "Failed to log equipment check");
+      }
+    },
+    [equipmentChecks]
+  );
+
+  const handleOilCheck = useCallback(
+    async (id) => {
+      const target = oilChecks.find((item) => item.id === id);
+      if (!target) return;
+      const intervalDays = getIntervalDays(target, "lastCheck", "nextCheck");
+      const now = new Date();
+      const payload = {
+        id,
+        lastCheck: now.toISOString(),
+        nextCheck: nextDueFrom(now, intervalDays),
+        intervalDays,
+      };
+
+      try {
+        const response = await fetch(OIL_STOCK_API_ENDPOINT, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Failed to mark check");
+        }
+        const updated = result.data;
+        setOilChecks((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      } catch (error) {
+        console.error("Oil/stock check update failed", error);
+        alert(error.message || "Failed to mark oil/stock check");
+      }
+    },
+    [oilChecks]
+  );
+
+  const handleSaveEquipment = useCallback(
+    async (form) => {
+      const now = new Date();
+      const resolvedLastChecked = form.lastChecked || now.toISOString();
+      const resolvedIntervalDays =
+        (Number(form.intervalDays) > 0 && Number(form.intervalDays)) ||
+        convertMonthsToDays(form.intervalMonths) ||
+        365;
+      const baseDate = form.lastChecked ? new Date(form.lastChecked) : now;
+      const resolvedNextDue = form.nextDue || nextDueFrom(baseDate, resolvedIntervalDays);
+      const resolvedIntervalLabel = form.intervalLabel || getDurationLabel(form.intervalMonths);
+
+      const payload = {
+        id: form.id || null,
+        name: form.name,
+        lastChecked: resolvedLastChecked,
+        nextDue: resolvedNextDue,
+        intervalDays: resolvedIntervalDays,
+        intervalMonths: form.intervalMonths,
+        intervalLabel: resolvedIntervalLabel,
+        createdBy: dbUserId || null,
+      };
+
+      const method = payload.id ? "PUT" : "POST";
+
+      try {
+        const response = await fetch(EQUIPMENT_API_ENDPOINT, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Failed to save equipment entry");
+        }
+        const saved = result.data;
+        setEquipmentChecks((prev) => {
+          const exists = prev.some((item) => item.id === saved.id);
+          if (exists) {
+            return prev.map((item) => (item.id === saved.id ? saved : item));
+          }
+          return [...prev, saved];
+        });
+        setEquipmentModal({ open: false, item: null });
+      } catch (error) {
+        console.error("Save equipment entry failed", error);
+        alert(error.message || "Failed to save equipment entry");
+      }
+    },
+    [dbUserId]
+  );
+
+  const handleSaveOilStock = useCallback(
+    async (form) => {
+      const now = new Date();
+      const resolvedLastCheck = form.lastCheck || now.toISOString();
+      const resolvedIntervalDays =
+        (Number(form.intervalDays) > 0 && Number(form.intervalDays)) ||
+        convertMonthsToDays(form.intervalMonths) ||
+        30;
+      const baseDate = form.lastCheck ? new Date(form.lastCheck) : now;
+      const resolvedNextCheck = form.nextCheck || nextDueFrom(baseDate, resolvedIntervalDays);
+      const resolvedIntervalLabel = form.intervalLabel || getDurationLabel(form.intervalMonths);
+
+      const payload = {
+        id: form.id || null,
+        title: form.title,
+        stock: form.stock,
+        lastCheck: resolvedLastCheck,
+        nextCheck: resolvedNextCheck,
+        lastToppedUp: form.lastToppedUp,
+        intervalDays: resolvedIntervalDays,
+        intervalMonths: form.intervalMonths,
+        intervalLabel: resolvedIntervalLabel,
+        createdBy: dbUserId || null,
+      };
+
+      const method = payload.id ? "PUT" : "POST";
+
+      try {
+        const response = await fetch(OIL_STOCK_API_ENDPOINT, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Failed to save oil/stock entry");
+        }
+        const saved = result.data;
+        setOilChecks((prev) => {
+          const exists = prev.some((item) => item.id === saved.id);
+          if (exists) {
+            return prev.map((item) => (item.id === saved.id ? saved : item));
+          }
+          return [...prev, saved];
+        });
+        setOilStockModal({ open: false, item: null });
+      } catch (error) {
+        console.error("Save oil/stock entry failed", error);
+        alert(error.message || "Failed to save oil/stock entry");
+      }
+    },
+    [dbUserId]
+  );
+
+  const handleDeleteEquipment = useCallback(async (id) => {
+    if (!id) return;
+    try {
+      const response = await fetch(`${EQUIPMENT_API_ENDPOINT}?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      const payload = await response.json().catch(() => ({ success: response.ok }));
+      if (!response.ok || payload?.success === false) {
+        throw new Error(payload?.message || "Failed to delete equipment entry");
+      }
+      setEquipmentChecks((prev) => prev.filter((item) => item.id !== id));
+    } catch (error) {
+      console.error("Delete equipment entry failed", error);
+      alert(error.message || "Failed to delete equipment entry");
+    } finally {
+      setEquipmentModal({ open: false, item: null });
+    }
   }, []);
 
-  const handleOilCheck = useCallback((id) => {
-    setOilChecks((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item;
-        return {
-          ...item,
-          lastCheck: new Date().toISOString(),
-          nextCheck: nextDueFrom(new Date(), 7),
-        };
-      })
-    );
-  }, []);
-
-  const handleSaveEquipment = useCallback(async (form) => {
-    // TODO: Save to database
-    const newEquipment = {
-      id: `equipment-${Date.now()}`,
-      name: form.name,
-      lastChecked: form.lastChecked || new Date().toISOString(),
-      nextDue: form.nextDue || nextDueFrom(new Date(), 7),
-      status: "Ready",
-    };
-    setEquipmentChecks((prev) => [...prev, newEquipment]);
-    setEquipmentModal({ open: false });
-  }, []);
-
-  const handleSaveOilStock = useCallback(async (form) => {
-    // TODO: Save to database - note this should link to consumables-tracker
-    const newOilStock = {
-      id: `oil-${Date.now()}`,
-      title: form.title,
-      stock: form.stock,
-      lastCheck: form.lastCheck || new Date().toISOString(),
-      nextCheck: form.nextCheck || nextDueFrom(new Date(), 7),
-      lastToppedUp: form.lastToppedUp,
-    };
-    setOilChecks((prev) => [...prev, newOilStock]);
-    setOilStockModal({ open: false });
+  const handleDeleteOilStock = useCallback(async (id) => {
+    if (!id) return;
+    try {
+      const response = await fetch(`${OIL_STOCK_API_ENDPOINT}?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      const payload = await response.json().catch(() => ({ success: response.ok }));
+      if (!response.ok || payload?.success === false) {
+        throw new Error(payload?.message || "Failed to delete oil/stock entry");
+      }
+      setOilChecks((prev) => prev.filter((item) => item.id !== id));
+    } catch (error) {
+      console.error("Delete oil/stock entry failed", error);
+      alert(error.message || "Failed to delete oil/stock entry");
+    } finally {
+      setOilStockModal({ open: false, item: null });
+    }
   }, []);
 
   const handleAutoMovement = useCallback(
@@ -1641,7 +2121,7 @@ export default function TrackingDashboard() {
         </div>
         <button
           type="button"
-          onClick={() => setEquipmentModal({ open: true })}
+          onClick={() => setEquipmentModal({ open: true, item: null })}
           style={{
             padding: "10px 18px",
             borderRadius: "12px",
@@ -1654,12 +2134,15 @@ export default function TrackingDashboard() {
         >
           Add Equipment/tools
         </button>
+        {equipmentLoading && (
+          <span style={{ alignSelf: "center", color: "var(--info)", fontWeight: 600 }}>Loading…</span>
+        )}
       </div>
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: "14px",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gap: "16px",
         }}
       >
         {equipmentChecks.length === 0 && (
@@ -1679,11 +2162,21 @@ export default function TrackingDashboard() {
         {equipmentChecks.map((check) => {
           const dueLabel = getDueLabel(check.nextDue);
           const isDue = dueLabel === "Due now";
-          const badgeColor =
-            check.status?.toLowerCase().includes("due") || isDue ? "var(--danger)" : "var(--success-dark)";
+          const statusLabel = (check.status || "").toLowerCase();
+          const badgeColor = statusLabel.includes("due") || isDue ? "var(--danger)" : "var(--success-dark)";
+          const durationLabel = getDurationDisplay(check);
           return (
             <div
               key={check.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => setEquipmentModal({ open: true, item: check })}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setEquipmentModal({ open: true, item: check });
+                }
+              }}
               style={{
                 padding: "18px",
                 borderRadius: "16px",
@@ -1692,6 +2185,7 @@ export default function TrackingDashboard() {
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
+                cursor: "pointer",
               }}
             >
               <div
@@ -1704,10 +2198,6 @@ export default function TrackingDashboard() {
               >
                 <div>
                   <strong style={{ display: "block", fontSize: "1.05rem" }}>{check.name}</strong>
-                  <p style={{ margin: "2px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>{check.location}</p>
-                  <p style={{ margin: "2px 0 0", color: "var(--info-dark)", fontSize: "0.8rem" }}>
-                    Owner: {check.owner}
-                  </p>
                 </div>
                 <span style={{ fontSize: "0.75rem", fontWeight: 600, color: badgeColor }}>
                   {check.status || dueLabel}
@@ -1736,11 +2226,24 @@ export default function TrackingDashboard() {
                   <span>Next due</span>
                   <strong>{formatDateLabel(check.nextDue)}</strong>
                 </div>
-                <p style={{ margin: "6px 0 0", color: "var(--info)", fontSize: "0.8rem" }}>{check.notes}</p>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "0.85rem",
+                    color: "var(--info-dark)",
+                  }}
+                >
+                  <span>Duration</span>
+                  <strong>{durationLabel}</strong>
+                </div>
               </div>
               <button
                 type="button"
-                onClick={() => handleEquipmentCheck(check.id)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleEquipmentCheck(check.id);
+                }}
                 style={{
                   marginTop: "6px",
                   padding: "8px 14px",
@@ -1780,7 +2283,7 @@ export default function TrackingDashboard() {
         </div>
         <button
           type="button"
-          onClick={() => setOilStockModal({ open: true })}
+          onClick={() => setOilStockModal({ open: true, item: null })}
           style={{
             padding: "10px 18px",
             borderRadius: "12px",
@@ -1793,12 +2296,15 @@ export default function TrackingDashboard() {
         >
           Add Oil / Stock
         </button>
+        {oilLoading && (
+          <span style={{ alignSelf: "center", color: "var(--info)", fontWeight: 600 }}>Loading…</span>
+        )}
       </div>
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: "14px",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gap: "16px",
         }}
       >
         {oilChecks.length === 0 && (
@@ -1818,9 +2324,19 @@ export default function TrackingDashboard() {
         {oilChecks.map((item) => {
           const dueLabel = getDueLabel(item.nextCheck);
           const isDue = dueLabel === "Due now";
+          const durationLabel = getDurationDisplay(item);
           return (
             <div
               key={item.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => setOilStockModal({ open: true, item })}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setOilStockModal({ open: true, item });
+                }
+              }}
               style={{
                 padding: "18px",
                 borderRadius: "16px",
@@ -1829,6 +2345,7 @@ export default function TrackingDashboard() {
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
+                cursor: "pointer",
               }}
             >
               <div
@@ -1862,10 +2379,6 @@ export default function TrackingDashboard() {
                 }}
               >
                 <div>
-                  <span style={{ display: "block", color: "var(--info)" }}>Stock</span>
-                  <strong>{item.stock || "—"}</strong>
-                </div>
-                <div>
                   <span style={{ display: "block", color: "var(--info)" }}>Last check</span>
                   <strong>{formatDateLabel(item.lastCheck)}</strong>
                 </div>
@@ -1874,13 +2387,16 @@ export default function TrackingDashboard() {
                   <strong>{formatDateLabel(item.nextCheck)}</strong>
                 </div>
                 <div>
-                  <span style={{ display: "block", color: "var(--info)" }}>Last topped up</span>
-                  <strong>{formatDateLabel(item.lastToppedUp)}</strong>
+                  <span style={{ display: "block", color: "var(--info)" }}>Duration</span>
+                  <strong>{durationLabel}</strong>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => handleOilCheck(item.id)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleOilCheck(item.id);
+                }}
                 style={{
                   marginTop: "6px",
                   padding: "8px 14px",
@@ -2002,15 +2518,19 @@ export default function TrackingDashboard() {
 
       {equipmentModal.open && (
         <EquipmentToolsModal
-          onClose={() => setEquipmentModal({ open: false })}
+          initialData={equipmentModal.item}
+          onClose={() => setEquipmentModal({ open: false, item: null })}
           onSave={handleSaveEquipment}
+          onDelete={handleDeleteEquipment}
         />
       )}
 
       {oilStockModal.open && (
         <OilStockModal
-          onClose={() => setOilStockModal({ open: false })}
+          initialData={oilStockModal.item}
+          onClose={() => setOilStockModal({ open: false, item: null })}
           onSave={handleSaveOilStock}
+          onDelete={handleDeleteOilStock}
         />
       )}
     </Layout>
