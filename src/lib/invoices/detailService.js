@@ -56,7 +56,7 @@ async function fetchJobSnapshot(jobNumber, jobId) { // fetch job, customer, and 
   }
   let jobQuery = supabase // start job query
     .from("jobs") // target jobs table
-    .select("id, job_number, job_source, status, created_at, completed_at, mileage_at_service, customer_id, customer, vehicle_reg, vehicle_make_model, vehicle_id, account_id, account_number") // fetch needed columns
+    .select("id, job_number, job_source, status, created_at, completed_at, mileage_at_service, customer_id, customer, vehicle_reg, vehicle_make_model, vehicle_id, account_number") // fetch needed columns
     .limit(1); // limit to one row
   if (jobId) { // filter by job id when provided
     jobQuery = jobQuery.eq("id", jobId); // apply filter

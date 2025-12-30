@@ -1,5 +1,8 @@
 TO DO:
-This hasnt fixed the problem with the job-cards/[jobnumber] page with the tabs there. 
+
+
+When parts are added to a row within the Parts Identified tab inside the job-cards/[jobnumber] page they aren’t saving to the concern row, need to make sure when a part is added to a row it is saved to that row within the database and loads within the row every time. It’s being added to the database however not showing its added to a row after the screen is refreshed. Make sure that the rows are connected to the database etc
+
 
 
 

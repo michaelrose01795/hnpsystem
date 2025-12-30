@@ -23,6 +23,11 @@ export default async function handler(req, res) { // handler for /api/invoices/b
       return; // exit handler
     }
     console.error("Invoice detail by order failed:", error); // log unexpected issues
-    res.status(500).json({ success: false, message: "Unable to load invoice details" }); // respond 500
+    console.error("Error details:", { // log additional context
+      message: error.message,
+      stack: error.stack,
+      orderNumber
+    });
+    res.status(500).json({ success: false, message: error.message || "Unable to load invoice details" }); // respond 500 with actual error message
   }
 } // end handler

@@ -1736,7 +1736,7 @@ export default function TechJobDetailPage() {
                 padding: "10px 18px",
                 backgroundColor: activeTab === tab ? "var(--primary)" : "var(--surface-light)",
                 color: activeTab === tab ? "var(--text-inverse)" : "var(--text-primary)",
-                border: activeTab === tab ? "2px solid var(--primary)" : "1px solid var(--border)",
+                border: activeTab === tab ? "1px solid var(--primary)" : "1px solid var(--border)",
                 borderRadius: "8px",
                 cursor: "pointer",
                 fontSize: "14px",
