@@ -4525,20 +4525,10 @@ function VHCTab({ jobNumber, jobData }) {
   const [copied, setCopied] = useState(false);
 
   // Check if customer view should be enabled
-  // Parts must have prices and labour times must be added
-  const hasPartsWithPrices = useMemo(() => {
-    if (!jobData?.partsAllocations || !Array.isArray(jobData.partsAllocations)) return false;
+  // All checkboxes must be complete (parts and labour for each row)
+  const [allCheckboxesComplete, setAllCheckboxesComplete] = useState(false);
 
-    // If there are no parts, consider it as not ready
-    if (jobData.partsAllocations.length === 0) return false;
-
-    // Check if all parts have prices and labour hours
-    return jobData.partsAllocations.every(part => {
-      const hasPrice = part.part?.unit_price || part.unitPrice;
-      const hasLabourTime = part.labour_hours !== null && part.labour_hours !== undefined;
-      return hasPrice && hasLabourTime;
-    });
-  }, [jobData]);
+  const hasPartsWithPrices = allCheckboxesComplete;
 
   const customerViewUrl = useMemo(() => {
     if (typeof window === 'undefined') return '';
@@ -4610,6 +4600,7 @@ function VHCTab({ jobNumber, jobData }) {
         jobNumber={jobNumber}
         showNavigation={false}
         customActions={customActions}
+        onCheckboxesComplete={setAllCheckboxesComplete}
       />
     </div>
   );

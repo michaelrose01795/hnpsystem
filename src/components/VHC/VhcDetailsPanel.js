@@ -288,10 +288,10 @@ const COLOUR_CLASS = {
 };
 
 const SEVERITY_THEME = {
-  red: { background: "var(--danger-surface)", border: "var(--danger-surface)", text: "var(--danger)" },
-  amber: { background: "var(--warning-surface)", border: "var(--warning-surface)", text: "var(--danger-dark)" },
-  green: { background: "var(--success-surface)", border: "var(--success)", text: "var(--info-dark)" },
-  grey: { background: "var(--info-surface)", border: "var(--accent-purple-surface)", text: "var(--info-dark)" },
+  red: { background: "var(--danger-surface)", border: "var(--danger-surface)", text: "var(--danger)", hover: "#ffd4d4" },
+  amber: { background: "var(--warning-surface)", border: "var(--warning-surface)", text: "var(--danger-dark)", hover: "#ffe6cc" },
+  green: { background: "var(--success-surface)", border: "var(--success)", text: "var(--info-dark)", hover: "var(--success-surface)" },
+  grey: { background: "var(--info-surface)", border: "var(--accent-purple-surface)", text: "var(--info-dark)", hover: "var(--accent-purple-surface)" },
 };
 
 const PANEL_SECTION_STYLE = {
@@ -685,7 +685,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
   );
 };
 
-export default function VhcDetailsPanel({ jobNumber, showNavigation = true, readOnly = false, customActions = null }) {
+export default function VhcDetailsPanel({ jobNumber, showNavigation = true, readOnly = false, customActions = null, onCheckboxesComplete = null }) {
   const router = useRouter();
   const resolvedJobNumber = jobNumber || router.query?.jobNumber;
 
@@ -1383,7 +1383,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   }, [partsIdentified, partsNotRequired, summaryItems, vhcIdAliases]);
 
   const ensureEntryValue = (state, itemId) =>
-    state[itemId] || { partsCost: "", laborHours: "", totalOverride: "", status: null };
+    state[itemId] || { partsCost: "", laborHours: "", totalOverride: "", status: null, labourComplete: false, partsComplete: false };
 
   const updateEntryValue = (itemId, field, value) => {
     setItemEntries((prev) => ({
@@ -1393,6 +1393,63 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   };
 
   const getEntryForItem = (itemId) => ensureEntryValue(itemEntries, itemId);
+
+  // Auto-update partsComplete checkbox based on parts being added or marked as not required
+  useEffect(() => {
+    setItemEntries((prev) => {
+      const updated = { ...prev };
+      let hasChanges = false;
+
+      // Check each item in the summary
+      severityLists.red?.forEach((item) => {
+        const itemId = item.id;
+        const canonicalId = resolveCanonicalVhcId(itemId);
+        const hasParts = partsCostByVhcItem.has(canonicalId);
+        const isNotRequired = partsNotRequired.has(String(itemId));
+        const shouldBeComplete = hasParts || isNotRequired;
+
+        const entry = ensureEntryValue(prev, itemId);
+        if (entry.partsComplete !== shouldBeComplete) {
+          updated[itemId] = { ...entry, partsComplete: shouldBeComplete };
+          hasChanges = true;
+        }
+      });
+
+      severityLists.amber?.forEach((item) => {
+        const itemId = item.id;
+        const canonicalId = resolveCanonicalVhcId(itemId);
+        const hasParts = partsCostByVhcItem.has(canonicalId);
+        const isNotRequired = partsNotRequired.has(String(itemId));
+        const shouldBeComplete = hasParts || isNotRequired;
+
+        const entry = ensureEntryValue(prev, itemId);
+        if (entry.partsComplete !== shouldBeComplete) {
+          updated[itemId] = { ...entry, partsComplete: shouldBeComplete };
+          hasChanges = true;
+        }
+      });
+
+      return hasChanges ? updated : prev;
+    });
+  }, [partsCostByVhcItem, partsNotRequired, severityLists, resolveCanonicalVhcId]);
+
+  // Check if all checkboxes are complete and notify parent
+  useEffect(() => {
+    if (!onCheckboxesComplete) return;
+
+    const allItems = [...(severityLists.red || []), ...(severityLists.amber || [])];
+    if (allItems.length === 0) {
+      onCheckboxesComplete(false);
+      return;
+    }
+
+    const allComplete = allItems.every((item) => {
+      const entry = getEntryForItem(item.id);
+      return entry.partsComplete && entry.labourComplete;
+    });
+
+    onCheckboxesComplete(allComplete);
+  }, [itemEntries, severityLists, onCheckboxesComplete]);
 
   const parseNumericValue = (value) => {
     const num = parseFloat(value);
@@ -1424,12 +1481,26 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     return partsCost + computeLabourCost(entry.laborHours);
   };
 
-  const determineStatusColor = (entry, resolvedPartsCost) => {
+  const determineStatusColor = (entry, resolvedPartsCost, itemId) => {
     if (entry.status === "authorized") return "var(--success)";
     if (entry.status === "declined") return "var(--danger)";
-    const hasLabour = parseNumericValue(entry.laborHours) > 0;
+
+    // Labour is considered "added" if:
+    // 1. Labour hours is set to any value (including 0), OR
+    // 2. The labourComplete checkbox is checked
+    const labourValue = entry.laborHours;
+    const hasLabour = (labourValue !== null && labourValue !== undefined && labourValue !== "") || entry.labourComplete;
+
+    // Parts/costs are considered "added" if:
+    // 1. Parts have a cost > 0, OR
+    // 2. Total override > 0, OR
+    // 3. Parts are marked as "not required"
+    const isPartsNotRequired = partsNotRequired.has(String(itemId));
     const hasCosts =
-      (resolvedPartsCost ?? parseNumericValue(entry.partsCost)) > 0 || parseNumericValue(entry.totalOverride) > 0;
+      (resolvedPartsCost ?? parseNumericValue(entry.partsCost)) > 0 ||
+      parseNumericValue(entry.totalOverride) > 0 ||
+      isPartsNotRequired;
+
     if (!hasLabour || !hasCosts) return "var(--danger)";
     return "var(--warning)";
   };
@@ -1518,8 +1589,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                 }}
               >
                 <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "260px" }}>Item Details</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "180px" }}>Parts (Cost £)</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "160px" }}>Labour</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "120px" }}>Parts</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "130px" }}>Labour</th>
                 <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "160px" }}>Total</th>
                 <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "130px" }}>Status</th>
                 {selectionEnabled && (
@@ -1545,7 +1616,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                     : totalCost.toFixed(2);
                 const partsDisplayValue =
                   resolvedPartsCost !== undefined ? resolvedPartsCost.toFixed(2) : "";
-                const statusColor = determineStatusColor(entry, resolvedPartsCost);
+                const statusColor = determineStatusColor(entry, resolvedPartsCost, item.id);
                 const locationLabel = item.location
                   ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
                   : null;
@@ -1607,67 +1678,76 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                       ) : null}
                     </td>
                     <td style={{ padding: "12px 16px" }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={partsDisplayValue}
-                          placeholder="Add via parts tab"
-                          style={{
-                            width: "160px",
-                            padding: "8px",
-                            borderRadius: "8px",
-                            border: "1px solid var(--accent-purple-surface)",
-                            backgroundColor: "var(--info-surface)",
-                          }}
-                          disabled
-                          readOnly
+                          type="checkbox"
+                          checked={entry.partsComplete || false}
+                          disabled={true}
+                          title={entry.partsComplete ? "Parts added or marked as not required" : "Add parts or mark as not required"}
                         />
-                        <a href="#parts-identified" style={{ fontSize: "12px", color: "var(--warning)", textDecoration: "none" }}>
-                          View parts tab
-                        </a>
+                        <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                          {partsDisplayValue ? `£${partsDisplayValue}` : "—"}
+                        </div>
                       </div>
                     </td>
                     <td style={{ padding: "12px 16px" }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <input
+                          type="checkbox"
+                          checked={entry.labourComplete || false}
+                          onChange={(e) => {
+                            const isChecked = e.target.checked;
+                            updateEntryValue(item.id, "labourComplete", isChecked);
+                            if (isChecked && (!entry.laborHours || entry.laborHours === "")) {
+                              updateEntryValue(item.id, "laborHours", "0");
+                            }
+                          }}
+                          disabled={readOnly || (entry.status === "authorized" || entry.status === "declined")}
+                        />
                         <input
                           type="number"
                           min="0"
                           step="0.1"
                           value={entry.laborHours ?? ""}
-                          onChange={(event) => updateEntryValue(item.id, "laborHours", event.target.value)}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            updateEntryValue(item.id, "laborHours", value);
+                            // Auto-check the checkbox if a number is entered
+                            if (value && value !== "" && value !== "0") {
+                              updateEntryValue(item.id, "labourComplete", true);
+                            }
+                          }}
                           placeholder="0.0"
                           style={{
-                            width: "140px",
-                            padding: "8px",
+                            width: "60px",
+                            padding: "6px 8px",
                             borderRadius: "8px",
                             border: "1px solid var(--accent-purple-surface)",
+                            fontSize: "14px",
                           }}
-                          disabled={readOnly}
+                          disabled={readOnly || (entry.status === "authorized" || entry.status === "declined")}
                         />
-                        <span style={{ fontSize: "12px", color: "var(--info)" }}>£{labourCost.toFixed(2)}</span>
+                        <span style={{ fontSize: "12px", color: "var(--info)", whiteSpace: "nowrap" }}>£{labourCost.toFixed(2)}</span>
                       </div>
                     </td>
                     <td style={{ padding: "12px 16px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={totalDisplayValue}
-                            onChange={(event) => updateEntryValue(item.id, "totalOverride", event.target.value)}
-                            placeholder="Override total"
-                            style={{
-                              width: "160px",
-                              padding: "8px",
-                              borderRadius: "8px",
-                              border: "1px solid var(--accent-purple-surface)",
-                            }}
-                            disabled={readOnly}
-                          />
-                        </div>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={totalDisplayValue}
+                          onChange={(event) => updateEntryValue(item.id, "totalOverride", event.target.value)}
+                          placeholder="0.00"
+                          style={{
+                            width: "80px",
+                            padding: "6px 8px",
+                            borderRadius: "8px",
+                            border: "1px solid var(--accent-purple-surface)",
+                            fontSize: "14px",
+                          }}
+                          disabled={readOnly || (entry.status === "authorized" || entry.status === "declined")}
+                        />
                         {isWarranty && (
                           <span
                             style={{
@@ -1931,13 +2011,18 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   // Handler for opening part search modal
   const handleVhcItemRowClick = useCallback((vhcId) => {
     setExpandedVhcItems((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(vhcId)) {
+      const wasExpanded = prev.has(vhcId);
+      if (wasExpanded) {
+        // If clicking an already expanded item, just close it
+        const newSet = new Set(prev);
         newSet.delete(vhcId);
+        return newSet;
       } else {
+        // If opening a new item, close all others and open only this one
+        const newSet = new Set();
         newSet.add(vhcId);
+        return newSet;
       }
-      return newSet;
     });
   }, []);
 
@@ -2355,6 +2440,10 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
                 const isExpanded = expandedVhcItems.has(vhcId);
 
+                // Check if row is locked (authorized or declined)
+                const entry = getEntryForItem(vhcId);
+                const isLocked = entry.status === "authorized" || entry.status === "declined";
+
                 return (
                   <React.Fragment key={vhcId}>
                   <tr
@@ -2366,7 +2455,10 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                       transition: "background 0.2s ease",
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "var(--accent-purple-surface)";
+                      const hoverColor = vhcSeverity && SEVERITY_THEME[vhcSeverity]?.hover
+                        ? SEVERITY_THEME[vhcSeverity].hover
+                        : "var(--accent-purple-surface)";
+                      e.currentTarget.style.background = hoverColor;
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.background = vhcSeverity ? SEVERITY_THEME[vhcSeverity]?.background : "var(--surface)";
@@ -2384,25 +2476,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                           <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
                             {vhcNotes}
                           </div>
-                        )}
-                        {severityBadgeStyles && (
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              marginTop: "6px",
-                              borderRadius: "999px",
-                              fontSize: "11px",
-                              fontWeight: 600,
-                              padding: "2px 10px",
-                              background: severityBadgeStyles.background,
-                              color: severityBadgeStyles.color,
-                              textTransform: "uppercase",
-                              letterSpacing: "0.08em",
-                            }}
-                          >
-                            {vhcSeverity}
-                          </span>
                         )}
                         {locationLabel && (
                           <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "4px" }}>
@@ -2477,8 +2550,11 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
-                          handlePartsNotRequiredToggle(vhcId);
+                          if (!isLocked) {
+                            handlePartsNotRequiredToggle(vhcId);
+                          }
                         }}
+                        disabled={isLocked}
                         style={{
                           padding: "8px 16px",
                           borderRadius: "8px",
@@ -2486,10 +2562,12 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                           background: isPartsNotRequired ? "var(--success)" : "var(--surface)",
                           color: isPartsNotRequired ? "var(--surface)" : "var(--info-dark)",
                           fontWeight: 600,
-                          cursor: "pointer",
+                          cursor: isLocked ? "not-allowed" : "pointer",
                           fontSize: "12px",
                           transition: "all 0.2s ease",
+                          opacity: isLocked ? 0.5 : 1,
                         }}
+                        title={isLocked ? "Cannot modify authorized or declined items" : ""}
                       >
                         {isPartsNotRequired ? "✓ Not Required" : "Mark Not Required"}
                       </button>
@@ -2505,18 +2583,25 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                           <div style={{ marginBottom: "20px" }}>
                             <button
                               type="button"
-                              onClick={(e) => handleAddPartButtonClick(item, e)}
+                              onClick={(e) => {
+                                if (!isLocked) {
+                                  handleAddPartButtonClick(item, e);
+                                }
+                              }}
+                              disabled={isLocked}
                               style={{
                                 padding: "10px 20px",
                                 borderRadius: "8px",
                                 border: "1px solid var(--primary)",
-                                background: "var(--primary)",
-                                color: "var(--surface)",
+                                background: isLocked ? "var(--surface-light)" : "var(--primary)",
+                                color: isLocked ? "var(--info)" : "var(--surface)",
                                 fontWeight: 600,
-                                cursor: "pointer",
+                                cursor: isLocked ? "not-allowed" : "pointer",
                                 fontSize: "13px",
                                 transition: "all 0.2s ease",
+                                opacity: isLocked ? 0.5 : 1,
                               }}
+                              title={isLocked ? "Cannot add parts to authorized or declined items" : ""}
                             >
                               + Add New Part
                             </button>
@@ -2717,12 +2802,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                                             type="checkbox"
                                             checked={inStock}
                                             onChange={(e) => handlePartDetailChange(partKey, "inStock", e.target.checked)}
-                                            style={{
-                                              width: "18px",
-                                              height: "18px",
-                                              cursor: "pointer",
-                                              accentColor: "var(--success)",
-                                            }}
                                           />
                                           <span style={{
                                             fontSize: "13px",
@@ -2751,12 +2830,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                                             type="checkbox"
                                             checked={backOrder}
                                             onChange={(e) => handlePartDetailChange(partKey, "backOrder", e.target.checked)}
-                                            style={{
-                                              width: "18px",
-                                              height: "18px",
-                                              cursor: "pointer",
-                                              accentColor: "var(--warning)",
-                                            }}
                                           />
                                           <span style={{
                                             fontSize: "13px",
@@ -2785,12 +2858,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                                             type="checkbox"
                                             checked={warranty}
                                             onChange={(e) => handlePartDetailChange(partKey, "warranty", e.target.checked)}
-                                            style={{
-                                              width: "18px",
-                                              height: "18px",
-                                              cursor: "pointer",
-                                              accentColor: "var(--primary)",
-                                            }}
                                           />
                                           <span style={{
                                             fontSize: "13px",
@@ -2810,18 +2877,24 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                                       >
                                         <button
                                           type="button"
-                                          onClick={() => handleRemovePart(part, vhcId)}
-                                          disabled={isRemovingPart}
+                                          onClick={() => {
+                                            if (!isLocked) {
+                                              handleRemovePart(part, vhcId);
+                                            }
+                                          }}
+                                          disabled={isRemovingPart || isLocked}
                                           style={{
                                             padding: "10px 18px",
                                             borderRadius: "8px",
                                             border: "1px solid var(--danger)",
-                                            background: isRemovingPart ? "var(--danger-surface)" : "var(--surface)",
+                                            background: (isRemovingPart || isLocked) ? "var(--danger-surface)" : "var(--surface)",
                                             color: "var(--danger)",
                                             fontWeight: 600,
-                                            cursor: isRemovingPart ? "not-allowed" : "pointer",
+                                            cursor: (isRemovingPart || isLocked) ? "not-allowed" : "pointer",
                                             transition: "all 0.2s ease",
+                                            opacity: isLocked ? 0.5 : 1,
                                           }}
+                                          title={isLocked ? "Cannot remove parts from authorized or declined items" : ""}
                                         >
                                           {isRemovingPart ? "Removing…" : "Remove"}
                                         </button>

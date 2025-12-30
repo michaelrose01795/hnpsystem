@@ -58,6 +58,10 @@ const FEEDBACK_THEME = {
   warning: { color: "var(--danger)", background: "var(--warning-surface)" },
   error: { color: "var(--danger)", background: "var(--danger-surface)" },
 };
+const DEFAULT_SEARCH_FEEDBACK = {
+  type: "info",
+  text: "Enter a part number or name and click Search to query the stock catalogue",
+};
 
 export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumber, onPartSelected }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,20 +70,32 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
   const [selectedParts, setSelectedParts] = useState([]);
   const [addingSelectedParts, setAddingSelectedParts] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState(null);
-  const [searchFeedback, setSearchFeedback] = useState({
-    type: "info",
-    text: "Enter a part number or name and click Search to query the stock catalogue",
-  });
+  const [searchFeedback, setSearchFeedback] = useState(DEFAULT_SEARCH_FEEDBACK);
 
   const vhcItem = vhcItemData?.vhcItem;
   const linkedParts = vhcItemData?.linkedParts || [];
 
   const defaultFilter = useMemo(() => deriveCategoryFilter(vhcItem), [vhcItem]);
 
-useEffect(() => {
-  if (!isOpen) return;
-  setCategoryFilter(withFilterMode(defaultFilter));
-}, [defaultFilter, isOpen]);
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalStyle = window.getComputedStyle(document.body).overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalStyle;
+      };
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    // Reset all search state when modal opens
+    setSearchQuery("");
+    setSearchResults([]);
+    setSearchFeedback(DEFAULT_SEARCH_FEEDBACK);
+    setCategoryFilter(null); // Reset to null instead of applying default filter
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -177,12 +193,27 @@ useEffect(() => {
     }
   }, []);
 
-  // Automatically fetch suggested parts when a default filter is available
+  // Auto-search when user types (debounced)
   useEffect(() => {
     if (!isOpen) return;
-    if (!categoryFilter || categoryFilter.mode !== "auto") return;
-    searchParts("", categoryFilter);
-  }, [categoryFilter, isOpen, searchParts]);
+
+    const trimmedQuery = searchQuery.trim();
+    const hasSearchTerm = trimmedQuery.length >= 2;
+    const hasCategoryFilter = Boolean(categoryFilter?.value);
+
+    // Perform search if there's a search term or a manually applied category filter
+    if (hasSearchTerm || (hasCategoryFilter && categoryFilter.mode === "manual")) {
+      const timeoutId = setTimeout(() => {
+        searchParts(searchQuery, categoryFilter);
+      }, 300); // 300ms debounce
+
+      return () => clearTimeout(timeoutId);
+    } else if (!hasSearchTerm && !hasCategoryFilter) {
+      // Clear results if search term is removed and no filter is applied
+      setSearchResults([]);
+      setSearchFeedback(DEFAULT_SEARCH_FEEDBACK);
+    }
+  }, [searchQuery, categoryFilter, isOpen, searchParts]);
 
   const handleManualSearch = useCallback(() => {
     searchParts(searchQuery, categoryFilter);
@@ -402,8 +433,11 @@ useEffect(() => {
         alignItems: "center",
         zIndex: 1200,
         padding: "24px",
+        overflowY: "auto",
       }}
       onClick={onClose}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
     >
       <div
         style={{
@@ -417,6 +451,8 @@ useEffect(() => {
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
+          margin: "auto",
+          position: "relative",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -760,18 +796,20 @@ useEffect(() => {
           </div>
 
           {/* Search Results */}
-          {loading && (
-            <div style={{ padding: "20px", textAlign: "center", color: "var(--info)" }}>
-              Searching...
-            </div>
-          )}
-
-          {!loading && searchResults.length > 0 && (
+          {(loading || searchResults.length > 0) && (
             <div>
               <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--accent-purple)", marginBottom: "12px" }}>
-                Search Results ({searchResults.length})
+                {loading ? "Searching..." : `Search Results (${searchResults.length})`}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto" }}>
+              {loading ? (
+                <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--info)", minHeight: "200px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div>
+                    <div style={{ fontSize: "14px", marginBottom: "8px" }}>Searching parts...</div>
+                    <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>Please wait</div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto", minHeight: "100px" }}>
                 {searchResults.map((part) => {
                   const isSelected = selectedParts.some((entry) => entry.part.id === part.id);
                   return (
@@ -816,7 +854,8 @@ useEffect(() => {
                     </div>
                   </div>
                 )})}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
