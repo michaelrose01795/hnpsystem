@@ -610,6 +610,7 @@ CREATE TABLE public.jobs (
   warranty_linked_job_id integer,
   warranty_vhc_master_job_id integer,
   delivery_confirmed_at timestamp with time zone,
+  account_number text,
   CONSTRAINT jobs_pkey PRIMARY KEY (id),
   CONSTRAINT jobs_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES public.users(user_id),
   CONSTRAINT jobs_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(vehicle_id),
