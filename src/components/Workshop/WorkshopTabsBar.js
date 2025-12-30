@@ -63,15 +63,16 @@ export default function WorkshopTabsBar() {
                 style={{
                   padding: "10px 16px",
                   borderRadius: "12px",
-                  border: active ? "1px solid var(--primary-dark)" : "1px solid var(--surface-light)",
-                  backgroundColor: active ? "var(--primary-dark)" : "var(--surface-light)",
-                  color: active ? "var(--surface)" : "var(--primary-dark)",
+                  border: active ? "1px solid var(--primary)" : "1px solid var(--surface-light)",
+                  backgroundColor: active ? "var(--primary)" : "var(--surface-light)",
+                  color: active ? "var(--text-inverse)" : "var(--text-primary)",
                   fontWeight: 600,
                   fontSize: "0.85rem",
                   textDecoration: "none",
                   boxShadow: "none",
-                  transition: "background-color 0.2s ease, color 0.2s ease",
+                  transition: "background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease",
                   whiteSpace: "nowrap",
+                  display: "inline-block",
                 }}
               >
                 {tab.label}
@@ -99,17 +100,18 @@ export default function WorkshopTabsBar() {
                   textAlign: "center",
                   padding: "10px 18px",
                   borderRadius: "999px",
-                  border: "1px solid var(--danger)",
-                  backgroundColor: active ? "var(--primary-dark)" : "var(--surface)",
-                  color: active ? "var(--surface)" : "var(--primary-dark)",
+                  border: active ? "1px solid var(--primary)" : "1px solid var(--primary)",
+                  backgroundColor: active ? "var(--primary)" : "var(--surface)",
+                  color: active ? "var(--text-inverse)" : "var(--primary)",
                   fontWeight: 600,
                   fontSize: "0.9rem",
                   textDecoration: "none",
-                  boxShadow: "none"
-                    ? "0 16px 32px rgba(var(--primary-rgb), 0.22)"
-                    : "0 10px 20px rgba(var(--primary-rgb), 0.12)",
-                  transition: "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+                  boxShadow: active
+                    ? "0 4px 12px rgba(var(--primary-rgb), 0.25)"
+                    : "0 2px 8px rgba(var(--primary-rgb), 0.12)",
+                  transition: "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
                   whiteSpace: "nowrap",
+                  display: "inline-block",
                 }}
               >
                 {action.label}

@@ -285,11 +285,12 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                       padding: "14px 16px",
                       border: `1px solid ${isActive ? palette.accent : palette.border}`,
                       background: isActive ? palette.accent : palette.surface,
-                      color: isActive ? "var(--surface)" : palette.textPrimary,
+                      color: isActive ? "var(--text-inverse)" : palette.textPrimary,
                       fontWeight: 600,
                       fontSize: "14px",
                       textAlign: "left",
                       cursor: "pointer",
+                      transition: "all 0.2s ease",
                     }}
                   >
                     {option.label}
@@ -321,9 +322,10 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                       borderRadius: "999px",
                       border: `1px solid ${isActive ? palette.accent : palette.border}`,
                       background: isActive ? palette.accent : palette.surface,
-                      color: isActive ? "var(--surface)" : palette.textPrimary,
+                      color: isActive ? "var(--text-inverse)" : palette.textPrimary,
                       fontWeight: 600,
                       cursor: "pointer",
+                      transition: "all 0.2s ease",
                     }}
                   >
                     {option}
@@ -487,9 +489,10 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                         borderRadius: "999px",
                         border: `1px solid ${isActive ? palette.accent : paletteStyles.border}`,
                         background: isActive ? palette.accent : paletteStyles.background,
-                        color: isActive ? "var(--surface)" : paletteStyles.color,
+                        color: isActive ? "var(--text-inverse)" : paletteStyles.color,
                         fontWeight: 600,
                         cursor: "pointer",
+                        transition: "all 0.2s ease",
                       }}
                     >
                       {status}

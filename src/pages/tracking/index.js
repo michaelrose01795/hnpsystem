@@ -2460,11 +2460,12 @@ export default function TrackingDashboard() {
                     border: isActive
                       ? "1px solid var(--primary)"
                       : "1px solid rgba(var(--grey-accent-rgb), 0.3)",
-                    background: isActive ? "rgba(var(--primary-rgb), 0.08)" : "var(--surface)",
-                    color: isActive ? "var(--primary)" : "var(--info-dark)",
+                    background: isActive ? "var(--primary)" : "var(--surface)",
+                    color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
                     fontWeight: 600,
                     cursor: "pointer",
-                    boxShadow: isActive ? "0 2px 8px rgba(0, 0, 0, 0.08)" : "none",
+                    boxShadow: isActive ? "0 2px 8px rgba(var(--primary-rgb), 0.25)" : "none",
+                    transition: "all 0.2s ease",
                   }}
                 >
                   {tab.label}

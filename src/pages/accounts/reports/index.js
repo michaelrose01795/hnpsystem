@@ -57,7 +57,7 @@ export default function AccountsReportsPage() {
             {REPORT_PERIODS.map((period) => {
               const isActive = activePeriod === period.value;
               return (
-                <button key={period.value} type="button" onClick={() => setActivePeriod(period.value)} style={{ padding: "10px 16px", borderRadius: "999px", border: isActive ? "none" : "1px solid var(--surface-light)", background: isActive ? "var(--primary)" : "var(--surface-light)", color: isActive ? "white" : "var(--text-secondary)", fontWeight: 600 }}>{period.label}</button>
+                <button key={period.value} type="button" onClick={() => setActivePeriod(period.value)} style={{ padding: "10px 16px", borderRadius: "999px", border: isActive ? "1px solid var(--primary)" : "1px solid var(--surface-light)", background: isActive ? "var(--primary)" : "var(--surface-light)", color: isActive ? "var(--text-inverse)" : "var(--text-secondary)", fontWeight: 600, transition: "all 0.2s ease" }}>{period.label}</button>
               );
             })}
           </div>

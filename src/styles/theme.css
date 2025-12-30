@@ -13,6 +13,7 @@
   --text-secondary: #1f1f1f;
   --text-secondary-rgb: 31, 31, 31;
   --text-inverse: #ffffff;
+  --text-inverse-rgb: 255, 255, 255;
   --primary: #d10000;
   --primary-light: #ff4d4d;
   --primary-dark: #a00000;
@@ -106,6 +107,7 @@
   --text-secondary: #f2f2ff;
   --text-secondary-rgb: 242, 242, 255;
   --text-inverse: #0a0a0c;
+  --text-inverse-rgb: 10, 10, 12;
   --primary: #b497ff;
   --primary-light: #c6a8ff;
   --primary-dark: #8e72da;

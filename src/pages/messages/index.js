@@ -70,7 +70,7 @@ const ComposeToggleButton = ({ active, children, onClick }) => (
       padding: "10px 12px",
       border: `1px solid ${active ? palette.accent : palette.border}`,
       backgroundColor: active ? palette.accent : "var(--surface)",
-      color: active ? "var(--surface)" : palette.accent,
+      color: active ? "var(--text-inverse)" : palette.accent,
       fontWeight: 600,
       cursor: "pointer",
       transition: "all 0.2s ease",
