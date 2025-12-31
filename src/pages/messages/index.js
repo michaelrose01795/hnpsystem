@@ -1012,6 +1012,25 @@ function MessagesPage() {
     setShowCommandSuggestions(false);
   }, [messageDraft]);
 
+  const handleInsertCommandFromHelp = useCallback((command) => {
+    // Insert command at the end of current message draft
+    const newText = messageDraft ? messageDraft + ' ' + command.autocomplete : command.autocomplete;
+    setMessageDraft(newText);
+
+    // Close help modal
+    setCommandHelpOpen(false);
+
+    // Focus textarea and set cursor at end
+    setTimeout(() => {
+      const textarea = document.getElementById('message-textarea');
+      if (textarea) {
+        textarea.focus();
+        const cursorPos = newText.length;
+        textarea.setSelectionRange(cursorPos, cursorPos);
+      }
+    }, 100);
+  }, [messageDraft]);
+
   const handleSendMessage = useCallback(
     async (event) => {
       event?.preventDefault();
@@ -1646,9 +1665,11 @@ function MessagesPage() {
               />
 
               <div
+                className="custom-scrollbar"
                 style={{
                   flex: 1,
                   minHeight: 0,
+                  maxHeight: "700px",
                   overflowY: "auto",
                   display: "flex",
                   flexDirection: "column",
@@ -1911,6 +1932,7 @@ function MessagesPage() {
                     marginTop: "16px",
                     flex: 1,
                     minHeight: 0,
+                    maxHeight: "540px",
                     overflowY: "auto",
                     display: "flex",
                     flexDirection: "column",
@@ -2616,40 +2638,97 @@ function MessagesPage() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <p style={{ color: palette.textMuted, margin: 0 }}>
-                Use slash commands in your messages to create quick links and references:
+                Use slash commands in your messages to create quick links and references.
+                Commands shown are based on your role and permissions.
               </p>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <div style={{ padding: "12px", backgroundColor: "var(--info-surface)", borderRadius: radii.lg }}>
-                  <strong style={{ color: palette.accent }}>/job[number]</strong> or <strong style={{ color: palette.accent }}>/[number]</strong>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "0.9rem", color: palette.textMuted }}>
-                    Creates a clickable link to the job card's Messages tab. Example: <code>/job12345</code> or <code>/12345</code>
-                  </p>
-                </div>
-
-                <div style={{ padding: "12px", backgroundColor: "var(--info-surface)", borderRadius: radii.lg }}>
-                  <strong style={{ color: palette.accent }}>/cust[customername]</strong>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "0.9rem", color: palette.textMuted }}>
-                    References a customer by name. Example: <code>/custjohnsmith</code>
-                  </p>
-                </div>
-
-                <div style={{ padding: "12px", backgroundColor: "var(--info-surface)", borderRadius: radii.lg }}>
-                  <strong style={{ color: palette.accent }}>/customer</strong>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "0.9rem", color: palette.textMuted }}>
-                    References the customer in the current thread (if any)
-                  </p>
-                </div>
-
-                <div style={{ padding: "12px", backgroundColor: "var(--info-surface)", borderRadius: radii.lg }}>
-                  <strong style={{ color: palette.accent }}>/vehicle</strong>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "0.9rem", color: palette.textMuted }}>
-                    References the vehicle from previous messages in the thread
-                  </p>
-                </div>
+              <div style={{
+                padding: "8px 12px",
+                backgroundColor: "var(--accent-surface)",
+                borderRadius: radii.lg,
+                borderLeft: `3px solid ${palette.accent}`,
+                fontSize: "0.85rem"
+              }}>
+                <strong style={{ color: palette.accent }}>Click any command below</strong> to insert it into your message!
               </div>
 
+              {/* Organize commands by category */}
+              {(() => {
+                const categories = {
+                  'Jobs & Work': availableCommands.filter(cmd =>
+                    ['job', '', 'myjobs', 'archive', 'appointments'].includes(cmd.pattern)
+                  ),
+                  'Customers & Accounts': availableCommands.filter(cmd =>
+                    ['cust', 'customer', 'account', 'invoice'].includes(cmd.pattern)
+                  ),
+                  'Vehicles': availableCommands.filter(cmd =>
+                    ['vehicle', 'vhc', 'tracking', 'valet'].includes(cmd.pattern)
+                  ),
+                  'Parts & Inventory': availableCommands.filter(cmd =>
+                    ['part', 'parts', 'order'].includes(cmd.pattern)
+                  ),
+                  'Team & Operations': availableCommands.filter(cmd =>
+                    ['user', 'hr', 'clocking'].includes(cmd.pattern)
+                  ),
+                };
+
+                return Object.entries(categories).map(([category, commands]) => {
+                  if (commands.length === 0) return null;
+
+                  return (
+                    <div key={category}>
+                      <h4 style={{
+                        margin: "0 0 8px 0",
+                        fontSize: "0.85rem",
+                        fontWeight: 700,
+                        color: palette.accent,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em"
+                      }}>
+                        {category}
+                      </h4>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        {commands.map((cmd, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => handleInsertCommandFromHelp(cmd)}
+                            style={{
+                              padding: "10px 12px",
+                              backgroundColor: "var(--info-surface)",
+                              borderRadius: radii.lg,
+                              borderLeft: `3px solid ${palette.accent}`,
+                              cursor: "pointer",
+                              transition: "all 0.15s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "var(--accent-surface)";
+                              e.currentTarget.style.transform = "translateX(4px)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = "var(--info-surface)";
+                              e.currentTarget.style.transform = "translateX(0)";
+                            }}
+                          >
+                            <strong style={{ color: palette.accent, fontSize: "0.95rem" }}>
+                              {cmd.command}
+                            </strong>
+                            <p style={{ margin: "2px 0 0 0", fontSize: "0.85rem", color: palette.textMuted }}>
+                              {cmd.description}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+
+              {/* Tips Section */}
               <div style={{
+                marginTop: "8px",
+                paddingTop: "16px",
+                borderTop: `1px solid ${palette.border}`
+              }}>
+                <div style={{
                 padding: "12px",
                 backgroundColor: "var(--success-surface)",
                 borderRadius: radii.lg,
@@ -2672,6 +2751,7 @@ function MessagesPage() {
                 <p style={{ margin: "4px 0 0 0", fontSize: "0.9rem", color: palette.textMuted }}>
                   Commands are case-insensitive and will be automatically linked when you send your message.
                 </p>
+              </div>
               </div>
             </div>
           </div>
