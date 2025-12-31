@@ -82,6 +82,7 @@ const normaliseJobJoin = (join) => {
     vehicleReg: join.vehicle_reg || "",
     customer: join.customer || "",
     serviceType: join.type || "",
+    makeModel: join.vehicle_make_model || "",
   };
 };
 
@@ -91,8 +92,10 @@ const mergeEntry = (entryMap, baseKey, incoming) => {
       jobId: incoming.jobId,
       jobNumber: incoming.jobNumber,
       vehicleReg: incoming.vehicleReg,
+      reg: incoming.vehicleReg,
       customer: incoming.customer,
       serviceType: incoming.serviceType,
+      makeModel: incoming.makeModel,
       status: incoming.status,
       vehicleLocation: incoming.vehicleLocation || null,
       keyLocation: incoming.keyLocation || null,
@@ -108,8 +111,10 @@ const mergeEntry = (entryMap, baseKey, incoming) => {
     ...existing,
     jobNumber: existing.jobNumber || incoming.jobNumber,
     vehicleReg: existing.vehicleReg || incoming.vehicleReg,
+    reg: existing.reg || incoming.vehicleReg,
     customer: existing.customer || incoming.customer,
     serviceType: existing.serviceType || incoming.serviceType,
+    makeModel: existing.makeModel || incoming.makeModel,
     status: incoming.status || existing.status,
     vehicleLocation: incoming.vehicleLocation || existing.vehicleLocation,
     keyLocation: incoming.keyLocation || existing.keyLocation,
@@ -124,14 +129,14 @@ export const fetchTrackingSnapshot = async () => {
     supabase
       .from("key_tracking_events")
       .select(
-        "key_event_id, job_id, vehicle_id, action, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type)"
+        "key_event_id, job_id, vehicle_id, action, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, vehicle_make_model)"
       )
       .order("occurred_at", { ascending: false })
       .limit(50),
     supabase
       .from("vehicle_tracking_events")
       .select(
-        "event_id, job_id, vehicle_id, status, location, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type)"
+        "event_id, job_id, vehicle_id, status, location, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, vehicle_make_model)"
       )
       .order("occurred_at", { ascending: false })
       .limit(50),
@@ -152,6 +157,7 @@ export const fetchTrackingSnapshot = async () => {
       vehicleReg: join.vehicleReg,
       customer: join.customer,
       serviceType: join.serviceType,
+      makeModel: join.makeModel,
       status: event.status || join.serviceType || "In Progress",
       vehicleLocation: event.location || null,
       keyLocation: null,
@@ -169,6 +175,7 @@ export const fetchTrackingSnapshot = async () => {
       vehicleReg: join.vehicleReg,
       customer: join.customer,
       serviceType: join.serviceType,
+      makeModel: join.makeModel,
       status: statusLabelForAction("job_complete"),
       vehicleLocation: null,
       keyLocation: event.action || null,

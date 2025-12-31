@@ -255,6 +255,17 @@ const formatDateLabel = (value) => {
   });
 };
 
+const formatDateOnlyLabel = (value) => {
+  if (!value) return "Pending";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Pending";
+  return parsed.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
 const getDueLabel = (value) => {
   if (!value) return "Schedule pending";
   const parsed = new Date(value);
@@ -309,9 +320,10 @@ const formatRelativeTime = (timestamp) => {
   return `${days}d ago`;
 };
 
-const CombinedTrackerCard = ({ entry, isHighlighted }) => {
+const CombinedTrackerCard = ({ entry, isHighlighted, onClick }) => {
   return (
     <div
+      onClick={onClick}
       style={{
         padding: "16px 18px",
         borderRadius: "16px",
@@ -321,43 +333,46 @@ const CombinedTrackerCard = ({ entry, isHighlighted }) => {
         display: "flex",
         flexDirection: "column",
         gap: "8px",
+        cursor: "pointer",
+        transition: "all 0.2s ease",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-2px)";
+        e.currentTarget.style.boxShadow = isHighlighted ? "0 6px 16px rgba(var(--danger-rgb), 0.3)" : "0 4px 12px rgba(var(--grey-accent-rgb), 0.2)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.style.boxShadow = isHighlighted ? "0 4px 12px rgba(var(--danger-rgb), 0.2)" : "none";
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
-        <div>
-          <strong style={{ fontSize: "1.05rem", color: "var(--accent-purple)" }}>{entry.jobNumber || "Unknown job"}</strong>
-          <p style={{ margin: "2px 0 0", color: "var(--info-dark)" }}>{entry.customer || "Customer pending"}</p>
-        </div>
-        <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>Updated {formatRelativeTime(entry.updatedAt)}</span>
+      <div>
+        <strong style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)" }}>
+          {entry.jobNumber || "Unknown job"} • {entry.reg || "Unknown reg"}
+        </strong>
+        <p style={{ margin: "4px 0 0", fontSize: "0.9rem", color: "var(--info-dark)" }}>
+          {entry.customer || "Customer pending"} • {entry.makeModel || "Make/Model pending"}
+        </p>
       </div>
 
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-          gap: "12px",
-          alignItems: "center",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "8px",
+          marginTop: "8px",
         }}
       >
         <div>
-          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Vehicle</p>
-          <strong style={{ color: "var(--accent-purple)" }}>{entry.reg || "Unknown reg"}</strong>
+          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Key location</p>
+          <strong style={{ fontSize: "0.95rem", color: "var(--accent-purple)" }}>{entry.keyLocation || "Pending"}</strong>
         </div>
         <div>
           <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Car location</p>
-          <strong style={{ color: "var(--success-dark)" }}>{entry.vehicleLocation || "Unallocated"}</strong>
-        </div>
-        <div>
-          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Key location</p>
-          <strong style={{ color: "var(--accent-purple)" }}>{entry.keyLocation || "Pending"}</strong>
-        </div>
-        <div>
-          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Last move</p>
-          <strong style={{ color: "var(--accent-purple)" }}>{formatRelativeTime(entry.updatedAt)}</strong>
+          <strong style={{ fontSize: "0.95rem", color: "var(--success-dark)" }}>{entry.vehicleLocation || "Unallocated"}</strong>
         </div>
       </div>
 
-      <p style={{ margin: 0, color: "var(--info-dark)" }}>{entry.notes || "No additional notes"}</p>
+      <p style={{ margin: "8px 0 0", fontSize: "0.75rem", color: "var(--info)" }}>Last moved {formatRelativeTime(entry.updatedAt)}</p>
     </div>
   );
 };
@@ -884,18 +899,6 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
           />
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
-            Last Topped Up
-          </label>
-          <CalendarField
-            value={form.lastToppedUpDate}
-            onChange={(e) => handleChange("lastToppedUpDate", e.target.value)}
-            placeholder="Select date"
-            size="md"
-          />
-        </div>
-
         <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginTop: "10px", flexWrap: "wrap" }}>
           {initialData?.id && (
             <button
@@ -1320,10 +1323,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.08em", color: "var(--info)" }}>
-              {context === "car" ? "Update vehicle location" : "Update key location"}
-            </p>
-            <h2 style={{ margin: "4px 0 0" }}>{entry ? "Edit existing" : "Log new"}</h2>
+            <h2 style={{ margin: 0 }}>{entry ? "Edit existing" : "Log new"}</h2>
           </div>
           <button
             type="button"
@@ -1410,45 +1410,6 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
               size="md"
             />
           </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>Status</label>
-            <DropdownField
-              options={STATUS_OPTIONS}
-              value={form.status}
-              onValueChange={(value) => handleChange("status", value)}
-              placeholder="Select status"
-              size="md"
-            />
-          </div>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
-            Key Tag / Guidance
-          </label>
-          <input
-            value={form.keyTip}
-            onChange={(event) => handleChange("keyTip", event.target.value)}
-            placeholder="Green tag #4, handover drawer, etc."
-            style={{
-              padding: "10px 12px",
-              borderRadius: "12px",
-              border: "1px solid var(--accent-purple-surface)",
-              fontSize: "0.95rem",
-            }}
-          />
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>Notes</label>
-          <textarea
-            rows={3}
-            value={form.notes}
-            onChange={(event) => handleChange("notes", event.target.value)}
-            placeholder="Collection time, valet status, instructions..."
-            style={{ padding: "10px", borderRadius: "12px", border: "1px solid var(--accent-purple-surface)", resize: "vertical" }}
-          />
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
@@ -1505,7 +1466,7 @@ export default function TrackingDashboard() {
   const userRoles = useMemo(() => (user?.roles || []).map((role) => role.toLowerCase()), [user]);
   const isWorkshopManager = userRoles.includes("workshop manager");
   const tabs = useMemo(() => {
-    const base = [{ id: "tracker", label: "Tracker" }];
+    const base = [{ id: "tracker", label: "Key/Parking" }];
     if (isWorkshopManager) {
       base.push({ id: "equipment", label: "Equipment/Tools" }, { id: "oil-stock", label: "Oil/Stock" });
     }
@@ -1516,6 +1477,8 @@ export default function TrackingDashboard() {
   const [oilChecks, setOilChecks] = useState(() => cloneList(DEFAULT_OIL_CHECKS));
   const [equipmentLoading, setEquipmentLoading] = useState(false);
   const [oilLoading, setOilLoading] = useState(false);
+  const [activeTopUpId, setActiveTopUpId] = useState(null);
+  const [topUpValue, setTopUpValue] = useState("");
 
   const loadEntries = useCallback(async () => {
     setLoading(true);
@@ -1673,7 +1636,7 @@ export default function TrackingDashboard() {
   );
 
   const handleOilCheck = useCallback(
-    async (id) => {
+    async (id, stockAmount) => {
       const target = oilChecks.find((item) => item.id === id);
       if (!target) return;
       const intervalDays = getIntervalDays(target, "lastCheck", "nextCheck");
@@ -1682,6 +1645,8 @@ export default function TrackingDashboard() {
         id,
         lastCheck: now.toISOString(),
         nextCheck: nextDueFrom(now, intervalDays),
+        lastToppedUp: now.toISOString(),
+        stock: stockAmount || target.stock,
         intervalDays,
       };
 
@@ -1697,6 +1662,8 @@ export default function TrackingDashboard() {
         }
         const updated = result.data;
         setOilChecks((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+        setActiveTopUpId(null);
+        setTopUpValue("");
       } catch (error) {
         console.error("Oil/stock check update failed", error);
         alert(error.message || "Failed to mark oil/stock check");
@@ -1997,6 +1964,7 @@ export default function TrackingDashboard() {
 
       await loadEntries();
       closeEntryModal();
+      setSimplifiedModal({ open: false, initialData: null });
     } catch (saveError) {
       console.error("Failed to log tracking entry", saveError);
       setError(saveError.message || "Unable to save tracking entry");
@@ -2057,8 +2025,11 @@ export default function TrackingDashboard() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gridTemplateColumns: "repeat(2, 1fr)",
           gap: "12px",
+          maxHeight: "calc(4 * 180px + 3 * 12px)",
+          overflowY: "auto",
+          paddingRight: "4px",
         }}
       >
         {entries.length === 0 && (
@@ -2096,6 +2067,19 @@ export default function TrackingDashboard() {
               key={entry.jobId || entry.id || `${entry.jobNumber}-${entry.updatedAt}`}
               entry={entry}
               isHighlighted={isHighlighted}
+              onClick={() => openEntryModal("car", {
+                id: entry.id,
+                jobId: entry.jobId,
+                jobNumber: entry.jobNumber,
+                reg: entry.reg,
+                customer: entry.customer,
+                serviceType: entry.serviceType,
+                vehicleLocation: entry.vehicleLocation,
+                keyLocation: entry.keyLocation,
+                status: entry.status,
+                keyTip: entry.keyTip,
+                notes: entry.notes,
+              })}
             />
           );
         })}
@@ -2194,16 +2178,17 @@ export default function TrackingDashboard() {
                   justifyContent: "space-between",
                   alignItems: "flex-start",
                   gap: "10px",
+                  minHeight: "28px",
                 }}
               >
-                <div>
+                <div style={{ flex: 1 }}>
                   <strong style={{ display: "block", fontSize: "1.05rem" }}>{check.name}</strong>
                 </div>
-                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: badgeColor }}>
+                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: badgeColor, flexShrink: 0 }}>
                   {check.status || dueLabel}
                 </span>
               </div>
-              <div style={{ display: "grid", gap: "6px" }}>
+              <div style={{ display: "grid", gap: "6px", flex: 1 }}>
                 <div
                   style={{
                     display: "flex",
@@ -2213,7 +2198,7 @@ export default function TrackingDashboard() {
                   }}
                 >
                   <span>Last checked</span>
-                  <strong>{formatDateLabel(check.lastChecked)}</strong>
+                  <strong>{formatDateOnlyLabel(check.lastChecked)}</strong>
                 </div>
                 <div
                   style={{
@@ -2224,7 +2209,7 @@ export default function TrackingDashboard() {
                   }}
                 >
                   <span>Next due</span>
-                  <strong>{formatDateLabel(check.nextDue)}</strong>
+                  <strong>{formatDateOnlyLabel(check.nextDue)}</strong>
                 </div>
                 <div
                   style={{
@@ -2234,7 +2219,7 @@ export default function TrackingDashboard() {
                     color: "var(--info-dark)",
                   }}
                 >
-                  <span>Duration</span>
+                  <span>Check interval</span>
                   <strong>{durationLabel}</strong>
                 </div>
               </div>
@@ -2245,7 +2230,7 @@ export default function TrackingDashboard() {
                   handleEquipmentCheck(check.id);
                 }}
                 style={{
-                  marginTop: "6px",
+                  marginTop: "auto",
                   padding: "8px 14px",
                   borderRadius: "10px",
                   border: "none",
@@ -2253,7 +2238,7 @@ export default function TrackingDashboard() {
                   color: "white",
                   fontWeight: 600,
                   cursor: "pointer",
-                  alignSelf: "flex-start",
+                  width: "100%",
                 }}
               >
                 Log check
@@ -2325,14 +2310,16 @@ export default function TrackingDashboard() {
           const dueLabel = getDueLabel(item.nextCheck);
           const isDue = dueLabel === "Due now";
           const durationLabel = getDurationDisplay(item);
+          const isTopUpActive = activeTopUpId === item.id;
+          const badgeColor = isDue ? "var(--danger)" : "var(--success-dark)";
           return (
             <div
               key={item.id}
               role="button"
               tabIndex={0}
-              onClick={() => setOilStockModal({ open: true, item })}
+              onClick={() => !isTopUpActive && setOilStockModal({ open: true, item })}
               onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
+                if (!isTopUpActive && (event.key === "Enter" || event.key === " ")) {
                   event.preventDefault();
                   setOilStockModal({ open: true, item });
                 }
@@ -2345,7 +2332,7 @@ export default function TrackingDashboard() {
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
-                cursor: "pointer",
+                cursor: isTopUpActive ? "default" : "pointer",
               }}
             >
               <div
@@ -2354,63 +2341,124 @@ export default function TrackingDashboard() {
                   justifyContent: "space-between",
                   alignItems: "flex-start",
                   gap: "10px",
+                  minHeight: "28px",
                 }}
               >
-                <div>
+                <div style={{ flex: 1 }}>
                   <strong style={{ display: "block", fontSize: "1.05rem" }}>{item.title}</strong>
                 </div>
-                <span
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    color: isDue ? "var(--danger)" : "var(--success-dark)",
-                  }}
-                >
+                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: badgeColor, flexShrink: 0 }}>
                   {dueLabel}
                 </span>
               </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-                  gap: "10px",
-                  color: "var(--info-dark)",
-                  fontSize: "0.85rem",
-                }}
-              >
-                <div>
-                  <span style={{ display: "block", color: "var(--info)" }}>Last check</span>
-                  <strong>{formatDateLabel(item.lastCheck)}</strong>
+              <div style={{ display: "grid", gap: "6px", flex: 1 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "0.85rem",
+                    color: "var(--info-dark)",
+                  }}
+                >
+                  <span>Stock amount</span>
+                  <strong>{item.stock || "—"}</strong>
                 </div>
-                <div>
-                  <span style={{ display: "block", color: "var(--info)" }}>Next check</span>
-                  <strong>{formatDateLabel(item.nextCheck)}</strong>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "0.85rem",
+                    color: "var(--info-dark)",
+                  }}
+                >
+                  <span>Last check</span>
+                  <strong>{formatDateOnlyLabel(item.lastCheck)}</strong>
                 </div>
-                <div>
-                  <span style={{ display: "block", color: "var(--info)" }}>Duration</span>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "0.85rem",
+                    color: "var(--info-dark)",
+                  }}
+                >
+                  <span>Next check</span>
+                  <strong>{formatDateOnlyLabel(item.nextCheck)}</strong>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "0.85rem",
+                    color: "var(--info-dark)",
+                  }}
+                >
+                  <span>Check interval</span>
                   <strong>{durationLabel}</strong>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handleOilCheck(item.id);
-                }}
-                style={{
-                  marginTop: "6px",
-                  padding: "8px 14px",
-                  borderRadius: "10px",
-                  border: "none",
-                  background: "var(--primary)",
-                  color: "white",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  alignSelf: "flex-start",
-                }}
-              >
-                Mark checked
-              </button>
+              {isTopUpActive && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+                    Top up stock amount
+                  </label>
+                  <input
+                    type="text"
+                    value={topUpValue}
+                    onChange={(e) => setTopUpValue(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    placeholder="e.g., 18 × 5L cans"
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--accent-purple-surface)",
+                      fontSize: "0.9rem",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleOilCheck(item.id, topUpValue);
+                    }}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: "10px",
+                      border: "none",
+                      background: "var(--success)",
+                      color: "white",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      width: "100%",
+                    }}
+                  >
+                    Save
+                  </button>
+                </div>
+              )}
+              {!isTopUpActive && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setActiveTopUpId(item.id);
+                    setTopUpValue(item.stock || "");
+                  }}
+                  style={{
+                    marginTop: "auto",
+                    padding: "8px 14px",
+                    borderRadius: "10px",
+                    border: "none",
+                    background: "var(--primary)",
+                    color: "white",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    width: "100%",
+                  }}
+                >
+                  Mark checked
+                </button>
+              )}
             </div>
           );
         })}

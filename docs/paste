@@ -1,13 +1,7 @@
 TO DO:
 
 
-
-When inside tracker page, make sure the popup “ Log new” remove the “status” drop down and this text “ Update vehicle location”, do the same with the “ Edit existing” popup and remove the “ Update vehicle location” text as well. Remove the “ Key Tag / Guidance” section for now from both popups and remove the “ Notes” section as well.
-
-
-
-
-link messages to job numbers with /controls inside the messages tab within the job-cards/[jobnumber] page and within the message page as well so when a message is sent users can use a /commant example /job[jobnumber] this will then show the jobnumber with a link which opens that page as well as linking it to the messages tab within that job, the same with /cust[customerfirsstandlastname] which will then give a link to the customer detail page etc create multiple commands, add these comands inside a popup within the page hiden inside a "?" button with details how to use them as well.
+link messages to job numbers with /controls inside the messages tab within the job-cards/[jobnumber] page and within the message page as well so when a message is sent users can use a /commant example /job[jobnumber] this will then show the jobnumber with a link which opens that page as well as linking it to the messages tab within that job, the same with /cust[customerfirsstandlastname] which will then give a link to the customer detail page etc create multiple commands, add these comands inside a popup within the page hiden inside a "?" button with details how to use them as well. Hvae it so with Group chats when the Groupchat name is clicked it opens a popup which shows everyone who is in the chat, remove the names from being shown inside the section where the names are curreentl shown insdie the group chat name section. make sure these are within a differnt section. 
 
 
 
