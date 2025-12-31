@@ -52,25 +52,188 @@ const formatMessageTimestamp = (value) => {
 };
 
 // Helper function to parse slash command metadata
-const parseSlashCommandMetadata = (text = "", customer, vehicles = []) => {
+const parseSlashCommandMetadata = async (text = "", customer, vehicles = []) => {
   if (!text) return null;
   const metadata = {};
-  const regex = /\/([^\s]+)/gi;
-  let match = null;
-  while ((match = regex.exec(text)) !== null) {
-    const token = (match[1] || "").toLowerCase();
-    if (/^\d+$/.test(token) && !metadata.jobNumber) {
-      metadata.jobNumber = token;
+  const tokens = text.match(/\/[^\s]+/g) || [];
+
+  // First pass: collect all commands
+  let hasJobNumber = false;
+  let hasVehicleCommand = false;
+  let hasCustomerCommand = false;
+
+  for (const raw of tokens) {
+    const token = raw.replace("/", "").trim();
+    if (!token) continue;
+
+    // /job[number] or /[number]
+    const jobMatch = token.match(/^(?:job)?(\d+)$/i);
+    if (jobMatch && !metadata.jobNumber) {
+      metadata.jobNumber = jobMatch[1];
+      hasJobNumber = true;
+      continue;
     }
-    if (token === "customer" && customer?.id) {
-      metadata.customerId = customer.id;
+
+    // /cust[name] - extract customer name
+    const custMatch = token.match(/^cust(.+)$/i);
+    if (custMatch && !metadata.customerName) {
+      metadata.customerName = custMatch[1];
+      continue;
     }
-    if (token === "vehicle" && vehicles?.[0]?.id) {
-      metadata.vehicleId = vehicles[0].id;
+
+    // /customer - reference to customer
+    if (token.toLowerCase() === "customer") {
+      hasCustomerCommand = true;
+      if (customer?.id) {
+        metadata.customerId = customer.id;
+      }
+    }
+
+    // /vehicle - reference to vehicle
+    if (token.toLowerCase() === "vehicle") {
+      hasVehicleCommand = true;
+      if (vehicles?.[0]?.id) {
+        metadata.vehicleId = vehicles[0].id;
+      }
     }
   }
+
+  // Second pass: if job number is present and vehicle/customer commands are used,
+  // fetch the job data to link vehicle and customer
+  if (hasJobNumber && (hasVehicleCommand || hasCustomerCommand)) {
+    try {
+      const response = await fetch(`/api/jobcards/${metadata.jobNumber}`);
+      if (response.ok) {
+        const jobData = await response.json();
+
+        // Link vehicle if /vehicle command was used and not already set
+        if (hasVehicleCommand && !metadata.vehicleId && jobData.vehicleId) {
+          metadata.vehicleId = jobData.vehicleId;
+        }
+
+        // Link customer if /customer command was used and not already set from context
+        if (hasCustomerCommand && !metadata.customerId && jobData.customerId) {
+          metadata.customerId = jobData.customerId;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch job data for metadata:', error);
+      // Continue without the job data
+    }
+  }
+
   return Object.keys(metadata).length ? metadata : null;
 };
+
+// Helper function to render message content with clickable slash commands
+const renderMessageContentWithLinks = (content) => {
+  if (!content) return null;
+
+  const parts = [];
+  let lastIndex = 0;
+  const regex = /\/(job)?(\d+)|\/cust([a-zA-Z]+)|\/customer|\/vehicle/gi;
+
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(content.substring(lastIndex, match.index));
+    }
+
+    const fullMatch = match[0];
+    const isJob = match[1] !== undefined || /^\/\d+/.test(fullMatch);
+    const jobNumber = match[2];
+    const custName = match[3];
+
+    if (isJob && jobNumber) {
+      // /job[number] or /[number] - link to VHC details page for customers
+      parts.push(
+        <a
+          key={match.index}
+          href={`/vhc/details/${jobNumber}`}
+          style={{
+            color: "var(--primary)",
+            textDecoration: "underline",
+            fontWeight: 600,
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          {fullMatch}
+        </a>
+      );
+    } else if (custName) {
+      // /cust[name]
+      parts.push(
+        <span
+          key={match.index}
+          style={{
+            fontWeight: 600,
+            textDecoration: "underline",
+            color: "var(--primary)",
+          }}
+          title={`Customer: ${custName}`}
+        >
+          {fullMatch}
+        </span>
+      );
+    } else {
+      // /customer or /vehicle
+      parts.push(
+        <span
+          key={match.index}
+          style={{
+            fontWeight: 600,
+          }}
+        >
+          {fullMatch}
+        </span>
+      );
+    }
+
+    lastIndex = regex.lastIndex;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : content;
+};
+
+// Available slash commands for customers
+const SLASH_COMMANDS = [
+  {
+    command: "/job[number]",
+    description: "Link to a job (e.g., /job12345)",
+    autocomplete: "/job",
+    pattern: "job",
+    hasInput: true
+  },
+  {
+    command: "/[number]",
+    description: "Quick link to a job (e.g., /12345)",
+    autocomplete: "/",
+    pattern: "",
+    hasInput: true
+  },
+  {
+    command: "/customer",
+    description: "Reference yourself (auto-links if /job used)",
+    autocomplete: "/customer",
+    pattern: "customer",
+    hasInput: false
+  },
+  {
+    command: "/vehicle",
+    description: "Reference your vehicle (auto-links if /job used)",
+    autocomplete: "/vehicle",
+    pattern: "vehicle",
+    hasInput: false
+  }
+];
 
 export default function CustomerMessagesPage() {
   const { timeline, customer, vehicles, isLoading, error } = useCustomerPortalData();
@@ -89,6 +252,8 @@ export default function CustomerMessagesPage() {
   // Conversation state
   const [conversationFeedback, setConversationFeedback] = useState("");
   const [conversationError, setConversationError] = useState("");
+  const [showCommandSuggestions, setShowCommandSuggestions] = useState(false);
+  const [commandSuggestions, setCommandSuggestions] = useState([]);
 
   // System notifications state
   const [systemNotifications, setSystemNotifications] = useState([]);
@@ -246,15 +411,70 @@ export default function CustomerMessagesPage() {
     }
   }, [composerSelection, dbUserId, fetchThreads, openThread]);
 
+  // Handle message draft change with command suggestions
+  const handleMessageDraftChange = useCallback((event) => {
+    const value = event.target.value;
+    setMessageDraft(value);
+
+    // Detect slash command at cursor position
+    const cursorPos = event.target.selectionStart;
+    const textBeforeCursor = value.substring(0, cursorPos);
+    const lastSlashIndex = textBeforeCursor.lastIndexOf('/');
+
+    if (lastSlashIndex !== -1) {
+      const textAfterSlash = textBeforeCursor.substring(lastSlashIndex + 1);
+      // Only show suggestions if there's no space after the slash
+      if (!textAfterSlash.includes(' ')) {
+        const searchTerm = textAfterSlash.toLowerCase();
+        const filtered = SLASH_COMMANDS.filter(cmd =>
+          cmd.pattern.toLowerCase().startsWith(searchTerm) ||
+          cmd.command.toLowerCase().includes(searchTerm) ||
+          (searchTerm === '' && cmd.pattern === '') // Show /[number] when typing just /
+        );
+        setCommandSuggestions(filtered);
+        setShowCommandSuggestions(filtered.length > 0);
+      } else {
+        setShowCommandSuggestions(false);
+      }
+    } else {
+      setShowCommandSuggestions(false);
+    }
+  }, []);
+
+  // Handle selecting a command from suggestions
+  const handleSelectCommand = useCallback((command) => {
+    const cursorPos = document.activeElement?.selectionStart || messageDraft.length;
+    const textBeforeCursor = messageDraft.substring(0, cursorPos);
+    const lastSlashIndex = textBeforeCursor.lastIndexOf('/');
+
+    if (lastSlashIndex !== -1) {
+      const textAfter = messageDraft.substring(cursorPos);
+      const newText = messageDraft.substring(0, lastSlashIndex) + command.autocomplete + textAfter;
+      setMessageDraft(newText);
+
+      // Set cursor position after the autocompleted text
+      setTimeout(() => {
+        const textarea = document.getElementById('message-draft');
+        if (textarea) {
+          const newCursorPos = lastSlashIndex + command.autocomplete.length;
+          textarea.focus();
+          textarea.setSelectionRange(newCursorPos, newCursorPos);
+        }
+      }, 0);
+    }
+    setShowCommandSuggestions(false);
+  }, [messageDraft]);
+
   // Handle send message
   const handleSendMessage = useCallback(
     async (event) => {
       event?.preventDefault();
       if (!activeThread?.id || !dbUserId || !messageDraft.trim()) return;
+      setShowCommandSuggestions(false);
       setSendingMessage(true);
       setMessagesError("");
       try {
-        const metadata = parseSlashCommandMetadata(messageDraft, customer, vehicles);
+        const metadata = await parseSlashCommandMetadata(messageDraft, customer, vehicles);
         const response = await fetch(`/api/messages/threads/${activeThread.id}/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -724,7 +944,7 @@ export default function CustomerMessagesPage() {
                                 {formatMessageTimestamp(message.createdAt)}
                               </span>
                             </div>
-                            <p className="text-slate-700">{message.content}</p>
+                            <p className="text-slate-700">{renderMessageContentWithLinks(message.content)}</p>
                             {message.metadata?.jobNumber && (
                               <p className="text-[0.65rem] text-slate-500">
                                 Linked job #{message.metadata.jobNumber}
@@ -762,7 +982,48 @@ export default function CustomerMessagesPage() {
                     </div>
                   )}
                 </div>
-                <form onSubmit={handleSendMessage} className="space-y-3">
+                <form onSubmit={handleSendMessage} className="relative space-y-3">
+                  {/* Command suggestions dropdown */}
+                  {showCommandSuggestions && commandSuggestions.length > 0 && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: "100%",
+                        left: 0,
+                        right: 0,
+                        marginBottom: "8px",
+                        maxHeight: "240px",
+                        overflowY: "auto",
+                        backgroundColor: "var(--surface)",
+                        border: "1px solid var(--surface-light)",
+                        borderRadius: "16px",
+                        boxShadow: "0 10px 40px rgba(0, 0, 0, 0.15)",
+                        zIndex: 1000,
+                      }}
+                    >
+                      {commandSuggestions.map((cmd, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => handleSelectCommand(cmd)}
+                          className="w-full border-b border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-left hover:bg-[var(--surface-light)]"
+                          style={{
+                            borderBottom: index < commandSuggestions.length - 1 ? "1px solid var(--surface-light)" : "none",
+                          }}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm font-bold text-[var(--primary)]">
+                              {cmd.command}
+                            </span>
+                            <span className="text-xs text-slate-500">
+                              {cmd.description}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   <label htmlFor="message-draft" className="sr-only">
                     Message
                   </label>
@@ -770,8 +1031,8 @@ export default function CustomerMessagesPage() {
                     id="message-draft"
                     rows={3}
                     value={messageDraft}
-                    onChange={(event) => setMessageDraft(event.target.value)}
-                    placeholder="Type your message…"
+                    onChange={handleMessageDraftChange}
+                    placeholder="Type your message… (type / for commands)"
                     className="w-full rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[var(--primary)] focus:outline-none"
                   />
                   <div className="flex justify-end">

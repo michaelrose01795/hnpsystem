@@ -1,14 +1,12 @@
 TO DO:
 
 
-link messages to job numbers with /controls inside the messages tab within the job-cards/[jobnumber] page and within the message page as well so when a message is sent users can use a /commant example /job[jobnumber] this will then show the jobnumber with a link which opens that page as well as linking it to the messages tab within that job, the same with /cust[customerfirsstandlastname] which will then give a link to the customer detail page etc create multiple commands, add these comands inside a popup within the page hiden inside a "?" button with details how to use them as well. Hvae it so with Group chats when the Groupchat name is clicked it opens a popup which shows everyone who is in the chat, remove the names from being shown inside the section where the names are curreentl shown insdie the group chat name section. make sure these are within a differnt section. 
+Create a custoemr page which when search for a customer if brings up the full details of the customer, the cars attached, history jobs linked to the customer etc all from the database. Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first, have it so the items which are linked to the customer are shown in the tab layout at the top eg Vehciles tab shows all the vehciles, history tab shows all of the history tab, have it so the cust details stays at the top section of the page and the tabs are underneath the cust section and shows the tab sections at the bottom within the tabs. have it so this page follows the light and dark mode theme. 
 
 
 
 
-Create a custoemr page which when search for a customer if brings up the full details of the customer, the cars attached, history jobs linked to the customer etc all from the database. Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first
-
-
+With every page (check with chat and go though ages which are actaull used and pages which are used in anohter page but can be used into one) within the top bar to the right of the search add a "?" button which opens a drop down (link to drop down style api) which shows (contact support (this opens messages tab and starts a new message with the uers Lead tech (add this in small print within the section as a todo) which within the text box to send the message shows a / comand which tells the sender the page the user was on and then the user can then input text after either reporting a concern, bug, or a question. The next in the drop down is a "Tutorial" button which gives multiple steps describing what each section and button does inside an overlay type style making the background darker and the section or button the tutorial is telling how to use lighter with the description box like a bubble which is inside the darker section and the bubble is following the light and dark theme, there is also a "Next" and "back" button which flicks through the each section and button to do with that page/the tab selected at the time of the button press with also an "Finish" button which closes the overlay and tutorial section. What woul dbe the best way to implement this? as an api with a file linked to each page and tab which has all of the buttons and section anmes and descriptions inside the api linking or a section within the actual code which reads the code and sees what section does what same with buttons, unless theres another way which is commonly used for tutorials like im describing.
 
 NOTE:
 
@@ -121,3 +119,6 @@ Capture when to inspect service fluids and replenish stock for busy workshop day
 
 
 
+
+
+link messages to job numbers with /controls inside the messages tab within the job-cards/[jobnumber] page and within the message page as well so when a message is sent users can use a /commant example /job[jobnumber] this will then show the jobnumber with a link which opens that page as well as linking it to the messages tab within that job, the same with /cust[customerfirsstandlastname] which will then give a link to the customer detail page etc create multiple commands, add these comands inside a popup within the page hiden inside a "?" button with details how to use them as well. Hvae it so with Group chats when the Groupchat name is clicked it opens a popup which shows everyone who is in the chat, remove the names from being shown inside the section where the names are curreentl shown insdie the group chat name section. make sure these are within a differnt section. 

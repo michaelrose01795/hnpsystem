@@ -4607,6 +4607,85 @@ function VHCTab({ jobNumber, jobData }) {
 }
 
 // ✅ Messages Tab
+// Helper function to render message content with clickable slash commands
+const renderMessageContentWithLinks = (content) => {
+  if (!content) return null;
+
+  const parts = [];
+  let lastIndex = 0;
+  const regex = /\/(job)?(\d+)|\/cust([a-zA-Z]+)|\/customer|\/vehicle/gi;
+
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(content.substring(lastIndex, match.index));
+    }
+
+    const fullMatch = match[0];
+    const isJob = match[1] !== undefined || /^\/\d+/.test(fullMatch);
+    const jobNumber = match[2];
+    const custName = match[3];
+
+    if (isJob && jobNumber) {
+      // /job[number] or /[number]
+      parts.push(
+        <a
+          key={match.index}
+          href={`/job-cards/${jobNumber}?tab=messages`}
+          style={{
+            color: "var(--primary)",
+            textDecoration: "underline",
+            fontWeight: 600,
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          {fullMatch}
+        </a>
+      );
+    } else if (custName) {
+      // /cust[name]
+      parts.push(
+        <span
+          key={match.index}
+          style={{
+            fontWeight: 600,
+            textDecoration: "underline",
+            color: "var(--accent-purple)",
+          }}
+          title={`Customer: ${custName}`}
+        >
+          {fullMatch}
+        </span>
+      );
+    } else {
+      // /customer or /vehicle
+      parts.push(
+        <span
+          key={match.index}
+          style={{
+            fontWeight: 600,
+            color: "var(--info-dark)",
+          }}
+        >
+          {fullMatch}
+        </span>
+      );
+    }
+
+    lastIndex = regex.lastIndex;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : content;
+};
+
 function MessagesTab({ thread, jobNumber, customerEmail }) {
   const router = useRouter();
   const participants = Array.isArray(thread?.participants) ? thread.participants : [];
@@ -4813,7 +4892,7 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
                       </span>
                     </div>
                     <p style={{ margin: "8px 0 0 0", color: "var(--info-dark)", fontSize: "14px", whiteSpace: "pre-wrap" }}>
-                      {message.content}
+                      {renderMessageContentWithLinks(message.content)}
                     </p>
                     <div style={{ marginTop: "8px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
                       <span

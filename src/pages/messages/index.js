@@ -137,7 +137,129 @@ const AvatarBadge = ({ name }) => {
   );
 };
 
-const MessageBubble = ({ message, isMine, nameColor = palette.accent }) => {
+const renderMessageContent = (content, userRoles = []) => {
+  if (!content) return null;
+
+  // Enhanced regex to catch all slash commands
+  const regex = /\/(?:(job|vhc|part|invoice|account|order|user|cust)([a-zA-Z0-9]+)|(\d+)|(customer|vehicle|parts|tracking|valet|hr|clocking|archive|myjobs|appointments))/gi;
+
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(content)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(content.substring(lastIndex, match.index));
+    }
+
+    const fullMatch = match[0];
+    const prefix = match[1]; // job, vhc, part, etc.
+    const value = match[2];  // The value after prefix
+    const numberOnly = match[3]; // Just a number
+    const standalone = match[4]; // customer, vehicle, parts, etc.
+
+    let href = null;
+    let title = fullMatch;
+
+    // Determine the link based on the command
+    if (numberOnly) {
+      // /12345 - job number shorthand
+      href = getJobLink(numberOnly, userRoles);
+      title = `Job #${numberOnly}`;
+    } else if (prefix === 'job' && value) {
+      href = getJobLink(value, userRoles);
+      title = `Job #${value}`;
+    } else if (prefix === 'vhc' && value) {
+      href = `/vhc/details/${value}`;
+      title = `VHC for Job #${value}`;
+    } else if (prefix === 'part' && value) {
+      title = `Part #${value}`;
+    } else if (prefix === 'invoice' && value) {
+      href = `/accounts/invoices/${value}`;
+      title = `Invoice #${value}`;
+    } else if (prefix === 'account' && value) {
+      href = `/accounts/view/${value}`;
+      title = `Account ${value}`;
+    } else if (prefix === 'order' && value) {
+      href = `/parts/create-order/${value}`;
+      title = `Parts Order ${value}`;
+    } else if (prefix === 'user' && value) {
+      title = `User: ${value}`;
+    } else if (prefix === 'cust' && value) {
+      title = `Customer: ${value}`;
+    } else if (standalone === 'parts') {
+      href = '/parts';
+      title = 'Parts Management';
+    } else if (standalone === 'tracking') {
+      href = '/tracking';
+      title = 'Vehicle Tracking';
+    } else if (standalone === 'valet') {
+      href = '/valet';
+      title = 'Valet Dashboard';
+    } else if (standalone === 'hr') {
+      href = '/hr/manager';
+      title = 'HR Dashboard';
+    } else if (standalone === 'clocking') {
+      href = '/clocking';
+      title = 'Time Clocking';
+    } else if (standalone === 'archive') {
+      href = '/job-cards/archive';
+      title = 'Job Archive';
+    } else if (standalone === 'myjobs') {
+      href = '/job-cards/myjobs';
+      title = 'My Jobs';
+    } else if (standalone === 'appointments') {
+      href = '/job-cards/appointments';
+      title = 'Appointments';
+    }
+
+    // Render as link if href exists, otherwise just highlight
+    if (href) {
+      parts.push(
+        <a
+          key={match.index}
+          href={href}
+          style={{
+            color: "inherit",
+            textDecoration: "underline",
+            fontWeight: 600,
+          }}
+          title={title}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          {fullMatch}
+        </a>
+      );
+    } else {
+      parts.push(
+        <span
+          key={match.index}
+          style={{
+            fontWeight: 600,
+            textDecoration: standalone || (prefix && value) ? "underline" : "none",
+          }}
+          title={title}
+        >
+          {fullMatch}
+        </span>
+      );
+    }
+
+    lastIndex = regex.lastIndex;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : content;
+};
+
+const MessageBubble = ({ message, isMine, nameColor = palette.accent, userRoles = [] }) => {
   const senderName = message.sender?.name || "Unknown";
   const timestamp = new Date(message.createdAt).toLocaleTimeString([], {
     hour: "2-digit",
@@ -191,39 +313,91 @@ const MessageBubble = ({ message, isMine, nameColor = palette.accent }) => {
             {senderName}
           </span>
           <span style={{ fontSize: "0.75rem", color: palette.textMuted }}>{timestamp}</span>
-          <div style={bubbleStyles}>{message.content}</div>
+          <div style={bubbleStyles}>{renderMessageContent(message.content, userRoles)}</div>
         </div>
       </div>
     </div>
   );
 };
 
-const parseSlashCommandMetadata = (text = "", thread = null) => {
+const parseSlashCommandMetadata = async (text = "", thread = null) => {
   if (!text) return null;
   const metadata = {};
   const tokens = text.match(/\/[^\s]+/g) || [];
+
+  // First pass: collect all commands
+  let hasJobNumber = false;
+  let hasVehicleCommand = false;
+  let hasCustomerCommand = false;
+
   for (const raw of tokens) {
     const token = raw.replace("/", "").trim();
     if (!token) continue;
-    if (/^\d+$/.test(token) && !metadata.jobNumber) {
-      metadata.jobNumber = token;
+
+    // /job[number] or /[number]
+    const jobMatch = token.match(/^(?:job)?(\d+)$/i);
+    if (jobMatch && !metadata.jobNumber) {
+      metadata.jobNumber = jobMatch[1];
+      hasJobNumber = true;
       continue;
     }
-    if (token.toLowerCase() === "customer" && !metadata.customerId) {
-      const customerMember = (thread?.members || []).find((member) =>
-        member.profile?.role?.toLowerCase().includes("customer")
-      );
-      if (customerMember) {
-        metadata.customerId = customerMember.userId;
+
+    // /cust[name] - extract customer name
+    const custMatch = token.match(/^cust(.+)$/i);
+    if (custMatch && !metadata.customerName) {
+      metadata.customerName = custMatch[1];
+      continue;
+    }
+
+    // /customer - reference to customer in thread
+    if (token.toLowerCase() === "customer") {
+      hasCustomerCommand = true;
+      if (!metadata.customerId) {
+        const customerMember = (thread?.members || []).find((member) =>
+          member.profile?.role?.toLowerCase().includes("customer")
+        );
+        if (customerMember) {
+          metadata.customerId = customerMember.userId;
+        }
       }
     }
-    if (token.toLowerCase() === "vehicle" && !metadata.vehicleId) {
-      const vehicleReference = thread?.lastMessage?.metadata?.vehicleId;
-      if (vehicleReference) {
-        metadata.vehicleId = vehicleReference;
+
+    // /vehicle - reference to vehicle
+    if (token.toLowerCase() === "vehicle") {
+      hasVehicleCommand = true;
+      if (!metadata.vehicleId) {
+        const vehicleReference = thread?.lastMessage?.metadata?.vehicleId;
+        if (vehicleReference) {
+          metadata.vehicleId = vehicleReference;
+        }
       }
     }
   }
+
+  // Second pass: if job number is present and vehicle/customer commands are used,
+  // fetch the job data to link vehicle and customer
+  if (hasJobNumber && (hasVehicleCommand || hasCustomerCommand)) {
+    try {
+      const response = await fetch(`/api/jobcards/${metadata.jobNumber}`);
+      if (response.ok) {
+        const jobData = await response.json();
+
+        // Link vehicle if /vehicle command was used and not already set
+        if (hasVehicleCommand && !metadata.vehicleId && jobData.vehicleId) {
+          metadata.vehicleId = jobData.vehicleId;
+        }
+
+        // Link customer if /customer command was used and not already set
+        if (hasCustomerCommand && !metadata.customerId && jobData.customerId) {
+          metadata.customerId = jobData.customerId;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch job data for metadata:', error);
+      // Continue without the job data
+    }
+  }
+
   return Object.keys(metadata).length ? metadata : null;
 };
 
@@ -235,6 +409,216 @@ const formatNotificationTimestamp = (value) => {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+  });
+};
+
+// Helper function to get user-specific link for job based on role
+const getJobLink = (jobNumber, userRoles = []) => {
+  const normalizedRoles = userRoles.map(r => r.toLowerCase());
+
+  // Technicians use myjobs path
+  if (normalizedRoles.includes('technician')) {
+    return `/job-cards/myjobs/${jobNumber}`;
+  }
+
+  // Everyone else uses standard job-cards path
+  return `/job-cards/${jobNumber}?tab=messages`;
+};
+
+// Filter commands based on user roles
+const getAvailableCommands = (userRoles = []) => {
+  const normalizedRoles = userRoles.map(r => r.toLowerCase());
+
+  const allCommands = [
+    // Job Commands
+    {
+      command: "/job[number]",
+      description: "Link to a job card (e.g., /job12345)",
+      autocomplete: "/job",
+      pattern: "job",
+      hasInput: true,
+      roles: ['all'], // Everyone can reference jobs
+      getLink: (num) => getJobLink(num, userRoles)
+    },
+    {
+      command: "/[number]",
+      description: "Quick link to a job (e.g., /12345)",
+      autocomplete: "/",
+      pattern: "",
+      hasInput: true,
+      roles: ['all'],
+      getLink: (num) => getJobLink(num, userRoles)
+    },
+
+    // Customer Commands
+    {
+      command: "/cust[name]",
+      description: "Reference a customer (e.g., /custjohnsmith)",
+      autocomplete: "/cust",
+      pattern: "cust",
+      hasInput: true,
+      roles: ['all']
+    },
+    {
+      command: "/customer",
+      description: "Reference the customer (auto-links if /job used)",
+      autocomplete: "/customer",
+      pattern: "customer",
+      hasInput: false,
+      roles: ['all']
+    },
+
+    // Vehicle Commands
+    {
+      command: "/vehicle",
+      description: "Reference the vehicle (auto-links if /job used)",
+      autocomplete: "/vehicle",
+      pattern: "vehicle",
+      hasInput: false,
+      roles: ['all']
+    },
+    {
+      command: "/vhc[jobnumber]",
+      description: "Link to Vehicle Health Check (e.g., /vhc12345)",
+      autocomplete: "/vhc",
+      pattern: "vhc",
+      hasInput: true,
+      roles: ['technician', 'service advisor', 'service manager', 'workshop manager', 'admin'],
+      getLink: (num) => `/vhc/details/${num}`
+    },
+
+    // Parts Commands
+    {
+      command: "/part[partnumber]",
+      description: "Reference a part (e.g., /partBP123)",
+      autocomplete: "/part",
+      pattern: "part",
+      hasInput: true,
+      roles: ['parts', 'parts manager', 'technician', 'service advisor', 'workshop manager', 'admin']
+    },
+    {
+      command: "/parts",
+      description: "Link to Parts Management",
+      autocomplete: "/parts",
+      pattern: "parts",
+      hasInput: false,
+      roles: ['parts', 'parts manager', 'admin'],
+      getLink: () => '/parts'
+    },
+    {
+      command: "/order[ordernumber]",
+      description: "Link to parts order (e.g., /orderPO123)",
+      autocomplete: "/order",
+      pattern: "order",
+      hasInput: true,
+      roles: ['parts', 'parts manager', 'admin'],
+      getLink: (num) => `/parts/create-order/${num}`
+    },
+
+    // Account Commands
+    {
+      command: "/invoice[number]",
+      description: "Link to invoice (e.g., /invoiceINV123)",
+      autocomplete: "/invoice",
+      pattern: "invoice",
+      hasInput: true,
+      roles: ['accounts', 'service manager', 'workshop manager', 'admin', 'owner'],
+      getLink: (num) => `/accounts/invoices/${num}`
+    },
+    {
+      command: "/account[id]",
+      description: "Link to customer account (e.g., /accountACC123)",
+      autocomplete: "/account",
+      pattern: "account",
+      hasInput: true,
+      roles: ['accounts', 'service manager', 'workshop manager', 'admin', 'owner'],
+      getLink: (id) => `/accounts/view/${id}`
+    },
+
+    // Tracking & Status
+    {
+      command: "/tracking",
+      description: "Link to Vehicle Tracking",
+      autocomplete: "/tracking",
+      pattern: "tracking",
+      hasInput: false,
+      roles: ['service advisor', 'service manager', 'workshop manager', 'valet', 'admin'],
+      getLink: () => '/tracking'
+    },
+    {
+      command: "/valet",
+      description: "Link to Valet Dashboard",
+      autocomplete: "/valet",
+      pattern: "valet",
+      hasInput: false,
+      roles: ['valet', 'service manager', 'workshop manager', 'admin'],
+      getLink: () => '/valet'
+    },
+
+    // HR Commands
+    {
+      command: "/hr",
+      description: "Link to HR Dashboard",
+      autocomplete: "/hr",
+      pattern: "hr",
+      hasInput: false,
+      roles: ['hr manager', 'admin manager', 'owner', 'admin'],
+      getLink: () => '/hr/manager'
+    },
+    {
+      command: "/user[name]",
+      description: "Reference a staff member (e.g., /userjohnsmith)",
+      autocomplete: "/user",
+      pattern: "user",
+      hasInput: true,
+      roles: ['all']
+    },
+
+    // Time & Clocking
+    {
+      command: "/clocking",
+      description: "Link to Time Clocking",
+      autocomplete: "/clocking",
+      pattern: "clocking",
+      hasInput: false,
+      roles: ['workshop manager', 'service manager', 'admin'],
+      getLink: () => '/clocking'
+    },
+
+    // Useful Shortcuts
+    {
+      command: "/archive",
+      description: "Link to Job Archive",
+      autocomplete: "/archive",
+      pattern: "archive",
+      hasInput: false,
+      roles: ['service advisor', 'service manager', 'workshop manager', 'admin'],
+      getLink: () => '/job-cards/archive'
+    },
+    {
+      command: "/myjobs",
+      description: "Link to My Jobs",
+      autocomplete: "/myjobs",
+      pattern: "myjobs",
+      hasInput: false,
+      roles: ['technician'],
+      getLink: () => '/job-cards/myjobs'
+    },
+    {
+      command: "/appointments",
+      description: "Link to Appointments",
+      autocomplete: "/appointments",
+      pattern: "appointments",
+      hasInput: false,
+      roles: ['service advisor', 'service manager', 'admin'],
+      getLink: () => '/job-cards/appointments'
+    }
+  ];
+
+  // Filter commands based on user roles
+  return allCommands.filter(cmd => {
+    if (cmd.roles.includes('all')) return true;
+    return cmd.roles.some(role => normalizedRoles.includes(role));
   });
 };
 
@@ -303,6 +687,10 @@ function MessagesPage() {
   const [groupManageError, setGroupManageError] = useState("");
   const [groupManageBusy, setGroupManageBusy] = useState(false);
   const [conversationError, setConversationError] = useState("");
+  const [commandHelpOpen, setCommandHelpOpen] = useState(false);
+  const [groupMembersModalOpen, setGroupMembersModalOpen] = useState(false);
+  const [showCommandSuggestions, setShowCommandSuggestions] = useState(false);
+  const [commandSuggestions, setCommandSuggestions] = useState([]);
 
   const scrollerRef = useRef(null);
   const {
@@ -323,6 +711,11 @@ function MessagesPage() {
   );
 
   const isGroupChat = Boolean(activeThread && activeThread.type === "group");
+
+  // Get available commands based on user roles
+  const availableCommands = useMemo(() => {
+    return getAvailableCommands(user?.roles || []);
+  }, [user?.roles]);
 
   const filteredThreads = useMemo(() => {
     const term = threadSearchTerm.trim().toLowerCase();
@@ -566,14 +959,68 @@ function MessagesPage() {
     startDirectThread,
   ]);
 
+  const handleMessageDraftChange = useCallback((event) => {
+    const value = event.target.value;
+    setMessageDraft(value);
+
+    // Detect slash command at cursor position
+    const cursorPos = event.target.selectionStart;
+    const textBeforeCursor = value.substring(0, cursorPos);
+    const lastSlashIndex = textBeforeCursor.lastIndexOf('/');
+
+    if (lastSlashIndex !== -1) {
+      const textAfterSlash = textBeforeCursor.substring(lastSlashIndex + 1);
+      // Only show suggestions if there's no space after the slash
+      if (!textAfterSlash.includes(' ')) {
+        const searchTerm = textAfterSlash.toLowerCase();
+        const filtered = availableCommands.filter(cmd =>
+          cmd.pattern.toLowerCase().startsWith(searchTerm) ||
+          cmd.command.toLowerCase().includes(searchTerm) ||
+          (searchTerm === '' && cmd.pattern === '') // Show /[number] when typing just /
+        );
+        setCommandSuggestions(filtered);
+        setShowCommandSuggestions(filtered.length > 0);
+      } else {
+        setShowCommandSuggestions(false);
+      }
+    } else {
+      setShowCommandSuggestions(false);
+    }
+  }, [availableCommands]);
+
+  const handleSelectCommand = useCallback((command) => {
+    const cursorPos = document.activeElement?.selectionStart || messageDraft.length;
+    const textBeforeCursor = messageDraft.substring(0, cursorPos);
+    const lastSlashIndex = textBeforeCursor.lastIndexOf('/');
+
+    if (lastSlashIndex !== -1) {
+      const textAfter = messageDraft.substring(cursorPos);
+      const newText = messageDraft.substring(0, lastSlashIndex) + command.autocomplete + textAfter;
+      setMessageDraft(newText);
+
+      // Set cursor position after the autocompleted text
+      // Need to do this in the next tick to ensure the textarea is updated
+      setTimeout(() => {
+        const textarea = document.getElementById('message-textarea');
+        if (textarea) {
+          const newCursorPos = lastSlashIndex + command.autocomplete.length;
+          textarea.focus();
+          textarea.setSelectionRange(newCursorPos, newCursorPos);
+        }
+      }, 0);
+    }
+    setShowCommandSuggestions(false);
+  }, [messageDraft]);
+
   const handleSendMessage = useCallback(
     async (event) => {
       event?.preventDefault();
       if (!messageDraft.trim() || !activeThreadId || !dbUserId) return;
+      setShowCommandSuggestions(false);
       setSending(true);
       setConversationError("");
       try {
-        const metadata = parseSlashCommandMetadata(messageDraft, activeThread);
+        const metadata = await parseSlashCommandMetadata(messageDraft, activeThread);
         const payload = await sendThreadMessage(activeThreadId, {
           senderId: dbUserId,
           content: messageDraft.trim(),
@@ -1411,9 +1858,25 @@ function MessagesPage() {
                   }}
                 >
                   <div style={{ flex: "1 1 auto", minWidth: 0 }}>
-                    <h3 style={{ margin: 0, color: systemTitleColor }}>{activeThread.title}</h3>
+                    {isGroupChat ? (
+                      <h3
+                        onClick={() => setGroupMembersModalOpen(true)}
+                        style={{
+                          margin: 0,
+                          color: systemTitleColor,
+                          cursor: "pointer",
+                          textDecoration: "underline",
+                          textDecorationStyle: "dotted",
+                        }}
+                        title="Click to view members"
+                      >
+                        {activeThread.title}
+                      </h3>
+                    ) : (
+                      <h3 style={{ margin: 0, color: systemTitleColor }}>{activeThread.title}</h3>
+                    )}
                   </div>
-                  {isGroupChat && (
+                  {isGroupChat && canEditGroup && (
                     <div
                       style={{
                         display: "flex",
@@ -1423,38 +1886,21 @@ function MessagesPage() {
                         justifyContent: "flex-end",
                       }}
                     >
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "6px",
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      {activeThread.members.map((member) => {
-                        const label = `${member.profile?.name || "Unknown"}${
-                          member.role === "leader" ? " • Leader" : ""
-                        }`;
-                        return <Chip key={member.userId} label={label} color={userNameColor} />;
-                      })}
-                    </div>
-                      {canEditGroup && (
-                        <button
-                          type="button"
-                          onClick={openGroupEditModal}
-                          style={{
-                            borderRadius: radii.pill,
-                            padding: "8px 16px",
-                            border: `1px solid ${palette.border}`,
-                            backgroundColor: "var(--surface)",
-                            color: palette.accent,
-                            fontWeight: 600,
-                            cursor: "pointer",
-                          }}
-                        >
-                          Edit
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={openGroupEditModal}
+                        style={{
+                          borderRadius: radii.pill,
+                          padding: "8px 16px",
+                          border: `1px solid ${palette.border}`,
+                          backgroundColor: "var(--surface)",
+                          color: palette.accent,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Edit
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1484,6 +1930,7 @@ function MessagesPage() {
                       message={message}
                       isMine={message.senderId === dbUserId}
                       nameColor={userNameColor}
+                      userRoles={user?.roles || []}
                     />
                   ))}
                 </div>
@@ -1497,13 +1944,68 @@ function MessagesPage() {
                     display: "flex",
                     flexDirection: "column",
                     gap: "10px",
+                    position: "relative",
                   }}
                 >
+                  {/* Command suggestions dropdown */}
+                  {showCommandSuggestions && commandSuggestions.length > 0 && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: "100%",
+                        left: 0,
+                        right: 0,
+                        marginBottom: "8px",
+                        maxHeight: "240px",
+                        overflowY: "auto",
+                        backgroundColor: "var(--surface)",
+                        border: `1px solid ${palette.border}`,
+                        borderRadius: radii.lg,
+                        boxShadow: shadows.lg,
+                        zIndex: 1000,
+                      }}
+                    >
+                      {commandSuggestions.map((cmd, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => handleSelectCommand(cmd)}
+                          style={{
+                            width: "100%",
+                            textAlign: "left",
+                            padding: "12px 14px",
+                            border: "none",
+                            borderBottom: index < commandSuggestions.length - 1 ? `1px solid ${palette.border}` : "none",
+                            backgroundColor: "var(--surface)",
+                            cursor: "pointer",
+                            transition: "background-color 0.15s",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "var(--info-surface)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "var(--surface)";
+                          }}
+                        >
+                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <span style={{ fontWeight: 700, color: palette.accent, fontSize: "0.95rem" }}>
+                              {cmd.command}
+                            </span>
+                            <span style={{ fontSize: "0.85rem", color: palette.textMuted }}>
+                              {cmd.description}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   <textarea
+                    id="message-textarea"
                     rows={3}
                     value={messageDraft}
-                    onChange={(event) => setMessageDraft(event.target.value)}
-                    placeholder="Write an internal update…"
+                    onChange={handleMessageDraftChange}
+                    placeholder="Write an internal update… (type / for commands)"
                     style={{
                       width: "100%",
                       borderRadius: radii.lg,
@@ -1513,7 +2015,28 @@ function MessagesPage() {
                       backgroundColor: "var(--surface)",
                     }}
                   />
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                    <button
+                      type="button"
+                      onClick={() => setCommandHelpOpen(true)}
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "50%",
+                        border: `1px solid ${palette.border}`,
+                        backgroundColor: "var(--surface)",
+                        color: palette.accent,
+                        fontWeight: 700,
+                        fontSize: "1rem",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      title="Slash command help"
+                    >
+                      ?
+                    </button>
                     <button
                       type="submit"
                       disabled={!canSend}
@@ -2043,6 +2566,205 @@ function MessagesPage() {
               >
                 Start Chat
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Command Help Modal */}
+      {commandHelpOpen && (
+        <div
+          onClick={() => setCommandHelpOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              ...cardStyle,
+              maxWidth: "600px",
+              width: "90%",
+              maxHeight: "80vh",
+              overflowY: "auto",
+              gap: "20px",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ margin: 0, color: palette.textPrimary }}>Slash Commands Help</h3>
+              <button
+                type="button"
+                onClick={() => setCommandHelpOpen(false)}
+                style={{
+                  border: "none",
+                  background: "none",
+                  fontSize: "1.5rem",
+                  cursor: "pointer",
+                  color: palette.textMuted,
+                  padding: "4px",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <p style={{ color: palette.textMuted, margin: 0 }}>
+                Use slash commands in your messages to create quick links and references:
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ padding: "12px", backgroundColor: "var(--info-surface)", borderRadius: radii.lg }}>
+                  <strong style={{ color: palette.accent }}>/job[number]</strong> or <strong style={{ color: palette.accent }}>/[number]</strong>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "0.9rem", color: palette.textMuted }}>
+                    Creates a clickable link to the job card's Messages tab. Example: <code>/job12345</code> or <code>/12345</code>
+                  </p>
+                </div>
+
+                <div style={{ padding: "12px", backgroundColor: "var(--info-surface)", borderRadius: radii.lg }}>
+                  <strong style={{ color: palette.accent }}>/cust[customername]</strong>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "0.9rem", color: palette.textMuted }}>
+                    References a customer by name. Example: <code>/custjohnsmith</code>
+                  </p>
+                </div>
+
+                <div style={{ padding: "12px", backgroundColor: "var(--info-surface)", borderRadius: radii.lg }}>
+                  <strong style={{ color: palette.accent }}>/customer</strong>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "0.9rem", color: palette.textMuted }}>
+                    References the customer in the current thread (if any)
+                  </p>
+                </div>
+
+                <div style={{ padding: "12px", backgroundColor: "var(--info-surface)", borderRadius: radii.lg }}>
+                  <strong style={{ color: palette.accent }}>/vehicle</strong>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "0.9rem", color: palette.textMuted }}>
+                    References the vehicle from previous messages in the thread
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                padding: "12px",
+                backgroundColor: "var(--success-surface)",
+                borderRadius: radii.lg,
+                borderLeft: `4px solid var(--success)`
+              }}>
+                <strong style={{ color: "var(--success)" }}>Smart Linking:</strong>
+                <p style={{ margin: "4px 0 0 0", fontSize: "0.9rem", color: palette.textMuted }}>
+                  When you use <code>/job[number]</code> together with <code>/vehicle</code> or <code>/customer</code>,
+                  the system automatically links the vehicle and customer from that job!
+                </p>
+              </div>
+
+              <div style={{
+                padding: "12px",
+                backgroundColor: "var(--warning-surface)",
+                borderRadius: radii.lg,
+                borderLeft: `4px solid var(--warning)`
+              }}>
+                <strong style={{ color: "var(--warning)" }}>Tip:</strong>
+                <p style={{ margin: "4px 0 0 0", fontSize: "0.9rem", color: palette.textMuted }}>
+                  Commands are case-insensitive and will be automatically linked when you send your message.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Group Members Modal */}
+      {groupMembersModalOpen && activeThread && isGroupChat && (
+        <div
+          onClick={() => setGroupMembersModalOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              ...cardStyle,
+              maxWidth: "500px",
+              width: "90%",
+              maxHeight: "70vh",
+              overflowY: "auto",
+              gap: "20px",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ margin: 0, color: palette.textPrimary }}>
+                {activeThread.title || "Group Chat"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setGroupMembersModalOpen(false)}
+                style={{
+                  border: "none",
+                  background: "none",
+                  fontSize: "1.5rem",
+                  cursor: "pointer",
+                  color: palette.textMuted,
+                  padding: "4px",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div>
+              <h4 style={{ margin: "0 0 12px 0", color: palette.textMuted, fontSize: "0.9rem" }}>
+                Members ({activeThread.members.length})
+              </h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {activeThread.members.map((member) => (
+                  <div
+                    key={member.userId}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "12px",
+                      backgroundColor: "var(--info-surface)",
+                      borderRadius: radii.lg,
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 600, color: palette.textPrimary }}>
+                        {member.profile?.name || "Unknown"}
+                      </div>
+                      <div style={{ fontSize: "0.85rem", color: palette.textMuted }}>
+                        {member.profile?.role || "Unknown role"}
+                      </div>
+                    </div>
+                    {member.role === "leader" && (
+                      <span
+                        style={{
+                          padding: "4px 12px",
+                          borderRadius: radii.pill,
+                          backgroundColor: palette.accentSurface,
+                          color: palette.accent,
+                          fontSize: "0.75rem",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Leader
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
