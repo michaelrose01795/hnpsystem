@@ -945,6 +945,14 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
           if (!alias?.display_id || alias.vhc_item_id === null || alias.vhc_item_id === undefined) return;
           aliasMapFromDb[String(alias.display_id)] = String(alias.vhc_item_id);
         });
+
+        console.log("🔧 Initial page load - Parts from DB:", parts_job_items?.filter(p => p.origin === 'vhc').map(p => ({
+          id: p.id,
+          part: p.part?.name,
+          vhc_item_id: p.vhc_item_id
+        })));
+        console.log("🔧 Initial page load - Aliases:", aliasMapFromDb);
+
         setVhcItemAliasRecords(sanitizedAliasRows);
         setVhcIdAliases(aliasMapFromDb);
         setJob({
@@ -1303,18 +1311,27 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
     const partsByVhcId = new Map();
     partsIdentified.forEach((part) => {
-      if (!part?.vhc_item_id) return;
+      if (!part?.vhc_item_id) {
+        console.log("⚠️ Part without vhc_item_id:", part);
+        return;
+      }
       const key = String(part.vhc_item_id);
       if (!partsByVhcId.has(key)) {
         partsByVhcId.set(key, []);
       }
       partsByVhcId.get(key).push(part);
     });
+    console.log("📦 Parts grouped by VHC ID:", Object.fromEntries(partsByVhcId));
+    console.log("📋 VHC ID Aliases:", vhcIdAliases);
 
     summaryItems.forEach((summaryItem) => {
       const displayVhcId = String(summaryItem.id);
       const canonicalVhcId = resolveCanonicalVhcId(displayVhcId);
       const linkedParts = partsByVhcId.get(canonicalVhcId) || [];
+
+      if (linkedParts.length > 0 || displayVhcId !== canonicalVhcId) {
+        console.log(`🔍 Item ${displayVhcId} -> canonical ${canonicalVhcId} -> ${linkedParts.length} parts`);
+      }
 
       items.push({
         vhcItem: summaryItem,
@@ -2055,10 +2072,18 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const handlePartAdded = useCallback(async (payload) => {
     const partData = payload?.jobPart || payload;
     const sourceVhcId = payload?.sourceVhcId ? String(payload.sourceVhcId) : selectedVhcRowId;
-    console.log("🔍 handlePartAdded called with:", partData, "source row:", sourceVhcId);
+    console.log("🔍 handlePartAdded called with:", {
+      partData,
+      sourceVhcId,
+      vhc_item_id: partData?.vhc_item_id,
+      selectedVhcItem
+    });
 
     if (sourceVhcId && partData?.vhc_item_id) {
+      console.log("📝 Creating alias:", sourceVhcId, "=>", partData.vhc_item_id);
       await upsertVhcItemAlias(sourceVhcId, partData.vhc_item_id);
+    } else {
+      console.warn("⚠️ Missing data for alias creation - sourceVhcId:", sourceVhcId, "vhc_item_id:", partData?.vhc_item_id);
     }
 
     // Refresh job data to show the new part

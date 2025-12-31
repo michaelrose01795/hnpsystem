@@ -315,15 +315,35 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
       }
 
       const parseVhcItemId = (vhcId) => {
-        if (!vhcId) return null;
+        if (!vhcId) {
+          console.log("⚠️ parseVhcItemId: vhcId is null/undefined");
+          return null;
+        }
         const parsed = Number(vhcId);
+        console.log(`🔢 parseVhcItemId: input="${vhcId}" (type: ${typeof vhcId}), parsed=${parsed}, isInteger=${Number.isInteger(parsed)}, isSafe=${Number.isSafeInteger(parsed)}`);
         return Number.isInteger(parsed) && Number.isSafeInteger(parsed) ? parsed : null;
       };
 
-      let validVhcItemId = parseVhcItemId(vhcItemData.vhcId);
+      console.log("🔍 VHC Item Data BEFORE parsing:", {
+        vhcId: vhcItemData.vhcId,
+        vhcIdType: typeof vhcItemData.vhcId,
+        canonicalVhcId: vhcItemData.canonicalVhcId,
+        canonicalVhcIdType: typeof vhcItemData.canonicalVhcId,
+        vhcItem: vhcItemData.vhcItem
+      });
+
+      // Try to use canonicalVhcId first (the actual DB ID), fallback to vhcId
+      let validVhcItemId = parseVhcItemId(vhcItemData.canonicalVhcId || vhcItemData.vhcId);
+
+      console.log("🔍 VHC Item Data AFTER parsing:", {
+        vhcId: vhcItemData.vhcId,
+        canonicalVhcId: vhcItemData.canonicalVhcId,
+        parsedId: validVhcItemId,
+        parsedIdType: typeof validVhcItemId
+      });
 
       if (!validVhcItemId && vhcItemData.vhcId && vhcItemData.vhcItem) {
-        console.log("Creating vhc_checks record for VHC item with string ID:", vhcItemData.vhcId);
+        console.log("⚠️ Creating vhc_checks record for VHC item with string ID:", vhcItemData.vhcId);
 
         const { data: vhcCheckData, error: vhcCheckError } = await supabase
           .from("vhc_checks")
@@ -352,6 +372,8 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
       let successCount = 0;
       const errors = [];
 
+      console.log("💾 Adding parts to VHC item ID:", validVhcItemId, "from display ID:", vhcItemData.vhcId);
+
       for (const selection of selectedParts) {
         const selectedPart = selection.part;
         const rawQuantity = selection.quantity;
@@ -359,6 +381,8 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
         const validQuantity = Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
 
         try {
+          console.log(`💾 Saving part "${selectedPart.name}" with vhc_item_id: ${validVhcItemId}`);
+
           const response = await fetch("/api/parts/jobs", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

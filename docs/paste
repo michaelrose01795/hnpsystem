@@ -1,10 +1,6 @@
 TO DO:
 
 
-When parts are added to a row within the Parts Identified tab inside the job-cards/[jobnumber] page they aren’t saving to the concern row, need to make sure when a part is added to a row it is saved to that row within the database and loads within the row every time. It’s being added to the database however not showing its added to a row after the screen is refreshed. Make sure that the rows are connected to the database etc
-
-
-
 
 When inside tracker page, make sure the popup “ Log new” remove the “status” drop down and this text “ Update vehicle location”, do the same with the “ Edit existing” popup and remove the “ Update vehicle location” text as well. Remove the “ Key Tag / Guidance” section for now from both popups and remove the “ Notes” section as well.
 
