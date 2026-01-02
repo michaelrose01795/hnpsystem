@@ -344,6 +344,30 @@ const resolveLocationKey = (item = {}) => {
   return null;
 };
 
+const deriveBrakeLocationKey = (item = {}) => {
+  const locationReference = normalizeText(item.location || "");
+  if (locationReference.includes("front")) return "front";
+  if (locationReference.includes("rear")) return "rear";
+  const labelReference = normalizeText(item.label || item.sectionName || "");
+  if (labelReference.includes("front")) return "front";
+  if (labelReference.includes("rear")) return "rear";
+  return null;
+};
+
+const resolveWheelPositionFromItem = (item = {}) => {
+  if (item.wheelKey) {
+    return item.wheelKey.toString().toUpperCase();
+  }
+  const label = (item.label || item.sectionName || "").toUpperCase();
+  const resolved = WHEEL_POSITION_KEYS.find((key) => label.includes(key));
+  return resolved ? resolved.toUpperCase() : null;
+};
+
+const formatStatusLabel = (status) => {
+  if (!status) return null;
+  return `${status.charAt(0).toUpperCase()}${status.slice(1)}`;
+};
+
 const formatDateTime = (value) => {
   if (!value) return "—";
   const date = new Date(value);
@@ -373,6 +397,18 @@ const normaliseColour = (value) => {
   return null;
 };
 
+const deriveHighestSeverity = (statuses = []) => {
+  let highest = null;
+  statuses.forEach((status) => {
+    const colour = normaliseColour(status);
+    if (!colour) return;
+    if (!highest || (SEVERITY_RANK[colour] ?? -1) > (SEVERITY_RANK[highest] ?? -1)) {
+      highest = colour;
+    }
+  });
+  return highest;
+};
+
 const formatPlainTreadReadings = (tread = {}) => {
   const segments = ["outer", "middle", "inner"].map((key) => {
     const reading = tread?.[key];
@@ -387,6 +423,27 @@ const formatPlainTreadReadings = (tread = {}) => {
     return text.endsWith("mm") ? text : `${text}mm`;
   });
   return segments.filter(Boolean);
+};
+
+const formatTreadDepthSummary = (tread = {}) => {
+  const segments = [
+    ["outer", "Outer"],
+    ["middle", "Middle"],
+    ["inner", "Inner"],
+  ]
+    .map(([key, label]) => {
+      const raw = tread?.[key];
+      if (raw === null || raw === undefined || raw === "") return null;
+      const numeric = Number.parseFloat(raw);
+      const formatted = Number.isFinite(numeric)
+        ? `${numeric.toFixed(1).replace(/\.0$/, "")}mm`
+        : raw.toString().trim();
+      if (!formatted) return null;
+      const safeValue = formatted.toLowerCase().includes("mm") ? formatted : `${formatted}mm`;
+      return `${label} ${safeValue}`;
+    })
+    .filter(Boolean);
+  return segments.length > 0 ? segments.join(" • ") : null;
 };
 
 const formatMeasurement = (value) => {
@@ -1215,46 +1272,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       });
     });
 
-    const locationRanks = new Map();
     items.forEach((item) => {
-      if (!item.location) return;
-      const rank = SEVERITY_RANK[item.rawSeverity] || 0;
-      const prev = locationRanks.get(item.location) || 0;
-      if (rank > prev) {
-        locationRanks.set(item.location, rank);
-      }
-    });
-
-    items.forEach((item) => {
-      if (!item.location) {
-        item.displaySeverity = item.rawSeverity;
-        return;
-      }
-      const locRank = locationRanks.get(item.location) || 0;
-      const itemRank = SEVERITY_RANK[item.rawSeverity] || 0;
-      item.displaySeverity = locRank > itemRank ? "red" : item.rawSeverity;
-    });
-
-    const categoryRanks = new Map();
-    items.forEach((item) => {
-      const categoryId = item.category?.id;
-      if (!categoryId || ISOLATED_SUMMARY_CATEGORIES.has(categoryId)) return;
-      const rank = SEVERITY_RANK[item.displaySeverity || item.rawSeverity] ?? 0;
-      const prev = categoryRanks.get(categoryId) ?? -1;
-      if (rank > prev) {
-        categoryRanks.set(categoryId, rank);
-      }
-    });
-
-    items.forEach((item) => {
-      const categoryId = item.category?.id;
-      if (!categoryId || ISOLATED_SUMMARY_CATEGORIES.has(categoryId)) return;
-      const categoryRank = categoryRanks.get(categoryId);
-      if (typeof categoryRank !== "number") return;
-      const currentRank = SEVERITY_RANK[item.displaySeverity || item.rawSeverity] ?? -1;
-      if (categoryRank > currentRank) {
-        item.displaySeverity = RANK_TO_SEVERITY[categoryRank] || item.displaySeverity || "red";
-      }
+      item.displaySeverity = item.rawSeverity;
     });
 
     items.forEach((item) => {
@@ -1270,6 +1289,131 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
     return items;
   }, [sections, wheelTreadLookup]);
+
+  const brakeSupplementaryByLocation = useMemo(() => {
+    const map = new Map();
+    const brakes = vhcData?.brakesHubs;
+    if (!brakes || typeof brakes !== "object") return map;
+    const ensureLocation = (location) => {
+      if (!location) return null;
+      if (!map.has(location)) {
+        map.set(location, { entries: [], hasRed: false });
+      }
+      return map.get(location);
+    };
+    const pushEntry = (location, entry) => {
+      if (!location || !entry) return;
+      const context = ensureLocation(location);
+      if (!context) return;
+      context.entries.push(entry);
+      if (entry.status === "red") {
+        context.hasRed = true;
+      }
+    };
+
+    const padConfigs = [
+      { key: "frontPads", label: "Front Pads", location: "front" },
+      { key: "rearPads", label: "Rear Pads", location: "rear" },
+    ];
+    padConfigs.forEach(({ key, label, location }) => {
+      const pad = brakes[key];
+      if (!pad || typeof pad !== "object") return;
+      const measurement = formatMeasurement(pad.measurement);
+      const padStatus = normaliseColour(pad.status);
+      const concernStatuses = Array.isArray(pad.concerns)
+        ? pad.concerns.map((concern) => normaliseColour(concern?.status)).filter(Boolean)
+        : [];
+      const status = deriveHighestSeverity([padStatus, ...concernStatuses]) || padStatus || null;
+      if (!measurement && !status) return;
+      pushEntry(location, {
+        id: `${location}-${key}`,
+        label,
+        measurement: measurement ? `Pad thickness: ${measurement}` : null,
+        status,
+      });
+    });
+
+    const discConfigs = [
+      { key: "frontDiscs", label: "Front Discs", location: "front" },
+      { key: "rearDiscs", label: "Rear Discs", location: "rear" },
+    ];
+    discConfigs.forEach(({ key, label, location }) => {
+      const disc = brakes[key];
+      if (!disc || typeof disc !== "object") return;
+      const measurement =
+        formatMeasurement(
+          disc.measurements?.values || disc.measurements?.thickness || disc.measurements
+        ) || null;
+      const measurementStatus = normaliseColour(disc.measurements?.status);
+      const visualStatus = normaliseColour(disc.visual?.status);
+      const directStatus = normaliseColour(disc.status);
+      const concernStatuses = Array.isArray(disc.concerns)
+        ? disc.concerns.map((concern) => normaliseColour(concern?.status)).filter(Boolean)
+        : [];
+      const status =
+        deriveHighestSeverity([measurementStatus, visualStatus, directStatus, ...concernStatuses]) ||
+        measurementStatus ||
+        visualStatus ||
+        directStatus ||
+        null;
+      const note = (disc.visual?.notes || disc.visual?.note || "").trim();
+      if (!measurement && !status && !note) return;
+      pushEntry(location, {
+        id: `${location}-${key}`,
+        label,
+        measurement: measurement ? `Disc thickness: ${measurement}` : null,
+        status,
+        note: note || null,
+      });
+    });
+
+    return map;
+  }, [vhcData?.brakesHubs]);
+
+  const tyreSupplementaryByWheel = useMemo(() => {
+    const map = new Map();
+    const tyres = vhcData?.wheelsTyres;
+    if (!tyres || typeof tyres !== "object") return map;
+    WHEEL_POSITION_KEYS.forEach((key) => {
+      const entry = tyres[key];
+      if (!entry || typeof entry !== "object") return;
+      const depthSummary = formatTreadDepthSummary(entry.tread);
+      if (!depthSummary) return;
+      const status = normaliseColour(entry.status) || normaliseColour(entry.treadStatus);
+      map.set(key.toUpperCase(), {
+        id: `tyre-${key}`,
+        label: `${key} Tyre`,
+        measurement: `Tread depths: ${depthSummary}`,
+        status,
+      });
+    });
+    return map;
+  }, [vhcData?.wheelsTyres]);
+
+  const getBrakeSupplementaryRows = useCallback(
+    (item) => {
+      if (!item || item.categoryId !== "brakes_hubs") return [];
+      const locationKey = deriveBrakeLocationKey(item);
+      if (!locationKey) return [];
+      const context = brakeSupplementaryByLocation.get(locationKey);
+      if (!context || context.entries.length === 0) return [];
+      const shouldShow = context.entries.length > 1 || context.hasRed || item.displaySeverity === "red";
+      return shouldShow ? context.entries : [];
+    },
+    [brakeSupplementaryByLocation]
+  );
+
+  const getTyreSupplementaryRows = useCallback(
+    (item) => {
+      if (!item || item.categoryId !== "wheels_tyres") return [];
+      const wheelKey = resolveWheelPositionFromItem(item);
+      if (!wheelKey) return [];
+      const context = tyreSupplementaryByWheel.get(wheelKey);
+      if (!context) return [];
+      return [context];
+    },
+    [tyreSupplementaryByWheel]
+  );
 
   const severitySections = useMemo(() => {
     const base = { red: new Map(), amber: new Map() };
@@ -1647,6 +1791,10 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                 const severityLabel =
                   item.rawSeverity ? item.rawSeverity.charAt(0).toUpperCase() + item.rawSeverity.slice(1) : null;
                 const severityBadge = severityLabel ? buildSeverityBadgeStyles(item.rawSeverity) : null;
+                const supplementaryRows = [
+                  ...getBrakeSupplementaryRows(item),
+                  ...getTyreSupplementaryRows(item),
+                ];
 
                 return (
                   <tr
@@ -1692,6 +1840,57 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                       ) : null}
                       {locationLabel ? (
                         <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>Location: {locationLabel}</div>
+                      ) : null}
+                      {supplementaryRows.length > 0 ? (
+                        <div
+                          style={{
+                            marginTop: "8px",
+                            borderRadius: "12px",
+                            background: "var(--surface-light)",
+                            padding: "10px 12px",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "6px",
+                          }}
+                        >
+                          {supplementaryRows.map((entry) => {
+                            const entryStatusLabel = formatStatusLabel(entry.status);
+                            const badgeStyles = entry.status ? buildSeverityBadgeStyles(entry.status) : null;
+                            return (
+                              <div
+                                key={entry.id || `${entry.label}-${entry.measurement}`}
+                                style={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: "8px",
+                                  alignItems: "center",
+                                  fontSize: "12px",
+                                  color: "var(--info-dark)",
+                                }}
+                              >
+                                <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{entry.label}</span>
+                                {entry.measurement ? <span>{entry.measurement}</span> : null}
+                                {entryStatusLabel && badgeStyles ? (
+                                  <span
+                                    style={{
+                                      padding: "2px 10px",
+                                      borderRadius: "999px",
+                                      fontSize: "11px",
+                                      fontWeight: 600,
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.08em",
+                                      background: badgeStyles.background,
+                                      color: badgeStyles.color,
+                                    }}
+                                  >
+                                    {entryStatusLabel}
+                                  </span>
+                                ) : null}
+                                {entry.note ? <span style={{ color: "var(--info)" }}>{entry.note}</span> : null}
+                              </div>
+                            );
+                          })}
+                        </div>
                       ) : null}
                     </td>
                     <td style={{ padding: "12px 16px" }}>
@@ -3385,8 +3584,24 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       )}
 
       <div style={PANEL_SECTION_STYLE}>
-        <div style={{ ...TAB_ROW_STYLE, justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          <nav
+            style={{
+              borderRadius: "999px",
+              border: "1px solid var(--surface-light)",
+              background: "var(--surface)",
+              padding: "6px",
+              display: "flex",
+              gap: "6px",
+              overflowX: "auto",
+              scrollbarWidth: "thin",
+              scrollbarColor: "var(--scrollbar-thumb) transparent",
+              scrollBehavior: "smooth",
+              WebkitOverflowScrolling: "touch",
+            }}
+            className="vhc-tabs-scroll-container"
+            aria-label="VHC tabs"
+          >
             {TAB_OPTIONS.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -3395,20 +3610,24 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
                   style={{
-                    border: "none",
-                    background: "transparent",
-                    padding: "10px 14px",
-                    borderBottom: isActive ? "3px solid var(--primary)" : "3px solid transparent",
-                    color: isActive ? "var(--accent-purple)" : "var(--info)",
-                    fontWeight: isActive ? 700 : 500,
+                    flex: "0 0 auto",
+                    borderRadius: "999px",
+                    border: "1px solid transparent",
+                    padding: "10px 20px",
+                    fontSize: "0.9rem",
+                    fontWeight: 600,
                     cursor: "pointer",
+                    background: isActive ? "var(--primary)" : "transparent",
+                    color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
+                    transition: "all 0.15s ease",
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {tab.label}
                 </button>
               );
             })}
-          </div>
+          </nav>
           {customActions && (
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               {typeof customActions === "function" ? customActions(activeTab) : customActions}
@@ -3594,6 +3813,26 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
         initialLocation=""
         allowSkip={true}
       />
+
+      <style jsx global>{`
+        .vhc-tabs-scroll-container::-webkit-scrollbar {
+          height: 6px;
+        }
+
+        .vhc-tabs-scroll-container::-webkit-scrollbar-track {
+          background: transparent;
+          border-radius: 999px;
+        }
+
+        .vhc-tabs-scroll-container::-webkit-scrollbar-thumb {
+          background: var(--scrollbar-thumb);
+          border-radius: 999px;
+        }
+
+        .vhc-tabs-scroll-container::-webkit-scrollbar-thumb:hover {
+          background: var(--scrollbar-thumb-hover);
+        }
+      `}</style>
     </div>
   );
 }

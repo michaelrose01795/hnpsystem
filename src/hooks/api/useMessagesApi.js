@@ -2,6 +2,7 @@
 import { useMemo } from "react";
 import {
   addThreadMembers,
+  connectCustomerToThread,
   createThread,
   fetchMessageDirectory,
   fetchMessageThreads,
@@ -28,6 +29,7 @@ export const useMessagesApi = () =>
       saveMessage,
       updateThread,
       deleteThread,
+      connectCustomer: connectCustomerToThread,
     }),
     []
   );

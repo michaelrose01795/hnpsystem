@@ -56,3 +56,9 @@ export const saveMessage = (messageId, payload) =>
     method: "POST",
     body: payload,
   });
+
+export const connectCustomerToThread = (payload) =>
+  apiRequest("/api/messages/connect-customer", {
+    method: "POST",
+    body: payload,
+  });

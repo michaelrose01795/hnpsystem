@@ -349,6 +349,16 @@ const parseSlashCommandMetadata = async (text = "", thread = null) => {
       continue;
     }
 
+    // /addcust[name or email] - connect a customer to chat
+    const addCustMatch = token.match(/^addcust(?:\[(.+)\]|(.+))$/i);
+    if (addCustMatch && !metadata.addCustomerQuery) {
+      const query = (addCustMatch[1] ?? addCustMatch[2] ?? "").trim();
+      if (query) {
+        metadata.addCustomerQuery = query;
+        continue;
+      }
+    }
+
     // /customer - reference to customer in thread
     if (token.toLowerCase() === "customer") {
       hasCustomerCommand = true;
@@ -400,6 +410,14 @@ const parseSlashCommandMetadata = async (text = "", thread = null) => {
 
   return Object.keys(metadata).length ? metadata : null;
 };
+
+const ADD_CUSTOMER_TOKEN_REGEX = /\/addcust[^\s]+/gi;
+
+const stripAddCustomerCommands = (text = "") =>
+  String(text || "")
+    .replace(ADD_CUSTOMER_TOKEN_REGEX, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 
 const formatNotificationTimestamp = (value) => {
   if (!value) return "Unknown time";
@@ -466,6 +484,14 @@ const getAvailableCommands = (userRoles = []) => {
       pattern: "customer",
       hasInput: false,
       roles: ['all']
+    },
+    {
+      command: "/addcust[name or email]",
+      description: "Invite a customer and create a shared chat (e.g., /addcust[jane@domain.com])",
+      autocomplete: "/addcust",
+      pattern: "addcust",
+      hasInput: true,
+      roles: ['service advisor', 'service manager', 'after sales manager', 'workshop manager', 'admin']
     },
 
     // Vehicle Commands
@@ -703,6 +729,7 @@ function MessagesPage() {
     removeMembers,
     updateThread,
     deleteThread: deleteThreadApi,
+    connectCustomer: connectCustomerApi,
   } = useMessagesApi();
 
   const activeThread = useMemo(
@@ -851,6 +878,33 @@ function MessagesPage() {
     setConversationError("");
     setLastSystemViewedAt(new Date().toISOString());
   }, []);
+
+  const connectCustomerToConversation = useCallback(
+    async ({ threadId, customerQuery }) => {
+      if (!threadId || !dbUserId) {
+        throw new Error("Select a conversation before inviting a customer.");
+      }
+      if (!customerQuery) {
+        throw new Error("Customer name or email is required.");
+      }
+      const payload = await connectCustomerApi({
+        threadId,
+        actorId: dbUserId,
+        customerQuery,
+      });
+      const nextThread = payload?.thread || payload?.data;
+      if (!nextThread?.id) {
+        throw new Error("Customer conversation could not be created.");
+      }
+      mergeThread(nextThread);
+      await fetchThreads();
+      return {
+        thread: nextThread,
+        customer: payload?.customer || null,
+      };
+    },
+    [connectCustomerApi, dbUserId, fetchThreads, mergeThread]
+  );
 
   const startDirectThread = useCallback(
     async (targetUserId) => {
@@ -1039,18 +1093,56 @@ function MessagesPage() {
       setSending(true);
       setConversationError("");
       try {
-        const metadata = await parseSlashCommandMetadata(messageDraft, activeThread);
-        const payload = await sendThreadMessage(activeThreadId, {
+        const parsedMetadata =
+          (await parseSlashCommandMetadata(messageDraft, activeThread)) || null;
+        const addCustomerQuery = parsedMetadata?.addCustomerQuery;
+        if (parsedMetadata && "addCustomerQuery" in parsedMetadata) {
+          delete parsedMetadata.addCustomerQuery;
+        }
+
+        let targetThreadId = activeThreadId;
+        let cleanedContent = messageDraft;
+
+        if (addCustomerQuery) {
+          const { thread: nextThread, customer } =
+            await connectCustomerToConversation({
+              threadId: activeThreadId,
+              customerQuery: addCustomerQuery,
+            });
+          targetThreadId = nextThread.id;
+          cleanedContent = stripAddCustomerCommands(messageDraft);
+          if (!cleanedContent) {
+            const label =
+              customer?.name || customer?.email || addCustomerQuery;
+            cleanedContent = label
+              ? `Customer ${label} was added to this chat.`
+              : "Customer invited to this chat.";
+          }
+        }
+
+        const finalContent = cleanedContent.trim();
+        if (!finalContent) {
+          throw new Error("Message is empty after processing commands.");
+        }
+
+        const payload = await sendThreadMessage(targetThreadId, {
           senderId: dbUserId,
-          content: messageDraft.trim(),
-          metadata,
+          content: finalContent,
+          metadata:
+            parsedMetadata && Object.keys(parsedMetadata).length
+              ? parsedMetadata
+              : null,
         });
         const newMessage = payload?.data || payload?.message;
         if (!newMessage) throw new Error("Message payload missing.");
         setMessageDraft("");
-        setMessages((prev) => [...prev, newMessage]);
+        if (targetThreadId === activeThreadId) {
+          setMessages((prev) => [...prev, newMessage]);
+        } else {
+          setMessages([newMessage]);
+        }
         await fetchThreads();
-        await openThread(activeThreadId);
+        await openThread(targetThreadId);
       } catch (error) {
         console.error("❌ Failed to send message:", error);
         setConversationError(error.message || "Unable to send message.");
@@ -1061,6 +1153,7 @@ function MessagesPage() {
     [
       activeThread,
       activeThreadId,
+      connectCustomerToConversation,
       dbUserId,
       fetchThreads,
       messageDraft,
@@ -2658,7 +2751,7 @@ function MessagesPage() {
                     ['job', '', 'myjobs', 'archive', 'appointments'].includes(cmd.pattern)
                   ),
                   'Customers & Accounts': availableCommands.filter(cmd =>
-                    ['cust', 'customer', 'account', 'invoice'].includes(cmd.pattern)
+                    ['cust', 'customer', 'addcust', 'account', 'invoice'].includes(cmd.pattern)
                   ),
                   'Vehicles': availableCommands.filter(cmd =>
                     ['vehicle', 'vhc', 'tracking', 'valet'].includes(cmd.pattern)

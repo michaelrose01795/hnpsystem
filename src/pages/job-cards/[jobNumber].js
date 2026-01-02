@@ -1346,17 +1346,24 @@ export default function JobCardDetailPage() {
         </section>
 
         {/* ✅ Tabs Navigation */}
-        <section style={{
-          borderRadius: "999px",
-          border: "1px solid var(--surface-light)",
-          background: "var(--surface)",
-          padding: "6px",
-          display: "flex",
-          gap: "6px",
-          width: "100%",
-          overflowX: "auto",
-          flexShrink: 0
-        }}>
+        <section
+          style={{
+            borderRadius: "999px",
+            border: "1px solid var(--surface-light)",
+            background: "var(--surface)",
+            padding: "6px",
+            display: "flex",
+            gap: "6px",
+            width: "100%",
+            overflowX: "auto",
+            flexShrink: 0,
+            scrollbarWidth: "thin",
+            scrollbarColor: "var(--scrollbar-thumb) transparent",
+            scrollBehavior: "smooth",
+            WebkitOverflowScrolling: "touch"
+          }}
+          className="tabs-scroll-container"
+        >
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -1579,6 +1586,26 @@ export default function JobCardDetailPage() {
         />
 
       </div>
+
+      <style jsx global>{`
+        .tabs-scroll-container::-webkit-scrollbar {
+          height: 6px;
+        }
+
+        .tabs-scroll-container::-webkit-scrollbar-track {
+          background: transparent;
+          border-radius: 999px;
+        }
+
+        .tabs-scroll-container::-webkit-scrollbar-thumb {
+          background: var(--scrollbar-thumb);
+          border-radius: 999px;
+        }
+
+        .tabs-scroll-container::-webkit-scrollbar-thumb:hover {
+          background: var(--scrollbar-thumb-hover);
+        }
+      `}</style>
     </Layout>
   );
 }
