@@ -10,8 +10,6 @@ import {
   getCustomerBySlug,
   getCustomerVehicles,
   getCustomerJobs,
-  getCustomerActivityEvents,
-  getCustomerAccounts,
 } from "@/lib/database/customers";
 import { createCustomerDisplaySlug, normalizeCustomerSlug } from "@/lib/customers/slug";
 import { isValidUuid } from "@/lib/utils/ids";
@@ -19,8 +17,6 @@ import { isValidUuid } from "@/lib/utils/ids";
 const TAB_DEFINITIONS = [
   { id: "vehicles", label: "Vehicles" },
   { id: "history", label: "History" },
-  { id: "activity", label: "Activity" },
-  { id: "accounts", label: "Accounts" },
 ];
 
 const INACTIVE_JOB_STATUSES = new Set(["complete", "collected", "cancelled", "invoiced"]);
@@ -42,25 +38,12 @@ const detailCardStyles = {
     gap: "16px",
     alignItems: "flex-start",
   },
-  nameGroup: {
-    flex: "1 1 280px",
-    minWidth: "240px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-  },
   name: {
-    fontSize: "2.25rem",
+    fontSize: "1.65rem",
     fontWeight: 700,
     margin: 0,
     color: "var(--text-primary)",
     wordBreak: "break-word",
-  },
-  metaGrid: {
-    flex: "1 1 240px",
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-    gap: "12px",
   },
   metaItem: {
     borderRadius: "16px",
@@ -70,6 +53,7 @@ const detailCardStyles = {
     display: "flex",
     flexDirection: "column",
     gap: "4px",
+    minHeight: "110px",
   },
   metaLabel: {
     textTransform: "uppercase",
@@ -80,31 +64,6 @@ const detailCardStyles = {
   metaValue: {
     fontWeight: 600,
     color: "var(--text-primary)",
-  },
-  statsRow: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-    gap: "16px",
-  },
-  statCard: {
-    borderRadius: "18px",
-    border: "1px solid var(--surface-light)",
-    background: "var(--surface-light)",
-    padding: "18px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px",
-  },
-  statLabel: {
-    fontSize: "0.75rem",
-    textTransform: "uppercase",
-    letterSpacing: "0.25em",
-    color: "var(--grey-accent)",
-  },
-  statValue: {
-    fontSize: "1.4rem",
-    fontWeight: 700,
-    color: "var(--info-dark)",
   },
 };
 
@@ -149,7 +108,7 @@ const detailGridStyles = {
   grid: {
     display: "grid",
     gap: "16px",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
   },
   item: {
     borderRadius: "16px",
@@ -159,6 +118,7 @@ const detailGridStyles = {
     display: "flex",
     flexDirection: "column",
     gap: "4px",
+    minHeight: "110px",
   },
   label: {
     textTransform: "uppercase",
@@ -188,34 +148,6 @@ const formatDate = (value) => {
   } catch (_err) {
     return "—";
   }
-};
-
-const formatDateTime = (value) => {
-  if (!value) return "—";
-  try {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "—";
-    return date.toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch (_err) {
-    return "—";
-  }
-};
-
-const currencyFormatter = new Intl.NumberFormat(undefined, {
-  style: "currency",
-  currency: "GBP",
-  minimumFractionDigits: 2,
-});
-
-const formatCurrency = (value) => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return "—";
-  return currencyFormatter.format(Number(value));
 };
 
 const parseRequests = (raw) => {
@@ -505,198 +437,7 @@ const HistoryTab = ({ jobs }) => {
   );
 };
 
-const ActivityTab = ({ events }) => {
-  if (!events.length) {
-    return (
-      <div
-        style={{
-          border: "1px dashed var(--surface-light)",
-          borderRadius: "18px",
-          padding: "24px",
-          textAlign: "center",
-          color: "var(--grey-accent)",
-        }}
-      >
-        No activity recorded yet.
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      {events.map((event) => (
-        <div
-          key={event.event_id}
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr auto",
-            gap: "16px",
-            borderRadius: "18px",
-            border: "1px solid var(--surface-light)",
-            background: "var(--surface-light)",
-            padding: "18px",
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <p
-              style={{
-                margin: 0,
-                fontSize: "0.75rem",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: "var(--grey-accent)",
-              }}
-            >
-              {event.activity_source || "System update"}
-            </p>
-            <h3 style={{ margin: 0, fontSize: "1.1rem", color: "var(--text-primary)" }}>
-              {event.activity_type || "Activity"}
-            </h3>
-            {event.activity_payload?.summary && (
-              <p style={{ margin: 0, color: "var(--text-secondary)" }}>
-                {event.activity_payload.summary}
-              </p>
-            )}
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", fontSize: "0.85rem" }}>
-              {event.job_id && (
-                <span style={{ color: "var(--primary-dark)" }}>Job #{event.job_id}</span>
-              )}
-              {event.vehicle_id && (
-                <span style={{ color: "var(--text-secondary)" }}>
-                  Vehicle #{event.vehicle_id}
-                </span>
-              )}
-            </div>
-          </div>
-          <div
-            style={{
-              textAlign: "right",
-              color: "var(--text-secondary)",
-              fontSize: "0.85rem",
-              minWidth: "150px",
-            }}
-          >
-            {formatDateTime(event.occurred_at)}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const AccountsTab = ({ accounts }) => {
-  if (!accounts.length) {
-    return (
-      <div
-        style={{
-          border: "1px dashed var(--surface-light)",
-          borderRadius: "18px",
-          padding: "24px",
-          textAlign: "center",
-          color: "var(--grey-accent)",
-        }}
-      >
-        No workshop accounts on file for this customer.
-      </div>
-    );
-  }
-
-  return (
-    <div
-      style={{
-        display: "grid",
-        gap: "16px",
-        gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-      }}
-    >
-      {accounts.map((account) => (
-        <div
-          key={account.account_id}
-          style={{
-            borderRadius: "20px",
-            border: "1px solid var(--surface-light)",
-            background: "var(--surface-light)",
-            padding: "20px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-          }}
-        >
-          <div>
-            <p
-              style={{
-                margin: 0,
-                fontSize: "0.75rem",
-                color: "var(--grey-accent)",
-                letterSpacing: "0.25em",
-                textTransform: "uppercase",
-              }}
-            >
-              Account type
-            </p>
-            <p style={{ margin: 0, fontWeight: 700, fontSize: "1.2rem" }}>
-              {account.account_type || "Retail"}
-            </p>
-          </div>
-
-          <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-            <AccountField label="Status" value={account.status} />
-            <AccountField label="Balance" value={formatCurrency(account.balance)} />
-            <AccountField label="Credit limit" value={formatCurrency(account.credit_limit)} />
-          </div>
-
-          <div style={{ display: "grid", gap: "8px" }}>
-            <AccountField label="Billing name" value={account.billing_name} stacked />
-            <AccountField label="Billing email" value={account.billing_email} stacked />
-            <AccountField label="Billing phone" value={account.billing_phone} stacked />
-            <AccountField
-              label="Updated"
-              value={formatDate(account.updated_at)}
-              stacked
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const AccountField = ({ label, value, stacked = false }) => (
-  <div style={{ display: "flex", flexDirection: "column", minWidth: stacked ? "100%" : "auto" }}>
-    <span
-      style={{
-        fontSize: "0.65rem",
-        textTransform: "uppercase",
-        letterSpacing: "0.25em",
-        color: "var(--grey-accent)",
-      }}
-    >
-      {label}
-    </span>
-    <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{value || "—"}</span>
-  </div>
-);
-
-const DetailField = ({ label, value, href }) => {
-  const content = value ? (
-    href ? (
-      <a href={href} style={{ color: "var(--primary)", fontWeight: 600 }}>
-        {value}
-      </a>
-    ) : (
-      <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{value}</span>
-    )
-  ) : (
-    <span style={{ color: "var(--text-secondary)" }}>—</span>
-  );
-
-  return (
-    <div style={detailGridStyles.item}>
-      <span style={detailGridStyles.label}>{label}</span>
-      {content}
-    </div>
-  );
-};
+// Activity and Accounts tabs removed per latest requirements.
 
 const getSlugParam = (rawSlug) => {
   if (!rawSlug) return "";
@@ -710,8 +451,6 @@ export default function CustomerDetailWorkspace() {
   const [customer, setCustomer] = useState(null);
   const [vehicles, setVehicles] = useState([]);
   const [jobs, setJobs] = useState([]);
-  const [activityEvents, setActivityEvents] = useState([]);
-  const [accounts, setAccounts] = useState([]);
   const [activeTab, setActiveTab] = useState(TAB_DEFINITIONS[0].id);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -738,25 +477,18 @@ export default function CustomerDetailWorkspace() {
           setCustomer(null);
           setVehicles([]);
           setJobs([]);
-          setActivityEvents([]);
-          setAccounts([]);
           setError("Customer record was not found.");
           return;
         }
 
-        const [vehiclesForCustomer, jobsForCustomer, eventsForCustomer, accountsForCustomer] =
-          await Promise.all([
-            getCustomerVehicles(customerRecord.id),
-            getCustomerJobs(customerRecord.id),
-            getCustomerActivityEvents(customerRecord.id),
-            getCustomerAccounts(customerRecord.id),
-          ]);
+        const [vehiclesForCustomer, jobsForCustomer] = await Promise.all([
+          getCustomerVehicles(customerRecord.id),
+          getCustomerJobs(customerRecord.id),
+        ]);
 
         setCustomer(customerRecord);
         setVehicles(vehiclesForCustomer || []);
         setJobs(jobsForCustomer || []);
-        setActivityEvents(eventsForCustomer || []);
-        setAccounts(accountsForCustomer || []);
       } catch (err) {
         console.error("Failed to load customer detail view:", err);
         setError("Unable to load customer data right now.");
@@ -779,21 +511,58 @@ export default function CustomerDetailWorkspace() {
     }
   }, [router, customer, slugFromRoute]);
 
-  const stats = useMemo(() => {
-    const totalJobs = jobs.length;
-    const activeJobs = jobs.filter(
+  const customerName = [customer?.firstname, customer?.lastname].filter(Boolean).join(" ").trim();
+  const contactNumbers = [
+    { label: "Mobile", value: customer?.mobile },
+    { label: "Telephone", value: customer?.telephone },
+  ].filter((entry) => entry.value);
+  const formattedAddress = [customer?.address, customer?.postcode].filter(Boolean).join(", ");
+
+  const { totalJobs, activeJobs } = useMemo(() => {
+    const total = jobs.length;
+    const active = jobs.filter(
       (job) => job?.status && !INACTIVE_JOB_STATUSES.has(String(job.status).toLowerCase())
     ).length;
-    const lastVisitedJob = jobs[0];
-    return [
-      { label: "Vehicles on file", value: vehicles.length },
-      { label: "Total jobs", value: totalJobs },
-      { label: "Open jobs", value: activeJobs },
-      { label: "Activity items", value: activityEvents.length },
-      { label: "Accounts", value: accounts.length },
-      { label: "Last booking", value: lastVisitedJob ? formatDate(lastVisitedJob.created_at) : "—" },
-    ];
-  }, [jobs, vehicles, activityEvents.length, accounts.length]);
+    return { totalJobs: total, activeJobs: active };
+  }, [jobs]);
+
+  const profileGridItems = useMemo(
+    () => [
+      {
+        key: "email",
+        label: "Email",
+        value: customer?.email,
+        href: customer?.email ? `mailto:${customer.email}` : undefined,
+      },
+      {
+        key: "contact-number",
+        label: "Contact numbers",
+        type: "list",
+        items: contactNumbers,
+      },
+      {
+        key: "address",
+        label: "Address",
+        value: formattedAddress || customer?.address || "",
+      },
+      {
+        key: "vehicles",
+        label: "Vehicles on file",
+        value: vehicles.length,
+      },
+      {
+        key: "total-jobs",
+        label: "Total jobs",
+        value: totalJobs,
+      },
+      {
+        key: "open-jobs",
+        label: "Open jobs",
+        value: activeJobs,
+      },
+    ],
+    [customer?.email, contactNumbers, formattedAddress, vehicles.length, totalJobs, activeJobs]
+  );
 
   const renderTabContent = () => {
     if (activeTab === "vehicles") {
@@ -802,16 +571,8 @@ export default function CustomerDetailWorkspace() {
     if (activeTab === "history") {
       return <HistoryTab jobs={jobs} />;
     }
-    if (activeTab === "activity") {
-      return <ActivityTab events={activityEvents} />;
-    }
-    if (activeTab === "accounts") {
-      return <AccountsTab accounts={accounts} />;
-    }
     return null;
   };
-
-  const customerName = [customer?.firstname, customer?.lastname].filter(Boolean).join(" ").trim();
 
   return (
     <Layout>
@@ -867,68 +628,58 @@ export default function CustomerDetailWorkspace() {
                     Customer profile
                   </p>
                   <h1 style={detailCardStyles.name}>{customerName || customer.email || "Customer"}</h1>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      flexWrap: "wrap",
-                      color: "var(--text-secondary)",
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    <span>Customer ID: {customer.id}</span>
-                    <span>Created {formatDate(customer.created_at)}</span>
-                    <span>Updated {formatDate(customer.updated_at)}</span>
-                  </div>
-                </div>
-                <div style={detailCardStyles.metaGrid}>
-                  <div style={detailCardStyles.metaItem}>
-                    <span style={detailCardStyles.metaLabel}>Preferred contact</span>
-                    <span style={detailCardStyles.metaValue}>
-                      {customer.contact_preference || "Not set"}
-                    </span>
-                  </div>
-                  <div style={detailCardStyles.metaItem}>
-                    <span style={detailCardStyles.metaLabel}>Email</span>
-                    <span style={detailCardStyles.metaValue}>{customer.email || "—"}</span>
-                  </div>
-                  <div style={detailCardStyles.metaItem}>
-                    <span style={detailCardStyles.metaLabel}>Mobile</span>
-                    <span style={detailCardStyles.metaValue}>{customer.mobile || "—"}</span>
-                  </div>
-                  <div style={detailCardStyles.metaItem}>
-                    <span style={detailCardStyles.metaLabel}>Telephone</span>
-                    <span style={detailCardStyles.metaValue}>{customer.telephone || "—"}</span>
-                  </div>
                 </div>
               </div>
 
               <div style={detailGridStyles.grid}>
-                <DetailField
-                  label="Primary email"
-                  value={customer.email}
-                  href={customer.email ? `mailto:${customer.email}` : undefined}
-                />
-                <DetailField
-                  label="Mobile"
-                  value={customer.mobile}
-                  href={customer.mobile ? `tel:${customer.mobile}` : undefined}
-                />
-                <DetailField
-                  label="Telephone"
-                  value={customer.telephone}
-                  href={customer.telephone ? `tel:${customer.telephone}` : undefined}
-                />
-                <DetailField label="Preferred contact" value={customer.contact_preference} />
-                <DetailField label="Address" value={customer.address} />
-                <DetailField label="Postcode" value={customer.postcode} />
-              </div>
-
-              <div style={detailCardStyles.statsRow}>
-                {stats.map((stat) => (
-                  <div key={stat.label} style={detailCardStyles.statCard}>
-                    <span style={detailCardStyles.statLabel}>{stat.label}</span>
-                    <span style={detailCardStyles.statValue}>{stat.value ?? "—"}</span>
+                {profileGridItems.map((item) => (
+                  <div key={item.key} style={detailGridStyles.item}>
+                    <span style={detailGridStyles.label}>{item.label}</span>
+                    {item.type === "list" ? (
+                      item.items?.length ? (
+                        <ul
+                          style={{
+                            listStyle: "none",
+                            padding: 0,
+                            margin: 0,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "8px",
+                          }}
+                        >
+                          {item.items.map((entry) => (
+                            <li key={`${entry.label}-${entry.value}`}>
+                              <span
+                                style={{
+                                  fontSize: "0.75rem",
+                                  color: "var(--grey-accent)",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.2em",
+                                }}
+                              >
+                                {entry.label}
+                              </span>
+                              <a
+                                href={`tel:${entry.value}`}
+                                style={{ color: "var(--primary)", fontWeight: 600 }}
+                              >
+                                {entry.value}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span style={{ color: "var(--text-secondary)" }}>No numbers on file</span>
+                      )
+                    ) : item.href ? (
+                      <a href={item.href} style={{ color: "var(--primary)", fontWeight: 600 }}>
+                        {item.value || "—"}
+                      </a>
+                    ) : (
+                      <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+                        {item.value ?? "—"}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -945,8 +696,6 @@ export default function CustomerDetailWorkspace() {
                   {tab.label}
                   {tab.id === "vehicles" ? ` (${vehicles.length})` : ""}
                   {tab.id === "history" ? ` (${jobs.length})` : ""}
-                  {tab.id === "activity" ? ` (${activityEvents.length})` : ""}
-                  {tab.id === "accounts" ? ` (${accounts.length})` : ""}
                 </button>
               ))}
             </nav>

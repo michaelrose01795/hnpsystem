@@ -1,9 +1,9 @@
 TO DO:
-Remove the following from the customers page "Customer ID: e82ad0e5-2d27-4483-b071-5efc4685072c
-Created 5 Dec 2025
-Updated 5 Dec 2025 "
+within the /commands for the messages, have it so users can connect the customers to the chat feed, this acutall creates a new chat which incifes the current people in the chat + adding the /addcust[customername] to the chat as well which then creates the caht into a group chat. this then shows within the customer portal within the messages which is all linked with their email. 
 
 
+
+have it so the Customer Requests Contact Scheduling Service History Parts Notes Write Up VHC Warranty Clocking Messages Documents Invoice tabs follow the same design as the tabs within the customerslug page
 
 
 

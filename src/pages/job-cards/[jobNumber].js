@@ -1347,14 +1347,14 @@ export default function JobCardDetailPage() {
 
         {/* ✅ Tabs Navigation */}
         <section style={{
-          display: "flex",
-          gap: "8px",
-          overflowX: "auto",
-          padding: "8px",
-          backgroundColor: "var(--layer-section-level-1)",
-          borderRadius: "12px",
-          boxShadow: "none",
+          borderRadius: "999px",
           border: "1px solid var(--surface-light)",
+          background: "var(--surface)",
+          padding: "6px",
+          display: "flex",
+          gap: "6px",
+          width: "100%",
+          overflowX: "auto",
           flexShrink: 0
         }}>
           {tabs.map((tab) => (
@@ -1362,39 +1362,29 @@ export default function JobCardDetailPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               style={{
-                padding: "10px 16px",
-                backgroundColor: activeTab === tab.id ? "var(--primary)" : "transparent",
-                color: activeTab === tab.id ? "white" : "var(--grey-accent)",
-                border: "none",
-                borderRadius: "8px",
+                flex: "0 0 auto",
+                borderRadius: "999px",
+                border: "1px solid transparent",
+                padding: "10px 20px",
+                fontSize: "0.9rem",
+                fontWeight: 600,
                 cursor: "pointer",
-                fontWeight: activeTab === tab.id ? "600" : "500",
-                fontSize: "14px",
-                whiteSpace: "nowrap",
-                transition: "all 0.2s",
+                background: activeTab === tab.id ? "var(--primary)" : "transparent",
+                color: activeTab === tab.id ? "var(--text-inverse)" : "var(--text-primary)",
+                transition: "all 0.15s ease",
                 display: "flex",
                 alignItems: "center",
                 gap: "6px",
-                position: "relative"
-              }}
-              onMouseEnter={(e) => {
-                if (activeTab !== tab.id) {
-                  e.target.style.backgroundColor = "var(--surface)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (activeTab !== tab.id) {
-                  e.target.style.backgroundColor = "transparent";
-                }
+                whiteSpace: "nowrap"
               }}
             >
-              <span>{tab.icon}</span>
+              {tab.icon && <span>{tab.icon}</span>}
               <span>{tab.label}</span>
               {tab.badge && (
                 <span style={{
                   padding: "2px 8px",
-                  backgroundColor: activeTab === tab.id ? "rgba(var(--surface-rgb), 0.3)" : "var(--primary)",
-                  color: activeTab === tab.id ? "white" : "white",
+                  backgroundColor: activeTab === tab.id ? "rgba(255, 255, 255, 0.3)" : "var(--primary)",
+                  color: "white",
                   borderRadius: "10px",
                   fontSize: "11px",
                   fontWeight: "600"
