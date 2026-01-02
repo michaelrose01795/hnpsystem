@@ -1,6 +1,7 @@
 // file location: src/components/GlobalSearch.js
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
+import { createCustomerDisplaySlug } from "@/lib/customers/slug";
 
 const MIN_QUERY_LENGTH = 2;
 
@@ -9,6 +10,19 @@ const typeLabels = {
   customer: "Customer",
   navigation: "Navigation",
   parts_order: "Parts Order",
+};
+
+const createSlugFromResult = (item = {}) => {
+  if (item.slug) return item.slug;
+  if (item.firstName || item.lastName) {
+    const slug = createCustomerDisplaySlug(item.firstName || "", item.lastName || "");
+    if (slug) return slug;
+  }
+  if (item.title) {
+    const slug = createCustomerDisplaySlug(item.title, "");
+    if (slug) return slug;
+  }
+  return "";
 };
 
 const GlobalSearch = ({
@@ -150,9 +164,15 @@ const GlobalSearch = ({
       }
 
       if (result.type === "customer") {
+        const slugCandidate = createSlugFromResult(result);
+        const destination =
+          result.href ||
+          (slugCandidate ? `/customers/${encodeURIComponent(slugCandidate)}` : null) ||
+          (result.customerId ? `/customers/${encodeURIComponent(result.customerId)}` : null) ||
+          (result.id ? `/customers/${encodeURIComponent(result.id)}` : null);
         return {
           ...result,
-          href: result.jobNumber ? `/job-cards/${result.jobNumber}` : null,
+          href: destination,
         };
       }
 

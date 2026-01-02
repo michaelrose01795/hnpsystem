@@ -2,6 +2,21 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/customers.js
 import { supabase } from "@/lib/supabaseClient"; // import Supabase client
+import { normalizeCustomerSlug, splitCustomerSlugParts } from "@/lib/customers/slug";
+
+const CUSTOMER_SELECT_FIELDS = `
+  id,
+  firstname,
+  lastname,
+  email,
+  mobile,
+  telephone,
+  address,
+  postcode,
+  contact_preference,
+  created_at,
+  updated_at
+`;
 
 /* ============================================
    GET CUSTOMER BY ID
@@ -12,19 +27,7 @@ export const getCustomerById = async (customerId) => {
   
   const { data, error } = await supabase
     .from("customers")
-    .select(`
-      id,
-      firstname,
-      lastname,
-      email,
-      mobile,
-      telephone,
-      address,
-      postcode,
-      contact_preference,
-      created_at,
-      updated_at
-    `)
+    .select(CUSTOMER_SELECT_FIELDS)
     .eq("id", customerId)
     .single();
 
@@ -37,6 +40,78 @@ export const getCustomerById = async (customerId) => {
   return data;
 };
 
+const sanitizeLikeValue = (value = "") => value.replace(/[%_]/g, "");
+
+const fallbackCustomerLookupBySlug = async (rawSlug) => {
+  const { firstName, lastName } = splitCustomerSlugParts(rawSlug);
+  if (!firstName && !lastName) {
+    return null;
+  }
+
+  const safeFirst = sanitizeLikeValue(firstName);
+  const safeLast = sanitizeLikeValue(lastName);
+  const nameFilters = [];
+
+  if (safeFirst && safeLast) {
+    nameFilters.push(
+      `and(firstname.ilike.${safeFirst}%,lastname.ilike.${safeLast}%)`,
+      `and(firstname.ilike.${safeLast}%,lastname.ilike.${safeFirst}%)`
+    );
+  } else {
+    const single = sanitizeLikeValue(safeFirst || safeLast);
+    if (single) {
+      nameFilters.push(
+        `firstname.ilike.${single}%`,
+        `lastname.ilike.${single}%`
+      );
+    }
+  }
+
+  if (nameFilters.length === 0) {
+    return null;
+  }
+
+  const filterExpression = nameFilters.join(",");
+
+  const { data, error } = await supabase
+    .from("customers")
+    .select(CUSTOMER_SELECT_FIELDS)
+    .or(filterExpression)
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    console.error("❌ fallback customer lookup error:", error.message);
+    return null;
+  }
+
+  return data?.[0] || null;
+};
+
+export const getCustomerBySlug = async (customerSlug) => {
+  const slugKey = normalizeCustomerSlug(customerSlug);
+  if (!slugKey) {
+    return fallbackCustomerLookupBySlug(customerSlug);
+  }
+
+  const { data, error } = await supabase
+    .from("customers")
+    .select(CUSTOMER_SELECT_FIELDS)
+    .eq("slug_key", slugKey)
+    .maybeSingle();
+
+  if (error) {
+    console.error("❌ getCustomerBySlug error:", error.message);
+    return fallbackCustomerLookupBySlug(customerSlug);
+  }
+
+  if (data) {
+    return data;
+  }
+
+  return fallbackCustomerLookupBySlug(customerSlug);
+};
+
 /* ============================================
    GET ALL CUSTOMERS
    ✅ Returns all customers with pagination support
@@ -46,19 +121,7 @@ export const getAllCustomers = async (limit = 100, offset = 0) => {
   
   const { data, error, count } = await supabase
     .from("customers")
-    .select(`
-      id,
-      firstname,
-      lastname,
-      email,
-      mobile,
-      telephone,
-      address,
-      postcode,
-      contact_preference,
-      created_at,
-      updated_at
-    `, { count: 'exact' })
+    .select(CUSTOMER_SELECT_FIELDS, { count: "exact" })
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -91,18 +154,7 @@ export const searchCustomers = async (searchTerm) => {
 
   let query = supabase
     .from("customers")
-    .select(`
-      id,
-      firstname,
-      lastname,
-      email,
-      mobile,
-      telephone,
-      address,
-      postcode,
-      contact_preference,
-      created_at
-    `);
+    .select(CUSTOMER_SELECT_FIELDS);
 
   // If multiple words, try to match as firstname + lastname combination
   if (nameParts.length >= 2) {
@@ -205,6 +257,66 @@ export const getCustomerJobs = async (customerId) => {
   }
 
   console.log("✅ Customer jobs found:", data?.length || 0); // debug log
+  return data || [];
+};
+
+export const getCustomerActivityEvents = async (customerId, { limit = 50 } = {}) => {
+  if (!customerId) return [];
+
+  const { data, error } = await supabase
+    .from("customer_activity_events")
+    .select(`
+      event_id,
+      customer_id,
+      job_id,
+      vehicle_id,
+      activity_type,
+      activity_source,
+      activity_payload,
+      occurred_at,
+      created_by
+    `)
+    .eq("customer_id", customerId)
+    .order("occurred_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("❌ getCustomerActivityEvents error:", error.message);
+    return [];
+  }
+
+  return data || [];
+};
+
+export const getCustomerAccounts = async (customerId) => {
+  if (!customerId) return [];
+
+  const { data, error } = await supabase
+    .from("accounts")
+    .select(`
+      account_id,
+      customer_id,
+      account_type,
+      balance,
+      credit_limit,
+      status,
+      billing_name,
+      billing_email,
+      billing_phone,
+      billing_address_line1,
+      billing_city,
+      billing_postcode,
+      created_at,
+      updated_at
+    `)
+    .eq("customer_id", customerId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("❌ getCustomerAccounts error:", error.message);
+    return [];
+  }
+
   return data || [];
 };
 
@@ -445,4 +557,3 @@ export const createCustomer = async (customerData) => {
     return { success: false, error: message };
   }
 };
-

@@ -126,6 +126,38 @@ CREATE TABLE public.consumables (
   CONSTRAINT consumables_pkey PRIMARY KEY (id),
   CONSTRAINT consumables_location_id_fkey FOREIGN KEY (location_id) REFERENCES public.consumable_locations(id)
 );
+CREATE TABLE public.customer_activity_events (
+  event_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  customer_id uuid NOT NULL,
+  job_id integer,
+  vehicle_id integer,
+  activity_type text NOT NULL,
+  activity_source text,
+  activity_payload jsonb DEFAULT '{}'::jsonb,
+  occurred_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT customer_activity_events_pkey PRIMARY KEY (event_id),
+  CONSTRAINT customer_activity_events_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT customer_activity_events_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT customer_activity_events_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(vehicle_id),
+  CONSTRAINT customer_activity_events_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.customer_job_history (
+  history_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  customer_id uuid NOT NULL,
+  job_id integer,
+  job_number text,
+  status_snapshot text,
+  vehicle_reg text,
+  vehicle_make_model text,
+  mileage_at_service integer,
+  recorded_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT customer_job_history_pkey PRIMARY KEY (history_id),
+  CONSTRAINT customer_job_history_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT customer_job_history_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
+);
 CREATE TABLE public.customer_payment_methods (
   method_id uuid NOT NULL DEFAULT gen_random_uuid(),
   customer_id uuid NOT NULL,
@@ -138,6 +170,18 @@ CREATE TABLE public.customer_payment_methods (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT customer_payment_methods_pkey PRIMARY KEY (method_id),
   CONSTRAINT customer_payment_methods_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
+);
+CREATE TABLE public.customer_vehicle_links (
+  link_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  customer_id uuid NOT NULL,
+  vehicle_id integer NOT NULL,
+  relationship text NOT NULL DEFAULT 'owner'::text,
+  is_primary boolean NOT NULL DEFAULT false,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT customer_vehicle_links_pkey PRIMARY KEY (link_id),
+  CONSTRAINT customer_vehicle_links_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT customer_vehicle_links_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(vehicle_id)
 );
 CREATE TABLE public.customers (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

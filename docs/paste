@@ -1,7 +1,8 @@
 TO DO:
+Remove the following from the customers page "Customer ID: e82ad0e5-2d27-4483-b071-5efc4685072c
+Created 5 Dec 2025
+Updated 5 Dec 2025 "
 
-
-Create a custoemr page which when search for a customer if brings up the full details of the customer, the cars attached, history jobs linked to the customer etc all from the database. Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first, have it so the items which are linked to the customer are shown in the tab layout at the top eg Vehciles tab shows all the vehciles, history tab shows all of the history tab, have it so the cust details stays at the top section of the page and the tabs are underneath the cust section and shows the tab sections at the bottom within the tabs. have it so this page follows the light and dark mode theme. link this poage to the global search, if a customer is searched dont show the job numbers or anything apart from this page. have it so the details within this page is linked to the other derauls liek the job numbers within the history tab etc 
 
 
 
@@ -122,3 +123,8 @@ Capture when to inspect service fluids and replenish stock for busy workshop day
 
 
 link messages to job numbers with /controls inside the messages tab within the job-cards/[jobnumber] page and within the message page as well so when a message is sent users can use a /commant example /job[jobnumber] this will then show the jobnumber with a link which opens that page as well as linking it to the messages tab within that job, the same with /cust[customerfirsstandlastname] which will then give a link to the customer detail page etc create multiple commands, add these comands inside a popup within the page hiden inside a "?" button with details how to use them as well. Hvae it so with Group chats when the Groupchat name is clicked it opens a popup which shows everyone who is in the chat, remove the names from being shown inside the section where the names are curreentl shown insdie the group chat name section. make sure these are within a differnt section. 
+
+
+
+
+Create a custoemr page which when search for a customer if brings up the full details of the customer, the cars attached, history jobs linked to the customer etc all from the database. Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first, have it so the items which are linked to the customer are shown in the tab layout at the top eg Vehciles tab shows all the vehciles, history tab shows all of the history tab, have it so the cust details stays at the top section of the page and the tabs are underneath the cust section and shows the tab sections at the bottom within the tabs. have it so this page follows the light and dark mode theme. link this poage to the global search, if a customer is searched dont show the job numbers or anything apart from this page. have it so the details within this page is linked to the other derauls liek the job numbers within the history tab etc 

@@ -2,6 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/api/search/global.js
 import { supabase } from "@/lib/supabaseClient";
+import { createCustomerDisplaySlug, normalizeCustomerSlug } from "@/lib/customers/slug";
 
 const INACTIVE_STATUSES = ["complete", "collected", "cancelled", "invoiced"];
 
@@ -204,7 +205,7 @@ export default async function handler(req, res) {
 
     (customerResponse.data || []).forEach((customer) => {
       const jobRecord = customerJobIndex[customer.id] || {};
-      const preferredJob = jobRecord.active || jobRecord.latest;
+      const preferredJob = jobRecord.active || jobRecord.latest || null;
 
       const fullName = [customer.firstname, customer.lastname]
         .filter(Boolean)
@@ -212,24 +213,39 @@ export default async function handler(req, res) {
         .join(" ")
         .trim();
 
+      const contactChannel = customer.mobile || customer.telephone || "";
+      const subtitleParts = [
+        contactChannel,
+        customer.email || "",
+      ].filter(Boolean);
+
+      const displaySlug = createCustomerDisplaySlug(
+        customer.firstname || "",
+        customer.lastname || ""
+      );
+
+      const result = {
+        type: "customer",
+        id: customer.id,
+        customerId: customer.id,
+        firstName: customer.firstname || "",
+        lastName: customer.lastname || "",
+        slug: displaySlug || null,
+        slugKey: displaySlug ? normalizeCustomerSlug(displaySlug) : null,
+        title: fullName || customer.email || "Unknown customer",
+        subtitle: subtitleParts.join(" • "),
+        contact: contactChannel || customer.email || "",
+        href: displaySlug ? `/customers/${displaySlug}` : `/customers/${customer.id}`,
+      };
+
       if (preferredJob) {
-        results.push({
-          type: "customer",
-          id: customer.id,
-          title: fullName || customer.email || "Unknown customer",
-          subtitle: [
-            customer.mobile || customer.telephone || "",
-            preferredJob?.job_number ? `Job #${preferredJob.job_number}` : "",
-          ]
-            .filter(Boolean)
-            .join(" • "),
-          contact: customer.mobile || customer.telephone || customer.email || "",
-          jobNumber: preferredJob?.job_number || null,
-          jobStatus: preferredJob?.status || null,
-          vehicleReg: preferredJob?.vehicle_reg || "",
-          vehicleMakeModel: preferredJob?.vehicle_make_model || "",
-        });
+        result.jobNumber = preferredJob.job_number || null;
+        result.jobStatus = preferredJob.status || null;
+        result.vehicleReg = preferredJob.vehicle_reg || "";
+        result.vehicleMakeModel = preferredJob.vehicle_make_model || "";
       }
+
+      results.push(result);
     });
 
     (orderResponse.data || []).forEach((order) => {

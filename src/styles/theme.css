@@ -156,20 +156,20 @@
 
   /* Three-tier background system - Dark Mode */
   /* Level 1 (Top layer - softened charcoal): inner cards, stats blocks */
-  --layer-section-level-1: #1e2027;
+  --layer-section-level-1: #2d1f3d;
   /* Level 2 (Middle layer - muted grey): section containers */
-  --layer-section-level-2: #16181f;
-  /* Level 3 (Bottom layer - lighter dark grey): outer shell */
-  --layer-section-level-3: #0e1015;
+  --layer-section-level-2: #221732;
+  /* Level 3 (Bottom layer - dark purple): outer shell */
+  --layer-section-level-3: #1a0f2e;
   /* Level 4 (Extra dark if needed) */
-  --layer-section-level-4: #080a0f;
-  --row-background: #1a1c20;
+  --layer-section-level-4: #120a20;
+  --row-background: #251a35;
   --text-color: #ffffff;
 
   /* Section gradient shadows - Dark Mode (for future use) */
-  --section-gradient-outer: #12121a;
-  --section-gradient-inner: #1e1e28;
-  --section-gradient-center: #23232b;
+  --section-gradient-outer: #1d1230;
+  --section-gradient-inner: #281b38;
+  --section-gradient-center: #2f2040;
   --layer-gradient: var(--layer-section-level-3);
 
   /* Scrollbar colors */
