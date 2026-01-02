@@ -196,6 +196,7 @@ CREATE TABLE public.customers (
   contact_preference text DEFAULT 'email'::text,
   updated_at timestamp with time zone DEFAULT now(),
   name text,
+  slug_key text DEFAULT regexp_replace(lower((COALESCE(firstname, ''::text) || COALESCE(lastname, ''::text))), '[^a-z0-9]'::text, ''::text, 'g'::text),
   CONSTRAINT customers_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.deliveries (

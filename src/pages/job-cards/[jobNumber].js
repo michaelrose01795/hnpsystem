@@ -1950,19 +1950,6 @@ function CustomerRequestsTab({
               }}>
                 Total Checks: {vhcSummary.total}
               </span>
-              <span style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "6px 10px",
-                borderRadius: "999px",
-                backgroundColor: "var(--info-surface)",
-                color: "var(--info-dark)",
-                fontSize: "12px",
-                fontWeight: "600"
-              }}>
-                Grey: {vhcSummary.grey}
-              </span>
             </div>
 
             {jobData.vhcRequired ? (

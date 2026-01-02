@@ -277,7 +277,7 @@ const RANK_TO_SEVERITY = {
 const LABOUR_RATE = 155;
 const SEVERITY_META = {
   red: { title: "Red Repairs", description: "", accent: "var(--danger)" },
-  amber: { title: "Amber Repairs", description: "Advisory items that should be considered soon.", accent: "var(--warning)" },
+  amber: { title: "Amber Repairs", description: "", accent: "var(--warning)" },
 };
 
 const COLOUR_CLASS = {
@@ -365,7 +365,7 @@ const resolveWheelPositionFromItem = (item = {}) => {
 
 const formatStatusLabel = (status) => {
   if (!status) return null;
-  return `${status.charAt(0).toUpperCase()}${status.slice(1)}`;
+  return status.toString().toUpperCase();
 };
 
 const formatDateTime = (value) => {
@@ -426,12 +426,8 @@ const formatPlainTreadReadings = (tread = {}) => {
 };
 
 const formatTreadDepthSummary = (tread = {}) => {
-  const segments = [
-    ["outer", "Outer"],
-    ["middle", "Middle"],
-    ["inner", "Inner"],
-  ]
-    .map(([key, label]) => {
+  const segments = ["outer", "middle", "inner"]
+    .map((key) => {
       const raw = tread?.[key];
       if (raw === null || raw === undefined || raw === "") return null;
       const numeric = Number.parseFloat(raw);
@@ -439,11 +435,25 @@ const formatTreadDepthSummary = (tread = {}) => {
         ? `${numeric.toFixed(1).replace(/\.0$/, "")}mm`
         : raw.toString().trim();
       if (!formatted) return null;
-      const safeValue = formatted.toLowerCase().includes("mm") ? formatted : `${formatted}mm`;
-      return `${label} ${safeValue}`;
+      return formatted.toLowerCase().includes("mm") ? formatted : `${formatted}mm`;
     })
     .filter(Boolean);
   return segments.length > 0 ? segments.join(" • ") : null;
+};
+
+const buildTyreSpecLines = (tyre) => {
+  if (!tyre || typeof tyre !== "object") return [];
+  const specs = [];
+  if (tyre.manufacturer) specs.push(`Make: ${tyre.manufacturer}`);
+  if (tyre.size) {
+    const loadPart = tyre.load ? ` ${tyre.load}` : "";
+    const speedPart = tyre.speed ? ` ${tyre.speed}` : "";
+    specs.push(`Size: ${tyre.size}${loadPart}${speedPart}`.trim());
+  }
+  if (typeof tyre.runFlat === "boolean") {
+    specs.push(`Run Flat: ${tyre.runFlat ? "Yes" : "No"}`);
+  }
+  return specs;
 };
 
 const formatMeasurement = (value) => {
@@ -769,6 +779,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const [vhcIdAliases, setVhcIdAliases] = useState({});
   const [vhcItemAliasRecords, setVhcItemAliasRecords] = useState([]);
   const [removingPartIds, setRemovingPartIds] = useState(new Set());
+  const [hoveredStatusId, setHoveredStatusId] = useState(null);
 
   const resolveCanonicalVhcId = useCallback(
     (vhcId) => {
@@ -1290,6 +1301,86 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     return items;
   }, [sections, wheelTreadLookup]);
 
+  const greenItems = useMemo(() => {
+    const items = [];
+    sections.forEach((section) => {
+      const sectionName = section.name || section.title || "Vehicle Health Check";
+      (section.items || []).forEach((item, index) => {
+        const severity = normaliseColour(item.colour || item.status || section.colour);
+        if (severity !== "green") return;
+        const id = item.vhc_id || `${sectionName}-ok-${index}`;
+        const heading =
+          item.heading || item.label || item.issue_title || item.name || item.title || sectionName;
+        const category = resolveCategoryForItem(sectionName, heading);
+        const location = resolveLocationKey(item);
+        items.push({
+          id: String(id),
+          label: heading || "Recorded item",
+          notes: item.notes || item.issue_description || "",
+          measurement: formatMeasurement(item.measurement),
+          sectionName,
+          category,
+          location,
+          wheelKey: item.wheelKey || null,
+        });
+      });
+    });
+
+    items.forEach((item) => {
+      if (item.category?.id !== "wheels_tyres") return;
+      const wheelKey = (item.wheelKey || "").toString().toUpperCase();
+      const treadLabel = wheelKey ? wheelTreadLookup.get(wheelKey) : null;
+      if (wheelKey && treadLabel) {
+        item.label = `${wheelKey} - ${treadLabel}`;
+      } else if (wheelKey) {
+        item.label = wheelKey;
+      }
+      const wheelData = wheelKey && vhcData?.wheelsTyres ? vhcData.wheelsTyres[wheelKey] : null;
+      const treadSummary = formatTreadDepthSummary(wheelData?.tread);
+      if (treadSummary) {
+        item.measurement = `Tread depths: ${treadSummary}`;
+      }
+      const spec = buildTyreSpecLines(wheelData);
+      if (spec.length > 0) {
+        item.spec = spec;
+      }
+    });
+
+    const brakes = vhcData?.brakesHubs;
+    if (brakes && typeof brakes === "object") {
+      const padMeasurement = (padData, label) => {
+        const measurement = formatMeasurement(padData?.measurement);
+        return measurement ? `${label}: ${measurement}` : null;
+      };
+      const discMeasurement = (discData, label) => {
+        const measurement =
+          formatMeasurement(discData?.measurements?.values || discData?.measurements?.thickness || discData?.measurements) ||
+          null;
+        return measurement ? `${label}: ${measurement}` : null;
+      };
+
+      items.forEach((item) => {
+        if (item.category?.id !== "brakes_hubs") return;
+        const lowerLabel = (item.label || "").toLowerCase();
+        if (lowerLabel.includes("front pad")) {
+          const value = padMeasurement(brakes.frontPads, "Pad thickness");
+          if (value) item.measurement = value;
+        } else if (lowerLabel.includes("rear pad")) {
+          const value = padMeasurement(brakes.rearPads, "Pad thickness");
+          if (value) item.measurement = value;
+        } else if (lowerLabel.includes("front disc")) {
+          const value = discMeasurement(brakes.frontDiscs, "Disc thickness");
+          if (value) item.measurement = value;
+        } else if (lowerLabel.includes("rear disc")) {
+          const value = discMeasurement(brakes.rearDiscs, "Disc thickness");
+          if (value) item.measurement = value;
+        }
+      });
+    }
+
+    return items;
+  }, [sections, wheelTreadLookup, vhcData?.wheelsTyres, vhcData?.brakesHubs]);
+
   const brakeSupplementaryByLocation = useMemo(() => {
     const map = new Map();
     const brakes = vhcData?.brakesHubs;
@@ -1378,13 +1469,15 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       const entry = tyres[key];
       if (!entry || typeof entry !== "object") return;
       const depthSummary = formatTreadDepthSummary(entry.tread);
-      if (!depthSummary) return;
       const status = normaliseColour(entry.status) || normaliseColour(entry.treadStatus);
+      const spec = buildTyreSpecLines(entry);
+      if (!depthSummary && spec.length === 0 && !status) return;
       map.set(key.toUpperCase(), {
         id: `tyre-${key}`,
         label: `${key} Tyre`,
-        measurement: `Tread depths: ${depthSummary}`,
+        measurement: depthSummary ? `Tread depths: ${depthSummary}` : null,
         status,
+        spec,
       });
     });
     return map;
@@ -1642,9 +1735,19 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     return partsCost + computeLabourCost(entry.laborHours);
   };
 
-  const determineStatusColor = (entry, resolvedPartsCost, itemId) => {
-    if (entry.status === "authorized") return "var(--success)";
-    if (entry.status === "declined") return "var(--danger)";
+  const resolveRowStatusState = (entry, resolvedPartsCost, itemId) => {
+    if (entry.status === "authorized") {
+      return {
+        color: "var(--success)",
+        label: "Approved",
+      };
+    }
+    if (entry.status === "declined") {
+      return {
+        color: "var(--danger)",
+        label: "Declined",
+      };
+    }
 
     // Labour is considered "added" if:
     // 1. Labour hours is set to any value (including 0), OR
@@ -1662,8 +1765,34 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       parseNumericValue(entry.totalOverride) > 0 ||
       isPartsNotRequired;
 
-    if (!hasLabour || !hasCosts) return "var(--danger)";
-    return "var(--warning)";
+    const missingLabour = !hasLabour;
+    const missingParts = !hasCosts;
+
+    if (missingLabour && missingParts) {
+      return {
+        color: "var(--warning-dark)",
+        label: "Add labour & parts",
+      };
+    }
+
+    if (missingLabour) {
+      return {
+        color: "var(--warning-dark)",
+        label: "Add labour",
+      };
+    }
+
+    if (missingParts) {
+      return {
+        color: "var(--warning-dark)",
+        label: "Add parts",
+      };
+    }
+
+    return {
+      color: "var(--warning)",
+      label: "Awaiting decision",
+    };
   };
 
   const toggleRowSelection = (severity, itemId) => {
@@ -1777,7 +1906,7 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                     : totalCost.toFixed(2);
                 const partsDisplayValue =
                   resolvedPartsCost !== undefined ? resolvedPartsCost.toFixed(2) : "";
-                const statusColor = determineStatusColor(entry, resolvedPartsCost, item.id);
+                const statusState = resolveRowStatusState(entry, resolvedPartsCost, item.id);
                 const locationLabel = item.location
                   ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
                   : null;
@@ -1788,13 +1917,12 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                 const detailLabel = item.label || item.sectionName || "Recorded item";
                 const concernDetail = item.concernText || "";
                 const detailContent = concernDetail || item.notes || "";
-                const severityLabel =
-                  item.rawSeverity ? item.rawSeverity.charAt(0).toUpperCase() + item.rawSeverity.slice(1) : null;
-                const severityBadge = severityLabel ? buildSeverityBadgeStyles(item.rawSeverity) : null;
                 const supplementaryRows = [
                   ...getBrakeSupplementaryRows(item),
                   ...getTyreSupplementaryRows(item),
                 ];
+                const statusKey = `${severity}-${item.id}`;
+                const isStatusHovered = hoveredStatusId === statusKey;
 
                 return (
                   <tr
@@ -1815,28 +1943,8 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                           <span style={{ fontWeight: 500, color: "var(--info-dark)" }}>- {detailContent}</span>
                         ) : null}
                       </div>
-                      {severityBadge ? (
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            marginTop: "4px",
-                            borderRadius: "999px",
-                            fontSize: "11px",
-                            fontWeight: 600,
-                            padding: "2px 10px",
-                            background: severityBadge.background,
-                            color: severityBadge.color,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.08em",
-                          }}
-                        >
-                          {severityLabel}
-                        </span>
-                      ) : null}
                       {item.measurement ? (
-                        <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>Measurement: {item.measurement}</div>
+                        <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>{item.measurement}</div>
                       ) : null}
                       {locationLabel ? (
                         <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>Location: {locationLabel}</div>
@@ -1887,6 +1995,15 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                                   </span>
                                 ) : null}
                                 {entry.note ? <span style={{ color: "var(--info)" }}>{entry.note}</span> : null}
+                                {Array.isArray(entry.spec) && entry.spec.length > 0 ? (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: "2px", width: "100%" }}>
+                                    {entry.spec.map((line) => (
+                                      <span key={`${entry.id || entry.label}-spec-${line}`} style={{ color: "var(--info)", fontSize: "11px" }}>
+                                        {line}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : null}
                               </div>
                             );
                           })}
@@ -1987,19 +2104,54 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                       </div>
                     </td>
                     <td style={{ padding: "12px 16px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div
+                        onMouseEnter={() => setHoveredStatusId(statusKey)}
+                        onMouseLeave={() => setHoveredStatusId(null)}
+                        onFocus={() => setHoveredStatusId(statusKey)}
+                        onBlur={() => setHoveredStatusId(null)}
+                        style={{
+                          position: "relative",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minHeight: "40px",
+                          width: "100%",
+                        }}
+                        tabIndex={0}
+                        aria-label={statusState.label}
+                      >
                         <span
                           style={{
-                            width: "14px",
-                            height: "14px",
+                            width: "18px",
+                            height: "18px",
                             borderRadius: "999px",
-                            backgroundColor: statusColor,
+                            backgroundColor: statusState.color,
                             display: "inline-block",
+                            boxShadow: "0 0 0 2px var(--surface)",
+                            cursor: "pointer",
                           }}
                         />
-                        <span style={{ fontSize: "12px", color: "var(--info-dark)" }}>
-                          {entry.status ? entry.status.charAt(0).toUpperCase() + entry.status.slice(1) : "Pending"}
-                        </span>
+                        {isStatusHovered && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: "50%",
+                              top: "-8px",
+                              transform: "translate(-50%, -100%)",
+                              background: "var(--surface)",
+                              border: "1px solid var(--surface-light)",
+                              borderRadius: "12px",
+                              padding: "10px 14px",
+                              boxShadow: "0 16px 30px rgba(15, 23, 42, 0.15)",
+                              minWidth: "220px",
+                              zIndex: 5,
+                            }}
+                          >
+                            <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--accent-purple)" }}>
+                              {statusState.label}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </td>
                     {selectionEnabled && (
@@ -3671,6 +3823,82 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                   </div>
                 );
               })}
+              {greenItems.length > 0 && (
+                <div
+                  style={{
+                    border: "2px solid var(--success)",
+                    borderRadius: "18px",
+                    padding: "20px",
+                    background: "var(--success-surface)",
+                    boxShadow: "none",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "18px",
+                  }}
+                >
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Green Checks</h2>
+                  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                      gap: "12px",
+                    }}
+                  >
+                    {greenItems.map((item) => {
+                      const locationLabel = item.location
+                        ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
+                        : null;
+                      return (
+                        <div
+                          key={item.id}
+                          style={{
+                            borderRadius: "14px",
+                            background: "var(--surface)",
+                            border: "1px solid var(--surface-light)",
+                            padding: "14px",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "6px",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.08em",
+                              color: "var(--info)",
+                            }}
+                          >
+                            {item.category?.label || item.sectionName}
+                          </span>
+                          <div style={{ fontWeight: 700, color: "var(--accent-purple)", fontSize: "14px" }}>
+                            {item.label}
+                          </div>
+                          {item.notes ? (
+                            <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>{item.notes}</div>
+                          ) : null}
+                          {item.measurement ? (
+                            <div style={{ fontSize: "12px", color: "var(--info)" }}>{item.measurement}</div>
+                          ) : null}
+                          {locationLabel ? (
+                            <div style={{ fontSize: "12px", color: "var(--info)" }}>Location: {locationLabel}</div>
+                          ) : null}
+                          {item.spec?.length > 0 ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "2px", fontSize: "12px", color: "var(--info)" }}>
+                              {item.spec.map((line) => (
+                                <span key={`${item.id}-spec-${line}`}>{line}</span>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

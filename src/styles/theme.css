@@ -88,8 +88,8 @@
   --layout-stack-gap: 20px;
 
   /* Scrollbar colors */
-  --scrollbar-thumb: #ff1493;
-  --scrollbar-thumb-hover: #ff69b4;
+  --scrollbar-thumb: #ef4444;
+  --scrollbar-thumb-hover: #dc2626;
 }
 
 :root[data-theme="dark"] {
@@ -173,6 +173,6 @@
   --layer-gradient: var(--layer-section-level-3);
 
   /* Scrollbar colors */
-  --scrollbar-thumb: #ff1493;
-  --scrollbar-thumb-hover: #ff69b4;
+  --scrollbar-thumb: #a855f7;
+  --scrollbar-thumb-hover: #9333ea;
 }
