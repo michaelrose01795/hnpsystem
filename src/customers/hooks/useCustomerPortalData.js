@@ -5,23 +5,30 @@ import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 
-const buildContacts = (usersByRole = {}) => [
-  {
-    id: "service",
-    label: "Service Team",
-    name: (usersByRole["Service"] || ["Service Advisor"])[0] || "Service Advisor",
-  },
-  {
-    id: "parts",
-    label: "Parts Desk",
-    name: (usersByRole["Parts"] || ["Parts Coordinator"])[0] || "Parts Coordinator",
-  },
-  {
-    id: "sales",
-    label: "Retail Sales",
-    name: (usersByRole["Sales"] || ["Retail Sales"])[0] || "Retail Sales",
-  },
-];
+const resolveContactName = (entry) => {
+  if (!entry) return "";
+  if (typeof entry === "string") return entry;
+  return entry.name || entry.fullName || entry.displayName || entry.email || "";
+};
+
+const buildContacts = (usersByRole = {}) =>
+  [
+    {
+      id: "service",
+      label: "Service Team",
+      name: resolveContactName((usersByRole["Service"] || [])[0]),
+    },
+    {
+      id: "parts",
+      label: "Parts Desk",
+      name: resolveContactName((usersByRole["Parts"] || [])[0]),
+    },
+    {
+      id: "sales",
+      label: "Retail Sales",
+      name: resolveContactName((usersByRole["Sales"] || [])[0]),
+    },
+  ].filter((contact) => contact.name);
 
 const mapVehicleRow = (row) => ({
   id: row.vehicle_id,

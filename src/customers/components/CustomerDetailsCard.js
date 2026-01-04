@@ -83,12 +83,10 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
   };
 
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5">
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">My details</p>
-          <h3 className="text-xl font-semibold text-slate-900">Keep your profile up to date</h3>
-        </div>
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-5">
+      <header className="rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
+        <p className="text-xs uppercase tracking-[0.35em] text-white">My details</p>
+        <h3 className="text-xl font-semibold text-white">Keep your profile up to date</h3>
       </header>
 
       <form onSubmit={handleSubmit} className="mt-4 grid gap-4 text-sm">
@@ -96,8 +94,8 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
           <div
             className={`rounded-2xl border px-3 py-2 text-xs ${
               error
-                ? "border-red-200 bg-red-50 text-red-700"
-                : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                ? "border-[var(--danger)] bg-[var(--danger-surface)] text-[var(--danger-dark)]"
+                : "border-[var(--success)] bg-[var(--success-surface)] text-[var(--success-dark)]"
             }`}
           >
             {error || message}
@@ -105,84 +103,84 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
         )}
 
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-slate-600">
+          <label className="text-xs font-semibold text-[var(--text-secondary)]">
             First name
             <input
               type="text"
               value={formState.firstname}
               onChange={(event) => handleInputChange("firstname", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
-          <label className="text-xs font-semibold text-slate-600">
+          <label className="text-xs font-semibold text-[var(--text-secondary)]">
             Last name
             <input
               type="text"
               value={formState.lastname}
               onChange={(event) => handleInputChange("lastname", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-slate-600">
+          <label className="text-xs font-semibold text-[var(--text-secondary)]">
             Email address
             <input
               type="email"
               value={formState.email}
               onChange={(event) => handleInputChange("email", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
-          <label className="text-xs font-semibold text-slate-600">
+          <label className="text-xs font-semibold text-[var(--text-secondary)]">
             Mobile phone
             <input
               type="tel"
               value={formState.mobile}
               onChange={(event) => handleInputChange("mobile", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-slate-600">
+          <label className="text-xs font-semibold text-[var(--text-secondary)]">
             Landline
             <input
               type="tel"
               value={formState.telephone}
               onChange={(event) => handleInputChange("telephone", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
-          <label className="text-xs font-semibold text-slate-600">
+          <label className="text-xs font-semibold text-[var(--text-secondary)]">
             Postcode
             <input
               type="text"
               value={formState.postcode}
               onChange={(event) => handleInputChange("postcode", event.target.value.toUpperCase())}
-              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
         </div>
 
-        <label className="text-xs font-semibold text-slate-600">
+        <label className="text-xs font-semibold text-[var(--text-secondary)]">
           Address
           <textarea
             value={formState.address}
             onChange={(event) => handleInputChange("address", event.target.value)}
             rows={3}
-            className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
           />
         </label>
 
-        <label className="text-xs font-semibold text-slate-600">
+        <label className="text-xs font-semibold text-[var(--text-secondary)]">
           Contact preference
           <select
             value={formState.contactPreference}
             onChange={(event) => handleInputChange("contactPreference", event.target.value)}
-            className="mt-1 w-full rounded-xl border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--primary)] focus:outline-none"
           >
             {CONTACT_OPTIONS.map((option) => (
               <option key={option} value={option}>

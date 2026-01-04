@@ -1,6 +1,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/customers/pages/DashboardPage.js
-import React from "react";
+import React, { useMemo } from "react";
+import dayjs from "dayjs";
 import CustomerLayout from "@/customers/components/CustomerLayout";
 import CustomerHero from "@/customers/components/CustomerHero";
 import VehicleGarageCard from "@/customers/components/VehicleGarageCard";
@@ -16,6 +17,7 @@ export default function CustomerDashboardPage() {
   const {
     vehicles,
     vhcSummaries,
+    jobs,
     parts,
     contacts,
     timeline,
@@ -25,29 +27,53 @@ export default function CustomerDashboardPage() {
     refreshPortalData,
   } = useCustomerPortalData();
 
+  const lastUpdated = useMemo(() => {
+    const timestamps = [];
+    (jobs || []).forEach((job) => {
+      if (job.updated_at) timestamps.push(new Date(job.updated_at));
+      else if (job.created_at) timestamps.push(new Date(job.created_at));
+    });
+    (vhcSummaries || []).forEach((summary) => {
+      if (summary.createdAtRaw) timestamps.push(new Date(summary.createdAtRaw));
+    });
+    if (!timestamps.length) return null;
+    const latest = new Date(Math.max(...timestamps.map((date) => date.getTime())));
+    return dayjs(latest).format("DD MMM · HH:mm");
+  }, [jobs, vhcSummaries]);
+
+  const nextVisit = useMemo(() => {
+    const dated = (vehicles || [])
+      .map((vehicle) => vehicle.nextService)
+      .filter(Boolean)
+      .find((value) => value !== "TBC" && value !== "—");
+    return dated || null;
+  }, [vehicles]);
+
   return (
-    <CustomerLayout pageTitle="Customer overview">
+    <CustomerLayout>
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">
+        <div className="rounded-2xl border border-[var(--danger)] bg-[var(--danger-surface)] px-4 py-3 text-sm text-[var(--danger-dark)] mb-4">
           {error}
         </div>
       )}
-      <CustomerHero nextVisit="24 June · 08:30" lastUpdated="2 minutes ago" />
       {isLoading ? (
-        <div className="rounded-2xl border border-[var(--surface-light)] bg-white p-5 text-sm text-slate-500" >
+        <div className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-5 text-sm text-[var(--text-secondary)]">
           Loading your live workshop data…
         </div>
       ) : null}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="lg:col-span-2">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)]">
+        <div className="flex flex-col gap-6">
+          <CustomerHero nextVisit={nextVisit} lastUpdated={lastUpdated} />
           <CustomerBookingCalendar />
+          <VHCSummaryList summaries={vhcSummaries} vehicles={vehicles} />
+          <AppointmentTimeline events={timeline} />
         </div>
-        <CustomerDetailsCard customer={customer} onDetailsSaved={refreshPortalData} />
-        <VehicleGarageCard vehicles={vehicles} />
-        <VHCSummaryList summaries={vhcSummaries} vehicles={vehicles} />
-        <PartsAccessCard parts={parts} />
-        <MessagingHub contacts={contacts} />
-        <AppointmentTimeline events={timeline} />
+        <div className="flex flex-col gap-6">
+          <CustomerDetailsCard customer={customer} onDetailsSaved={refreshPortalData} />
+          <VehicleGarageCard vehicles={vehicles} />
+          <PartsAccessCard parts={parts} />
+          <MessagingHub contacts={contacts} />
+        </div>
       </div>
     </CustomerLayout>
   );

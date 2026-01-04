@@ -12,6 +12,12 @@ export const departmentDashboardShortcuts = [
     description: "Technician assignments, consumables, and throughput",
   },
   {
+    label: "Tech Dashboard",
+    href: "/tech/dashboard",
+    roles: ["techs"],
+    description: "Technician personal dashboard with job assignments and clocking",
+  },
+  {
     label: "Service Dashboard",
     href: "/dashboard/service",
     roles: ["service", "service manager"],

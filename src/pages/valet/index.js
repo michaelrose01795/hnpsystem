@@ -121,9 +121,18 @@ const inferWash = (job) => {
   return false;
 };
 
+const inferVehicleHere = (job) => {
+  // Auto-tick if job is checked in (has checkedInAt timestamp)
+  return Boolean(job.checkedInAt);
+};
+
 const buildChecklist = (job) => {
   const stored = job.maintenanceInfo?.valetChecklist || {};
   const result = {
+    vehicleHere:
+      typeof stored.vehicleHere === "boolean"
+        ? stored.vehicleHere
+        : inferVehicleHere(job),
     workshop:
       typeof stored.workshop === "boolean"
         ? stored.workshop
@@ -221,6 +230,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
         }}
       >
         {[
+          { field: "vehicleHere", label: "Vehicle Here" },
           { field: "workshop", label: "Workshop" },
           { field: "mot", label: "MOT" },
           { field: "wash", label: "Wash Complete" },
@@ -233,7 +243,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
               alignItems: "center",
               gap: "8px",
               fontSize: "13px",
-              color: "var(--grey-accent-dark)",
+              color: "var(--text-primary)",
               fontWeight: "600",
               cursor: "pointer",
             }}

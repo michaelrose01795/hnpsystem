@@ -151,7 +151,14 @@ export default function LoginPage() {
   // Redirect once user is logged in
   useEffect(() => {
     if (user) {
-      router.push("/newsfeed");
+      const roles = []
+        .concat(user.roles || [])
+        .concat(user.role ? [user.role] : [])
+        .map((role) => String(role).toLowerCase());
+      const target = roles.some((role) => role.includes("customer"))
+        ? "/customer"
+        : "/newsfeed";
+      router.push(target);
     }
   }, [user, router]);
 

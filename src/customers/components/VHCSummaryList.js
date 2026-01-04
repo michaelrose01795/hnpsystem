@@ -8,13 +8,13 @@ export default function VHCSummaryList({ summaries = [], vehicles = [] }) {
     [vehicles]
   );
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5">
-      <header className="flex items-center justify-between">
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-5">
+      <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
         <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">VHC status</p>
-          <h3 className="text-xl font-semibold text-slate-900">Vehicle health checks</h3>
+          <p className="text-xs uppercase tracking-[0.35em] text-white">VHC status</p>
+          <h3 className="text-xl font-semibold text-white">Vehicle health checks</h3>
         </div>
-        <span className="text-xs font-semibold uppercase tracking-wide text-[var(--primary)]">
+        <span className="rounded-full border border-white/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white">
           Connected to workshop
         </span>
       </header>
@@ -25,18 +25,18 @@ export default function VHCSummaryList({ summaries = [], vehicles = [] }) {
           return (
             <div
               key={summary.id}
-              className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-4 py-4 text-sm text-slate-700"
+              className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface-light)] px-4 py-4 text-sm text-[var(--text-secondary)]"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">
                     {vehicle?.makeModel || "Vehicle"} • {vehicle?.reg}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-[var(--text-secondary)]">
                     Shared on {summary.createdAt} · {summary.status}
                   </p>
                 </div>
-                <button className="rounded-full border border-[var(--surface-light)] px-4 py-2 text-xs font-semibold text-[var(--primary-dark)] hover:bg-[var(--surface-light)]">
+                <button className="rounded-full border border-[var(--surface-light)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--primary-dark)] hover:bg-[var(--surface-muted)]">
                   View VHC
                 </button>
               </div>
@@ -55,7 +55,7 @@ export default function VHCSummaryList({ summaries = [], vehicles = [] }) {
           );
         })}
         {summaries.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-[var(--surface-light)] px-4 py-8 text-center text-sm text-slate-500">
+          <p className="rounded-2xl border border-dashed border-[var(--surface-light)] px-4 py-8 text-center text-sm text-[var(--text-secondary)]">
             Your vehicle health checks will appear here once the workshop sends them to you.
           </p>
         )}

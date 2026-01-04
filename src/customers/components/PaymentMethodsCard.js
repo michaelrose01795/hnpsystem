@@ -82,29 +82,27 @@ export default function PaymentMethodsCard({
   };
 
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Payment methods</p>
-          <h3 className="text-xl font-semibold text-slate-900">Saved debit / credit cards</h3>
-        </div>
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-5">
+      <header className="rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
+        <p className="text-xs uppercase tracking-[0.35em] text-white">Payment methods</p>
+        <h3 className="text-xl font-semibold text-white">Saved debit / credit cards</h3>
       </header>
 
       <div className="mt-4 space-y-3">
         {paymentMethods.map((method) => (
           <div
             key={method.id}
-            className="rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-sm text-slate-700 "
+            className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface-light)] px-4 py-3 text-sm text-[var(--text-secondary)]"
           >
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-sm font-semibold text-[var(--text-primary)]">
                   {method.nickname || `${method.brand} •••• ${method.last4}`}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[var(--text-secondary)]">
                   Expires {String(method.expiryMonth).padStart(2, "0")}/{String(method.expiryYear).slice(-2)}
                 </p>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-[var(--text-secondary)]">
                   Added {new Date(method.savedAt).toLocaleDateString()}
                 </p>
               </div>
@@ -117,33 +115,39 @@ export default function PaymentMethodsCard({
           </div>
         ))}
         {paymentMethods.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-[var(--surface-light)] px-4 py-6 text-center text-sm text-slate-500">
+          <p className="rounded-2xl border border-dashed border-[var(--surface-light)] px-4 py-6 text-center text-sm text-[var(--text-secondary)]">
             No cards saved yet. Add one below to speed up checkout.
           </p>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 rounded-2xl border border-[var(--surface-light)] bg-white/70 p-4 text-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--primary)]">Add a payment method</p>
-        {error && <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+      <form onSubmit={handleSubmit} className="mt-6 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-4 text-sm">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--primary)]">
+          Add a payment method
+        </p>
+        {error && (
+          <p className="mt-2 rounded-lg border border-[var(--danger)] bg-[var(--danger-surface)] px-3 py-2 text-xs text-[var(--danger-dark)]">
+            {error}
+          </p>
+        )}
 
         <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-slate-600">
+          <label className="text-xs font-semibold text-[var(--text-secondary)]">
             Nickname
             <input
               type="text"
               value={formState.nickname}
               onChange={(event) => handleInputChange("nickname", event.target.value)}
-              className="mt-1 w-full rounded-lg border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
               placeholder="E.g. Personal Visa"
             />
           </label>
-          <label className="text-xs font-semibold text-slate-600">
+          <label className="text-xs font-semibold text-[var(--text-secondary)]">
             Card brand
             <select
               value={formState.brand}
               onChange={(event) => handleInputChange("brand", event.target.value)}
-              className="mt-1 w-full rounded-lg border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--primary)] focus:outline-none"
             >
               {brandOptions.map((brand) => (
                 <option key={brand} value={brand}>
@@ -155,18 +159,18 @@ export default function PaymentMethodsCard({
         </div>
 
         <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <label className="text-xs font-semibold text-slate-600">
+          <label className="text-xs font-semibold text-[var(--text-secondary)]">
             Last 4 digits
             <input
               type="text"
               maxLength={4}
               value={formState.last4}
               onChange={(event) => handleInputChange("last4", event.target.value.replace(/\D/g, ""))}
-              className="mt-1 w-full rounded-lg border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--primary)] focus:outline-none"
               placeholder="1234"
             />
           </label>
-          <label className="text-xs font-semibold text-slate-600">
+          <label className="text-xs font-semibold text-[var(--text-secondary)]">
             Expiry month
             <input
               type="number"
@@ -174,24 +178,24 @@ export default function PaymentMethodsCard({
               max={12}
               value={formState.expiryMonth}
               onChange={(event) => handleInputChange("expiryMonth", event.target.value)}
-              className="mt-1 w-full rounded-lg border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--primary)] focus:outline-none"
               placeholder="MM"
             />
           </label>
-          <label className="text-xs font-semibold text-slate-600">
+          <label className="text-xs font-semibold text-[var(--text-secondary)]">
             Expiry year
             <input
               type="number"
               min={new Date().getFullYear()}
               value={formState.expiryYear}
               onChange={(event) => handleInputChange("expiryYear", event.target.value)}
-              className="mt-1 w-full rounded-lg border border-[var(--surface-light)] px-3 py-2 text-sm focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--primary)] focus:outline-none"
               placeholder="YYYY"
             />
           </label>
         </div>
 
-        <label className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-600">
+        <label className="mt-3 flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)]">
           <input
             type="checkbox"
             checked={formState.isDefault}

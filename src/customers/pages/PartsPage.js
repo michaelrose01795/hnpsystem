@@ -22,19 +22,19 @@ export default function CustomerPartsPage() {
     : null;
 
   return (
-    <CustomerLayout pageTitle="Parts & accessories">
+    <CustomerLayout>
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">
+        <div className="mb-4 rounded-2xl border border-[var(--danger)] bg-[var(--danger-surface)] px-4 py-3 text-sm text-[var(--danger-dark)]">
           {error}
         </div>
       )}
       {isLoading ? (
-        <div className="rounded-2xl border border-[var(--surface-light)] bg-white p-5 text-sm text-slate-500 mb-4">
+        <div className="mb-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-5 text-sm text-[var(--text-secondary)]">
           Loading compatible parts…
         </div>
       ) : null}
       {activeVehicle && (
-        <div className="mb-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-xs text-slate-600">
+        <div className="mb-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-4 py-3 text-xs text-[var(--text-secondary)]">
           Showing accessories for <strong>{activeVehicle.makeModel}</strong> · {activeVehicle.reg}
         </div>
       )}

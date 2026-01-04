@@ -10,14 +10,14 @@ export default function CustomerVehiclesPage() {
   const { vehicles, timeline, isLoading, error } = useCustomerPortalData();
 
   return (
-    <CustomerLayout pageTitle="My vehicles">
+    <CustomerLayout>
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">
+        <div className="mb-4 rounded-2xl border border-[var(--danger)] bg-[var(--danger-surface)] px-4 py-3 text-sm text-[var(--danger-dark)]">
           {error}
         </div>
       )}
       {isLoading ? (
-        <div className="rounded-2xl border border-[var(--surface-light)] bg-white p-5 text-sm text-slate-500 mb-4">
+        <div className="mb-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-5 text-sm text-[var(--text-secondary)]">
           Loading your vehicles…
         </div>
       ) : null}

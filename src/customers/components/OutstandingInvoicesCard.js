@@ -8,32 +8,32 @@ export default function OutstandingInvoicesCard({ invoices = [] }) {
   };
 
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5">
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Outstanding invoices</p>
-          <h3 className="text-xl font-semibold text-slate-900">Pay securely online</h3>
-        </div>
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-5">
+      <header className="rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
+        <p className="text-xs uppercase tracking-[0.35em] text-white">Outstanding invoices</p>
+        <h3 className="text-xl font-semibold text-white">Pay securely online</h3>
       </header>
 
       <div className="mt-4 space-y-3 text-sm">
         {invoices.map((invoice) => (
           <div
             key={invoice.id}
-            className="rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-4 text-slate-700 "
+            className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface-light)] px-4 py-4 text-[var(--text-secondary)]"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-slate-900">Invoice #{invoice.id.slice(0, 8)}</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-sm font-semibold text-[var(--text-primary)]">
+                  Invoice #{invoice.id.slice(0, 8)}
+                </p>
+                <p className="text-xs text-[var(--text-secondary)]">
                   Job: {invoice.jobId || "N/A"} · Issued {invoice.createdAt}
                 </p>
               </div>
-              <span className="text-base font-semibold text-slate-900">
+              <span className="text-base font-semibold text-[var(--text-primary)]">
                 £{invoice.total.toFixed(2)}
               </span>
             </div>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-secondary)]">
               <p>VAT included: £{invoice.vat.toFixed(2)}</p>
               <button
                 onClick={() => handlePayInvoice(invoice)}
@@ -44,14 +44,14 @@ export default function OutstandingInvoicesCard({ invoices = [] }) {
               </button>
             </div>
             {!invoice.paymentLink && (
-              <p className="mt-2 text-[11px] text-slate-400">
+              <p className="mt-2 text-[11px] text-[var(--text-secondary)]">
                 Please contact the service team to request a new payment link.
               </p>
             )}
           </div>
         ))}
         {invoices.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-[var(--surface-light)] px-4 py-8 text-center text-sm text-slate-500">
+          <p className="rounded-2xl border border-dashed border-[var(--surface-light)] px-4 py-8 text-center text-sm text-[var(--text-secondary)]">
             Great news! You have no outstanding invoices.
           </p>
         )}

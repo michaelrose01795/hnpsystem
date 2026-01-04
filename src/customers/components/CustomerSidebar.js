@@ -21,61 +21,27 @@ export default function CustomerSidebar() {
   const { unreadCount } = useMessagesBadge(dbUserId);
 
   return (
-    <aside
-      style={{
-        width: "260px",
-        minWidth: "220px",
-        maxHeight: "calc(100vh - 32px)",
-        position: "sticky",
-        top: "16px",
-        display: "flex",
-        flexDirection: "column",
-        backgroundColor: "var(--surface)",
-        borderRadius: "16px",
-        boxShadow: "none",
-        border: "1px solid var(--surface-light)",
-        overflow: "hidden",
-        flexShrink: 0,
-      }}
-    >
-      <div
-        style={{
-          background: "var(--primary)",
-          padding: "24px",
-          color: "white",
-        }}
-      >
-        <p
-          style={{
-            margin: 0,
-            fontSize: "0.85rem",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            opacity: 0.8,
-          }}
-        >
+    <aside className="flex w-full flex-col overflow-hidden rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] lg:sticky lg:top-4 lg:max-h-[calc(100vh-32px)] lg:w-[260px] lg:min-w-[220px] lg:flex-shrink-0">
+      <div className="bg-[var(--primary)] px-6 py-5 text-white">
+        <p className="m-0 text-[0.85rem] uppercase tracking-[0.08em] text-white/80">
           Customer Portal
         </p>
-        <h2 style={{ margin: "6px 0 0", fontSize: "1.4rem", fontWeight: 700 }}>Workspace</h2>
+        <h2 className="mt-2 text-2xl font-semibold">Workspace</h2>
       </div>
-      <div style={{ padding: "20px", flex: 1, overflowY: "auto" }}>
+      <div className="flex-1 overflow-y-auto p-5">
         {NAV_LINKS.map((link) => {
           const isActive = pathname === link.href;
           const isMessagesLink = link.href === "/customer/messages";
           return (
             <Link key={link.href} href={link.href} style={{ textDecoration: "none" }}>
               <div
-                style={{
-                  marginBottom: "12px",
-                  padding: "12px 16px",
-                  borderRadius: "12px",
-                  background: isActive ? "var(--primary)" : "var(--surface-light)",
-                  color: isActive ? "var(--surface)" : "var(--primary-dark)",
-                  fontWeight: 600,
-                  boxShadow: "none",
-                }}
+                className={`mb-3 flex items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm font-semibold ${
+                  isActive
+                    ? "bg-[var(--primary)] text-[var(--text-inverse)]"
+                    : "bg-[var(--surface-light)] text-[var(--primary-dark)]"
+                }`}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                <div className="flex flex-1 items-center justify-between gap-2">
                   <span>{link.label}</span>
                   {isMessagesLink && unreadCount > 0 && (
                     <span

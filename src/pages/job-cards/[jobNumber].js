@@ -4605,6 +4605,7 @@ function VHCTab({ jobNumber, jobData }) {
         showNavigation={false}
         customActions={customActions}
         onCheckboxesComplete={setAllCheckboxesComplete}
+        enableTabs
       />
     </div>
   );

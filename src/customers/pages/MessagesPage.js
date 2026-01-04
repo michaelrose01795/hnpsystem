@@ -728,27 +728,25 @@ export default function CustomerMessagesPage() {
   const composerHasSearch = Boolean(composerSearch.trim());
 
   return (
-    <CustomerLayout pageTitle="Messages">
+    <CustomerLayout>
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">
+        <div className="mb-4 rounded-2xl border border-[var(--danger)] bg-[var(--danger-surface)] px-4 py-3 text-sm text-[var(--danger-dark)]">
           {error}
         </div>
       )}
       {isLoading ? (
-        <div className="rounded-2xl border border-[var(--surface-light)] bg-white p-5 text-sm text-slate-500 mb-4">
+        <div className="mb-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-5 text-sm text-[var(--text-secondary)]">
           Loading messages…
         </div>
       ) : null}
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-3xl border border-[var(--surface-light)] bg-white p-5">
-          <header className="flex items-center justify-between">
+        <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-5">
+          <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Message centre</p>
-              <h3 className="text-xl font-semibold text-slate-900">
-                Message the right person
-              </h3>
+              <p className="text-xs uppercase tracking-[0.35em] text-white">Message centre</p>
+              <h3 className="text-xl font-semibold text-white">Message the right person</h3>
             </div>
-            <span className="text-xs font-semibold text-[var(--primary)]">
+            <span className="rounded-full border border-white/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white">
               Conversations stay linked to your job
             </span>
           </header>
@@ -760,14 +758,14 @@ export default function CustomerMessagesPage() {
                   <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">
                     Live conversations
                   </p>
-                  <h4 className="text-lg font-semibold text-slate-900">Your messages</h4>
+                  <h4 className="text-lg font-semibold text-[var(--text-primary)]">Your messages</h4>
                 </div>
                 <div className="flex gap-3">
                   <button
                     type="button"
                     onClick={() => setComposerOpen(true)}
                     disabled={composerCreating}
-                    className="rounded-full border border-dashed border-[var(--primary)] bg-white px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full border border-dashed border-[var(--primary)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     + New conversation
                   </button>
@@ -775,22 +773,22 @@ export default function CustomerMessagesPage() {
                     type="button"
                     onClick={fetchThreads}
                     disabled={threadsLoading}
-                    className="rounded-full border border-[var(--surface-light)] bg-white px-3 py-1 text-xs font-semibold text-[var(--primary)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-1 text-xs font-semibold text-[var(--primary)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {threadsLoading ? "Refreshing…" : "Refresh"}
                   </button>
                 </div>
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-[var(--text-secondary)]">
                 System alerts stay pinned above your chats so you never miss a stock or VHC update.
               </p>
               {conversationFeedback && (
-                <p className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                <p className="rounded-2xl border border-[var(--success)] bg-[var(--success-surface)] px-4 py-3 text-sm text-[var(--success-dark)]">
                   {conversationFeedback}
                 </p>
               )}
               {conversationError && (
-                <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <p className="rounded-2xl border border-[var(--danger)] bg-[var(--danger-surface)] px-4 py-3 text-sm text-[var(--danger-dark)]">
                   {conversationError}
                 </p>
               )}
@@ -806,8 +804,8 @@ export default function CustomerMessagesPage() {
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-slate-900">System notifications</p>
-                      <p className="text-xs text-slate-500">{systemPreview}</p>
+                      <p className="font-semibold text-[var(--text-primary)]">System notifications</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{systemPreview}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {hasSystemUnread && (
@@ -820,7 +818,7 @@ export default function CustomerMessagesPage() {
                       </span>
                     </div>
                   </div>
-                  <p className="text-[0.65rem] text-slate-500">Latest {systemTimestampLabel}</p>
+                  <p className="text-[0.65rem] text-[var(--text-secondary)]">Latest {systemTimestampLabel}</p>
                 </button>
                 {threads.length ? (
                   <div className="space-y-3">
@@ -839,7 +837,7 @@ export default function CustomerMessagesPage() {
                           }`}
                         >
                           <div className="flex items-center justify-between gap-3">
-                            <p className="text-sm font-semibold text-slate-900">
+                            <p className="text-sm font-semibold text-[var(--text-primary)]">
                               {thread.title || "Conversation"}
                             </p>
                             {thread.hasUnread && (
@@ -848,7 +846,7 @@ export default function CustomerMessagesPage() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-[var(--text-secondary)]">
                             {thread.lastMessage?.sender?.name || "Team"} · {preview.length > 80 ? `${preview.slice(0, 80)}…` : preview}
                           </p>
                         </button>
@@ -856,7 +854,7 @@ export default function CustomerMessagesPage() {
                     })}
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-[var(--text-secondary)]">
                     No open conversations yet. Start one with the button above.
                   </p>
                 )}
@@ -868,7 +866,7 @@ export default function CustomerMessagesPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">System thread</p>
-                    <h4 className="text-lg font-semibold text-slate-900">System notifications</h4>
+                    <h4 className="text-lg font-semibold text-[var(--text-primary)]">System notifications</h4>
                   </div>
                   <span className="rounded-full bg-[var(--danger-surface)] px-3 py-1 text-xs font-semibold text-[var(--danger)]">
                     Read only
@@ -876,23 +874,23 @@ export default function CustomerMessagesPage() {
                 </div>
                 <div className="space-y-3 max-h-64 overflow-y-auto">
                   {systemLoading && (
-                    <p className="text-sm text-slate-500">Loading notifications…</p>
+                    <p className="text-sm text-[var(--text-secondary)]">Loading notifications…</p>
                   )}
                   {!systemLoading && systemError && (
-                    <p className="text-sm text-red-600">{systemError}</p>
+                    <p className="text-sm text-[var(--danger)]">{systemError}</p>
                   )}
                   {!systemLoading && !systemError && systemNotifications.length === 0 && (
-                    <p className="text-sm text-slate-500">No system notifications yet.</p>
+                    <p className="text-sm text-[var(--text-secondary)]">No system notifications yet.</p>
                   )}
                   {!systemLoading && !systemError && systemNotifications.length > 0 && (
                     <div className="space-y-3">
                       {systemNotifications.map((note) => (
                         <article
                           key={`system-${note.notification_id}`}
-                          className="space-y-1 rounded-2xl border border-[var(--surface-light)] bg-white/70 px-4 py-3 text-sm"
+                          className="space-y-1 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-4 py-3 text-sm"
                         >
-                          <p className="text-sm text-slate-900">{note.message || "System update"}</p>
-                          <p className="text-[0.65rem] text-slate-500">
+                          <p className="text-sm text-[var(--text-primary)]">{note.message || "System update"}</p>
+                          <p className="text-[0.65rem] text-[var(--text-secondary)]">
                             {formatNotificationTimestamp(note.created_at)}
                           </p>
                         </article>
@@ -900,7 +898,7 @@ export default function CustomerMessagesPage() {
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[var(--text-secondary)]">
                   Only the system posts here; this thread cannot be deleted or renamed.
                 </p>
               </div>
@@ -909,21 +907,21 @@ export default function CustomerMessagesPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Active thread</p>
-                    <h4 className="text-lg font-semibold text-slate-900">{activeThread.title}</h4>
+                    <h4 className="text-lg font-semibold text-[var(--text-primary)]">{activeThread.title}</h4>
                   </div>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-[var(--text-secondary)]">
                     {formatMessageTimestamp(threadMessages[threadMessages.length - 1]?.createdAt)}
                   </span>
                 </div>
                 <div className="space-y-3 max-h-60 overflow-y-auto pb-2">
                   {messagesLoading && (
-                    <p className="text-sm text-slate-500">Loading conversation…</p>
+                    <p className="text-sm text-[var(--text-secondary)]">Loading conversation…</p>
                   )}
                   {!messagesLoading && messagesError && (
-                    <p className="text-sm text-red-600">{messagesError}</p>
+                    <p className="text-sm text-[var(--danger)]">{messagesError}</p>
                   )}
                   {!messagesLoading && !messagesError && threadMessages.length === 0 && (
-                    <p className="text-sm text-slate-500">No messages yet. Start the conversation below.</p>
+                    <p className="text-sm text-[var(--text-secondary)]">No messages yet. Start the conversation below.</p>
                   )}
                   {!messagesLoading && !messagesError && (
                     <div className="space-y-3">
@@ -939,24 +937,24 @@ export default function CustomerMessagesPage() {
                             }`}
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-semibold text-slate-900">{senderName}</span>
-                              <span className="text-[0.65rem] uppercase tracking-[0.2em] text-slate-400">
+                              <span className="text-xs font-semibold text-[var(--text-primary)]">{senderName}</span>
+                              <span className="text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-secondary)]">
                                 {formatMessageTimestamp(message.createdAt)}
                               </span>
                             </div>
-                            <p className="text-slate-700">{renderMessageContentWithLinks(message.content)}</p>
+                            <p className="text-[var(--text-secondary)]">{renderMessageContentWithLinks(message.content)}</p>
                             {message.metadata?.jobNumber && (
-                              <p className="text-[0.65rem] text-slate-500">
+                              <p className="text-[0.65rem] text-[var(--text-secondary)]">
                                 Linked job #{message.metadata.jobNumber}
                               </p>
                             )}
                             {message.metadata?.customerId && (
-                              <p className="text-[0.65rem] text-slate-500">
+                              <p className="text-[0.65rem] text-[var(--text-secondary)]">
                                 Linked customer profile
                               </p>
                             )}
                             {message.metadata?.vehicleId && (
-                              <p className="text-[0.65rem] text-slate-500">
+                              <p className="text-[0.65rem] text-[var(--text-secondary)]">
                                 Linked vehicle {vehicles?.find((v) => v.id === message.metadata.vehicleId)?.reg || "(vehicle data)"}
                               </p>
                             )}
@@ -1015,7 +1013,7 @@ export default function CustomerMessagesPage() {
                             <span className="text-sm font-bold text-[var(--primary)]">
                               {cmd.command}
                             </span>
-                            <span className="text-xs text-slate-500">
+                            <span className="text-xs text-[var(--text-secondary)]">
                               {cmd.description}
                             </span>
                           </div>
@@ -1033,7 +1031,7 @@ export default function CustomerMessagesPage() {
                     value={messageDraft}
                     onChange={handleMessageDraftChange}
                     placeholder="Type your message… (type / for commands)"
-                    className="w-full rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[var(--primary)] focus:outline-none"
+                    className="w-full rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
                   />
                   <div className="flex justify-end">
                     <button
@@ -1047,19 +1045,19 @@ export default function CustomerMessagesPage() {
                 </form>
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-[var(--surface-light)] bg-[var(--background)] p-6 text-sm text-slate-500">
+              <div className="rounded-2xl border border-dashed border-[var(--surface-light)] bg-[var(--background)] p-6 text-sm text-[var(--text-secondary)]">
                 Select a conversation to view messages and replies.
               </div>
             )}
           </div>
           {composerOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-              <div className="w-full max-w-2xl rounded-3xl border border-[var(--surface-light)] bg-white p-6">
+              <div className="w-full max-w-2xl rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Compose</p>
-                    <h3 className="text-xl font-semibold text-slate-900">Create a group chat</h3>
-                    <p className="text-sm text-slate-500">
+                    <h3 className="text-xl font-semibold text-[var(--text-primary)]">Create a group chat</h3>
+                    <p className="text-sm text-[var(--text-secondary)]">
                       Search by name, check the people you need, and create a new thread.
                     </p>
                   </div>
@@ -1072,7 +1070,7 @@ export default function CustomerMessagesPage() {
                   </button>
                 </div>
                 <div className="mt-4 space-y-3">
-                  <label className="text-xs font-semibold uppercase text-slate-500">Search users</label>
+                  <label className="text-xs font-semibold uppercase text-[var(--text-secondary)]">Search users</label>
                   <input
                     type="search"
                     value={composerSearch}
@@ -1110,13 +1108,13 @@ export default function CustomerMessagesPage() {
                                   className="h-4 w-4 rounded border-[var(--primary)]"
                                 />
                                 <div>
-                                  <p className="font-semibold text-slate-900">{user.name}</p>
-                                  <p className="text-[0.65rem] uppercase tracking-[0.2em] text-slate-500">
+                                  <p className="font-semibold text-[var(--text-primary)]">{user.name}</p>
+                                  <p className="text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-secondary)]">
                                     {user.role || "Team member"}
                                   </p>
                                 </div>
                               </div>
-                              <span className="text-xs text-slate-500">{user.email}</span>
+                              <span className="text-xs text-[var(--text-secondary)]">{user.email}</span>
                             </label>
                           );
                         })}
@@ -1125,7 +1123,7 @@ export default function CustomerMessagesPage() {
                   </div>
                 </div>
                 <div className="mt-4 flex items-center justify-between">
-                  <span className="text-sm text-slate-500">
+                  <span className="text-sm text-[var(--text-secondary)]">
                     Selected {composerSelection.length} colleague
                     {composerSelection.length === 1 ? "" : "s"}
                   </span>

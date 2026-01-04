@@ -289,12 +289,18 @@ export default function PartsManagerDashboard() {
           .limit(10),
       ]);
 
-      if (!summaryResponse.success) {
-        throw new Error(summaryResponse.message || "Unable to load summary");
+      if (!summaryResponse?.success) {
+        console.warn(
+          "Parts summary response failed, continuing with defaults.",
+          summaryResponse?.message || summaryResponse
+        );
       }
 
-      if (!deliveriesResponse.success) {
-        throw new Error(deliveriesResponse.message || "Unable to load deliveries");
+      if (!deliveriesResponse?.success) {
+        console.warn(
+          "Parts deliveries response failed, continuing with defaults.",
+          deliveriesResponse?.message || deliveriesResponse
+        );
       }
 
       if (jobItemsResponse.error) {
@@ -305,7 +311,7 @@ export default function PartsManagerDashboard() {
         throw new Error(techRequestsResponse.error.message || "Unable to load tech requests");
       }
 
-      const summary = summaryResponse.summary || {};
+      const summary = summaryResponse?.summary || {};
       const lowStock = summary.lowStockParts || [];
       const jobRows = jobItemsResponse.data || [];
       const techRequests = techRequestsResponse.data || [];
@@ -336,7 +342,7 @@ export default function PartsManagerDashboard() {
         },
       ];
 
-      setDeliveryRoutes(deliveriesResponse.deliveries || []);
+      setDeliveryRoutes(deliveriesResponse?.deliveries || []);
       await refreshJobDeliveryMap(jobRows.map((row) => row.job?.id).filter(Boolean));
 
       setDashboardData({
@@ -344,7 +350,7 @@ export default function PartsManagerDashboard() {
         workload: buildWorkloadRows(jobRows),
         focusItems: buildFocusItems(lowStock),
         inventoryAlerts: lowStock,
-        deliveries: (deliveriesResponse.deliveries || []).map((delivery) => ({
+        deliveries: (deliveriesResponse?.deliveries || []).map((delivery) => ({
           supplier: delivery.supplier || "Unknown supplier",
           eta: delivery.expected_date || delivery.received_date || "TBC",
           items: (delivery.delivery_items || []).length,
