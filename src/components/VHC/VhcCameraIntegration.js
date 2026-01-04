@@ -36,6 +36,7 @@ export default function VhcCameraIntegration({
   const [showPhotoEditor, setShowPhotoEditor] = useState(false);
   const [showVideoEditor, setShowVideoEditor] = useState(false);
   const [showUploadConfirm, setShowUploadConfirm] = useState(false);
+  const [launchMode, setLaunchMode] = useState(null);
 
   // Media states
   const [capturedMedia, setCapturedMedia] = useState(null);
@@ -44,18 +45,21 @@ export default function VhcCameraIntegration({
 
   // Determine initial mode based on active tab
   const getInitialMode = () => {
+    if (launchMode) return launchMode;
     if (activeTab === "photos") return "photo";
     if (activeTab === "videos") return "video";
     return "photo"; // default
   };
 
   // Handle camera button click
-  const handleCameraClick = () => {
+  const handleCameraClick = (mode = null) => {
+    setLaunchMode(mode);
     setShowCameraModal(true);
   };
 
   // Handle capture from camera
   const handleCapture = (file, type) => {
+    setLaunchMode(null);
     setCapturedMedia(file);
     setMediaType(type);
     setShowCameraModal(false);
@@ -105,6 +109,7 @@ export default function VhcCameraIntegration({
     setCapturedMedia(null);
     setEditedMedia(null);
     setMediaType(null);
+    setLaunchMode(null);
 
     // Notify parent to refresh
     if (onUploadComplete) {
@@ -118,6 +123,7 @@ export default function VhcCameraIntegration({
     setCapturedMedia(null);
     setEditedMedia(null);
     setMediaType(null);
+    setLaunchMode(null);
   };
 
   // Handle camera modal close
@@ -125,31 +131,86 @@ export default function VhcCameraIntegration({
     setShowCameraModal(false);
     setCapturedMedia(null);
     setMediaType(null);
+    setLaunchMode(null);
   };
 
   // Only show button on photos or videos tab and when not in read-only mode
-  const shouldShowButton = (activeTab === "photos" || activeTab === "videos") && !readOnly;
+  const shouldShowButton = (activeTab === "photos" || activeTab === "videos" || !activeTab) && !readOnly;
 
   if (!shouldShowButton) {
     return null;
   }
 
+  const renderCaptureButtons = () => {
+    if (activeTab === "photos") {
+      return (
+        <button
+          onClick={() => handleCameraClick("photo")}
+          style={{
+            ...createVhcButtonStyle("primary"),
+            padding: "8px 16px",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            fontSize: "14px",
+          }}
+        >
+          📷 Capture Photo
+        </button>
+      );
+    }
+    if (activeTab === "videos") {
+      return (
+        <button
+          onClick={() => handleCameraClick("video")}
+          style={{
+            ...createVhcButtonStyle("primary"),
+            padding: "8px 16px",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            fontSize: "14px",
+          }}
+        >
+          🎥 Capture Video
+        </button>
+      );
+    }
+    return (
+      <>
+        <button
+          onClick={() => handleCameraClick("photo")}
+          style={{
+            ...createVhcButtonStyle("primary"),
+            padding: "8px 16px",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            fontSize: "14px",
+          }}
+        >
+          📷 Capture Photo
+        </button>
+        <button
+          onClick={() => handleCameraClick("video")}
+          style={{
+            ...createVhcButtonStyle("secondary"),
+            padding: "8px 16px",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            fontSize: "14px",
+          }}
+        >
+          🎥 Capture Video
+        </button>
+      </>
+    );
+  };
+
   return (
     <>
-      {/* Camera Button */}
-      <button
-        onClick={handleCameraClick}
-        style={{
-          ...createVhcButtonStyle("primary"),
-          padding: "8px 16px",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "6px",
-          fontSize: "14px",
-        }}
-      >
-        📷 Capture {activeTab === "photos" ? "Photo" : "Video"}
-      </button>
+      {renderCaptureButtons()}
 
       {/* Camera Capture Modal */}
       <CameraCaptureModal

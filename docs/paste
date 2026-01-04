@@ -1,5 +1,13 @@
 TO DO:
 
+Link the "/tech/dashboard" page to a button within the "My Dashboard" inside the navigation sidebar, only add it to this play for view of the tech role no one else and only in this location., remove any mock data from the page and implement it all within the the database adn pull from the database, if required Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first. 
+
+
+
+
+
+Parts identified console error
+
 
 
 

@@ -171,7 +171,7 @@ const renderMessageContent = (content, userRoles = []) => {
       href = getJobLink(value, userRoles);
       title = `Job #${value}`;
     } else if (prefix === 'vhc' && value) {
-      href = `/vhc/details/${value}`;
+      href = `/job-cards/${value}?tab=vhc`;
       title = `VHC for Job #${value}`;
     } else if (prefix === 'part' && value) {
       title = `Part #${value}`;
@@ -510,7 +510,7 @@ const getAvailableCommands = (userRoles = []) => {
       pattern: "vhc",
       hasInput: true,
       roles: ['technician', 'service advisor', 'service manager', 'workshop manager', 'admin'],
-      getLink: (num) => `/vhc/details/${num}`
+      getLink: (num) => `/job-cards/${num}?tab=vhc`
     },
 
     // Parts Commands

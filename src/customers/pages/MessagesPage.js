@@ -150,7 +150,7 @@ const renderMessageContentWithLinks = (content) => {
       parts.push(
         <a
           key={match.index}
-          href={`/vhc/details/${jobNumber}`}
+          href={`/job-cards/${jobNumber}?tab=vhc`}
           style={{
             color: "var(--primary)",
             textDecoration: "underline",

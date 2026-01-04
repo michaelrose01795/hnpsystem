@@ -441,6 +441,7 @@ export const getAllJobs = async () => {
       job_notes(note_id, note_text, user_id, created_at, updated_at),
       job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time, technician_id, created_at, updated_at),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at),
+      vhc_authorizations(id, authorized_items, authorized_at),
       booking_request:job_booking_requests(
         request_id,
         job_id,
@@ -1760,6 +1761,7 @@ const formatJobData = (data) => {
     notes: data.job_notes || [],
     writeUp: data.job_writeups?.[0] || null,
     files: data.job_files || [], // ✅ NEW: File attachments
+    vhcAuthorizations: data.vhc_authorizations || [],
     linkedWarrantyJobId: data.warranty_linked_job_id || null,
     warrantyVhcMasterJobId: data.warranty_vhc_master_job_id || null,
     linkedWarrantyJobNumber: data.linked_warranty_job?.job_number || null,

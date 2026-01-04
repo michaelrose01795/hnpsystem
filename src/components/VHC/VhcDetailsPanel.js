@@ -22,16 +22,6 @@ const STATUS_BADGES = {
   grey: "var(--info)",
 };
 
-const TAB_OPTIONS = [
-  { id: "summary", label: "Summary" },
-  { id: "health-check", label: "Health Check" },
-  { id: "parts-identified", label: "Parts Identified" },
-  { id: "parts-authorized", label: "Parts Authorized" },
-  { id: "parts-on-order", label: "Parts On Order" },
-  { id: "photos", label: "Photos" },
-  { id: "videos", label: "Videos" },
-];
-
 const HEALTH_SECTION_CONFIG = [
   {
     key: "wheelsTyres",
@@ -752,7 +742,15 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
   );
 };
 
-export default function VhcDetailsPanel({ jobNumber, showNavigation = true, readOnly = false, customActions = null, onCheckboxesComplete = null }) {
+export default function VhcDetailsPanel({
+  jobNumber,
+  showNavigation = true,
+  readOnly = false,
+  customActions = null,
+  onCheckboxesComplete = null,
+  viewMode = "full",
+}) {
+  const isCustomerView = viewMode === "customer";
   const router = useRouter();
   const resolvedJobNumber = jobNumber || router.query?.jobNumber;
 
@@ -761,7 +759,6 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
   const [vhcData, setVhcData] = useState(baseVhcPayload());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("summary");
   const [itemEntries, setItemEntries] = useState({});
   const [severitySelections, setSeveritySelections] = useState({ red: [], amber: [] });
   const [activeSection, setActiveSection] = useState(null);
@@ -1539,6 +1536,18 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     return lists;
   }, [severitySections]);
 
+  const labourHoursByVhcItem = useMemo(() => {
+    const map = new Map();
+    partsIdentified.forEach((part) => {
+      if (!part?.vhc_item_id) return;
+      const hours = Number(part.labour_hours);
+      if (!Number.isFinite(hours) || hours <= 0) return;
+      const key = String(part.vhc_item_id);
+      map.set(key, (map.get(key) || 0) + hours);
+    });
+    return map;
+  }, [partsIdentified]);
+
   // Combined VHC items with their parts for Parts Identified section
   const vhcItemsWithParts = useMemo(() => {
     if (!summaryItems || summaryItems.length === 0) return [];
@@ -1648,6 +1657,51 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
 
   const getEntryForItem = (itemId) => ensureEntryValue(itemEntries, itemId);
 
+  const resolveCustomerRowTotal = (itemId) => {
+    const entry = getEntryForItem(itemId);
+    const resolvedPartsCost = resolvePartsCost(itemId, entry);
+    const canonicalId = resolveCanonicalVhcId(itemId);
+    const labourHours = labourHoursByVhcItem.get(canonicalId) || 0;
+    const labourCost = labourHours * LABOUR_RATE;
+    const partsCost = resolvedPartsCost ?? 0;
+    const total = partsCost + labourCost;
+    return total > 0 ? total : null;
+  };
+
+  const customerTotals = useMemo(() => {
+    const totals = {
+      red: 0,
+      amber: 0,
+      authorized: 0,
+      declined: 0,
+      overall: 0,
+    };
+    const accumulate = (items, severity) => {
+      items.forEach((item) => {
+        const rowTotal = resolveCustomerRowTotal(item.id);
+        if (!rowTotal) return;
+        totals[severity] += rowTotal;
+        totals.overall += rowTotal;
+        const entry = getEntryForItem(item.id);
+        if (entry.status === "authorized") {
+          totals.authorized += rowTotal;
+        } else if (entry.status === "declined") {
+          totals.declined += rowTotal;
+        }
+      });
+    };
+    accumulate(severityLists.red || [], "red");
+    accumulate(severityLists.amber || [], "amber");
+    return totals;
+  }, [severityLists, itemEntries, labourHoursByVhcItem, partsCostByVhcItem, resolveCanonicalVhcId]);
+
+  const updateEntryStatus = (itemId, status) => {
+    setItemEntries((prev) => ({
+      ...prev,
+      [itemId]: { ...ensureEntryValue(prev, itemId), status },
+    }));
+  };
+
   // Auto-update partsComplete checkbox based on parts being added or marked as not required
   useEffect(() => {
     setItemEntries((prev) => {
@@ -1733,6 +1787,11 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     const partsCost =
       resolvedPartsCost !== undefined ? resolvedPartsCost : parseNumericValue(entry.partsCost);
     return partsCost + computeLabourCost(entry.laborHours);
+  };
+
+  const formatCurrency = (value) => {
+    if (!Number.isFinite(value)) return "—";
+    return `£${value.toFixed(2)}`;
   };
 
   const resolveRowStatusState = (entry, resolvedPartsCost, itemId) => {
@@ -2216,6 +2275,148 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       </div>
     );
   };
+
+  const renderCustomerRow = (item, severity) => {
+    const entry = getEntryForItem(item.id);
+    const total = resolveCustomerRowTotal(item.id);
+    const detailLabel = item.label || item.sectionName || "Recorded item";
+    const detailContent = item.concernText || item.notes || "";
+    const measurement = item.measurement || "";
+    const categoryLabel = item.categoryLabel || item.sectionName || "Recorded Section";
+    const isAuthorized = entry.status === "authorized";
+    const isDeclined = entry.status === "declined";
+    const showDecision = severity === "red" || severity === "amber";
+
+    return (
+      <div
+        key={`${severity}-${item.id}`}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          padding: "14px 16px",
+          borderBottom: "1px solid var(--info-surface)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
+          <div style={{ minWidth: "240px" }}>
+            <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+              {categoryLabel}
+            </div>
+            <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--accent-purple)", marginTop: "4px" }}>
+              {detailLabel}
+            </div>
+            {detailContent ? (
+              <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "4px" }}>{detailContent}</div>
+            ) : null}
+            {measurement ? (
+              <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>{measurement}</div>
+            ) : null}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+            <div style={{ fontSize: "14px", fontWeight: 600 }}>{formatCurrency(total)}</div>
+            {showDecision ? (
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                <label style={{ display: "flex", gap: "6px", alignItems: "center", fontSize: "13px" }}>
+                  <input
+                    type="checkbox"
+                    checked={isAuthorized}
+                    onChange={(event) => updateEntryStatus(item.id, event.target.checked ? "authorized" : null)}
+                  />
+                  Authorise
+                </label>
+                <label style={{ display: "flex", gap: "6px", alignItems: "center", fontSize: "13px" }}>
+                  <input
+                    type="checkbox"
+                    checked={isDeclined}
+                    onChange={(event) => updateEntryStatus(item.id, event.target.checked ? "declined" : null)}
+                  />
+                  Decline
+                </label>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCustomerSection = (title, items, severity) => {
+    const theme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--surface)" };
+    return (
+      <div
+        style={{
+          border: `1px solid ${theme.border || "var(--info-surface)"}`,
+          borderRadius: "16px",
+          background: theme.background || "var(--surface)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            padding: "14px 16px",
+            fontWeight: 700,
+            color: theme.text || "var(--accent-purple)",
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            fontSize: "12px",
+            borderBottom: "1px solid var(--info-surface)",
+          }}
+        >
+          {title}
+        </div>
+        {items.length === 0 ? (
+          <div style={{ padding: "16px", fontSize: "13px", color: "var(--info)" }}>
+            No items recorded.
+          </div>
+        ) : (
+          items.map((item) => renderCustomerRow(item, severity))
+        )}
+      </div>
+    );
+  };
+
+  const renderCustomerView = () => (
+    <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          gap: "12px",
+        }}
+      >
+        <div style={{ padding: "14px 16px", borderRadius: "12px", background: "var(--surface-light)" }}>
+          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+            Red Work
+          </div>
+          <div style={{ fontSize: "18px", fontWeight: 700 }}>{formatCurrency(customerTotals.red)}</div>
+        </div>
+        <div style={{ padding: "14px 16px", borderRadius: "12px", background: "var(--surface-light)" }}>
+          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+            Amber Work
+          </div>
+          <div style={{ fontSize: "18px", fontWeight: 700 }}>{formatCurrency(customerTotals.amber)}</div>
+        </div>
+        <div style={{ padding: "14px 16px", borderRadius: "12px", background: "var(--surface-light)" }}>
+          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+            Authorised
+          </div>
+          <div style={{ fontSize: "18px", fontWeight: 700 }}>{formatCurrency(customerTotals.authorized)}</div>
+        </div>
+        <div style={{ padding: "14px 16px", borderRadius: "12px", background: "var(--surface-light)" }}>
+          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+            Declined
+          </div>
+          <div style={{ fontSize: "18px", fontWeight: 700 }}>{formatCurrency(customerTotals.declined)}</div>
+        </div>
+      </div>
+
+      {renderCustomerSection("Red Items", severityLists.red || [], "red")}
+      {renderCustomerSection("Amber Items", severityLists.amber || [], "amber")}
+      {renderCustomerSection("Green Items", greenItems || [], "green")}
+    </div>
+  );
   const photoFiles = useMemo(() => {
     const isImage = (file = {}) => {
       const type = (file.file_type || "").toLowerCase();
@@ -3609,6 +3810,10 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
     return renderStatusMessage(error, "var(--danger)");
   }
 
+  if (isCustomerView) {
+    return renderCustomerView();
+  }
+
   const jobHeader = (
     <div
       style={{
@@ -3668,11 +3873,11 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       {showNavigation && (
         <div style={PANEL_SECTION_STYLE}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-            <button
-              type="button"
-              onClick={() => router.push("/vhc/dashboard")}
-              style={{
-                border: "1px solid var(--accent-purple-surface)",
+              <button
+                type="button"
+                onClick={() => router.push("/job-cards/view")}
+                style={{
+                  border: "1px solid var(--accent-purple-surface)",
                 borderRadius: "10px",
                 padding: "8px 14px",
                 background: "var(--surface)",
@@ -3736,173 +3941,124 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
       )}
 
       <div style={PANEL_SECTION_STYLE}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-          <nav
-            style={{
-              borderRadius: "999px",
-              border: "1px solid var(--surface-light)",
-              background: "var(--surface)",
-              padding: "6px",
-              display: "flex",
-              gap: "6px",
-              overflowX: "auto",
-              scrollbarWidth: "thin",
-              scrollbarColor: "var(--scrollbar-thumb) transparent",
-              scrollBehavior: "smooth",
-              WebkitOverflowScrolling: "touch",
-            }}
-            className="vhc-tabs-scroll-container"
-            aria-label="VHC tabs"
-          >
-            {TAB_OPTIONS.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    flex: "0 0 auto",
-                    borderRadius: "999px",
-                    border: "1px solid transparent",
-                    padding: "10px 20px",
-                    fontSize: "0.9rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    background: isActive ? "var(--primary)" : "transparent",
-                    color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
-                    transition: "all 0.15s ease",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </nav>
-          {customActions && (
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              {typeof customActions === "function" ? customActions(activeTab) : customActions}
-            </div>
-          )}
-        </div>
+        {customActions && (
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+            {typeof customActions === "function" ? customActions("summary") : customActions}
+          </div>
+        )}
         <div style={TAB_CONTENT_STYLE}>
-          {activeTab === "summary" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              {["red", "amber"].map((severity) => {
-                const section = severitySections[severity];
-                if (!section || section.size === 0) return null;
-                const meta = SEVERITY_META[severity];
-                const severityTheme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--danger-surface)" };
-                return (
-                  <div
-                    key={severity}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "16px",
-                      border: `2px solid ${severityTheme.border}`,
-                      borderRadius: "18px",
-                      padding: "18px",
-                      background: "var(--surface)",
-                      boxShadow: "none",
-                    }}
-                  >
-                    <div
-                      style={{
-                        borderBottom: `1px solid ${severityTheme.border}`,
-                        paddingBottom: "10px",
-                      }}
-                    >
-                      <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
-                      {meta.description ? (
-                        <p style={{ margin: "4px 0 0", color: "var(--info)" }}>{meta.description}</p>
-                      ) : null}
-                    </div>
-                    {renderSeverityTable(severity)}
-                  </div>
-                );
-              })}
-              {greenItems.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            {["red", "amber"].map((severity) => {
+              const section = severitySections[severity];
+              if (!section || section.size === 0) return null;
+              const meta = SEVERITY_META[severity];
+              const severityTheme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--danger-surface)" };
+              return (
                 <div
+                  key={severity}
                   style={{
-                    border: "2px solid var(--success)",
-                    borderRadius: "18px",
-                    padding: "20px",
-                    background: "var(--success-surface)",
-                    boxShadow: "none",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "18px",
+                    gap: "16px",
+                    border: `2px solid ${severityTheme.border}`,
+                    borderRadius: "18px",
+                    padding: "18px",
+                    background: "var(--surface)",
+                    boxShadow: "none",
                   }}
                 >
-                  <div>
-                    <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Green Checks</h2>
-                  </div>
                   <div
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                      gap: "12px",
+                      borderBottom: `1px solid ${severityTheme.border}`,
+                      paddingBottom: "10px",
                     }}
                   >
-                    {greenItems.map((item) => {
-                      const locationLabel = item.location
-                        ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
-                        : null;
-                      return (
-                        <div
-                          key={item.id}
+                    <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
+                    {meta.description ? (
+                      <p style={{ margin: "4px 0 0", color: "var(--info)" }}>{meta.description}</p>
+                    ) : null}
+                  </div>
+                  {renderSeverityTable(severity)}
+                </div>
+              );
+            })}
+            {greenItems.length > 0 && (
+              <div
+                style={{
+                  border: "2px solid var(--success)",
+                  borderRadius: "18px",
+                  padding: "20px",
+                  background: "var(--success-surface)",
+                  boxShadow: "none",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "18px",
+                }}
+              >
+                <div>
+                  <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Green Checks</h2>
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: "12px",
+                  }}
+                >
+                  {greenItems.map((item) => {
+                    const locationLabel = item.location
+                      ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
+                      : null;
+                    return (
+                      <div
+                        key={item.id}
+                        style={{
+                          borderRadius: "14px",
+                          background: "var(--surface)",
+                          border: "1px solid var(--surface-light)",
+                          padding: "14px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "6px",
+                        }}
+                      >
+                        <span
                           style={{
-                            borderRadius: "14px",
-                            background: "var(--surface)",
-                            border: "1px solid var(--surface-light)",
-                            padding: "14px",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "6px",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.08em",
+                            color: "var(--info)",
                           }}
                         >
-                          <span
-                            style={{
-                              fontSize: "11px",
-                              fontWeight: 600,
-                              textTransform: "uppercase",
-                              letterSpacing: "0.08em",
-                              color: "var(--info)",
-                            }}
-                          >
-                            {item.category?.label || item.sectionName}
-                          </span>
-                          <div style={{ fontWeight: 700, color: "var(--accent-purple)", fontSize: "14px" }}>
-                            {item.label}
-                          </div>
-                          {item.notes ? (
-                            <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>{item.notes}</div>
-                          ) : null}
-                          {item.measurement ? (
-                            <div style={{ fontSize: "12px", color: "var(--info)" }}>{item.measurement}</div>
-                          ) : null}
-                          {locationLabel ? (
-                            <div style={{ fontSize: "12px", color: "var(--info)" }}>Location: {locationLabel}</div>
-                          ) : null}
-                          {item.spec?.length > 0 ? (
-                            <div style={{ display: "flex", flexDirection: "column", gap: "2px", fontSize: "12px", color: "var(--info)" }}>
-                              {item.spec.map((line) => (
-                                <span key={`${item.id}-spec-${line}`}>{line}</span>
-                              ))}
-                            </div>
-                          ) : null}
+                          {item.category?.label || item.sectionName}
+                        </span>
+                        <div style={{ fontWeight: 700, color: "var(--accent-purple)", fontSize: "14px" }}>
+                          {item.label}
                         </div>
-                      );
-                    })}
-                  </div>
+                        {item.notes ? (
+                          <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>{item.notes}</div>
+                        ) : null}
+                        {item.measurement ? (
+                          <div style={{ fontSize: "12px", color: "var(--info)" }}>{item.measurement}</div>
+                        ) : null}
+                        {locationLabel ? (
+                          <div style={{ fontSize: "12px", color: "var(--info)" }}>Location: {locationLabel}</div>
+                        ) : null}
+                        {item.spec?.length > 0 ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px", fontSize: "12px", color: "var(--info)" }}>
+                            {item.spec.map((line) => (
+                              <span key={`${item.id}-spec-${line}`}>{line}</span>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
 
-          {activeTab === "health-check" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
               <div
                 style={{
@@ -3952,25 +4108,19 @@ export default function VhcDetailsPanel({ jobNumber, showNavigation = true, read
                 </div>
               )}
             </div>
-          )}
 
-          {activeTab === "parts-identified" && (
             <div id="parts-identified">
               {renderVhcItemsPanel()}
             </div>
-          )}
 
-          {activeTab === "parts-authorized" &&
-            renderPartsPanel("Parts Authorized", partsAuthorized, "No parts awaiting authorization or approvals recorded.")}
+            {renderPartsPanel("Parts Authorized", partsAuthorized, "No parts awaiting authorization or approvals recorded.")}
 
-          {activeTab === "parts-on-order" &&
-            renderPartsPanel("Parts On Order", partsOnOrder, "No parts have been raised with the parts department yet.")}
+            {renderPartsPanel("Parts On Order", partsOnOrder, "No parts have been raised with the parts department yet.")}
 
-          {activeTab === "photos" &&
-            renderFileGallery("Photos", photoFiles, "No customer-facing photos have been attached.", "photo")}
+            {renderFileGallery("Photos", photoFiles, "No customer-facing photos have been attached.", "photo")}
 
-          {activeTab === "videos" &&
-            renderFileGallery("Videos", videoFiles, "No customer-facing videos have been attached.", "video")}
+            {renderFileGallery("Videos", videoFiles, "No customer-facing videos have been attached.", "video")}
+          </div>
         </div>
       </div>
 

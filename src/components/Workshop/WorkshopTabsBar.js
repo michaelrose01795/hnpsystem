@@ -6,7 +6,6 @@ export const workshopTabs = [
   { href: "/workshop", label: "Dashboard" },
   { href: "/job-cards/waiting/nextjobs", label: "Next Jobs" },
   { href: "/job-cards/view", label: "Job Cards" },
-  { href: "/vhc/dashboard", label: "VHC" },
   { href: "/workshop/consumables-tracker", label: "Consumables" },
   { href: "/clocking", label: "Clocking" },
 ];

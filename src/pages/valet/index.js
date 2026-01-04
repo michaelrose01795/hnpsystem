@@ -34,6 +34,40 @@ const containsKeyword = (text, keywords = WASH_KEYWORDS) => {
   return keywords.some((keyword) => lower.includes(keyword));
 };
 
+const sumAuthorizedItems = (items) => {
+  if (!Array.isArray(items)) return 0;
+  return items.reduce((sum, item) => {
+    const amount = Number(
+      item?.amount ??
+        item?.value ??
+        item?.total ??
+        (typeof item === "number" ? item : 0)
+    );
+    return sum + (Number.isFinite(amount) ? amount : 0);
+  }, 0);
+};
+
+const jobHasServiceCategory = (job) => {
+  const categories = Array.isArray(job.jobCategories)
+    ? job.jobCategories.map((cat) => (cat || "").toLowerCase())
+    : [];
+  return categories.some((category) => category.includes("service"));
+};
+
+const jobHasHighValueAuthorizedWork = (job) => {
+  // Check if job has VHC authorizations with total >= £1000
+  if (!job.vhcAuthorizations || !Array.isArray(job.vhcAuthorizations)) {
+    return false;
+  }
+
+  const totalAuthorized = job.vhcAuthorizations.reduce((total, auth) => {
+    const authTotal = sumAuthorizedItems(auth.authorized_items || []);
+    return total + authTotal;
+  }, 0);
+
+  return totalAuthorized >= 1000;
+};
+
 const jobHasWashFlag = (job) => {
   const categories = Array.isArray(job.jobCategories)
     ? job.jobCategories.map((cat) => (cat || "").toLowerCase())
@@ -286,12 +320,23 @@ export default function ValetDashboard() {
       setError("");
       try {
         const allJobs = await getAllJobs();
-        const washJobs = (allJobs || []).filter(jobHasWashFlag);
+
+        // Filter jobs that match any of these criteria:
+        // 1. Has wash-related flags
+        // 2. Has "service" category
+        // 3. Has authorized work >= £1000
+        const filteredJobs = (allJobs || []).filter((job) => {
+          return (
+            jobHasWashFlag(job) ||
+            jobHasServiceCategory(job) ||
+            jobHasHighValueAuthorizedWork(job)
+          );
+        });
 
         if (!cancelled) {
-          setJobs(washJobs);
+          setJobs(filteredJobs);
           const initial = {};
-          washJobs.forEach((job) => {
+          filteredJobs.forEach((job) => {
             initial[job.id] = buildChecklist(job);
           });
           setValetState(initial);
