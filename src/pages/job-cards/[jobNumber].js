@@ -1459,13 +1459,16 @@ export default function JobCardDetailPage() {
 
           {/* Parts Tab */}
           {activeTab === "parts" && (
-            <PartsTabNew
-              jobData={jobData}
-              canEdit={canEdit}
-              onRefreshJob={() => fetchJobData({ silent: true })}
-              actingUserId={actingUserId}
-              actingUserNumericId={actingUserNumericId}
-            />
+            <>
+              <GoodsInPartsPanel goodsInParts={jobData?.goodsInParts || []} />
+              <PartsTabNew
+                jobData={jobData}
+                canEdit={canEdit}
+                onRefreshJob={() => fetchJobData({ silent: true })}
+                actingUserId={actingUserId}
+                actingUserNumericId={actingUserNumericId}
+              />
+            </>
           )}
 
           {/* Notes Tab */}
@@ -3700,6 +3703,89 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
   );
 }
 
+function GoodsInPartsPanel({ goodsInParts = [] }) {
+  const hasParts = Array.isArray(goodsInParts) && goodsInParts.length > 0;
+  const sortedParts = hasParts
+    ? [...goodsInParts].sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
+      })
+    : [];
+
+  return (
+    <div style={{ marginBottom: "24px" }}>
+      <h3 style={{ margin: "0 0 16px 0", fontSize: "18px", fontWeight: "600", color: "var(--text-primary)" }}>
+        PARTS ADDED TO JOB
+      </h3>
+      {!hasParts ? (
+        <div
+          style={{
+            padding: "24px",
+            borderRadius: "12px",
+            border: "1px dashed var(--surface-light)",
+            background: "var(--layer-section-level-1)",
+            color: "var(--text-secondary)",
+            fontSize: "14px",
+          }}
+        >
+          Parts linked from Goods In will appear here once they are assigned to this job.
+        </div>
+      ) : (
+        <div
+          style={{
+            borderRadius: "16px",
+            border: "1px solid var(--surface-light)",
+            background: "var(--surface)",
+            overflowX: "auto",
+          }}
+        >
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "separate",
+              borderSpacing: "0",
+            }}
+          >
+            <thead>
+              <tr style={{ background: "var(--layer-section-level-2)", textTransform: "uppercase", fontSize: "11px", letterSpacing: "0.08em" }}>
+                <th style={{ textAlign: "left", padding: "12px 16px" }}>Goods in #</th>
+                <th style={{ textAlign: "left", padding: "12px 16px" }}>Part number</th>
+                <th style={{ textAlign: "left", padding: "12px 16px" }}>Description</th>
+                <th style={{ textAlign: "center", padding: "12px 16px" }}>Qty</th>
+                <th style={{ textAlign: "right", padding: "12px 16px" }}>Retail</th>
+                <th style={{ textAlign: "right", padding: "12px 16px" }}>Cost</th>
+                <th style={{ textAlign: "left", padding: "12px 16px" }}>Invoice</th>
+                <th style={{ textAlign: "left", padding: "12px 16px" }}>Added</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedParts.map((line) => (
+                <tr key={line.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
+                  <td style={{ padding: "12px 16px", fontWeight: 600 }}>
+                    {line.goodsInNumber || "GIN"}
+                  </td>
+                  <td style={{ padding: "12px 16px" }}>{line.partNumber || "—"}</td>
+                  <td style={{ padding: "12px 16px", color: "var(--text-secondary)" }}>{line.description || "No description"}</td>
+                  <td style={{ padding: "12px 16px", textAlign: "center" }}>{line.quantity ?? 0}</td>
+                  <td style={{ padding: "12px 16px", textAlign: "right" }}>{formatMoney(line.retailPrice)}</td>
+                  <td style={{ padding: "12px 16px", textAlign: "right" }}>{formatMoney(line.costPrice)}</td>
+                  <td style={{ padding: "12px 16px" }}>
+                    {line.invoiceNumber || "—"}
+                  </td>
+                  <td style={{ padding: "12px 16px", color: "var(--text-secondary)" }}>
+                    {formatDateTime(line.createdAt)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ✅ Parts Tab (TODO)
 const normalizePartStatus = (status = "") => {
   const normalized = status.toLowerCase().replace(/\s+/g, "_");
@@ -3731,6 +3817,18 @@ const formatDateTime = (value) => {
   } catch (_err) {
     return value;
   }
+};
+
+const moneyFormatter = new Intl.NumberFormat("en-GB", {
+  style: "currency",
+  currency: "GBP",
+});
+
+const formatMoney = (value) => {
+  if (value === null || value === undefined || value === "") return "—";
+  const amount = Number(value);
+  if (Number.isNaN(amount)) return "—";
+  return moneyFormatter.format(amount);
 };
 
 function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNumericId }) {

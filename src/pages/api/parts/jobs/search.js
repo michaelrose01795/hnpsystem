@@ -3,7 +3,15 @@
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 
-const PARTS_ROLES = ["parts", "parts manager"];
+const GOODS_IN_ROLES = [
+  "parts",
+  "parts manager",
+  "service",
+  "service manager",
+  "workshop manager",
+  "after sales manager",
+  "aftersales manager",
+];
 const JOB_SELECT = `
   id,
   job_number,
@@ -73,4 +81,4 @@ async function handler(req, res, session) {
   }
 }
 
-export default withRoleGuard(handler, { allow: PARTS_ROLES });
+export default withRoleGuard(handler, { allow: GOODS_IN_ROLES });

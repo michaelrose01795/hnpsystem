@@ -438,6 +438,27 @@ export const getAllJobs = async () => {
           storage_location
         )
       ),
+      goods_in_items:parts_goods_in_items(
+        id,
+        goods_in_id,
+        job_id,
+        job_number,
+        part_number,
+        description,
+        quantity,
+        cost_price,
+        retail_price,
+        bin_location,
+        surcharge,
+        added_to_job,
+        created_at,
+        updated_at,
+        goods_in:goods_in_id(
+          goods_in_number,
+          supplier_name,
+          invoice_number
+        )
+      ),
       job_notes(note_id, note_text, user_id, created_at, updated_at),
       job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time, technician_id, created_at, updated_at),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at),
@@ -829,6 +850,28 @@ export const getJobByNumber = async (jobNumber) => {
             storage_location
           )
         )
+        ,
+        goods_in_items:parts_goods_in_items(
+          id,
+          goods_in_id,
+          job_id,
+          job_number,
+          part_number,
+          description,
+          quantity,
+          cost_price,
+          retail_price,
+          bin_location,
+          surcharge,
+          added_to_job,
+          created_at,
+          updated_at,
+          goods_in:goods_in_id(
+            goods_in_number,
+            supplier_name,
+            invoice_number
+          )
+        )
       `)
       .eq("id", jobData.warranty_vhc_master_job_id)
       .single();
@@ -989,6 +1032,27 @@ export const getJobByNumberOrReg = async (searchTerm) => {
           storage_location
         )
       ),
+      goods_in_items:parts_goods_in_items(
+        id,
+        goods_in_id,
+        job_id,
+        job_number,
+        part_number,
+        description,
+        quantity,
+        cost_price,
+        retail_price,
+        bin_location,
+        surcharge,
+        added_to_job,
+        created_at,
+        updated_at,
+        goods_in:goods_in_id(
+          goods_in_number,
+          supplier_name,
+          invoice_number
+        )
+      ),
       job_notes(note_id, note_text, created_at),
       job_writeups(writeup_id, work_performed, parts_used, recommendations),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_at)
@@ -1084,6 +1148,27 @@ export const getJobByNumberOrReg = async (searchTerm) => {
             qty_reserved,
             qty_on_order,
             storage_location
+          )
+        ),
+        goods_in_items:parts_goods_in_items(
+          id,
+          goods_in_id,
+          job_id,
+          job_number,
+          part_number,
+          description,
+          quantity,
+          cost_price,
+          retail_price,
+          bin_location,
+          surcharge,
+          added_to_job,
+          created_at,
+          updated_at,
+          goods_in:goods_in_id(
+            goods_in_number,
+            supplier_name,
+            invoice_number
           )
         ),
         job_notes(note_id, note_text, created_at),
@@ -1659,6 +1744,24 @@ const formatJobData = (data) => {
       : null,
   }));
 
+  const goodsInParts = (data.goods_in_items || []).map((item) => ({
+    id: item.id,
+    goodsInId: item.goods_in_id,
+    goodsInNumber: item.goods_in?.goods_in_number || null,
+    supplierName: item.goods_in?.supplier_name || null,
+    invoiceNumber: item.goods_in?.invoice_number || null,
+    partNumber: item.part_number || "",
+    description: item.description || "",
+    quantity: Number(item.quantity || 0),
+    costPrice: Number(item.cost_price || 0),
+    retailPrice: Number(item.retail_price || 0),
+    binLocation: item.bin_location || "",
+    surcharge: item.surcharge || "",
+    addedToJob: item.added_to_job !== false,
+    createdAt: item.created_at || null,
+    updatedAt: item.updated_at || null,
+  }));
+
   const bookingRequestRow = Array.isArray(data.booking_request)
     ? data.booking_request[0]
     : data.booking_request;
@@ -1758,6 +1861,7 @@ const formatJobData = (data) => {
     vhcChecks: hydrateVhcChecks(data.vhc_checks),
     partsRequests,
     partsAllocations,
+    goodsInParts,
     notes: data.job_notes || [],
     writeUp: data.job_writeups?.[0] || null,
     files: data.job_files || [], // ✅ NEW: File attachments

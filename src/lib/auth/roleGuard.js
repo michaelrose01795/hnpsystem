@@ -18,11 +18,36 @@ import { HR_CORE_ROLES, normalizeRoles } from "@/lib/auth/roles";
  */
 export function withRoleGuard(handler, { allow = [], authorize } = {}) {
   return async (req, res) => {
-    if (process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true") {
+    const devBypassEnv = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
+    const devRolesCookie = req.cookies?.["hnp-dev-roles"] || "";
+    const cookieRoles = devRolesCookie
+      .split("|")
+      .map((role) => role.trim())
+      .filter(Boolean);
+    const allowCookieBypass = cookieRoles.length > 0 && process.env.NODE_ENV !== "production";
+
+    if (devBypassEnv) {
       return handler(req, res, {
         user: { roles: HR_CORE_ROLES },
         devBypass: true,
       });
+    }
+
+    if (allowCookieBypass) {
+      const normalizedCookieRoles = normalizeRoles(cookieRoles);
+      const fauxSession = { user: { roles: normalizedCookieRoles }, devBypass: true };
+      const cookieAllowed =
+        typeof authorize === "function"
+          ? authorize(normalizedCookieRoles, fauxSession)
+          : allow.length === 0 ||
+            allow.some((role) => normalizedCookieRoles.includes(role.toLowerCase()));
+
+      if (!cookieAllowed) {
+        res.status(403).json({ success: false, message: "Insufficient permissions" });
+        return;
+      }
+
+      return handler(req, res, fauxSession);
     }
 
     const session = await getServerSession(req, res, authOptions);

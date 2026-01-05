@@ -18,12 +18,12 @@ const ITEM_SELECT = `
   goods_in_id,
   line_number,
   part_number,
+  main_part_number,
   description,
   quantity,
   retail_price,
   cost_price,
-  bin_location_primary,
-  bin_location_secondary,
+  bin_location,
   franchise,
   discount_code,
   surcharge,
@@ -72,14 +72,40 @@ async function handler(req, res, session) {
     return res.status(400).json({ success: false, message: "Valid goods-in item ID is required" });
   }
 
+  if (req.method === "DELETE") {
+    try {
+      const { data, error } = await supabase
+        .from("parts_goods_in_items")
+        .delete()
+        .eq("id", itemId)
+        .select("id")
+        .single();
+
+      if (error) {
+        if (error.code === "PGRST116") {
+          return res.status(404).json({ success: false, message: "Goods-in item not found" });
+        }
+        throw error;
+      }
+
+      return res.status(200).json({ success: true, deletedId: data?.id || itemId });
+    } catch (error) {
+      console.error("Failed to delete goods-in item:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Unable to delete goods-in item",
+        error: error.message,
+      });
+    }
+  }
+
   if (req.method !== "PATCH" && req.method !== "PUT") {
-    res.setHeader("Allow", "PATCH,PUT");
+    res.setHeader("Allow", "PATCH,PUT,DELETE");
     return res.status(405).json({ success: false, message: "Method not allowed" });
   }
 
   const {
-    binLocationPrimary,
-    binLocationSecondary,
+    binLocation,
     franchise,
     discountCode,
     packSize,
@@ -102,11 +128,8 @@ async function handler(req, res, session) {
   } = req.body || {};
 
   const updates = {};
-  if (binLocationPrimary !== undefined) {
-    updates.bin_location_primary = cleanText(binLocationPrimary);
-  }
-  if (binLocationSecondary !== undefined) {
-    updates.bin_location_secondary = cleanText(binLocationSecondary);
+  if (binLocation !== undefined) {
+    updates.bin_location = cleanText(binLocation);
   }
   if (franchise !== undefined) {
     updates.franchise = cleanText(franchise);

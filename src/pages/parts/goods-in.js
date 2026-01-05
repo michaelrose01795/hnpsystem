@@ -4,7 +4,10 @@ import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { popupCardStyles, popupOverlayStyles } from "@/styles/appTheme";
 import { sanitizeNumericId } from "@/lib/utils/ids";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
+import { DropdownField } from "@/components/dropdownAPI";
+import { CalendarField } from "@/components/calendarAPI";
+import { ScrollArea } from "@/components/scrollAPI";
 
 const PRICE_LEVEL_OPTIONS = [
   { value: "stock_order_rate", label: "Stock order rate" },
@@ -14,6 +17,20 @@ const PRICE_LEVEL_OPTIONS = [
 ];
 
 const FRANCHISE_OPTIONS = ["Mitsubishi", "Suzuki", "Other", "Tyre", "Stock", "Consumables"];
+
+const BIN_LOCATION_OPTIONS = (() => {
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const maxSlot = 10;
+  const options = [];
+  for (const letter of letters) {
+    for (let slot = 1; slot <= maxSlot; slot += 1) {
+      options.push(`${letter}${slot}`);
+    }
+  }
+  return options;
+})();
+
+const BIN_LOCATION_DATALIST_ID = "goods-in-bin-options";
 
 const VAT_RATE_OPTIONS = [
   { value: "standard", label: "Standard" },
@@ -94,6 +111,44 @@ const secondaryButtonStyle = {
   cursor: "pointer",
 };
 
+const dangerButtonStyle = {
+  padding: "8px 14px",
+  borderRadius: "10px",
+  border: "1px solid var(--danger)",
+  fontWeight: 600,
+  fontSize: "0.85rem",
+  background: "transparent",
+  color: "var(--danger)",
+  cursor: "pointer",
+};
+
+const invoiceTableStyles = {
+  width: "100%",
+  borderCollapse: "separate",
+  borderSpacing: "0 10px",
+  minWidth: "1000px",
+};
+
+const invoiceHeaderCellStyle = {
+  padding: "12px 16px",
+  fontSize: "0.75rem",
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "var(--text-secondary)",
+};
+
+const invoiceCellStyle = {
+  padding: "16px",
+  fontSize: "0.95rem",
+  color: "var(--text-primary)",
+};
+
+const invoiceRowStyle = {
+  background: "var(--layer-section-level-1)",
+  borderRadius: "16px",
+  boxShadow: "0 10px 25px rgba(15, 23, 42, 0.08)",
+};
+
 const createDefaultInvoiceForm = (invoiceDate) => ({
   supplierAccountId: "",
   supplierName: "",
@@ -109,11 +164,10 @@ const createDefaultInvoiceForm = (invoiceDate) => ({
 const createDefaultPartForm = () => ({
   partId: null,
   partNumber: "",
-  manufacturerPartNumber: "",
+  mainPartNumber: "",
   description: "",
   quantity: 1,
-  binLocationPrimary: "",
-  binLocationSecondary: "",
+  binLocation: "",
   franchise: FRANCHISE_OPTIONS[0],
   retailPrice: "",
   costPrice: "",
@@ -168,6 +222,15 @@ const currencyFormatter = new Intl.NumberFormat("en-GB", {
   currency: "GBP",
 });
 
+const formatRelativeTime = (value) => {
+  if (!value) return "recently";
+  try {
+    return formatDistanceToNow(new Date(value), { addSuffix: true });
+  } catch (error) {
+    return "recently";
+  }
+};
+
 function GoodsInPage() {
   const router = useRouter();
   const { user, dbUserId, authUserId } = useUser();
@@ -188,6 +251,8 @@ function GoodsInPage() {
   const [jobModalItem, setJobModalItem] = useState(null);
   const [completionPromptOpen, setCompletionPromptOpen] = useState(false);
   const [scanBusy, setScanBusy] = useState(false);
+  const [removingItemId, setRemovingItemId] = useState(null);
+  const [partError, setPartError] = useState("");
   const fileInputRef = useRef(null);
 
   const GOODS_IN_ROLES = useMemo(
@@ -264,14 +329,17 @@ function GoodsInPage() {
   );
 
   const handleInvoiceChange = (field, value) => {
+    if (partError) setPartError("");
     setInvoiceForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handlePartChange = (field, value) => {
+    setPartError("");
     setPartForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleNestedPartChange = (group, field, value) => {
+    setPartError("");
     setPartForm((prev) => ({
       ...prev,
       [group]: { ...prev[group], [field]: value },
@@ -279,6 +347,7 @@ function GoodsInPage() {
   };
 
   const handleSalePriceChange = (index, value) => {
+    setPartError("");
     setPartForm((prev) => {
       const next = [...prev.salePrices];
       next[index] = { ...next[index], price: value };
@@ -288,11 +357,15 @@ function GoodsInPage() {
 
   const ensureInvoiceReady = () => {
     if (!invoiceForm.supplierName.trim()) {
-      setToast({ type: "error", message: "Supplier name is required" });
+      const message = "Supplier name is required before adding parts";
+      setToast({ type: "error", message });
+      setPartError(message);
       return false;
     }
     if (!invoiceForm.invoiceNumber.trim()) {
-      setToast({ type: "error", message: "Invoice number is required" });
+      const message = "Invoice number is required before adding parts";
+      setToast({ type: "error", message });
+      setPartError(message);
       return false;
     }
     return true;
@@ -332,6 +405,7 @@ function GoodsInPage() {
     } catch (error) {
       console.error(error);
       setToast({ type: "error", message: error.message });
+      setPartError(error.message);
       return null;
     } finally {
       setLoadingGoodsIn(false);
@@ -341,10 +415,9 @@ function GoodsInPage() {
   const buildPartPayload = () => ({
     partId: partForm.partId,
     partNumber: partForm.partNumber,
-    manufacturerPartNumber: partForm.manufacturerPartNumber,
+    mainPartNumber: partForm.mainPartNumber,
     description: partForm.description,
-    binLocationPrimary: partForm.binLocationPrimary,
-    binLocationSecondary: partForm.binLocationSecondary,
+    binLocation: partForm.binLocation,
     franchise: partForm.franchise,
     retailPrice: partForm.retailPrice || null,
     costPrice: partForm.costPrice || null,
@@ -377,17 +450,21 @@ function GoodsInPage() {
   });
 
   const handleAddPart = async () => {
+    setPartError("");
     if (!partForm.partNumber.trim()) {
-      setToast({ type: "error", message: "Part number is required" });
+      setPartError("Part number is required");
       return;
     }
     if (!partForm.quantity || Number(partForm.quantity) <= 0) {
-      setToast({ type: "error", message: "Quantity must be above zero" });
+      setPartError("Quantity must be above zero");
       return;
     }
 
     const record = await ensureGoodsInRecord();
-    if (!record?.id) return;
+    if (!record?.id) {
+      setPartError("Unable to start goods-in record. Check invoice details.");
+      return;
+    }
 
     try {
       setSavingPart(true);
@@ -409,11 +486,41 @@ function GoodsInPage() {
       setActiveTab("global");
       setIsAdvancedPanelOpen(false);
       setToast({ type: "success", message: "Part added to invoice" });
+      setPartError("");
+    } catch (error) {
+      console.error(error);
+      setToast({ type: "error", message: error.message });
+      setPartError(error.message);
+    } finally {
+      setSavingPart(false);
+    }
+  };
+
+  const handleRemoveItem = async (itemId) => {
+    if (!itemId) return;
+    if (!goodsInRecord?.id) {
+      setToast({ type: "error", message: "Start a goods-in record before removing lines" });
+      return;
+    }
+    if (typeof window !== "undefined" && !window.confirm("Remove this invoice line?")) {
+      return;
+    }
+    try {
+      setRemovingItemId(itemId);
+      const response = await fetch(`/api/parts/goods-in/items/${itemId}`, {
+        method: "DELETE",
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Unable to remove line");
+      }
+      setGoodsInItems((prev) => prev.filter((item) => item.id !== itemId));
+      setToast({ type: "success", message: "Invoice line removed" });
     } catch (error) {
       console.error(error);
       setToast({ type: "error", message: error.message });
     } finally {
-      setSavingPart(false);
+      setRemovingItemId(null);
     }
   };
 
@@ -515,13 +622,14 @@ function GoodsInPage() {
   };
 
   const handlePartSelected = (part) => {
+    setPartError("");
     setPartForm((prev) => ({
       ...prev,
       partId: part.id,
       partNumber: part.part_number,
-      manufacturerPartNumber: part.oem_reference || prev.manufacturerPartNumber,
+      mainPartNumber: part.oem_reference || prev.mainPartNumber,
       description: part.name || part.description || prev.description,
-      binLocationPrimary: part.storage_location || prev.binLocationPrimary,
+      binLocation: part.storage_location || prev.binLocation,
       retailPrice: part.unit_price ? String(part.unit_price) : prev.retailPrice,
       costPrice: part.unit_cost ? String(part.unit_cost) : prev.costPrice,
     }));
@@ -531,6 +639,7 @@ function GoodsInPage() {
   const handleJobAssigned = (updatedItem) => {
     setGoodsInItems((prev) => prev.map((item) => (item.id === updatedItem.id ? updatedItem : item)));
     setJobModalItem(null);
+    setToast({ type: "success", message: "Goods in complete and added to job" });
   };
 
   if (!hasGoodsInAccess) {
@@ -569,6 +678,38 @@ function GoodsInPage() {
             {toast.message}
           </div>
         )}
+
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "8px",
+            border: "1px solid var(--surface-light)",
+            borderRadius: "16px",
+            padding: "8px 12px",
+            background: "var(--surface)",
+          }}
+        >
+          {ADVANCED_TABS.map((tab) => (
+            <button
+              key={`top-${tab.id}`}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setIsAdvancedPanelOpen(true);
+              }}
+              style={{
+                ...secondaryButtonStyle,
+                borderColor: activeTab === tab.id ? "var(--primary)" : "transparent",
+                color: activeTab === tab.id ? "var(--primary)" : "var(--text-secondary)",
+                background: activeTab === tab.id ? "var(--surface-light)" : "transparent",
+                fontSize: "0.8rem",
+                padding: "6px 12px",
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
         <section style={sectionCardStyle}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -623,30 +764,29 @@ function GoodsInPage() {
               />
             </div>
             <div>
-              <label style={labelStyle}>Invoice date</label>
-              <input
-                type="date"
-                style={inputStyle}
+              <CalendarField
+                label="Invoice date"
                 value={invoiceForm.invoiceDate}
                 onChange={(event) => handleInvoiceChange("invoiceDate", event.target.value)}
+                name="invoiceDate"
+                helperText=""
+                style={{ width: "100%" }}
               />
-              <small style={{ color: "var(--text-secondary)" }}>
-                {formatInvoiceDate(invoiceForm.invoiceDate)}
-              </small>
             </div>
             <div>
               <label style={labelStyle}>Price level</label>
-              <select
-                style={inputStyle}
+              <DropdownField
                 value={invoiceForm.priceLevel}
                 onChange={(event) => handleInvoiceChange("priceLevel", event.target.value)}
+                style={{ width: "100%" }}
+                placeholder="Select price level"
               >
                 {PRICE_LEVEL_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
-              </select>
+              </DropdownField>
             </div>
           </div>
           {invoiceForm.supplierAddress && (
@@ -681,6 +821,19 @@ function GoodsInPage() {
               Search catalogue
             </button>
           </div>
+          {partError && (
+            <div
+              style={{
+                border: "1px solid var(--danger)",
+                borderRadius: "12px",
+                padding: "10px 14px",
+                color: "var(--danger)",
+                background: "var(--danger-surface, rgba(239, 68, 68, 0.08))",
+              }}
+            >
+              {partError}
+            </div>
+          )}
           <div style={fieldGridStyle}>
             <div>
               <label style={labelStyle}>Part number</label>
@@ -698,11 +851,11 @@ function GoodsInPage() {
               />
             </div>
             <div>
-              <label style={labelStyle}>Manufacturer part number</label>
+              <label style={labelStyle}>Main part number</label>
               <input
                 style={inputStyle}
-                value={partForm.manufacturerPartNumber}
-                onChange={(event) => handlePartChange("manufacturerPartNumber", event.target.value)}
+                value={partForm.mainPartNumber}
+                onChange={(event) => handlePartChange("mainPartNumber", event.target.value)}
               />
             </div>
             <div>
@@ -718,34 +871,18 @@ function GoodsInPage() {
             <div>
               <label style={labelStyle}>Bin location</label>
               <input
+                type="search"
+                list={BIN_LOCATION_DATALIST_ID}
                 style={inputStyle}
-                value={partForm.binLocationPrimary}
-                onChange={(event) => handlePartChange("binLocationPrimary", event.target.value)}
+                value={partForm.binLocation}
+                onChange={(event) => handlePartChange("binLocation", event.target.value)}
                 placeholder="A1"
               />
-            </div>
-            <div>
-              <label style={labelStyle}>Bin location 2</label>
-              <input
-                style={inputStyle}
-                value={partForm.binLocationSecondary}
-                onChange={(event) => handlePartChange("binLocationSecondary", event.target.value)}
-                placeholder="B3"
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Franchise</label>
-              <select
-                style={inputStyle}
-                value={partForm.franchise}
-                onChange={(event) => handlePartChange("franchise", event.target.value)}
-              >
-                {FRANCHISE_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
+              <datalist id={BIN_LOCATION_DATALIST_ID}>
+                {BIN_LOCATION_OPTIONS.map((location) => (
+                  <option key={location} value={location} />
                 ))}
-              </select>
+              </datalist>
             </div>
             <div>
               <label style={labelStyle}>Description</label>
@@ -764,12 +901,6 @@ function GoodsInPage() {
                   onChange={(event) => handlePartChange("retailPrice", event.target.value)}
                   placeholder="0.00"
                 />
-                <button
-                  style={{ ...secondaryButtonStyle, whiteSpace: "nowrap" }}
-                  onClick={() => setIsAdvancedPanelOpen((state) => !state)}
-                >
-                  {isAdvancedPanelOpen ? "Hide" : "Update"}
-                </button>
               </div>
             </div>
             <div>
@@ -822,17 +953,18 @@ function GoodsInPage() {
                   <div style={fieldGridStyle}>
                     <div>
                       <label style={labelStyle}>Franchise</label>
-                      <select
-                        style={inputStyle}
+                      <DropdownField
                         value={partForm.franchise}
                         onChange={(event) => handlePartChange("franchise", event.target.value)}
+                        style={{ width: "100%" }}
+                        placeholder="Select franchise"
                       >
                         {FRANCHISE_OPTIONS.map((option) => (
                           <option key={option} value={option}>
                             {option}
                           </option>
                         ))}
-                      </select>
+                      </DropdownField>
                     </div>
                     <div>
                       <label style={labelStyle}>Surcharge</label>
@@ -845,17 +977,18 @@ function GoodsInPage() {
                     </div>
                     <div>
                       <label style={labelStyle}>VAT rate</label>
-                      <select
-                        style={inputStyle}
+                      <DropdownField
                         value={partForm.vatRate}
                         onChange={(event) => handlePartChange("vatRate", event.target.value)}
+                        style={{ width: "100%" }}
+                        placeholder="Select VAT rate"
                       >
                         {VAT_RATE_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
                         ))}
-                      </select>
+                      </DropdownField>
                       {partForm.vatRate === "custom" && (
                         <input
                           style={{ ...inputStyle, marginTop: "6px" }}
@@ -1115,6 +1248,12 @@ function GoodsInPage() {
 
           <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
             <button
+              onClick={() => setIsAdvancedPanelOpen((state) => !state)}
+              style={{ ...secondaryButtonStyle, order: 0 }}
+            >
+              {isAdvancedPanelOpen ? "Hide details" : "Update details"}
+            </button>
+            <button
               onClick={() => setPartForm(createDefaultPartForm())}
               style={secondaryButtonStyle}
               disabled={savingPart}
@@ -1152,22 +1291,29 @@ function GoodsInPage() {
               No lines yet. Add a part to populate this invoice.
             </div>
           ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <ScrollArea
+              maxHeight="420px"
+              style={{
+                borderRadius: "20px",
+                border: "1px solid var(--surface-light)",
+                overflowX: "auto",
+                background: "var(--surface)",
+              }}
+            >
+              <table style={invoiceTableStyles}>
                 <thead>
-                  <tr style={{ textAlign: "left", borderBottom: "1px solid var(--surface-light)" }}>
-                    <th>Part number</th>
-                    <th>Man part number</th>
-                    <th>Description</th>
-                    <th>Bin</th>
-                    <th>Bin 2</th>
-                    <th>Retail</th>
-                    <th>Cost</th>
-                    <th>Surcharge</th>
-                    <th>Qty</th>
-                    <th>Cost total</th>
-                    <th>Claim</th>
-                    <th>Actions</th>
+                  <tr style={{ textAlign: "left" }}>
+                    <th style={invoiceHeaderCellStyle}>Part number</th>
+                    <th style={invoiceHeaderCellStyle}>Main part number</th>
+                    <th style={invoiceHeaderCellStyle}>Description</th>
+                    <th style={invoiceHeaderCellStyle}>Bin</th>
+                    <th style={invoiceHeaderCellStyle}>Retail</th>
+                    <th style={invoiceHeaderCellStyle}>Cost</th>
+                    <th style={invoiceHeaderCellStyle}>Surcharge</th>
+                    <th style={invoiceHeaderCellStyle}>Qty</th>
+                    <th style={invoiceHeaderCellStyle}>Cost total</th>
+                    <th style={invoiceHeaderCellStyle}>Claim</th>
+                    <th style={invoiceHeaderCellStyle}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1175,36 +1321,36 @@ function GoodsInPage() {
                     const cost = Number(item.cost_price || 0);
                     const qty = Number(item.quantity || 0);
                     return (
-                      <tr key={item.id} style={{ borderBottom: "1px solid var(--surface-light)" }}>
-                        <td>{item.part_number}</td>
-                        <td>{item.manufacturer_part_number}</td>
-                        <td>{item.description}</td>
-                        <td>{item.bin_location_primary}</td>
-                        <td>{item.bin_location_secondary}</td>
-                        <td>{item.retail_price ? currencyFormatter.format(item.retail_price) : "--"}</td>
-                        <td>{item.cost_price ? currencyFormatter.format(item.cost_price) : "--"}</td>
-                        <td>{item.surcharge || "--"}</td>
-                        <td>{item.quantity}</td>
-                        <td>{currencyFormatter.format(cost * qty || 0)}</td>
-                        <td>{item.claim_number || "--"}</td>
-                        <td>
-                          {item.added_to_job ? (
-                            <span style={{ color: "var(--success)" }}>Added to job {item.job_number}</span>
-                          ) : (
-                            <button
-                              style={{ ...secondaryButtonStyle, fontSize: "0.8rem" }}
-                              onClick={() => setJobModalItem(item)}
-                            >
-                              Add to job
-                            </button>
-                          )}
+                      <tr key={item.id} style={invoiceRowStyle}>
+                        <td style={{ ...invoiceCellStyle, fontWeight: 600 }}>{item.part_number}</td>
+                        <td style={invoiceCellStyle}>{item.main_part_number || "—"}</td>
+                        <td style={{ ...invoiceCellStyle, color: "var(--text-secondary)" }}>{item.description}</td>
+                        <td style={invoiceCellStyle}>{item.bin_location || "—"}</td>
+                        <td style={invoiceCellStyle}>
+                          {item.retail_price ? currencyFormatter.format(item.retail_price) : "--"}
+                        </td>
+                        <td style={invoiceCellStyle}>
+                          {item.cost_price ? currencyFormatter.format(item.cost_price) : "--"}
+                        </td>
+                        <td style={invoiceCellStyle}>{item.surcharge || "--"}</td>
+                        <td style={invoiceCellStyle}>{item.quantity}</td>
+                        <td style={invoiceCellStyle}>{currencyFormatter.format(cost * qty || 0)}</td>
+                        <td style={invoiceCellStyle}>{item.claim_number || "--"}</td>
+                        <td style={{ ...invoiceCellStyle, textAlign: "right" }}>
+                          <button
+                            style={{ ...dangerButtonStyle, opacity: removingItemId === item.id ? 0.6 : 1 }}
+                            onClick={() => handleRemoveItem(item.id)}
+                            disabled={removingItemId === item.id}
+                          >
+                            {removingItemId === item.id ? "Removing..." : "Remove"}
+                          </button>
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
-            </div>
+            </ScrollArea>
           )}
         </section>
       </div>
@@ -1339,33 +1485,56 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const searchRequestRef = useRef(0);
 
-  const searchParts = useCallback(
-    async (term) => {
-      if (!term || term.trim().length < 2) {
-        setResults([]);
-        setError("Enter at least 2 characters");
+  const searchParts = useCallback(async (term) => {
+    const trimmed = term.trim();
+    const requestId = ++searchRequestRef.current;
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({ search: trimmed, limit: "30" });
+      const response = await fetch(`/api/parts/catalog?${params.toString()}`);
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Unable to search parts");
+      }
+      if (requestId !== searchRequestRef.current) {
         return;
       }
-      try {
-        setLoading(true);
-        const params = new URLSearchParams({ search: term.trim(), limit: "30" });
-        const response = await fetch(`/api/parts/catalog?${params.toString()}`);
-        const payload = await response.json();
-        if (!response.ok || !payload?.success) {
-          throw new Error(payload?.message || "Unable to search parts");
-        }
-        setResults(payload.parts || []);
-        setError(payload.parts?.length ? "" : "No parts match this search");
-      } catch (err) {
-        console.error(err);
+      setResults(payload.parts || []);
+      setError(payload.parts?.length ? "" : "No parts match this search");
+    } catch (err) {
+      console.error(err);
+      if (requestId === searchRequestRef.current) {
         setError(err.message);
-      } finally {
+      }
+    } finally {
+      if (requestId === searchRequestRef.current) {
         setLoading(false);
       }
-    },
-    []
-  );
+    }
+  }, []);
+
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setResults([]);
+      setError("");
+      setLoading(false);
+      return;
+    }
+    if (trimmed.length < 2) {
+      setResults([]);
+      setError("Enter at least 2 characters");
+      setLoading(false);
+      return;
+    }
+    setError("");
+    const timeoutId = setTimeout(() => {
+      searchParts(trimmed);
+    }, 400);
+    return () => clearTimeout(timeoutId);
+  }, [query, searchParts]);
 
   return (
     <div style={popupOverlayStyles}>
@@ -1381,11 +1550,10 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
           placeholder="Part number or description"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={(event) => event.key === "Enter" && searchParts(query)}
         />
-        <button style={{ ...primaryButtonStyle(loading), marginTop: "10px" }} onClick={() => searchParts(query)} disabled={loading}>
-          {loading ? "Searching..." : "Search"}
-        </button>
+        <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "8px" }}>
+          {loading ? "Searching..." : "Results update automatically as you type"}
+        </div>
         {error && <div style={{ color: "var(--danger)", marginTop: "10px" }}>{error}</div>}
         <div style={{ maxHeight: "420px", overflowY: "auto", marginTop: "12px" }}>
           {results.map((part) => (
@@ -1418,52 +1586,52 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
 }
 
 function JobAssignmentModal({ item, onClose, onAssigned }) {
-  const [jobNumber, setJobNumber] = useState("");
-  const [jobRecord, setJobRecord] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [jobResults, setJobResults] = useState([]);
+  const [selectedJob, setSelectedJob] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const searchJobs = useCallback(async (term, signal) => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({ search: term, limit: "20" });
+      const response = await fetch(`/api/parts/jobs/search?${params.toString()}`, { signal });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Unable to search jobs");
+      }
+      setJobResults(payload.jobs || []);
+      setError(payload.jobs?.length ? "" : "No jobs found");
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      setJobResults([]);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!jobNumber.trim()) {
-      setJobRecord(null);
+    if (!searchTerm.trim()) {
+      setJobResults([]);
+      setSelectedJob(null);
       setError("");
       return;
     }
-    let isMounted = true;
     const controller = new AbortController();
-    const fetchJob = async () => {
-      try {
-        setLoading(true);
-        const params = new URLSearchParams({ jobNumber: jobNumber.trim() });
-        const response = await fetch(`/api/parts/jobs/search?${params.toString()}`, {
-          signal: controller.signal,
-        });
-        const payload = await response.json();
-        if (!response.ok || !payload?.success) {
-          throw new Error(payload?.message || "Unable to load job");
-        }
-        if (isMounted) {
-          setJobRecord(payload.job);
-          setError("");
-        }
-      } catch (err) {
-        if (err.name === "AbortError") return;
-        setJobRecord(null);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchJob();
+    const timeoutId = setTimeout(() => {
+      searchJobs(searchTerm.trim(), controller.signal);
+    }, 400);
     return () => {
-      isMounted = false;
       controller.abort();
+      clearTimeout(timeoutId);
     };
-  }, [jobNumber]);
+  }, [searchTerm, searchJobs]);
 
   const handleAssign = async () => {
-    if (!jobRecord) {
-      setError("Enter a job number first");
+    if (!selectedJob) {
+      setError("Select a job row first");
       return;
     }
     try {
@@ -1472,11 +1640,11 @@ function JobAssignmentModal({ item, onClose, onAssigned }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           addedToJob: true,
-          jobNumber: jobRecord.job_number,
-          jobId: jobRecord.id,
+          jobNumber: selectedJob.job_number,
+          jobId: selectedJob.id,
           jobAllocationPayload: {
-            customer: jobRecord.customer,
-            description: jobRecord.description,
+            customer: selectedJob.customer,
+            description: selectedJob.description,
             part: {
               partNumber: item.part_number,
               description: item.description,
@@ -1508,22 +1676,50 @@ function JobAssignmentModal({ item, onClose, onAssigned }) {
           </button>
         </div>
         <p style={{ marginTop: 0, color: "var(--text-secondary)" }}>{item.description}</p>
-        <label style={labelStyle}>Job number</label>
+        <label style={labelStyle}>Search job number or customer</label>
         <input
           style={inputStyle}
-          value={jobNumber}
-          onChange={(event) => setJobNumber(event.target.value)}
-          placeholder="Enter job number"
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          placeholder="e.g., GJ12345"
         />
-        {loading && <div style={{ marginTop: "8px" }}>Looking up job...</div>}
+        {loading && <div style={{ marginTop: "8px" }}>Searching...</div>}
         {error && <div style={{ marginTop: "8px", color: "var(--danger)" }}>{error}</div>}
-        {jobRecord && (
-          <div style={{ marginTop: "12px", border: "1px solid var(--surface-light)", borderRadius: "10px", padding: "12px" }}>
-            <div style={{ fontWeight: 600 }}>Job {jobRecord.job_number}</div>
-            <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>{jobRecord.description}</div>
-            <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-              {jobRecord.vehicle_reg} · {jobRecord.customer}
-            </div>
+        <div style={{ maxHeight: "260px", overflowY: "auto", marginTop: "12px" }}>
+          {jobResults.map((job) => {
+            const isSelected = selectedJob?.id === job.id;
+            return (
+              <button
+                key={job.id}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  border: "1px solid var(--surface-light)",
+                  borderRadius: "12px",
+                  padding: "12px",
+                  marginBottom: "8px",
+                  cursor: "pointer",
+                  background: isSelected ? "var(--surface-light)" : "transparent",
+                }}
+                onClick={() => {
+                  setSelectedJob(job);
+                  setError("");
+                }}
+              >
+                <div style={{ fontWeight: 600 }}>
+                  {job.job_number} · {job.customer || "Unknown customer"}
+                </div>
+                <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>{job.description || "No description"}</div>
+                <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+                  {job.vehicle_reg || "No reg"} · Updated {job.updated_at ? formatRelativeTime(job.updated_at) : "recently"}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {selectedJob && (
+          <div style={{ marginTop: "8px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+            Selected job: <strong>{selectedJob.job_number}</strong>
           </div>
         )}
         <button style={{ ...primaryButtonStyle(false), marginTop: "16px", width: "100%" }} onClick={handleAssign}>
