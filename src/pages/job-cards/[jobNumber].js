@@ -219,6 +219,7 @@ export default function JobCardDetailPage() {
   const [sharedNoteSaving, setSharedNoteSaving] = useState(false);
   const sharedNoteSaveRef = useRef(null);
   const jobRealtimeRefreshRef = useRef(null);
+  const partsAllocationModalRef = useRef(null);
   const [vehicleJobHistory, setVehicleJobHistory] = useState([]);
   const [customerVehicles, setCustomerVehicles] = useState([]);
   const [customerVehiclesLoading, setCustomerVehiclesLoading] = useState(false);
@@ -284,6 +285,10 @@ export default function JobCardDetailPage() {
     // Update the ref for next comparison
     previousStatusRef.current = currentStatus;
   }, [jobData?.status, jobData?.jobNumber, router]);
+
+  const openAllocationModalFromGoods = useCallback(() => {
+    partsAllocationModalRef.current?.openAllocationModal?.();
+  }, []);
 
   const fetchSharedNote = useCallback(async (jobId) => {
     if (!jobId) return null;
@@ -1460,8 +1465,13 @@ export default function JobCardDetailPage() {
           {/* Parts Tab */}
           {activeTab === "parts" && (
             <>
-              <GoodsInPartsPanel goodsInParts={jobData?.goodsInParts || []} />
+              <GoodsInPartsPanel
+                goodsInParts={jobData?.goodsInParts || []}
+                onAllocateParts={openAllocationModalFromGoods}
+                canAllocate={canEdit}
+              />
               <PartsTabNew
+                ref={partsAllocationModalRef}
                 jobData={jobData}
                 canEdit={canEdit}
                 onRefreshJob={() => fetchJobData({ silent: true })}
@@ -3703,7 +3713,7 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
   );
 }
 
-function GoodsInPartsPanel({ goodsInParts = [] }) {
+function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) {
   const hasParts = Array.isArray(goodsInParts) && goodsInParts.length > 0;
   const sortedParts = hasParts
     ? [...goodsInParts].sort((a, b) => {
@@ -3712,24 +3722,68 @@ function GoodsInPartsPanel({ goodsInParts = [] }) {
         return bTime - aTime;
       })
     : [];
+  const allocateDisabled = !hasParts;
 
   return (
     <div style={{ marginBottom: "24px" }}>
-      <h3 style={{ margin: "0 0 16px 0", fontSize: "18px", fontWeight: "600", color: "var(--text-primary)" }}>
-        PARTS ADDED TO JOB
-      </h3>
+      <div
+        style={{
+          marginBottom: "16px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "12px",
+          flexWrap: "wrap",
+        }}
+      >
+        <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "var(--text-primary)" }}>
+          PARTS ADDED TO JOB
+        </h3>
+        <button
+          type="button"
+          disabled={!canAllocate || allocateDisabled}
+          onClick={() => {
+            if (canAllocate && !allocateDisabled) {
+              onAllocateParts?.();
+            }
+          }}
+          title={
+            !canAllocate
+              ? "You do not have permission to allocate parts."
+              : allocateDisabled
+              ? "No parts have been added to this job yet."
+              : ""
+          }
+          style={{
+            padding: "8px 16px",
+            borderRadius: "8px",
+            border: "1px solid var(--accent-purple)",
+            background: !canAllocate || allocateDisabled ? "var(--surface-light)" : "var(--accent-purple)",
+            color: !canAllocate || allocateDisabled ? "var(--text-secondary)" : "#fff",
+            fontSize: "12px",
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            cursor: !canAllocate || allocateDisabled ? "not-allowed" : "pointer",
+            transition: "background 0.2s ease, color 0.2s ease",
+          }}
+        >
+          Allocate to Request
+        </button>
+      </div>
       {!hasParts ? (
         <div
           style={{
-            padding: "24px",
+            padding: "20px",
             borderRadius: "12px",
             border: "1px dashed var(--surface-light)",
             background: "var(--layer-section-level-1)",
             color: "var(--text-secondary)",
             fontSize: "14px",
+            textAlign: "center",
           }}
         >
-          Parts linked from Goods In will appear here once they are assigned to this job.
+          No parts have been added to this job yet.
         </div>
       ) : (
         <div

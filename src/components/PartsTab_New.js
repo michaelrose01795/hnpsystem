@@ -1,7 +1,8 @@
 // ✅ New Parts Tab with Drag & Drop Allocation
 // file location: src/components/PartsTab_New.js
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
 import PrePickLocationModal from "@/components/VHC/PrePickLocationModal";
+import VHCModalShell from "@/components/VHC/VHCModalShell";
 
 // Helper functions (keep existing)
 const normalizePartStatus = (status = "") => {
@@ -36,7 +37,7 @@ const formatDateTime = (value) => {
   }
 };
 
-export default function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNumericId }) {
+const PartsTabNew = forwardRef(function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNumericId }, ref) {
   const jobId = jobData?.id;
   const jobNumber = jobData?.jobNumber;
 
@@ -55,6 +56,7 @@ export default function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUser
   const [draggingPart, setDraggingPart] = useState(null);
   const [dragOverRequest, setDragOverRequest] = useState(null);
   const [partAllocations, setPartAllocations] = useState({});
+  const [isAllocationModalOpen, setIsAllocationModalOpen] = useState(false);
 
   // State for pre-pick location modal
   const [isPrePickModalOpen, setIsPrePickModalOpen] = useState(false);
@@ -123,6 +125,25 @@ export default function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUser
     });
     setPartAllocations(allocations);
   }, [jobParts]);
+
+  const partsOnOrder = useMemo(
+    () => jobParts.filter((part) => normalizePartStatus(part.status) === "on_order"),
+    [jobParts]
+  );
+
+  const closeAllocationModal = useCallback(() => {
+    setIsAllocationModalOpen(false);
+    setDraggingPart(null);
+    setDragOverRequest(null);
+  }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      openAllocationModal: () => setIsAllocationModalOpen(true),
+    }),
+    []
+  );
 
   // Search stock catalog
   const searchStockCatalog = useCallback(async (term) => {
@@ -276,6 +297,11 @@ export default function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUser
     setDraggingPart(part);
     e.dataTransfer.effectAllowed = "move";
   };
+
+  const handleDragEnd = useCallback(() => {
+    setDraggingPart(null);
+    setDragOverRequest(null);
+  }, []);
 
   const handleDragOver = (e) => {
     if (!canEdit || !draggingPart) return;
@@ -606,21 +632,56 @@ export default function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUser
             minHeight: "400px",
           }}
         >
-          <div style={{ marginBottom: "12px" }}>
-            <div
+          <div
+            style={{
+              marginBottom: "12px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "var(--primary)",
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Parts Added to Job
+              </div>
+              <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
+                {unallocatedParts.length} unallocated · {jobParts.length} total
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={!canEdit || jobParts.length === 0}
+              onClick={() => {
+                if (canEdit && jobParts.length > 0) {
+                  setIsAllocationModalOpen(true);
+                }
+              }}
+              title={!canEdit ? "You do not have permission to allocate parts." : jobParts.length === 0 ? "No parts have been added to this job yet." : ""}
               style={{
-                fontSize: "14px",
+                padding: "10px 14px",
+                borderRadius: "8px",
+                border: "1px solid var(--accent-purple)",
+                background: !canEdit || jobParts.length === 0 ? "var(--surface-light)" : "var(--accent-purple)",
+                color: !canEdit || jobParts.length === 0 ? "var(--text-secondary)" : "white",
+                fontSize: "12px",
                 fontWeight: 600,
-                color: "var(--primary)",
-                letterSpacing: "0.05em",
+                cursor: !canEdit || jobParts.length === 0 ? "not-allowed" : "pointer",
                 textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                transition: "background 0.2s ease, color 0.2s ease",
               }}
             >
-              Parts Added to Job
-            </div>
-            <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
-              {unallocatedParts.length} unallocated · {jobParts.length} total
-            </p>
+              Allocate to Request
+            </button>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {unallocatedParts.length === 0 ? (
@@ -640,15 +701,11 @@ export default function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUser
               unallocatedParts.map((part) => (
                 <div
                   key={part.id}
-                  draggable={canEdit}
-                  onDragStart={(e) => handleDragStart(part, e)}
                   style={{
                     padding: "12px",
                     borderRadius: "8px",
-                    border: `1px solid ${draggingPart?.id === part.id ? "var(--primary)" : "var(--surface-light)"}`,
-                    backgroundColor: draggingPart?.id === part.id ? "var(--info-surface)" : "var(--surface)",
-                    cursor: canEdit ? "grab" : "default",
-                    opacity: draggingPart?.id === part.id ? 0.5 : 1,
+                    border: "1px solid var(--surface-light)",
+                    backgroundColor: "var(--surface)",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
@@ -740,7 +797,7 @@ export default function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUser
           </div>
         </div>
 
-        {/* Right Side - Allocated Requests */}
+        {/* Right Side - Parts On Order */}
         <div
           style={{
             background: "var(--surface)",
@@ -760,111 +817,95 @@ export default function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUser
                 textTransform: "uppercase",
               }}
             >
-              Customer Requests & Authorized Work
+              Parts On Order
             </div>
             <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
-              Drop parts here to allocate
+              Track items awaiting delivery before they can be fitted.
             </p>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {allRequests.length === 0 ? (
-              <div
-                style={{
-                  padding: "20px",
-                  textAlign: "center",
-                  color: "var(--info)",
-                  fontSize: "13px",
-                  border: "1px dashed var(--surface-light)",
-                  borderRadius: "8px",
-                }}
-              >
-                No requests or authorized work found for this job.
-              </div>
-            ) : (
-              allRequests.map((request) => {
-                const allocatedParts = partAllocations[request.id] || [];
-                const isDropTarget = dragOverRequest === request.id;
-
+          {partsOnOrder.length === 0 ? (
+            <div
+              style={{
+                padding: "20px",
+                textAlign: "center",
+                color: "var(--info)",
+                fontSize: "13px",
+                border: "1px dashed var(--surface-light)",
+                borderRadius: "8px",
+              }}
+            >
+              No parts currently on order for this job.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {partsOnOrder.map((part) => {
+                const statusMeta = getPartStatusMeta(part.status);
                 return (
                   <div
-                    key={request.id}
-                    onDragOver={handleDragOver}
-                    onDragEnter={(e) => handleDragEnterRequest(request.id, e)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(request.id, e)}
+                    key={part.id}
                     style={{
-                      padding: "10px",
-                      borderRadius: "8px",
-                      border: `2px solid ${isDropTarget ? "var(--primary)" : "var(--surface-light)"}`,
-                      backgroundColor: isDropTarget ? "var(--info-surface)" : "var(--surface)",
-                      transition: "all 0.2s",
+                      padding: "12px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--surface-light)",
+                      background: "var(--surface)",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                       <div>
-                        <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                          {request.type === "customer" ? "Customer Request" : "VHC Authorized"}
-                        </div>
-                        <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
-                          {request.description}
+                        <div style={{ fontWeight: 600, color: "var(--accent-purple)", fontSize: "13px" }}>{part.name}</div>
+                        <div style={{ fontSize: "11px", color: "var(--info)" }}>
+                          Part #: {part.partNumber} · Added: {formatDateTime(part.createdAt)}
                         </div>
                       </div>
-                      {allocatedParts.length > 0 && (
-                        <span
-                          style={{
-                            padding: "2px 8px",
-                            borderRadius: "999px",
-                            backgroundColor: "var(--accent-purple-surface)",
-                            color: "var(--accent-purple)",
-                            fontSize: "11px",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {allocatedParts.length}
-                        </span>
-                      )}
-                    </div>
-                    {/* Show drag indicator line when dragging over */}
-                    {isDropTarget && draggingPart && (
-                      <div
+                      <span
                         style={{
-                          height: "3px",
-                          backgroundColor: "var(--primary)",
-                          borderRadius: "2px",
-                          marginBottom: "8px",
-                          animation: "pulse 1s infinite",
+                          padding: "4px 10px",
+                          borderRadius: "999px",
+                          background: statusMeta.background,
+                          color: statusMeta.color,
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
                         }}
-                      />
-                    )}
-                    {/* Allocated Parts */}
-                    {allocatedParts.length > 0 && (
-                      <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                        {allocatedParts.map((part) => (
-                          <div
-                            key={part.id}
-                            style={{
-                              padding: "8px",
-                              borderRadius: "6px",
-                              backgroundColor: "var(--accent-purple-surface)",
-                              fontSize: "12px",
-                            }}
-                          >
-                            <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{part.name}</div>
-                            <div style={{ color: "var(--info-dark)", marginTop: "2px" }}>
-                              Qty: {part.quantity} × £{Number(part.unitPrice || 0).toFixed(2)} = £
-                              {(part.quantity * Number(part.unitPrice || 0)).toFixed(2)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                      >
+                        {statusMeta.label}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginTop: "8px", fontSize: "12px", color: "var(--info-dark)" }}>
+                      <div>Qty Ordered: {part.quantity}</div>
+                      <div>Unit Cost: £{Number(part.unitCost || 0).toFixed(2)}</div>
+                      <div>Unit Price: £{Number(part.unitPrice || 0).toFixed(2)}</div>
+                    </div>
+                    <div style={{ marginTop: "6px", fontSize: "12px", color: "var(--info)" }}>
+                      Storage / Pre-pick: {part.storageLocation && part.storageLocation !== "Not assigned" ? part.storageLocation.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "Awaiting location"}
+                    </div>
                   </div>
                 );
-              })
-            )}
-          </div>
+              })}
+            </div>
+          )}
         </div>
       </div>
+
+      <AllocatePartsModal
+        isOpen={isAllocationModalOpen}
+        onClose={closeAllocationModal}
+        jobParts={jobParts}
+        allRequests={allRequests}
+        partAllocations={partAllocations}
+        draggingPart={draggingPart}
+        dragOverRequest={dragOverRequest}
+        canEdit={canEdit}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnterRequest={handleDragEnterRequest}
+        onDragLeaveRequest={handleDragLeave}
+        onDropRequest={handleDrop}
+        onDragEnd={handleDragEnd}
+        onAssignViaDropdown={handleAssignViaDropdown}
+      />
 
       {/* Pre-Pick Location Modal */}
       <PrePickLocationModal
@@ -876,5 +917,263 @@ export default function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUser
         allowSkip={true}
       />
     </div>
+  );
+});
+
+export default PartsTabNew;
+
+function AllocatePartsModal({
+  isOpen,
+  onClose,
+  jobParts,
+  allRequests,
+  partAllocations,
+  draggingPart,
+  dragOverRequest,
+  canEdit,
+  onDragStart,
+  onDragOver,
+  onDragEnterRequest,
+  onDragLeaveRequest,
+  onDropRequest,
+  onDragEnd,
+  onAssignViaDropdown,
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <VHCModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Allocate Parts to Requests"
+      subtitle="Drag booked parts onto authorised requests or use the assign dropdown."
+      width="1080px"
+      height="80vh"
+      footer={
+        <div style={{ display: "flex", justifyContent: "flex-end", width: "100%" }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              padding: "10px 18px",
+              border: "1px solid var(--accent-purple)",
+              borderRadius: "8px",
+              background: "var(--accent-purple)",
+              color: "#fff",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Close
+          </button>
+        </div>
+      }
+    >
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", height: "100%" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", overflowY: "auto" }}>
+          <div>
+            <div
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "var(--primary)",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Parts Booked to Job
+            </div>
+            <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
+              Drag a part to the right or choose a request from the dropdown.
+            </p>
+          </div>
+          {jobParts.length === 0 ? (
+            <div
+              style={{
+                padding: "24px",
+                borderRadius: "10px",
+                border: "1px dashed var(--surface-light)",
+                textAlign: "center",
+                color: "var(--info)",
+                fontSize: "13px",
+              }}
+            >
+              No parts booked on this job yet.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {jobParts.map((part) => (
+                <div
+                  key={part.id}
+                  draggable={canEdit}
+                  onDragStart={(e) => onDragStart(part, e)}
+                  onDragEnd={onDragEnd}
+                  style={{
+                    padding: "12px",
+                    borderRadius: "10px",
+                    border: `1px solid ${draggingPart?.id === part.id ? "var(--primary)" : "var(--surface-light)"}`,
+                    backgroundColor: draggingPart?.id === part.id ? "var(--info-surface)" : "var(--surface)",
+                    cursor: canEdit ? "grab" : "default",
+                    opacity: draggingPart?.id === part.id ? 0.6 : 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                    <div>
+                      <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{part.name}</div>
+                      <div style={{ fontSize: "11px", color: "var(--info)" }}>
+                        Part #: {part.partNumber} · Qty: {part.quantity}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: "12px", color: "var(--info-dark)", whiteSpace: "nowrap" }}>
+                      £{Number(part.unitPrice || 0).toFixed(2)}
+                    </div>
+                  </div>
+                  {canEdit && (
+                    <select
+                      value={part.allocatedToRequestId || ""}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          onAssignViaDropdown(part.id, e.target.value);
+                        }
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "6px 10px",
+                        borderRadius: "8px",
+                        border: "1px solid var(--surface-light)",
+                        fontSize: "12px",
+                        background: "var(--surface)",
+                        color: "var(--info-dark)",
+                      }}
+                    >
+                      <option value="">Assign to...</option>
+                      {allRequests.map((req) => (
+                        <option key={req.id} value={req.id}>
+                          {req.description.substring(0, 40)}...
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", overflowY: "auto" }}>
+          <div>
+            <div
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "var(--primary)",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Allocate to Request
+            </div>
+            <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
+              Drop the part card here to link it to authorised work.
+            </p>
+          </div>
+          {allRequests.length === 0 ? (
+            <div
+              style={{
+                padding: "24px",
+                borderRadius: "10px",
+                border: "1px dashed var(--surface-light)",
+                textAlign: "center",
+                color: "var(--info)",
+                fontSize: "13px",
+              }}
+            >
+              No customer requests or authorised work found for this job.
+            </div>
+          ) : (
+            allRequests.map((request) => {
+              const allocatedParts = partAllocations[request.id] || [];
+              const isDropTarget = dragOverRequest === request.id;
+
+              return (
+                <div
+                  key={request.id}
+                  onDragOver={onDragOver}
+                  onDragEnter={(e) => onDragEnterRequest(request.id, e)}
+                  onDragLeave={onDragLeaveRequest}
+                  onDrop={(e) => onDropRequest(request.id, e)}
+                  style={{
+                    padding: "12px",
+                    borderRadius: "10px",
+                    border: `2px solid ${isDropTarget ? "var(--primary)" : "var(--surface-light)"}`,
+                    backgroundColor: isDropTarget ? "var(--info-surface)" : "var(--surface)",
+                    transition: "all 0.2s",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>
+                    <div>
+                      <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                        {request.type === "customer" ? "Customer Request" : "VHC Authorised"}
+                      </div>
+                      <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
+                        {request.description}
+                      </div>
+                    </div>
+                    {allocatedParts.length > 0 && (
+                      <span
+                        style={{
+                          padding: "2px 8px",
+                          borderRadius: "999px",
+                          background: "var(--accent-purple-surface)",
+                          color: "var(--accent-purple)",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {allocatedParts.length}
+                      </span>
+                    )}
+                  </div>
+                  {isDropTarget && draggingPart && (
+                    <div
+                      style={{
+                        height: "3px",
+                        background: "var(--primary)",
+                        borderRadius: "2px",
+                        marginTop: "8px",
+                      }}
+                    />
+                  )}
+                  {allocatedParts.length > 0 && (
+                    <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                      {allocatedParts.map((part) => (
+                        <div
+                          key={part.id}
+                          style={{
+                            padding: "8px",
+                            borderRadius: "6px",
+                            background: "var(--accent-purple-surface)",
+                            fontSize: "12px",
+                          }}
+                        >
+                          <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{part.name}</div>
+                          <div style={{ color: "var(--info-dark)", marginTop: "2px" }}>
+                            Qty: {part.quantity} × £{Number(part.unitPrice || 0).toFixed(2)} = £
+                            {(part.quantity * Number(part.unitPrice || 0)).toFixed(2)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </VHCModalShell>
   );
 }
