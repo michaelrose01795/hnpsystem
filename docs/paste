@@ -1,5 +1,17 @@
 TO DO:
 
+
+Goods in: - create a goods in page with an Invoice / Delivery’s note details section (Have name of section as “Invoice details”) inside this section it has a supplier (links to the accounts company thought the database), Invoice number, Delivery Note No, date (set as [todaysdate] in DD/MM/YY), add a note box, Price level drop down with Stock order rate (add other which will be within this drop down), “Scan doc” button which pulls the information from the uploaded from files document and adds it into the correct locations. Next section is “Add Part” section in here is a part number (when ENTER and add a search button which opens a popup which search’s though every part added to the database and when clicked loads the details, is pressed it auto fills the other sections if the information has been added into the database already, quantity, Bin location, bin location 2 (have bin location side by side), Description, Franchise (have dropdown as Mitsubishi, Suzuki, other, tyre, stock, consumables), Retail price, cost price, discount code, add an update button next to the Retail section which opens a section within the page which has multiple tabs inside (Global, dealer, stock, user defined, links, sales history, Audi, additional fields, online store) within the global tab have these fields auto filled with the correct details, franchise, retail price, surcharge, VAT rate (drop down with standard Add others if required), Pack size, discount code, sales price section with 1-4 sale prices, Purchase detail section with Stock order, VOR, Local cost. Fill the other tabs which will have the relevant fields and sections in for each tab. When a part is filed out the add button is clicked, this then saves the part to the database which is now goods in with a good in number created to the row for reference, and a row of that part inside the invoice is added to the bottom section where a table with titles Part number, Man part number, description, Bin location , Bin location 2, Retail price, Cost price, Surcharge, quantity, Cost total, claim number is. Once all of the parts are added into this section which are inside the inlovce complete button is pressed, this shows then When the complete button is pressed and the goods in number received as user if they want to add to job or not, if yes is pressed then open a popup to with the part number auto filled and job number tonne entered, when the job number is entered it then shows the job with description, part number, cost, retail cost, quantity inside the parts added to job section within the job-cards/jobnumber page. good in number (save to database with all the other details. accounts with other businesses (create this within the database so other businesses used have accounts, example a tyre place just search for the company and this links to their company account with us) this popup will shows the Account No, Name, and Address with a search box inside. The popup opens when the Supplier “Search” button is clicked.
+
+
+
+
+
+
+
+
+
+
 Parts identified console error
 
 
