@@ -20,15 +20,15 @@ async function handler(req, res, session) {
   }
   try {
     const { data, error } = await supabase
-      .from("accounts")
-      .select("account_id")
-      .ilike("account_id", `${PREFIX}%`)
-      .order("account_id", { ascending: false })
+      .from("company_accounts")
+      .select("account_number")
+      .ilike("account_number", `${PREFIX}%`)
+      .order("account_number", { ascending: false })
       .limit(1);
     if (error) {
       throw error;
     }
-    const latest = data?.[0]?.account_id || "";
+    const latest = data?.[0]?.account_number || "";
     const numericPortion = Number(latest.replace(/\D/g, "")) || 0;
     const next = String(numericPortion + 1).padStart(PAD_LENGTH, "0");
     res.status(200).json({ success: true, accountNumber: `${PREFIX}${next}` });

@@ -2494,7 +2494,23 @@ export default function TrackingDashboard() {
             gap: "18px",
           }}
         >
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+          <div
+            style={{
+              borderRadius: "999px",
+              border: "1px solid var(--surface-light)",
+              background: "var(--surface)",
+              padding: "6px",
+              display: "flex",
+              gap: "6px",
+              width: "100%",
+              overflowX: "auto",
+              flexShrink: 0,
+              scrollbarWidth: "thin",
+              scrollbarColor: "var(--scrollbar-thumb) transparent",
+              scrollBehavior: "smooth",
+              WebkitOverflowScrolling: "touch",
+            }}
+          >
             {tabs.map((tab) => {
               const isActive = tab.id === activeTab;
               return (
@@ -2503,17 +2519,20 @@ export default function TrackingDashboard() {
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
                   style={{
-                    padding: "10px 18px",
-                    borderRadius: "12px",
-                    border: isActive
-                      ? "1px solid var(--primary)"
-                      : "1px solid rgba(var(--grey-accent-rgb), 0.3)",
-                    background: isActive ? "var(--primary)" : "var(--surface)",
-                    color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
+                    flex: "0 0 auto",
+                    borderRadius: "999px",
+                    border: "1px solid transparent",
+                    padding: "10px 20px",
+                    fontSize: "0.9rem",
                     fontWeight: 600,
                     cursor: "pointer",
-                    boxShadow: isActive ? "0 2px 8px rgba(var(--primary-rgb), 0.25)" : "none",
-                    transition: "all 0.2s ease",
+                    background: isActive ? "var(--primary)" : "transparent",
+                    color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
+                    transition: "all 0.15s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {tab.label}

@@ -4,20 +4,20 @@ import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import supabase from "@/lib/supabaseClient";
 
 const allowedRoles = ["admin", "owner", "admin manager", "accounts", "accounts manager"];
-const ACCOUNT_TYPE = "Company";
+const COMPANY_ACCOUNTS_TABLE = "company_accounts";
 const editableFields = [
-  "billing_name",
-  "billing_email",
-  "billing_phone",
+  "company_name",
+  "trading_name",
+  "contact_name",
+  "contact_email",
+  "contact_phone",
   "billing_address_line1",
   "billing_address_line2",
   "billing_city",
   "billing_postcode",
   "billing_country",
-  "credit_limit",
-  "credit_terms",
   "notes",
-  "status",
+  "linked_account_id",
 ];
 
 async function handler(req, res, session) {
@@ -33,10 +33,9 @@ async function handler(req, res, session) {
       return;
     }
     const { data, error } = await supabase
-      .from("accounts")
+      .from(COMPANY_ACCOUNTS_TABLE)
       .select("*")
-      .eq("account_id", accountNumber)
-      .eq("account_type", ACCOUNT_TYPE)
+      .eq("account_number", accountNumber)
       .maybeSingle();
     if (error) {
       console.error("Failed to load company account", error);
@@ -62,15 +61,24 @@ async function handler(req, res, session) {
         updates[field] = incoming[field];
       }
     });
+    if (Object.prototype.hasOwnProperty.call(updates, "company_name")) {
+      updates.company_name = String(updates.company_name || "").trim();
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, "trading_name")) {
+      updates.trading_name = String(updates.trading_name || "").trim();
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, "linked_account_id")) {
+      const linkedValue = String(updates.linked_account_id || "").trim();
+      updates.linked_account_id = linkedValue ? linkedValue : null;
+    }
     if (Object.keys(updates).length === 0) {
       res.status(400).json({ success: false, message: "No valid fields to update" });
       return;
     }
     const { data, error } = await supabase
-      .from("accounts")
+      .from(COMPANY_ACCOUNTS_TABLE)
       .update(updates)
-      .eq("account_id", accountNumber)
-      .eq("account_type", ACCOUNT_TYPE)
+      .eq("account_number", accountNumber)
       .select()
       .single();
     if (error) {
@@ -87,10 +95,9 @@ async function handler(req, res, session) {
       return;
     }
     const { error } = await supabase
-      .from("accounts")
+      .from(COMPANY_ACCOUNTS_TABLE)
       .delete()
-      .eq("account_id", accountNumber)
-      .eq("account_type", ACCOUNT_TYPE);
+      .eq("account_number", accountNumber);
     if (error) {
       console.error("Failed to delete company account", error);
       res.status(500).json({ success: false, message: "Unable to delete company account" });

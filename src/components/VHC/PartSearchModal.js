@@ -63,7 +63,15 @@ const DEFAULT_SEARCH_FEEDBACK = {
   text: "Enter a part number or name and click Search to query the stock catalogue",
 };
 
-export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumber, onPartSelected }) {
+export default function PartSearchModal({
+  isOpen,
+  onClose,
+  vhcItemData,
+  jobNumber,
+  onPartSelected,
+  userId,
+  userNumericId,
+}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -382,25 +390,34 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
 
         try {
           console.log(`💾 Saving part "${selectedPart.name}" with vhc_item_id: ${validVhcItemId}`);
+          const payload = {
+            jobId: jobData.id,
+            partId: selectedPart.id,
+            quantityRequested: validQuantity,
+            allocateFromStock: false,
+            status: "pending",
+            origin: "vhc",
+            vhcItemId: validVhcItemId,
+            unitPrice: selectedPart.unit_price,
+            unitCost: selectedPart.unit_cost || 0,
+            requestNotes: `Linked from VHC: ${vhcItemData.vhcItem?.label || "VHC Item"}`,
+            userId,
+            userNumericId,
+          };
+          console.log("[parts/jobs] POST payload:", payload);
 
           const response = await fetch("/api/parts/jobs", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              jobId: jobData.id,
-              partId: selectedPart.id,
-              quantityRequested: validQuantity,
-              allocateFromStock: false,
-              status: "pending",
-              origin: "vhc",
-              vhcItemId: validVhcItemId,
-              unitPrice: selectedPart.unit_price,
-              unitCost: selectedPart.unit_cost || 0,
-              requestNotes: `Linked from VHC: ${vhcItemData.vhcItem?.label || "VHC Item"}`,
-            }),
+            body: JSON.stringify(payload),
           });
 
           const result = await response.json();
+          console.log("[parts/jobs] Response:", {
+            ok: response.ok,
+            status: response.status,
+            result,
+          });
 
           if (!response.ok || !result.success) {
             throw new Error(result.message || "Failed to add part to job");
@@ -441,7 +458,7 @@ export default function PartSearchModal({ isOpen, onClose, vhcItemData, jobNumbe
         onClose();
       }
     }
-  }, [selectedParts, vhcItemData, jobNumber, onPartSelected, onClose]);
+  }, [selectedParts, vhcItemData, jobNumber, onPartSelected, onClose, userId, userNumericId]);
 
   if (!isOpen) return null;
 

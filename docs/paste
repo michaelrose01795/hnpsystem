@@ -1,54 +1,19 @@
 TO DO:
 
-Fix “## Error Type
-Runtime Error
-Error Message
-Unable to load company accounts
-at <unknown> (src/pages/company-accounts/index.js:41:19)
-Code Frame
-39 | const payload = await response.json();
-40 | if (!response.ok) {
-41 | throw new Error(payload?.message || "Failed to load company accounts");
-| ^
-42 | }
-43 | setAccounts(payload.data || []);
-44 | if (!payload.data?.length) {
-Next.js version: 16.1.1 (Turbopack)”
-
-
-add this to addscheme.sql first. 
-CREATE TABLE public.company_accounts (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  account_number text NOT NULL,
-  company_name text NOT NULL,
-  trading_name text,
-  contact_name text,
-  contact_email text,
-  contact_phone text,
-  billing_address_line1 text,
-  billing_address_line2 text,
-  billing_city text,
-  billing_postcode text,
-  billing_country text DEFAULT 'United Kingdom'::text,
-  linked_account_id text,
-  notes text,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT company_accounts_pkey PRIMARY KEY (id),
-  CONSTRAINT company_accounts_account_number_key UNIQUE (account_number),
-  CONSTRAINT company_accounts_linked_account_id_fkey FOREIGN KEY (linked_account_id) REFERENCES public.accounts(account_id)
-);
+Remove the concole prompts for the vhc panel as this is fixed and no longer required
 
 
 
 
-Make sure Goods in parts and added to jobnuber are shown within the "PARTS ADDED TO JOB" section inside jobcard/[jobnumber page]. tab buttons. notshowing. goods in number search. shows all goods in, connect each tab to show correct data linked to tab
+
+Make sure Goods in parts and added to jobnuber are shown within the "PARTS ADDED TO JOB" section inside jobcard/[jobnumber page]. 
+
+
+ goods in number search. shows all goods in, connect each tab to show correct data linked to tab
 
 
 
-
--change right side of parts added to job number to parts on order, add a allocate to request button inside that page and this opens another popup which has a left and right side left is parts booked to job, and right side is allocate to request (this is used for invoicing 
-
+Retail and sales jobnumber, when creating a jobnumber have the jobnumber to store a "Retail" or "Sales" status so jobs which are retail and jobs which are sales are easily told differnt. within the sidebar there will be another section which shows retail
 
 
 

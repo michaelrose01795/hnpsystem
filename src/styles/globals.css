@@ -35,10 +35,11 @@ body {
 /* === Modern Floating Scrollbar Styles === */
 /* ========================================================= */
 
-/* Global scrollbar for all elements */
+/* Global scrollbar for all elements - hidden by default */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb) transparent;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
 }
 
 /* Webkit browsers (Chrome, Safari, Edge) */
@@ -52,15 +53,56 @@ body {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
+  background: transparent;
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
+  transition: background 0.3s ease, opacity 0.3s ease;
 }
 
-*::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
+/* Show scrollbar when element has scrollbar-visible class */
+.scrollbar-visible {
+  scrollbar-color: var(--scrollbar-thumb) transparent !important;
+}
+
+.scrollbar-visible::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb) !important;
   background-clip: padding-box;
+}
+
+/* Hide scrollbar when element has scrollbar-hidden class */
+.scrollbar-hidden {
+  scrollbar-color: transparent transparent !important;
+}
+
+.scrollbar-hidden::-webkit-scrollbar-thumb {
+  background: transparent !important;
+}
+
+/* Always show darker scrollbar on direct hover of scrollbar thumb */
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover) !important;
+  background-clip: padding-box;
+}
+
+/* Show scrollbar on hover for all elements */
+*:hover {
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  background-clip: padding-box;
+}
+
+/* Specific styling for tabs container to hide scrollbar completely */
+.tabs-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.tabs-scroll-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* ========================================================= */

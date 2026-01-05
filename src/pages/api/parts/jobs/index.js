@@ -178,6 +178,18 @@ export default async function handler(req, res) {
       vhcItemId,
     } = req.body || {};
 
+    console.log("[api/parts/jobs] POST", {
+      jobId,
+      partId,
+      vhcItemId,
+      quantityRequested,
+      quantity,
+      origin,
+      status,
+      userId,
+      userNumericId,
+    });
+
     if (!jobId || !partId) {
       return res.status(400).json({
         success: false,
@@ -254,6 +266,14 @@ export default async function handler(req, res) {
         .single();
 
       if (insertError) throw insertError;
+
+      console.log("[api/parts/jobs] Inserted", {
+        id: newJobPart?.id,
+        job_id: newJobPart?.job_id,
+        vhc_item_id: newJobPart?.vhc_item_id,
+        origin: newJobPart?.origin,
+        status: newJobPart?.status,
+      });
 
       if (shouldAllocate) {
         const { error: stockError } = await supabase

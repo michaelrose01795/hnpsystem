@@ -219,7 +219,6 @@ export default function JobCardDetailPage() {
   const [sharedNoteSaving, setSharedNoteSaving] = useState(false);
   const sharedNoteSaveRef = useRef(null);
   const jobRealtimeRefreshRef = useRef(null);
-  const partsAllocationModalRef = useRef(null);
   const [vehicleJobHistory, setVehicleJobHistory] = useState([]);
   const [customerVehicles, setCustomerVehicles] = useState([]);
   const [customerVehiclesLoading, setCustomerVehiclesLoading] = useState(false);
@@ -286,9 +285,6 @@ export default function JobCardDetailPage() {
     previousStatusRef.current = currentStatus;
   }, [jobData?.status, jobData?.jobNumber, router]);
 
-  const openAllocationModalFromGoods = useCallback(() => {
-    partsAllocationModalRef.current?.openAllocationModal?.();
-  }, []);
 
   const fetchSharedNote = useCallback(async (jobId) => {
     if (!jobId) return null;
@@ -1356,16 +1352,19 @@ export default function JobCardDetailPage() {
             borderRadius: "999px",
             border: "1px solid var(--surface-light)",
             background: "var(--surface)",
-            padding: "6px",
+            padding: "6px 8px",
             display: "flex",
-            gap: "6px",
+            gap: "4px",
             width: "100%",
             overflowX: "auto",
             flexShrink: 0,
-            scrollbarWidth: "thin",
-            scrollbarColor: "var(--scrollbar-thumb) transparent",
+            scrollbarWidth: "none",
             scrollBehavior: "smooth",
-            WebkitOverflowScrolling: "touch"
+            WebkitOverflowScrolling: "touch",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "44px",
+            flexWrap: "wrap"
           }}
           className="tabs-scroll-container"
         >
@@ -1377,8 +1376,8 @@ export default function JobCardDetailPage() {
                 flex: "0 0 auto",
                 borderRadius: "999px",
                 border: "1px solid transparent",
-                padding: "10px 20px",
-                fontSize: "0.9rem",
+                padding: "6px 14px",
+                fontSize: "0.8rem",
                 fontWeight: 600,
                 cursor: "pointer",
                 background: activeTab === tab.id ? "var(--primary)" : "transparent",
@@ -1386,19 +1385,22 @@ export default function JobCardDetailPage() {
                 transition: "all 0.15s ease",
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
-                whiteSpace: "nowrap"
+                justifyContent: "center",
+                gap: "4px",
+                whiteSpace: "nowrap",
+                height: "auto",
+                minHeight: "30px"
               }}
             >
               {tab.icon && <span>{tab.icon}</span>}
               <span>{tab.label}</span>
               {tab.badge && (
                 <span style={{
-                  padding: "2px 8px",
+                  padding: "2px 6px",
                   backgroundColor: activeTab === tab.id ? "rgba(255, 255, 255, 0.3)" : "var(--primary)",
                   color: "white",
-                  borderRadius: "10px",
-                  fontSize: "11px",
+                  borderRadius: "8px",
+                  fontSize: "10px",
                   fontWeight: "600"
                 }}>
                   {tab.badge}
@@ -1465,18 +1467,13 @@ export default function JobCardDetailPage() {
           {/* Parts Tab */}
           {activeTab === "parts" && (
             <>
-              <GoodsInPartsPanel
-                goodsInParts={jobData?.goodsInParts || []}
-                onAllocateParts={openAllocationModalFromGoods}
-                canAllocate={canEdit}
-              />
               <PartsTabNew
-                ref={partsAllocationModalRef}
                 jobData={jobData}
                 canEdit={canEdit}
                 onRefreshJob={() => fetchJobData({ silent: true })}
                 actingUserId={actingUserId}
                 actingUserNumericId={actingUserNumericId}
+                invoiceReady={invoicePrerequisitesMet}
               />
             </>
           )}

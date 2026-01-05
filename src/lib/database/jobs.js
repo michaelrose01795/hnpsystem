@@ -779,6 +779,27 @@ export const getJobByNumber = async (jobNumber) => {
           storage_location
         )
       ),
+      goods_in_items:parts_goods_in_items(
+        id,
+        goods_in_id,
+        job_id,
+        job_number,
+        part_number,
+        description,
+        quantity,
+        cost_price,
+        retail_price,
+        bin_location,
+        surcharge,
+        added_to_job,
+        created_at,
+        updated_at,
+        goods_in:goods_in_id(
+          goods_in_number,
+          supplier_name,
+          invoice_number
+        )
+      ),
       job_notes(note_id, note_text, user_id, created_at, updated_at),
       job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time, technician_id, created_at, updated_at),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at)

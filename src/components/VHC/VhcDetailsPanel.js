@@ -6,6 +6,7 @@ import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabaseClient";
 import { summariseTechnicianVhc } from "@/lib/vhc/summary";
 import { saveChecksheet } from "@/lib/database/jobs";
+import { useUser } from "@/context/UserContext";
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
 import BrakesHubsDetailsModal from "@/components/VHC/BrakesHubsDetailsModal";
 import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetailsModal";
@@ -92,6 +93,7 @@ const baseVhcPayload = () => ({
   externalInspection: null,
   internalElectrics: createDefaultInternalElectrics(),
   underside: createDefaultUnderside(),
+  partsNotRequired: [],
 });
 
 const ensureArray = (value) => (Array.isArray(value) ? value : []);
@@ -206,6 +208,7 @@ const buildVhcPayload = (source = {}) => {
     externalInspection: normaliseExternalInspectionPayload(source.externalInspection),
     internalElectrics: mergeEntries(base.internalElectrics, source.internalElectrics),
     underside: mergeEntries(base.underside, source.underside),
+    partsNotRequired: Array.isArray(source.partsNotRequired) ? source.partsNotRequired : [],
   };
 };
 
@@ -763,6 +766,7 @@ export default function VhcDetailsPanel({
 }) {
   const isCustomerView = viewMode === "customer";
   const router = useRouter();
+  const { authUserId, dbUserId } = useUser() || {};
   const resolvedJobNumber = jobNumber || router.query?.jobNumber;
 
   const [job, setJob] = useState(null);
@@ -929,12 +933,32 @@ export default function VhcDetailsPanel({
     [resolvedJobNumber]
   );
 
+  const fetchJobPartsViaApi = useCallback(async (jobId) => {
+    if (!jobId) return null;
+    try {
+      const response = await fetch(`/api/parts/job-items?job_id=${encodeURIComponent(jobId)}`);
+      const data = await response.json();
+      if (!response.ok || !data?.ok) {
+        console.warn("[VHC] Fallback parts fetch failed", {
+          status: response.status,
+          payload: data,
+        });
+        return null;
+      }
+      return Array.isArray(data.data) ? data.data : [];
+    } catch (error) {
+      console.error("[VHC] Fallback parts fetch error", error);
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     if (!resolvedJobNumber) return;
 
     const fetchData = async () => {
       setLoading(true);
       setError(null);
+      console.log("[VHC] Loading job data", { jobNumber: resolvedJobNumber });
       try {
         const jobPromise = supabase
           .from("jobs")
@@ -1016,6 +1040,13 @@ export default function VhcDetailsPanel({
           vhc_item_aliases: aliasRows = [],
           ...jobFields
         } = jobRow;
+        let resolvedParts = Array.isArray(parts_job_items) ? parts_job_items : [];
+        if (resolvedParts.length === 0 && jobRow?.id) {
+          const fallbackParts = await fetchJobPartsViaApi(jobRow.id);
+          if (Array.isArray(fallbackParts) && fallbackParts.length > 0) {
+            resolvedParts = fallbackParts;
+          }
+        }
         const sanitizedAliasRows = Array.isArray(aliasRows) ? aliasRows.filter(Boolean) : [];
         const aliasMapFromDb = {};
         sanitizedAliasRows.forEach((alias) => {
@@ -1023,7 +1054,21 @@ export default function VhcDetailsPanel({
           aliasMapFromDb[String(alias.display_id)] = String(alias.vhc_item_id);
         });
 
-        console.log("🔧 Initial page load - Parts from DB:", parts_job_items?.filter(p => p.origin === 'vhc').map(p => ({
+        console.log("[VHC] Job fetch summary", {
+          jobId: jobRow?.id,
+          partsCount: resolvedParts.length,
+          aliasesCount: sanitizedAliasRows.length,
+        });
+        console.log(
+          "[VHC] Parts raw snapshot",
+          resolvedParts.map((part) => ({
+            id: part?.id,
+            vhc_item_id: part?.vhc_item_id,
+            origin: part?.origin,
+            status: part?.status,
+          }))
+        );
+        console.log("🔧 Initial page load - Parts from DB:", resolvedParts?.filter(p => p.origin === 'vhc').map(p => ({
           id: p.id,
           part: p.part?.name,
           vhc_item_id: p.vhc_item_id
@@ -1034,7 +1079,7 @@ export default function VhcDetailsPanel({
         setVhcIdAliases(aliasMapFromDb);
         setJob({
           ...jobFields,
-          parts_job_items: parts_job_items || [],
+          parts_job_items: resolvedParts,
           job_files: job_files || [],
         });
         setWorkflow(workflowRow || null);
@@ -1053,7 +1098,7 @@ export default function VhcDetailsPanel({
     };
 
     fetchData();
-  }, [resolvedJobNumber]);
+  }, [fetchJobPartsViaApi, resolvedJobNumber]);
 
   useEffect(() => {
     setItemEntries({});
@@ -1065,6 +1110,11 @@ export default function VhcDetailsPanel({
     setSectionSaveError("");
     setLastSectionSavedAt(null);
   }, [resolvedJobNumber]);
+
+  useEffect(() => {
+    const stored = Array.isArray(vhcData?.partsNotRequired) ? vhcData.partsNotRequired : [];
+    setPartsNotRequired(new Set(stored.map((value) => String(value))));
+  }, [vhcData?.partsNotRequired]);
 
   useEffect(() => {
     if (!job?.id) return;
@@ -1555,7 +1605,8 @@ export default function VhcDetailsPanel({
       const hours = Number(part.labour_hours);
       if (!Number.isFinite(hours) || hours <= 0) return;
       const key = String(part.vhc_item_id);
-      map.set(key, (map.get(key) || 0) + hours);
+      const current = map.get(key) || 0;
+      map.set(key, Math.max(current, hours));
     });
     return map;
   }, [partsIdentified]);
@@ -1714,6 +1765,33 @@ export default function VhcDetailsPanel({
       return hasChanges ? updated : prev;
     });
   }, [partsCostByVhcItem, partsNotRequired, severityLists, resolveCanonicalVhcId]);
+
+  useEffect(() => {
+    setItemEntries((prev) => {
+      const updated = { ...prev };
+      let hasChanges = false;
+      const items = [...(severityLists.red || []), ...(severityLists.amber || [])];
+
+      items.forEach((item) => {
+        const entry = ensureEntryValue(prev, item.id);
+        if (entry.laborHours !== "" && entry.laborHours !== null && entry.laborHours !== undefined) {
+          return;
+        }
+        const canonicalId = resolveCanonicalVhcId(item.id);
+        const hours = labourHoursByVhcItem.get(canonicalId);
+        if (Number.isFinite(hours) && hours > 0) {
+          updated[item.id] = {
+            ...entry,
+            laborHours: String(hours),
+            labourComplete: true,
+          };
+          hasChanges = true;
+        }
+      });
+
+      return hasChanges ? updated : prev;
+    });
+  }, [labourHoursByVhcItem, severityLists, resolveCanonicalVhcId]);
 
   // Check if all checkboxes are complete and notify parent
   useEffect(() => {
@@ -2104,6 +2182,7 @@ export default function VhcDetailsPanel({
                             updateEntryValue(item.id, "labourComplete", isChecked);
                             if (isChecked && (!entry.laborHours || entry.laborHours === "")) {
                               updateEntryValue(item.id, "laborHours", "0");
+                              persistLabourHours(item.id, 0);
                             }
                           }}
                           disabled={readOnly || (entry.status === "authorized" || entry.status === "declined")}
@@ -2120,6 +2199,9 @@ export default function VhcDetailsPanel({
                             if (value && value !== "" && value !== "0") {
                               updateEntryValue(item.id, "labourComplete", true);
                             }
+                          }}
+                          onBlur={(event) => {
+                            persistLabourHours(item.id, event.target.value);
                           }}
                           placeholder="0.0"
                           style={{
@@ -2544,6 +2626,63 @@ export default function VhcDetailsPanel({
     }
   }, [job, resolvedJobNumber]);
 
+  const persistLabourHours = useCallback(
+    async (displayVhcId, hoursValue) => {
+      if (!job?.id) return;
+      const canonicalId = resolveCanonicalVhcId(displayVhcId);
+      const parsedId = Number(canonicalId);
+      if (!Number.isInteger(parsedId)) {
+        console.warn("[VHC] Invalid VHC item id for labour update", {
+          displayVhcId,
+          canonicalId,
+        });
+        return;
+      }
+      const parsedHours = Number(hoursValue);
+      const labourHours = Number.isFinite(parsedHours) ? parsedHours : 0;
+
+      try {
+        const response = await fetch("/api/parts/vhc-labour", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jobId: job.id,
+            vhcItemId: parsedId,
+            labourHours,
+            userId: authUserId || null,
+            userNumericId: dbUserId || null,
+          }),
+        });
+        const result = await response.json();
+        if (!response.ok || !result?.success) {
+          throw new Error(result?.message || "Failed to save labour hours");
+        }
+        if (result.updatedCount === 0) {
+          console.warn("[VHC] No parts updated for labour hours", {
+            jobId: job.id,
+            vhcItemId: parsedId,
+          });
+        }
+        if (Array.isArray(result.items) && result.items.length > 0) {
+          setJob((prev) => {
+            if (!prev) return prev;
+            const existingParts = Array.isArray(prev.parts_job_items) ? prev.parts_job_items : [];
+            const updatedMap = new Map(existingParts.map((part) => [part.id, part]));
+            result.items.forEach((item) => {
+              if (!item?.id) return;
+              const current = updatedMap.get(item.id) || {};
+              updatedMap.set(item.id, { ...current, ...item });
+            });
+            return { ...prev, parts_job_items: Array.from(updatedMap.values()) };
+          });
+        }
+      } catch (error) {
+        console.error("Failed to persist labour hours", error);
+      }
+    },
+    [authUserId, dbUserId, job?.id, resolveCanonicalVhcId]
+  );
+
   // Handler for Pre-Pick Location dropdown change
   const handlePrePickLocationChange = useCallback(async (partItemId, location) => {
     if (location === "on_order") {
@@ -2577,17 +2716,27 @@ export default function VhcDetailsPanel({
   }, [handlePartStatusUpdate]);
 
   // Handler for "Parts Not Required" toggle
-  const handlePartsNotRequiredToggle = useCallback((vhcItemId) => {
-    setPartsNotRequired((prev) => {
-      const next = new Set(prev);
-      if (next.has(vhcItemId)) {
-        next.delete(vhcItemId);
-      } else {
-        next.add(vhcItemId);
-      }
-      return next;
-    });
-  }, []);
+  const handlePartsNotRequiredToggle = useCallback(
+    async (vhcItemId) => {
+      const key = String(vhcItemId);
+      setPartsNotRequired((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+        const payload = {
+          ...vhcData,
+          partsNotRequired: Array.from(next),
+        };
+        setVhcData(payload);
+        persistVhcSections(payload);
+        return next;
+      });
+    },
+    [persistVhcSections, vhcData]
+  );
 
   // Handler for opening part search modal
   const handleVhcItemRowClick = useCallback((vhcId) => {
@@ -2716,6 +2865,13 @@ export default function VhcDetailsPanel({
           vhc_item_aliases: aliasRows = [],
           ...jobFields
         } = updatedJob;
+        let resolvedParts = Array.isArray(parts_job_items) ? parts_job_items : [];
+        if (resolvedParts.length === 0 && updatedJob?.id) {
+          const fallbackParts = await fetchJobPartsViaApi(updatedJob.id);
+          if (Array.isArray(fallbackParts) && fallbackParts.length > 0) {
+            resolvedParts = fallbackParts;
+          }
+        }
         const sanitizedAliasRows = Array.isArray(aliasRows) ? aliasRows.filter(Boolean) : [];
         const aliasMapFromDb = {};
         sanitizedAliasRows.forEach((alias) => {
@@ -2732,7 +2888,7 @@ export default function VhcDetailsPanel({
               mergedPartsMap.set(part.id, part);
             }
           });
-          (Array.isArray(parts_job_items) ? parts_job_items : []).forEach((part) => {
+          resolvedParts.forEach((part) => {
             if (part?.id) {
               mergedPartsMap.set(part.id, part);
             }
@@ -2824,7 +2980,7 @@ export default function VhcDetailsPanel({
         };
       });
     }
-  }, [resolvedJobNumber, selectedVhcRowId, upsertVhcItemAlias]);
+  }, [fetchJobPartsViaApi, resolvedJobNumber, selectedVhcRowId, upsertVhcItemAlias]);
 
   const handleRemovePart = useCallback(
     async (partItem, displayVhcId) => {
@@ -2963,7 +3119,28 @@ export default function VhcDetailsPanel({
     console.log("🎨 partDetails:", partDetails);
     console.log("🎨 expandedVhcItems:", Array.from(expandedVhcItems));
 
-    if (!vhcItemsWithParts || vhcItemsWithParts.length === 0) {
+    const itemsById = new Map(
+      (vhcItemsWithParts || []).map((item) => [String(item.vhcId), item])
+    );
+    const orderedSourceItems = [
+      ...(severityLists.red || []),
+      ...(severityLists.amber || []),
+    ];
+    const filteredItems = orderedSourceItems.map((item) => {
+      const key = String(item.id);
+      const existing = itemsById.get(key);
+      if (existing) {
+        return existing;
+      }
+      return {
+        vhcItem: item,
+        linkedParts: [],
+        vhcId: key,
+        canonicalVhcId: resolveCanonicalVhcId(key),
+      };
+    });
+
+    if (!filteredItems || filteredItems.length === 0) {
       return (
         <div
           style={{
@@ -3009,7 +3186,7 @@ export default function VhcDetailsPanel({
               </tr>
             </thead>
             <tbody>
-              {vhcItemsWithParts.map((item) => {
+              {filteredItems.map((item) => {
                 const { vhcItem, linkedParts, vhcId, canonicalVhcId } = item;
                 const isPartsNotRequired = partsNotRequired.has(vhcId);
                 const isWarranty = warrantyRows.has(vhcId);
@@ -3506,7 +3683,7 @@ export default function VhcDetailsPanel({
         </div>
       </div>
     );
-  }, [vhcItemsWithParts, partsNotRequired, warrantyRows, partsCostByVhcItem, handlePartsNotRequiredToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handleAddPartButtonClick, handlePartDetailChange, handleRemovePart, removingPartIds]);
+  }, [vhcItemsWithParts, severityLists, resolveCanonicalVhcId, partsNotRequired, warrantyRows, partsCostByVhcItem, handlePartsNotRequiredToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handleAddPartButtonClick, handlePartDetailChange, handleRemovePart, removingPartIds]);
 
   // Render parts panel with table
   const renderPartsPanel = useCallback((title, parts, emptyMessage) => {
@@ -4435,6 +4612,8 @@ export default function VhcDetailsPanel({
         vhcItemData={selectedVhcItem}
         jobNumber={resolvedJobNumber}
         onPartSelected={handlePartAdded}
+        userId={authUserId || null}
+        userNumericId={dbUserId || null}
       />
 
       {/* Pre-Pick Location Modal */}

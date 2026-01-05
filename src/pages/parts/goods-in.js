@@ -640,6 +640,13 @@ function GoodsInPage() {
     setGoodsInItems((prev) => prev.map((item) => (item.id === updatedItem.id ? updatedItem : item)));
     setJobModalItem(null);
     setToast({ type: "success", message: "Goods in complete and added to job" });
+    setPartError("");
+    setPartForm(createDefaultPartForm());
+    setIsAdvancedPanelOpen(false);
+    setActiveTab("global");
+    if (updatedItem?.job_number) {
+      router.push(`/job-cards/${updatedItem.job_number}?tab=parts`);
+    }
   };
 
   if (!hasGoodsInAccess) {
@@ -681,13 +688,19 @@ function GoodsInPage() {
 
         <div
           style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "8px",
+            borderRadius: "999px",
             border: "1px solid var(--surface-light)",
-            borderRadius: "16px",
-            padding: "8px 12px",
             background: "var(--surface)",
+            padding: "6px",
+            display: "flex",
+            gap: "6px",
+            width: "100%",
+            overflowX: "auto",
+            flexShrink: 0,
+            scrollbarWidth: "thin",
+            scrollbarColor: "var(--scrollbar-thumb) transparent",
+            scrollBehavior: "smooth",
+            WebkitOverflowScrolling: "touch",
           }}
         >
           {ADVANCED_TABS.map((tab) => (
@@ -698,12 +711,20 @@ function GoodsInPage() {
                 setIsAdvancedPanelOpen(true);
               }}
               style={{
-                ...secondaryButtonStyle,
-                borderColor: activeTab === tab.id ? "var(--primary)" : "transparent",
-                color: activeTab === tab.id ? "var(--primary)" : "var(--text-secondary)",
-                background: activeTab === tab.id ? "var(--surface-light)" : "transparent",
-                fontSize: "0.8rem",
-                padding: "6px 12px",
+                flex: "0 0 auto",
+                borderRadius: "999px",
+                border: "1px solid transparent",
+                padding: "10px 20px",
+                fontSize: "0.9rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                background: activeTab === tab.id ? "var(--primary)" : "transparent",
+                color: activeTab === tab.id ? "var(--text-inverse)" : "var(--text-primary)",
+                transition: "all 0.15s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                whiteSpace: "nowrap",
               }}
             >
               {tab.label}
@@ -924,30 +945,6 @@ function GoodsInPage() {
 
           {isAdvancedPanelOpen && (
             <div style={{ marginTop: "12px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "6px",
-                  borderBottom: "1px solid var(--surface-light)",
-                  paddingBottom: "8px",
-                }}
-              >
-                {ADVANCED_TABS.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    style={{
-                      ...secondaryButtonStyle,
-                      borderColor: activeTab === tab.id ? "var(--primary)" : "transparent",
-                      color: activeTab === tab.id ? "var(--primary)" : "var(--text-secondary)",
-                      background: activeTab === tab.id ? "var(--surface-light)" : "transparent",
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
               <div style={{ marginTop: "14px" }}>
                 {activeTab === "global" && (
                   <div style={fieldGridStyle}>

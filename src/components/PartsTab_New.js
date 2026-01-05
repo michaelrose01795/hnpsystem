@@ -1,8 +1,6 @@
 // ✅ New Parts Tab with Drag & Drop Allocation
 // file location: src/components/PartsTab_New.js
-import React, { useState, useCallback, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
-import PrePickLocationModal from "@/components/VHC/PrePickLocationModal";
-import VHCModalShell from "@/components/VHC/VHCModalShell";
+import React, { useState, useCallback, useEffect, useMemo, forwardRef } from "react";
 
 // Helper functions (keep existing)
 const normalizePartStatus = (status = "") => {
@@ -15,29 +13,22 @@ const normalizePartStatus = (status = "") => {
   return "pending";
 };
 
-const PART_STATUS_META = {
-  pending: { label: "Pending", color: "var(--danger-dark)", background: "var(--warning-surface)" },
-  priced: { label: "Priced", color: "var(--accent-purple)", background: "var(--accent-purple-surface)" },
-  pre_pick: { label: "Pre Pick", color: "var(--success-dark)", background: "var(--success-surface)" },
-  on_order: { label: "On Order", color: "var(--warning)", background: "var(--warning-surface)" },
-  stock: { label: "Stock", color: "var(--accent-purple)", background: "var(--info-surface)" },
+const moneyFormatter = new Intl.NumberFormat("en-GB", {
+  style: "currency",
+  currency: "GBP",
+});
+
+const formatMoney = (value) => {
+  if (value === null || value === undefined || value === "") return "—";
+  const amount = Number(value);
+  if (Number.isNaN(amount)) return "—";
+  return moneyFormatter.format(amount);
 };
 
-const getPartStatusMeta = (status) => {
-  const normalized = normalizePartStatus(status || "pending");
-  return PART_STATUS_META[normalized] || PART_STATUS_META.pending;
-};
-
-const formatDateTime = (value) => {
-  if (!value) return "Not recorded";
-  try {
-    return new Date(value).toLocaleString();
-  } catch (_err) {
-    return value;
-  }
-};
-
-const PartsTabNew = forwardRef(function PartsTabNew({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNumericId }, ref) {
+const PartsTabNew = forwardRef(function PartsTabNew(
+  { jobData, canEdit, onRefreshJob, actingUserId, actingUserNumericId, invoiceReady },
+  _ref
+) {
   const jobId = jobData?.id;
   const jobNumber = jobData?.jobNumber;
 
@@ -52,16 +43,10 @@ const PartsTabNew = forwardRef(function PartsTabNew({ jobData, canEdit, onRefres
   const [catalogSuccessMessage, setCatalogSuccessMessage] = useState("");
   const [allocatingPart, setAllocatingPart] = useState(false);
 
-  // State for drag and drop
-  const [draggingPart, setDraggingPart] = useState(null);
-  const [dragOverRequest, setDragOverRequest] = useState(null);
   const [partAllocations, setPartAllocations] = useState({});
-  const [isAllocationModalOpen, setIsAllocationModalOpen] = useState(false);
+  const [selectedPartIds, setSelectedPartIds] = useState([]);
+  const [allocatingSelection, setAllocatingSelection] = useState(false);
 
-  // State for pre-pick location modal
-  const [isPrePickModalOpen, setIsPrePickModalOpen] = useState(false);
-  const [selectedPartForPrePick, setSelectedPartForPrePick] = useState(null);
-  const [updatingPrePick, setUpdatingPrePick] = useState(false);
 
   const canAllocateParts = Boolean(canEdit && jobId);
   const allocationDisabledReason = !canEdit
@@ -70,7 +55,7 @@ const PartsTabNew = forwardRef(function PartsTabNew({ jobData, canEdit, onRefres
     ? "Job must be loaded before allocating parts."
     : "";
 
-  // Get all parts added to the job
+  // Get all parts added to the job (from allocations)
   const jobParts = useMemo(() => {
     return (Array.isArray(jobData.partsAllocations) ? jobData.partsAllocations : []).map((item) => ({
       id: item.id,
@@ -86,8 +71,30 @@ const PartsTabNew = forwardRef(function PartsTabNew({ jobData, canEdit, onRefres
       status: item.status || "pending",
       allocatedToRequestId: item.allocatedToRequestId || null,
       createdAt: item.createdAt,
+      source: "allocation",
     }));
   }, [jobData.partsAllocations]);
+
+  const goodsInParts = useMemo(() => {
+    return (Array.isArray(jobData.goodsInParts) ? jobData.goodsInParts : [])
+      .filter((item) => item.addedToJob !== false)
+      .map((item) => ({
+        id: `goods-in-${item.id}`,
+        partId: null,
+        partNumber: item.partNumber || item.part_number || "N/A",
+        name: item.partNumber || item.description || "Part",
+        description: item.description || "",
+        quantity: item.quantity ?? 0,
+        unitPrice: item.retailPrice ?? item.retail_price ?? 0,
+        unitCost: item.costPrice ?? item.cost_price ?? 0,
+        qtyInStock: null,
+        storageLocation: item.binLocation || item.bin_location || "Not assigned",
+        status: "stock",
+        allocatedToRequestId: null,
+        createdAt: item.createdAt,
+        source: "goods-in",
+      }));
+  }, [jobData.goodsInParts]);
 
   // Get customer requests and authorized work
   const allRequests = useMemo(() => {
@@ -131,19 +138,14 @@ const PartsTabNew = forwardRef(function PartsTabNew({ jobData, canEdit, onRefres
     [jobParts]
   );
 
-  const closeAllocationModal = useCallback(() => {
-    setIsAllocationModalOpen(false);
-    setDraggingPart(null);
-    setDragOverRequest(null);
+  const togglePartSelection = useCallback((partId) => {
+    setSelectedPartIds((prev) => {
+      if (prev.includes(partId)) {
+        return prev.filter((entry) => entry !== partId);
+      }
+      return [...prev, partId];
+    });
   }, []);
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      openAllocationModal: () => setIsAllocationModalOpen(true),
-    }),
-    []
-  );
 
   // Search stock catalog
   const searchStockCatalog = useCallback(async (term) => {
@@ -291,147 +293,67 @@ const PartsTabNew = forwardRef(function PartsTabNew({ jobData, canEdit, onRefres
     selectedCatalogPart,
   ]);
 
-  // Drag and drop handlers
-  const handleDragStart = (part, e) => {
-    if (!canEdit) return;
-    setDraggingPart(part);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDragEnd = useCallback(() => {
-    setDraggingPart(null);
-    setDragOverRequest(null);
-  }, []);
-
-  const handleDragOver = (e) => {
-    if (!canEdit || !draggingPart) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDragEnterRequest = (requestId, e) => {
-    if (!canEdit || !draggingPart) return;
-    e.stopPropagation();
-    setDragOverRequest(requestId);
-  };
-
-  const handleDragLeave = (e) => {
-    if (!canEdit || !draggingPart) return;
-    const relatedTarget = e.relatedTarget;
-    if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
-      setDragOverRequest(null);
-    }
-  };
-
-  const handleDrop = async (requestId, e) => {
-    e.preventDefault();
-    if (!canEdit || !draggingPart) return;
-
-    try {
-      const response = await fetch("/api/parts/allocate-to-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          partAllocationId: draggingPart.id,
-          requestId: requestId,
-          jobId: jobId,
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to allocate part to request");
-      }
-
-      if (typeof onRefreshJob === "function") {
-        onRefreshJob();
-      }
-    } catch (error) {
-      console.error("Failed to allocate part to request:", error);
-      alert(`Error: ${error.message}`);
-    } finally {
-      setDraggingPart(null);
-      setDragOverRequest(null);
-    }
-  };
-
-  const handleAssignViaDropdown = async (partId, requestId) => {
-    if (!canEdit) return;
-
-    try {
-      const response = await fetch("/api/parts/allocate-to-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          partAllocationId: partId,
-          requestId: requestId,
-          jobId: jobId,
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to allocate part to request");
-      }
-
-      if (typeof onRefreshJob === "function") {
-        onRefreshJob();
-      }
-    } catch (error) {
-      console.error("Failed to allocate part to request:", error);
-      alert(`Error: ${error.message}`);
-    }
-  };
-
-  // Handler for opening pre-pick location modal
-  const handleOpenPrePickModal = useCallback((part) => {
-    setSelectedPartForPrePick(part);
-    setIsPrePickModalOpen(true);
-  }, []);
-
-  // Handler for closing pre-pick location modal
-  const handleClosePrePickModal = useCallback(() => {
-    setIsPrePickModalOpen(false);
-    setSelectedPartForPrePick(null);
-  }, []);
-
-  // Handler for updating pre-pick location
-  const handleUpdatePrePickLocation = useCallback(async (prePickLocation) => {
-    if (!selectedPartForPrePick || !canEdit) return;
-
-    setUpdatingPrePick(true);
-    try {
-      const response = await fetch(`/api/parts/job-items/${selectedPartForPrePick.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          storageLocation: prePickLocation || null,
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data.ok) {
-        throw new Error(data.error || "Failed to update pre-pick location");
-      }
-
-      // Close modal
-      setIsPrePickModalOpen(false);
-      setSelectedPartForPrePick(null);
-
-      // Refresh job data
-      if (typeof onRefreshJob === "function") {
-        onRefreshJob();
-      }
-    } catch (error) {
-      console.error("Failed to update pre-pick location:", error);
-      alert(`Error: ${error.message}`);
-    } finally {
-      setUpdatingPrePick(false);
-    }
-  }, [selectedPartForPrePick, canEdit, onRefreshJob]);
-
   // Get unallocated parts
   const unallocatedParts = jobParts.filter((part) => !part.allocatedToRequestId);
+  const leftPanelParts = [...unallocatedParts, ...goodsInParts];
+
+  const handleAssignSelectedToRequest = useCallback(
+    async (requestId) => {
+      if (!canEdit || !invoiceReady || !requestId) return;
+      if (selectedPartIds.length === 0) return;
+
+      const selectedParts = leftPanelParts.filter((part) => selectedPartIds.includes(part.id));
+      const allocatableParts = selectedParts.filter((part) => part.source !== "goods-in");
+
+      if (allocatableParts.length === 0) {
+        alert("Select parts from the job list to allocate.");
+        return;
+      }
+
+      setAllocatingSelection(true);
+      try {
+        await Promise.all(
+          allocatableParts.map(async (part) => {
+            const response = await fetch("/api/parts/allocate-to-request", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                partAllocationId: part.id,
+                requestId,
+                jobId,
+              }),
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+              throw new Error(data.message || "Failed to allocate part to request");
+            }
+          })
+        );
+
+        setSelectedPartIds([]);
+        if (typeof onRefreshJob === "function") {
+          onRefreshJob();
+        }
+      } catch (error) {
+        console.error("Failed to allocate parts to request:", error);
+        alert(`Error: ${error.message}`);
+      } finally {
+        setAllocatingSelection(false);
+      }
+    },
+    [canEdit, invoiceReady, jobId, leftPanelParts, onRefreshJob, selectedPartIds]
+  );
+
+  useEffect(() => {
+    if (!invoiceReady) {
+      setSelectedPartIds([]);
+    }
+  }, [invoiceReady]);
+
+  useEffect(() => {
+    setSelectedPartIds((prev) => prev.filter((id) => leftPanelParts.some((part) => part.id === id)));
+  }, [leftPanelParts]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -654,37 +576,39 @@ const PartsTabNew = forwardRef(function PartsTabNew({ jobData, canEdit, onRefres
                 Parts Added to Job
               </div>
               <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
-                {unallocatedParts.length} unallocated · {jobParts.length} total
+                {leftPanelParts.length} unallocated · {jobParts.length + goodsInParts.length} total
               </p>
             </div>
-            <button
-              type="button"
-              disabled={!canEdit || jobParts.length === 0}
-              onClick={() => {
-                if (canEdit && jobParts.length > 0) {
-                  setIsAllocationModalOpen(true);
+            {invoiceReady && (
+              <button
+                type="button"
+                disabled={!canEdit || leftPanelParts.length === 0}
+                title={
+                  !canEdit
+                    ? "You do not have permission to allocate parts."
+                    : leftPanelParts.length === 0
+                    ? "No parts have been added to this job yet."
+                    : "Select parts and choose a request to allocate"
                 }
-              }}
-              title={!canEdit ? "You do not have permission to allocate parts." : jobParts.length === 0 ? "No parts have been added to this job yet." : ""}
-              style={{
-                padding: "10px 14px",
-                borderRadius: "8px",
-                border: "1px solid var(--accent-purple)",
-                background: !canEdit || jobParts.length === 0 ? "var(--surface-light)" : "var(--accent-purple)",
-                color: !canEdit || jobParts.length === 0 ? "var(--text-secondary)" : "white",
-                fontSize: "12px",
-                fontWeight: 600,
-                cursor: !canEdit || jobParts.length === 0 ? "not-allowed" : "pointer",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                transition: "background 0.2s ease, color 0.2s ease",
-              }}
-            >
-              Allocate to Request
-            </button>
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--accent-purple)",
+                  background: !canEdit || leftPanelParts.length === 0 ? "var(--surface-light)" : "var(--accent-purple)",
+                  color: !canEdit || leftPanelParts.length === 0 ? "var(--text-secondary)" : "white",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: !canEdit || leftPanelParts.length === 0 ? "not-allowed" : "pointer",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Allocate to Request
+              </button>
+            )}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {unallocatedParts.length === 0 ? (
+            {leftPanelParts.length === 0 ? (
               <div
                 style={{
                   padding: "20px",
@@ -698,106 +622,56 @@ const PartsTabNew = forwardRef(function PartsTabNew({ jobData, canEdit, onRefres
                 No unallocated parts. Add parts using the search above.
               </div>
             ) : (
-              unallocatedParts.map((part) => (
-                <div
-                  key={part.id}
-                  style={{
-                    padding: "12px",
-                    borderRadius: "8px",
-                    border: "1px solid var(--surface-light)",
-                    backgroundColor: "var(--surface)",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "10px",
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, color: "var(--accent-purple)", fontSize: "13px" }}>{part.name}</div>
-                    <div style={{ fontSize: "11px", color: "var(--info)" }}>
-                      Part #: {part.partNumber} · Qty: {part.quantity} · £{Number(part.unitPrice || 0).toFixed(2)}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
-                      {part.storageLocation && part.storageLocation !== "Not assigned" ? (
-                        <>
-                          <div style={{ fontSize: "11px", color: "var(--success-dark)" }}>
-                            Pre-Pick: {part.storageLocation.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                          </div>
-                          {canEdit && (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenPrePickModal(part)}
-                              style={{
-                                padding: "2px 6px",
-                                fontSize: "10px",
-                                borderRadius: "4px",
-                                border: "1px solid var(--info)",
-                                background: "var(--surface)",
-                                color: "var(--info)",
-                                cursor: "pointer",
-                                fontWeight: 500,
-                              }}
-                            >
-                              Change
-                            </button>
-                          )}
-                        </>
-                      ) : (
-                        canEdit && (
-                          <button
-                            type="button"
-                            onClick={() => handleOpenPrePickModal(part)}
-                            style={{
-                              padding: "4px 8px",
-                              fontSize: "11px",
-                              borderRadius: "6px",
-                              border: "1px solid var(--accent-purple)",
-                              background: "var(--accent-purple-surface)",
-                              color: "var(--accent-purple)",
-                              cursor: "pointer",
-                              fontWeight: 600,
-                            }}
-                          >
-                            Set Pre-Pick Location
-                          </button>
-                        )
-                      )}
-                    </div>
-                  </div>
-                  {canEdit && (
-                    <select
-                      value={part.allocatedToRequestId || ""}
-                      onChange={(e) => {
-                        const requestId = e.target.value;
-                        if (requestId) {
-                          handleAssignViaDropdown(part.id, requestId);
-                        }
-                      }}
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        border: "1px solid var(--surface-light)",
-                        fontSize: "11px",
-                        backgroundColor: "var(--surface)",
-                        color: "var(--info-dark)",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <option value="">Assign to...</option>
-                      {allRequests.map((req) => (
-                        <option key={req.id} value={req.id}>
-                          {req.description.substring(0, 40)}...
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              ))
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead>
+                    <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
+                      <th style={{ textAlign: "left", padding: "8px" }}>Part number</th>
+                      <th style={{ textAlign: "left", padding: "8px" }}>Description</th>
+                      <th style={{ textAlign: "right", padding: "8px" }}>Qty</th>
+                      <th style={{ textAlign: "right", padding: "8px" }}>Retail</th>
+                      <th style={{ textAlign: "right", padding: "8px" }}>Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leftPanelParts.map((part) => {
+                      const isAllocatable = part.source !== "goods-in" && invoiceReady;
+                      const isSelected = selectedPartIds.includes(part.id);
+                      return (
+                        <tr
+                          key={part.id}
+                          onClick={() => {
+                            if (isAllocatable) {
+                              togglePartSelection(part.id);
+                            }
+                          }}
+                          style={{
+                            background: isSelected ? "var(--info-surface)" : "transparent",
+                            cursor: isAllocatable ? "pointer" : "default",
+                            borderTop: "1px solid var(--surface-light)",
+                          }}
+                          title={part.source === "goods-in" ? "Goods-in parts are view-only here." : ""}
+                        >
+                          <td style={{ padding: "8px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                            {part.partNumber}
+                          </td>
+                          <td style={{ padding: "8px", color: "var(--info-dark)" }}>
+                            {part.description || part.name}
+                          </td>
+                          <td style={{ padding: "8px", textAlign: "right" }}>{part.quantity}</td>
+                          <td style={{ padding: "8px", textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
+                          <td style={{ padding: "8px", textAlign: "right" }}>{formatMoney(part.unitCost)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Right Side - Parts On Order */}
+        {/* Right Side - Parts On Order / Allocate Parts */}
         <div
           style={{
             background: "var(--surface)",
@@ -817,13 +691,115 @@ const PartsTabNew = forwardRef(function PartsTabNew({ jobData, canEdit, onRefres
                 textTransform: "uppercase",
               }}
             >
-              Parts On Order
+              {invoiceReady ? "Allocate parts" : "Parts On Order"}
             </div>
-            <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
-              Track items awaiting delivery before they can be fitted.
-            </p>
+            {invoiceReady && (
+              <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
+                Select parts on the left, then choose a request to allocate them.
+              </p>
+            )}
           </div>
-          {partsOnOrder.length === 0 ? (
+          {invoiceReady ? (
+            allRequests.length === 0 ? (
+              <div
+                style={{
+                  padding: "20px",
+                  textAlign: "center",
+                  color: "var(--info)",
+                  fontSize: "13px",
+                  border: "1px dashed var(--surface-light)",
+                  borderRadius: "8px",
+                }}
+              >
+                No customer requests or authorised work found for this job.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {allRequests.map((request) => {
+                  const allocatedParts = partAllocations[request.id] || [];
+                  return (
+                    <div
+                      key={request.id}
+                      style={{
+                        padding: "12px",
+                        borderRadius: "10px",
+                        border: "1px solid var(--surface-light)",
+                        background: "var(--surface)",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                        <div>
+                          <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                            {request.type === "customer" ? "Customer Request" : "VHC Authorised"}
+                          </div>
+                          <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
+                            {request.description}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={!canEdit || selectedPartIds.length === 0 || allocatingSelection}
+                          onClick={() => handleAssignSelectedToRequest(request.id)}
+                          style={{
+                            padding: "6px 10px",
+                            borderRadius: "6px",
+                            border: "1px solid var(--accent-purple)",
+                            background: !canEdit || selectedPartIds.length === 0 || allocatingSelection
+                              ? "var(--surface-light)"
+                              : "var(--accent-purple)",
+                            color: !canEdit || selectedPartIds.length === 0 || allocatingSelection
+                              ? "var(--text-secondary)"
+                              : "white",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            cursor:
+                              !canEdit || selectedPartIds.length === 0 || allocatingSelection ? "not-allowed" : "pointer",
+                          }}
+                        >
+                          {allocatingSelection ? "Allocating..." : "Assign selected"}
+                        </button>
+                      </div>
+                      {allocatedParts.length > 0 && (
+                        <div
+                          style={{
+                            marginTop: "10px",
+                            marginLeft: "14px",
+                            paddingLeft: "12px",
+                            borderLeft: "2px solid var(--surface-light)",
+                          }}
+                        >
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                            <thead>
+                              <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
+                                <th style={{ textAlign: "left", padding: "6px" }}>Part number</th>
+                                <th style={{ textAlign: "left", padding: "6px" }}>Description</th>
+                                <th style={{ textAlign: "right", padding: "6px" }}>Qty</th>
+                                <th style={{ textAlign: "right", padding: "6px" }}>Retail</th>
+                                <th style={{ textAlign: "right", padding: "6px" }}>Cost</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {allocatedParts.map((part) => (
+                                <tr key={part.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
+                                  <td style={{ padding: "6px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                                    {part.partNumber}
+                                  </td>
+                                  <td style={{ padding: "6px", color: "var(--info-dark)" }}>{part.description || part.name}</td>
+                                  <td style={{ padding: "6px", textAlign: "right" }}>{part.quantity}</td>
+                                  <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
+                                  <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitCost)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          ) : partsOnOrder.length === 0 ? (
             <div
               style={{
                 padding: "20px",
@@ -837,343 +813,40 @@ const PartsTabNew = forwardRef(function PartsTabNew({ jobData, canEdit, onRefres
               No parts currently on order for this job.
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {partsOnOrder.map((part) => {
-                const statusMeta = getPartStatusMeta(part.status);
-                return (
-                  <div
-                    key={part.id}
-                    style={{
-                      padding: "12px",
-                      borderRadius: "10px",
-                      border: "1px solid var(--surface-light)",
-                      background: "var(--surface)",
-                      boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                      <div>
-                        <div style={{ fontWeight: 600, color: "var(--accent-purple)", fontSize: "13px" }}>{part.name}</div>
-                        <div style={{ fontSize: "11px", color: "var(--info)" }}>
-                          Part #: {part.partNumber} · Added: {formatDateTime(part.createdAt)}
-                        </div>
-                      </div>
-                      <span
-                        style={{
-                          padding: "4px 10px",
-                          borderRadius: "999px",
-                          background: statusMeta.background,
-                          color: statusMeta.color,
-                          fontSize: "11px",
-                          fontWeight: 600,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                        }}
-                      >
-                        {statusMeta.label}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginTop: "8px", fontSize: "12px", color: "var(--info-dark)" }}>
-                      <div>Qty Ordered: {part.quantity}</div>
-                      <div>Unit Cost: £{Number(part.unitCost || 0).toFixed(2)}</div>
-                      <div>Unit Price: £{Number(part.unitPrice || 0).toFixed(2)}</div>
-                    </div>
-                    <div style={{ marginTop: "6px", fontSize: "12px", color: "var(--info)" }}>
-                      Storage / Pre-pick: {part.storageLocation && part.storageLocation !== "Not assigned" ? part.storageLocation.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "Awaiting location"}
-                    </div>
-                  </div>
-                );
-              })}
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                <thead>
+                  <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
+                    <th style={{ textAlign: "left", padding: "8px" }}>Part number</th>
+                    <th style={{ textAlign: "left", padding: "8px" }}>Description</th>
+                    <th style={{ textAlign: "right", padding: "8px" }}>Qty</th>
+                    <th style={{ textAlign: "right", padding: "8px" }}>Retail</th>
+                    <th style={{ textAlign: "right", padding: "8px" }}>Cost</th>
+                    <th style={{ textAlign: "left", padding: "8px" }}>ETA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {partsOnOrder.map((part) => (
+                    <tr key={part.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
+                      <td style={{ padding: "8px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                        {part.partNumber}
+                      </td>
+                      <td style={{ padding: "8px", color: "var(--info-dark)" }}>{part.description || part.name}</td>
+                      <td style={{ padding: "8px", textAlign: "right" }}>{part.quantity}</td>
+                      <td style={{ padding: "8px", textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
+                      <td style={{ padding: "8px", textAlign: "right" }}>{formatMoney(part.unitCost)}</td>
+                      <td style={{ padding: "8px", color: "var(--info-dark)" }}>—</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
       </div>
 
-      <AllocatePartsModal
-        isOpen={isAllocationModalOpen}
-        onClose={closeAllocationModal}
-        jobParts={jobParts}
-        allRequests={allRequests}
-        partAllocations={partAllocations}
-        draggingPart={draggingPart}
-        dragOverRequest={dragOverRequest}
-        canEdit={canEdit}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnterRequest={handleDragEnterRequest}
-        onDragLeaveRequest={handleDragLeave}
-        onDropRequest={handleDrop}
-        onDragEnd={handleDragEnd}
-        onAssignViaDropdown={handleAssignViaDropdown}
-      />
-
-      {/* Pre-Pick Location Modal */}
-      <PrePickLocationModal
-        isOpen={isPrePickModalOpen}
-        onClose={handleClosePrePickModal}
-        onConfirm={handleUpdatePrePickLocation}
-        partName={selectedPartForPrePick?.name || "Part"}
-        initialLocation={selectedPartForPrePick?.storageLocation || ""}
-        allowSkip={true}
-      />
     </div>
   );
 });
 
 export default PartsTabNew;
-
-function AllocatePartsModal({
-  isOpen,
-  onClose,
-  jobParts,
-  allRequests,
-  partAllocations,
-  draggingPart,
-  dragOverRequest,
-  canEdit,
-  onDragStart,
-  onDragOver,
-  onDragEnterRequest,
-  onDragLeaveRequest,
-  onDropRequest,
-  onDragEnd,
-  onAssignViaDropdown,
-}) {
-  if (!isOpen) return null;
-
-  return (
-    <VHCModalShell
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Allocate Parts to Requests"
-      subtitle="Drag booked parts onto authorised requests or use the assign dropdown."
-      width="1080px"
-      height="80vh"
-      footer={
-        <div style={{ display: "flex", justifyContent: "flex-end", width: "100%" }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: "10px 18px",
-              border: "1px solid var(--accent-purple)",
-              borderRadius: "8px",
-              background: "var(--accent-purple)",
-              color: "#fff",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Close
-          </button>
-        </div>
-      }
-    >
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", height: "100%" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", overflowY: "auto" }}>
-          <div>
-            <div
-              style={{
-                fontSize: "13px",
-                fontWeight: 600,
-                color: "var(--primary)",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}
-            >
-              Parts Booked to Job
-            </div>
-            <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
-              Drag a part to the right or choose a request from the dropdown.
-            </p>
-          </div>
-          {jobParts.length === 0 ? (
-            <div
-              style={{
-                padding: "24px",
-                borderRadius: "10px",
-                border: "1px dashed var(--surface-light)",
-                textAlign: "center",
-                color: "var(--info)",
-                fontSize: "13px",
-              }}
-            >
-              No parts booked on this job yet.
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {jobParts.map((part) => (
-                <div
-                  key={part.id}
-                  draggable={canEdit}
-                  onDragStart={(e) => onDragStart(part, e)}
-                  onDragEnd={onDragEnd}
-                  style={{
-                    padding: "12px",
-                    borderRadius: "10px",
-                    border: `1px solid ${draggingPart?.id === part.id ? "var(--primary)" : "var(--surface-light)"}`,
-                    backgroundColor: draggingPart?.id === part.id ? "var(--info-surface)" : "var(--surface)",
-                    cursor: canEdit ? "grab" : "default",
-                    opacity: draggingPart?.id === part.id ? 0.6 : 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "6px",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-                    <div>
-                      <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{part.name}</div>
-                      <div style={{ fontSize: "11px", color: "var(--info)" }}>
-                        Part #: {part.partNumber} · Qty: {part.quantity}
-                      </div>
-                    </div>
-                    <div style={{ fontSize: "12px", color: "var(--info-dark)", whiteSpace: "nowrap" }}>
-                      £{Number(part.unitPrice || 0).toFixed(2)}
-                    </div>
-                  </div>
-                  {canEdit && (
-                    <select
-                      value={part.allocatedToRequestId || ""}
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          onAssignViaDropdown(part.id, e.target.value);
-                        }
-                      }}
-                      style={{
-                        width: "100%",
-                        padding: "6px 10px",
-                        borderRadius: "8px",
-                        border: "1px solid var(--surface-light)",
-                        fontSize: "12px",
-                        background: "var(--surface)",
-                        color: "var(--info-dark)",
-                      }}
-                    >
-                      <option value="">Assign to...</option>
-                      {allRequests.map((req) => (
-                        <option key={req.id} value={req.id}>
-                          {req.description.substring(0, 40)}...
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", overflowY: "auto" }}>
-          <div>
-            <div
-              style={{
-                fontSize: "13px",
-                fontWeight: 600,
-                color: "var(--primary)",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}
-            >
-              Allocate to Request
-            </div>
-            <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
-              Drop the part card here to link it to authorised work.
-            </p>
-          </div>
-          {allRequests.length === 0 ? (
-            <div
-              style={{
-                padding: "24px",
-                borderRadius: "10px",
-                border: "1px dashed var(--surface-light)",
-                textAlign: "center",
-                color: "var(--info)",
-                fontSize: "13px",
-              }}
-            >
-              No customer requests or authorised work found for this job.
-            </div>
-          ) : (
-            allRequests.map((request) => {
-              const allocatedParts = partAllocations[request.id] || [];
-              const isDropTarget = dragOverRequest === request.id;
-
-              return (
-                <div
-                  key={request.id}
-                  onDragOver={onDragOver}
-                  onDragEnter={(e) => onDragEnterRequest(request.id, e)}
-                  onDragLeave={onDragLeaveRequest}
-                  onDrop={(e) => onDropRequest(request.id, e)}
-                  style={{
-                    padding: "12px",
-                    borderRadius: "10px",
-                    border: `2px solid ${isDropTarget ? "var(--primary)" : "var(--surface-light)"}`,
-                    backgroundColor: isDropTarget ? "var(--info-surface)" : "var(--surface)",
-                    transition: "all 0.2s",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>
-                    <div>
-                      <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                        {request.type === "customer" ? "Customer Request" : "VHC Authorised"}
-                      </div>
-                      <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
-                        {request.description}
-                      </div>
-                    </div>
-                    {allocatedParts.length > 0 && (
-                      <span
-                        style={{
-                          padding: "2px 8px",
-                          borderRadius: "999px",
-                          background: "var(--accent-purple-surface)",
-                          color: "var(--accent-purple)",
-                          fontSize: "11px",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {allocatedParts.length}
-                      </span>
-                    )}
-                  </div>
-                  {isDropTarget && draggingPart && (
-                    <div
-                      style={{
-                        height: "3px",
-                        background: "var(--primary)",
-                        borderRadius: "2px",
-                        marginTop: "8px",
-                      }}
-                    />
-                  )}
-                  {allocatedParts.length > 0 && (
-                    <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                      {allocatedParts.map((part) => (
-                        <div
-                          key={part.id}
-                          style={{
-                            padding: "8px",
-                            borderRadius: "6px",
-                            background: "var(--accent-purple-surface)",
-                            fontSize: "12px",
-                          }}
-                        >
-                          <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{part.name}</div>
-                          <div style={{ color: "var(--info-dark)", marginTop: "2px" }}>
-                            Qty: {part.quantity} × £{Number(part.unitPrice || 0).toFixed(2)} = £
-                            {(part.quantity * Number(part.unitPrice || 0)).toFixed(2)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-    </VHCModalShell>
-  );
-}

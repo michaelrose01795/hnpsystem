@@ -37,27 +37,6 @@ CREATE TABLE public.accounts (
   CONSTRAINT accounts_pkey PRIMARY KEY (account_id),
   CONSTRAINT accounts_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
 );
-CREATE TABLE public.company_accounts (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  account_number text NOT NULL,
-  company_name text NOT NULL,
-  trading_name text,
-  contact_name text,
-  contact_email text,
-  contact_phone text,
-  billing_address_line1 text,
-  billing_address_line2 text,
-  billing_city text,
-  billing_postcode text,
-  billing_country text DEFAULT 'United Kingdom'::text,
-  linked_account_id text,
-  notes text,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT company_accounts_pkey PRIMARY KEY (id),
-  CONSTRAINT company_accounts_account_number_key UNIQUE (account_number),
-  CONSTRAINT company_accounts_linked_account_id_fkey FOREIGN KEY (linked_account_id) REFERENCES public.accounts(account_id)
-);
 CREATE TABLE public.appointments (
   appointment_id integer NOT NULL DEFAULT nextval('appointments_appointment_id_seq'::regclass),
   job_id integer,
@@ -86,6 +65,26 @@ CREATE TABLE public.clocking (
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT clocking_pkey PRIMARY KEY (id),
   CONSTRAINT clocking_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.company_accounts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  account_number text NOT NULL UNIQUE,
+  company_name text NOT NULL,
+  trading_name text,
+  contact_name text,
+  contact_email text,
+  contact_phone text,
+  billing_address_line1 text,
+  billing_address_line2 text,
+  billing_city text,
+  billing_postcode text,
+  billing_country text DEFAULT 'United Kingdom'::text,
+  linked_account_id text,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT company_accounts_pkey PRIMARY KEY (id),
+  CONSTRAINT company_accounts_linked_account_id_fkey FOREIGN KEY (linked_account_id) REFERENCES public.accounts(account_id)
 );
 CREATE TABLE public.company_profile_settings (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
