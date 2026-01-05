@@ -77,6 +77,11 @@ export const sidebarSections = [
         href: "/job-cards/view",
         roles: ["service"],
       },
+      {
+        label: "Goods In",
+        href: "/parts/goods-in",
+        roles: ["service"],
+      },
     ],
   },
   {
@@ -91,6 +96,11 @@ export const sidebarSections = [
       {
         label: "Job Cards",
         href: "/job-cards/view",
+        roles: ["service manager"],
+      },
+      {
+        label: "Goods In",
+        href: "/parts/goods-in",
         roles: ["service manager"],
       },
     ],
@@ -114,6 +124,11 @@ export const sidebarSections = [
         href: "/workshop/consumables-tracker",
         roles: ["workshop manager"],
       },
+      {
+        label: "Goods In",
+        href: "/parts/goods-in",
+        roles: ["workshop manager"],
+      },
     ],
   },
   {
@@ -128,6 +143,11 @@ export const sidebarSections = [
       {
         label: "Job Cards",
         href: "/job-cards/view",
+        roles: ["aftersales manager"],
+      },
+      {
+        label: "Goods In",
+        href: "/parts/goods-in",
         roles: ["aftersales manager"],
       },
     ],
@@ -174,6 +194,11 @@ export const sidebarSections = [
         roles: ["parts"],
       },
       {
+        label: "Goods In",
+        href: "/parts/goods-in",
+        roles: ["parts"],
+      },
+      {
         label: "Deliveries",
         href: "/parts/deliveries",
         roles: ["parts"],
@@ -192,6 +217,11 @@ export const sidebarSections = [
       {
         label: "Parts Workspace",
         href: "/parts",
+        roles: ["parts manager"],
+      },
+      {
+        label: "Goods In",
+        href: "/parts/goods-in",
         roles: ["parts manager"],
       },
       {

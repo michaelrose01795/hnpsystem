@@ -67,6 +67,7 @@ const SERVICE_ACTION_LINKS = [
 const PARTS_ACTION_LINKS = [
   { label: "Delivery/Collection Planner", href: "/parts/delivery-planner" },
   { label: "Create Order", href: "/parts/create-order" },
+  { label: "Goods In", href: "/parts/goods-in" },
 ];
 
 const MODE_STORAGE_KEY = "appModeSelection";

@@ -140,6 +140,7 @@ Every account-related page wraps `ProtectedRoute` with explicit uppercase role l
 | `/parts/delivery-planner` | Planner for delivery/collection stops (`src/pages/parts/delivery-planner.js`). | Appears in parts quick actions for Parts roles. |
 | `/parts/create-order` | Create supplier orders (`src/pages/parts/create-order/index.js`). | Parts action shortcut for Parts roles. |
 | `/parts/create-order/[orderNumber]` | Existing order detail view. | Same as above. |
+| `/parts/goods-in` | Goods-in intake workspace for supplier invoices & stock receipt (`src/pages/parts/goods-in.js`). | Sidebar entry for Parts, Parts Manager, Service, Service Manager, Workshop Manager, Aftersales Manager (plus parts quick action). |
 
 ### 3.9 Customer & CRM (internal staff)
 
