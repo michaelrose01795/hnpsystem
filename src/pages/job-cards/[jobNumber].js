@@ -231,6 +231,7 @@ export default function JobCardDetailPage() {
   const [invoicePopupOpen, setInvoicePopupOpen] = useState(false);
   const [invoiceResponse, setInvoiceResponse] = useState(null);
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false);
+  const [vhcFinancialTotalsFromPanel, setVhcFinancialTotalsFromPanel] = useState({ authorized: 0, declined: 0 });
 
   const isArchiveMode = router.query.archive === "1";
 
@@ -1011,6 +1012,32 @@ export default function JobCardDetailPage() {
     }
   };
 
+  // ✅ VHC Financial Totals (received from VhcDetailsPanel via callback)
+  const vhcFinancialTotals = useMemo(() => {
+    // Return null values if jobData is not loaded yet
+    if (!jobData) {
+      return { authorized: null, declined: null };
+    }
+
+    // Use the totals from VhcDetailsPanel (will be 0 if no items marked)
+    return {
+      authorized: vhcFinancialTotalsFromPanel.authorized,
+      declined: vhcFinancialTotalsFromPanel.declined
+    };
+  }, [jobData, vhcFinancialTotalsFromPanel]);
+
+  const formatCurrency = (value) => {
+    // Show N/A only when value is null or undefined (jobData not loaded)
+    if (value === null || value === undefined) {
+      return "N/A";
+    }
+    // Show £0.00 for zero values, or the actual amount
+    if (!Number.isFinite(value)) {
+      return "N/A";
+    }
+    return `£${value.toFixed(2)}`;
+  };
+
   // ✅ Loading State
   if (loading) {
     return (
@@ -1329,7 +1356,7 @@ export default function JobCardDetailPage() {
         {/* ✅ Vehicle & Customer Info Bar */}
         <section style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "1fr 1fr 0.8fr 0.8fr",
           gap: "16px",
           flexShrink: 0
         }}>
@@ -1362,6 +1389,38 @@ export default function JobCardDetailPage() {
             </div>
             <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
               {jobData.customerPhone || jobData.customerEmail || "No contact info"}
+            </div>
+          </div>
+
+          <div style={{
+            padding: "16px 20px",
+            backgroundColor: "var(--surface)",
+            borderRadius: "12px",
+            boxShadow: "none",
+            border: "1px solid var(--surface-light)"
+          }}>
+            <div style={{ fontSize: "12px", color: "var(--success)", marginBottom: "4px" }}>AUTHORISED</div>
+            <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--success)", marginBottom: "4px" }}>
+              {formatCurrency(vhcFinancialTotals.authorized)}
+            </div>
+            <div style={{ fontSize: "11px", color: "var(--grey-accent)" }}>
+              VHC Total
+            </div>
+          </div>
+
+          <div style={{
+            padding: "16px 20px",
+            backgroundColor: "var(--surface)",
+            borderRadius: "12px",
+            boxShadow: "none",
+            border: "1px solid var(--surface-light)"
+          }}>
+            <div style={{ fontSize: "12px", color: "var(--danger)", marginBottom: "4px" }}>DECLINED</div>
+            <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--danger)", marginBottom: "4px" }}>
+              {formatCurrency(vhcFinancialTotals.declined)}
+            </div>
+            <div style={{ fontSize: "11px", color: "var(--grey-accent)" }}>
+              VHC Total
             </div>
           </div>
         </section>
@@ -1527,7 +1586,11 @@ export default function JobCardDetailPage() {
 
           {/* VHC Tab */}
           {activeTab === "vhc" && (
-            <VHCTab jobNumber={jobNumber} jobData={jobData} />
+            <VHCTab
+              jobNumber={jobNumber}
+              jobData={jobData}
+              onFinancialTotalsChange={setVhcFinancialTotalsFromPanel}
+            />
           )}
 
           {/* Warranty Tab */}
@@ -4694,7 +4757,7 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
 }
 
 // ✅ VHC Tab
-function VHCTab({ jobNumber, jobData }) {
+function VHCTab({ jobNumber, jobData, onFinancialTotalsChange }) {
   const [copied, setCopied] = useState(false);
 
   // Check if customer view should be enabled
@@ -4774,6 +4837,7 @@ function VHCTab({ jobNumber, jobData }) {
         showNavigation={false}
         customActions={customActions}
         onCheckboxesComplete={setAllCheckboxesComplete}
+        onFinancialTotalsChange={onFinancialTotalsChange}
         enableTabs
       />
     </div>

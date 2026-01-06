@@ -295,6 +295,8 @@ const SEVERITY_THEME = {
   amber: { background: "var(--warning-surface)", border: "var(--warning-surface)", text: "var(--danger-dark)", hover: "#ffe6cc" },
   green: { background: "var(--success-surface)", border: "var(--success)", text: "var(--info-dark)", hover: "var(--success-surface)" },
   grey: { background: "var(--info-surface)", border: "var(--accent-purple-surface)", text: "var(--info-dark)", hover: "var(--accent-purple-surface)" },
+  authorized: { background: "var(--success-surface)", border: "var(--success)", text: "var(--success)", hover: "var(--success-surface)" },
+  declined: { background: "var(--danger-surface)", border: "var(--danger)", text: "var(--danger)", hover: "#ffd4d4" },
 };
 
 const PANEL_SECTION_STYLE = {
@@ -761,6 +763,7 @@ export default function VhcDetailsPanel({
   readOnly = false,
   customActions = null,
   onCheckboxesComplete = null,
+  onFinancialTotalsChange = null,
   viewMode = "full",
   enableTabs = false,
 }) {
@@ -1555,17 +1558,29 @@ export default function VhcDetailsPanel({
     return base;
   }, [summaryItems]);
   const severityLists = useMemo(() => {
-    const lists = { red: [], amber: [] };
+    const lists = { red: [], amber: [], authorized: [], declined: [] };
     ["red", "amber"].forEach((severity) => {
       const section = severitySections[severity];
       if (!section) return;
       Array.from(section.values()).forEach(({ category, items }) => {
         items.forEach((item) => {
-          lists[severity].push({
+          const enrichedItem = {
             ...item,
             categoryLabel: category.label,
             categoryId: category.id,
-          });
+          };
+
+          // Check if item has an approval status from database
+          const approvalStatus = item.approval_status || item.approvalStatus || 'pending';
+
+          if (approvalStatus === 'authorized') {
+            lists.authorized.push(enrichedItem);
+          } else if (approvalStatus === 'declined') {
+            lists.declined.push(enrichedItem);
+          } else {
+            // pending items stay in their severity lists
+            lists[severity].push(enrichedItem);
+          }
         });
       });
     });
@@ -1687,11 +1702,39 @@ export default function VhcDetailsPanel({
 
   const getEntryForItem = (itemId) => ensureEntryValue(itemEntries, itemId);
 
-  const updateEntryStatus = (itemId, status) => {
+  const updateEntryStatus = async (itemId, status) => {
+    // Update local state immediately
     setItemEntries((prev) => ({
       ...prev,
       [itemId]: { ...ensureEntryValue(prev, itemId), status },
     }));
+
+    // Persist to database (convert null to 'pending')
+    const canonicalId = resolveCanonicalVhcId(itemId);
+    const parsedId = Number(canonicalId);
+    if (!Number.isInteger(parsedId)) return;
+
+    // Convert null to 'pending' for database
+    const dbStatus = status || 'pending';
+
+    try {
+      const response = await fetch("/api/vhc/update-item-status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vhcItemId: parsedId,
+          approvalStatus: dbStatus,
+          approvedBy: authUserId || dbUserId || "system"
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        console.error("Failed to update approval status:", result?.message);
+      }
+    } catch (error) {
+      console.error("Error updating approval status:", error);
+    }
   };
 
   // Auto-update partsComplete checkbox based on parts being added or marked as not required
@@ -1845,6 +1888,16 @@ export default function VhcDetailsPanel({
     accumulate(severityLists.amber || [], "amber");
     return totals;
   }, [severityLists, itemEntries, labourHoursByVhcItem, partsCostByVhcItem, resolveCanonicalVhcId]);
+
+  // Notify parent component when financial totals change
+  useEffect(() => {
+    if (onFinancialTotalsChange && typeof onFinancialTotalsChange === 'function') {
+      onFinancialTotalsChange({
+        authorized: customerTotals.authorized,
+        declined: customerTotals.declined
+      });
+    }
+  }, [customerTotals.authorized, customerTotals.declined, onFinancialTotalsChange]);
 
   const formatCurrency = (value) => {
     if (!Number.isFinite(value)) return "—";
@@ -2162,8 +2215,8 @@ export default function VhcDetailsPanel({
                           onChange={(event) => {
                             const value = event.target.value;
                             updateEntryValue(item.id, "laborHours", value);
-                            // Auto-check the checkbox if a number is entered
-                            if (value && value !== "" && value !== "0") {
+                            // Auto-check the checkbox if a number is entered (including 0)
+                            if (value !== "" && value !== null && value !== undefined) {
                               updateEntryValue(item.id, "labourComplete", true);
                             }
                           }}
@@ -2344,9 +2397,10 @@ export default function VhcDetailsPanel({
     const detailContent = item.concernText || item.notes || "";
     const measurement = item.measurement || "";
     const categoryLabel = item.categoryLabel || item.sectionName || "Recorded Section";
-    const isAuthorized = entry.status === "authorized";
-    const isDeclined = entry.status === "declined";
-    const showDecision = severity === "red" || severity === "amber";
+    const isAuthorized = entry.status === "authorized" || severity === "authorized";
+    const isDeclined = entry.status === "declined" || severity === "declined";
+    // Only show authorize/decline checkboxes for pending red/amber items
+    const showDecision = (severity === "red" || severity === "amber") && !isAuthorized && !isDeclined;
 
     return (
       <div
@@ -2397,6 +2451,31 @@ export default function VhcDetailsPanel({
                 </label>
               </div>
             ) : null}
+            {/* Final Check checkbox for authorized or declined items */}
+            {(isAuthorized || isDeclined) && (
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                <label style={{
+                  display: "flex",
+                  gap: "6px",
+                  alignItems: "center",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: isAuthorized ? "var(--success)" : "var(--danger)"
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={true}
+                    onChange={(event) => {
+                      if (!event.target.checked) {
+                        // Uncheck resets status to pending
+                        updateEntryStatus(item.id, null);
+                      }
+                    }}
+                  />
+                  Final Check - {isAuthorized ? "Authorised" : "Declined"}
+                </label>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -2473,8 +2552,19 @@ export default function VhcDetailsPanel({
         </div>
       </div>
 
-      {renderCustomerSection("Red Items", severityLists.red || [], "red")}
-      {renderCustomerSection("Amber Items", severityLists.amber || [], "amber")}
+      {/* Only show Red section if there are pending red items */}
+      {severityLists.red && severityLists.red.length > 0 && renderCustomerSection("Red Items", severityLists.red, "red")}
+
+      {/* Only show Amber section if there are pending amber items */}
+      {severityLists.amber && severityLists.amber.length > 0 && renderCustomerSection("Amber Items", severityLists.amber, "amber")}
+
+      {/* Authorised section - always show if there are authorized items */}
+      {severityLists.authorized && severityLists.authorized.length > 0 && renderCustomerSection("Authorised", severityLists.authorized, "authorized")}
+
+      {/* Declined section - always show if there are declined items */}
+      {severityLists.declined && severityLists.declined.length > 0 && renderCustomerSection("Declined", severityLists.declined, "declined")}
+
+      {/* Green Items section stays at the bottom */}
       {renderCustomerSection("Green Items", greenItems || [], "green")}
     </div>
   );
@@ -4061,76 +4151,6 @@ export default function VhcDetailsPanel({
           {jobHeader}
         </div>
       )}
-
-      {/* Overall Authorised/Declined Totals Section */}
-      {(() => {
-        // Calculate overall totals across all red and amber items
-        let overallAuthorisedTotal = 0;
-        let overallDeclinedTotal = 0;
-
-        ["red", "amber"].forEach((severity) => {
-          const items = severityLists[severity] || [];
-          items.forEach((item) => {
-            const entry = getEntryForItem(item.id);
-            const resolvedPartsCost = resolvePartsCost(item.id, entry);
-            const totalCost = computeRowTotal(entry, resolvedPartsCost);
-            const finalTotal = entry.totalOverride !== "" && entry.totalOverride !== null
-              ? parseFloat(entry.totalOverride)
-              : totalCost;
-
-            if (entry.status === "authorized") {
-              overallAuthorisedTotal += finalTotal;
-            } else if (entry.status === "declined") {
-              overallDeclinedTotal += finalTotal;
-            }
-          });
-        });
-
-        // Only show this section if there are authorised or declined items
-        if (overallAuthorisedTotal > 0 || overallDeclinedTotal > 0) {
-          return (
-            <div style={{
-              ...PANEL_SECTION_STYLE,
-              padding: "14px 18px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "16px",
-              flexWrap: "wrap"
-            }}>
-              <div style={{
-                display: "flex",
-                gap: "24px",
-                alignItems: "center",
-                flexWrap: "wrap",
-                flex: 1
-              }}>
-                {overallAuthorisedTotal > 0 && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ fontSize: "13px", color: "var(--info)", fontWeight: 500 }}>
-                      Total Authorised:
-                    </span>
-                    <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--success)" }}>
-                      £{overallAuthorisedTotal.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                {overallDeclinedTotal > 0 && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ fontSize: "13px", color: "var(--info)", fontWeight: 500 }}>
-                      Total Declined:
-                    </span>
-                    <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--danger)" }}>
-                      £{overallDeclinedTotal.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        }
-        return null;
-      })()}
 
       <div style={PANEL_SECTION_STYLE}>
         {enableTabs ? (

@@ -1,20 +1,11 @@
 TO DO:
 
 
-add the authorised totals and declinded totals within the "VEHICLE
-MF20LZO
-HYUNDAI
-CUSTOMER
-Edward Lane
-07587 332400" section at the top of the jobcard page so its static no matter what tab the user is on, have it show a n/a within that section until the data is done. 
+Have it so when a row is authorised have it removed from the amber or red section and add to a new green section which is called authorised (which is under the red and amber section), do the same with the amber section, and if declinded have a decline section show so it hides the row from the red or amber sec tion and addes it into the declined section, at the end for the job to be compelte there should no rows within the red or amber section (hide the red or amber section if this is the case) and there should all of the reported rows with all the info from the row within the authorise and or within the declinded section have the authorised sectin more to the top of the section and the declinded underneath. leave the Green checks at the bottom of the page. make sure when a row is authroised or declined this status is updated within the database, if the row has niether decline or authrosied status then the job cannot be complete and the status iwthin the database is something like n/a or something helpful. Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first.
 
 
 
-have it so when a row is authorised have it removed from the amber or red section and add to a new green section which is called authorised (which is under the red and amber section), do the same with the amber section, and if declinded have a decline section show so it hides the row from the red or amber sec tion and addes it into the declined section, at the end for the job to be compelte there should no rows within the red or amber section (hide the red or amber section if this is the case) and there should all of the reported rows with all the info from the row within the authorise and or within the declinded section have the authorised sectin more to the top of the section and the declinded underneath. leave the Green checks at the bottom of the page. make sure when a row is authroised or declined this status is updated within the database, if the row has niether decline or authrosied status then the job cannot be complete and the status iwthin the database is something like n/a or something helpful. Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first.
-
-
-
-
+Log deleiver button needs to be removed as all logs are done when a part is Goods in through the goods in page, whena part is goods in add it to the stock list, if the part is goods in and then booked stright to a jobnumber then book the part in and then take it out again to book to the part so there is a log of the part(s) being logged. 
 
 
 Make sure Goods in parts and added to jobnuber are shown within the "PARTS ADDED TO JOB" section inside jobcard/[jobnumber page]. 

@@ -1335,6 +1335,14 @@ CREATE TABLE public.vhc_checks (
   measurement character varying,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  approval_status text DEFAULT 'pending'::text CHECK (approval_status IS NULL OR (approval_status = ANY (ARRAY['pending'::text, 'authorized'::text, 'declined'::text]))),
+  labour_hours numeric,
+  parts_cost numeric,
+  total_override numeric,
+  labour_complete boolean DEFAULT false,
+  parts_complete boolean DEFAULT false,
+  approved_at timestamp with time zone,
+  approved_by text,
   CONSTRAINT vhc_checks_pkey PRIMARY KEY (vhc_id),
   CONSTRAINT vhc_checks_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
