@@ -796,6 +796,7 @@ export default function VhcDetailsPanel({
   const [vhcItemAliasRecords, setVhcItemAliasRecords] = useState([]);
   const [removingPartIds, setRemovingPartIds] = useState(new Set());
   const [hoveredStatusId, setHoveredStatusId] = useState(null);
+  const [vhcChecksData, setVhcChecksData] = useState([]);
 
   const resolveCanonicalVhcId = useCallback(
     (vhcId) => {
@@ -965,7 +966,7 @@ export default function VhcDetailsPanel({
             customer:customer_id(*),
             vehicle:vehicle_id(*),
             technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at),
+            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete),
             parts_job_items(
               id,
               part_id,
@@ -1060,6 +1061,9 @@ export default function VhcDetailsPanel({
           job_files: job_files || [],
         });
         setWorkflow(workflowRow || null);
+
+        // Store all VHC checks data for approval status lookup
+        setVhcChecksData(vhc_checks || []);
 
         const builderRecord = vhc_checks.find(
           (check) => check.section === "VHC_CHECKSHEET"
@@ -1286,6 +1290,27 @@ export default function VhcDetailsPanel({
     },
     [vhcData, persistVhcSections]
   );
+  // Create lookup map from vhc_id to approval data
+  const vhcApprovalLookup = useMemo(() => {
+    const map = new Map();
+    vhcChecksData.forEach((check) => {
+      if (check.vhc_id) {
+        map.set(String(check.vhc_id), {
+          approvalStatus: check.approval_status || 'pending',
+          approvedBy: check.approved_by,
+          approvedAt: check.approved_at,
+          labourHours: check.labour_hours,
+          partsCost: check.parts_cost,
+          totalOverride: check.total_override,
+          labourComplete: check.labour_complete,
+          partsComplete: check.parts_complete,
+        });
+      }
+    });
+    console.log('[VHC] vhcApprovalLookup built:', map);
+    return map;
+  }, [vhcChecksData]);
+
   const summaryItems = useMemo(() => {
     const items = [];
     sections.forEach((section) => {
@@ -1303,6 +1328,11 @@ export default function VhcDetailsPanel({
         const concerns = Array.isArray(item.concerns) ? item.concerns : [];
         const primaryConcern =
           concerns.find((concern) => normaliseColour(concern.status) === severity) || concerns[0] || null;
+
+        // Get approval status from database
+        const approvalData = vhcApprovalLookup.get(String(id)) || {};
+        console.log(`[VHC] Item ${id}: approvalData =`, approvalData);
+
         items.push({
           id: String(id),
           label: heading || "Recorded item",
@@ -1315,6 +1345,9 @@ export default function VhcDetailsPanel({
           rawSeverity: severity,
           concerns,
           wheelKey: item.wheelKey || null,
+          approvalStatus: approvalData.approvalStatus || 'pending',
+          approvedBy: approvalData.approvedBy,
+          approvedAt: approvalData.approvedAt,
         });
       });
     });
@@ -1335,7 +1368,7 @@ export default function VhcDetailsPanel({
     });
 
     return items;
-  }, [sections, wheelTreadLookup]);
+  }, [sections, wheelTreadLookup, vhcApprovalLookup]);
 
   const greenItems = useMemo(() => {
     const items = [];
@@ -1572,6 +1605,7 @@ export default function VhcDetailsPanel({
 
           // Check if item has an approval status from database
           const approvalStatus = item.approval_status || item.approvalStatus || 'pending';
+          console.log(`[VHC] severityLists: Item ${item.id} has approvalStatus=${approvalStatus}`);
 
           if (approvalStatus === 'authorized') {
             lists.authorized.push(enrichedItem);
@@ -1583,6 +1617,12 @@ export default function VhcDetailsPanel({
           }
         });
       });
+    });
+    console.log('[VHC] severityLists calculated:', {
+      red: lists.red.length,
+      amber: lists.amber.length,
+      authorized: lists.authorized.length,
+      declined: lists.declined.length
     });
     return lists;
   }, [severitySections]);
@@ -1731,7 +1771,27 @@ export default function VhcDetailsPanel({
       const result = await response.json();
       if (!response.ok || !result?.success) {
         console.error("Failed to update approval status:", result?.message);
+        return;
       }
+
+      // Update vhcChecksData to trigger re-render of sections
+      console.log(`[VHC] Updating vhcChecksData for vhc_id=${parsedId} to status=${dbStatus}`);
+      setVhcChecksData((prev) => {
+        const updated = prev.map((check) => {
+          if (check.vhc_id === parsedId) {
+            console.log(`[VHC] Found and updating check:`, check);
+            return {
+              ...check,
+              approval_status: dbStatus,
+              approved_by: authUserId || dbUserId || "system",
+              approved_at: dbStatus === 'pending' ? null : new Date().toISOString(),
+            };
+          }
+          return check;
+        });
+        console.log('[VHC] Updated vhcChecksData:', updated);
+        return updated;
+      });
     } catch (error) {
       console.error("Error updating approval status:", error);
     }
@@ -1804,12 +1864,24 @@ export default function VhcDetailsPanel({
   }, [labourHoursByVhcItem, severityLists, resolveCanonicalVhcId]);
 
   // Check if all checkboxes are complete and notify parent
+  // IMPORTANT: Also checks for pending approval status - job cannot be completed if any items are still pending
   useEffect(() => {
     if (!onCheckboxesComplete) return;
 
-    const allItems = [...(severityLists.red || []), ...(severityLists.amber || [])];
-    if (allItems.length === 0) {
+    // Check for any pending items (items that haven't been authorized or declined)
+    const allPendingItems = [...(severityLists.red || []), ...(severityLists.amber || [])];
+
+    // If there are any pending items that need approval, job cannot be completed
+    if (allPendingItems.length > 0) {
       onCheckboxesComplete(false);
+      return;
+    }
+
+    // If all items have been authorized or declined, check the checkboxes
+    const allItems = [...(severityLists.authorized || []), ...(severityLists.declined || [])];
+    if (allItems.length === 0) {
+      // No VHC items at all, allow completion
+      onCheckboxesComplete(true);
       return;
     }
 
@@ -1986,9 +2058,11 @@ export default function VhcDetailsPanel({
   };
 
   const handleBulkStatus = useCallback(
-    (severity, status) => {
+    async (severity, status) => {
       const selectedIds = severitySelections[severity] || [];
       if (selectedIds.length === 0) return;
+
+      // Update local state immediately for all selected items
       setItemEntries((prev) => {
         const next = { ...prev };
         selectedIds.forEach((id) => {
@@ -1997,9 +2071,63 @@ export default function VhcDetailsPanel({
         });
         return next;
       });
+
+      // Persist each item to database
+      const updatePromises = selectedIds.map(async (itemId) => {
+        const canonicalId = resolveCanonicalVhcId(itemId);
+        const parsedId = Number(canonicalId);
+        if (!Number.isInteger(parsedId)) return;
+
+        const dbStatus = status || 'pending';
+
+        try {
+          const response = await fetch("/api/vhc/update-item-status", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              vhcItemId: parsedId,
+              approvalStatus: dbStatus,
+              approvedBy: authUserId || dbUserId || "system"
+            }),
+          });
+
+          const result = await response.json();
+          if (!response.ok || !result?.success) {
+            console.error("Failed to update approval status:", result?.message);
+            return null;
+          }
+          return parsedId;
+        } catch (error) {
+          console.error("Error updating approval status:", error);
+          return null;
+        }
+      });
+
+      // Wait for all updates to complete
+      const updatedIds = await Promise.all(updatePromises);
+      const successfulIds = updatedIds.filter(id => id !== null);
+
+      // Update vhcChecksData for all successfully updated items
+      if (successfulIds.length > 0) {
+        setVhcChecksData((prev) => {
+          return prev.map((check) => {
+            if (successfulIds.includes(check.vhc_id)) {
+              return {
+                ...check,
+                approval_status: status || 'pending',
+                approved_by: authUserId || dbUserId || "system",
+                approved_at: status ? new Date().toISOString() : null,
+              };
+            }
+            return check;
+          });
+        });
+      }
+
+      // Clear selection
       setSeveritySelections((prev) => ({ ...prev, [severity]: [] }));
     },
-    [severitySelections]
+    [severitySelections, resolveCanonicalVhcId, authUserId, dbUserId]
   );
 
   const renderSeverityTable = (severity) => {
@@ -2020,7 +2148,8 @@ export default function VhcDetailsPanel({
         </div>
       );
     }
-    const selectionEnabled = !readOnly;
+    // Disable selection for authorized/declined items
+    const selectionEnabled = !readOnly && severity !== "authorized" && severity !== "declined";
     const selectedIds = severitySelections[severity] || [];
     const selectedSet = new Set(selectedIds);
     const allChecked = items.length > 0 && selectedSet.size === items.length;
@@ -2342,7 +2471,7 @@ export default function VhcDetailsPanel({
             </tbody>
           </table>
         </div>
-        {selectionEnabled && (
+        {selectionEnabled && severity !== "authorized" && severity !== "declined" && (
           <div
             style={{
               display: "flex",
@@ -2624,7 +2753,7 @@ export default function VhcDetailsPanel({
             customer:customer_id(*),
             vehicle:vehicle_id(*),
             technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at),
+            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete),
             parts_job_items(
               id,
               part_id,
@@ -4208,14 +4337,14 @@ export default function VhcDetailsPanel({
             <div style={TAB_CONTENT_STYLE}>
               {activeTab === "summary" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  {/* Only show Red/Amber sections if there are pending items */}
                   {["red", "amber"].map((severity) => {
-                    const section = severitySections[severity];
-                    if (!section || section.size === 0) return null;
+                    const items = severityLists[severity] || [];
+                    if (items.length === 0) return null;
                     const meta = SEVERITY_META[severity];
                     const severityTheme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--danger-surface)" };
 
                     // Calculate totals for this severity
-                    const items = severityLists[severity] || [];
                     const selectedIds = severitySelections[severity] || [];
                     const selectedSet = new Set(selectedIds);
 
@@ -4291,6 +4420,51 @@ export default function VhcDetailsPanel({
                       </div>
                     );
                   })}
+
+                  {/* Authorised section - show if there are authorized items */}
+                  {severityLists.authorized && severityLists.authorized.length > 0 && (
+                    <div
+                      style={{
+                        border: "2px solid var(--success)",
+                        borderRadius: "18px",
+                        padding: "18px",
+                        background: "var(--surface)",
+                        boxShadow: "none",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "16px",
+                      }}
+                    >
+                      <div style={{ borderBottom: "1px solid var(--success)", paddingBottom: "10px" }}>
+                        <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
+                        <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been authorised for work</p>
+                      </div>
+                      {renderSeverityTable("authorized")}
+                    </div>
+                  )}
+
+                  {/* Declined section - show if there are declined items */}
+                  {severityLists.declined && severityLists.declined.length > 0 && (
+                    <div
+                      style={{
+                        border: "2px solid var(--danger)",
+                        borderRadius: "18px",
+                        padding: "18px",
+                        background: "var(--surface)",
+                        boxShadow: "none",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "16px",
+                      }}
+                    >
+                      <div style={{ borderBottom: "1px solid var(--danger)", paddingBottom: "10px" }}>
+                        <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
+                        <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been declined</p>
+                      </div>
+                      {renderSeverityTable("declined")}
+                    </div>
+                  )}
+
                   {greenItems.length > 0 && (
                     <div
                       style={{
@@ -4450,14 +4624,14 @@ export default function VhcDetailsPanel({
             )}
             <div style={TAB_CONTENT_STYLE}>
               <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                {/* Only show Red/Amber sections if there are pending items */}
                 {["red", "amber"].map((severity) => {
-                  const section = severitySections[severity];
-                  if (!section || section.size === 0) return null;
+                  const items = severityLists[severity] || [];
+                  if (items.length === 0) return null;
                   const meta = SEVERITY_META[severity];
                   const severityTheme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--danger-surface)" };
 
                   // Calculate totals for this severity
-                  const items = severityLists[severity] || [];
                   const selectedIds = severitySelections[severity] || [];
                   const selectedSet = new Set(selectedIds);
 
@@ -4533,6 +4707,51 @@ export default function VhcDetailsPanel({
                     </div>
                   );
                 })}
+
+                {/* Authorised section - show if there are authorized items */}
+                {severityLists.authorized && severityLists.authorized.length > 0 && (
+                  <div
+                    style={{
+                      border: "2px solid var(--success)",
+                      borderRadius: "18px",
+                      padding: "18px",
+                      background: "var(--surface)",
+                      boxShadow: "none",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "16px",
+                    }}
+                  >
+                    <div style={{ borderBottom: "1px solid var(--success)", paddingBottom: "10px" }}>
+                      <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
+                      <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been authorised for work</p>
+                    </div>
+                    {renderSeverityTable("authorized")}
+                  </div>
+                )}
+
+                {/* Declined section - show if there are declined items */}
+                {severityLists.declined && severityLists.declined.length > 0 && (
+                  <div
+                    style={{
+                      border: "2px solid var(--danger)",
+                      borderRadius: "18px",
+                      padding: "18px",
+                      background: "var(--surface)",
+                      boxShadow: "none",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "16px",
+                    }}
+                  >
+                    <div style={{ borderBottom: "1px solid var(--danger)", paddingBottom: "10px" }}>
+                      <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
+                      <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been declined</p>
+                    </div>
+                    {renderSeverityTable("declined")}
+                  </div>
+                )}
+
                 {greenItems.length > 0 && (
                   <div
                     style={{
