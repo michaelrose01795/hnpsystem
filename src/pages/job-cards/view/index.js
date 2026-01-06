@@ -569,12 +569,12 @@ export default function ViewJobCards() {
         <div
           style={{
             width: "100%",
-            maxWidth: "1400px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-        }}
-      >
+            maxWidth: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+          }}
+        >
         {
           // middle-layer
         }
