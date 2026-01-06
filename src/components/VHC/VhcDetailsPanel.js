@@ -1640,6 +1640,17 @@ export default function VhcDetailsPanel({
 
   const labourHoursByVhcItem = useMemo(() => {
     const map = new Map();
+
+    // First, get labour hours from vhc_checks (primary source of truth)
+    vhcChecksData.forEach((check) => {
+      if (!check?.vhc_id) return;
+      const hours = Number(check.labour_hours);
+      if (!Number.isFinite(hours) || hours < 0) return; // Allow 0 values
+      const key = String(check.vhc_id);
+      map.set(key, hours);
+    });
+
+    // Then, also check parts_job_items and take the maximum value
     partsIdentified.forEach((part) => {
       if (!part?.vhc_item_id) return;
       const hours = Number(part.labour_hours);
@@ -1648,8 +1659,9 @@ export default function VhcDetailsPanel({
       const current = map.get(key) || 0;
       map.set(key, Math.max(current, hours));
     });
+
     return map;
-  }, [partsIdentified]);
+  }, [partsIdentified, vhcChecksData]);
 
   // Combined VHC items with their parts for Parts Identified section
   const vhcItemsWithParts = useMemo(() => {
@@ -2734,6 +2746,26 @@ export default function VhcDetailsPanel({
 
   const renderCustomerSection = (title, items, severity) => {
     const theme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--surface)" };
+
+    // Calculate authorized and declined totals for this section
+    const sectionTotals = useMemo(() => {
+      let authorized = 0;
+      let declined = 0;
+
+      items.forEach((item) => {
+        const rowTotal = resolveCustomerRowTotal(item.id);
+        if (!rowTotal) return;
+        const entry = getEntryForItem(item.id);
+        if (entry.status === "authorized") {
+          authorized += rowTotal;
+        } else if (entry.status === "declined") {
+          declined += rowTotal;
+        }
+      });
+
+      return { authorized, declined };
+    }, [items]);
+
     return (
       <div
         style={{
@@ -2754,7 +2786,23 @@ export default function VhcDetailsPanel({
             borderBottom: "1px solid var(--info-surface)",
           }}
         >
-          {title}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>{title}</span>
+            {(sectionTotals.authorized > 0 || sectionTotals.declined > 0) && (
+              <div style={{ display: "flex", gap: "16px", fontSize: "11px", textTransform: "none", fontWeight: 600 }}>
+                {sectionTotals.authorized > 0 && (
+                  <span style={{ color: "var(--success)" }}>
+                    Authorised: {formatCurrency(sectionTotals.authorized)}
+                  </span>
+                )}
+                {sectionTotals.declined > 0 && (
+                  <span style={{ color: "var(--danger)" }}>
+                    Declined: {formatCurrency(sectionTotals.declined)}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         {items.length === 0 ? (
           <div style={{ padding: "16px", fontSize: "13px", color: "var(--info)" }}>
@@ -2938,46 +2986,107 @@ export default function VhcDetailsPanel({
       if (!job?.id) return;
       const canonicalId = resolveCanonicalVhcId(displayVhcId);
       const parsedId = Number(canonicalId);
-      if (!Number.isInteger(parsedId)) {
-        return;
-      }
       const parsedHours = Number(hoursValue);
       const labourHours = Number.isFinite(parsedHours) ? parsedHours : 0;
 
+      // Find the item to get its details for potential vhc_checks record creation
+      const item = summaryItems.find(i => String(i.id) === String(displayVhcId));
+
       try {
-        const response = await fetch("/api/parts/vhc-labour", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            jobId: job.id,
-            vhcItemId: parsedId,
-            labourHours,
-            userId: authUserId || null,
-            userNumericId: dbUserId || null,
-          }),
-        });
-        const result = await response.json();
-        if (!response.ok || !result?.success) {
-          throw new Error(result?.message || "Failed to save labour hours");
-        }
-        if (Array.isArray(result.items) && result.items.length > 0) {
-          setJob((prev) => {
-            if (!prev) return prev;
-            const existingParts = Array.isArray(prev.parts_job_items) ? prev.parts_job_items : [];
-            const updatedMap = new Map(existingParts.map((part) => [part.id, part]));
-            result.items.forEach((item) => {
-              if (!item?.id) return;
-              const current = updatedMap.get(item.id) || {};
-              updatedMap.set(item.id, { ...current, ...item });
-            });
-            return { ...prev, parts_job_items: Array.from(updatedMap.values()) };
+        let vhcItemIdToUse = parsedId;
+
+        // If we don't have a valid numeric ID (no alias exists), we need to create a vhc_checks record
+        if (!Number.isInteger(parsedId) && item) {
+          console.log(`[VHC] No canonical vhc_id for ${displayVhcId}, creating vhc_checks record`);
+
+          // Create a vhc_checks record for this item
+          const createResponse = await fetch("/api/jobcards/create-vhc-item", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jobId: job.id,
+              jobNumber: resolvedJobNumber,
+              section: item.sectionName || item.category?.label || "Vehicle Health Check",
+              issueTitle: item.label,
+              issueDescription: item.notes || item.concernText || "",
+              measurement: item.measurement || null,
+              labourHours,
+            }),
           });
+
+          if (createResponse.ok) {
+            const createResult = await createResponse.json();
+            if (createResult.success && createResult.vhcId) {
+              vhcItemIdToUse = createResult.vhcId;
+              // Create alias mapping
+              await upsertVhcItemAlias(displayVhcId, vhcItemIdToUse);
+              console.log(`[VHC] Created vhc_checks record with ID ${vhcItemIdToUse} for ${displayVhcId}`);
+            }
+          }
+        }
+
+        // Only proceed if we have a valid numeric ID
+        if (Number.isInteger(vhcItemIdToUse)) {
+          // Update the vhc_checks table - this is the primary source of truth for labour hours
+          const vhcResponse = await fetch("/api/vhc/update-item-status", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              vhcItemId: vhcItemIdToUse,
+              labourHours,
+              approvedBy: authUserId || dbUserId || null,
+            }),
+          });
+          const vhcResult = await vhcResponse.json();
+          if (!vhcResponse.ok || !vhcResult?.success) {
+            console.warn("Failed to update vhc_checks labour hours:", vhcResult?.message);
+          }
+
+          // Update parts_job_items if there are any parts linked to this VHC item
+          const partsResponse = await fetch("/api/parts/vhc-labour", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jobId: job.id,
+              vhcItemId: vhcItemIdToUse,
+              labourHours,
+              userId: authUserId || null,
+              userNumericId: dbUserId || null,
+            }),
+          });
+          const partsResult = await partsResponse.json();
+
+          // Update parts in local state if any were updated
+          if (partsResponse.ok && Array.isArray(partsResult.items) && partsResult.items.length > 0) {
+            setJob((prev) => {
+              if (!prev) return prev;
+              const existingParts = Array.isArray(prev.parts_job_items) ? prev.parts_job_items : [];
+              const updatedMap = new Map(existingParts.map((part) => [part.id, part]));
+              partsResult.items.forEach((item) => {
+                if (!item?.id) return;
+                const current = updatedMap.get(item.id) || {};
+                updatedMap.set(item.id, { ...current, ...item });
+              });
+              return { ...prev, parts_job_items: Array.from(updatedMap.values()) };
+            });
+          }
+
+          // Refresh vhcChecksData to include the new/updated record
+          if (resolvedJobNumber) {
+            const { data: updatedVhcChecks } = await supabase
+              .from("vhc_checks")
+              .select("*")
+              .eq("job_id", job.id);
+            if (updatedVhcChecks) {
+              setVhcChecksData(updatedVhcChecks);
+            }
+          }
         }
       } catch (error) {
         console.error("Failed to persist labour hours", error);
       }
     },
-    [authUserId, dbUserId, job?.id, resolveCanonicalVhcId]
+    [authUserId, dbUserId, job?.id, resolveCanonicalVhcId, summaryItems, resolvedJobNumber, upsertVhcItemAlias]
   );
 
   // Handler for Pre-Pick Location dropdown change
@@ -4556,8 +4665,17 @@ export default function VhcDetailsPanel({
                     }}
                   >
                     <div style={{ borderBottom: "1px solid var(--success)", paddingBottom: "10px" }}>
-                      <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
-                      <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been authorised for work</p>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
+                          <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been authorised for work</p>
+                        </div>
+                        {customerTotals.authorized > 0 && (
+                          <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--success)" }}>
+                            {formatCurrency(customerTotals.authorized)}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     {renderSeverityTable("authorized")}
                   </div>
@@ -4576,8 +4694,17 @@ export default function VhcDetailsPanel({
                     }}
                   >
                     <div style={{ borderBottom: "1px solid var(--danger)", paddingBottom: "10px" }}>
-                      <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
-                      <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been declined</p>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
+                          <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been declined</p>
+                        </div>
+                        {customerTotals.declined > 0 && (
+                          <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--danger)" }}>
+                            {formatCurrency(customerTotals.declined)}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     {renderSeverityTable("declined")}
                   </div>
@@ -4840,8 +4967,17 @@ export default function VhcDetailsPanel({
                     }}
                   >
                     <div style={{ borderBottom: "1px solid var(--success)", paddingBottom: "10px" }}>
-                      <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
-                      <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been authorised for work</p>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
+                          <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been authorised for work</p>
+                        </div>
+                        {customerTotals.authorized > 0 && (
+                          <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--success)" }}>
+                            {formatCurrency(customerTotals.authorized)}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     {renderSeverityTable("authorized")}
                   </div>
@@ -4862,8 +4998,17 @@ export default function VhcDetailsPanel({
                     }}
                   >
                     <div style={{ borderBottom: "1px solid var(--danger)", paddingBottom: "10px" }}>
-                      <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
-                      <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been declined</p>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
+                          <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been declined</p>
+                        </div>
+                        {customerTotals.declined > 0 && (
+                          <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--danger)" }}>
+                            {formatCurrency(customerTotals.declined)}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     {renderSeverityTable("declined")}
                   </div>

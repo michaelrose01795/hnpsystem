@@ -1,25 +1,81 @@
 TO DO:
 
-Show authorised and declinded total at the top of each section. "Internal
-Air Con/Heating/ventilation
-- Ac heating" row not working or saving labour time within database/frontend. 
+At the top of the "Declined" section add a total of for that section in red text Following the theme light and dark. do the same inside the "Authorised" section and have the text green. And then add the total for that section inside the "AUTHORISED £0.00 VHC Total" and the "DECLINED £0.00 VHC Total" section when its been addded to either. also "Items that have been authorised for work" remove this and this text "Items that have been declined"
+
+
+
+
+Atm when the rows are added to either authorised or declined section make sure this their new place, the status of these items does not change when the page is refreshed, make sure the status is chaning to authorised or declinded within the database, so when the page loads again the status of the row remains the same and the rows either show inside the declinded, authorised or if niether have been picked yet they stay in either the red or amber section depending on the status of their row when reported. 
+
+
+When a part is authorised added that part with the row inside the "Parts Authorized" tab, this row will show the same row as used inside the  parts indentifed tab with the table title being "VHC Item	Linked Parts	Parts Cost	Warranty	Parts Not Required" however without the Parts noot required title and instead a status upadate drop down (link to drop down api stly) and this also links to the "Find Job Card" section insdie the /parts where the table view is "Part	Qty	Stage	Status	Pre-pick	Notes". 
+
+
+
+
+Inside the newfeed page bring the rows closer to gether so the have some room when hover is active, make the width of the sections smaller and the higets smaller (only make bigger when more rows of text within the description (add a scroll after 20 lines)), make the description text smaller a bit and have the sections so they follow the theme and style of the rest of the app
+
+
+
+
+
+make the "Customer Requests Contact Scheduling Service History Parts Notes Write Up VHC Warranty Clocking Messages Documents Invoice" tabs bigger to fit the tab section claenly and neatly only add a horisontal scroll if nessacarry. but if a scroll is added then make the length of it half the lengh of the tab section and for it to not push the tab buttons up out of the center horizonaly line of the tab section, if and only if the section requires to be made bigger to achive this then make the tab section bigger but if making bigger dont also move the buttons so they arent in the horizonaly center line. 
+
+
 
 
 
 Log deleiver button needs to be removed as all logs are done when a part is Goods in through the goods in page, whena part is goods in add it to the stock list, if the part is goods in and then booked stright to a jobnumber then book the part in and then take it out again to book to the part so there is a log of the part(s) being logged. 
 
 
+
+
+
+
+Change the "Description" box is its the same size as the other field until text goes beond the size only then make the text box section bigger within the /parts/goods-in page. Also link the Supplier accounts popup to the Company accounts database so it brings the list view of all of the company accounts when start typing for. Add a "Franchise" drop down (following the dropdown api style) has Mitsubushi, Suzuki, stock, tyre, consumables within the dropdown. Have it so if a tyre is selected within that drop down have it so either the Retail preice is calculated to £30 more than the  cost price or the cost price is £30 less than the Retial price depending what has been eneted first. When a part or parts are added within the "Invoice lines" section add a total retial price and total cost price at the top of the section on the same row as the "Refresh, Complete" buttons for easy refernce to cross reference the invocie (make sure this adds the total for the quantity example 1 part has two quanities costing 50 so the total for that row would be £100). 
+
+
+When a new part is added within the "Add part" section inside the /parts/goods-in page add the new part to "Stock Catalogue" and the database. Remove the "Deliveries & Ordered Stock" section inside the /parts page. make the stock catalogue the bottom half of the page and the Find job card section the top half of the page. Implement the find job card section inside the parts tab inside the job-cards/[jobnumber] page have it so this view is only visible to the parts and parts manager user that is this table view "Part	Qty	Stage	Status	Pre-pick	Notes". also link where required to do with status inside the vhc tab inside the "Parts On Order" tab. change the /parts page to a stock catalogue as well as the sidebar button and the url link name. keep the "Find Job Card" on this page for the time being. 
+
+
+
+When the "Complete" button is pressed and the popup opnes and "Not now" is pressed take the user back to the "parts/goods-in" page with all of the data cleared from the fields. when "Add to job" button is pressed the next popup shows the "Part number" and "Pirelli P Zero, 235/40 R18 95Y XL" with quantity wanting to add to the job with job number, 1 or multiple rows of the parts can be selected to add to the job number at once, after 1 or all of the parts are added (doesnt matter how many) the cancel button which takes the user back to the "Goods in complete" popup is pressed or the finish button is pressed which saves the changes to the database, any parts which we not added to a job number we added to the stock catalog and the user is taken back to the "parts/goods-in" page with the fields empty. 
+
+
+When search in global for "goods in number" have it so it opens the page "/parts/goods-in/[GINnumber]" not "/parts/goods-in?goodsIn=GIN[number], this will take the users to a new page, inside this page build a invoice recreation with Supplier details at the top section, invoice lines in the middle, totals at the bottom, history section for where the parts were added once goods in was complete either to a job number or to stock, if to job number how many what invocie line and how many and the same with stock. 
+
+
+
+
+
+
 Make sure Goods in parts and added to jobnuber are shown within the "PARTS ADDED TO JOB" section inside jobcard/[jobnumber page]. 
-
-
-
 
  goods in number search. shows all goods in, connect each tab to show correct data linked to tab, add this within the global search bar. 
 
 
 
 
-Parts identified console error
+
+
+make the "Job Progress Tracker" sidebar wider so it can comfortably with the sections. have it so the sidebar width changes with the devices screen size used and the contents always fit within the sidebar section. 
+
+
+
+
+
+
+Parts identified console error???
+
+
+
+
+
+
+Go though each page and set which section has what level of colour level 1-4
+Change to base layer " /* Level 3 (Bottom layer - pale red): page background + outer shell */
+  --layer-section-level-3: #ffeaea;" adjust in all places where users 
+
 
 
 

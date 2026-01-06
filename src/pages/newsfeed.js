@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Layout from "@/components/Layout";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
+import { MultiSelectDropdown } from "@/components/dropdownAPI";
 
 const FALLBACK_UPDATES = [
   {
@@ -108,16 +109,33 @@ const deriveDepartmentsFromRoles = (roles = []) => {
   return Array.from(mapped);
 };
 
-const formatDate = (value) => {
-  if (!value) return "Unknown date";
+const formatTimeAgo = (value) => {
+  if (!value) return "Unknown time";
   try {
-    return new Date(value).toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    const date = new Date(value);
+    const now = new Date();
+    const diffInMs = now - date;
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInMinutes < 1) {
+      return "Just now";
+    } else if (diffInMinutes < 60) {
+      return `${diffInMinutes} minute${diffInMinutes === 1 ? "" : "s"} ago`;
+    } else if (diffInHours < 24) {
+      return `${diffInHours} hour${diffInHours === 1 ? "" : "s"} ago`;
+    } else if (diffInDays < 30) {
+      return `${diffInDays} day${diffInDays === 1 ? "" : "s"} ago`;
+    } else if (diffInDays < 365) {
+      const months = Math.floor(diffInDays / 30);
+      return `${months} month${months === 1 ? "" : "s"} ago`;
+    } else {
+      const years = Math.floor(diffInDays / 365);
+      return `${years} year${years === 1 ? "" : "s"} ago`;
+    }
   } catch (error) {
-    return "Unknown date";
+    return "Unknown time";
   }
 };
 
@@ -143,9 +161,7 @@ export default function NewsFeed() {
     content: "",
     departments: [],
   });
-  const [departmentMenuOpen, setDepartmentMenuOpen] = useState(false);
   const [notificationError, setNotificationError] = useState("");
-  const departmentMenuRef = useRef(null);
 
   const userRoles = user?.roles || [];
   const userDepartments = useMemo(() => deriveDepartmentsFromRoles(userRoles), [userRoles]);
@@ -195,43 +211,18 @@ export default function NewsFeed() {
     };
   }, [fetchUpdates]);
 
-  useEffect(() => {
-    if (!departmentMenuOpen) return undefined;
-    const handleClick = (event) => {
-      if (departmentMenuRef.current && !departmentMenuRef.current.contains(event.target)) {
-        setDepartmentMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [departmentMenuOpen]);
-
-  const sectionFeeds = useMemo(() => {
+  const accessibleUpdates = useMemo(() => {
     const accessibleSections = SECTION_ORDER.filter(
       (section) => section === "General" || userDepartments.includes(section)
     );
-    return accessibleSections
-      .map((label) => {
-        const posts = updates.filter((update) => matchesSection(update, label));
-        return { label, posts };
-      })
-      .filter((section) => section.posts.length > 0);
+    return updates.filter((update) =>
+      accessibleSections.some((section) => matchesSection(update, section))
+    );
   }, [updates, userDepartments]);
-
-  const handleDepartmentToggle = (department) => {
-    setFormState((previous) => {
-      const hasDept = previous.departments.includes(department);
-      const nextDepartments = hasDept
-        ? previous.departments.filter((dept) => dept !== department)
-        : [...previous.departments, department];
-      return { ...previous, departments: nextDepartments };
-    });
-  };
 
   const resetModal = () => {
     setFormState({ title: "", content: "", departments: [] });
     setNotificationError("");
-    setDepartmentMenuOpen(false);
   };
 
   const handleCreateUpdate = async () => {
@@ -265,13 +256,11 @@ export default function NewsFeed() {
     }
   };
 
-  const departmentsSummary = formState.departments.length === 0 ? "Choose departments" : null;
-
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-3xl mx-auto px-6 py-8">
         {canManageUpdates && (
-          <div className="flex justify-end items-center mb-10">
+          <div className="flex justify-end items-center mb-12">
             <button
               onClick={() => {
                 resetModal();
@@ -290,61 +279,94 @@ export default function NewsFeed() {
         )}
 
         {loading && (
-          <p className="text-sm text-gray-400 mb-6">Loading latest updates…</p>
-        )}
-
-        {!loading && sectionFeeds.length === 0 && (
-          <p className="text-sm text-gray-400 mb-6">
-            No updates published for your departments yet.
+          <p
+            className="text-sm mb-6"
+            style={{ color: "var(--text-secondary)", opacity: 0.7 }}
+          >
+            Loading latest updates…
           </p>
         )}
 
-        <div className="space-y-10">
-          {sectionFeeds.map((section) => (
-            <section
-              key={section.label}
-              className="rounded-3xl p-8 border border-[var(--surface-light)] transition-all duration-300"
-              style={{ background: "var(--surface)" }}
+        {!loading && accessibleUpdates.length === 0 && (
+          <div
+            className="text-center py-16"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "16px",
+              backgroundColor: "var(--layer-section-level-1)",
+            }}
+          >
+            <p
+              className="text-sm"
+              style={{ color: "var(--text-secondary)", opacity: 0.7 }}
             >
+              No updates published for your departments yet.
+            </p>
+          </div>
+        )}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "48px" }}>
+          {accessibleUpdates.map((update) => (
+            <article
+              key={update.id ?? update.title}
+              style={{
+                padding: "32px",
+                border: "1px solid var(--border)",
+                borderRadius: "16px",
+                backgroundColor: "var(--layer-section-level-1)",
+                cursor: "pointer",
+                transition: "transform 0.3s ease, box-shadow 0.3s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-8px)";
+                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              {/* Title */}
               <h2
-                className="text-2xl font-semibold mb-6 pb-2 border-b border-[var(--surface-light)]"
-                style={{ color: "var(--primary)" }}
+                style={{
+                  fontSize: "28px",
+                  fontWeight: "bold",
+                  marginBottom: "12px",
+                  color: "var(--text-primary)",
+                }}
               >
-                {section.label} Department
+                {update.title}
               </h2>
 
-              <div className="flex flex-col gap-6">
-                {section.posts.map((post) => (
-                  <article
-                    key={post.id ?? post.title}
-                    className="rounded-2xl bg-[var(--surface-light)]  p-6 border border-[var(--surface-light)] transition-all duration-300 hover:-translate-y-1 hover:border-[var(--primary-light)]"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {post.title}
-                      </h3>
-                      <span
-                        className="text-xs font-medium px-3 py-1 rounded-full"
-                        style={{
-                          backgroundColor: "var(--surface)",
-                          border: "1px solid var(--surface-light)",
-                          color: "var(--primary)",
-                        }}
-                      >
-                        {(post.departments && post.departments[0]) || section.label}
-                      </span>
-                    </div>
-
-                    <p className="text-gray-700 mb-4 leading-relaxed">{post.content}</p>
-
-                    <div className="flex justify-between text-sm text-gray-500 border-t border-gray-100 pt-3">
-                      <span>{post.author || "System"}</span>
-                      <span>{formatDate(post.created_at)}</span>
-                    </div>
-                  </article>
-                ))}
+              {/* Author and Time */}
+              <div
+                style={{
+                  fontSize: "12px",
+                  marginBottom: "20px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  color: "var(--text-secondary)",
+                  opacity: 0.7,
+                }}
+              >
+                <span>{update.author || "System"}</span>
+                <span>•</span>
+                <span>{formatTimeAgo(update.created_at)}</span>
               </div>
-            </section>
+
+              {/* Description */}
+              <p
+                style={{
+                  fontSize: "20px",
+                  lineHeight: "1.9",
+                  color: "var(--text-primary)",
+                  opacity: 0.9,
+                }}
+              >
+                {update.content}
+              </p>
+            </article>
           ))}
         </div>
       </div>
@@ -508,166 +530,19 @@ export default function NewsFeed() {
 
               {/* Departments Field */}
               <div style={{ marginBottom: "24px" }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "8px",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    color: "var(--primary)",
+                <MultiSelectDropdown
+                  label="Visible to Departments"
+                  placeholder="Add departments"
+                  options={AVAILABLE_DEPARTMENTS}
+                  value={formState.departments}
+                  onChange={(selectedDepartments) => {
+                    setFormState((prev) => ({
+                      ...prev,
+                      departments: selectedDepartments,
+                    }));
                   }}
-                >
-                  Visible to Departments
-                </label>
-
-                {/* Selected Departments Display */}
-                <div
-                  style={{
-                    minHeight: "48px",
-                    padding: "8px 12px",
-                    borderRadius: "12px",
-                    border: "2px solid var(--surface-light)",
-                    backgroundColor: "var(--surface-light)",
-                    marginBottom: "8px",
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "8px",
-                    alignItems: "center",
-                  }}
-                >
-                  {formState.departments.length === 0 ? (
-                    <span style={{ color: "#999", fontSize: "15px" }}>No departments selected</span>
-                  ) : (
-                    formState.departments.map((dept) => (
-                      <span
-                        key={dept}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          padding: "6px 12px",
-                          borderRadius: "8px",
-                          backgroundColor: "var(--primary)",
-                          color: "white",
-                          fontSize: "13px",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {dept}
-                        <button
-                          type="button"
-                          onClick={() => handleDepartmentToggle(dept)}
-                          style={{
-                            background: "none",
-                            border: "none",
-                            color: "white",
-                            cursor: "pointer",
-                            fontSize: "16px",
-                            lineHeight: "1",
-                            padding: "0",
-                            marginLeft: "2px",
-                          }}
-                          aria-label={`Remove ${dept}`}
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))
-                  )}
-                </div>
-
-                {/* Department Selection Dropdown */}
-                <div style={{ position: "relative" }} ref={departmentMenuRef}>
-                  <button
-                    type="button"
-                    onClick={() => setDepartmentMenuOpen((previous) => !previous)}
-                    style={{
-                      width: "100%",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "12px 16px",
-                      borderRadius: "12px",
-                      border: "2px solid var(--surface-light)",
-                      backgroundColor: "var(--surface-light)",
-                      fontSize: "15px",
-                      cursor: "pointer",
-                      transition: "border-color 0.2s",
-                    }}
-                    onMouseEnter={(e) => (e.target.style.borderColor = "var(--primary)")}
-                    onMouseLeave={(e) => (e.target.style.borderColor = "var(--surface-light)")}
-                  >
-                    <span style={{ fontWeight: "500" }}>
-                      {departmentMenuOpen ? "Select departments to add" : "Add departments"}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        padding: "4px 12px",
-                        borderRadius: "8px",
-                        backgroundColor: "var(--primary)",
-                        color: "white",
-                      }}
-                    >
-                      {departmentMenuOpen ? "Close" : "Select"}
-                    </span>
-                  </button>
-                  {departmentMenuOpen && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "100%",
-                        marginTop: "8px",
-                        left: 0,
-                        right: 0,
-                        backgroundColor: "var(--surface)",
-                        borderRadius: "12px",
-                        border: "2px solid var(--primary)",
-                        boxShadow: "none",
-                        zIndex: 1000,
-                        maxHeight: "280px",
-                        overflowY: "auto",
-                      }}
-                    >
-                      {AVAILABLE_DEPARTMENTS.map((department, index) => (
-                        <label
-                          key={department}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: "14px 16px",
-                            fontSize: "15px",
-                            cursor: "pointer",
-                            borderBottom: index < AVAILABLE_DEPARTMENTS.length - 1 ? "1px solid var(--surface-light)" : "none",
-                            transition: "background-color 0.2s",
-                            backgroundColor: formState.departments.includes(department) ? "var(--surface-light)" : "transparent",
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--surface-light)")}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = formState.departments.includes(department) ? "var(--surface-light)" : "transparent";
-                          }}
-                        >
-                          <span style={{ fontWeight: "500" }}>{department}</span>
-                          <input
-                            type="checkbox"
-                            checked={formState.departments.includes(department)}
-                            onChange={() => handleDepartmentToggle(department)}
-                            style={{
-                              width: "20px",
-                              height: "20px",
-                              cursor: "pointer",
-                              accentColor: "var(--primary)",
-                            }}
-                          />
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                  emptyState="No departments available"
+                />
               </div>
 
               {/* Error Message */}

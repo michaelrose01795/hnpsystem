@@ -62,13 +62,13 @@
 
   /* Three-tier background system - Light Mode */
   /* Level 1 (Top layer - almost white): inner cards, stats blocks */
-  --layer-section-level-1: #fff9f9;
+  --layer-section-level-1: #fde8e8;
   /* Level 2 (Middle layer - softer blush): primary card sections */
-  --layer-section-level-2: #fff2f2;
+  --layer-section-level-2: #ffdede;
   /* Level 3 (Bottom layer - pale red): page background + outer shell */
   --layer-section-level-3: #ffeaea;
   /* Level 4 (Extra dark if needed) */
-  --layer-section-level-4: #ffd0d0;
+  --layer-section-level-4: #ffcdcd;
   --row-background: #ffffff;
   --text-color: var(--text-primary);
 
