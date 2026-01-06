@@ -1209,16 +1209,36 @@ export default function JobCardDetailPage() {
               }}>
                 {jobData.status}
               </span>
-              {jobData.jobSource && (
+              {jobData.jobSource === "Warranty" && (
                 <span style={{
                   padding: "6px 14px",
-                  backgroundColor: jobData.jobSource === "Warranty" ? "var(--warning-surface)" : "var(--success-surface)",
-                  color: jobData.jobSource === "Warranty" ? "var(--danger)" : "var(--success-dark)",
+                  backgroundColor: "var(--warning-surface)",
+                  color: "var(--danger)",
                   borderRadius: "20px",
                   fontWeight: "600",
                   fontSize: "13px"
                 }}>
                   {jobData.jobSource}
+                </span>
+              )}
+              {jobData.jobDivision && (
+                <span
+                  style={{
+                    padding: "6px 14px",
+                    backgroundColor:
+                      jobData.jobDivision.toLowerCase() === "sales"
+                        ? "var(--info-surface)"
+                        : "var(--success-surface)",
+                    color:
+                      jobData.jobDivision.toLowerCase() === "sales"
+                        ? "var(--info)"
+                        : "var(--success-dark)",
+                    borderRadius: "20px",
+                    fontWeight: "600",
+                    fontSize: "13px",
+                  }}
+                >
+                  {jobData.jobDivision}
                 </span>
               )}
             </div>

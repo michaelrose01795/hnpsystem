@@ -198,6 +198,22 @@ export default function ViewJobCards() {
   const [activeTab, setActiveTab] = useState("today"); // track active tab
   const [loading, setLoading] = useState(true); // loading state
   const router = useRouter(); // router for navigation
+  useEffect(() => {
+    const divisionParam = router.query?.division;
+    if (!divisionParam) {
+      setDivisionFilter("All");
+      return;
+    }
+    const normalized = String(divisionParam).trim().toLowerCase();
+    if (normalized === "retail") {
+      setDivisionFilter("Retail");
+    } else if (normalized === "sales") {
+      setDivisionFilter("Sales");
+    } else {
+      setDivisionFilter("All");
+    }
+  }, [router.query?.division]);
+  const [divisionFilter, setDivisionFilter] = useState("All"); // Retail vs Sales filter
   const { triggerNextAction } = useNextAction(); // next action dispatcher
   const { user } = useUser();
   const today = getTodayDate(); // get today's date
@@ -291,31 +307,67 @@ export default function ViewJobCards() {
     }
   };
 
+  const normalizedDivisionFilter =
+    divisionFilter !== "All" ? divisionFilter.toLowerCase() : null;
+
+  const divisionFilteredJobs = useMemo(
+    () =>
+      normalizedDivisionFilter
+        ? jobs.filter(
+            (job) =>
+              (job.jobDivision || "Retail").toLowerCase() ===
+              normalizedDivisionFilter
+          )
+        : jobs,
+    [jobs, normalizedDivisionFilter]
+  );
+
+  const handleDivisionFilterChange = useCallback(
+    (nextValue) => {
+      if (!nextValue || nextValue === divisionFilter) return;
+      const nextFilter = nextValue;
+      setDivisionFilter(nextFilter);
+      const nextQuery = { ...router.query };
+      if (nextFilter === "All") {
+        delete nextQuery.division;
+      } else {
+        nextQuery.division = nextFilter.toLowerCase();
+      }
+      router.replace({ pathname: router.pathname, query: nextQuery }, undefined, {
+        shallow: true,
+      });
+    },
+    [divisionFilter, router]
+  );
+
+  const divisionFilterLabel =
+    divisionFilter === "All" ? "Retail & Sales" : `${divisionFilter} only`;
+
   const jobDateLookup = useMemo(
     () =>
-      jobs.reduce((acc, job) => {
+      divisionFilteredJobs.reduce((acc, job) => {
         acc[job.id] = getJobDate(job);
         return acc;
       }, {}),
-    [jobs]
+    [divisionFilteredJobs]
   );
 
   const todayJobs = useMemo(
     () =>
-      jobs.filter((job) => {
+      divisionFilteredJobs.filter((job) => {
         const jobDate = jobDateLookup[job.id];
         return jobDate === today;
       }),
-    [jobs, today, jobDateLookup]
+    [divisionFilteredJobs, today, jobDateLookup]
   );
 
   const carryOverJobs = useMemo(
     () =>
-      jobs.filter((job) => {
+      divisionFilteredJobs.filter((job) => {
         const jobDate = jobDateLookup[job.id];
         return jobDate !== today;
       }),
-    [jobs, today, jobDateLookup]
+    [divisionFilteredJobs, today, jobDateLookup]
   );
 
   const normalizedOrders = useMemo(() => {
@@ -678,6 +730,60 @@ export default function ViewJobCards() {
                 </div>
               )}
             </div>
+            {!isOrdersTab && (
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "8px",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    color: "var(--grey-accent)",
+                  }}
+                >
+                  Division:
+                </span>
+                {["All", "Retail", "Sales"].map((option) => {
+                  const isActive = divisionFilter === option;
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => handleDivisionFilterChange(option)}
+                      style={{
+                        padding: "8px 16px",
+                        borderRadius: "999px",
+                        border: isActive ? "1px solid transparent" : "1px solid var(--surface-light)",
+                        background: isActive ? "var(--primary)" : "var(--surface)",
+                        color: isActive ? "white" : "var(--accent-purple)",
+                        fontWeight: 600,
+                        fontSize: "12px",
+                        cursor: "pointer",
+                        boxShadow: "none",
+                        transition: "all 0.2s ease",
+                      }}
+                    >
+                      {option}
+                    </button>
+                  );
+                })}
+                <span
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--grey-accent)",
+                    fontWeight: 500,
+                  }}
+                >
+                  {divisionFilterLabel}
+                </span>
+              </div>
+            )}
 
             {!isOrdersTab && (
               <div
@@ -843,15 +949,47 @@ export default function ViewJobCards() {
                     </p>
                   </div>
                   {/* ✅ Job Source Badge */}
-                  <div style={{
-                    backgroundColor: popupJob.jobSource === "Warranty" ? "var(--warning)" : "var(--success)",
-                    color: "white",
-                    padding: "8px 16px",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                    fontWeight: "600"
-                  }}>
-                    {popupJob.jobSource || "RETAIL"}
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "8px",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      justifyContent: "flex-end",
+                    }}
+                  >
+                    {popupJob.jobDivision && (
+                      <span
+                        style={{
+                          backgroundColor:
+                            popupJob.jobDivision.toLowerCase() === "sales"
+                              ? "var(--info-surface)"
+                              : "var(--success-surface)",
+                          color:
+                            popupJob.jobDivision.toLowerCase() === "sales"
+                              ? "var(--info)"
+                              : "var(--success-dark)",
+                          padding: "8px 16px",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {popupJob.jobDivision}
+                      </span>
+                    )}
+                    <span
+                      style={{
+                        backgroundColor: popupJob.jobSource === "Warranty" ? "var(--warning)" : "var(--success)",
+                        color: "white",
+                        padding: "8px 16px",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                      }}
+                    >
+                      {popupJob.jobSource || "Retail"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1156,7 +1294,12 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
       })
     : "Unknown";
   const jobStatus = job.status || "Status pending";
-  const jobSourceLabel = job.jobSource || "Retail";
+  const jobDivisionLabel = job.jobDivision || "Retail";
+  const isSalesDivision = jobDivisionLabel.toLowerCase() === "sales";
+  const divisionBadgeStyles = {
+    backgroundColor: isSalesDivision ? "var(--info-surface)" : "var(--success-surface)",
+    color: isSalesDivision ? "var(--info)" : "var(--success-dark)",
+  };
 
   // Extract customer requests text
   const customerRequests = job.requests && Array.isArray(job.requests)
@@ -1204,19 +1347,41 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
           <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--primary)" }}>{job.reg || "—"}</span>
           <span style={{ fontSize: "13px", color: "var(--info)" }}>{job.makeModel || "Vehicle pending"}</span>
         </div>
-        <span
+        <div
           style={{
-            padding: "4px 10px",
-            borderRadius: "999px",
-            backgroundColor: "var(--accent-purple-surface)",
-            color: "var(--accent-purple)",
-            fontWeight: 600,
-            fontSize: "12px",
-            textTransform: "capitalize",
+            display: "flex",
+            gap: "8px",
+            alignItems: "center",
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
           }}
         >
-          {jobStatus}
-        </span>
+          <span
+            style={{
+              padding: "4px 10px",
+              borderRadius: "999px",
+              fontWeight: 600,
+              fontSize: "12px",
+              textTransform: "capitalize",
+              ...divisionBadgeStyles,
+            }}
+          >
+            {jobDivisionLabel}
+          </span>
+          <span
+            style={{
+              padding: "4px 10px",
+              borderRadius: "999px",
+              backgroundColor: "var(--accent-purple-surface)",
+              color: "var(--accent-purple)",
+              fontWeight: 600,
+              fontSize: "12px",
+              textTransform: "capitalize",
+            }}
+          >
+            {jobStatus}
+          </span>
+        </div>
       </div>
 
       {/* Main Info Row - Compact horizontal layout */}

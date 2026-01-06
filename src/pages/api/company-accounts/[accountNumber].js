@@ -5,6 +5,7 @@ import supabase from "@/lib/supabaseClient";
 
 const allowedRoles = ["admin", "owner", "admin manager", "accounts", "accounts manager"];
 const COMPANY_ACCOUNTS_TABLE = "company_accounts";
+const HISTORY_LIMIT = 50;
 const editableFields = [
   "company_name",
   "trading_name",
@@ -20,6 +21,42 @@ const editableFields = [
   "linked_account_id",
   "linked_account_label",
 ];
+
+async function fetchAccountHistory(accountNumber) {
+  const history = { jobs: [], invoices: [] };
+  if (!accountNumber) {
+    return history;
+  }
+  const [jobsResult, invoicesResult] = await Promise.all([
+    supabase
+      .from("jobs")
+      .select(
+        "id, job_number, job_source, status, customer, vehicle_reg, vehicle_make_model, created_at, completed_at"
+      )
+      .eq("account_number", accountNumber)
+      .order("created_at", { ascending: false })
+      .limit(HISTORY_LIMIT),
+    supabase
+      .from("invoices")
+      .select(
+        "id, invoice_number, job_number, order_number, payment_status, invoice_total, invoice_date, due_date, created_at, invoice_to"
+      )
+      .eq("account_number", accountNumber)
+      .order("created_at", { ascending: false })
+      .limit(HISTORY_LIMIT),
+  ]);
+  if (jobsResult.error) {
+    console.error("Failed to load company account job history", jobsResult.error);
+  } else {
+    history.jobs = jobsResult.data || [];
+  }
+  if (invoicesResult.error) {
+    console.error("Failed to load company account invoice history", invoicesResult.error);
+  } else {
+    history.invoices = invoicesResult.data || [];
+  }
+  return history;
+}
 
 async function handler(req, res, session) {
   const permissions = deriveAccountPermissions(session.user?.roles || []);
@@ -47,7 +84,8 @@ async function handler(req, res, session) {
       res.status(404).json({ success: false, message: "Company account not found" });
       return;
     }
-    res.status(200).json({ success: true, data });
+    const history = await fetchAccountHistory(accountNumber);
+    res.status(200).json({ success: true, data, history });
     return;
   }
   if (req.method === "PUT") {

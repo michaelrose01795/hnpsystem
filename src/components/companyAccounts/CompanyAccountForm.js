@@ -298,8 +298,9 @@ export default function CompanyAccountForm({
           style={{
             padding: "10px 16px",
             borderRadius: "10px",
-            border: "1px solid var(--surface-light)",
-            background: "transparent",
+            border: "1px solid var(--surface-border, var(--surface-light))",
+            background: "var(--surface-light)",
+            color: "var(--text-primary)",
           }}
         >
           Cancel

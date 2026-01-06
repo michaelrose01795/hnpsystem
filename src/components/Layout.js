@@ -478,7 +478,29 @@ export default function Layout({ children, jobNumber }) {
         },
       ]
     : [];
-  const serviceSidebarSections = [...WORKSHOP_SHORTCUT_SECTIONS, ...accountsSidebarSections];
+  const jobDivisionSidebarSections = [
+    {
+      label: "Job Divisions",
+      category: "departments",
+      items: [
+        {
+          label: "Retail Jobs",
+          href: "/job-cards/view?division=retail",
+          roles: roleCategories?.Retail || [],
+        },
+        {
+          label: "Sales Jobs",
+          href: "/job-cards/view?division=sales",
+          roles: roleCategories?.Sales || [],
+        },
+      ],
+    },
+  ];
+  const serviceSidebarSections = [
+    ...jobDivisionSidebarSections,
+    ...WORKSHOP_SHORTCUT_SECTIONS,
+    ...accountsSidebarSections,
+  ];
   const combinedSidebarSections = [...sidebarSections, ...serviceSidebarSections];
   const navigationItems = [];
   const seenNavItems = new Set();

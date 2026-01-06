@@ -4062,6 +4062,76 @@ export default function VhcDetailsPanel({
         </div>
       )}
 
+      {/* Overall Authorised/Declined Totals Section */}
+      {(() => {
+        // Calculate overall totals across all red and amber items
+        let overallAuthorisedTotal = 0;
+        let overallDeclinedTotal = 0;
+
+        ["red", "amber"].forEach((severity) => {
+          const items = severityLists[severity] || [];
+          items.forEach((item) => {
+            const entry = getEntryForItem(item.id);
+            const resolvedPartsCost = resolvePartsCost(item.id, entry);
+            const totalCost = computeRowTotal(entry, resolvedPartsCost);
+            const finalTotal = entry.totalOverride !== "" && entry.totalOverride !== null
+              ? parseFloat(entry.totalOverride)
+              : totalCost;
+
+            if (entry.status === "authorized") {
+              overallAuthorisedTotal += finalTotal;
+            } else if (entry.status === "declined") {
+              overallDeclinedTotal += finalTotal;
+            }
+          });
+        });
+
+        // Only show this section if there are authorised or declined items
+        if (overallAuthorisedTotal > 0 || overallDeclinedTotal > 0) {
+          return (
+            <div style={{
+              ...PANEL_SECTION_STYLE,
+              padding: "14px 18px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "16px",
+              flexWrap: "wrap"
+            }}>
+              <div style={{
+                display: "flex",
+                gap: "24px",
+                alignItems: "center",
+                flexWrap: "wrap",
+                flex: 1
+              }}>
+                {overallAuthorisedTotal > 0 && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ fontSize: "13px", color: "var(--info)", fontWeight: 500 }}>
+                      Total Authorised:
+                    </span>
+                    <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--success)" }}>
+                      £{overallAuthorisedTotal.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                {overallDeclinedTotal > 0 && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ fontSize: "13px", color: "var(--info)", fontWeight: 500 }}>
+                      Total Declined:
+                    </span>
+                    <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--danger)" }}>
+                      £{overallDeclinedTotal.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })()}
+
       <div style={PANEL_SECTION_STYLE}>
         {enableTabs ? (
           <>
@@ -4123,6 +4193,34 @@ export default function VhcDetailsPanel({
                     if (!section || section.size === 0) return null;
                     const meta = SEVERITY_META[severity];
                     const severityTheme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--danger-surface)" };
+
+                    // Calculate totals for this severity
+                    const items = severityLists[severity] || [];
+                    const selectedIds = severitySelections[severity] || [];
+                    const selectedSet = new Set(selectedIds);
+
+                    let selectedTotal = 0;
+                    let authorisedTotal = 0;
+                    let declinedTotal = 0;
+
+                    items.forEach((item) => {
+                      const entry = getEntryForItem(item.id);
+                      const resolvedPartsCost = resolvePartsCost(item.id, entry);
+                      const totalCost = computeRowTotal(entry, resolvedPartsCost);
+                      const finalTotal = entry.totalOverride !== "" && entry.totalOverride !== null
+                        ? parseFloat(entry.totalOverride)
+                        : totalCost;
+
+                      if (selectedSet.has(item.id)) {
+                        selectedTotal += finalTotal;
+                      }
+                      if (entry.status === "authorized") {
+                        authorisedTotal += finalTotal;
+                      } else if (entry.status === "declined") {
+                        declinedTotal += finalTotal;
+                      }
+                    });
+
                     return (
                       <div
                         key={severity}
@@ -4143,10 +4241,31 @@ export default function VhcDetailsPanel({
                             paddingBottom: "10px",
                           }}
                         >
-                          <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
-                          {meta.description ? (
-                            <p style={{ margin: "4px 0 0", color: "var(--info)" }}>{meta.description}</p>
-                          ) : null}
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", flexWrap: "wrap" }}>
+                            <div>
+                              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
+                              {meta.description ? (
+                                <p style={{ margin: "4px 0 0", color: "var(--info)" }}>{meta.description}</p>
+                              ) : null}
+                            </div>
+                            <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+                              {selectedSet.size > 0 && (
+                                <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--info-dark)" }}>
+                                  Selected: £{selectedTotal.toFixed(2)}
+                                </span>
+                              )}
+                              {authorisedTotal > 0 && (
+                                <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--success)" }}>
+                                  Authorised: £{authorisedTotal.toFixed(2)}
+                                </span>
+                              )}
+                              {declinedTotal > 0 && (
+                                <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--danger)" }}>
+                                  Declined: £{declinedTotal.toFixed(2)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                         {renderSeverityTable(severity)}
                       </div>
@@ -4316,6 +4435,34 @@ export default function VhcDetailsPanel({
                   if (!section || section.size === 0) return null;
                   const meta = SEVERITY_META[severity];
                   const severityTheme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--danger-surface)" };
+
+                  // Calculate totals for this severity
+                  const items = severityLists[severity] || [];
+                  const selectedIds = severitySelections[severity] || [];
+                  const selectedSet = new Set(selectedIds);
+
+                  let selectedTotal = 0;
+                  let authorisedTotal = 0;
+                  let declinedTotal = 0;
+
+                  items.forEach((item) => {
+                    const entry = getEntryForItem(item.id);
+                    const resolvedPartsCost = resolvePartsCost(item.id, entry);
+                    const totalCost = computeRowTotal(entry, resolvedPartsCost);
+                    const finalTotal = entry.totalOverride !== "" && entry.totalOverride !== null
+                      ? parseFloat(entry.totalOverride)
+                      : totalCost;
+
+                    if (selectedSet.has(item.id)) {
+                      selectedTotal += finalTotal;
+                    }
+                    if (entry.status === "authorized") {
+                      authorisedTotal += finalTotal;
+                    } else if (entry.status === "declined") {
+                      declinedTotal += finalTotal;
+                    }
+                  });
+
                   return (
                     <div
                       key={severity}
@@ -4336,10 +4483,31 @@ export default function VhcDetailsPanel({
                           paddingBottom: "10px",
                         }}
                       >
-                        <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
-                        {meta.description ? (
-                          <p style={{ margin: "4px 0 0", color: "var(--info)" }}>{meta.description}</p>
-                        ) : null}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", flexWrap: "wrap" }}>
+                          <div>
+                            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
+                            {meta.description ? (
+                              <p style={{ margin: "4px 0 0", color: "var(--info)" }}>{meta.description}</p>
+                            ) : null}
+                          </div>
+                          <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+                            {selectedSet.size > 0 && (
+                              <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--info-dark)" }}>
+                                Selected: £{selectedTotal.toFixed(2)}
+                              </span>
+                            )}
+                            {authorisedTotal > 0 && (
+                              <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--success)" }}>
+                                Authorised: £{authorisedTotal.toFixed(2)}
+                              </span>
+                            )}
+                            {declinedTotal > 0 && (
+                              <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--danger)" }}>
+                                Declined: £{declinedTotal.toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       {renderSeverityTable(severity)}
                     </div>

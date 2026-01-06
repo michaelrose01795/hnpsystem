@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   try {
     // GET - Fetch all job cards with optional filters
     if (req.method === 'GET') {
-      const { status, source, category } = req.query;
+      const { status, source, category, division } = req.query;
 
       console.log('🔍 Fetching job cards with filters:', { status, source, category });
 
@@ -40,6 +40,13 @@ export default async function handler(req, res) {
         console.log(`📊 Filtered by category "${category}":`, jobCards.length, 'jobs');
       }
 
+      if (division) {
+        jobCards = jobCards.filter((j) =>
+          (j.jobDivision || "Retail")?.toLowerCase() === division.toLowerCase()
+        );
+        console.log(`📊 Filtered by division "${division}":`, jobCards.length, 'jobs');
+      }
+
       console.log('✅ Returning', jobCards.length, 'job cards');
 
       return res.status(200).json({
@@ -48,7 +55,8 @@ export default async function handler(req, res) {
         filters: {
           status: status || null,
           source: source || null,
-          category: category || null
+          category: category || null,
+          division: division || null
         }
       });
     }
@@ -65,6 +73,7 @@ export default async function handler(req, res) {
         type, 
         description,
         jobSource,
+        jobDivision,
         jobCategories 
       } = req.body;
 
@@ -83,6 +92,7 @@ export default async function handler(req, res) {
         type: type || 'Service',
         description,
         jobSource,
+        jobDivision,
         jobCategories
       });
 

@@ -112,6 +112,7 @@ export default function CreateJobCardPage() {
   const WAITING_STATUS_STORAGE_KEY = "jobCardCreateWaitingStatus"; // key used to persist waiting status background choice
   const [waitingStatus, setWaitingStatus] = useState("Neither"); // customer waiting status
   const [jobSource, setJobSource] = useState("Retail"); // job source (Retail or Warranty)
+  const [jobDivision, setJobDivision] = useState("Retail"); // business unit (Retail or Sales)
   const [jobCategories, setJobCategories] = useState(["Other"]); // auto-detected job categories
   const [showNewCustomer, setShowNewCustomer] = useState(false); // toggle new customer popup
   const [showExistingCustomer, setShowExistingCustomer] = useState(false); // toggle existing customer popup
@@ -942,6 +943,7 @@ export default function CreateJobCardPage() {
         vehicleId,
         waitingStatus,
         jobSource,
+        jobDivision,
         jobCategories,
         requests: sanitizedRequests,
         cosmeticNotes: cosmeticNotes || null,
@@ -1034,8 +1036,29 @@ export default function CreateJobCardPage() {
                 marginBottom: "4px",
               }}
             >
-              {jobNumberDisplay ? `${jobSource} — ${jobNumberDisplay}` : `${jobSource} Job Card`}
+              {jobNumberDisplay ? `${jobDivision} — ${jobNumberDisplay}` : `${jobDivision} Job Card`}
             </h2>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "12px",
+                color: jobSource === "Warranty" ? "var(--danger)" : "var(--success-dark)",
+                fontWeight: 600,
+              }}
+            >
+              <span>Job source:</span>
+              <span
+                style={{
+                  padding: "2px 10px",
+                  borderRadius: "999px",
+                  backgroundColor: jobSource === "Warranty" ? "var(--warning-surface)" : "var(--success-surface)",
+                }}
+              >
+                {jobSource}
+              </span>
+            </div>
           </div>
           <button
             onClick={handleSaveJob}
@@ -1183,6 +1206,48 @@ export default function CreateJobCardPage() {
                         style={{ width: "16px", height: "16px", cursor: "pointer" }}
                       />
                       <span style={{ fontSize: "13px", fontWeight: "500" }}>{src}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "var(--grey-accent)",
+                    display: "block",
+                    marginBottom: "8px",
+                  }}
+                >
+                  Job Division
+                </label>
+                <div style={{ display: "flex", gap: "12px" }}>
+                  {["Retail", "Sales"].map((division) => (
+                    <label
+                      key={division}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        cursor: "pointer",
+                        padding: "8px 12px",
+                        borderRadius: "8px",
+                        border: jobDivision === division ? "2px solid var(--primary)" : "2px solid var(--border)",
+                        backgroundColor: jobDivision === division ? "var(--surface-light)" : "var(--surface)",
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="jobDivision"
+                        value={division}
+                        checked={jobDivision === division}
+                        onChange={() => setJobDivision(division)}
+                        style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                      />
+                      <span style={{ fontSize: "13px", fontWeight: "500" }}>{division}</span>
                     </label>
                   ))}
                 </div>

@@ -1,9 +1,18 @@
 TO DO:
 
-have the cancel button within the add new company accounts button follow the light and dark theme. 
+
+add the authorised totals and declinded totals within the "VEHICLE
+MF20LZO
+HYUNDAI
+CUSTOMER
+Edward Lane
+07587 332400" section at the top of the jobcard page so its static no matter what tab the user is on, have it show a n/a within that section until the data is done. 
 
 
-have it so the global search bar can search for any order number, job number, part number, Goods in (GI) number etc 
+
+have it so when a row is authorised have it removed from the amber or red section and add to a new green section which is called authorised (which is under the red and amber section), do the same with the amber section, and if declinded have a decline section show so it hides the row from the red or amber sec tion and addes it into the declined section, at the end for the job to be compelte there should no rows within the red or amber section (hide the red or amber section if this is the case) and there should all of the reported rows with all the info from the row within the authorise and or within the declinded section have the authorised sectin more to the top of the section and the declinded underneath. leave the Green checks at the bottom of the page. make sure when a row is authroised or declined this status is updated within the database, if the row has niether decline or authrosied status then the job cannot be complete and the status iwthin the database is something like n/a or something helpful. Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first.
+
+
 
 
 
@@ -15,10 +24,6 @@ Make sure Goods in parts and added to jobnuber are shown within the "PARTS ADDED
 
 
 
-Retail and sales jobnumber, when creating a jobnumber have the jobnumber to store a "Retail" or "Sales" status so jobs which are retail and jobs which are sales are easily told differnt. within the sidebar there will be another section which shows retail
-
-
-
 
 Parts identified console error
 
@@ -26,7 +31,10 @@ Parts identified console error
 
 
 
-With every page (check with chat and go though ages which are actaull used and pages which are used in anohter page but can be used into one) within the top bar to the right of the search add a "?" button which opens a drop down (link to drop down style api) which shows (contact support (this opens messages tab and starts a new message with the uers Lead tech (add this in small print within the section as a todo) which within the text box to send the message shows a / comand which tells the sender the page the user was on and then the user can then input text after either reporting a concern, bug, or a question. The next in the drop down is a "Tutorial" button which gives multiple steps describing what each section and button does inside an overlay type style making the background darker and the section or button the tutorial is telling how to use lighter with the description box like a bubble which is inside the darker section and the bubble is following the light and dark theme, there is also a "Next" and "back" button which flicks through the each section and button to do with that page/the tab selected at the time of the button press with also an "Finish" button which closes the overlay and tutorial section. What woul dbe the best way to implement this? as an api with a file linked to each page and tab which has all of the buttons and section anmes and descriptions inside the api linking or a section within the actual code which reads the code and sees what section does what same with buttons, unless theres another way which is commonly used for tutorials like im describing.
+TO BE COMPLETED AT END:
+
+
+With every page within the top bar to the right of the search add a "?" button which opens a drop down (link to drop down style api) which shows (contact support (this opens messages tab and starts a new message with the uers Lead tech (add this in small print within the section as a todo) which within the text box to send the message shows a / comand which tells the sender the page the user was on and then the user can then input text after either reporting a concern, bug, or a question. The next in the drop down is a "Tutorial" button which gives multiple steps describing what each section and button does inside an overlay type style making the background darker and the section or button the tutorial is telling how to use lighter with the description box like a bubble which is inside the darker section and the bubble is following the light and dark theme, there is also a "Next" and "back" button which flicks through the each section and button to do with that page/the tab selected at the time of the button press with also an "Finish" button which closes the overlay and tutorial section. What woul dbe the best way to implement this? as an api with a file linked to each page and tab which has all of the buttons and section anmes and descriptions inside the api linking or a section within the actual code which reads the code and sees what section does what same with buttons, unless theres another way which is commonly used for tutorials like im describing.
 
 NOTE:
 

@@ -342,6 +342,7 @@ export const getAllJobs = async () => {
       vehicle_make_model,
       waiting_status,
       job_source,
+      job_division,
       job_categories,
       requests,
       cosmetic_notes,
@@ -356,6 +357,7 @@ export const getAllJobs = async () => {
         job_number,
         status,
         job_source,
+        job_division,
         vehicle_reg,
         vehicle_make_model
       ),
@@ -363,7 +365,8 @@ export const getAllJobs = async () => {
         id,
         job_number,
         status,
-        job_source
+        job_source,
+        job_division
       ),
       created_at,
       updated_at,
@@ -681,6 +684,7 @@ export const getJobByNumber = async (jobNumber) => {
       vehicle_make_model,
       waiting_status,
       job_source,
+      job_division,
       job_categories,
       requests,
       cosmetic_notes,
@@ -695,6 +699,7 @@ export const getJobByNumber = async (jobNumber) => {
         job_number,
         status,
         job_source,
+        job_division,
         vehicle_reg,
         vehicle_make_model
       ),
@@ -702,7 +707,8 @@ export const getJobByNumber = async (jobNumber) => {
         id,
         job_number,
         status,
-        job_source
+        job_source,
+        job_division
       ),
       created_at,
       updated_at,
@@ -834,6 +840,7 @@ export const getJobByNumber = async (jobNumber) => {
         job_number,
         status,
         job_source,
+        job_division,
         description,
         vehicle_reg,
         vehicle_make_model,
@@ -980,6 +987,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
       vehicle_make_model,
       waiting_status,
       job_source,
+      job_division,
       job_categories,
       requests,
       cosmetic_notes,
@@ -1105,6 +1113,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
         vehicle_make_model,
         waiting_status,
         job_source,
+        job_division,
         job_categories,
         requests,
         cosmetic_notes,
@@ -1836,6 +1845,7 @@ const formatJobData = (data) => {
     // ✅ NEW: Job-specific fields
     waitingStatus: data.waiting_status || "Neither",
     jobSource: data.job_source || "Retail",
+    jobDivision: data.job_division || data.jobDivision || "Retail",
     jobCategories: data.job_categories || [],
     requests: data.requests || [],
     cosmeticNotes: data.cosmetic_notes || "",
@@ -1927,6 +1937,7 @@ export const addJobToDatabase = async ({
   vehicleId,
   waitingStatus,
   jobSource,
+  jobDivision,
   jobCategories,
   requests,
   cosmeticNotes,
@@ -1944,7 +1955,14 @@ export const addJobToDatabase = async ({
       assignedTo,
       customerId,
       vehicleId,
-      waitingStatus, jobSource, jobCategories, requests, cosmeticNotes, vhcRequired, maintenanceInfo
+      waitingStatus,
+      jobSource,
+      jobDivision,
+      jobCategories,
+      requests,
+      cosmeticNotes,
+      vhcRequired,
+      maintenanceInfo
     });
 
     // Find the vehicle by registration number if vehicleId not provided
@@ -1989,6 +2007,7 @@ export const addJobToDatabase = async ({
       status: "Open",
       waiting_status: waitingStatus || "Neither",
       job_source: jobSource || "Retail",
+      job_division: jobDivision || "Retail",
       job_categories: jobCategories || [],
       requests: requests || [],
       cosmetic_notes: cosmeticNotes || null,
@@ -2013,6 +2032,7 @@ export const addJobToDatabase = async ({
         vehicle_make_model,
         waiting_status,
         job_source,
+        job_division,
         job_categories,
         requests,
         cosmetic_notes,
