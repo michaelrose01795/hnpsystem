@@ -93,30 +93,96 @@ export default function CompanyAccountsIndexPage() {
             style={{
               display: "flex",
               flexDirection: "column",
-              alignItems: "flex-start",
-              gap: "6px",
-              padding: "16px",
-              borderRadius: "14px",
+              gap: "10px",
+              padding: "18px",
+              borderRadius: "18px",
               border: "1px solid var(--surface-light)",
               background: "white",
               textAlign: "left",
+              boxShadow: "0 6px 18px rgba(25, 25, 38, 0.08)",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", width: "100%", gap: "12px", flexWrap: "wrap" }}>
-              <div>
-                <p style={{ margin: 0, fontWeight: 700 }}>{account.company_name || "Unnamed company"}</p>
-                <p style={{ margin: 0, color: "var(--text-secondary)" }}>{account.trading_name}</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: "1.05rem", color: "var(--text-primary)" }}>
+                  {account.company_name || "Unnamed company"}
+                </p>
+                <p style={{ margin: 0, color: "var(--text-secondary)" }}>{account.trading_name || "—"}</p>
               </div>
-              <div style={{ textAlign: "right" }}>
-                <p style={{ margin: 0, fontWeight: 600 }}>#{account.account_number}</p>
-                {account.linked_account_id && <p style={{ margin: 0, color: "var(--text-secondary)" }}>Ledger: {account.linked_account_id}</p>}
+              <div style={{ textAlign: "right", display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span
+                  style={{
+                    fontWeight: 700,
+                    color: "var(--primary-dark)",
+                    background: "var(--primary-tint, rgba(101, 44, 245, 0.08))",
+                    padding: "4px 10px",
+                    borderRadius: "999px",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  #{account.account_number}
+                </span>
+                {(account.linked_account_label || account.linked_account_id) && (
+                  <span style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+                    Ledger · {account.linked_account_label || account.linked_account_id}
+                  </span>
+                )}
               </div>
             </div>
-            <div style={{ display: "flex", gap: "18px", flexWrap: "wrap", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-              {account.contact_name && <span>Contact: {account.contact_name}</span>}
-              {account.contact_email && <span>Email: {account.contact_email}</span>}
-              {account.contact_phone && <span>Phone: {account.contact_phone}</span>}
-              {account.billing_city && <span>City: {account.billing_city}</span>}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+              {account.contact_name && (
+                <span
+                  style={{
+                    fontSize: "0.9rem",
+                    color: "var(--text-primary)",
+                    padding: "6px 12px",
+                    background: "var(--surface-light)",
+                    borderRadius: "999px",
+                  }}
+                >
+                  Contact · {account.contact_name}
+                </span>
+              )}
+              {account.contact_email && (
+                <span
+                  style={{
+                    fontSize: "0.9rem",
+                    color: "var(--text-secondary)",
+                    padding: "6px 12px",
+                    background: "var(--surface-light)",
+                    borderRadius: "999px",
+                  }}
+                >
+                  {account.contact_email}
+                </span>
+              )}
+              {account.contact_phone && (
+                <span
+                  style={{
+                    fontSize: "0.9rem",
+                    color: "var(--text-secondary)",
+                    padding: "6px 12px",
+                    background: "var(--surface-light)",
+                    borderRadius: "999px",
+                  }}
+                >
+                  {account.contact_phone}
+                </span>
+              )}
+              {account.billing_city && (
+                <span
+                  style={{
+                    fontSize: "0.9rem",
+                    color: "var(--text-secondary)",
+                    padding: "6px 12px",
+                    background: "var(--surface-light)",
+                    borderRadius: "999px",
+                  }}
+                >
+                  {account.billing_city}
+                </span>
+              )}
             </div>
           </button>
         ))}

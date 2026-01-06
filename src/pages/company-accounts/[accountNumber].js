@@ -141,8 +141,10 @@ export default function CompanyAccountDetailPage() {
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <p style={{ margin: 0, fontWeight: 600 }}>#{account.account_number}</p>
-                  {account.linked_account_id && (
-                    <p style={{ margin: 0, color: "var(--text-secondary)" }}>Ledger account: {account.linked_account_id}</p>
+                  {(account.linked_account_label || account.linked_account_id) && (
+                    <p style={{ margin: 0, color: "var(--text-secondary)" }}>
+                      Ledger account: {account.linked_account_label || account.linked_account_id}
+                    </p>
                   )}
                 </div>
               </div>

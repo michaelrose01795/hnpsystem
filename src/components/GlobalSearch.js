@@ -10,6 +10,8 @@ const typeLabels = {
   customer: "Customer",
   navigation: "Navigation",
   parts_order: "Parts Order",
+  part: "Part",
+  goods_in: "Goods In",
 };
 
 const createSlugFromResult = (item = {}) => {

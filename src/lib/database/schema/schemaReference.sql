@@ -83,6 +83,7 @@ CREATE TABLE public.company_accounts (
   notes text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  linked_account_label text,
   CONSTRAINT company_accounts_pkey PRIMARY KEY (id),
   CONSTRAINT company_accounts_linked_account_id_fkey FOREIGN KEY (linked_account_id) REFERENCES public.accounts(account_id)
 );

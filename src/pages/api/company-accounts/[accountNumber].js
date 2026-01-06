@@ -18,6 +18,7 @@ const editableFields = [
   "billing_country",
   "notes",
   "linked_account_id",
+  "linked_account_label",
 ];
 
 async function handler(req, res, session) {
@@ -70,6 +71,9 @@ async function handler(req, res, session) {
     if (Object.prototype.hasOwnProperty.call(updates, "linked_account_id")) {
       const linkedValue = String(updates.linked_account_id || "").trim();
       updates.linked_account_id = linkedValue ? linkedValue : null;
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, "linked_account_label")) {
+      updates.linked_account_label = String(updates.linked_account_label || "").trim();
     }
     if (Object.keys(updates).length === 0) {
       res.status(400).json({ success: false, message: "No valid fields to update" });

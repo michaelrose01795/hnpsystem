@@ -939,10 +939,6 @@ export default function VhcDetailsPanel({
       const response = await fetch(`/api/parts/job-items?job_id=${encodeURIComponent(jobId)}`);
       const data = await response.json();
       if (!response.ok || !data?.ok) {
-        console.warn("[VHC] Fallback parts fetch failed", {
-          status: response.status,
-          payload: data,
-        });
         return null;
       }
       return Array.isArray(data.data) ? data.data : [];
@@ -958,7 +954,6 @@ export default function VhcDetailsPanel({
     const fetchData = async () => {
       setLoading(true);
       setError(null);
-      console.log("[VHC] Loading job data", { jobNumber: resolvedJobNumber });
       try {
         const jobPromise = supabase
           .from("jobs")
@@ -1053,27 +1048,6 @@ export default function VhcDetailsPanel({
           if (!alias?.display_id || alias.vhc_item_id === null || alias.vhc_item_id === undefined) return;
           aliasMapFromDb[String(alias.display_id)] = String(alias.vhc_item_id);
         });
-
-        console.log("[VHC] Job fetch summary", {
-          jobId: jobRow?.id,
-          partsCount: resolvedParts.length,
-          aliasesCount: sanitizedAliasRows.length,
-        });
-        console.log(
-          "[VHC] Parts raw snapshot",
-          resolvedParts.map((part) => ({
-            id: part?.id,
-            vhc_item_id: part?.vhc_item_id,
-            origin: part?.origin,
-            status: part?.status,
-          }))
-        );
-        console.log("🔧 Initial page load - Parts from DB:", resolvedParts?.filter(p => p.origin === 'vhc').map(p => ({
-          id: p.id,
-          part: p.part?.name,
-          vhc_item_id: p.vhc_item_id
-        })));
-        console.log("🔧 Initial page load - Aliases:", aliasMapFromDb);
 
         setVhcItemAliasRecords(sanitizedAliasRows);
         setVhcIdAliases(aliasMapFromDb);
@@ -1621,7 +1595,6 @@ export default function VhcDetailsPanel({
     const partsByVhcId = new Map();
     partsIdentified.forEach((part) => {
       if (!part?.vhc_item_id) {
-        console.log("⚠️ Part without vhc_item_id:", part);
         return;
       }
       const key = String(part.vhc_item_id);
@@ -1630,17 +1603,11 @@ export default function VhcDetailsPanel({
       }
       partsByVhcId.get(key).push(part);
     });
-    console.log("📦 Parts grouped by VHC ID:", Object.fromEntries(partsByVhcId));
-    console.log("📋 VHC ID Aliases:", vhcIdAliases);
 
     summaryItems.forEach((summaryItem) => {
       const displayVhcId = String(summaryItem.id);
       const canonicalVhcId = resolveCanonicalVhcId(displayVhcId);
       const linkedParts = partsByVhcId.get(canonicalVhcId) || [];
-
-      if (linkedParts.length > 0 || displayVhcId !== canonicalVhcId) {
-        console.log(`🔍 Item ${displayVhcId} -> canonical ${canonicalVhcId} -> ${linkedParts.length} parts`);
-      }
 
       items.push({
         vhcItem: summaryItem,
@@ -2632,10 +2599,6 @@ export default function VhcDetailsPanel({
       const canonicalId = resolveCanonicalVhcId(displayVhcId);
       const parsedId = Number(canonicalId);
       if (!Number.isInteger(parsedId)) {
-        console.warn("[VHC] Invalid VHC item id for labour update", {
-          displayVhcId,
-          canonicalId,
-        });
         return;
       }
       const parsedHours = Number(hoursValue);
@@ -2656,12 +2619,6 @@ export default function VhcDetailsPanel({
         const result = await response.json();
         if (!response.ok || !result?.success) {
           throw new Error(result?.message || "Failed to save labour hours");
-        }
-        if (result.updatedCount === 0) {
-          console.warn("[VHC] No parts updated for labour hours", {
-            jobId: job.id,
-            vhcItemId: parsedId,
-          });
         }
         if (Array.isArray(result.items) && result.items.length > 0) {
           setJob((prev) => {
@@ -2785,18 +2742,9 @@ export default function VhcDetailsPanel({
   const handlePartAdded = useCallback(async (payload) => {
     const partData = payload?.jobPart || payload;
     const sourceVhcId = payload?.sourceVhcId ? String(payload.sourceVhcId) : selectedVhcRowId;
-    console.log("🔍 handlePartAdded called with:", {
-      partData,
-      sourceVhcId,
-      vhc_item_id: partData?.vhc_item_id,
-      selectedVhcItem
-    });
 
     if (sourceVhcId && partData?.vhc_item_id) {
-      console.log("📝 Creating alias:", sourceVhcId, "=>", partData.vhc_item_id);
       await upsertVhcItemAlias(sourceVhcId, partData.vhc_item_id);
-    } else {
-      console.warn("⚠️ Missing data for alias creation - sourceVhcId:", sourceVhcId, "vhc_item_id:", partData?.vhc_item_id);
     }
 
     // Refresh job data to show the new part
@@ -2854,8 +2802,6 @@ export default function VhcDetailsPanel({
         .eq("job_number", resolvedJobNumber)
         .maybeSingle();
 
-      console.log("🔍 Fetched updated job:", updatedJob);
-      console.log("🔍 Parts in updated job:", updatedJob?.parts_job_items);
 
       if (!fetchError && updatedJob) {
         const {
@@ -2923,9 +2869,6 @@ export default function VhcDetailsPanel({
           const part = partData.part || {};
           const partKey = `${displayVhcId}-${partData.id}`;
 
-          console.log("🔍 Creating part details for key:", partKey);
-          console.log("🔍 Part data:", part);
-
           // Calculate VAT (20%)
           const unitPrice = Number(partData.unit_price || part.unit_price || 0);
           const unitCost = Number(partData.unit_cost || part.unit_cost || 0);
@@ -2944,15 +2887,11 @@ export default function VhcDetailsPanel({
             warranty: false,
           };
 
-          console.log("🔍 New part detail:", newPartDetail);
-
           setPartDetails((prev) => {
-            console.log("🔍 Previous partDetails:", prev);
             const updated = {
               ...prev,
               [partKey]: newPartDetail,
             };
-            console.log("🔍 Updated partDetails:", updated);
             return updated;
           });
 
@@ -2960,7 +2899,6 @@ export default function VhcDetailsPanel({
           setExpandedVhcItems((prev) => {
             const newSet = new Set(prev);
             newSet.add(displayVhcId);
-            console.log("🔍 Expanded VHC items:", Array.from(newSet));
             return newSet;
           });
         }
@@ -3114,11 +3052,6 @@ export default function VhcDetailsPanel({
 
   // Render VHC items panel for Parts Identified (shows all red/amber VHC items)
   const renderVhcItemsPanel = useCallback(() => {
-    console.log("🎨 Rendering VHC items panel");
-    console.log("🎨 vhcItemsWithParts:", vhcItemsWithParts);
-    console.log("🎨 partDetails:", partDetails);
-    console.log("🎨 expandedVhcItems:", Array.from(expandedVhcItems));
-
     const itemsById = new Map(
       (vhcItemsWithParts || []).map((item) => [String(item.vhcId), item])
     );

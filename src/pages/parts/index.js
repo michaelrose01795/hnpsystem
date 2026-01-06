@@ -1,5 +1,6 @@
 // file location: src/pages/parts/index.js
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import {
@@ -177,6 +178,7 @@ const RequirementBadge = ({ label, background, color }) => (
 );
 
 function PartsPortalPage() {
+  const router = useRouter();
   const { user, dbUserId, authUserId } = useUser();
   const actingUserId = useMemo(() => {
     if (typeof authUserId === "string" && isValidUuid(authUserId)) return authUserId;
@@ -230,6 +232,19 @@ function PartsPortalPage() {
   const [categories, setCategories] = useState([]);
   const [categorySearch, setCategorySearch] = useState("");
   const [detectedCategory, setDetectedCategory] = useState("");
+
+  const {
+    inventorySearch: queryInventorySearch,
+    partNumber: queryPartNumber,
+    part: queryPart,
+    search: querySearch,
+  } = router.query || {};
+
+  const inventorySearchQueryParam = useMemo(
+    () => (queryInventorySearch || queryPartNumber || queryPart || querySearch || "").toString(),
+    [queryInventorySearch, queryPartNumber, queryPart, querySearch]
+  );
+  const lastInventoryQueryApplied = useRef("");
 
   const selectedDeliveryPart = useMemo(
     () => inventory.find((part) => part.id === deliveryForm.partId),
@@ -558,6 +573,19 @@ function PartsPortalPage() {
   useEffect(() => {
     setSelectedPipelineStage("all");
   }, [jobData?.id]);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (!inventorySearchQueryParam) {
+      lastInventoryQueryApplied.current = "";
+      return;
+    }
+    if (lastInventoryQueryApplied.current === inventorySearchQueryParam) {
+      return;
+    }
+    lastInventoryQueryApplied.current = inventorySearchQueryParam;
+    setInventorySearch(inventorySearchQueryParam);
+  }, [router.isReady, inventorySearchQueryParam]);
 
   useEffect(() => {
     fetchInventory("");

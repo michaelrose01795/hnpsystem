@@ -6,6 +6,54 @@ import supabase from "@/lib/supabaseClient";
 const allowedRoles = ["admin", "owner", "admin manager", "accounts", "accounts manager"];
 const COMPANY_ACCOUNTS_TABLE = "company_accounts";
 
+const formatInsertError = (error, context = {}) => {
+  if (!error) {
+    return { status: 500, message: "Unable to create company account" };
+  }
+  const { accountNumber } = context;
+  const { code, message, details } = error;
+  if (code === "23505") {
+    const duplicateFieldMatch = details?.match(/\(([^)]+)\)=\(([^)]+)\)/);
+    if (duplicateFieldMatch) {
+      const [, column, value] = duplicateFieldMatch;
+      return {
+        status: 409,
+        message: `${column.replace(/_/g, " ")} "${value}" already exists. Please use a different value.`,
+      };
+    }
+    return {
+      status: 409,
+      message: "Another company account already uses this account number. Please choose a different number.",
+    };
+  }
+  if (code === "23503" && details?.includes("linked_account_id")) {
+    return {
+      status: 400,
+      message: "The linked ledger account could not be found. Please check the account ID or remove it.",
+    };
+  }
+  if (code === "23502") {
+    const fieldMatch = details?.match(/column \"([^\"]+)\"/i);
+    if (fieldMatch) {
+      const [, column] = fieldMatch;
+      return {
+        status: 400,
+        message: `Field "${column.replace(/_/g, " ")}" is required.`,
+      };
+    }
+  }
+  if (message?.toLowerCase().includes("account_number")) {
+    return {
+      status: 400,
+      message: accountNumber ? `Account number "${accountNumber}" is invalid or already used.` : "Account number is invalid.",
+    };
+  }
+  return {
+    status: 400,
+    message: message || "Unable to create company account",
+  };
+};
+
 async function handler(req, res, session) {
   const permissions = deriveAccountPermissions(session.user?.roles || []);
   if (req.method === "GET") {
@@ -54,6 +102,7 @@ async function handler(req, res, session) {
       res.status(400).json({ success: false, message: "Company name is required" });
       return;
     }
+    const linkedAccountLabel = String(payload.linked_account_label || "").trim();
     const insertValues = {
       account_number: accountNumber,
       company_name: companyName,
@@ -67,6 +116,7 @@ async function handler(req, res, session) {
       billing_postcode: payload.billing_postcode || "",
       billing_country: payload.billing_country || "United Kingdom",
       linked_account_id: payload.linked_account_id ? String(payload.linked_account_id).trim() : null,
+      linked_account_label: linkedAccountLabel,
       notes: payload.notes || "",
     };
     const { data, error } = await supabase
@@ -76,7 +126,8 @@ async function handler(req, res, session) {
       .single();
     if (error) {
       console.error("Failed to create company account", error);
-      res.status(500).json({ success: false, message: "Unable to create company account" });
+      const { status, message } = formatInsertError(error, { accountNumber });
+      res.status(status).json({ success: false, message });
       return;
     }
     res.status(201).json({ success: true, data });

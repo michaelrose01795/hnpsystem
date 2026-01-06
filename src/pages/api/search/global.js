@@ -31,11 +31,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const [jobResponse, customerResponse, orderResponse] = await Promise.all([
-      supabase
-        .from("jobs")
-        .select(
-          `
+    const [jobResponse, customerResponse, orderResponse, partResponse, goodsInResponse] =
+      await Promise.all([
+        supabase
+          .from("jobs")
+          .select(
+            `
             id,
             job_number,
             status,
@@ -96,6 +97,41 @@ export default async function handler(req, res) {
         )
         .order("created_at", { ascending: false })
         .limit(15),
+      supabase
+        .from("parts_catalog")
+        .select(
+          `
+          id,
+          part_number,
+          name,
+          description,
+          supplier,
+          category,
+          storage_location,
+          unit_price,
+          unit_cost
+        `
+        )
+        .or(
+          `part_number.ilike.%${term}%,name.ilike.%${term}%,supplier.ilike.%${term}%,category.ilike.%${term}%,description.ilike.%${term}%`
+        )
+        .order("part_number", { ascending: true })
+        .limit(15),
+      supabase
+        .from("parts_goods_in")
+        .select(`
+          id,
+          goods_in_number,
+          supplier_name,
+          invoice_number,
+          status,
+          created_at
+        `)
+        .or(
+          `goods_in_number.ilike.%${term}%,invoice_number.ilike.%${term}%,supplier_name.ilike.%${term}%`
+        )
+        .order("created_at", { ascending: false })
+        .limit(15),
     ]);
 
     if (jobResponse.error) {
@@ -119,6 +155,22 @@ export default async function handler(req, res) {
       return res.status(500).json({
         success: false,
         message: "Failed to run parts order search",
+      });
+    }
+
+    if (partResponse.error) {
+      console.error("Global search part catalogue error:", partResponse.error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to run part search",
+      });
+    }
+
+    if (goodsInResponse.error) {
+      console.error("Global search goods-in error:", goodsInResponse.error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to run goods-in search",
       });
     }
 
@@ -265,6 +317,54 @@ export default async function handler(req, res) {
           .join(" • "),
         deliveryStatus: order.delivery_status,
         deliveryEta: order.delivery_eta,
+      });
+    });
+
+    (goodsInResponse.data || []).forEach((record) => {
+      const goodsInNumber = record.goods_in_number || "";
+      const subtitleParts = [
+        record.supplier_name || "",
+        record.invoice_number ? `Invoice ${record.invoice_number}` : "",
+        record.status ? toTitleCase(record.status) : "",
+      ].filter(Boolean);
+      const goodsInQuery = goodsInNumber || record.id;
+
+      results.push({
+        type: "goods_in",
+        id: record.id,
+        goodsInId: record.id,
+        goodsInNumber,
+        status: record.status,
+        supplierName: record.supplier_name || "",
+        invoiceNumber: record.invoice_number || "",
+        title: goodsInNumber ? `Goods In ${goodsInNumber}` : "Goods In Receipt",
+        subtitle: subtitleParts.join(" • "),
+        href: `/parts/goods-in?goodsIn=${encodeURIComponent(goodsInQuery)}`,
+      });
+    });
+
+    (partResponse.data || []).forEach((part) => {
+      const partNumber = part.part_number || "";
+      const baseTitle = partNumber ? `Part ${partNumber}` : part.name || "Part";
+      const subtitleParts = [
+        part.name && part.name !== partNumber ? part.name : "",
+        part.supplier || "",
+        part.category || "",
+        part.storage_location ? `Bin ${part.storage_location}` : "",
+      ].filter(Boolean);
+      const destinationQuery = partNumber || part.name || term;
+
+      results.push({
+        type: "part",
+        id: part.id,
+        partNumber,
+        name: part.name,
+        supplier: part.supplier,
+        category: part.category,
+        storageLocation: part.storage_location,
+        title: baseTitle,
+        subtitle: subtitleParts.join(" • "),
+        href: `/parts?inventorySearch=${encodeURIComponent(destinationQuery)}`,
       });
     });
 
