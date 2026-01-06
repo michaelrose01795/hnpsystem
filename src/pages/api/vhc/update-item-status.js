@@ -34,6 +34,16 @@ export default async function handler(req, res) {
       }
       updateData.approval_status = approvalStatus;
 
+      // Set display_status to match approval_status when authorized or declined
+      // This makes items move to Authorised or Declined sections
+      if (approvalStatus === 'authorized') {
+        updateData.display_status = 'authorized';
+      } else if (approvalStatus === 'declined') {
+        updateData.display_status = 'declined';
+      }
+      // If returning to pending, display_status will stay as original severity (red/amber/green)
+      // unless we also need to reset it - we'll handle this in the UI
+
       // Set approved_at and approved_by when status changes to authorized or declined
       if (approvalStatus === 'authorized' || approvalStatus === 'declined') {
         updateData.approved_at = new Date().toISOString();

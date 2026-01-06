@@ -1,7 +1,8 @@
 TO DO:
 
-
-Have it so when a row is authorised have it removed from the amber or red section and add to a new green section which is called authorised (which is under the red and amber section), do the same with the amber section, and if declinded have a decline section show so it hides the row from the red or amber sec tion and addes it into the declined section, at the end for the job to be compelte there should no rows within the red or amber section (hide the red or amber section if this is the case) and there should all of the reported rows with all the info from the row within the authorise and or within the declinded section have the authorised sectin more to the top of the section and the declinded underneath. leave the Green checks at the bottom of the page. make sure when a row is authroised or declined this status is updated within the database, if the row has niether decline or authrosied status then the job cannot be complete and the status iwthin the database is something like n/a or something helpful. Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first.
+Show authorised and declinded total at the top of each section. "Internal
+Air Con/Heating/ventilation
+- Ac heating" row not working or saving labour time within database/frontend. 
 
 
 
@@ -11,7 +12,9 @@ Log deleiver button needs to be removed as all logs are done when a part is Good
 Make sure Goods in parts and added to jobnuber are shown within the "PARTS ADDED TO JOB" section inside jobcard/[jobnumber page]. 
 
 
- goods in number search. shows all goods in, connect each tab to show correct data linked to tab
+
+
+ goods in number search. shows all goods in, connect each tab to show correct data linked to tab, add this within the global search bar. 
 
 
 

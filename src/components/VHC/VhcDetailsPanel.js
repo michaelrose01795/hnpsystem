@@ -1293,10 +1293,13 @@ export default function VhcDetailsPanel({
   // Create lookup map from vhc_id to approval data
   const vhcApprovalLookup = useMemo(() => {
     const map = new Map();
+    console.log('[VHC] Building vhcApprovalLookup from vhcChecksData:', vhcChecksData.length, 'checks');
     vhcChecksData.forEach((check) => {
       if (check.vhc_id) {
+        console.log(`[VHC] Check vhc_id=${check.vhc_id}: approval_status=${check.approval_status}, display_status=${check.display_status}`);
         map.set(String(check.vhc_id), {
           approvalStatus: check.approval_status || 'pending',
+          displayStatus: check.display_status || null,
           approvedBy: check.approved_by,
           approvedAt: check.approved_at,
           labourHours: check.labour_hours,
@@ -1307,7 +1310,7 @@ export default function VhcDetailsPanel({
         });
       }
     });
-    console.log('[VHC] vhcApprovalLookup built:', map);
+    console.log('[VHC] vhcApprovalLookup built with', map.size, 'entries');
     return map;
   }, [vhcChecksData]);
 
@@ -1329,9 +1332,10 @@ export default function VhcDetailsPanel({
         const primaryConcern =
           concerns.find((concern) => normaliseColour(concern.status) === severity) || concerns[0] || null;
 
-        // Get approval status from database
-        const approvalData = vhcApprovalLookup.get(String(id)) || {};
-        console.log(`[VHC] Item ${id}: approvalData =`, approvalData);
+        // Get approval status from database - resolve display ID to canonical vhc_id first
+        const canonicalId = vhcIdAliases[String(id)] || String(id);
+        const approvalData = vhcApprovalLookup.get(canonicalId) || {};
+        console.log(`[VHC] Item ${id}: canonicalId=${canonicalId}, approvalData =`, approvalData);
 
         items.push({
           id: String(id),
@@ -1346,6 +1350,7 @@ export default function VhcDetailsPanel({
           concerns,
           wheelKey: item.wheelKey || null,
           approvalStatus: approvalData.approvalStatus || 'pending',
+          displayStatus: approvalData.displayStatus,
           approvedBy: approvalData.approvedBy,
           approvedAt: approvalData.approvedAt,
         });
@@ -1353,7 +1358,8 @@ export default function VhcDetailsPanel({
     });
 
     items.forEach((item) => {
-      item.displaySeverity = item.rawSeverity;
+      // Use display_status from database if available, otherwise use original severity
+      item.displaySeverity = item.displayStatus || item.rawSeverity;
     });
 
     items.forEach((item) => {
@@ -1367,8 +1373,13 @@ export default function VhcDetailsPanel({
       }
     });
 
+    console.log('[VHC] summaryItems built with', items.length, 'items');
+    items.forEach(item => {
+      console.log(`[VHC] summaryItem: id=${item.id}, label=${item.label}, rawSeverity=${item.rawSeverity}, displaySeverity=${item.displaySeverity}, approvalStatus=${item.approvalStatus}`);
+    });
+
     return items;
-  }, [sections, wheelTreadLookup, vhcApprovalLookup]);
+  }, [sections, wheelTreadLookup, vhcApprovalLookup, vhcIdAliases]);
 
   const greenItems = useMemo(() => {
     const items = [];
@@ -1578,10 +1589,14 @@ export default function VhcDetailsPanel({
   );
 
   const severitySections = useMemo(() => {
-    const base = { red: new Map(), amber: new Map() };
+    const base = { red: new Map(), amber: new Map(), authorized: new Map(), declined: new Map() };
     summaryItems.forEach((item) => {
       const severity = item.displaySeverity;
-      if (!base[severity]) return;
+      if (!base[severity]) {
+        // If severity not in our base map, skip this item
+        console.log(`[VHC] Unknown severity "${severity}" for item ${item.id}, skipping`);
+        return;
+      }
       const categoryId = item.category.id;
       if (!base[severity].has(categoryId)) {
         base[severity].set(categoryId, { category: item.category, items: [] });
@@ -1592,7 +1607,7 @@ export default function VhcDetailsPanel({
   }, [summaryItems]);
   const severityLists = useMemo(() => {
     const lists = { red: [], amber: [], authorized: [], declined: [] };
-    ["red", "amber"].forEach((severity) => {
+    ["red", "amber", "authorized", "declined"].forEach((severity) => {
       const section = severitySections[severity];
       if (!section) return;
       Array.from(section.values()).forEach(({ category, items }) => {
@@ -1603,18 +1618,8 @@ export default function VhcDetailsPanel({
             categoryId: category.id,
           };
 
-          // Check if item has an approval status from database
-          const approvalStatus = item.approval_status || item.approvalStatus || 'pending';
-          console.log(`[VHC] severityLists: Item ${item.id} has approvalStatus=${approvalStatus}`);
-
-          if (approvalStatus === 'authorized') {
-            lists.authorized.push(enrichedItem);
-          } else if (approvalStatus === 'declined') {
-            lists.declined.push(enrichedItem);
-          } else {
-            // pending items stay in their severity lists
-            lists[severity].push(enrichedItem);
-          }
+          console.log(`[VHC] severityLists: Item ${item.id} (${item.label}) in ${severity} section, displaySeverity=${item.displaySeverity}`);
+          lists[severity].push(enrichedItem);
         });
       });
     });
@@ -1624,6 +1629,12 @@ export default function VhcDetailsPanel({
       authorized: lists.authorized.length,
       declined: lists.declined.length
     });
+    if (lists.authorized.length > 0) {
+      console.log('[VHC] Authorized items:', lists.authorized.map(i => ({ id: i.id, label: i.label })));
+    }
+    if (lists.declined.length > 0) {
+      console.log('[VHC] Declined items:', lists.declined.map(i => ({ id: i.id, label: i.label })));
+    }
     return lists;
   }, [severitySections]);
 
@@ -1632,7 +1643,7 @@ export default function VhcDetailsPanel({
     partsIdentified.forEach((part) => {
       if (!part?.vhc_item_id) return;
       const hours = Number(part.labour_hours);
-      if (!Number.isFinite(hours) || hours <= 0) return;
+      if (!Number.isFinite(hours) || hours < 0) return; // Allow 0 values
       const key = String(part.vhc_item_id);
       const current = map.get(key) || 0;
       map.set(key, Math.max(current, hours));
@@ -1743,6 +1754,10 @@ export default function VhcDetailsPanel({
   const getEntryForItem = (itemId) => ensureEntryValue(itemEntries, itemId);
 
   const updateEntryStatus = async (itemId, status) => {
+    console.log(`━━━ [VHC STATUS] STARTING UPDATE ━━━`);
+    console.log(`[VHC STATUS] Item ID: ${itemId}`);
+    console.log(`[VHC STATUS] New Status: ${status}`);
+
     // Update local state immediately
     setItemEntries((prev) => ({
       ...prev,
@@ -1752,48 +1767,73 @@ export default function VhcDetailsPanel({
     // Persist to database (convert null to 'pending')
     const canonicalId = resolveCanonicalVhcId(itemId);
     const parsedId = Number(canonicalId);
-    if (!Number.isInteger(parsedId)) return;
+    console.log(`[VHC STATUS] Canonical ID: ${canonicalId}, Parsed ID: ${parsedId}`);
+
+    if (!Number.isInteger(parsedId)) {
+      console.error(`❌ [VHC STATUS ERROR] Invalid ID - cannot update`);
+      return;
+    }
 
     // Convert null to 'pending' for database
     const dbStatus = status || 'pending';
+    const newDisplayStatus = dbStatus === 'authorized' ? 'authorized' : dbStatus === 'declined' ? 'declined' : null;
+
+    console.log(`[VHC STATUS] DB Status: ${dbStatus}, Display Status: ${newDisplayStatus}`);
 
     try {
+      const requestBody = {
+        vhcItemId: parsedId,
+        approvalStatus: dbStatus,
+        approvedBy: authUserId || dbUserId || "system"
+      };
+      console.log(`[VHC STATUS] API Request Body:`, requestBody);
+
       const response = await fetch("/api/vhc/update-item-status", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          vhcItemId: parsedId,
-          approvalStatus: dbStatus,
-          approvedBy: authUserId || dbUserId || "system"
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const result = await response.json();
+      console.log(`[VHC STATUS] API Response:`, result);
+
       if (!response.ok || !result?.success) {
-        console.error("Failed to update approval status:", result?.message);
+        console.error(`❌ [VHC STATUS ERROR] API Failed:`, result?.message);
+        console.error(`❌ [VHC STATUS ERROR] Full Response:`, result);
         return;
       }
 
+      console.log(`✅ [VHC STATUS] Database updated successfully!`);
+
       // Update vhcChecksData to trigger re-render of sections
-      console.log(`[VHC] Updating vhcChecksData for vhc_id=${parsedId} to status=${dbStatus}`);
+      console.log(`[VHC STATUS] Updating local state vhcChecksData...`);
       setVhcChecksData((prev) => {
+        console.log(`[VHC STATUS] Previous vhcChecksData count: ${prev.length}`);
         const updated = prev.map((check) => {
           if (check.vhc_id === parsedId) {
-            console.log(`[VHC] Found and updating check:`, check);
-            return {
+            console.log(`[VHC STATUS] FOUND CHECK TO UPDATE:`, check);
+            const updatedCheck = {
               ...check,
               approval_status: dbStatus,
+              display_status: newDisplayStatus || check.display_status,
               approved_by: authUserId || dbUserId || "system",
               approved_at: dbStatus === 'pending' ? null : new Date().toISOString(),
             };
+            console.log(`[VHC STATUS] UPDATED CHECK:`, updatedCheck);
+            return updatedCheck;
           }
           return check;
         });
-        console.log('[VHC] Updated vhcChecksData:', updated);
+        console.log(`[VHC STATUS] Updated vhcChecksData count: ${updated.length}`);
         return updated;
       });
+
+      console.log(`✅ ━━━ [VHC STATUS] UPDATE COMPLETE ━━━`);
+      console.log(`✅ Item ${itemId} should now appear in "${dbStatus}" section`);
     } catch (error) {
-      console.error("Error updating approval status:", error);
+      console.error(`❌ ━━━ [VHC STATUS ERROR] EXCEPTION ━━━`);
+      console.error(`❌ [VHC STATUS ERROR]`, error);
+      console.error(`❌ [VHC STATUS ERROR] Stack:`, error.stack);
     }
   };
 
@@ -1849,7 +1889,7 @@ export default function VhcDetailsPanel({
         }
         const canonicalId = resolveCanonicalVhcId(item.id);
         const hours = labourHoursByVhcItem.get(canonicalId);
-        if (Number.isFinite(hours) && hours > 0) {
+        if (Number.isFinite(hours) && hours >= 0) { // Allow 0 values
           updated[item.id] = {
             ...entry,
             laborHours: String(hours),
@@ -1862,6 +1902,40 @@ export default function VhcDetailsPanel({
       return hasChanges ? updated : prev;
     });
   }, [labourHoursByVhcItem, severityLists, resolveCanonicalVhcId]);
+
+  // Initialize itemEntries from vhcApprovalLookup (database values)
+  useEffect(() => {
+    setItemEntries((prev) => {
+      const updated = { ...prev };
+      let hasChanges = false;
+      const items = [...(severityLists.red || []), ...(severityLists.amber || []), ...(severityLists.authorized || []), ...(severityLists.declined || [])];
+
+      items.forEach((item) => {
+        const entry = ensureEntryValue(prev, item.id);
+        // Only initialize if not already set
+        if (entry.laborHours !== "" && entry.laborHours !== null && entry.laborHours !== undefined) {
+          return;
+        }
+
+        // Get approval data from database
+        const approvalData = vhcApprovalLookup.get(String(item.id));
+        if (approvalData && approvalData.labourHours !== null && approvalData.labourHours !== undefined) {
+          updated[item.id] = {
+            ...entry,
+            laborHours: String(approvalData.labourHours),
+            labourComplete: approvalData.labourComplete || false,
+            partsCost: approvalData.partsCost !== null && approvalData.partsCost !== undefined ? String(approvalData.partsCost) : entry.partsCost,
+            partsComplete: approvalData.partsComplete || false,
+            totalOverride: approvalData.totalOverride !== null && approvalData.totalOverride !== undefined ? String(approvalData.totalOverride) : entry.totalOverride,
+            status: approvalData.approvalStatus || null,
+          };
+          hasChanges = true;
+        }
+      });
+
+      return hasChanges ? updated : prev;
+    });
+  }, [vhcApprovalLookup, severityLists]);
 
   // Check if all checkboxes are complete and notify parent
   // IMPORTANT: Also checks for pending approval status - job cannot be completed if any items are still pending
@@ -2059,8 +2133,16 @@ export default function VhcDetailsPanel({
 
   const handleBulkStatus = useCallback(
     async (severity, status) => {
+      console.log(`━━━ [VHC BULK] STARTING BULK UPDATE ━━━`);
+      console.log(`[VHC BULK] Severity: ${severity}, New Status: ${status}`);
+
       const selectedIds = severitySelections[severity] || [];
-      if (selectedIds.length === 0) return;
+      console.log(`[VHC BULK] Selected IDs:`, selectedIds);
+
+      if (selectedIds.length === 0) {
+        console.log(`[VHC BULK] No items selected - aborting`);
+        return;
+      }
 
       // Update local state immediately for all selected items
       setItemEntries((prev) => {
@@ -2076,7 +2158,12 @@ export default function VhcDetailsPanel({
       const updatePromises = selectedIds.map(async (itemId) => {
         const canonicalId = resolveCanonicalVhcId(itemId);
         const parsedId = Number(canonicalId);
-        if (!Number.isInteger(parsedId)) return;
+        console.log(`[VHC BULK] Processing item ${itemId} -> vhc_id ${parsedId}`);
+
+        if (!Number.isInteger(parsedId)) {
+          console.error(`❌ [VHC BULK ERROR] Invalid ID for item ${itemId}`);
+          return null;
+        }
 
         const dbStatus = status || 'pending';
 
@@ -2093,12 +2180,13 @@ export default function VhcDetailsPanel({
 
           const result = await response.json();
           if (!response.ok || !result?.success) {
-            console.error("Failed to update approval status:", result?.message);
+            console.error(`❌ [VHC BULK ERROR] Failed for vhc_id ${parsedId}:`, result?.message);
             return null;
           }
+          console.log(`✅ [VHC BULK] Success for vhc_id ${parsedId}`);
           return parsedId;
         } catch (error) {
-          console.error("Error updating approval status:", error);
+          console.error(`❌ [VHC BULK ERROR] Exception for item ${itemId}:`, error);
           return null;
         }
       });
@@ -2107,25 +2195,38 @@ export default function VhcDetailsPanel({
       const updatedIds = await Promise.all(updatePromises);
       const successfulIds = updatedIds.filter(id => id !== null);
 
+      console.log(`[VHC BULK] Successful updates: ${successfulIds.length}/${selectedIds.length}`);
+      console.log(`[VHC BULK] Successful vhc_ids:`, successfulIds);
+
       // Update vhcChecksData for all successfully updated items
       if (successfulIds.length > 0) {
+        const newDisplayStatus = status === 'authorized' ? 'authorized' : status === 'declined' ? 'declined' : null;
+        console.log(`[VHC BULK] Updating vhcChecksData, setting display_status to: ${newDisplayStatus}`);
+
         setVhcChecksData((prev) => {
-          return prev.map((check) => {
+          const updated = prev.map((check) => {
             if (successfulIds.includes(check.vhc_id)) {
+              console.log(`[VHC BULK] Updating check vhc_id=${check.vhc_id} from display_status=${check.display_status} to ${newDisplayStatus}`);
               return {
                 ...check,
                 approval_status: status || 'pending',
+                display_status: newDisplayStatus || check.display_status,
                 approved_by: authUserId || dbUserId || "system",
                 approved_at: status ? new Date().toISOString() : null,
               };
             }
             return check;
           });
+          console.log(`[VHC BULK] Updated vhcChecksData`);
+          return updated;
         });
       }
 
       // Clear selection
       setSeveritySelections((prev) => ({ ...prev, [severity]: [] }));
+
+      console.log(`✅ ━━━ [VHC BULK] BULK UPDATE COMPLETE ━━━`);
+      console.log(`✅ ${successfulIds.length} items should now appear in "${status}" section`);
     },
     [severitySelections, resolveCanonicalVhcId, authUserId, dbUserId]
   );
@@ -2326,9 +2427,29 @@ export default function VhcDetailsPanel({
                         <input
                           type="checkbox"
                           checked={entry.labourComplete || false}
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const isChecked = e.target.checked;
                             updateEntryValue(item.id, "labourComplete", isChecked);
+
+                            // Save labour complete status to database
+                            const canonicalId = resolveCanonicalVhcId(item.id);
+                            const parsedId = Number(canonicalId);
+                            if (Number.isInteger(parsedId)) {
+                              try {
+                                await fetch("/api/vhc/update-item-status", {
+                                  method: "PATCH",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    vhcItemId: parsedId,
+                                    labourComplete: isChecked,
+                                    approvedBy: authUserId || dbUserId || "system"
+                                  }),
+                                });
+                              } catch (error) {
+                                console.error("Failed to save labour complete status", error);
+                              }
+                            }
+
                             if (isChecked && (!entry.laborHours || entry.laborHours === "")) {
                               updateEntryValue(item.id, "laborHours", "0");
                               persistLabourHours(item.id, 0);
@@ -4421,49 +4542,45 @@ export default function VhcDetailsPanel({
                     );
                   })}
 
-                  {/* Authorised section - show if there are authorized items */}
-                  {severityLists.authorized && severityLists.authorized.length > 0 && (
-                    <div
-                      style={{
-                        border: "2px solid var(--success)",
-                        borderRadius: "18px",
-                        padding: "18px",
-                        background: "var(--surface)",
-                        boxShadow: "none",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "16px",
-                      }}
-                    >
-                      <div style={{ borderBottom: "1px solid var(--success)", paddingBottom: "10px" }}>
-                        <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
-                        <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been authorised for work</p>
-                      </div>
-                      {renderSeverityTable("authorized")}
+                  {/* Authorised section - always show */}
+                  <div
+                    style={{
+                      border: "2px solid var(--success)",
+                      borderRadius: "18px",
+                      padding: "18px",
+                      background: "var(--surface)",
+                      boxShadow: "none",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "16px",
+                    }}
+                  >
+                    <div style={{ borderBottom: "1px solid var(--success)", paddingBottom: "10px" }}>
+                      <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
+                      <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been authorised for work</p>
                     </div>
-                  )}
+                    {renderSeverityTable("authorized")}
+                  </div>
 
-                  {/* Declined section - show if there are declined items */}
-                  {severityLists.declined && severityLists.declined.length > 0 && (
-                    <div
-                      style={{
-                        border: "2px solid var(--danger)",
-                        borderRadius: "18px",
-                        padding: "18px",
-                        background: "var(--surface)",
-                        boxShadow: "none",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "16px",
-                      }}
-                    >
-                      <div style={{ borderBottom: "1px solid var(--danger)", paddingBottom: "10px" }}>
-                        <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
-                        <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been declined</p>
-                      </div>
-                      {renderSeverityTable("declined")}
+                  {/* Declined section - always show */}
+                  <div
+                    style={{
+                      border: "2px solid var(--danger)",
+                      borderRadius: "18px",
+                      padding: "18px",
+                      background: "var(--surface)",
+                      boxShadow: "none",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "16px",
+                    }}
+                  >
+                    <div style={{ borderBottom: "1px solid var(--danger)", paddingBottom: "10px" }}>
+                      <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
+                      <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been declined</p>
                     </div>
-                  )}
+                    {renderSeverityTable("declined")}
+                  </div>
 
                   {greenItems.length > 0 && (
                     <div

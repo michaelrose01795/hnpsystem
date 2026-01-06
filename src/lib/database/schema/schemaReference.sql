@@ -1343,6 +1343,7 @@ CREATE TABLE public.vhc_checks (
   parts_complete boolean DEFAULT false,
   approved_at timestamp with time zone,
   approved_by text,
+  display_status text CHECK (display_status IS NULL OR (display_status = ANY (ARRAY['red'::text, 'amber'::text, 'green'::text, 'authorized'::text, 'declined'::text]))),
   CONSTRAINT vhc_checks_pkey PRIMARY KEY (vhc_id),
   CONSTRAINT vhc_checks_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
